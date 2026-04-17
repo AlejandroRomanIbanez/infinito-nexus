@@ -61,8 +61,8 @@ class TestGetAppConfPaths(unittest.TestCase):
             if "tests" in Path(dirpath).parts:
                 continue
             for fname in files:
-                # ignore .py and .sh files
-                if fname.endswith((".py", ".sh")):
+                # ignore .py, .sh, and .md files (.md are documentation examples, not real code)
+                if fname.endswith((".py", ".sh", ".md")):
                     continue
                 file_path = Path(dirpath) / fname
                 try:
