@@ -15,6 +15,7 @@ if TYPE_CHECKING:
     from utils.env.builder import BuildContext, EnvBuilder
 
 KEY = "INFINITO_OUTER_NETWORK_MTU"
+STATIC_READS = (KEY,)
 
 
 def _default_route_iface() -> str | None:
@@ -22,7 +23,7 @@ def _default_route_iface() -> str | None:
     if not proc_route.is_file():
         return None
     try:
-        text = proc_route.read_text()
+        text = proc_route.read_text()  # nocheck: cache-read - live /proc routing
     except OSError:
         return None
     for raw in text.splitlines()[1:]:
@@ -34,7 +35,7 @@ def _default_route_iface() -> str | None:
 
 def _iface_mtu(iface: str) -> str | None:
     try:
-        return Path(f"/sys/class/net/{iface}/mtu").read_text().strip()
+        return Path(f"/sys/class/net/{iface}/mtu").read_text().strip()  # nocheck: cache-read
     except OSError:
         return None
 

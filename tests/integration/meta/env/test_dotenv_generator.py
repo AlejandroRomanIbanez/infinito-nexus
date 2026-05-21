@@ -132,13 +132,38 @@ def parse_dotenv(path: Path) -> dict[str, str]:
     return result
 
 
+def _dynamic_handler_static_reads() -> set[str]:
+    """Collect ``STATIC_READS`` keys declared by dynamic handler modules.
+
+    Dynamic handlers that pull their fallback from ``ctx.static[KEY]``
+    must list the key in a module-level ``STATIC_READS`` tuple so this
+    drift test recognises the read.
+    """
+    import importlib
+
+    handlers_dir = PROJECT_ROOT / "utils" / "env" / "handlers"
+    referenced: set[str] = set()
+    for module_path in sorted(handlers_dir.glob("*.py")):
+        if module_path.name in ("__init__.py", "passthrough.py", "gha_passthrough.py"):
+            continue
+        module_name = f"utils.env.handlers.{module_path.stem}"
+        module = importlib.import_module(module_name)
+        referenced.update(getattr(module, "STATIC_READS", ()))
+    return referenced
+
+
 def generator_referenced_keys() -> set[str]:
     """Return the set of env/default.env keys the generator actually reads.
 
     Sourced from the handler registry's ``PASSTHROUGH_STATIC_KEYS`` and
-    ``GHA_STATIC_KEYS`` tuples. Catches the most common drift: a new
-    key in env/default.env that no handler references."""
-    return set(PASSTHROUGH_STATIC_KEYS) | set(GHA_STATIC_KEYS)
+    ``GHA_STATIC_KEYS`` tuples plus any dynamic handler module's
+    ``STATIC_READS`` tuple. Catches the most common drift: a new key in
+    env/default.env that no handler references."""
+    return (
+        set(PASSTHROUGH_STATIC_KEYS)
+        | set(GHA_STATIC_KEYS)
+        | _dynamic_handler_static_reads()
+    )
 
 
 class TestStaticYamlDrift(unittest.TestCase):

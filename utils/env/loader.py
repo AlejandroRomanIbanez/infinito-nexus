@@ -7,7 +7,7 @@ from pathlib import Path
 
 from utils.env.parser import parse_static_env
 
-_LOADED_FLAG = "INFINITO_ENV_LOADED"
+_LOADED_FLAG = "INFINITO_ENV_LOADED"  # nocheck: env-loader-internal-guard
 _DOTENV_NAME = ".env"
 
 
