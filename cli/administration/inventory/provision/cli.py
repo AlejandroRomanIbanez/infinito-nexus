@@ -131,8 +131,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--workers",
         type=int,
-        default=4,
-        help="Worker threads for credentials generation (default: 4).",
+        default=os.cpu_count() or 4,
+        help="Worker threads for credentials generation (default: host CPU count, fallback 4).",
     )
     parser.add_argument(
         "--vars-file",
