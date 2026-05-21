@@ -68,8 +68,8 @@
   environment:
     COMPOSE_HTTP_TIMEOUT: "600"
     DOCKER_CLIENT_TIMEOUT: "600"
-    DOCKER_BUILDKIT: "1"
-    COMPOSE_DOCKER_CLI_BUILD: "1"
+    DOCKER_BUILDKIT: "{{ BUILDKIT_ENABLED | int }}"
+    COMPOSE_DOCKER_CLI_BUILD: "{{ BUILDKIT_ENABLED | int }}"
   listen:
     - compose build
 

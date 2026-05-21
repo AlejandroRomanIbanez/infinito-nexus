@@ -118,12 +118,30 @@ def main() -> int:
         if rc == 0 and "--ignore-buildable" in help_out:
             pull_cmd.append("--ignore-buildable")
 
-    run_or_fail(
-        pull_cmd,
-        cwd=cwd,
-        env=env,
-        label="docker compose pull",
-    )
+    print(f">>> {' '.join(pull_cmd)}", file=sys.stderr)
+    rc, out = run_cmd(pull_cmd, cwd=cwd, env=env)
+    if out.strip():
+        print(out, file=sys.stderr, end="" if out.endswith("\n") else "\n")
+
+    if rc != 0:
+        rc_images, images_out = run_cmd(
+            [*base_cmd, "config", "--images"], cwd=cwd, env=env
+        )
+        if rc_images != 0:
+            raise RuntimeError(f"docker compose pull failed (rc={rc})")
+        required = [line.strip() for line in images_out.splitlines() if line.strip()]
+        missing = []
+        for image in required:
+            rc_inspect, _ = run_cmd(
+                ["docker", "image", "inspect", image], cwd=cwd, env=env
+            )
+            if rc_inspect != 0:
+                missing.append(image)
+        if missing:
+            raise RuntimeError(
+                f"docker compose pull failed (rc={rc}); images missing locally: {missing}"
+            )
+        print(f"docker compose pull failed (rc={rc}) but all images present locally", file=sys.stderr)
 
     lock_file.write_text("ok\n", encoding="utf-8")
     print("pulled")

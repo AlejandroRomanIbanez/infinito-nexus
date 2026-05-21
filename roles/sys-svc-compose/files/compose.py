@@ -218,6 +218,10 @@ def main() -> int:
     if args.debug:
         print(">>> " + " ".join(shlex.quote(x) for x in cmd), file=sys.stderr)
 
+    if os.environ["INFINITO_BUILDKIT_ENABLED"] != "1":
+        os.environ["DOCKER_BUILDKIT"] = "0"
+        os.environ["COMPOSE_DOCKER_CLI_BUILD"] = "0"
+
     # execvp preserves signal handling under systemd. The argv list is
     # built from this script's own argv plus `--env-file` / `--profile`
     # additions; no shell parses it.

@@ -73,6 +73,7 @@ services:
       - letsencrypt:/etc/letsencrypt/
 
     environment:
+      INFINITO_BUILDKIT_ENABLED: ${INFINITO_BUILDKIT_ENABLED}
       INFINITO_CONTAINER_NO_CA: ${INFINITO_CONTAINER_NO_CA}
       INFINITO_DNS_IP: ${INFINITO_DNS_IP}
       INFINITO_DOMAIN: ${INFINITO_DOMAIN}
