@@ -5,7 +5,7 @@ deleted: the ``__pycache__`` cache remains and the now-orphan parent directory
 holds nothing else. ``git clean -fdX`` does not touch the parent because the
 parent itself is tracked, so they stick around forever.
 
-Run via ``python -m utils.cleanup.pycache_only_dirs`` (or ``make clean-pycache-only-dirs``).
+Run via ``python -m utils.cleanup.pycache_only_dirs`` (or ``make clean-pycache-dirs``).
 """
 
 from __future__ import annotations

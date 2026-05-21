@@ -46,7 +46,7 @@ echo "limit_host=${INFINITO_LIMIT_HOST}"
 echo "inventory_dir=${INFINITO_INVENTORY_DIR}"
 echo
 
-echo ">>> Bringing stack down (replaces former 'make down' prerequisite)"
+echo ">>> Bringing stack down (replaces former 'make compose-down' prerequisite)"
 "${PYTHON}" -m cli.administration.deploy.development down
 
 echo ">>> Ensuring stack is up for distro ${INFINITO_DISTRO}"

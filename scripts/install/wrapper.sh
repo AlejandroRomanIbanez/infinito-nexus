@@ -4,7 +4,7 @@
 # Dispatcher for `python -m utils.install.lint` based on INFINITO_LINT_RUNNER:
 #   host             -- install lint tools into the host venv.
 #   docker           -- install lint tools inside the running infinito
-#                       compose container (requires `make up`; auto-brings
+#                       compose container (requires `make compose-up`; auto-brings
 #                       the stack up).
 #
 # The per-environment stamp (build/install-lint-<hash>.stamp; <hash> is
@@ -31,8 +31,8 @@ host)
 	;;
 docker)
 	if ! docker compose ps -q infinito 2>/dev/null | grep -q .; then
-		echo ">>> 'infinito' container not running; starting the stack via 'make up'..."
-		"${MAKE:-make}" up
+		echo ">>> 'infinito' container not running; starting the stack via 'make compose-up'..."
+		"${MAKE:-make}" compose-up
 	fi
 
 	INFINITO_DISTRO="${INFINITO_DISTRO}" \

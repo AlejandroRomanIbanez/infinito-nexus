@@ -53,7 +53,7 @@ Important:
 - Some local deploy commands are destructive.
 - Read [reset/README.md](../../../scripts/tests/deploy/local/reset/README.md), [purge/README.md](../../../scripts/tests/deploy/local/purge/README.md), or [exec/README.md](../../../scripts/tests/deploy/local/exec/README.md) before using the matching helper.
 - For act-based workflow checks, see [Act Workflow Checks](../tools/act.md).
-- After a successful local deploy, run `make trust-ca` and restart your browser.
+- After a successful local deploy, run `make network-trust-ca` and restart your browser.
 
 ## Suite Selection 🎯
 

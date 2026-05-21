@@ -2,7 +2,7 @@
 # Chooses where to execute scripts/tests/code/run.sh based on
 # INFINITO_TEST_RUNNER:
 #   docker (default) -- inside the already-running infinito compose
-#                       container (requires `make up`).
+#                       container (requires `make compose-up`).
 #   host             -- directly against the host shell/Python.
 set -euo pipefail
 
@@ -32,10 +32,10 @@ docker)
 	echo "============================================================"
 
 	# Auto-bring-up: if the `infinito` container is not running, kick off
-	# `make up` first so test-* doesn't fail with "service not running".
+	# `make compose-up` first so test-* doesn't fail with "service not running".
 	if ! docker compose ps -q infinito 2>/dev/null | grep -q .; then
-		echo ">>> 'infinito' container not running; starting the stack via 'make up'..."
-		"${MAKE:-make}" up
+		echo ">>> 'infinito' container not running; starting the stack via 'make compose-up'..."
+		"${MAKE:-make}" compose-up
 	fi
 
 	# Compose auto-loads `.env` (the SPOT generated from default.env),

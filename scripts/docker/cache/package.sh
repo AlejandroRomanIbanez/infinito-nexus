@@ -54,7 +54,7 @@ rotate_admin_password() {
 			log "Default rotation rejected but configured password authenticates; assuming previous bootstrap, marking done"
 		else
 			log "Cannot authenticate with default '${NEXUS_DEFAULT_PASSWORD}' nor with configured INFINITO_CACHE_PACKAGE_ADMIN_PASSWORD."
-			log "Wipe ${INFINITO_CACHE_PACKAGE_HOST_PATH} (e.g. via 'make cache-clean') and retry."
+			log "Wipe ${INFINITO_CACHE_PACKAGE_HOST_PATH} (e.g. via 'make clean-cache') and retry."
 			return 1
 		fi
 	fi

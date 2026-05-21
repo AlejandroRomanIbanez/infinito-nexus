@@ -11,7 +11,7 @@ make deploy mode=reinstall apps="${MATOMO_APP}" INFINITO_FULL_CYCLE=true
 inspect
 
 echo "Re-trusting the CA after the fresh deploy rebuilt the certificates."
-make trust-ca
+make network-trust-ca
 
 echo "Verifying matomo is now reachable after its dedicated deploy."
 assert_http_status 200 "${MATOMO_URL}"

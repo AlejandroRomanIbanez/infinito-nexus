@@ -14,7 +14,7 @@ For rules on how to write and structure the `Makefile` itself, see [makefile.md]
 
 These pages drill into a single workflow rather than enumerate every target. `make help` is the authoritative list of available targets:
 
-- [Network debugging](../actions/debugging/network.md): `make debug-network` (DNS / TCP / TLS / PMTU diagnostics inside the dev container) plus MTU / IPv6 / connectivity troubleshooting.
+- [Network debugging](../actions/debugging/network.md): `make diagnose-network` (DNS / TCP / TLS / PMTU diagnostics inside the dev container) plus MTU / IPv6 / connectivity troubleshooting.
 - For app-level local deploy flows and end-to-end checks, see [Development & Testing](../actions/testing.md).
 
 ## Git 🔐

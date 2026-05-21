@@ -13,7 +13,7 @@
 # the Nexus side, the next bootstrap rotates a fresh admin password
 # and re-creates blobstore + proxy repos.
 #
-# Use `make cache-clean` rather than calling this script directly.
+# Use `make clean-cache` rather than calling this script directly.
 
 set -euo pipefail
 
@@ -31,7 +31,7 @@ source "scripts/meta/env/load.sh"
 # whole stack would also kill the runner, which is too destructive;
 # scope to the two cache services explicitly.
 if docker ps --format '{{.Names}}' | grep -qE '^infinito-(registry|package)-cache$'; then
-	echo "[cache-clean] stopping infinito-registry-cache + infinito-package-cache"
+	echo "[clean-cache] stopping infinito-registry-cache + infinito-package-cache"
 	docker stop infinito-registry-cache infinito-package-cache 2>/dev/null || true
 	docker rm infinito-registry-cache infinito-package-cache 2>/dev/null || true
 fi
@@ -51,14 +51,14 @@ remove_path() {
 	local p="$1"
 	[[ -z "${p}" ]] && return 0
 	if [[ ! -e "${p}" ]]; then
-		echo "[cache-clean] not present, skipping: ${p}"
+		echo "[clean-cache] not present, skipping: ${p}"
 		return 0
 	fi
 	if [[ -w "${p}" ]] || [[ -O "${p}" ]]; then
-		echo "[cache-clean] removing: ${p}"
+		echo "[clean-cache] removing: ${p}"
 		rm -rf -- "${p}"
 	else
-		echo "[cache-clean] removing (sudo): ${p}"
+		echo "[clean-cache] removing (sudo): ${p}"
 		sudo rm -rf -- "${p}"
 	fi
 }
@@ -67,4 +67,4 @@ remove_path "${PATHS[0]}"
 remove_path "${PATHS[1]}"
 remove_path "${PATHS[2]}"
 
-echo "[cache-clean] done. Re-run 'make up' to recreate empty caches."
+echo "[clean-cache] done. Re-run 'make compose-up' to recreate empty caches."

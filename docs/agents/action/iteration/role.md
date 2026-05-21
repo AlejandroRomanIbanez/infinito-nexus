@@ -43,14 +43,14 @@ For the matrix-variant mechanism (folder layout, round semantics, `--variant` / 
 
 ## Certificate Authority
 
-- If the website uses locally deployed certificates, you MUST run `make trust-ca` before you inspect it in a browser. Otherwise the browser will warn about the local CA and the inspection will not be reliable.
-- After `make trust-ca`, you MUST restart the browser so it picks up the updated trust store.
-- If `make trust-ca` fails due to missing root permissions, you MUST use the alternative syntax `curl -k` (or `wget --no-check-certificate`) to skip certificate validation when checking URLs from the command line instead of fixing the trust store.
+- If the website uses locally deployed certificates, you MUST run `make network-trust-ca` before you inspect it in a browser. Otherwise the browser will warn about the local CA and the inspection will not be reliable.
+- After `make network-trust-ca`, you MUST restart the browser so it picks up the updated trust store.
+- If `make network-trust-ca` fails due to missing root permissions, you MUST use the alternative syntax `curl -k` (or `wget --no-check-certificate`) to skip certificate validation when checking URLs from the command line instead of fixing the trust store.
 
 ## Inspect
 
 - Before you redeploy, you MUST complete all available inspections first. Check the live local output, local logs, and current browser state so the original state stays visible.
-- To inspect files or run commands inside a running container, use `make exec`.
-- To run a one-off sidecar image against the same docker daemon (e.g. a Playwright runner with a patched `.env`), use `make run IMAGE=<ref> [INFINITO_CMD=...] [INFINITO_RUN_FLAGS=...]`.
-- When a local deploy fails, you SHOULD first inspect and, where practical, validate a fix inside the running container with `make exec` / `make run` before starting another deploy. Use that live investigation to identify the concrete root cause and save iteration time.
+- To inspect files or run commands inside a running container, use `make compose-exec`.
+- To run a one-off sidecar image against the same docker daemon (e.g. a Playwright runner with a patched `.env`), use `make compose-inner-run IMAGE=<ref> [INFINITO_CMD=...] [INFINITO_RUN_FLAGS=...]`.
+- When a local deploy fails, you SHOULD first inspect and, where practical, validate a fix inside the running container with `make compose-exec` / `make compose-inner-run` before starting another deploy. Use that live investigation to identify the concrete root cause and save iteration time.
 - Once the root cause is understood, you MUST apply the real fix in the repository files and then continue the redeploy loop with the usual commands from this page. In-container fixes are only for diagnosis or short validation and MUST NOT replace the repo change.

@@ -89,7 +89,7 @@ You SHOULD use `make deploy` (full discovery) only when you need broad coverage 
 You SHOULD check what is actually consuming space before cleaning up:
 
 ```bash
-make system-disk-usage
+make diagnose-disk-usage
 ```
 
 That makes it easier to see whether the real issue is Docker, journald, a package cache, or project state.

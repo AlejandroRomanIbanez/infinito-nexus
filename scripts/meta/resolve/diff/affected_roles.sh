@@ -24,7 +24,7 @@
 #   <role-id> [<role-id> ...]        restricted deploy set (whitelist).
 #
 # Pre-conditions:
-#   - The container started by `make up` is running (the Python resolver
+#   - The container started by `make compose-up` is running (the Python resolver
 #     is invoked via `docker compose ... exec infinito`, identical to the
 #     pattern used in scripts/meta/resolve/apps.sh).
 #   - `git fetch origin main` is reachable (caller already did checkout).

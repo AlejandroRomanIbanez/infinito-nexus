@@ -26,7 +26,7 @@ CACHE_AFTER="$(cache_snapshot)"
 assert_caches_used "${CACHE_BEFORE}" "${CACHE_AFTER}"
 
 echo "Trusting the local CA certificate so HTTPS endpoints are reachable from the host."
-make trust-ca
+make network-trust-ca
 
 echo "Verifying the dashboard is reachable (matomo was disabled, not the dashboard itself)."
 assert_http_status 200 "${DASHBOARD_URL}"

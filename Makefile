@@ -13,24 +13,23 @@ else
 $(error Missing env file: $(ENV_SH))
 endif
 
-.PHONY: setup setup-clean install install-force install-ansible install-lint install-lint-force install-venv install-python install-python-dev install-system-python install-skills update-skills agent-install
+.PHONY: setup setup-clean install install-force install-ansible install-lint install-lint-force install-venv install-python install-python-dev install-system-python install-skills update-skills install-agent
 .PHONY: test lint lint-action lint-ansible lint-python lint-shellcheck lint-markdown lint-makefile lint-javascript autoformat test-lint test-unit test-integration test-external test-signed
-.PHONY: clean clean-pycache-only-dirs clean-sudo down cache-clean
-.PHONY: system-purge system-disk-usage
-.PHONY: list tree mig dockerignore chmod-scripts help
+.PHONY: clean clean-cache clean-pycache-dirs clean-sudo compose-down
+.PHONY: system-purge diagnose-disk-usage
+.PHONY: meta-list meta-tree meta-mig fix-dockerignore fix-chmod help
 .PHONY: print-python
-.PHONY: dns-setup dns-remove
+.PHONY: network-dns-setup network-dns-remove
 .PHONY: environment-bootstrap environment-teardown
 .PHONY: wsl2-systemd-check wsl2-dns-setup wsl2-trust-windows
-.PHONY: apparmor-teardown apparmor-restore
-.PHONY: disable-ipv6 restore-ipv6
-.PHONY: trust-ca
-.PHONY: restart refresh exec run up down stop console
+.PHONY: security-apparmor-teardown security-apparmor-restore
+.PHONY: network-ipv6-disable network-ipv6-restore
+.PHONY: network-trust-ca
+.PHONY: compose-restart network-refresh compose-exec compose-inner-run compose-up compose-down compose-stop console
 .PHONY: build build-missing build-no-cache build-no-cache-all build-cleanup build-dependency
 .PHONY: act-all act-app act-workflow
-.PHONY: deploy container-refresh-inventory container-purge-entity container-purge-system
+.PHONY: deploy diagnose-network container-refresh-inventory container-purge-entity container-purge-system
 .PHONY: bootstrap
-.PHONY: debug-network
 
 # Run all act-based deploy checks.
 act-all:
@@ -45,11 +44,11 @@ act-workflow:
 	@bash scripts/tests/deploy/act/workflow.sh
 
 # Install OS-level sandbox dependencies (bubblewrap, socat) required by the Claude Code sandbox.
-agent-install:
+install-agent:
 	@bash scripts/install/sandbox.sh
 
 # Restore AppArmor profiles.
-apparmor-restore:
+security-apparmor-restore:
 	@echo "==> AppArmor: restore profiles"
 	@if grep -q '^[Yy1]' /sys/module/apparmor/parameters/enabled 2>/dev/null; then \
 		sudo bash scripts/system/apparmor/restore.sh; \
@@ -58,7 +57,7 @@ apparmor-restore:
 	fi
 
 # Tear down AppArmor for local development.
-apparmor-teardown:
+security-apparmor-teardown:
 	@echo "==> AppArmor: full teardown (local dev)"
 	@if grep -q '^[Yy1]' /sys/module/apparmor/parameters/enabled 2>/dev/null; then \
 		sudo bash scripts/system/apparmor/teardown.sh; \
@@ -74,7 +73,7 @@ autoformat: install-lint
 bootstrap: install setup
 
 # Build the local image.
-build: dockerignore
+build: fix-dockerignore
 	@IMAGE_TAG="$$(bash scripts/meta/resolve/image/local.sh)" \
 		bash scripts/image/build.sh
 
@@ -104,12 +103,12 @@ build-no-cache-all:
 		INFINITO_DISTRO="$$d" "$(MAKE)" build-no-cache; \
 	done
 
-# Wipe on-disk caches under /var/cache/infinito/core/cache/ (stops cache containers first; re-run `make up` to recreate).
-cache-clean:
+# Wipe on-disk caches under /var/cache/infinito/core/cache/ (stops cache containers first; re-run `make compose-up` to recreate).
+clean-cache:
 	@bash scripts/system/cache/clean.sh
 
 # Mark all shell scripts under scripts/ as executable.
-chmod-scripts:
+fix-chmod:
 	@find scripts/ -name "*.sh" -exec chmod +x {} \;
 
 # Remove ignored files from the working tree; falls back to sudo for container-owned __pycache__/*.pyc, warns and continues if both fail.
@@ -129,7 +128,7 @@ clean:
 	fi
 
 # Remove tracked directories whose only child is a __pycache__ folder (orphans left after moving / deleting source files).
-clean-pycache-only-dirs:
+clean-pycache-dirs:
 	@"$${PYTHON}" -m utils.cleanup.pycache_only_dirs
 
 # Remove ignored files from the working tree with sudo.
@@ -155,10 +154,6 @@ container-purge-system: container-purge-entity
 container-refresh-inventory:
 	@bash scripts/tests/deploy/local/reset/inventory.sh
 
-# Run the network-diagnose script inside the infinito container (DNS/TCP/TLS/PMTU v4+v6).
-debug-network:
-	@$(MAKE) exec INFINITO_CMD="python3 -m cli.contributing.network.diagnose"
-
 # Run the local deploy router. Args: mode=initialize|reinstall|update (default initialize), apps=<csv>, purge=true|false (default false), type=server|workstation|universal (default from default.env), bundles=<csv>, disabled=<csv>, full_cycle=true|false. Example: `make deploy mode=reinstall apps=web-app-matomo full_cycle=true`. See scripts/tests/deploy/local/deploy/main.sh for the full table.
 deploy:
 	@$(if $(apps),INFINITO_APPS="$(apps)") \
@@ -170,22 +165,26 @@ deploy:
 	 $(if $(full_cycle),INFINITO_FULL_CYCLE="$(full_cycle)") \
 	 bash scripts/tests/deploy/local/deploy/main.sh
 
+# Run the network-diagnose script inside the infinito container (DNS/TCP/TLS/PMTU v4+v6).
+diagnose-network:
+	@$(MAKE) compose-exec INFINITO_CMD="python3 -m cli.contributing.network.diagnose"
+
 # Disable IPv6 for local development.
-disable-ipv6:
+network-ipv6-disable:
 	@sudo bash scripts/system/network/ipv6/disable.sh
-	@"$(MAKE)" refresh
+	@"$(MAKE)" network-refresh
 
 # Remove the DNS configuration.
-dns-remove:
+network-dns-remove:
 	@bash scripts/system/network/dns/remove.sh
 
 # Configure DNS on Linux.
-dns-setup: wsl2-dns-setup
+network-dns-setup: wsl2-dns-setup
 	@bash scripts/system/network/dns/setup/linux.sh
 
 # Regenerate .dockerignore from .gitignore (which carries the .git entry Docker needs). Race-safe under parallel make setup invocations.
-dockerignore:
-	@echo "Create dockerignore"
+fix-dockerignore:
+	@echo "Create .dockerignore"
 	cat .gitignore > .dockerignore
 
 # Regenerate .env (SPOT) from default.env + runtime context (distro, cache sizes, secrets, ...).
@@ -198,17 +197,17 @@ dotenv-force:
 	@env -i HOME="$${HOME}" PATH="$${PATH}" python3 -m cli.meta.env
 
 # Stop the development stack.
-down:
+compose-down:
 	@"$${PYTHON}" -m cli.administration.deploy.development down
 
 # Bootstrap the local development environment.
-environment-bootstrap: wsl2-systemd-check install-python-dev install-lint apparmor-teardown dns-setup disable-ipv6
+environment-bootstrap: wsl2-systemd-check install-python-dev install-lint security-apparmor-teardown network-dns-setup network-ipv6-disable
 
 # Tear down the local development environment.
-environment-teardown: apparmor-restore dns-remove restore-ipv6
+environment-teardown: security-apparmor-restore network-dns-remove network-ipv6-restore
 
-# Run a shell (`make exec`) or command (`make exec INFINITO_CMD="..."`) in the running container.
-exec:
+# Run a shell (`make compose-exec`) or command (`make compose-exec INFINITO_CMD="..."`) in the running container.
+compose-exec:
 	@bash scripts/tests/deploy/local/exec/container.sh
 
 # Print every Make target with the description from its preceding comment line.
@@ -296,33 +295,33 @@ lint-shellcheck: install-lint
 	@bash scripts/lint/wrapper.sh shellcheck
 
 # Print the repository role list.
-list:
+meta-list:
 	@echo "Generating the roles list"
 	@"$${PYTHON}" -m cli.build.list
 
 # Build the meta graph inputs.
-mig: list tree
+meta-mig: meta-list meta-tree
 	@echo "Creating meta data for meta infinity graph"
 
 # Refresh the running development stack only when it already exists.
-refresh:
+network-refresh:
 	@bash scripts/system/network/docker/stack_refresh.sh
 
 # Restart the development stack.
-restart:
+compose-restart:
 	@"$${PYTHON}" -m cli.administration.deploy.development restart
 
 # Restore IPv6 settings.
-restore-ipv6:
+network-ipv6-restore:
 	@sudo bash scripts/system/network/ipv6/restore.sh
-	@"$(MAKE)" refresh
+	@"$(MAKE)" network-refresh
 
 # Run a one-off `docker run` inside the running container.
-run:
+compose-inner-run:
 	@bash scripts/tests/deploy/local/exec/run.sh
 
 # Run the setup step after generating .dockerignore.
-setup: dockerignore dotenv
+setup: fix-dockerignore dotenv
 	@bash scripts/setup.sh
 
 # Run setup after cleaning ignored files.
@@ -330,11 +329,11 @@ setup-clean: clean setup
 	@echo "Full build with cleanup before was executed."
 
 # Stop the development stack without removing volumes.
-stop:
+compose-stop:
 	@"$${PYTHON}" -m cli.administration.deploy.development stop
 
 # Show disk and Docker resource usage to identify what to clean up.
-system-disk-usage:
+diagnose-disk-usage:
 	@bash scripts/system/meta/disk-usage.sh
 
 # Run the broad low-hardware cleanup routine.
@@ -384,17 +383,17 @@ test-unit: install
 	bash scripts/tests/code/wrapper.sh
 
 # Print the repository tree.
-tree:
+meta-tree:
 	@echo "Generating Tree"
 	@"$${PYTHON}" -m cli.build.tree -D 2
 
 # Trust the local CA on Linux and WSL2.
-trust-ca:
+network-trust-ca:
 	@bash scripts/system/tls/trust/linux.sh
 	@bash scripts/system/tls/trust/wsl2.sh
 
 # Start the development stack.
-up: install
+compose-up: install
 	@"$${PYTHON}" -m cli.administration.deploy.development up
 
 # Update all agent skills to latest versions and refresh skills-lock.json.

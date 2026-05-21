@@ -74,7 +74,7 @@ if [ -n "${INFINITO_CONTAINER}" ]; then
 		journalctl -u 'hlth-disc-space*' -n 80 --no-pager 2>&1 ||
 		echo "journal for hlth-disc-space not accessible"
 else
-	echo "no infinito container running (expected before 'make up')"
+	echo "no infinito container running (expected before 'make compose-up')"
 fi
 
 echo "::endgroup::"

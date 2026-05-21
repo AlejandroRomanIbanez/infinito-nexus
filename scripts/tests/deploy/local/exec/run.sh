@@ -21,13 +21,13 @@ set -euo pipefail
 #   INFINITO_CONTAINER Optional explicit override of the host container name.
 #
 # Examples:
-#   IMAGE=alpine make run
-#   IMAGE=alpine INFINITO_CMD='env | grep PATH' make run
+#   IMAGE=alpine make compose-inner-run
+#   IMAGE=alpine INFINITO_CMD='env | grep PATH' make compose-inner-run
 #   IMAGE=mcr.microsoft.com/playwright:v1.59.1-noble \
 #     INFINITO_RUN_FLAGS='--env-file /tmp/test-e2e-playwright/web-app-friendica/.env \
 #                -v /tmp/test-e2e-playwright/web-app-friendica:/e2e -w /e2e' \
 #     INFINITO_CMD='npx playwright test --grep dashboard' \
-#     make run
+#     make compose-inner-run
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../../../" && pwd)"

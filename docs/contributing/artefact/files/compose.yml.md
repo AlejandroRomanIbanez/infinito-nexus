@@ -75,7 +75,7 @@ The env-var contracts each service expects strictly via `${VAR:?…}` (consumed 
 | `INFINITO_CACHE_PACKAGE_MAX_AGE_MIN` | Cache freshness window in minutes, applied to every Nexus proxy repo (`contentMaxAge`/`metadataMaxAge`/negative-cache TTL). Stays strictly below the 7-day `Valid-Until` window Debian / Ubuntu generate in their apt `Release` files, so `apt-get update` never aborts with "Release file ... is expired". |
 | `INFINITO_CACHE_PACKAGE_ADMIN_PASSWORD` | Target value for the rotated Nexus admin password. Default is a stable per-host hash. |
 | `INFINITO_CACHE_PACKAGE_PORT` | Host-side port mapped to Nexus REST/UI. Bound to `${INFINITO_BIND_IP}` only. |
-| `INFINITO_CACHE_PACKAGE_PIP_CONF` | Bind source for `/etc/pip.conf`. Driver-injected by `make up` under the `cache` profile. |
+| `INFINITO_CACHE_PACKAGE_PIP_CONF` | Bind source for `/etc/pip.conf`. Driver-injected by `make compose-up` under the `cache` profile. |
 | `INFINITO_CACHE_PACKAGE_NPMRC` | Bind source for `/root/.npmrc`. Driver-injected. |
 | `INFINITO_CACHE_PACKAGE_APT_LIST` | Bind source for `/etc/apt/sources.list.d/package-cache.list`. Driver-injected. |
 | `INFINITO_CACHE_PACKAGE_FRONTEND_CA_DIR` | Host directory for the frontend CA. |

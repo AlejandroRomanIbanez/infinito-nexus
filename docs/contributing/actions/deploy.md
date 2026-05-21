@@ -75,15 +75,15 @@ infinito administration deploy development deploy --inventory-dir "${INFINITO_IN
 
 ## Inspect Live State 🔍
 
-Use [`make exec`](../../../Makefile) to drop into the running container shell. The repo is mounted at `/opt/src/infinito`, so code changes are visible immediately. Inspect logs and current state BEFORE redeploying so the failing snapshot stays available.
+Use [`make compose-exec`](../../../Makefile) to drop into the running container shell. The repo is mounted at `/opt/src/infinito`, so code changes are visible immediately. Inspect logs and current state BEFORE redeploying so the failing snapshot stays available.
 
-For TLS-enabled local sites, run [`make trust-ca`](../../../Makefile) once after the first deploy and restart the browser; alternatively use `curl -k` on the command line.
+For TLS-enabled local sites, run [`make network-trust-ca`](../../../Makefile) once after the first deploy and restart the browser; alternatively use `curl -k` on the command line.
 
 ## Reference Files 📌
 
 | File | Purpose |
 |---|---|
-| [Makefile](../../../Makefile) | The `deploy` router target and `make exec` / `make trust-ca` helpers. |
+| [Makefile](../../../Makefile) | The `deploy` router target and `make compose-exec` / `make network-trust-ca` helpers. |
 | [dev CLI tree](../../../cli/administration/deploy/development/) | Python CLI for init, deploy, up, down, exec, etc. |
 | [`make dotenv`](../../../Makefile) | Resolves `INFINITO_INVENTORY_DIR`, `INFINITO_INVENTORY_FILE`, and `INFINITO_INVENTORY_VARS_FILE` into `.env` for the dev CLI (see [variables.md](../environment/variables.md)). |
 | [local deploy scripts](../../../scripts/tests/deploy/local/) | Bash glue behind the make targets (fresh / reuse / purge variants). |

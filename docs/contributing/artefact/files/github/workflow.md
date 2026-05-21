@@ -88,7 +88,7 @@ Ordering:
 
 - Swap step MUST run **after** `actions/checkout` because the script lives inside the repo.
 - Swap step SHOULD run **after** `jlumbroso/free-disk-space` so the reclaimed disk on `/` is also a candidate target when `/mnt` is crowded.
-- Swap step MUST run **before** any `make up` / container build step so the expanded swap is active when heavy-allocation work begins.
+- Swap step MUST run **before** any `make compose-up` / container build step so the expanded swap is active when heavy-allocation work begins.
 
 Swap is a host-kernel resource; see [svc-opt-swapfile](../../../../../roles/svc-opt-swapfile/) for why the in-stack swap role is intentionally skipped inside containers.
 

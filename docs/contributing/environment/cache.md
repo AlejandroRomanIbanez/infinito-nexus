@@ -96,9 +96,9 @@ Per-variable defaults and purposes are in [compose.yml.md](../artefact/files/com
 
 | Action | Command |
 |---|---|
-| Start the stack with caches | `make up` |
-| Stop the stack | `make down` |
-| Wipe local cache state | `make cache-clean` |
+| Start the stack with caches | `make compose-up` |
+| Stop the stack | `make compose-down` |
+| Wipe local cache state | `make clean-cache` |
 | Manually re-bootstrap Nexus repos | `bash scripts/docker/cache/package.sh` (after `make dotenv` or sourcing `scripts/meta/env/load.sh`) |
 | Manually regenerate frontend certs | `bash scripts/docker/cache/package-frontend-certs.sh` |
 | Reload nginx in the frontend | `docker exec infinito-package-cache-frontend nginx -s reload` |

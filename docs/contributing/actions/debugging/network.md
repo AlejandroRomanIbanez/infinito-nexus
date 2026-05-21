@@ -5,10 +5,10 @@ When compose pulls hang, image builds fail to resolve registry manifests, `make 
 ## Diagnose tool 🕵️
 
 ```bash
-make debug-network
+make diagnose-network
 ```
 
-Runs [__main__.py](../../../../cli/contributing/network/diagnose/__main__.py) inside the running `infinito` container and produces a structured DNS / TCP / TLS / PMTU report against the standard infrastructure hosts (`github.com`, `ghcr.io`, `registry-1.docker.io`, `auth.docker.io`, `pypi.org`, `files.pythonhosted.org`, `registry.npmjs.org`, `objects.githubusercontent.com`, `raw.githubusercontent.com`), separately for IPv4 and IPv6 when available. Extra hosts can be appended via `INFINITO_NET_DEBUG_HOSTS="example.com api.example.org" make debug-network`.
+Runs [__main__.py](../../../../cli/contributing/network/diagnose/__main__.py) inside the running `infinito` container and produces a structured DNS / TCP / TLS / PMTU report against the standard infrastructure hosts (`github.com`, `ghcr.io`, `registry-1.docker.io`, `auth.docker.io`, `pypi.org`, `files.pythonhosted.org`, `registry.npmjs.org`, `objects.githubusercontent.com`, `raw.githubusercontent.com`), separately for IPv4 and IPv6 when available. Extra hosts can be appended via `INFINITO_NET_DEBUG_HOSTS="example.com api.example.org" make diagnose-network`.
 
 On first run it self-installs `iputils-ping` + `iproute2` via the container's package manager (Debian / Ubuntu apt, Arch pacman, Fedora / CentOS / RHEL dnf). The installer waits up to two minutes for an apt-lock if a parallel deploy is running. IPv6 probes are auto-skipped when the bridge has no usable IPv6 default route.
 
@@ -54,10 +54,10 @@ For a one-off local override of the compose bridge, regenerate `.env` with the d
 
 ```bash
 INFINITO_OUTER_NETWORK_MTU=1400 make dotenv
-make down && make up
+make compose-down && make compose-up
 ```
 
-A clean `down && up` is required after the change: `make up` alone recreates the bridge but compose then re-attaches existing containers with dynamic IPs instead of the static `default.env` ones, which breaks CoreDNS.
+A clean `down && up` is required after the change: `make compose-up` alone recreates the bridge but compose then re-attaches existing containers with dynamic IPs instead of the static `default.env` ones, which breaks CoreDNS.
 
 ## IPv6 🔢
 
@@ -71,23 +71,23 @@ curl -6 https://registry-1.docker.io/v2/
 The recommended way to disable IPv6 for local development is via Make:
 
 ```bash
-make disable-ipv6
+make network-ipv6-disable
 ```
 
-This also restarts `docker.service` and then calls `make refresh`, so the running Infinito development stack is recreated when one is active and the new setting reaches fresh container network namespaces.
+This also restarts `docker.service` and then calls `make network-refresh`, so the running Infinito development stack is recreated when one is active and the new setting reaches fresh container network namespaces.
 
 To restore the original IPv6 settings afterwards:
 
 ```bash
-make restore-ipv6
+make network-ipv6-restore
 ```
 
-This restore path also restarts `docker.service` and then calls `make refresh`, so the running Infinito development stack is recreated when one is active and the restored setting reaches fresh container network namespaces.
+This restore path also restarts `docker.service` and then calls `make network-refresh`, so the running Infinito development stack is recreated when one is active and the restored setting reaches fresh container network namespaces.
 
 You can also refresh the running local stack directly after host-level changes:
 
 ```bash
-make refresh
+make network-refresh
 ```
 
 Alternatively, disable IPv6 only in Docker via `/etc/docker/daemon.json`:
@@ -103,4 +103,4 @@ ping -c 3 registry-1.docker.io
 curl -v https://registry-1.docker.io/v2/
 ```
 
-Check firewall rules, proxy settings, and DNS configuration. The `proxy env vars` and `CA bundle summary` sections of `make debug-network` surface the same information from inside the container.
+Check firewall rules, proxy settings, and DNS configuration. The `proxy env vars` and `CA bundle summary` sections of `make diagnose-network` surface the same information from inside the container.

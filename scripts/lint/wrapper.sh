@@ -2,7 +2,7 @@
 # Dispatcher for scripts/lint/<TYPE>.sh based on INFINITO_LINT_RUNNER:
 #   host             -- directly on the host shell (tools resolved via PATH).
 #   docker           -- inside the running infinito compose container
-#                       (requires `make up`; auto-brings the stack up).
+#                       (requires `make compose-up`; auto-brings the stack up).
 #
 # Argv: <TYPE> [extra args forwarded to the lint script]
 #   TYPE is the basename (without `.sh`) of a sibling script next to this
@@ -43,8 +43,8 @@ docker)
 	echo "============================================================"
 
 	if ! docker compose ps -q infinito 2>/dev/null | grep -q .; then
-		echo ">>> 'infinito' container not running; starting the stack via 'make up'..."
-		"${MAKE:-make}" up
+		echo ">>> 'infinito' container not running; starting the stack via 'make compose-up'..."
+		"${MAKE:-make}" compose-up
 	fi
 
 	# Pass BASH_ENV so `bash --login` auto-sources load.sh inside the

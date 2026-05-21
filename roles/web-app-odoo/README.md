@@ -96,7 +96,7 @@ The role includes a custom `auth_oauth_https` addon that fixes OAuth redirect UR
 ### Inspecting the Container
 
 ```bash
-make exec
+make compose-exec
 # Then inside the container:
 odoo shell -d <database_name>
 ```

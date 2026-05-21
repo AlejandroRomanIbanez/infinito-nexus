@@ -92,7 +92,7 @@ jobs:
           INFINITO_DISTRO: ${{ matrix.distro }}
         run: |
           set -euo pipefail
-          make up
+          make compose-up
 
       - name: DNS test suite
         shell: bash
