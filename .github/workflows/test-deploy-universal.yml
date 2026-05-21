@@ -122,7 +122,13 @@ jobs:
         shell: bash
         env:
           INFINITO_APPS: ${{ matrix.apps }}
+          ANSIBLE_LOG_PATH: /tmp/ansible-${{ matrix.apps }}.log
         run: ./scripts/tests/deploy/ci/all.sh
+
+      - name: 📊 Top role runtimes
+        if: always()
+        shell: bash
+        run: python3 utils/github/profile/role_summary.py /tmp/ansible-${{ matrix.apps }}.log
 
       - name: Dump runner state (on failure)
         if: failure()
