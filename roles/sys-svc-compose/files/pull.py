@@ -104,12 +104,18 @@ def main() -> int:
     if not args.skip_build and has_buildable_services(
         base_cmd=base_cmd, cwd=cwd, env=env
     ):
-        run_or_fail(
-            [*base_cmd, "build", "--pull"],
-            cwd=cwd,
-            env=env,
-            label="docker compose build --pull",
-        )
+        build_pull_cmd = [*base_cmd, "build", "--pull"]
+        print(f">>> {' '.join(build_pull_cmd)}", file=sys.stderr)
+        rc, out = run_cmd(build_pull_cmd, cwd=cwd, env=env)
+        if out.strip():
+            print(out, file=sys.stderr, end="" if out.endswith("\n") else "\n")
+        if rc != 0:
+            run_or_fail(
+                [*base_cmd, "build"],
+                cwd=cwd,
+                env=env,
+                label="docker compose build",
+            )
 
     pull_cmd = [*base_cmd, "pull"]
 

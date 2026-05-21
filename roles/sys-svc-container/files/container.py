@@ -447,12 +447,11 @@ def main() -> int:
         return 2
 
     if cmd == "run":
-        no_ca = os.environ["INFINITO_CONTAINER_NO_CA"].lower() in {
-            "1",
-            "true",
-            "yes",
-        }
-        return container_run(args, debug=debug, with_ca=not no_ca)
+        return container_run(
+            args,
+            debug=debug,
+            with_ca=os.environ.get("CA_CONTAINER_ENABLED") == "1",
+        )
 
     if cmd == "docker":
         return exec_docker(["docker", *args], debug=debug)
