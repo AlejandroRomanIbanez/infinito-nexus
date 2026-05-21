@@ -41,7 +41,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Install jq
+      - name: 📦 Install jq
         run: ./scripts/install/apt.sh jq
 
       - name: Compute matrix JSON
@@ -91,7 +91,7 @@ jobs:
         shell: bash
         run: bash scripts/github/runner/disk_pressure_report.sh PRE-BUILD
 
-      - name: Resolve repository owner
+      - name: 🔍 Resolve repository owner
         id: owner
         shell: bash
         run: |

@@ -41,7 +41,7 @@ jobs:
             echo "distros=$(scripts/meta/resolve/distros.sh)"
           } >> "$GITHUB_OUTPUT"
 
-      - name: Install jq
+      - name: 📦 Install jq
         shell: bash
         run: ./scripts/install/apt.sh jq
 

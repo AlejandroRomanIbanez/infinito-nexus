@@ -39,13 +39,13 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Resolve repository owner
+      - name: 🔍 Resolve repository owner
         shell: bash
         run: |
           set -euo pipefail
           echo "GITHUB_REPOSITORY_OWNER=$(scripts/meta/resolve/repository/owner.sh)" >> "$GITHUB_ENV"
 
-      - name: Install jq
+      - name: 📦 Install jq
         shell: bash
         run: ./scripts/install/apt.sh jq
 
@@ -93,7 +93,7 @@ jobs:
       # large CI and application images and can otherwise exhaust / on
       # GitHub-hosted runners.
       # Option rationale: docs/contributing/artefact/files/github/workflow.md
-      - name: Free disk space
+      - name: 🧹 Free disk space
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
           tool-cache: true
@@ -109,21 +109,21 @@ jobs:
       # Replace the default ~4 GB runner swap with a larger file so transient
       # memory spikes (e.g. peertube plugin install, issue #162) don't trip
       # the host OOM-killer. Script picks / or /mnt based on live free space.
-      - name: Enlarge swap space
+      - name: 💾 Enlarge swap space
         shell: bash
         run: ./scripts/github/runner/enlarge_swap.sh
 
-      - name: Resolve repository owner
+      - name: 🔍 Resolve repository owner
         shell: bash
         run: |
           set -euo pipefail
           echo "GITHUB_REPOSITORY_OWNER=$(scripts/meta/resolve/repository/owner.sh)" >> "$GITHUB_ENV"
 
-      - name: Install jq
+      - name: 📦 Install jq
         shell: bash
         run: ./scripts/install/apt.sh jq
 
-      - name: Deploy app
+      - name: 🚀 Deploy app
         shell: bash
         env:
           INFINITO_APPS: ${{ matrix.apps }}
@@ -135,7 +135,7 @@ jobs:
         shell: bash
         run: python3 utils/github/profile/role_summary.py /tmp/ansible-${{ matrix.apps }}.log
 
-      - name: Dump runner state (on failure)
+      - name: 🩺 Dump runner state (on failure)
         if: failure()
         shell: bash
         run: ./scripts/github/runner/dump_state.sh "post-deploy failure (${{ matrix.apps }})"
