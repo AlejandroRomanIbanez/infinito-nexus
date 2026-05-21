@@ -69,7 +69,7 @@ run_meta_cli() {
 		"${PYTHON}" "$@"
 		;;
 	docker)
-		local -a compose_args=(docker compose --env-file env/ci.env)
+		local -a compose_args=(docker compose)
 		if [[ -f "env.development" ]]; then
 			compose_args+=(--env-file env.development)
 		fi

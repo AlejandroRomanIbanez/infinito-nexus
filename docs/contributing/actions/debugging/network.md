@@ -57,7 +57,7 @@ INFINITO_OUTER_NETWORK_MTU=1400 make dotenv
 make down && make up
 ```
 
-A clean `down && up` is required after the change: `make up` alone recreates the bridge but compose then re-attaches existing containers with dynamic IPs instead of the static `ci.env` ones, which breaks CoreDNS.
+A clean `down && up` is required after the change: `make up` alone recreates the bridge but compose then re-attaches existing containers with dynamic IPs instead of the static `default.env` ones, which breaks CoreDNS.
 
 ## IPv6 🔢
 

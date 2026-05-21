@@ -30,9 +30,14 @@ def _parse_value(raw_value: str) -> str:
     # Strip trailing inline comment when value is not quoted.
     if value and value[0] not in ('"', "'"):
         value = value.split("#", 1)[0].rstrip()
-    # Strip a matched pair of outer quotes.
+    # Strip a matched pair of outer quotes and undo the writer's
+    # `\\`/`\"` escaping (mirrors bash double-quote semantics for the
+    # subset of values this parser is allowed to handle).
     if len(value) >= 2 and value[0] == value[-1] and value[0] in ('"', "'"):
+        quote = value[0]
         value = value[1:-1]
+        if quote == '"':
+            value = value.replace('\\"', '"').replace("\\\\", "\\")
     return value
 
 

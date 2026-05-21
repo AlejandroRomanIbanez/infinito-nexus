@@ -2,33 +2,17 @@
 set -euo pipefail
 
 # ------------------------------------------------------------
-# Load environment (Single Source of Truth)
+# Load environment (Single Source of Truth: .env from env/default.env)
 # ------------------------------------------------------------
-ENV_FILE="${ENV_FILE:-env/ci.env}"
-
-if [ ! -f "${ENV_FILE}" ]; then
-	echo "ERROR: env file not found: ${ENV_FILE}"
-	exit 1
-fi
-
-# Export all variables from env file
-set -a
-# shellcheck disable=SC1090
-source "${ENV_FILE}"
-set +a
-
-# Source project defaults so INFINITO_CONTAINER auto-derives from
-# INFINITO_DISTRO (single SPOT in scripts/meta/env/load.sh) — callers
-# only need to set INFINITO_DISTRO.
 # shellcheck source=scripts/meta/env/load.sh
 source scripts/meta/env/load.sh
 
 # ------------------------------------------------------------
 # Required variables (fail hard if missing)
 # ------------------------------------------------------------
-: "${INFINITO_DNS_IP:?Missing INFINITO_DNS_IP in env file}"
-: "${INFINITO_DOMAIN:?Missing INFINITO_DOMAIN in env file}"
-: "${INFINITO_IP4:?Missing INFINITO_IP4 in env file}"
+: "${INFINITO_DNS_IP:?Missing INFINITO_DNS_IP in .env}"
+: "${INFINITO_DOMAIN:?Missing INFINITO_DOMAIN in .env}"
+: "${INFINITO_IP4:?Missing INFINITO_IP4 in .env}"
 : "${INFINITO_CONTAINER:?Missing INFINITO_CONTAINER env (e.g. infinito_nexus_arch)}"
 
 SUBDOMAIN="foo.${INFINITO_DOMAIN}"
@@ -57,7 +41,6 @@ fail() {
 echo "============================================================"
 echo " DNS TEST SUITE"
 echo "============================================================"
-echo "ENV_FILE   = ${ENV_FILE}"
 echo "INFINITO_DNS_IP     = ${INFINITO_DNS_IP}"
 echo "INFINITO_DOMAIN     = ${INFINITO_DOMAIN}"
 echo "SUBDOMAIN  = ${SUBDOMAIN}"

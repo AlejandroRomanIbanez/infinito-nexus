@@ -97,7 +97,6 @@ jobs:
       - name: DNS test suite
         shell: bash
         env:
-          ENV_FILE: env/ci.env
           INFINITO_DISTRO: ${{ matrix.distro }}
         run: |
           set -euo pipefail

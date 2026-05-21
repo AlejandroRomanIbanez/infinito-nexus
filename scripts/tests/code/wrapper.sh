@@ -33,17 +33,15 @@ docker)
 
 	# Auto-bring-up: if the `infinito` container is not running, kick off
 	# `make up` first so test-* doesn't fail with "service not running".
-	if ! docker compose --env-file env/ci.env --env-file .env --profile ci \
+	if ! docker compose --profile ci \
 		ps -q infinito 2>/dev/null | grep -q .; then
 		echo ">>> 'infinito' container not running; starting the stack via 'make up'..."
 		"${MAKE:-make}" up
 	fi
 
-	# `--env-file env/ci.env --env-file .env` pulls the network defaults
-	# (INFINITO_DNS_IP, INFINITO_IP4, INFINITO_DOMAIN, ...) from ci.env
-	# and the generated keys (INFINITO_CONTAINER, INFINITO_SUBNET, ...)
-	# from `.env`. Compose otherwise auto-loads only `.env`, which would
-	# leave the ci.env keys unset when this wrapper is the entry point.
+	# Compose auto-loads `.env` (the SPOT generated from env/default.env),
+	# which carries every INFINITO_* default (INFINITO_DNS_IP, INFINITO_IP4,
+	# INFINITO_DOMAIN, INFINITO_CONTAINER, INFINITO_SUBNET, ...).
 	# BASH_ENV makes `bash --login` source load.sh on startup, pulling
 	# every INFINITO_* key from the bind-mounted .env into the test
 	# runner's environment (notably INFINITO_WORKER_FETCH, otherwise the
@@ -63,7 +61,7 @@ docker)
 		-e INFINITO_TEST_TYPE="${INFINITO_TEST_TYPE}" # nocheck: makefile-supplied
 	)
 	INFINITO_DISTRO="${INFINITO_DISTRO}" \
-		docker compose --env-file env/ci.env --env-file .env --profile ci exec -T \
+		docker compose --profile ci exec -T \
 		"${exec_env_args[@]}" \
 		--workdir "${INFINITO_SRC_DIR}" \
 		infinito \

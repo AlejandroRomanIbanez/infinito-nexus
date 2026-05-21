@@ -34,8 +34,9 @@ def _default_route_iface() -> str | None:
 
 
 def _iface_mtu(iface: str) -> str | None:
+    mtu_path = Path(f"/sys/class/net/{iface}/mtu")
     try:
-        return Path(f"/sys/class/net/{iface}/mtu").read_text().strip()  # nocheck: cache-read
+        return mtu_path.read_text().strip()  # nocheck: cache-read
     except OSError:
         return None
 

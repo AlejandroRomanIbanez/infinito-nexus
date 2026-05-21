@@ -34,8 +34,6 @@ class TestComposeUpRetries(unittest.TestCase):
         )
 
         args = [
-            "--env-file",
-            "env/ci.env",
             "up",
             "-d",
             "--no-build",
@@ -66,7 +64,7 @@ class TestComposeUpRetries(unittest.TestCase):
             )
         )
 
-        args = ["--env-file", "env/ci.env", "up", "-d", "coredns", "infinito"]
+        args = ["up", "-d", "coredns", "infinito"]
 
         with self.assertRaises(subprocess.CalledProcessError):
             compose._compose_up_with_retries(args, attempts=6, delay_s=30)
@@ -90,7 +88,7 @@ class TestComposeUpRetries(unittest.TestCase):
             )
         )
 
-        args = ["--env-file", "env/ci.env", "up", "-d", "coredns", "infinito"]
+        args = ["up", "-d", "coredns", "infinito"]
         compose._compose_up_with_retries(args, attempts=6, delay_s=30)
 
         self.assertEqual(compose.run.call_count, 1)
@@ -217,7 +215,7 @@ class TestComposeUpRetries(unittest.TestCase):
         compose.up(run_entry_init=False)
 
         compose._compose_up_with_retries.assert_called_once_with(
-            ["--env-file", "env/ci.env", "up", "-d", "coredns", "infinito"],
+            ["up", "-d", "coredns", "infinito"],
             attempts=6,
             delay_s=30,
         )
@@ -244,8 +242,6 @@ class TestComposeUpRetries(unittest.TestCase):
 
         compose._compose_up_with_retries.assert_called_once_with(
             [
-                "--env-file",
-                "env/ci.env",
                 "up",
                 "-d",
                 "--no-build",
@@ -283,8 +279,6 @@ class TestComposeUpRetries(unittest.TestCase):
         # Cache services precede coredns + infinito so depends_on health gates resolve.
         compose._compose_up_with_retries.assert_called_once_with(
             [
-                "--env-file",
-                "env/ci.env",
                 "up",
                 "-d",
                 "registry-cache",

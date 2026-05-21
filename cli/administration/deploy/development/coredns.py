@@ -7,6 +7,8 @@ import subprocess
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+from utils.env.parser import parse_static_env
+
 if TYPE_CHECKING:
     from pathlib import Path
 
@@ -17,7 +19,7 @@ class CoreDNSCorefileRenderer:
     Render compose/coredns/Corefile from compose/coredns/Corefile.tmpl using envsubst.
 
     What this does:
-      - Reads variables from env file (default: env/ci.env)
+      - Reads variables from env file (default: .env, generated from env/default.env)
       - Runs `envsubst` to substitute variables into the Corefile template
       - Writes the output atomically (tmp -> rename)
       - Optionally prints a preview of the first N lines
@@ -31,7 +33,7 @@ class CoreDNSCorefileRenderer:
     """
 
     repo_root: Path
-    env_filename: str = "env/ci.env"
+    env_filename: str = ".env"
     template_relpath: str = "compose/coredns/Corefile.tmpl"
     output_relpath: str = "compose/coredns/Corefile"
 
@@ -83,20 +85,10 @@ class CoreDNSCorefileRenderer:
 
     def _load_env_file(self, env_file: Path) -> dict[str, str]:
         self._log(f"Loading env file: {env_file}")
-
         env = dict(os.environ)
-        loaded = 0
-
-        with env_file.open("r", encoding="utf-8") as f:
-            for raw in f:
-                line = raw.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                k, v = line.split("=", 1)
-                env[k] = v
-                loaded += 1
-
-        self._log(f"Loaded {loaded} variables from env file")
+        parsed = parse_static_env(env_file)
+        env.update(parsed)
+        self._log(f"Loaded {len(parsed)} variables from env file")
         return env
 
     def _preview(self, path: Path, *, max_lines: int) -> None:

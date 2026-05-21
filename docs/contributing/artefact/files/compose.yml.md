@@ -23,7 +23,8 @@ It MUST NOT host application roles, fixtures, or test harnesses.
 
 ## Environment Variables 📋
 
-All variables consumed by [compose.yml](../../../../compose.yml). The per-variable default + comment lives next to the key in [default.env](../../../../env/default.env) (or [ci.env](../../../../env/ci.env) for CI-stack network defaults); the tables below stay scoped to "what role does this variable play in compose.yml" and stop duplicating the default.
+All variables consumed by [compose.yml](../../../../compose.yml).
+The per-variable default + comment lives next to the key in [default.env](../../../../env/default.env); the tables below stay scoped to "what role does this variable play in compose.yml" and stop duplicating the default.
 
 ### Image and Runtime
 
@@ -87,9 +88,9 @@ The env-var contracts each service expects strictly via `${VAR:?…}` (consumed 
 
 | Variable | Purpose |
 |---|---|
-| `INFINITO_DNS_IP` | Static IP assigned to the CoreDNS sidecar and used as the DNS server. Default lives in [ci.env](../../../../env/ci.env). |
-| `INFINITO_IP4` | Static IPv4 address assigned to the `infinito` container. Default in [ci.env](../../../../env/ci.env). |
-| `INFINITO_DOMAIN` | Base domain exported into the container environment. Default in [ci.env](../../../../env/ci.env). |
+| `INFINITO_DNS_IP` | Static IP assigned to the CoreDNS sidecar and used as the DNS server. Default lives in [default.env](../../../../env/default.env). |
+| `INFINITO_IP4` | Static IPv4 address assigned to the `infinito` container. Default in [default.env](../../../../env/default.env). |
+| `INFINITO_DOMAIN` | Base domain exported into the container environment. Default in [default.env](../../../../env/default.env). |
 | `INFINITO_BIND_IP` | Host address that all published ports bind to. |
 | `INFINITO_SUBNET` | IPAM subnet for the default bridge network. |
 | `INFINITO_GATEWAY` | IPAM gateway for the default bridge network. |
@@ -99,7 +100,7 @@ The env-var contracts each service expects strictly via `${VAR:?…}` (consumed 
 
 When you introduce a new env var in `compose.yml`, you MUST:
 
-1. Add the default + one-line `# ...` comment to [default.env](../../../../env/default.env) (or [ci.env](../../../../env/ci.env) for the CI network block). Defaults never live in `compose.yml`.
+1. Add the default + one-line `# ...` comment to [default.env](../../../../env/default.env). Defaults never live in `compose.yml`.
 2. Consume the variable strictly via `${VAR:?Run 'make dotenv' to generate the .env single source of truth}`; bare `${VAR}` is acceptable only when the value is optional (e.g. `NIX_CONFIG`).
 3. Add a row to the matching table above with its compose-side purpose.
 4. Cross-link the variable from the relevant workflow page when it exists only to drive a specific workflow (e.g. resource caps link to [ci.md](../../actions/debugging/ci.md)).

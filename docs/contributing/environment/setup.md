@@ -47,9 +47,12 @@ If you want to mark this checkout as a development environment, run:
 make mark-development
 ```
 
-This step is optional. It creates an empty `env.development` file in the repository root.
+This step is optional.
+It creates an empty `env.development` file in the repository root.
 
-Several tools (e.g. `cli/administration/deploy/development/compose.py`, `scripts/meta/resolve/apps.sh`) pass `env/ci.env` as the base env-file to Docker Compose and then, when `env.development` exists, append it as a second `--env-file`. Because Docker Compose applies env-files in order, any variable defined in `env.development` overrides the corresponding value from `env/ci.env`. This lets you customize local settings (ports, image tags, flags) without modifying the shared `env/ci.env` file.
+Several tools (e.g. `cli/administration/deploy/development/compose.py`, `scripts/meta/resolve/apps.sh`) let Docker Compose auto-load the generated `.env` (built from `env/default.env`) and, when `env.development` exists, pass it as an additional `--env-file`.
+Because Docker Compose applies the explicit `--env-file` after `.env`, any variable defined in `env.development` overrides the corresponding default.
+This lets you customize local settings (ports, image tags, flags) without modifying `env/default.env`.
 
 The `pre-commit` hooks are installed automatically by `make environment-bootstrap` and do not depend on this marker.
 

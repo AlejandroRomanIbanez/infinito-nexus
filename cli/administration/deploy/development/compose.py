@@ -192,8 +192,8 @@ class Compose:
         print(">>> NIX_CONFIG:", "<set>" if env.get("NIX_CONFIG") else "<empty>")
 
         no_build = env["INFINITO_BUILD"] != "1"
-        # Compose env-file precedence: later files override earlier ones.
-        args = ["--env-file", "env/ci.env"]
+        # Compose auto-loads `.env`; layer `env.development` on top when present.
+        args: list[str] = []
 
         env_local = self.repo_root / "env.development"
         if env_local.exists():

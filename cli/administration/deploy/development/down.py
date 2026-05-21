@@ -24,7 +24,7 @@ def _base_env(*, distro: str) -> dict[str, str]:
 
 
 def _compose_run(*, repo_root: Path, distro: str, args: list[str]) -> None:
-    cmd = ["docker", "compose", "--env-file", "env/ci.env"]
+    cmd = ["docker", "compose"]
     env_development = repo_root / "env.development"
     if env_development.exists():
         cmd += ["--env-file", "env.development"]
