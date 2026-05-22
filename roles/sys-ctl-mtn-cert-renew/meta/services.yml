@@ -1,5 +1,4 @@
 ---
+# nocheck: required-by-coverage — gated by `lookup('tls', application_id, 'mode') == 'letsencrypt'`, not expressible via role-id/category match
 cert-renew:
   lifecycle: beta
-  required_by:
-    roles: [web-app-mailu]

@@ -20,9 +20,12 @@ from __future__ import annotations
 
 import unittest
 
-from plugins.filter.role_has_nocheck import role_has_nocheck
-from plugins.filter.role_has_required_by import role_has_required_by
-from plugins.filter.role_is_invokable import role_is_invokable
+from utils.roles.mapping import ROLE_FILE_META_SERVICES
+from utils.roles.required_by_coverage import (
+    role_has_nocheck,
+    role_has_required_by,
+    role_is_invokable,
+)
 
 from . import PROJECT_ROOT
 
@@ -41,7 +44,7 @@ class TestRequiredByForNonInvokable(unittest.TestCase):
                 continue
             if role_has_nocheck(role_id, NOCHECK_ID, ROLES_DIR):
                 continue
-            services_yml = role_dir / "meta" / "services.yml"
+            services_yml = role_dir / ROLE_FILE_META_SERVICES
             rel = services_yml.relative_to(PROJECT_ROOT).as_posix()
             offenders.append(rel if services_yml.is_file() else f"{rel} (missing)")
 

@@ -18,13 +18,15 @@ from cli.meta.roles.services.called import (
     verify,
 )
 from cli.meta.roles.services.called.__main__ import main as cli_main
+from utils.roles.mapping import ROLE_FILE_META_SERVICES
 
 _ESC = "\x1b"
 
 
 def _write_services_yml(role_dir: Path, content: str) -> None:
-    (role_dir / "meta").mkdir(parents=True, exist_ok=True)
-    (role_dir / "meta" / "services.yml").write_text(textwrap.dedent(content))
+    services_yml = role_dir / ROLE_FILE_META_SERVICES
+    services_yml.parent.mkdir(parents=True, exist_ok=True)
+    services_yml.write_text(textwrap.dedent(content))
 
 
 class TestCategoriesOf(unittest.TestCase):
@@ -58,10 +60,7 @@ class TestRoleBodyExecuted(unittest.TestCase):
 
     def test_multi_wrapper_only_skipping_returns_false(self) -> None:
         """Edge case the count-heuristic would mis-fire on."""
-        block = (
-            "TASK [foo : include_tasks] *****\n"
-            "skipping: [localhost] => \n"
-        )
+        block = "TASK [foo : include_tasks] *****\nskipping: [localhost] => \n"
         self.assertFalse(_role_body_executed(block * 3, "foo"))
 
     def test_included_marks_executed(self) -> None:
@@ -217,7 +216,9 @@ class TestHostLogSlice(unittest.TestCase):
             f.write("hello world")
             path = f.name
         try:
-            self.assertEqual(_host_log_slice(log_path=path, byte_offset=0), "hello world")
+            self.assertEqual(
+                _host_log_slice(log_path=path, byte_offset=0), "hello world"
+            )
         finally:
             Path(path).unlink()
 
@@ -274,8 +275,7 @@ class TestVerifyEndToEnd(unittest.TestCase):
             """,
         )
         self._set_log(
-            "TASK [sys-svc-webserver-core : Load OpenResty] ****\n"
-            "ok: [localhost] => \n"
+            "TASK [sys-svc-webserver-core : Load OpenResty] ****\nok: [localhost] => \n"
         )
         ok, missing = verify(
             roles_dir=self.roles_dir,
@@ -296,8 +296,7 @@ class TestVerifyEndToEnd(unittest.TestCase):
             """,
         )
         self._set_log(
-            "TASK [sys-ctl-hlth-csp : include_tasks] ****\n"
-            "skipping: [localhost]\n"
+            "TASK [sys-ctl-hlth-csp : include_tasks] ****\nskipping: [localhost]\n"
         )
         ok, missing = verify(
             roles_dir=self.roles_dir,
@@ -337,8 +336,7 @@ class TestVerifyEndToEnd(unittest.TestCase):
         )
         prefix = "earlier round content\n"
         body = (
-            "TASK [sys-svc-webserver-core : Load OpenResty] ****\n"
-            "ok: [localhost] => \n"
+            "TASK [sys-svc-webserver-core : Load OpenResty] ****\nok: [localhost] => \n"
         )
         # Scenario: previous-round events at start; current slice starts AFTER them.
         self._set_log(prefix + body)
@@ -414,9 +412,7 @@ class TestCLIMain(unittest.TestCase):
         )
         # verify() was called with the trimmed list
         kwargs = mock_verify.call_args.kwargs
-        self.assertEqual(
-            kwargs["deployed_role_ids"], ["web-app-yourls", "web-svc-css"]
-        )
+        self.assertEqual(kwargs["deployed_role_ids"], ["web-app-yourls", "web-svc-css"])
 
 
 if __name__ == "__main__":

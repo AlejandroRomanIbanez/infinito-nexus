@@ -28,7 +28,8 @@ import subprocess
 import sys
 from pathlib import Path
 
-import yaml
+from utils.cache.yaml import load_yaml_any
+from utils.roles.mapping import ROLE_FILE_META_SERVICES
 
 _ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 # Status indicators that prove a task block was NOT skipped. We anchor to
@@ -69,10 +70,15 @@ def required_role_ids(
     deployed_set = set(deployed_role_ids)
 
     required: set[str] = set()
-    for services_yml in sorted(roles_dir.glob("*/meta/services.yml")):
+    if not roles_dir.is_dir():
+        return required
+    for role_dir in sorted(p for p in roles_dir.iterdir() if p.is_dir()):
+        services_yml = role_dir / ROLE_FILE_META_SERVICES
+        if not services_yml.is_file():
+            continue
         try:
-            data = yaml.safe_load(services_yml.read_text()) or {}
-        except yaml.YAMLError as exc:
+            data = load_yaml_any(str(services_yml), default_if_missing={})
+        except Exception as exc:
             print(
                 f"WARN: failed to parse {services_yml}: {exc}",
                 file=sys.stderr,
@@ -80,7 +86,7 @@ def required_role_ids(
             continue
         if not isinstance(data, dict):
             continue
-        role_id = services_yml.parents[1].name
+        role_id = role_dir.name
         for entry in data.values():
             if not isinstance(entry, dict):
                 continue
@@ -206,17 +212,16 @@ def verify(
             container=container, log_path=log_path, byte_offset=log_byte_offset
         )
     else:
-        log_content = _host_log_slice(
-            log_path=log_path, byte_offset=log_byte_offset
-        )
+        log_content = _host_log_slice(log_path=log_path, byte_offset=log_byte_offset)
     if log_content is None:
         # Missing log == we cannot prove coverage either way; treat as
         # missing for every required role so the operator notices.
         return False, sorted(required)
 
-    missing: list[str] = []
-    for role_id in sorted(required):
-        if not _role_body_executed(log_content, role_id):
-            missing.append(role_id)
+    missing = [
+        role_id
+        for role_id in sorted(required)
+        if not _role_body_executed(log_content, role_id)
+    ]
 
     return len(missing) == 0, missing
