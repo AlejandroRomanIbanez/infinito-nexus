@@ -8,8 +8,8 @@ For the env contract see [Agent `playwright.env.j2`](../../../../agents/files/ro
 
 ## File placement 📁
 
-- The spec MUST be at `roles/<role>/files/playwright/playwright.spec.js`. The role-relative path is the SPOT constant `ROLE_FILE_PLAYWRIGHT_SPEC` in [utils/roles/mapping.py](../../../../../utils/roles/mapping.py); registered as optional on `ROLE_TYPE_APPLICATION`, disallowed elsewhere.
-- Companion `.js` helpers (role-local utility modules, like `web-app-dashboard/files/playwright/dashboard-card-flow.js`) MAY live next to the spec under the same `files/playwright/` directory. The runner (`roles/test-e2e-playwright/tasks/run_one.yml`) globs every `*.js` in that directory and stages them into the same `tests/` tree, so the spec can `require("./<helper>")` without any further wiring.
+- The spec MUST be at `roles/<role>/files/playwright/playwright.spec.js`. The role-relative path is the SPOT constant `ROLE_FILE_PLAYWRIGHT_SPEC` in [mapping.py](../../../../../utils/roles/mapping.py); registered as optional on `ROLE_TYPE_APPLICATION`, disallowed elsewhere.
+- Companion `.js` helpers (role-local utility modules, like `web-app-dashboard/files/playwright/dashboard-card-flow.js`) MAY live next to the spec under the same `files/playwright/` directory. The runner (`roles/test-e2e-playwright/tasks/02_run_one.yml`) globs every `*.js` in that directory and stages them into the same `tests/` tree, so the spec can `require("./<helper>")` without any further wiring.
 - `playwright.config.js` and `package.json` are central, NOT per-role. See [Playwright Tests → Role-Local Files](../../../actions/testing/playwright.md#role-local-files-).
 
 ## Three personas, fixed flow 🚶

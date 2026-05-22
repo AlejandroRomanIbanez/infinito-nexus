@@ -264,6 +264,8 @@
       - "{{ _playwright_stage_dir }}/volume:/volume"
       - -v
       - "{{ _playwright_reports_dir }}:/reports"
+      - -v
+      - "{{ TEST_E2E_PLAYWRIGHT_SHARED_NODE_MODULES }}:/e2e/node_modules:ro"
       - -w
       - /e2e
       - "{{ TEST_E2E_PLAYWRIGHT_IMAGE }}"

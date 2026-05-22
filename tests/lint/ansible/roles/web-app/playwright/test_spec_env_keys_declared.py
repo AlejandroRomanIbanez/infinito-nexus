@@ -50,7 +50,7 @@ _ENV_REF_RE = re.compile(
 # * Node.js runtime itself: NODE_ENV, NODE_TLS_*, NODE_DEBUG, …
 # * Playwright runner: PLAYWRIGHT_*, PW_*, CI, DEBUG.
 # * Test-harness flags injected by the deploy task (see
-#   `roles/test-e2e-playwright/tasks/run_one.yml`, e.g.
+#   `roles/test-e2e-playwright/tasks/02_run_one.yml`, e.g.
 #   `INFINITO_PLAYWRIGHT_KEEP`).
 _RUNTIME_ENV_NAMES: frozenset[str] = frozenset(
     {

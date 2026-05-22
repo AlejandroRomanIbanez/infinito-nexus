@@ -16,8 +16,11 @@
     state: directory
     mode: "0755"
 
+- name: Prepare shared @playwright/test install
+  ansible.builtin.include_tasks: 01_setup.yml
+
 - name: Run Playwright for each detected role
-  ansible.builtin.include_tasks: run_one.yml
+  ansible.builtin.include_tasks: 02_run_one.yml
   loop: "{{ TEST_E2E_PLAYWRIGHT_APPS }}"
   loop_control:
     loop_var: application_id
