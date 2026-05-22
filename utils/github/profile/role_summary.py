@@ -9,7 +9,9 @@ from collections import defaultdict
 from pathlib import Path
 
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
-LINE_RE = re.compile(r"^(?P<name>.+?)\s-{2,}\s+(?P<seconds>\d+(?:\.\d+)?)s\s*$")
+LINE_RE = re.compile(
+    r"^(?:.*\bINFO\|\s+)?(?P<name>\S.*?)\s-{2,}\s+(?P<seconds>\d+(?:\.\d+)?)s\s*$"
+)
 
 
 def _strip_ansi(line: str) -> str:

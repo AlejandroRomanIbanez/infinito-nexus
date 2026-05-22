@@ -71,6 +71,21 @@ class TestParseRoleTimes(unittest.TestCase):
         rows = role_summary.parse_role_times(path)
         self.assertEqual(rows, [])
 
+    def test_strips_ansible_log_prefix(self):
+        prefixed = (
+            "2026-05-22 15:23:23,180 p=985 u=root n=ansible INFO|"
+            " web-app-keycloak ------------------------------------ 42.50s\n"
+            "2026-05-22 15:23:24,000 p=985 u=root n=ansible INFO|"
+            " sys-svc-mail : Some task ----------------------------  3.00s\n"
+            "2026-05-22 15:23:25,000 p=985 u=root n=ansible INFO|"
+            " total ----------------------------------------------- 93.00s\n"
+        )
+        path = self._write(prefixed)
+        rows = role_summary.parse_role_times(path)
+        names = [name for name, _ in rows]
+        self.assertEqual(names, ["web-app-keycloak"])
+        self.assertAlmostEqual(dict(rows)["web-app-keycloak"], 42.50)
+
 
 class TestFormatTable(unittest.TestCase):
     def test_renders_markdown_table(self):
