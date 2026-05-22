@@ -219,6 +219,12 @@ def main():
 
     if args.output:
         os.makedirs(os.path.dirname(args.output), exist_ok=True)
+        # Unlink first when an existing file is not writable: the in-container `nobody` UID and the host UID both write here from parallel `make test` targets.
+        if os.path.exists(args.output) and not os.access(args.output, os.W_OK):
+            try:
+                os.unlink(args.output)
+            except OSError:
+                pass
         with open(args.output, 'w') as f:
             f.write(output)
         print(f"Playbook entries written to {args.output}")
