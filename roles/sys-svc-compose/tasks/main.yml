@@ -2,6 +2,19 @@
 - include_tasks: 01_core.yml
   when: run_once_sys_svc_compose is not defined
 
+- name: Include backup, repair and health services for docker
+  include_role:
+    name: "{{ service_role }}"
+  loop:
+    - sys-ctl-cln-docker
+    - sys-ctl-bkp-docker-2-loc
+    - sys-ctl-hlth-container
+    - sys-ctl-hlth-volumes
+    - sys-ctl-rpr-container-hard
+  loop_control:
+    loop_var: service_role
+  when: not (_service_loader_preloading | default(false) | bool)
+
 # This could lead to problems in sys-svc-compose directories which are based on a git repository
 # @todo Verify that this isn't the case. E.g. in accounting
 - name: "Create all sys-svc-compose directories (including parent directories) for '{{ application_id }}'"
