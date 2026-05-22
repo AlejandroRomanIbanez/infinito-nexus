@@ -65,7 +65,7 @@ class TestGetRequestsVerify(unittest.TestCase):
 
 
 class TestAddSimpleiconSource(unittest.TestCase):
-    def test_uses_absolute_simpleicons_url_when_icon_exists(self):
+    def test_uses_probe_url_for_source_when_no_public_url_base_given(self):
         cards = [{"title": "Keycloak", "icon": {"class": "fa-solid fa-lock"}}]
 
         with (
@@ -89,28 +89,41 @@ class TestAddSimpleiconSource(unittest.TestCase):
             verify="/tmp/test-ca.crt",
         )
 
+    def test_probes_sync_url_but_writes_public_url_into_source(self):
+        cards = [{"title": "Keycloak", "icon": {}}]
+
+        with patch.object(_simpleicons.requests, "head") as mock_head:
+            mock_head.return_value.status_code = 200
+
+            result = add_simpleicon_source(
+                cards,
+                "http://172.17.0.1:8044/",
+                public_url_base="https://icon.example.com",
+            )
+
+        # HEAD goes against the internal sync URL (no TLS, no redirect).
+        mock_head.assert_called_once()
+        probed_url = mock_head.call_args.args[0]
+        self.assertEqual(probed_url, "http://172.17.0.1:8044/keycloak.svg")
+        # The browser-facing source carries the public URL.
+        self.assertEqual(
+            result[0]["icon"]["source"], "https://icon.example.com/keycloak.svg"
+        )
+
     def test_keeps_card_without_source_when_icon_does_not_exist(self):
         cards = [{"title": "Missing", "icon": {"class": "fa-solid fa-circle-question"}}]
 
         with patch.object(_simpleicons.requests, "head") as mock_head:
             mock_head.return_value.status_code = 404
 
-            result = add_simpleicon_source(cards, "https://icons.example")
+            result = add_simpleicon_source(
+                cards,
+                "http://172.17.0.1:8044/",
+                public_url_base="https://icon.example.com",
+            )
 
         self.assertNotIn("source", result[0]["icon"])
         mock_head.assert_called_once()
-
-    def test_accepts_legacy_local_static_dir_parameter(self):
-        with patch.object(_simpleicons.requests, "head") as mock_head:
-            mock_head.return_value.status_code = 404
-
-            result = add_simpleicon_source(
-                [{"title": "Keycloak", "icon": {}}],
-                "https://icons.example",
-                local_static_dir="/",
-            )
-
-        self.assertEqual(result[0]["title"], "Keycloak")
 
 
 if __name__ == "__main__":

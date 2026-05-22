@@ -11,12 +11,11 @@ webserver_extra_configuration: "{{ lookup('template', 'nginx/sso.html.conf.j2') 
 
 ## Simpleicons
 DASHBOARD_SIMPLEICONS_ENABLED: "{{ lookup('config', DASHBOARD_APPLICATION_ID, 'services.simpleicons.enabled') }}"
-DASHBOARD_SIMPLEICONS_STATIC_SUBDIR: "simpleicons"
-DASHBOARD_SIMPLEICONS_STATIC_DIR_HOST: "{{ [ lookup('container', DASHBOARD_APPLICATION_ID, 'directories.volumes'), DASHBOARD_SIMPLEICONS_STATIC_SUBDIR ] | path_join
-  }}"
-DASHBOARD_SIMPLEICONS_STATIC_DIR_CONTAINER: "{{ ['/app/static', DASHBOARD_SIMPLEICONS_STATIC_SUBDIR] | path_join }}"
-# Use the direct local service port for sync/checks because the public
-# Simple Icons domain currently redirects through the file service.
+# Browser-facing absolute base URL of the public Simple Icons service.
+# Cards reference SVGs directly under this URL (icon.source = "<base>/<slug>.svg").
+DASHBOARD_SIMPLEICONS_URL_BASE: "{{ lookup('tls', 'web-svc-simpleicons', 'url.base') }}"
+# Direct local service port — used only for the in-cluster readiness wait
+# (avoids the TLS + redirect chain of the public URL during early bring-up).
 DASHBOARD_SIMPLEICONS_SYNC_URL_BASE: "{{ 'http://' ~ DOCKER_REACH_HOST ~ ':' ~ (lookup('config', 'web-svc-simpleicons', 'services.simpleicons.ports.local.http') |
   string) ~ '/' }}"
 
