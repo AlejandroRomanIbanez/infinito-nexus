@@ -6,7 +6,6 @@ from unittest.mock import patch
 
 from utils.cache.files import read_text
 from utils.github.profile import role_summary
-from utils.github.profile.role_summary import TOP_N_ENV_KEY
 
 SAMPLE_LOG = """\
 PLAY RECAP **********************************************************************
@@ -73,41 +72,20 @@ class TestParseRoleTimes(unittest.TestCase):
         self.assertEqual(rows, [])
 
 
-class TestReadTopN(unittest.TestCase):
-    def test_defaults_to_20(self):
-        with patch.dict(os.environ, {}, clear=False):
-            os.environ.pop(TOP_N_ENV_KEY, None)
-            self.assertEqual(role_summary._read_top_n(), 20)
-
-    def test_env_override(self):
-        with patch.dict(os.environ, {TOP_N_ENV_KEY: "5"}):
-            self.assertEqual(role_summary._read_top_n(), 5)
-
-    def test_invalid_env_falls_back_to_default(self):
-        with patch.dict(os.environ, {TOP_N_ENV_KEY: "not-a-number"}):
-            self.assertEqual(role_summary._read_top_n(), 20)
-
-    def test_non_positive_env_falls_back_to_default(self):
-        with patch.dict(os.environ, {TOP_N_ENV_KEY: "0"}):
-            self.assertEqual(role_summary._read_top_n(), 20)
-        with patch.dict(os.environ, {TOP_N_ENV_KEY: "-3"}):
-            self.assertEqual(role_summary._read_top_n(), 20)
-
-
 class TestFormatTable(unittest.TestCase):
     def test_renders_markdown_table(self):
         rows = [("alpha", 10.5), ("beta", 7.25)]
-        out = role_summary._format_table(rows, top_n=20)
+        out = role_summary._format_table(rows)
         self.assertIn("| 1 | `alpha` | 10.50s |", out)
         self.assertIn("| 2 | `beta` | 7.25s |", out)
-        self.assertIn("## ⏱️ Top role runtimes", out)
+        self.assertIn("## ⏱️ Role runtimes", out)
 
-    def test_respects_top_n(self):
+    def test_renders_all_rows(self):
         rows = [("a", 5.0), ("b", 4.0), ("c", 3.0)]
-        out = role_summary._format_table(rows, top_n=2)
+        out = role_summary._format_table(rows)
         self.assertIn("`a`", out)
         self.assertIn("`b`", out)
-        self.assertNotIn("`c`", out)
+        self.assertIn("`c`", out)
 
 
 class TestMain(unittest.TestCase):
@@ -129,7 +107,7 @@ class TestMain(unittest.TestCase):
             rc = role_summary.main(["role_summary.py", log_name])
         self.assertEqual(rc, 0)
         content = read_text(sum_name)
-        self.assertIn("## ⏱️ Top role runtimes", content)
+        self.assertIn("## ⏱️ Role runtimes", content)
         self.assertIn("web-app-keycloak", content)
 
 

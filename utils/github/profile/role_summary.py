@@ -1,11 +1,4 @@
-"""Parse an Ansible log produced with the ``profile_roles`` callback and write the
-top-N slowest roles to ``$GITHUB_STEP_SUMMARY`` as a Markdown table.
-
-Usage: ``role_summary.py <ansible-log-path>``
-
-Env:
-  INFINITO_PROFILE_TOP_N  Top-N role rows to emit (default: 20)
-"""
+"""Parse an Ansible `profile_roles` log and write the per-role runtimes to `$GITHUB_STEP_SUMMARY`."""
 
 from __future__ import annotations
 
@@ -15,8 +8,6 @@ import sys
 from collections import defaultdict
 from pathlib import Path
 
-DEFAULT_TOP_N = 20
-TOP_N_ENV_KEY = "INFINITO_PROFILE_TOP_N"  # nocheck: CI-only top-N knob for the role-summary step; not part of infra env
 ANSI_RE = re.compile(r"\x1b\[[0-9;]*m")
 LINE_RE = re.compile(r"^(?P<name>.+?)\s-{2,}\s+(?P<seconds>\d+(?:\.\d+)?)s\s*$")
 
@@ -44,29 +35,18 @@ def parse_role_times(log_path: Path) -> list[tuple[str, float]]:
     return sorted(totals.items(), key=lambda kv: kv[1], reverse=True)
 
 
-def _format_table(rows: list[tuple[str, float]], top_n: int) -> str:
+def _format_table(rows: list[tuple[str, float]]) -> str:
     header = [
-        "## ⏱️ Top role runtimes",
+        "## ⏱️ Role runtimes",
         "",
         "| # | Role | Duration |",
         "|---|------|---------:|",
     ]
     body = [
         f"| {idx} | `{name}` | {seconds:.2f}s |"
-        for idx, (name, seconds) in enumerate(rows[:top_n], start=1)
+        for idx, (name, seconds) in enumerate(rows, start=1)
     ]
     return "\n".join(header + body) + "\n"
-
-
-def _read_top_n() -> int:
-    raw = os.environ.get(TOP_N_ENV_KEY)
-    if not raw:
-        return DEFAULT_TOP_N
-    try:
-        value = int(raw)
-    except ValueError:
-        return DEFAULT_TOP_N
-    return value if value > 0 else DEFAULT_TOP_N
 
 
 def main(argv: list[str]) -> int:
@@ -81,8 +61,7 @@ def main(argv: list[str]) -> int:
     if not rows:
         print("[role_summary] no profile_roles entries found", file=sys.stderr)
         return 0
-    top_n = _read_top_n()
-    table = _format_table(rows, top_n)
+    table = _format_table(rows)
     print(table)
     summary_path = os.environ.get("GITHUB_STEP_SUMMARY")
     if summary_path:
