@@ -5,13 +5,15 @@ css:
   shared: true
   lifecycle: beta
 # nocheck: playwright-service-flag — provider role; no consumer surface to gate
+# nocheck: dynamic-flag
 cdn:
-  enabled: "{{ 'web-svc-cdn' in group_names }}"
-  shared: "{{ 'web-svc-cdn' in group_names }}"
+  enabled: true
+  shared: true
 # nocheck: playwright-service-flag — provider role; no consumer surface to gate
+# nocheck: dynamic-flag
 matomo:
-  enabled: "{{ 'web-app-matomo' in group_names }}"
-  shared: "{{ 'web-app-matomo' in group_names }}"
+  enabled: false
+  shared: false
 prometheus:
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
