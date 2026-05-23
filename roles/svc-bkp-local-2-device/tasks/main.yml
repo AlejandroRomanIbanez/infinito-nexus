@@ -4,6 +4,7 @@
       include_role:
         name: "{{ item }}"
       loop:
+        - sys-ctl-cln-faild-bkps
         - sys-ctl-cln-bkps
         - sys-lock
     - include_tasks: utils/once/flag.yml
