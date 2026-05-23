@@ -2,3 +2,4 @@
 data: opentalk_data
 config: opentalk_config
 minio: opentalk_minio
+rabbit: opentalk_rabbit

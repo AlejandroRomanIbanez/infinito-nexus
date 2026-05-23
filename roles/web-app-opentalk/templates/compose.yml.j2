@@ -61,6 +61,8 @@
       interval: 30s
       timeout: 10s
       retries: 5
+    volumes:
+      - rabbit:/var/lib/rabbitmq
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
     logging:
       driver: journald
@@ -85,7 +87,8 @@
     extra_volumes={
       'data':   {'name': OPENTALK_DATA_VOLUME},
       'config': {'name': OPENTALK_CONFIG_VOLUME},
-      'minio':  {'name': lookup('config', application_id, 'volumes.minio')}
+      'minio':  {'name': lookup('config', application_id, 'volumes.minio')},
+      'rabbit': {'name': lookup('config', application_id, 'volumes.rabbit')}
     }
 ) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
