@@ -1,4 +1,8 @@
 ---
+# nocheck: run-once — main.yml is the orchestrator entry point and intentionally
+# re-runnable; per-service idempotency is enforced by each loaded role's own
+# run_once_<role> flag inside load_service.yml.
+#
 # SPOT: global loader for all shared services.
 #
 # Called from tasks/stages/01_constructor.yml before the normal server app pass.
