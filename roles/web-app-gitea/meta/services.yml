@@ -21,6 +21,7 @@ email:
 mariadb:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
+# nocheck: playwright-service-flag — self-provider
 gitea:
   enabled: true
   shared: true

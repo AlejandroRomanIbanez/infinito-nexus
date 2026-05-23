@@ -7,13 +7,19 @@
     name: "{{ service_role }}"
   loop:
     - sys-ctl-cln-docker
-    - sys-ctl-bkp-docker-2-loc
     - sys-ctl-hlth-container
     - sys-ctl-hlth-volumes
     - sys-ctl-rpr-container-hard
   loop_control:
     loop_var: service_role
   when: not (_service_loader_preloading | default(false) | bool)
+
+- name: "Include svc-bkp-container-2-local when deployed"
+  include_role:
+    name: svc-bkp-container-2-local
+  when:
+    - not (_service_loader_preloading | default(false) | bool)
+    - "'svc-bkp-container-2-local' in group_names"
 
 # This could lead to problems in sys-svc-compose directories which are based on a git repository
 # @todo Verify that this isn't the case. E.g. in accounting

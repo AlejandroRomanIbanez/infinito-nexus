@@ -12,7 +12,7 @@
 - include_role:
     name: sys-service
   vars:
-    system_service_tpl_exec_start_pre: '{{ BIN_LOCK }} {{ SYS_SERVICE_GROUP_MANIPULATION | join(" ")  }} --ignore {{ SYS_SERVICE_OPTIMIZE_DRIVE }} {{ SYS_SERVICE_BACKUP_RMT_2_LOC
+    system_service_tpl_exec_start_pre: '{{ BIN_LOCK }} {{ SYS_SERVICE_GROUP_MANIPULATION | join(" ")  }} --ignore {{ SYS_SERVICE_OPTIMIZE_DRIVE }} {{ SYS_SERVICE_BACKUP_REMOTE_2_LOCAL
       }} {{ SYS_SERVICE_GROUP_CLEANUP | join(" ")  }} --timeout "{{ SYS_TIMEOUT_STORAGE_OPTIMIZER }}"'
     system_service_tpl_exec_start: "{{ system_service_script_exec }} --mass-storage-path {{ OPT_DRIVE_MASS_STORAGE_PATH }} --rapid-storage-path {{ OPT_DRIVE_RAPID_STORAGE_PATH
       }}"

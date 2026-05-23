@@ -42,7 +42,7 @@ SYS_SCHEDULE_REPAIR_DOCKER_HARD: "Sun *-*-* 00:00:00" # Restart docker instances
 
 ### Schedule for backup tasks
 SYS_SCHEDULE_BACKUP_REMOTE_TO_LOCAL: "*-*-* 00:30:00" # Pull Backup of the previous day
-SYS_SCHEDULE_BACKUP_DOCKER_TO_LOCAL: "*-*-* 01:00:00" # Backup the current day
+SYS_SCHEDULE_BACKUP_CONTAINER_TO_LOCAL: "*-*-* 01:00:00" # Backup the current day
 
 ### Schedule for Maintenance Tasks
 SYS_SCHEDULE_MAINTANANCE_LETSENCRYPT_RENEW: "*-*-2/2  10:00:00" # Renew Mailu certificates every two days (even days only)

@@ -66,7 +66,7 @@ class TestGetAppConf(unittest.TestCase):
 
     def test_missing_app_with_skip_missing_app_returns_default_false(self):
         """If app ID is missing and skip_missing_app=True, it should return the default (False)."""
-        apps = {"svc-bkp-rmt-2-loc": {}}
+        apps = {"svc-bkp-remote-2-local": {}}
         val = get(
             apps,
             "web-app-nextcloud",
