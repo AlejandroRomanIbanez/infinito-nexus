@@ -98,6 +98,17 @@ class TestContainerDependsOnLookup(unittest.TestCase):
         body = _parse(out)["depends_on"]
         self.assertEqual(body["init"]["condition"], "service_completed_successfully")
 
+    def test_extra_only_emits_depends_on_block(self):
+        out = _run(
+            "app",
+            _apps(),
+            extra={"resolver": {"condition": "service_started"}},
+        )[0]
+        self.assertEqual(
+            _parse(out),
+            {"depends_on": {"resolver": {"condition": "service_started"}}},
+        )
+
     def test_indent_default_four_spaces(self):
         out = _run("app", _apps(redis=True))[0]
         self.assertTrue(out.startswith("    depends_on:"))

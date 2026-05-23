@@ -33,9 +33,9 @@
       interval: 60s
       timeout: 5s
       retries: 1
-{{ lookup('container_depends_on', application_id) }}
-      application:
-        condition: service_started
+{{ lookup('container_depends_on', application_id, extra={
+  'application': {'condition': 'service_started'},
+}) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
 {{ lookup('applications') | compose_volumes(

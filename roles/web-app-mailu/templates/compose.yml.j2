@@ -29,9 +29,9 @@
     volumes:
       - "{{ [ MAILU_OVERRIDES_DIR, 'nginx' ] | path_join }}:/overrides:ro"
       - "{{ MAILU_CERT_DIR }}:/certs:ro"
-{{ lookup('container_depends_on', application_id) }}
-      resolver:
-        condition: service_started
+{{ lookup('container_depends_on', application_id, extra={
+  'resolver': {'condition': 'service_started'},
+}) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
       webmail:
       radicale:
@@ -46,11 +46,10 @@
     volumes:
       - "admin_data:/data"
       - "dkim:/dkim"
-{{ lookup('container_depends_on', application_id) }}
-      resolver:
-        condition: service_started
-      front:
-        condition: service_started
+{{ lookup('container_depends_on', application_id, extra={
+  'resolver': {'condition': 'service_started'},
+  'front': {'condition': 'service_started'},
+}) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
 

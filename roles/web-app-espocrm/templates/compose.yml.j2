@@ -37,9 +37,9 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
     volumes:
       - data:/var/www/html/
-{{ lookup('container_depends_on', application_id) }}
-      {{ ESPOCRM_SERVICE }}:
-        condition: service_healthy
+{{ lookup('container_depends_on', application_id, extra={
+  ESPOCRM_SERVICE: {'condition': 'service_healthy'},
+}) }}
     healthcheck:
       test: ["CMD-SHELL", "test -f /var/www/html/bootstrap.php && php -r \"require '/var/www/html/bootstrap.php'; echo 'OK';\""]
       interval: 30s
@@ -67,9 +67,9 @@
       - data:/var/www/html/
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.espocrm.ports.local.websocket') }}:8080"
-{{ lookup('container_depends_on', application_id) }}
-      {{ ESPOCRM_SERVICE }}:
-        condition: service_healthy
+{{ lookup('container_depends_on', application_id, extra={
+  ESPOCRM_SERVICE: {'condition': 'service_healthy'},
+}) }}
 
 {{ lookup('applications') | compose_volumes(
     application_id,
