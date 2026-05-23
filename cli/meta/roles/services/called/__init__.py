@@ -45,16 +45,16 @@ def categories_of(role_id: str) -> set[str]:
     """Top-level + first-sub-level categories for the given role id.
 
     Examples:
-        web-app-yourls   -> {"web", "web.app"}
-        svc-db-postgres  -> {"svc", "svc.db"}
-        sys-ctl-hlth-csp -> {"sys", "sys.ctl"}
+        web-app-yourls   -> {"web", "web-app"}
+        svc-db-postgres  -> {"svc", "svc-db"}
+        sys-ctl-hlth-csp -> {"sys", "sys-ctl"}
     """
     parts = role_id.split("-")
     if not parts or not parts[0]:
         return set()
     out: set[str] = {parts[0]}
     if len(parts) >= 2 and parts[1]:
-        out.add(f"{parts[0]}.{parts[1]}")
+        out.add(f"{parts[0]}-{parts[1]}")
     return out
 
 

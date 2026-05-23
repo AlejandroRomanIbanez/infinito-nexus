@@ -31,16 +31,16 @@ def _write_services_yml(role_dir: Path, content: str) -> None:
 
 class TestCategoriesOf(unittest.TestCase):
     def test_web_app(self) -> None:
-        self.assertEqual(categories_of("web-app-yourls"), {"web", "web.app"})
+        self.assertEqual(categories_of("web-app-yourls"), {"web", "web-app"})
 
     def test_web_svc(self) -> None:
-        self.assertEqual(categories_of("web-svc-css"), {"web", "web.svc"})
+        self.assertEqual(categories_of("web-svc-css"), {"web", "web-svc"})
 
     def test_svc_db(self) -> None:
-        self.assertEqual(categories_of("svc-db-postgres"), {"svc", "svc.db"})
+        self.assertEqual(categories_of("svc-db-postgres"), {"svc", "svc-db"})
 
     def test_sys_ctl(self) -> None:
-        self.assertEqual(categories_of("sys-ctl-hlth-csp"), {"sys", "sys.ctl"})
+        self.assertEqual(categories_of("sys-ctl-hlth-csp"), {"sys", "sys-ctl"})
 
     def test_single_segment(self) -> None:
         self.assertEqual(categories_of("desk"), {"desk"})
@@ -141,7 +141,7 @@ class TestRequiredRoleIds(unittest.TestCase):
             ---
             x:
               required_by:
-                categories: [web.app]
+                categories: [web-app]
             """,
         )
         result = required_role_ids(
