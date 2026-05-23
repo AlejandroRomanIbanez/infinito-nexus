@@ -13,7 +13,7 @@
       - 'logs:/var/log/gitlab'
       - 'data:/var/opt/gitlab'
     shm_size: '256m'
-{% include 'roles/sys-svc-container/templates/depends_on/dmbs_excl.yml.j2' %}
+{{ lookup('container_depends_on', application_id) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
 {{ lookup('applications') | compose_volumes(

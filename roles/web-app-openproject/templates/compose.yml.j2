@@ -40,7 +40,7 @@ x-op-app: &app
     command: "./docker/prod/web"
     container_name: {{ OPENPROJECT_WEB_CONTAINER }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
-{% include 'roles/sys-svc-container/templates/depends_on/dmbs_incl.yml.j2' %}
+{{ lookup('container_depends_on', application_id) }}
       cache:
         condition: service_started
       {{ OPENPROJECT_SEEDER_SERVICE }}:
@@ -59,7 +59,7 @@ x-op-app: &app
     command: "./docker/prod/worker"
     container_name: {{ OPENPROJECT_WORKER_CONTAINER }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
-{% include 'roles/sys-svc-container/templates/depends_on/dmbs_incl.yml.j2' %}
+{{ lookup('container_depends_on', application_id) }}
       cache:
         condition: service_started
       {{ OPENPROJECT_SEEDER_SERVICE }}:
@@ -75,7 +75,7 @@ x-op-app: &app
     command: "./docker/prod/cron"
     container_name: {{ OPENPROJECT_CRON_CONTAINER }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
-{% include 'roles/sys-svc-container/templates/depends_on/dmbs_incl.yml.j2' %}
+{{ lookup('container_depends_on', application_id) }}
       cache:
         condition: service_started
       {{ OPENPROJECT_SEEDER_SERVICE }}:

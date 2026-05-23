@@ -20,7 +20,7 @@
     volumes:
       - "{{ [lookup('container', application_id, 'directories.volumes'), 'controller.toml'] | path_join }}:/controller/controller.toml:ro"
       - data:/var/lib/opentalk
-{% include 'roles/sys-svc-container/templates/depends_on/dmbs_excl.yml.j2' %}
+{{ lookup('container_depends_on', application_id) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   livekit:

@@ -39,7 +39,7 @@ pull_policy: never
 {% endif %}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
       taiga:
-{% include 'roles/sys-svc-container/templates/depends_on/dmbs_incl.yml.j2' %}
+{{ lookup('container_depends_on', application_id) }}
       {{ TAIGA_EVENTS_RABBITMQ_SERVICE }}:
         condition: service_started
       {{ TAIGA_ASYNC_RABBITMQ_SERVICE }}:
@@ -76,7 +76,7 @@ pull_policy: never
 {% endif %}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
       taiga:
-{% include 'roles/sys-svc-container/templates/depends_on/dmbs_incl.yml.j2' %}
+{{ lookup('container_depends_on', application_id) }}
       {{ TAIGA_EVENTS_RABBITMQ_SERVICE }}:
         condition: service_started
       {{ TAIGA_ASYNC_RABBITMQ_SERVICE }}:

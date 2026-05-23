@@ -16,7 +16,7 @@
       - pgdata:/var/lib/postgresql
       - redisdata:/var/lib/redis
       - rabbitmqdata:/var/lib/rabbitmq
-{% include 'roles/sys-svc-container/templates/depends_on/dmbs_excl.yml.j2' %}
+{{ lookup('container_depends_on', application_id) }}
 
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
 
