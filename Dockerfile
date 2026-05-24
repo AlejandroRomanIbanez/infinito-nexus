@@ -5,7 +5,6 @@
 # scripts/image/build.sh.
 # Example values:
 #   INFINITO_PARENT_IMAGE=ghcr.io/kevinveenbirkenbach/pkgmgr-arch:stable
-#   INFINITO_PARENT_IMAGE=ghcr.io/kevinveenbirkenbach/pkgmgr-arch-slim:stable
 ARG INFINITO_PARENT_IMAGE
 FROM ${INFINITO_PARENT_IMAGE} AS full
 
@@ -83,15 +82,3 @@ ENTRYPOINT ["/bin/bash", "-c", "exec \"${INFINITO_SRC_DIR}/scripts/docker/entry.
 
 # IMPORTANT: default to systemd as PID 1
 CMD ["/sbin/init"]
-
-
-# ============================================================
-# Target: slim
-# - based on full, runs slim.sh
-# ============================================================
-FROM full AS slim
-
-# Image cleanup (reduce final size)
-RUN set -eu; \
-  test -x /usr/local/bin/slim.sh || { echo "slim.sh missing in base image" >&2; exit 1; }; \
-  /usr/local/bin/slim.sh
