@@ -6,6 +6,8 @@ const lamEnabled = isServiceEnabled("lam");
 const lamOauth2Fronted = String(process.env.LAM_OAUTH2_FRONTED || "").toLowerCase() === "true";
 const lamBaseUrl = normalizeBaseUrl(process.env.LAM_BASE_URL || "");
 const lamPassword = decodeDotenvQuotedValue(process.env.LAM_PASSWORD);
+const ldapAdminPassword = decodeDotenvQuotedValue(process.env.LDAP_ADMIN_PASSWORD);
+const lamLoginPassword = ldapAdminPassword || lamPassword;
 
 exports.register = function (shared) {
   test.describe("keycloak → ldap write-through, verified via LAM", () => {
@@ -35,7 +37,7 @@ exports.register = function (shared) {
       ).toBe("ok");
 
       const lamPage = await context.newPage();
-      await lamPage.goto(`${lamBaseUrl}/templates/login.php`, { waitUntil: "load" });
+      await lamPage.goto(`${lamBaseUrl}/lam/templates/login.php`, { waitUntil: "load" });
 
       if (lamOauth2Fronted) {
         const kcUsername = lamPage.locator("input[name='username'], input#username").first();
@@ -45,37 +47,40 @@ exports.register = function (shared) {
         await lamPage.locator("button[type='submit'], input[name='login'], input[type='submit']").first().click();
         await lamPage.waitForLoadState("networkidle");
 
-        const lamPwAfterSso = lamPage.locator("input[name='password'], input#passwd").first();
-        if (lamPassword && await lamPwAfterSso.isVisible({ timeout: 5_000 }).catch(() => false)) {
-          await lamPwAfterSso.fill(lamPassword);
+        const lamPwAfterSso = lamPage.locator("input[name='passwd'], input[name='password'], input#passwd").first();
+        if (lamLoginPassword && await lamPwAfterSso.isVisible({ timeout: 5_000 }).catch(() => false)) {
+          await lamPwAfterSso.fill(lamLoginPassword);
           await lamPage.locator("button[type='submit'], input[type='submit']").first().click();
           await lamPage.waitForLoadState("networkidle");
         }
       } else {
-        expect(lamPassword, "LAM_PASSWORD must be set when LAM is not OAuth2-fronted").toBeTruthy();
-        const lamPwInput = lamPage.locator("input[name='password'], input#passwd").first();
+        expect(lamLoginPassword, "LDAP_ADMIN_PASSWORD or LAM_PASSWORD must be set when LAM is not OAuth2-fronted").toBeTruthy();
+        const lamPwInput = lamPage.locator("input[name='passwd'], input[name='password'], input#passwd").first();
         await expect(lamPwInput, "LAM native login form must render").toBeVisible({ timeout: 30_000 });
-        await lamPwInput.fill(lamPassword);
+        await lamPwInput.fill(lamLoginPassword);
         await lamPage.locator("button[type='submit'], input[type='submit']").first().click();
         await lamPage.waitForLoadState("networkidle");
       }
 
-      await lamPage.goto(`${lamBaseUrl}/templates/lists/list.php?type=user`, { waitUntil: "load" });
-      const filter = lamPage.locator("input[name='filter_uid'], input[name*='filter']").first();
+      await lamPage.goto(`${lamBaseUrl}/lam/templates/lists/list.php?type=user`, { waitUntil: "load" });
+      const filter = lamPage.locator("input[type='text'][name='filter_uid'], input[type='text'][name^='filter_']").first();
       if (await filter.isVisible({ timeout: 5_000 }).catch(() => false)) {
         await filter.fill(shared.env.biberUsername);
         await filter.press("Enter");
         await lamPage.waitForLoadState("networkidle");
       }
-      const biberLink = lamPage.locator(`a:has-text("${shared.env.biberUsername}")`).first();
-      await expect(biberLink, "biber must appear in LAM user list").toBeVisible({ timeout: 30_000 });
-      await biberLink.click();
+      const biberRow = lamPage.locator(`tr:has(td:text-is("${shared.env.biberUsername}"))`).first();
+      await expect(biberRow, "biber must appear in LAM user list").toBeVisible({ timeout: 30_000 });
+      const biberEdit = biberRow.locator(`a[href*="edit.php"][href*="${shared.env.biberUsername}"]`).first();
+      await expect(biberEdit, "biber row must expose an Edit link").toBeVisible({ timeout: 10_000 });
+      await biberEdit.click();
       await lamPage.waitForLoadState("networkidle");
 
+      const initialsField = lamPage.locator("input[name='initials']").first();
       await expect(
-        lamPage.locator("body"),
-        `LAM-rendered LDAP entry for ${shared.env.biberUsername} must contain probe "${probe}"`
-      ).toContainText(probe, { timeout: 30_000 });
+        initialsField,
+        `LAM-rendered LDAP entry for ${shared.env.biberUsername} must contain probe "${probe}" in its initials field`
+      ).toHaveValue(probe, { timeout: 30_000 });
     });
   });
 };
