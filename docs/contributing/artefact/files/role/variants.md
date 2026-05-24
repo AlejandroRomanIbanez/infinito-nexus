@@ -26,7 +26,14 @@ A **variant** is the role's assembled per-role meta payload (the same payload `a
 
 - Entry `{}` produces the unchanged assembled payload, which becomes variant 0.
 - An entry with overrides produces a derived shape (for example WordPress Multisite domains).
-- Variant 0 is the canonical baseline. The first entry SHOULD therefore be `{}` whenever the role has a meaningful "default deploy" shape, so consumers reading variant 0 keep getting the historical payload unchanged.
+- Variant 0 is the canonical baseline. The first entry SHOULD therefore be `{}` whenever the role has a meaningful "default deploy" shape, so consumers reading variant 0 keep getting the assembled payload unchanged.
+
+## Credentials Interaction 🔐
+
+A variant entry MAY toggle `services.<key>.enabled+shared` to pull additional shared providers into the round's closure (for example `services.ldap.enabled: true` to add `svc-db-openldap`).
+
+The credential generator participates in this overlay so the providers a variant enables receive their schema-defined credentials in the inventory before deploy time.
+See [Credentials Generation](../../../design/variants.md#credentials-generation-) in the design doc for the full CI/CD vs standalone flow and the involved CLI flags.
 
 ## Example 📝
 
@@ -62,4 +69,4 @@ This declares two variants. Variant 0 is the baseline; variant 1 flips Multisite
 
 - You MUST NOT put per-environment overrides into `inventories/<env>/default.yml` for cases that belong to a single role; use this file instead. The environment inventory keeps only cross-cutting environment knobs.
 - You MUST NOT introduce conditionals or templating tricks at the variant-list level. The deep-merge is straight YAML; complex shape decisions belong inside the role itself.
-- You MUST NOT rename the file back to `meta/inventory.yml` for any reason. See the placement rule.
+- You MUST NOT name the file `meta/inventory.yml` for any reason. See the placement rule.
