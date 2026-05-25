@@ -4,6 +4,7 @@ csp:
   flags:
     script-src-elem:
       unsafe-eval: true
+      unsafe-inline: true
     script-src-attr:
       unsafe-eval: true
 domains:
