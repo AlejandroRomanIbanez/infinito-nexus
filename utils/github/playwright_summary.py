@@ -176,21 +176,24 @@ def _render(summaries: list[dict], context: str) -> str:
         "| Time | App | Variant | Pass | Test | Status | Duration | Message |",
         "|---|---|---|---|---|:---:|---:|---|",
     ]
-    for s in summaries:
-        for time_iso, name, status, msg, duration in s["records"]:
-            emoji = _STATUS_EMOJI.get(status, "❔")
-            if msg:
-                truncated = msg[:_MAX_MSG_LEN] + (
-                    "…" if len(msg) > _MAX_MSG_LEN else ""
-                )
-                message_cell = _md_escape_cell(truncated)
-            else:
-                message_cell = ""
-            lines.append(
-                f"| `{time_iso}` | `{s['app']}` | {s['variant']} | {s['pass']} | "
-                f"{_md_escape_cell(name)} | {emoji} | "
-                f"{_format_duration(duration)} | {message_cell} |"
-            )
+    rows: list[tuple[str, str, str, str, str, str, str, float]] = [
+        (time_iso, s["app"], s["variant"], s["pass"], name, status, msg, duration)
+        for s in summaries
+        for time_iso, name, status, msg, duration in s["records"]
+    ]
+    rows.sort(key=lambda r: r[0])
+    for time_iso, app, variant, pass_, name, status, msg, duration in rows:
+        emoji = _STATUS_EMOJI.get(status, "❔")
+        if msg:
+            truncated = msg[:_MAX_MSG_LEN] + ("…" if len(msg) > _MAX_MSG_LEN else "")
+            message_cell = _md_escape_cell(truncated)
+        else:
+            message_cell = ""
+        lines.append(
+            f"| `{time_iso}` | `{app}` | {variant} | {pass_} | "
+            f"{_md_escape_cell(name)} | {emoji} | "
+            f"{_format_duration(duration)} | {message_cell} |"
+        )
     return "\n".join(lines)
 
 
