@@ -86,14 +86,12 @@ async function ssoLoginAndAssertUsername(page, username, password) {
 
   await page.locator('input[name="username"], #username').fill(username);
   await page.locator('input[name="password"], #password').fill(password);
-  // Press race-detaches when Keycloak unmounts the form mid-submit;
-  // swallow the retry and wait for navigation off the Keycloak host instead.
   const leftKeycloak = page
     .waitForURL((url) => !issuerPattern.test(url.toString()), { timeout: 60_000 })
     .catch(() => {});
   await page
     .locator('input[name="password"], #password')
-    .press("Enter")
+    .press("Enter", { timeout: 5_000 })
     .catch(() => {});
   await leftKeycloak;
 
