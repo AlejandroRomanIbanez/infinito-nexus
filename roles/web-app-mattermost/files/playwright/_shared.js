@@ -42,6 +42,13 @@ async function waitForFirstVisible(locators, timeout = 60_000) {
 // off the Keycloak OIDC round-trip.
 async function startMattermostSsoFlow(page, baseUrl) {
   const base = baseUrl.replace(/\/$/, "");
+  // Pre-stamp the localStorage flag the landing page's "View in browser"
+  // button writes, so v11+ doesn't bounce fresh contexts to /landing#/.
+  await page.addInitScript(() => {
+    try {
+      localStorage.setItem("__landingPageSeen__", "true");
+    } catch {}
+  });
   const loginId = page.locator("#input_loginId");
   const deadline = Date.now() + 120_000;
   while (true) {
