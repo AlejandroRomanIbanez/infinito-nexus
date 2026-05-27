@@ -17,6 +17,9 @@
     ldap:
       enabled: true
       shared: true
+    lam: # nocheck: variants-services-match
+      enabled: true
+      shared: true
     logout:
       enabled: true
       shared: true
@@ -37,7 +40,28 @@
     ldap:
       enabled: true
       shared: true
+    lam: # nocheck: variants-services-match
+      enabled: true
+      shared: true
     sso:
+      enabled: false
+      shared: false
+    css:
+      enabled: false
+      shared: false
+    dashboard:
+      enabled: false
+      shared: false
+    email:
+      enabled: false
+      shared: false
+    logout:
+      enabled: false
+      shared: false
+    matomo:
+      enabled: false
+      shared: false
+    prometheus:
       enabled: false
       shared: false
 - services:

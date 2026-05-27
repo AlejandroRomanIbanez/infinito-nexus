@@ -11,8 +11,8 @@ SYS_SERVICE_CLEANUP_ANONYMOUS_VOLUMES: "{{ lookup('unit_name', 'sys-ctl-cln-anon
 SYS_SERVICE_CLEANUP_DISC_SPACE: "{{ lookup('unit_name', 'sys-ctl-cln-disc-space'      ) }}"
 SYS_SERVICE_CLEANUP_DOCKER: "{{ lookup('unit_name', 'sys-ctl-cln-docker'          ) }}"
 SYS_SERVICE_OPTIMIZE_DRIVE: "{{ lookup('unit_name', 'svc-opt-ssd-hdd'             ) }}"
-SYS_SERVICE_BACKUP_RMT_2_LOC: "{{ lookup('unit_name', 'svc-bkp-rmt-2-loc'           ) }}"
-SYS_SERVICE_BACKUP_DOCKER_2_LOC: "{{ lookup('unit_name', 'sys-ctl-bkp-docker-2-loc'    ) }}"
+SYS_SERVICE_BACKUP_REMOTE_2_LOCAL: "{{ lookup('unit_name', 'svc-bkp-remote-2-local'     ) }}"
+SYS_SERVICE_BACKUP_CONTAINER_2_LOCAL: "{{ lookup('unit_name', 'svc-bkp-container-2-local') }}"
 SYS_SERVICE_REPAIR_CONTAINER_SOFT: "{{ lookup('unit_name', 'sys-ctl-rpr-container-soft'  ) }}"
 SYS_SERVICE_REPAIR_CONTAINER_HARD: "{{ lookup('unit_name', 'sys-ctl-rpr-container-hard'  ) }}"
 

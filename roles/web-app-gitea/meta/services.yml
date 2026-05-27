@@ -29,7 +29,11 @@ email:
 mariadb:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
+# nocheck: playwright-service-flag — self-provider
 gitea:
+  enabled: true
+  shared: true
+  provides: gitea
   image: gitea/gitea
   version: latest
   min_storage: 10GB

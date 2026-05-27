@@ -26,9 +26,9 @@
     container_name: "{{ MAGENTO_PHP_CONTAINER }}"
     volumes:
       - "data:/var/www/html"
-{% include 'roles/sys-svc-container/templates/depends_on/dmbs_incl.yml.j2' %}
-      search:
-        condition: service_started
+{{ lookup('container_depends_on', application_id, extra={
+  'search': {'condition': 'service_started'},
+}) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   search:

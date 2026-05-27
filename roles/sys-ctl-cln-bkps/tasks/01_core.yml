@@ -22,6 +22,8 @@
 - include_role:
     name: sys-service
   vars:
+    system_service_timer_enabled: "{{ SYS_CTL_CLN_BKPS_TIMER_ENABLED | bool }}"
+    system_service_on_calendar: "{{ SYS_SCHEDULE_CLEANUP_BACKUPS }}"
     system_service_tpl_on_failure: "{{ SYS_SERVICE_ON_FAILURE_COMPOSE }}"
     system_service_tpl_exec_start: "{{ system_service_script_exec }} --backups-folder-path {{ DIR_BACKUPS }} --maximum-backup-size-percent {{ SIZE_PERCENT_MAXIMUM_BACKUP
       }}"

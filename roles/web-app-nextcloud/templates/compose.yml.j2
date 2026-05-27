@@ -38,7 +38,7 @@
       timeout: 10s
       retries: 3
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-{% include 'roles/sys-svc-container/templates/depends_on/dmbs_excl.yml.j2' %}
+{{ lookup('container_depends_on', application_id) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
 {% if NEXTCLOUD_HPB_SIGNALING_ENABLED | bool %}
@@ -110,7 +110,7 @@
       interval: 1m
       timeout: 10s
       retries: 3
-{% include 'roles/sys-svc-container/templates/depends_on/dmbs_excl.yml.j2' %}
+{{ lookup('container_depends_on', application_id) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
 {% if NEXTCLOUD_RECORDING_ENABLED | bool %}

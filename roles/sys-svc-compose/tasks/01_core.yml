@@ -31,16 +31,3 @@
     mode: "0755"
     owner: root
     group: root
-
-- name: Include backup, repair and health services for docker
-  include_role:
-    name: "{{ service_role }}"
-  loop:
-    - sys-ctl-cln-docker
-    - sys-ctl-bkp-docker-2-loc
-    - sys-ctl-hlth-container
-    - sys-ctl-hlth-volumes
-    - sys-ctl-rpr-container-hard
-  loop_control:
-    loop_var: service_role
-  when: not (_service_loader_preloading | default(false) | bool)

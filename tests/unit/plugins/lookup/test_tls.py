@@ -107,6 +107,40 @@ class TestTlsResolveLookup(unittest.TestCase):
         with self.assertRaises(AnsibleError):
             self.lookup.run(["web-app-a"], variables=self.base_vars, mode="nope")
 
+    def test_www_prefix_falls_back_to_bare_domain(self):
+        out = self.lookup.run(["www.a.example"], variables=self.base_vars)[0]
+        self.assertEqual(out["application_id"], "web-app-a")
+        self.assertEqual(out["domain"], "a.example")
+
+    def test_www_prefix_with_unknown_bare_still_raises(self):
+        with self.assertRaises(AnsibleError) as ctx:
+            self.lookup.run(["www.unknown.example"], variables=self.base_vars)
+        self.assertIn("not found", str(ctx.exception))
+
+    def test_non_www_unregistered_still_raises(self):
+        with self.assertRaises(AnsibleError) as ctx:
+            self.lookup.run(["unknown.example"], variables=self.base_vars)
+        self.assertIn("not found", str(ctx.exception))
+
+    def test_term_with_unresolved_jinja_is_templated(self):
+        class _FakeTemplar:
+            def __init__(self, mapping):
+                self._mapping = mapping
+                self.calls = []
+
+            def template(self, value):
+                self.calls.append(value)
+                return self._mapping.get(value, value)
+
+        fake = _FakeTemplar({"{{ MY_DOMAIN }}": "a.example"})
+        self.lookup._templar = fake
+
+        out = self.lookup.run(["{{ MY_DOMAIN }}"], variables=self.base_vars)[0]
+
+        self.assertEqual(out["application_id"], "web-app-a")
+        self.assertEqual(out["domain"], "a.example")
+        self.assertIn("{{ MY_DOMAIN }}", fake.calls)
+
 
 if __name__ == "__main__":
     unittest.main()

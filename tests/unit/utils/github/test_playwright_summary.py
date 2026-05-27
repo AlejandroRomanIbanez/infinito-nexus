@@ -383,6 +383,30 @@ class TestRender(unittest.TestCase):
             1,
         )
 
+    def test_rows_are_sorted_ascending_by_time(self) -> None:
+        out = ps._render(
+            [
+                self._summary(
+                    "late",
+                    [
+                        ("2026-05-17T12:00:05Z", "late-1", "passed", "", 0.1),
+                        ("2026-05-17T12:00:09Z", "late-2", "passed", "", 0.1),
+                    ],
+                ),
+                self._summary(
+                    "early",
+                    [
+                        ("2026-05-17T12:00:01Z", "early-1", "passed", "", 0.1),
+                        ("2026-05-17T12:00:07Z", "early-2", "passed", "", 0.1),
+                    ],
+                ),
+            ],
+            "ctx",
+        )
+        body = out.split("|---|---|---|---|---|:---:|---:|---|\n", 1)[1]
+        order = [line.split("|")[5].strip() for line in body.splitlines() if line]
+        self.assertEqual(order, ["early-1", "late-1", "early-2", "late-2"])
+
     def test_plain_layout_leaves_variant_and_pass_cells_empty(self) -> None:
         out = ps._render(
             [self._summary("foo", [(_T0, "t1", "passed", "", 1.0)])],

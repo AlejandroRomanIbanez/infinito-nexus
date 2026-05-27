@@ -19,21 +19,56 @@ _EMAIL_LOOKUP_RE = re.compile(r"""lookup\(\s*['"]email['"]""")
 _SCAN_EXTENSIONS = {".yml", ".yaml", ".j2", ".py", ".sh", ".conf", ".env"}
 
 
+def _yaml_refs_skipping_required_by(data: object) -> tuple[bool, bool]:
+    """Walk a parsed YAML structure for mailu refs and lookup('email'), but
+    treat values inside any `required_by` subtree as inert. `required_by`
+    expresses inverse coverage metadata for the deploy verifier, not a
+    "consumer of mailu" relation."""
+    refs_mailu = False
+    refs_email = False
+
+    def walk(node: object, inside_required_by: bool) -> None:
+        nonlocal refs_mailu, refs_email
+        if refs_mailu and refs_email:
+            return
+        if isinstance(node, dict):
+            for k, v in node.items():
+                walk(v, inside_required_by or k == "required_by")
+        elif isinstance(node, list):
+            for item in node:
+                walk(item, inside_required_by)
+        elif isinstance(node, str) and not inside_required_by:
+            if not refs_mailu and _MAILU_REF_RE.search(node):
+                refs_mailu = True
+            if not refs_email and _EMAIL_LOOKUP_RE.search(node):
+                refs_email = True
+
+    walk(data, False)
+    return refs_mailu, refs_email
+
+
 def _scan_role(role_path: Path) -> tuple[bool, bool]:
     """Return (refs_mailu, refs_email_lookup) for all scannable files in *role_path*."""
     refs_mailu = False
     refs_email = False
+    meta_services_yml = role_path / ROLE_FILE_META_SERVICES
     for path in role_path.rglob("*"):  # nocheck: project-walk
         if not path.is_file() or path.suffix not in _SCAN_EXTENSIONS:
             continue
-        try:
-            text = read_text(str(path))
-        except (OSError, UnicodeDecodeError):
-            continue
-        if not refs_mailu and _MAILU_REF_RE.search(text):
-            refs_mailu = True
-        if not refs_email and _EMAIL_LOOKUP_RE.search(text):
-            refs_email = True
+        if path == meta_services_yml:
+            data = load_yaml_any(str(path), default_if_missing={})
+            yml_mailu, yml_email = _yaml_refs_skipping_required_by(data)
+            refs_mailu = refs_mailu or yml_mailu
+            refs_email = refs_email or yml_email
+        else:
+            try:
+                text = read_text(str(path))
+            except (OSError, UnicodeDecodeError):
+                continue
+            if not refs_mailu and _MAILU_REF_RE.search(text):
+                refs_mailu = True
+            if not refs_email and _EMAIL_LOOKUP_RE.search(text):
+                refs_email = True
         if refs_mailu and refs_email:
             break
     return refs_mailu, refs_email

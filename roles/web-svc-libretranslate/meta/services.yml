@@ -25,7 +25,7 @@ sso:
       port: 5000
     allowed_groups:
       - "{{ lookup('rbac_group_path', application_id='web-svc-libretranslate', role='administrator') }}"
-# nocheck: dynamic-flag
+    # nocheck: dynamic-flag
     acl:
       whitelist:
         - /translate

@@ -36,7 +36,7 @@
       timeout: 20s
       retries: 5
       start_period: 60s
-{% include 'roles/sys-svc-container/templates/depends_on/dmbs_excl.yml.j2' %}
+{{ lookup('container_depends_on', application_id) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   nginx:

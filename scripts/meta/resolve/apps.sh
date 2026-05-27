@@ -100,6 +100,7 @@ apps_json="$(
 # ------------------------------------------------------------
 # 2) Global hard excludes (regex over app ids)
 # ------------------------------------------------------------
+# TODO: Remove exclude condition
 apps_json="$(
 	printf '%s\n' "${apps_json}" |
 		jq_exclude_regex '^(web-opt-rdr-www)$'

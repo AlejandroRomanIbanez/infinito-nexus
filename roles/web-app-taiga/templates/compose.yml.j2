@@ -39,11 +39,10 @@ pull_policy: never
 {% endif %}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
       taiga:
-{% include 'roles/sys-svc-container/templates/depends_on/dmbs_incl.yml.j2' %}
-      {{ TAIGA_EVENTS_RABBITMQ_SERVICE }}:
-        condition: service_started
-      {{ TAIGA_ASYNC_RABBITMQ_SERVICE }}:
-        condition: service_started
+{{ lookup('container_depends_on', application_id, extra={
+  TAIGA_EVENTS_RABBITMQ_SERVICE: {'condition': 'service_started'},
+  TAIGA_ASYNC_RABBITMQ_SERVICE: {'condition': 'service_started'},
+}) }}
 
 {% set service_name = TAIGA_ASYNC_SERVICE %}
   {{ service_name }}:
@@ -76,11 +75,10 @@ pull_policy: never
 {% endif %}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
       taiga:
-{% include 'roles/sys-svc-container/templates/depends_on/dmbs_incl.yml.j2' %}
-      {{ TAIGA_EVENTS_RABBITMQ_SERVICE }}:
-        condition: service_started
-      {{ TAIGA_ASYNC_RABBITMQ_SERVICE }}:
-        condition: service_started
+{{ lookup('container_depends_on', application_id, extra={
+  TAIGA_EVENTS_RABBITMQ_SERVICE: {'condition': 'service_started'},
+  TAIGA_ASYNC_RABBITMQ_SERVICE: {'condition': 'service_started'},
+}) }}
 
 {% set service_name = TAIGA_ASYNC_RABBITMQ_SERVICE %}
   {{ service_name }}:

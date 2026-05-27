@@ -45,6 +45,7 @@ def _run_deploy(
     debug: bool,
     passthrough: list[str],
     inventory_dir: str,
+    container_name: str,
     extra_ansible_vars: Mapping[str, Any] | None = None,
 ) -> int:
     inv_root = str(inventory_dir).rstrip("/")
@@ -88,9 +89,10 @@ def _run_deploy(
     if services_disabled:
         extra_env["INFINITO_SERVICES_DISABLED"] = services_disabled
 
-    ansible_log_path = os.environ.get("ANSIBLE_LOG_PATH")
-    if ansible_log_path:
-        extra_env["ANSIBLE_LOG_PATH"] = ansible_log_path
+    ansible_log_path = (
+        os.environ.get("ANSIBLE_LOG_PATH") or "/tmp/infinito-deploy.log"  # noqa: S108
+    )
+    extra_env["ANSIBLE_LOG_PATH"] = ansible_log_path
 
     # The Playwright E2E gate now keys on `RUNTIME` from the inventory's
     # host_vars (baked at init time by `cli.administration.deploy.development.init`).
@@ -99,7 +101,6 @@ def _run_deploy(
     # time: by then the runtime decision is already serialised into the
     # inventory the deploy stage consumes.
 
-    # Live stream output for immediate visibility.
     r = compose.exec(
         cmd,
         check=False,
@@ -304,6 +305,7 @@ def handler(args: argparse.Namespace) -> int:
             debug=bool(args.debug),
             passthrough=passthrough,
             inventory_dir=inv_dir,
+            container_name=container_name,
             extra_ansible_vars={"VARIANT_INDEX": round_index},
         )
         if rc != 0:
@@ -322,6 +324,7 @@ def handler(args: argparse.Namespace) -> int:
                 debug=bool(args.debug),
                 passthrough=passthrough,
                 inventory_dir=inv_dir,
+                container_name=container_name,
                 extra_ansible_vars={
                     "ASYNC_ENABLED": True,
                     "VARIANT_INDEX": round_index,
