@@ -2,15 +2,19 @@ const { test, expect, request } = require("@playwright/test");
 
 exports.register = function (shared) {
   test("administrator: REST API POST /api/v1/tickets creates a ticket", async () => {
-    expect(shared.env.adminUsername, "ADMIN_USERNAME must be set").toBeTruthy();
-    expect(shared.env.adminPassword, "ADMIN_PASSWORD must be set").toBeTruthy();
+    // The `zammad-api-bot` user that backs Basic-auth here is provisioned by
+    // the same `apply_oidc_settings.rb` post-bootstrap step that wires OIDC,
+    // so the variants where OIDC is disabled (V2, V3) have no bot to talk to.
+    shared.skipUnlessServiceEnabled("oidc");
+    expect(shared.env.adminApiUsername, "ADMIN_USERNAME must be set").toBeTruthy();
+    expect(shared.env.adminApiPassword, "ADMIN_PASSWORD must be set").toBeTruthy();
 
     const api = await request.newContext({
       ignoreHTTPSErrors: true,
       extraHTTPHeaders: {
         Authorization:
           `Basic ${ 
-          Buffer.from(`${shared.env.adminUsername}:${shared.env.adminPassword}`).toString("base64")}`,
+          Buffer.from(`${shared.env.adminApiUsername}:${shared.env.adminApiPassword}`).toString("base64")}`,
         "Content-Type": "application/json",
       },
     });
@@ -21,7 +25,7 @@ exports.register = function (shared) {
       data: {
         title: subject,
         group: "Users",
-        customer: shared.env.adminUsername,
+        customer: shared.env.adminApiUsername,
         article: {
           subject,
           body: "Created from the Infinito.Nexus Playwright REST regression suite.",

@@ -1,22 +1,22 @@
 {
   "Token": "{{ ZAMMAD_INITIAL_ADMIN_PASSWORD }}",
-  "TextModuleLocale": { "Locale": "en-us" },
+  "TextModuleLocale": { "Locale": "{{ HOST_LL_CC_TAG }}" },
   "Users": [
     {
       "login":     "{{ ZAMMAD_ADMINISTRATOR_EMAIL }}",
-      "firstname": "Infinito",
-      "lastname":  "Administrator",
+      "firstname": "{{ lookup('users', 'administrator').firstname }}",
+      "lastname":  "{{ lookup('users', 'administrator').lastname }}",
       "email":     "{{ ZAMMAD_ADMINISTRATOR_EMAIL }}",
-      "password":  "{{ ZAMMAD_ADMINISTRATOR_PASSWORD }}",
-      "organization": "Infinito.Nexus"
+      "password":  "{{ ZAMMAD_API_BOT_PASSWORD }}",
+      "organization": "{{ ORGANIZATION }}"
     }
   ],
   "Settings": [
     { "name": "system_init_done",         "value": true },
     { "name": "fqdn",                     "value": "{{ ZAMMAD_HOSTNAME }}" },
-    { "name": "http_type",                "value": "{{ 'https' if (lookup('tls', application_id, 'enabled') | bool) else 'http' }}" },
-    { "name": "organization",             "value": "Infinito.Nexus" },
-    { "name": "product_name",             "value": "Infinito.Nexus Helpdesk" },
+    { "name": "http_type",                "value": "{{ ZAMMAD_WEB_PROTOCOL }}" },
+    { "name": "organization",             "value": "{{ ORGANIZATION }}" },
+    { "name": "product_name",             "value": "{{ SOFTWARE_NAME }} Helpdesk" },
     { "name": "developer_mode",           "value": false },
     { "name": "user_create_account",      "value": false },
     { "name": "user_lost_password",       "value": true }
@@ -26,7 +26,7 @@
     {
       "name":  "auth_openid_connect_credentials",
       "value": {
-        "display_name":               "{{ OIDC.BUTTON_TEXT | default('Sign in with Infinito.Nexus') }}",
+        "display_name":               "{{ OIDC.BUTTON_TEXT }}",
         "identifier":                 "{{ OIDC.CLIENT.ID }}",
         "secret":                     "{{ OIDC.CLIENT.SECRET }}",
         "issuer":                     "{{ OIDC.CLIENT.ISSUER_URL }}",

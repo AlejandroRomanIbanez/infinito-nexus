@@ -27,14 +27,20 @@ ZAMMAD_MEMCACHED_VERSION: "{{ lookup('config', 'svc-db-memcached', 'services.mem
 ZAMMAD_RAILS_PORT: 3000
 ZAMMAD_WEBSOCKET_PORT: 6042
 
-# Admin credentials (consumed by auto_wizard.json.j2)
-ZAMMAD_ADMINISTRATOR_PASSWORD: "{{ lookup('users', 'administrator').password }}"
+# Local-auth password for the role-internal `zammad-api-bot` user (Basic-auth
+# REST API). Also reused as the wizard-bypass admin's local password since
+# both need the same shell-safe alphanumeric form (see schema.yml for why).
+ZAMMAD_API_BOT_PASSWORD:       "{{ lookup('config', application_id, 'credentials.api_bot_password') }}"
 ZAMMAD_ADMINISTRATOR_EMAIL:    "{{ lookup('users', 'administrator').email }}"
 ZAMMAD_INITIAL_ADMIN_PASSWORD: "{{ lookup('config', application_id, 'credentials.initial_admin_password') }}"
 ZAMMAD_SECRET_KEY_BASE:        "{{ lookup('config', application_id, 'credentials.secret_key_base') }}"
 
-# Hostname (consumed by env.j2 + auto_wizard.json.j2)
-ZAMMAD_HOSTNAME: "{{ lookup('domain', application_id) }}"
+# Hostname + scheme (consumed by env.j2 + auto_wizard.json.j2 + tasks)
+ZAMMAD_HOSTNAME:     "{{ lookup('domain', application_id) }}"
+ZAMMAD_WEB_PROTOCOL: "{{ lookup('tls', application_id, 'protocols.web') }}"
+
+# Reverse-proxy upstreams Rails should trust for `X-Forwarded-*` headers.
+# SPOT lives in `group_vars/all/08_networks.yml#NETWORK_TRUSTED_PROXY_CIDRS`.
 
 # Host-side bind-mount sources
 ZAMMAD_VOLUMES_DIR:              "{{ lookup('container', application_id, 'directories.volumes') }}"

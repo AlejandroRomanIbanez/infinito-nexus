@@ -42,11 +42,6 @@ redis:
 memcached:
   enabled: true
   shared: "{{ 'svc-db-memcached' in group_names }}"
-# nocheck: dynamic-flag
-# nocheck: playwright-service-flag — bundled search engine, covered by role-local integration tests
-elasticsearch:
-  enabled: true
-  shared: false
 zammad:
   image: ghcr.io/zammad/zammad
   version: "6.5.0"

@@ -15,6 +15,11 @@ credentials:
     algorithm: alphanumeric
     validation: "^[A-Za-z0-9]{16,}$"
     length: 32
+  api_bot_password:
+    description: "Local password for the role-internal `zammad-api-bot` user that backs Basic-auth REST-API calls (Playwright). Also reused as the wizard-bypass admin's local password. Alphanumeric on purpose — `lookup('users', 'administrator').password` carries `'$tr0ng€xampl3PW!`-style chars that get mangled by the Ansible→bash→`container exec -e`→Ruby ENV.fetch chain (see roles/web-app-joomla/tasks/02_install.yml:55-61 for the same class of bug)."
+    algorithm: alphanumeric
+    validation: "^[A-Za-z0-9]{32,}$"
+    length: 48
   api_token:
     description: "Long-lived Zammad API token created during bootstrap; used by tasks/main.yml for post-start configuration (OIDC settings, inbound channel, group
       mapping)."
