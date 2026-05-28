@@ -230,9 +230,11 @@ echo "------------------------------------------------------------"
 
 # Common build args
 : "${INFINITO_SRC_DIR:?INFINITO_SRC_DIR must be set; source scripts/meta/env/load.sh}"
+: "${INFINITO_VENV_DIR:?INFINITO_VENV_DIR must be set; source scripts/meta/env/load.sh}"
 build_args=(
 	--build-arg "INFINITO_PARENT_IMAGE=${INFINITO_PARENT_IMAGE}"
 	--build-arg "INFINITO_SRC_DIR=${INFINITO_SRC_DIR}"
+	--build-arg "INFINITO_VENV_DIR=${INFINITO_VENV_DIR}"
 	--build-arg "NIX_CONFIG=${NIX_CONFIG:-}"
 )
 
