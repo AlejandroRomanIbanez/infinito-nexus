@@ -129,5 +129,6 @@ for entry in "${OPEN_PRS[@]}"; do
 	echo "Closing superseded PR #${pr_num} (${pr_branch})"
 	gh pr close "${pr_num}" \
 		--repo "${REPO}" \
+		--delete-branch \
 		--comment "Superseded by #${PR_NUMBER}."
 done
