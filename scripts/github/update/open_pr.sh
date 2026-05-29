@@ -9,7 +9,6 @@ set -euo pipefail
 
 UPDATE_BASE_BRANCH="${UPDATE_BASE_BRANCH:-master}"
 UPDATE_BRANCH_SUFFIX="${UPDATE_BRANCH_SUFFIX:-$(date +%Y%m%d)}"
-BRANCH="${UPDATE_BRANCH_PREFIX}-${UPDATE_BRANCH_SUFFIX}"
 
 if ! command -v gh >/dev/null 2>&1; then
 	echo "ERROR: gh CLI not found." >&2
@@ -28,7 +27,8 @@ else
 	git config user.name "github-actions[bot]"
 	git config user.email "github-actions[bot]@users.noreply.github.com"
 fi
-git checkout -B "${BRANCH}"
+
+git checkout --detach HEAD
 
 if (($# > 0)); then
 	git add -- "$@"
@@ -43,16 +43,26 @@ fi
 
 git commit -m "${UPDATE_COMMIT_MESSAGE}"
 
-# Normalize CRLF endings so a git-produced patch hashes identically to a
-# gh-produced one regardless of which side the runner picked up.
-normalize_diff() { sed -e 's/\r$//'; }
-CURRENT_HASH="$(git diff "origin/${UPDATE_BASE_BRANCH}..HEAD" | normalize_diff | sha256sum | awk '{print $1}')"
-echo "Local diff hash: ${CURRENT_HASH}"
+fingerprint_ref() {
+	local ref="$1"
+	shift
+	if (($# == 0)); then
+		git rev-parse "${ref}^{tree}"
+		return
+	fi
+	local path blob
+	{
+		for path in "$@"; do
+			blob="$(git rev-parse "${ref}:${path}" 2>/dev/null || echo MISSING)"
+			printf '%s\t%s\n' "${blob}" "${path}"
+		done
+	} | sort | git hash-object --stdin
+}
 
-# Dedupe across *every* open PR against this base branch (the bot must
-# skip not just sibling bot-PRs but also any human-authored PR that
-# happens to carry the same change). The current branch is excluded so
-# the check never compares us to ourselves.
+mapfile -t CHANGED_FILES < <(git diff --name-only HEAD~1 HEAD)
+LOCAL_FP="$(fingerprint_ref HEAD "${CHANGED_FILES[@]}")"
+echo "Local fingerprint: ${LOCAL_FP} over ${#CHANGED_FILES[@]} file(s)"
+
 mapfile -t OPEN_PRS < <(
 	gh pr list \
 		--repo "${REPO}" \
@@ -60,7 +70,7 @@ mapfile -t OPEN_PRS < <(
 		--base "${UPDATE_BASE_BRANCH}" \
 		--limit 100 \
 		--json number,headRefName \
-		--jq ".[] | select(.headRefName != \"${BRANCH}\") | \"\(.number)\t\(.headRefName)\""
+		--jq ".[] | select(.headRefName | startswith(\"${UPDATE_BRANCH_PREFIX}-\")) | \"\(.number)\t\(.headRefName)\""
 )
 
 DUPLICATE_PR=""
@@ -68,20 +78,34 @@ for entry in "${OPEN_PRS[@]}"; do
 	[[ -z "${entry}" ]] && continue
 	pr_num="${entry%%$'\t'*}"
 	pr_branch="${entry##*$'\t'}"
-	pr_hash="$(gh pr diff "${pr_num}" --repo "${REPO}" | normalize_diff | sha256sum | awk '{print $1}')"
-	echo "  open PR #${pr_num} (${pr_branch}): ${pr_hash}"
-	if [[ "${pr_hash}" == "${CURRENT_HASH}" ]]; then
+	pr_head="$(gh pr view "${pr_num}" --repo "${REPO}" --json headRefOid --jq .headRefOid 2>/dev/null || true)"
+	if [[ -z "${pr_head}" ]] || ! git fetch --quiet --depth 1 origin "${pr_head}" 2>/dev/null; then
+		echo "  open PR #${pr_num} (${pr_branch}): head unfetchable; treating as non-duplicate"
+		continue
+	fi
+	pr_fp="$(fingerprint_ref "${pr_head}" "${CHANGED_FILES[@]}")"
+	echo "  open PR #${pr_num} (${pr_branch}): fingerprint ${pr_fp}"
+	if [[ "${pr_fp}" == "${LOCAL_FP}" ]]; then
 		DUPLICATE_PR="${pr_num}"
 		break
 	fi
 done
 
 if [[ -n "${DUPLICATE_PR}" ]]; then
-	echo "Open PR #${DUPLICATE_PR} already carries this exact diff. Skipping push and PR creation."
+	echo "Open PR #${DUPLICATE_PR} already carries this exact change. Skipping push and PR creation."
 	exit 0
 fi
 
-git push --force origin "${BRANCH}"
+BRANCH="${UPDATE_BRANCH_PREFIX}-${UPDATE_BRANCH_SUFFIX}-${LOCAL_FP:0:7}"
+echo "Pushing change to branch ${BRANCH}"
+
+git config --local --get-regexp '^includeif\..*\.path$' 2>/dev/null |
+	awk '{print $2}' |
+	sort -u |
+	xargs -r truncate -c -s 0
+git push --force \
+	"https://x-access-token:${GH_TOKEN}@github.com/${REPO}.git" \
+	"HEAD:refs/heads/${BRANCH}"
 
 PR_NUMBER="$(
 	gh pr list \
@@ -111,19 +135,3 @@ else
 	PR_NUMBER="${PR_URL##*/}"
 	echo "Created PR #${PR_NUMBER}: ${PR_URL}"
 fi
-
-# Close every other open PR in the same update class as superseded. A
-# PR is in the same class when its branch starts with the configured
-# UPDATE_BRANCH_PREFIX, so e.g. an image-versions run only retires
-# stale image-versions branches and never touches repository-refs,
-# skills, or human-authored PRs.
-for entry in "${OPEN_PRS[@]}"; do
-	[[ -z "${entry}" ]] && continue
-	pr_branch="${entry##*$'\t'}"
-	[[ "${pr_branch}" == "${UPDATE_BRANCH_PREFIX}-"* ]] || continue
-	pr_num="${entry%%$'\t'*}"
-	echo "Closing superseded PR #${pr_num} (${pr_branch})"
-	gh pr close "${pr_num}" \
-		--repo "${REPO}" \
-		--comment "Superseded by #${PR_NUMBER}."
-done

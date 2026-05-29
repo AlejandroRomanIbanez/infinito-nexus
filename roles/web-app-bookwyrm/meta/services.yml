@@ -1,15 +1,14 @@
 ---
-oauth2:
+sso:
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
-  origin:
-    host: application
-    port: 8000
-  allowed_groups:
-    - "{{ lookup('rbac_group_path', application_id='web-app-bookwyrm', role='administrator') }}"
-oidc:
-  enabled: "{{ 'web-app-keycloak' in group_names }}"
-  shared: "{{ 'web-app-keycloak' in group_names }}"
+  flavor: oauth2
+  oauth2:
+    origin:
+      host: application
+      port: 8000
+    allowed_groups:
+      - "{{ lookup('rbac_group_path', application_id='web-app-bookwyrm', role='administrator') }}"
 ldap:
   enabled: "{{ 'svc-db-openldap' in group_names }}"
   shared: "{{ 'svc-db-openldap' in group_names }}"
@@ -45,14 +44,14 @@ bookwyrm:
   # nocheck: docker-version
   version: 3.11-bookworm
   repository: https://github.com/bookwyrm-social/bookwyrm.git
-  ref: v0.8.5
+  ref: v0.8.6
   min_storage: 15GB
   registration_open: false
   allow_invite_request: false
   ports:
     local:
       http: 8049
-      oauth2: 16498
+      sso: 16498
   run_after:
     - web-app-matomo
     - web-app-keycloak

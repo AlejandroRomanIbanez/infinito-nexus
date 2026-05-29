@@ -50,6 +50,7 @@ jobs:
         env:
           GITHUB_EVENT_CREATED: ${{ github.event.created }}
           CI_RUN_ON_MAIN: ${{ vars.CI_RUN_ON_MAIN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: bash scripts/meta/resolve/push_ci_policy.sh
 

@@ -5,6 +5,8 @@ set -euo pipefail
 : "${GITHUB_OUTPUT:?Missing GITHUB_OUTPUT}"
 : "${GITHUB_SHA:?Missing GITHUB_SHA}"
 : "${GITHUB_REF:?Missing GITHUB_REF}"
+: "${GH_TOKEN:?Missing GH_TOKEN}"
+: "${GITHUB_REPOSITORY:?Missing GITHUB_REPOSITORY}"
 
 if [[ "${GITHUB_REF}" == "refs/heads/main" && "${CI_RUN_ON_MAIN:-}" != "true" ]]; then
 	{
@@ -14,6 +16,35 @@ if [[ "${GITHUB_REF}" == "refs/heads/main" && "${CI_RUN_ON_MAIN:-}" != "true" ]]
 	} >>"${GITHUB_OUTPUT}"
 	echo "Push to main detected and repository variable CI_RUN_ON_MAIN is not 'true' -> CI will be skipped."
 	exit 0
+fi
+
+if [[ "${GITHUB_REF}" != "refs/heads/main" ]]; then
+	branch_name="${GITHUB_REF#refs/heads/}"
+	case "${branch_name}" in
+	update/* | alert-autofix-*) max_attempts=10 ;;
+	*) max_attempts=1 ;;
+	esac
+	attempt=0
+	pr_count=0
+	while ((attempt < max_attempts)); do
+		pr_count="$(gh pr list --repo "${GITHUB_REPOSITORY}" --head "${branch_name}" --state open --json number --jq 'length')"
+		if ((pr_count > 0)); then
+			break
+		fi
+		attempt=$((attempt + 1))
+		if ((attempt < max_attempts)); then
+			sleep 2
+		fi
+	done
+	if ((pr_count > 0)); then
+		{
+			echo "should_run=false"
+			echo "skip_reason=pr-ci-covers-this-push"
+			echo "commit_in_main=false"
+		} >>"${GITHUB_OUTPUT}"
+		echo "Open PR exists for branch '${branch_name}' -> CI will be skipped; pull_request workflow handles this push."
+		exit 0
+	fi
 fi
 
 if [[ "${GITHUB_EVENT_CREATED}" != "true" ]]; then
