@@ -21,3 +21,5 @@ POSTGRES_LOCAL_HOST: "127.0.0.1"
 POSTGRES_LIBRARIES: "{{ lookup('postgres_libraries', lookup('service_extensions', 'postgres').values() | sum(start=[]) | unique | list) }}"
 POSTGRES_RETRIES: 5
 POSTGRES_EXEC_SHELL: "container exec -e PGPASSWORD={{ POSTGRES_PASSWORD | quote }} {{ POSTGRES_CONTAINER }} sh -lc"
+
+service_is_stateful: true
