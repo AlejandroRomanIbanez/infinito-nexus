@@ -36,9 +36,7 @@ NOCHECK_ID = "required-by-coverage"
 class TestRequiredByForNonInvokable(unittest.TestCase):
     def test_non_invokable_roles_declare_required_by(self) -> None:
         offenders: list[str] = []
-        for role_dir in sorted(
-            p for p in ROLES_DIR.iterdir() if p.is_dir() and not p.name.startswith("_")
-        ):
+        for role_dir in sorted(p for p in ROLES_DIR.iterdir() if p.is_dir()):
             role_id = role_dir.name
             if role_is_invokable(role_id, ROLES_DIR):
                 continue

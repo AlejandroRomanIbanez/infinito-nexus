@@ -1,1 +1,0 @@
-"""Application ID integration tests."""
