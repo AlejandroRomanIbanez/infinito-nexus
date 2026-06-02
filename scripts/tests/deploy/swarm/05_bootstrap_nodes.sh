@@ -32,6 +32,7 @@ APT_CFG
 		-e PACKAGE_INSTALL_FROM="/tmp/${DEB_BASENAME}" \
 		"${node}" bash -c \
 		'cd /opt/infinito-nexus && bash scripts/install/package.sh'
+	docker exec "${node}" rm -f /etc/apt/apt.conf.d/01-cacher
 }
 
 declare -A PIDS
