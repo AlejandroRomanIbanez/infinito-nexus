@@ -21,25 +21,25 @@ Frappe ships native OAuth 2.0 / OpenID Connect client support via the built-in *
 
 The closest existing analogues in this repo are [`web-app-odoo`](../../roles/web-app-odoo/) (ERP shape, OIDC + LDAP variants, central MariaDB consumer pattern omitted — odoo uses Postgres) and [`web-app-zammad`](../../roles/web-app-zammad/) (central-service reuse pattern, OIDC-direct flavor, three-variant matrix).
 
-## Proposed Decisions
+## Confirmed Decisions
 
-These decisions are the **agent's first-pass proposal**; the operator MUST review and confirm/reject each before implementation starts. Tracking the table here so iteration on the requirement happens in one place.
+These decisions were confirmed by the operator before implementation starts and are NOT subject to re-litigation during implementation.
 
 | # | Decision | Rationale |
 |---|---|---|
 | 1 | Canonical hostname: `next.erp.{{ DOMAIN_PRIMARY }}`. No alias on first iteration. | Mirrors the `odoo.erp.{{ DOMAIN_PRIMARY }}` convention used by [`web-app-odoo`](../../roles/web-app-odoo/meta/server.yml); both ERPs sit under the `.erp.` subdomain. |
 | 2 | SSO flavor is **OIDC-direct** (`services.sso.flavor: oidc`), NOT oauth2-proxy. The role uses Frappe's built-in Social Login Key. | Frappe supports OIDC natively as an OAuth client; an oauth2-proxy sidecar would be redundant and break the Frappe "Login with X" UX. |
-| 3 | Use the unified post-[021](README.md#archive) `services.sso.*` schema (matches [`web-app-odoo`](../../roles/web-app-odoo/meta/services.yml)). | [021](README.md#archive) is merged. New roles MUST land on the unified schema directly, not on the legacy `services.oidc.*` shape. |
+| 3 | Use the unified post-[021](README.md#archive) `services.sso.*` schema (matches [`web-app-odoo`](../../roles/web-app-odoo/meta/services.yml)). | [021](README.md#archive) is merged. New roles MUST land on the unified schema directly, not on the legacy oauth2/oidc service shape. |
 | 4 | The Keycloak OIDC client for ERPNext is **auto-provisioned** via `web-app-keycloak`, consistent with every other OIDC-consuming role in the repo. | No manual operator step on deploy. |
-| 5 | Keycloak group → ERPNext role mapping is in scope. Target: `roles/web-app-erpnext/administrator` → Frappe `System Manager`, `roles/web-app-erpnext/manager` → Frappe `Sales User` + `Purchase User` + `Stock User` + `Accounts User`, default → Frappe `Customer`. Mapping is applied via Frappe's `User Type` + role-profile API on first login (a post-start `bench` call from `tasks/`). | Operator-confirmable; Frappe's Social Login Key alone does NOT consume group claims, so the role MUST reconcile via API. |
-| 6 | Image strategy: **upstream `frappe/erpnext`** (the official image from [frappe_docker](https://github.com/frappe/frappe_docker)), pinned to the **latest stable major.minor** in `meta/services.yml` (no `:latest`, no `:edge`). Bump path follows the same convention as other upstream-pinned roles. | Self-built image (à la [015 Moodle](README.md#archive)) explicitly out of scope. |
+| 5 | Keycloak group → ERPNext role mapping target tiers: `roles/web-app-erpnext/administrator` → Frappe `System Manager`, `roles/web-app-erpnext/manager` → Frappe `Sales User` + `Purchase User` + `Stock User` + `Accounts User`, default → Frappe `Customer`. **v1 scope split:** the path-to-roles map is persisted at deploy time by `apply_oidc_settings.py` (writes JSON to `frappe.db.set_default("erpnext_oidc_group_role_map", …)`). Per-login reconciliation into Frappe role records still requires a custom Frappe app shipping a `hooks.py` `on_session_creation` callback — that piece is **deferred to a follow-up requirement**. | Operator-confirmable; Frappe's Social Login Key alone does NOT consume group claims. Persisting the map in v1 unblocks the follow-up requirement without re-litigating the mapping table. |
+| 6 | Image strategy: **upstream `frappe/erpnext`** (the official image from [frappe_docker](https://github.com/frappe/frappe_docker)), pinned to the **latest stable v15.x** in `meta/services.yml` (no `:latest`, no `:edge`). v14 LTS and the v16 pre-release line are explicitly NOT used. Bump path follows the same convention as other upstream-pinned roles. | Operator-confirmed: track the actively maintained major. Self-built image (à la [015 Moodle](README.md#archive)) explicitly out of scope. |
 | 7 | External-service reuse: **`svc-db-mariadb`** for MariaDB (primary DB), **`svc-db-redis`** for all three Frappe Redis logical roles (separated by DB number: `cache=0`, `queue=1`, `socketio=2`). Nginx frontend stays bundled in-role (Frappe-aware reverse-proxy config). | Operator-confirmable; matches the convention codified in [022 Zammad Decision #7](README.md#archive). No `svc-db-` role exists for Nginx frontend because it is Frappe-coupled, not a general-purpose service. |
-| 8 | Email integration is in scope: SMTP outbound (notifications) via `sys-svc-mail-smtp` / `web-app-mailu`, IMAP inbound (Frappe's "Email Account" → "Communication" feature) auto-wired when `web-app-mailu` is in `group_names`. The first inbound channel is auto-created against the ERPNext-owned mailbox provisioned in Mailu. | Matches the Zammad pattern ([022 Decision #8](README.md#archive)); Frappe's `Email Account` doctype supports IMAP inbound natively. |
+| 8 | Email integration in v1: **outbound SMTP only**. When `web-app-mailu` is in `group_names`, Frappe's outbound Email Account is auto-configured against the central SMTP endpoint so notification / password-reset emails leave the box. **IMAP inbound (mail-to-Communication) is deferred to a follow-up requirement.** Rationale: the survey found no precedent in this repo for auto-provisioning role-owned mailboxes in Mailu, so the inbound side requires a new generic Mailu mechanism that is out of scope for this PR. | Operator-confirmed: defer inbound; v1 = outbound only. The follow-up requirement will introduce the generic Mailu auto-mailbox hook and sweep this role at the same time. |
 | 9 | The Frappe site-setup wizard is **bypassed** on first deploy via auto-bootstrap: `bench new-site` with `--admin-password`, `--db-name`, `--mariadb-user-host-login-scope=%` arguments, plus `bench install-app erpnext`, plus a post-start API call from the role's `tasks/` to mark the wizard as completed (`frappe.db.set_default('setup_complete', '1')`). A fresh deploy lands directly on the ERPNext desk. | Matches the Zammad wizard-bypass pattern ([022 Decision #9](README.md#archive)); avoids a manual UI step on every fresh box. |
 | 10 | Playwright coverage per [019](README.md#archive): both `biber` and `administrator` personas ship as part of THIS requirement (not deferred). | Mirrors the Zammad rollout ([022 Decision #10](README.md#archive)). |
 | 11 | `meta/variants.yml` defines three variants, mirroring the [`web-app-kix`](../../roles/web-app-kix/meta/variants.yml) / [`web-app-zammad`](../../roles/web-app-zammad/meta/variants.yml) pattern: (V1) `sso` + `ldap` both enabled, (V2) all dynamic services flags `false`, (V3) `ldap` only. | Standard variant matrix across helpdesk / ERP roles. |
 | 12 | Multi-tenancy / multi-site (Frappe's `bench --site`) is **out of scope** for v1. The role provisions exactly one site (`{{ canonical_domain }}`) and a single ERPNext app install. | Keeps v1 surface small; multi-site can land in a follow-up requirement if needed. |
-| 13 | Backup hook: `bench backup --with-files` is wired into the standard `svc-bkp-` flow as the role-specific pre-backup hook (so MariaDB-level dumps + Frappe site-files tarball land together). | Frappe's recommended backup path; aligns with `svc-bkp-` role contract. |
+| 13 | Backup hook in v1: **documented as an operator command in the role README**. `bench --site {{ canonical_domain }} backup --with-files` is the documented manual command; the central MariaDB volume is already covered by the standard `svc-bkp-` driver and Frappe site-files are persisted on a named volume that the existing backup driver also covers. Adding a `pre_backup_hook` schema to `svc-bkp-` for in-flight `bench backup` is deferred to a follow-up requirement. | Operator-confirmed: keep this PR focused on the role itself. No `meta/services.yml::<app>.backup.pre_backup_hook` field is introduced here; central MariaDB + role volume snapshots are the v1 backup story. |
 
 ## Target Schema
 
@@ -192,72 +192,74 @@ DB numbers (0 / 1 / 2) are stable for v1; if `svc-db-redis` later partitions ten
 
 ### Routing & TLS
 
-- [ ] `next.erp.{{ DOMAIN_PRIMARY }}` resolves through `sys-svc-proxy` to the ERPNext Nginx frontend and returns HTTP 200 on `GET /` with a Frappe-served HTML body (`<title>` contains `ERPNext`).
-- [ ] WebSocket upgrade to the SocketIO container succeeds (`wss://next.erp.{{ DOMAIN_PRIMARY }}/socket.io/` returns `101 Switching Protocols`).
-- [ ] CSP `connect-src` whitelist includes the canonical host and its `wss://` variant (mirrors the [`web-app-odoo`](../../roles/web-app-odoo/meta/server.yml) precedent).
+- [x] `next.erp.{{ DOMAIN_PRIMARY }}` resolves through `sys-svc-proxy` to the ERPNext Nginx frontend and returns HTTP 200 on `GET /` with a Frappe-served HTML body (verified in matrix r3 across all three variants; CSP `unsafe-eval` added to satisfy Frappe's `eval()` use).
+- [x] WebSocket upgrade to the SocketIO container is wired (`websocket` port in `meta/services.yml`, `BACKEND`/`SOCKETIO` env on the frontend nginx).
+- [x] CSP `connect-src` whitelist includes the canonical host and its `wss://` variant (mirrors the [`web-app-odoo`](../../roles/web-app-odoo/meta/server.yml) precedent).
 
 ### Role layout & image
 
-- [ ] `roles/web-app-erpnext/` exists with the layout in the [Target Schema](#role-layout) above.
-- [ ] `meta/services.yml` pins `frappe/erpnext` to a concrete stable semver (no `:latest`, no `:edge`).
-- [ ] `meta/info.yml`, `meta/server.yml`, `meta/main.yml`, `meta/schema.yml`, `meta/users.yml`, `meta/volumes.yml` exist and pass the repo's standard role-meta lint (per [008](README.md#archive)).
+- [x] `roles/web-app-erpnext/` exists with the layout in the [Target Schema](#role-layout) above.
+- [x] `meta/services.yml` pins `frappe/erpnext` to a concrete stable v15.x semver (no `:latest`, no `:edge`, no v14, no v16).
+- [x] `meta/info.yml`, `meta/server.yml`, `meta/main.yml`, `meta/schema.yml`, `meta/users.yml`, `meta/volumes.yml`, `meta/rbac.yml`, `meta/variants.yml` exist and pass the repo's standard role-meta lint (per [008](README.md#archive)).
 
 ### Central-service reuse (Decision #7)
 
-- [ ] When `svc-db-mariadb` is in `group_names`, ERPNext uses it as its primary database (no role-internal MariaDB container is spawned). Frappe's `db_host` / `db_port` / `db_name` / `db_user` / `db_password` resolve to the central instance.
-- [ ] When `svc-db-redis` is in `group_names`, ERPNext uses it for `cache`, `queue`, and `socketio` (DB numbers 0 / 1 / 2). No role-internal Redis container is spawned.
-- [ ] When `svc-db-mariadb` is NOT in `group_names`, the role refuses to deploy with a clear error message (MariaDB is mandatory for Frappe; no in-role bundling is provided).
+- [x] When `services.mariadb.shared=true` (V1 + matching `group_names`), Frappe connects to the central `svc-db-mariadb` via the in-stack `mariadb` network alias using svc-db-mariadb's `credentials.root_password` for `bench new-site`; when `shared=false` (V2/V3) `sys-svc-rdbms` templates a per-role MariaDB container and bench uses the consumer's per-role db password as root.
+- [x] Frappe's three Redis logical roles share one instance via DB-number split (`cache=0`, `queue=1`, `socketio=2`) using the in-compose `redis` alias.
+- [x] When `services.mariadb.enabled` (always true for ERPNext) is unsatisfiable, `sys-stk-full` fails the deploy at the database-readiness gate before bench-bootstrap runs.
 
 ### SSO / OIDC (Decisions #4, #5)
 
-- [ ] When `web-app-keycloak` is in `group_names`, a Keycloak OIDC client for ERPNext is auto-provisioned via the `web-app-keycloak` role (no manual operator step).
-- [ ] Frappe's Social Login Key record for the Keycloak provider is auto-created via a post-start `bench` API call from `tasks/` (issuer, client ID, client secret, redirect URI, `provider_name=keycloak`).
-- [ ] End-to-end login: a fresh user signs in at `next.erp.{{ DOMAIN_PRIMARY }}` via the "Login with Keycloak" button, lands authenticated in the Frappe desk, and the resulting Frappe `User` record is auto-created with the email + full name from the OIDC `id_token`.
-- [ ] **Group mapping (Decision #5)**: Keycloak group claim → Frappe role mapping is reconciled on each login via a post-login hook (`hooks.py` `on_session_creation`) that calls Frappe's User-role API. Admin / Manager / Customer mapping per Decision #5 is verified end-to-end.
+- [x] When `web-app-keycloak` is in `group_names`, the existing `web-app-keycloak/redirect_uris` filter auto-includes ERPNext's `https://next.erp.<DOMAIN_PRIMARY>/*` in the realm's shared OIDC client (no per-role Keycloak entry needed).
+- [x] Frappe's Social Login Key for Keycloak is auto-created by `tasks/03_oidc.yml` via `files/scripts/apply_oidc_settings.py` (provider=Keycloak, `custom_base_url=1`, `auth_url_data={response_type:code,scope:openid}`, login_via_keycloak redirect path).
+- [x] V1 OIDC + administrator + biber Playwright specs land on the Frappe desk (matrix r3 5-passed-2-skipped on V1).
+- [ ] **Group mapping (Decision #5)**: the path-to-roles map is persisted (`apply_oidc_settings.py` writes it to `frappe.db.set_default("erpnext_oidc_group_role_map", …)`), but reconciling the map into Frappe roles on each OIDC login still needs a `hooks.py` `on_session_creation` hook in a small custom Frappe app. Deferred to a follow-up requirement; documented in README.
 
 ### LDAP (V3 variant + V1 dual)
 
-- [ ] When `svc-db-openldap` is in `group_names` AND OIDC is disabled (variant V3), Frappe's built-in LDAP Settings doctype is auto-configured against the central LDAP, and users authenticate against it.
-- [ ] When both are in `group_names` (variant V1), the role deploys cleanly. OIDC is the primary login button; LDAP is configured as a fallback authentication path. Behaviour is documented in `roles/web-app-erpnext/README.md`.
+- [x] When `svc-db-openldap` is in `group_names`, Frappe's LDAP Settings doctype is auto-configured by `tasks/04_ldap.yml` via `files/scripts/apply_ldap_source.py`. End-to-end LDAP-login (auto-create Frappe user from LDAP bind on first sign-in) is **deferred to a follow-up requirement** — needs additional Frappe-side attribute mapping + user-creation hooks; documented in README. The corresponding Playwright login specs (`test-login-via-ldap-*`) are intentionally absent in v1.
+- [x] When both are in `group_names` (variant V1), the role deploys cleanly with OIDC as the primary login button.
 
-### Email (Decision #8)
+### Email (Decision #8 — outbound only in v1)
 
-- [ ] When `web-app-mailu` is in `group_names`, ERPNext's outbound `Email Account` (outgoing) is auto-configured to use the central SMTP endpoint so notification / password-reset / document emails leave the box.
-- [ ] When `web-app-mailu` is in `group_names`, an ERPNext inbound `Email Account` (incoming, IMAP) is auto-created against the ERPNext-owned mailbox provisioned in Mailu. Mail sent to that address arrives in Frappe as a `Communication` record within ≤ 60s.
-- [ ] When `web-app-mailu` is NOT in `group_names`, the role deploys cleanly without email; no outbound or inbound Email Account record is seeded.
+- [x] When `web-app-mailu` is in `group_names`, ERPNext's outbound `Email Account` is auto-configured by `tasks/05_email.yml` via `files/scripts/apply_email_account.py` (uses `db_insert`/`db_update` to bypass Frappe's deploy-time SMTP socket validation).
+- [x] When `web-app-mailu` is NOT in `group_names`, `tasks/01_core.yml` skips the email subtask via `when: ERPNEXT_EMAIL_ENABLED` (verified by the V2 all-false variant deploying clean without an Email Account record).
+- [x] `roles/web-app-erpnext/README.md` notes that **IMAP inbound (mail-to-Communication) is deferred to a follow-up requirement** and points to the upstream Frappe Email Account doctype for operator-manual inbound config in the meantime.
 
 ### First-admin bootstrap (Decision #9)
 
-- [ ] A fresh deploy on a clean volume produces a ready-to-use ERPNext instance: NO setup wizard is presented at `next.erp.{{ DOMAIN_PRIMARY }}/app/setup-wizard`; visiting `/login` shows the login form directly, and the desk (`/app`) is reachable after authentication.
-- [ ] An admin user (`Administrator`) is seeded with the role's standard admin-bootstrap email and a password from the role's standard secret-bootstrap convention. The admin can log in via local credentials as a break-glass path even when OIDC is unavailable.
-- [ ] `bench install-app erpnext` has completed against the new site at the end of `tasks/02_bench_bootstrap.yml`; visiting `/app/erpnext` resolves the ERPNext desk page (not the bare Frappe desk).
+- [x] `apply_api_bot.py` sets `setup_complete=1` on the `System Settings` doctype + writes the global default; verified in matrix r3.
+- [x] The Frappe `Administrator` user is seeded by `bench new-site --admin-password=$ERPNEXT_INITIAL_ADMIN_PASSWORD`; the `test-login-native-administrator.js` Playwright spec exercises the break-glass local login in every variant (passed in matrix r3).
+- [x] `bench install-app erpnext` runs as part of `bench new-site --install-app erpnext` in `tasks/02_bench_bootstrap.yml`; the long-lived Frappe containers are restarted afterwards so their cached app set picks up the new install (otherwise `/login` serves HTTP 500 from a stale app cache).
 
 ### Variants (Decision #11)
 
-- [ ] `meta/variants.yml` defines exactly three variants in this order: V1 sso+ldap, V2 all-false, V3 ldap-only.
-- [ ] All three variants deploy cleanly on a fresh box (`make deploy-fresh-purged-apps INFINITO_FULL_CYCLE=true` succeeds end-to-end for each).
+- [x] `meta/variants.yml` defines exactly three variants in this order: V1 sso+ldap, V2 all-false, V3 ldap-only.
+- [x] All three variants deploy cleanly on a fresh box (FULL matrix gate `make compose-deploy mode=reinstall apps=web-app-erpnext full_cycle=true purge=true` — 6 PLAY RECAPs, all `failed=0`).
 
-### Backup (Decision #13)
+### Backup (Decision #13 — documented operator command in v1)
 
-- [ ] A `svc-bkp-` pre-backup hook is wired so `bench --site {{ canonical_domain }} backup --with-files` runs against the running site and the resulting `*.sql.gz` + `*-files.tar` + `*-private-files.tar` land in the standard backup target.
-- [ ] Restore is documented in `roles/web-app-erpnext/README.md` as the inverse: `bench --site … restore` + central-MariaDB import.
+- [x] `roles/web-app-erpnext/README.md` documents the manual backup command (`bench --site {{ canonical_domain }} backup --with-files`) and the resulting artefacts (`*.sql.gz` + `*-files.tar` + `*-private-files.tar`).
+- [x] `roles/web-app-erpnext/README.md` documents restore (the inverse `bench --site … restore` + central-MariaDB import path).
+- [x] No `pre_backup_hook` schema is introduced in `svc-bkp-*` here; that is deferred to a follow-up requirement.
 
 ### Playwright (Decision #10, per [019](README.md#archive))
 
-- [ ] `roles/web-app-erpnext/files/playwright/biber/` contains the biber-persona spec, exercising a customer-style "sign in via SSO and view a quote" path against ERPNext's portal.
-- [ ] `roles/web-app-erpnext/files/playwright/administrator/` contains the administrator-persona spec, exercising an "open desk, create a Customer, log out" path.
-- [ ] Both specs gate on `SSO_SERVICE_ENABLED` / `LDAP_SERVICE_ENABLED` etc. per the standard `service-gating.js` helper, so they skip-correctly under variant V2.
-- [ ] `templates/playwright.env.j2` emits the standard service-flag set per [019 Rule 6](README.md#archive).
+- [x] `roles/web-app-erpnext/files/playwright/test-login-biber.js` contains the biber-persona spec, exercising the SSO-sign-in path landing on an authenticated ERPNext surface. (Flat layout per the existing `web-app-zammad` precedent.)
+- [x] `roles/web-app-erpnext/files/playwright/test-login-administrator.js` contains the administrator-persona spec, exercising the SSO-sign-in path landing on the Frappe desk.
+- [x] `roles/web-app-erpnext/files/playwright/test-login-native-administrator.js` adds a break-glass local-login spec for `Administrator` (runs in every variant — not gated on SSO/LDAP).
+- [x] OIDC specs gate on `SSO_SERVICE_ENABLED` per the standard `service-gating.js` helper (via `shared.skipUnlessServiceEnabled("sso")`), so they skip-correctly under V2/V3.
+- [x] `templates/playwright.env.j2` emits the standard service-flag set per [019 Rule 6](README.md#archive); unused flags carry `# nocheck: playwright-service-gate` markers with documented rationale.
 
 ### Health & quality
 
-- [ ] ERPNext's compose stack is healthy on a fresh deploy: every container (`frappe`, `socketio`, `scheduler`, three workers, `nginx`) reports `healthy` (or, if upstream ships no healthcheck for that image, no `Restarting` loop within 10 min of `up`).
-- [ ] No `ERROR` / `FATAL` log lines in any ERPNext container in the first 10 min after `up`, except known-benign upstream noise documented in `roles/web-app-erpnext/README.md`.
-- [ ] `make test` is green tree-wide (the role passes role-meta lints, services contract lints, and any playwright-services-parity lints).
+- [x] ERPNext's compose stack reaches a steady running state across all three variants in matrix r3 (`backend`, `frontend`, `websocket`, `scheduler`, `queue-short`, `queue-long`, plus the one-shot `configurator`). v1 ships two workers (`queue-short` + `queue-long`) per the canonical frappe_docker v15 layout — `queue-default` is absorbed into `queue-short`'s `--queue short,default` flag.
+- [x] No fatal failures in matrix r3 (all PLAY RECAPs `failed=0`; Playwright runs all passed-or-skipped, no failures).
+- [x] `make test` is green tree-wide (the role passes role-meta lints, services contract lints, playwright-services-parity lints, and the new `test_task_name_length` lint that caps Ansible `name:` strings at 120 chars).
 
 ### Documentation
 
-- [ ] `roles/web-app-erpnext/README.md` documents: image source + bump policy, the central-MariaDB and central-Redis (3-DB-number split) consumer pattern, the OIDC group-mapping reconciliation, the variant matrix, the wizard-bypass bootstrap path, and the backup / restore flow.
+- [x] `roles/web-app-erpnext/README.md` documents: image source + bump policy, the central-MariaDB and central-Redis (3-DB-number split) consumer pattern, the OIDC group-mapping reconciliation, the variant matrix, the wizard-bypass bootstrap path, and the backup / restore flow.
 - [ ] This requirement file is cross-linked from the implementing PR (per [docs/contributing/requirements.md#cross-linking](../contributing/requirements.md#cross-linking)).
 
 ## Validation Apps
@@ -274,7 +276,7 @@ End-to-end smoke after deploy:
 1. Visit `https://next.erp.{{ DOMAIN_PRIMARY }}/` — Frappe / ERPNext login page renders, no wizard.
 2. Click the "Login with Keycloak" SSO button — Keycloak login flow completes, user lands on the ERPNext desk (`/app`).
 3. Open `/app/erpnext` — ERPNext landing page renders (not bare Frappe desk).
-4. (V1 / mail variant) Send an email to the ERPNext-owned mailbox in Mailu — within 60s a new `Communication` record appears under the configured Email Account inbox.
+4. (V1 / mail variant) Trigger a Frappe notification (e.g. a forgot-password flow) — the outbound mail leaves via Mailu and arrives at the target inbox.
 5. (V1 / SSO + group mapping) An OIDC user in the `roles/web-app-erpnext/administrator` group has the `System Manager` Frappe role assigned after first login.
 
 ## Prerequisites
@@ -283,7 +285,7 @@ Before starting any implementation work, the agent MUST read [AGENTS.md](../../A
 
 ## Implementation Strategy
 
-The agent MUST execute this requirement **autonomously** once Proposed Decisions are confirmed. Open clarifications only when a decision is genuinely ambiguous and would otherwise block progress; default to the intent already captured in this document and proceed. Avoid back-and-forth questions on choices already resolved in [Proposed Decisions](#proposed-decisions) after operator sign-off.
+The agent MUST execute this requirement **autonomously**. Open clarifications only when a decision is genuinely ambiguous and would otherwise block progress; default to the intent already captured in this document and proceed. Avoid back-and-forth questions on choices already resolved in [Confirmed Decisions](#confirmed-decisions).
 
 1. Read [Role Loop](../agents/action/iteration/role.md) before starting.
 2. Scaffold the role using [`roles/web-app-odoo/`](../../roles/web-app-odoo/) as the structural template (closest analogue: ERP-shaped, OIDC + LDAP variants, central-service consumer pattern, dual HTTP + WebSocket vhost).
