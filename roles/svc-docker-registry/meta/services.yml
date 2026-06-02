@@ -1,4 +1,8 @@
 ---
+# nocheck: dynamic-flag
+swarm:
+  enabled: true
+  shared: true
 registry:
   enabled: true
   shared: true
@@ -14,3 +18,5 @@ registry:
     local:
       registry: 5000
   lifecycle: alpha
+  run_after:
+    - svc-docker-swarm
