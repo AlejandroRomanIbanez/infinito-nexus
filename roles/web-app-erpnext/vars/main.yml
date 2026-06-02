@@ -1,0 +1,62 @@
+---
+application_id: "web-app-erpnext"
+entity_name: "{{ application_id | get_entity_name }}"
+
+ERPNEXT_IMAGE: "{{ lookup('config', application_id, 'services.erpnext.image') }}"
+ERPNEXT_VERSION: "{{ lookup('config', application_id, 'services.erpnext.version') }}"
+
+ERPNEXT_BACKEND_CONTAINER: "erpnext-backend"
+ERPNEXT_FRONTEND_CONTAINER: "erpnext-frontend"
+ERPNEXT_WEBSOCKET_CONTAINER: "erpnext-websocket"
+ERPNEXT_SCHEDULER_CONTAINER: "erpnext-scheduler"
+ERPNEXT_QUEUE_SHORT_CONTAINER: "erpnext-queue-short"
+ERPNEXT_QUEUE_LONG_CONTAINER: "erpnext-queue-long"
+ERPNEXT_CONFIGURATOR_CONTAINER: "erpnext-configurator"
+
+ERPNEXT_BACKEND_PORT: 8000
+ERPNEXT_WEBSOCKET_PORT: 9000
+ERPNEXT_FRONTEND_PORT: 8080
+
+ERPNEXT_HOSTNAME: "{{ lookup('domain', application_id) }}"
+ERPNEXT_SITE_NAME: "{{ ERPNEXT_HOSTNAME }}"
+
+ERPNEXT_SITES_VOLUME: "{{ lookup('config', application_id, 'volumes.sites') }}"
+ERPNEXT_ASSETS_VOLUME: "{{ lookup('config', application_id, 'volumes.assets') }}"
+ERPNEXT_LOGS_VOLUME: "{{ lookup('config', application_id, 'volumes.logs') }}"
+
+ERPNEXT_INITIAL_ADMIN_PASSWORD: "{{ lookup('config', application_id, 'credentials.initial_admin_password') }}"
+ERPNEXT_API_BOT_PASSWORD: "{{ lookup('config', application_id, 'credentials.api_bot_password') }}"
+ERPNEXT_API_KEY_SECRET: "{{ lookup('config', application_id, 'credentials.api_key_secret') }}"
+
+ERPNEXT_API_BOT_USER: "{{ lookup('users', 'erpnext-api-bot') }}"
+
+ERPNEXT_OIDC_ENABLED: "{{ lookup('config', application_id, 'services.sso.enabled')   | bool }}"
+ERPNEXT_LDAP_ENABLED: "{{ lookup('config', application_id, 'services.ldap.enabled')  | bool }}"
+ERPNEXT_EMAIL_ENABLED: "{{ lookup('config', application_id, 'services.email.enabled') | bool }}"
+
+ERPNEXT_DB_HOST: "{{ lookup('database', application_id, 'host') }}"
+ERPNEXT_DB_PORT: "{{ lookup('database', application_id, 'port') }}"
+
+# Central svc-db-mariadb root pw lives under its own credentials.root_password; per-role
+# MariaDB uses the consumer's database password as its root pw (sys-svc-rdbms convention).
+ERPNEXT_DB_ROOT_USER: "root"
+ERPNEXT_DB_ROOT_PASSWORD: >-
+  {{ lookup('config', 'svc-db-mariadb', 'credentials.root_password')
+     if (lookup('config', application_id, 'services.mariadb.shared') | bool)
+     else lookup('database', application_id, 'password') }}
+
+ERPNEXT_REDIS_HOST: "redis"
+ERPNEXT_REDIS_PORT: 6379
+
+ERPNEXT_MAIL: "{{ lookup('email', application_id) if ERPNEXT_EMAIL_ENABLED else {} }}"
+
+ERPNEXT_OIDC_GROUP_ROLE_MAP:
+  "/{{ RBAC.GROUP.NAME | trim('/') }}/{{ application_id }}/administrator":
+    - "System Manager"
+  "/{{ RBAC.GROUP.NAME | trim('/') }}/{{ application_id }}/manager":
+    - "Sales User"
+    - "Purchase User"
+    - "Stock User"
+    - "Accounts User"
+  "/{{ RBAC.GROUP.NAME | trim('/') }}/{{ application_id }}/customer":
+    - "Customer"
