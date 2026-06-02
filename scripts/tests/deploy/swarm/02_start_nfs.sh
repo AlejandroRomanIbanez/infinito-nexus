@@ -24,6 +24,8 @@ for i in $(seq 1 "${SYSTEMD_TIMEOUT}"); do
 	sleep 1
 done
 echo "FAILURE: ${NFS_SERVER} systemd did not become responsive within ${SYSTEMD_TIMEOUT}s"
+echo "--- docker logs ${NFS_SERVER} ---"
+docker logs "${NFS_SERVER}" 2>&1 || true
 echo "--- last 50 journalctl lines from ${NFS_SERVER} ---"
 docker exec "${NFS_SERVER}" journalctl --no-pager -n 50 2>&1 || true
 echo "--- systemctl list-jobs ---"

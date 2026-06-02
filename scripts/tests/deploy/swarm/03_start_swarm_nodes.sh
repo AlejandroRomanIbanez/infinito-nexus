@@ -29,6 +29,8 @@ for node in "${MGR}" "${WRK1}" "${WRK2}"; do
 	done
 	if [ "${ready}" != "true" ]; then
 		echo "FAILURE: ${node} systemd did not become responsive within ${SYSTEMD_TIMEOUT}s"
+		echo "--- docker logs ${node} ---"
+		docker logs "${node}" 2>&1 || true
 		echo "--- last 50 journalctl lines from ${node} ---"
 		docker exec "${node}" journalctl --no-pager -n 50 2>&1 || true
 		echo "--- docker inspect ${node} (State) ---"
