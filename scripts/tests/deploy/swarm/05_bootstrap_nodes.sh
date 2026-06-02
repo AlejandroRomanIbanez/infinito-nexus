@@ -3,8 +3,13 @@ set -euo pipefail
 
 HOST_SRC="$(pwd)"
 
+HOST_SUDO=""
+if [ "$(id -u)" -ne 0 ]; then
+	HOST_SUDO="sudo -E"
+fi
+
 echo "==> Building .deb once on the act-runner"
-DEB_PATH=$(PACKAGE_BUILD_ONLY=1 bash "${HOST_SRC}/scripts/install/package.sh" |
+DEB_PATH=$(PACKAGE_BUILD_ONLY=1 ${HOST_SUDO} bash "${HOST_SRC}/scripts/install/package.sh" |
 	tee /dev/stderr | tail -n1)
 [ -f "${DEB_PATH}" ] || {
 	echo "FAILURE: builder did not produce a .deb (${DEB_PATH})"
