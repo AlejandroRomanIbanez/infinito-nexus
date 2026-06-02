@@ -27,6 +27,8 @@ provision_node() {
 Acquire::http::Proxy "http://apt-cache:3142";
 Acquire::http::Pipeline-Depth "0";
 Acquire::http::No-Cache "false";
+Acquire::http::No-Keep-Alive "true";
+Acquire::http::Timeout "30";
 Acquire::Retries "3";
 APT_CFG
 	tar -C "${HOST_SRC}" -cf - . | docker exec -i "${node}" tar -C /opt/infinito-nexus -xpf -
