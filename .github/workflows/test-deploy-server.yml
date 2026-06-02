@@ -79,7 +79,7 @@ jobs:
         run: ./scripts/github/resolve/output_apps.sh
 
   server:
-    name: 🌐 Deploy ${{ matrix.apps }}
+    name: 🌐 Server ${{ matrix.apps }}
     if: needs.discover.outputs.apps != '' && needs.discover.outputs.apps != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 360
@@ -91,10 +91,6 @@ jobs:
         apps: ${{ fromJson(needs.discover.outputs.apps) }}
 
     steps:
-      # Reclaim runner space before Docker pulls start. Server deploy tests pull
-      # large CI and application images and can otherwise exhaust / on
-      # GitHub-hosted runners.
-      # Option rationale: docs/contributing/artefact/files/github/workflow.md
       - name: 🧹 Free disk space
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
@@ -108,9 +104,6 @@ jobs:
 
       - uses: actions/checkout@v6
 
-      # Replace the default ~4 GB runner swap with a larger file so transient
-      # memory spikes (e.g. peertube plugin install, issue #162) don't trip
-      # the host OOM-killer. Script picks / or /mnt based on live free space.
       - name: 💾 Enlarge swap space
         shell: bash
         run: ./scripts/github/runner/enlarge_swap.sh

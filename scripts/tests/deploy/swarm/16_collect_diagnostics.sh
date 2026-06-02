@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set +e
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/_context.sh"
+
 sep() {
 	echo "=========================================="
 	echo "=== $1"
@@ -31,10 +35,10 @@ for svc in $(docker exec "${MGR}" docker service ls --format '{{.Name}}'); do
 	docker exec "${MGR}" docker service logs --tail 50 "${svc}" 2>&1 | head -100
 done
 
-sep "docker images per node (filter custom + mariadb + mediawiki)"
+sep "docker images per node (filter custom + db + ${ENTITY})"
 for node in "${MGR}" "${WRK1}" "${WRK2}"; do
 	echo "--- ${node} ---"
-	docker exec "${node}" docker images | grep -E 'mariadb|mediawiki|custom' || echo "(none)"
+	docker exec "${node}" docker images | grep -E "mariadb|postgres|${ENTITY}|custom" || echo "(none)"
 done
 
 sep "rendered env files on manager (value lengths only)"
@@ -44,15 +48,17 @@ docker exec "${MGR}" sh -c 'for f in /opt/compose/*/\.env/env /opt/compose/*/.en
   awk -F= '"'"'{ if (NF>=2) { v=substr($0, index($0, "=")+1); printf "%s=<%d-char value>\n", $1, length(v) } else { print $0 } }'"'"' "$f"
 done'
 
-sep "live mariadb task container env (MARIADB* only, value prefix redacted)"
-MARIADB_CID=$(docker exec "${MGR}" sh -c \
-	'docker ps --filter label=com.docker.swarm.service.name=mariadb_mariadb --format "{{.ID}}" | head -n1')
-if [ -n "${MARIADB_CID}" ]; then
-	docker exec "${MGR}" docker exec "${MARIADB_CID}" sh -c \
-		'env | grep -E "^MARIADB|^MYSQL" | sed "s/=\(.\{1,3\}\).*/=\1...(redacted)/"' ||
-		echo "(failed to exec into ${MARIADB_CID})"
-else
-	echo "(no live mariadb task container found)"
+if [ "${DB_DEP}" = "mariadb" ]; then
+	sep "live mariadb container env (MARIADB* only, value prefix redacted)"
+	MARIADB_CID=$(docker exec "${MGR}" sh -c \
+		'docker ps --filter name=mariadb --format "{{.ID}}" | head -n1')
+	if [ -n "${MARIADB_CID}" ]; then
+		docker exec "${MGR}" docker exec "${MARIADB_CID}" sh -c \
+			'env | grep -E "^MARIADB|^MYSQL" | sed "s/=\(.\{1,3\}\).*/=\1...(redacted)/"' ||
+			echo "(failed to exec into ${MARIADB_CID})"
+	else
+		echo "(no live mariadb container found)"
+	fi
 fi
 
 sep "nfs-server logs"

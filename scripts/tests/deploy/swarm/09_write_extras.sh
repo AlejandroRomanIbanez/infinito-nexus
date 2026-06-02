@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-ssh-keygen -t ed25519 -N "" -f /tmp/swarm-nfs-admin.key -C "swarm-nfs-pilot-test" -q
+ssh-keygen -t ed25519 -N "" -f /tmp/swarm-nfs-admin.key -C "swarm-test" -q
 ADMIN_PUBKEY=$(cat /tmp/swarm-nfs-admin.key.pub)
 
 cat >/tmp/swarm-nfs-extras.yml <<EOF
