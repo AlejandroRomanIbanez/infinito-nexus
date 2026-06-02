@@ -11,8 +11,9 @@ set -euo pipefail
 : "${ACT_RM:=true}"
 : "${ACT_PLATFORM_IMAGE:=catthehacker/ubuntu:act-latest}"
 : "${ACT_BIND:=false}"
+: "${ACT_INPUTS:=}"
 
-echo "=== act: workflow=${ACT_WORKFLOW} event=${ACT_EVENT} job=${ACT_JOB:-<all>} matrix=${ACT_MATRIX:-<none>} ==="
+echo "=== act: workflow=${ACT_WORKFLOW} event=${ACT_EVENT} job=${ACT_JOB:-<all>} matrix=${ACT_MATRIX:-<none>} inputs=${ACT_INPUTS:-<none>} ==="
 
 cmd=(act "${ACT_EVENT}" -W "${ACT_WORKFLOW}")
 cmd+=(-P "ubuntu-latest=${ACT_PLATFORM_IMAGE}")
@@ -25,6 +26,11 @@ if [[ -n "${ACT_JOB}" ]]; then
 fi
 if [[ -n "${ACT_MATRIX}" ]]; then
 	cmd+=(--matrix "${ACT_MATRIX}")
+fi
+if [[ -n "${ACT_INPUTS}" ]]; then
+	for pair in ${ACT_INPUTS}; do
+		cmd+=(--input "${pair}")
+	done
 fi
 if [[ -n "${ACT_CONTAINER_OPTIONS}" ]]; then
 	cmd+=(--container-options "${ACT_CONTAINER_OPTIONS}")
