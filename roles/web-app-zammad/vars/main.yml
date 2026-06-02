@@ -43,6 +43,9 @@ ZAMMAD_TELEGRAM_HELPER_CONTAINER_PATH: "/opt/zammad/lib/telegram_helper.rb"
 
 ZAMMAD_OIDC_GROUP_ROLE_MAP_HOST_PATH: "{{ ZAMMAD_VOLUMES_DIR }}zz_oidc_group_role_mapping.rb"
 ZAMMAD_OIDC_GROUP_ROLE_MAP_CONTAINER_PATH: "/opt/zammad/config/initializers/zz_oidc_group_role_mapping.rb"
+
+ZAMMAD_STORAGE_VOLUME: "{{ lookup('config', application_id, 'volumes.zammad_storage.name') }}"
+ZAMMAD_SEARCH_VOLUME: "{{ lookup('config', application_id, 'volumes.zammad_search.name') }}"
 ZAMMAD_OIDC_GROUP_ROLE_MAP:
   "/{{ RBAC.GROUP.NAME | trim('/') }}/{{ application_id }}/administrator": "Admin"
   "/{{ RBAC.GROUP.NAME | trim('/') }}/{{ application_id }}/agent": "Agent"

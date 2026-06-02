@@ -114,6 +114,6 @@
 
 {{ lookup('applications') | compose_volumes(
     application_id,
-    extra_volumes={'zammad_storage': {}, 'zammad_search': {}}
+    extra_volumes={'zammad_storage': {'name': ZAMMAD_STORAGE_VOLUME}, 'zammad_search': {'name': ZAMMAD_SEARCH_VOLUME}}
 ) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}

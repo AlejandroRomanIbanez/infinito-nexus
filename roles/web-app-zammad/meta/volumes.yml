@@ -1,0 +1,5 @@
+---
+zammad_storage:
+  name: zammad_storage
+zammad_search:
+  name: zammad_search

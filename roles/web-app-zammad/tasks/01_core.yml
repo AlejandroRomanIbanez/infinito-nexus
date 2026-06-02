@@ -7,34 +7,24 @@
   vars:
     compose_handlers_flush: false
 
-- name: "stage the auto_wizard.json that bypasses Zammad's setup wizard"
-  ansible.builtin.template:
-    src: "auto_wizard.json.j2"
-    dest: "{{ ZAMMAD_AUTO_WIZARD_HOST_PATH }}"
-    mode: "0644"
-  notify: compose up
-
-- name: "stage Rails initializer that allows GET-initiated OmniAuth requests"
-  ansible.builtin.template:
-    src: "zz_omniauth_allow_get.rb.j2"
-    dest: "{{ ZAMMAD_OMNIAUTH_INIT_HOST_PATH }}"
-    mode: "0644"
-  notify: compose up
-
-- name: "stage TelegramHelper stub that prevents the upstream Zammad 6.5.0 boot crash on telegram-bot-ruby 2.4.0"
-  ansible.builtin.template:
-    src: "telegram_helper_stub.rb.j2"
-    dest: "{{ ZAMMAD_TELEGRAM_HELPER_HOST_PATH }}"
-    mode: "0644"
-  notify: compose up
-
-- name: "stage Rails initializer that maps Keycloak group claims to Zammad roles on OIDC sign-in"
-  ansible.builtin.template:
-    src: "zz_oidc_group_role_mapping.rb.j2"
-    dest: "{{ ZAMMAD_OIDC_GROUP_ROLE_MAP_HOST_PATH }}"
-    mode: "0644"
-  notify: compose up
-  when: ZAMMAD_OIDC_ENABLED
+- name: "Stage Zammad host-side init files (local + swarm peers)"
+  ansible.builtin.include_tasks:
+    file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
+  vars:
+    role_templates:
+      - src: "auto_wizard.json.j2"
+        dest: "{{ ZAMMAD_AUTO_WIZARD_HOST_PATH }}"
+        mode: "0644"
+      - src: "zz_omniauth_allow_get.rb.j2"
+        dest: "{{ ZAMMAD_OMNIAUTH_INIT_HOST_PATH }}"
+        mode: "0644"
+      - src: "telegram_helper_stub.rb.j2"
+        dest: "{{ ZAMMAD_TELEGRAM_HELPER_HOST_PATH }}"
+        mode: "0644"
+      - src: "zz_oidc_group_role_mapping.rb.j2"
+        dest: "{{ ZAMMAD_OIDC_GROUP_ROLE_MAP_HOST_PATH }}"
+        mode: "0644"
+        when: "{{ ZAMMAD_OIDC_ENABLED }}"
 
 - name: "grant CREATEDB to the Zammad PostgreSQL role (Zammad's init runs rake db:create even when the DB exists)"
   database_query:
