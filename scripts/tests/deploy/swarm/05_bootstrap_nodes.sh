@@ -18,7 +18,12 @@ provision_node() {
 	local node="$1"
 	echo "==> [${node}] copying repo + .deb + installing"
 	docker exec "${node}" mkdir -p /opt/infinito-nexus /etc/apt/apt.conf.d
-	docker exec "${node}" bash -c 'printf "Acquire::http::Proxy \"http://apt-cache:3142\";\n" > /etc/apt/apt.conf.d/01-cacher'
+	docker exec -i "${node}" bash -c 'cat > /etc/apt/apt.conf.d/01-cacher' <<'APT_CFG'
+Acquire::http::Proxy "http://apt-cache:3142";
+Acquire::http::Pipeline-Depth "0";
+Acquire::http::No-Cache "false";
+Acquire::Retries "3";
+APT_CFG
 	tar -C "${HOST_SRC}" -cf - . | docker exec -i "${node}" tar -C /opt/infinito-nexus -xpf -
 	# docker cp to a tmpfs mount lands in the overlay shadow path (moby/22281).
 	docker exec -i "${node}" sh -c "cat > /tmp/${DEB_BASENAME}" <"${DEB_PATH}"
