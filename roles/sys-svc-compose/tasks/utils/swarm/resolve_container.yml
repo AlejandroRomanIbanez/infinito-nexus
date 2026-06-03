@@ -3,7 +3,7 @@
     - name: "[swarm] Wait until task container for {{ _swarm_stack }}_{{ _swarm_service }} is up and resolve its ID"
       ansible.builtin.script:
         cmd: >-
-          swarm_resolve_container.sh
+          {{ playbook_dir }}/roles/sys-svc-compose/files/swarm_resolve_container.sh
           {{ _swarm_stack }}_{{ _swarm_service }}
           {{ (_swarm_require_running | default(true)) | bool | string | lower }}
       register: _swarm_resolved_cid
