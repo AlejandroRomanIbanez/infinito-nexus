@@ -81,7 +81,7 @@
     - compose up
   when: >-
     DEPLOYMENT_MODE != 'swarm'
-    or (service_is_stateful | default(false) | bool)
+    or (service_is_stateful | bool)
 
 - name: Aggressively prune Docker data (keep networks + keep in-use images)
   become: true
@@ -108,7 +108,7 @@
     - swarm deploy
   when:
     - DEPLOYMENT_MODE == 'swarm'
-    - not (service_is_stateful | default(false) | bool)
+    - not (service_is_stateful | bool)
 
 - name: "swarm: retag built images for local registry and push"
   ansible.builtin.script:
@@ -121,7 +121,7 @@
     - swarm deploy
   when:
     - DEPLOYMENT_MODE == 'swarm'
-    - not (service_is_stateful | default(false) | bool)
+    - not (service_is_stateful | bool)
     - (swarm.registry.host | default('') | length > 0)
 
 - name: "swarm: validate stack file via docker stack config"
@@ -140,7 +140,7 @@
   when:
     - MODE_ASSERT | bool
     - DEPLOYMENT_MODE == 'swarm'
-    - not (service_is_stateful | default(false) | bool)
+    - not (service_is_stateful | bool)
 
 - name: "swarm: docker stack deploy"
   ansible.builtin.shell: |
@@ -161,4 +161,4 @@
     - swarm deploy
   when:
     - DEPLOYMENT_MODE == 'swarm'
-    - not (service_is_stateful | default(false) | bool)
+    - not (service_is_stateful | bool)

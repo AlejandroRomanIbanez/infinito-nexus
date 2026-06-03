@@ -35,7 +35,7 @@
   when:
     - DEPLOYMENT_MODE == 'swarm'
     - not (MARIADB_EXPOSE_LOCAL | bool)
-    - not (service_is_stateful | default(false) | bool)
+    - not (service_is_stateful | bool)
 
 - block:
     - name: "Create database: {{ database_name }} (container via mariadb CLI)"

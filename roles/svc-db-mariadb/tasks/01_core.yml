@@ -27,7 +27,7 @@
   delay: 5
   when: >-
     DEPLOYMENT_MODE != 'swarm'
-    or (service_is_stateful | default(false) | bool)
+    or (service_is_stateful | bool)
 
 - block:
     - name: "[swarm] Wait until MariaDB task container is running and resolve its ID"
@@ -44,7 +44,7 @@
         MARIADB_NAME: "{{ mariadb_swarm_cid.stdout }}"
   when:
     - DEPLOYMENT_MODE == 'swarm'
-    - not (service_is_stateful | default(false) | bool)
+    - not (service_is_stateful | bool)
 
 - block:
     - name: "Root password reset | Check login with desired password (inside container)"

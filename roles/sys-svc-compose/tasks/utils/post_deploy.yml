@@ -3,7 +3,7 @@
   ansible.builtin.include_tasks: swarm/resolve_self.yml
   when:
     - DEPLOYMENT_MODE == 'swarm'
-    - not (service_is_stateful | default(false) | bool)
+    - not (service_is_stateful | bool)
 
 - name: "Wait until database container for '{{ application_id }}' is healthy"
   ansible.builtin.command: >-
