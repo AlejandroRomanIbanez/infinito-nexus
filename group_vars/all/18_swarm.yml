@@ -1,7 +1,7 @@
 ---
-DEPLOYMENT_MODE: "{{ 'swarm' if 'svc-docker-swarm' in group_names else 'compose' }}"
+DEPLOYMENT_MODE: "{{ 'swarm' if (groups[application_id] | default([]) | length) > 1 else 'compose' }}"
 
-service_is_stateful: false
+SWARM_CLUSTER_AVAILABLE: "{{ (groups['svc-docker-swarm'] | default([]) | length) > 0 }}"
 
 swarm:
   manager:

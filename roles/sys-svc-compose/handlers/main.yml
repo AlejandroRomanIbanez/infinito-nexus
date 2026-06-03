@@ -13,6 +13,7 @@
   listen:
     - compose up
   when:
+    - DEPLOYMENT_MODE != 'swarm'
     - lookup('domains') | has_domain(application_id)
     - lookup('tls', application_id, 'enabled') | bool
     - lookup('tls', application_id, 'mode') == 'self_signed'
@@ -29,7 +30,9 @@
   failed_when: dc_validate.rc != 0
   listen:
     - compose up
-  when: MODE_ASSERT | bool
+  when:
+    - DEPLOYMENT_MODE != 'swarm'
+    - MODE_ASSERT | bool
 
 - name: compose pull
   ansible.builtin.script:
@@ -51,6 +54,7 @@
   until: pull is succeeded
   listen:
     - compose up
+  when: DEPLOYMENT_MODE != 'swarm'
 
 - name: Build compose
   ansible.builtin.shell: |
@@ -64,6 +68,7 @@
     executable: /bin/bash
   listen:
     - compose build
+  when: DEPLOYMENT_MODE != 'swarm'
 
 - name: compose up
   ansible.builtin.shell: |
@@ -79,9 +84,7 @@
     executable: /bin/bash
   listen:
     - compose up
-  when: >-
-    DEPLOYMENT_MODE != 'swarm'
-    or (service_is_stateful | bool)
+  when: DEPLOYMENT_MODE != 'swarm'
 
 - name: Aggressively prune Docker data (keep networks + keep in-use images)
   become: true
@@ -106,9 +109,9 @@
   listen:
     - compose up
     - swarm deploy
-  when:
-    - DEPLOYMENT_MODE == 'swarm'
-    - not (service_is_stateful | bool)
+  when: DEPLOYMENT_MODE == 'swarm'
+  run_once: true
+  delegate_to: "{{ (groups['svc-docker-swarm-manager'] | default([]))[0] | default(inventory_hostname) }}"
 
 - name: "swarm: retag built images for local registry and push"
   ansible.builtin.script:
@@ -121,8 +124,9 @@
     - swarm deploy
   when:
     - DEPLOYMENT_MODE == 'swarm'
-    - not (service_is_stateful | bool)
     - (swarm.registry.host | default('') | length > 0)
+  run_once: true
+  delegate_to: "{{ (groups['svc-docker-swarm-manager'] | default([]))[0] | default(inventory_hostname) }}"
 
 - name: "swarm: validate stack file via docker stack config"
   ansible.builtin.shell: |
@@ -140,7 +144,8 @@
   when:
     - MODE_ASSERT | bool
     - DEPLOYMENT_MODE == 'swarm'
-    - not (service_is_stateful | bool)
+  run_once: true
+  delegate_to: "{{ (groups['svc-docker-swarm-manager'] | default([]))[0] | default(inventory_hostname) }}"
 
 - name: "swarm: docker stack deploy"
   ansible.builtin.shell: |
@@ -159,6 +164,6 @@
   listen:
     - compose up
     - swarm deploy
-  when:
-    - DEPLOYMENT_MODE == 'swarm'
-    - not (service_is_stateful | bool)
+  when: DEPLOYMENT_MODE == 'swarm'
+  run_once: true
+  delegate_to: "{{ (groups['svc-docker-swarm-manager'] | default([]))[0] | default(inventory_hostname) }}"

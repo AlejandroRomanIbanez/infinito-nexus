@@ -15,7 +15,7 @@
     global_install: true
   when: MARIADB_EXPOSE_LOCAL | bool
 
-- name: "[compose] Wait until the MariaDB container with hostname '{{ MARIADB_NAME }}' is running"
+- name: "Wait until the MariaDB container with hostname '{{ MARIADB_NAME }}' is running"
   community.docker.docker_container_info:
     name: "{{ MARIADB_NAME }}"
   register: db_info
@@ -25,26 +25,6 @@
     - db_info.container.State.Running
   retries: 30
   delay: 5
-  when: >-
-    DEPLOYMENT_MODE != 'swarm'
-    or (service_is_stateful | bool)
-
-- block:
-    - name: "[swarm] Wait until MariaDB task container is running and resolve its ID"
-      ansible.builtin.script:
-        cmd: "swarm_mariadb_cid.sh {{ application_id | get_entity_name }}"
-      register: mariadb_swarm_cid
-      changed_when: false
-      retries: 60
-      delay: 5
-      until: mariadb_swarm_cid.rc == 0
-
-    - name: "[swarm] Re-bind MARIADB_NAME to the resolved task container ID"
-      ansible.builtin.set_fact:
-        MARIADB_NAME: "{{ mariadb_swarm_cid.stdout }}"
-  when:
-    - DEPLOYMENT_MODE == 'swarm'
-    - not (service_is_stateful | bool)
 
 - block:
     - name: "Root password reset | Check login with desired password (inside container)"
@@ -68,7 +48,6 @@
       include_tasks: 03_reset_root_password.yml
       when:
         - mariadb_login_desired.rc != 0
-        - DEPLOYMENT_MODE != 'swarm'
 
   when: MARIADB_ALLOW_RESET_WITHOUT_PREVIOUS | bool
 

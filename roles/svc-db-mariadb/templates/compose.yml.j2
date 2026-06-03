@@ -11,7 +11,6 @@
       - "--transaction-isolation=READ-COMMITTED"
       - "--binlog-format=ROW"
 
-{% set service_needs_node_pin = true %}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 {% if MARIADB_EXPOSE_LOCAL %}
     ports: 

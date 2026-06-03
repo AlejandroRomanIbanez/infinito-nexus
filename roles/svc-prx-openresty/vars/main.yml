@@ -2,8 +2,6 @@
 # General
 application_id: "svc-prx-openresty"
 
-service_is_stateful: true
-
 # Openresty
 
 # Probapbly hard to implement to use dynamic entity_name here, so sticking with hard coded entity in conf path
