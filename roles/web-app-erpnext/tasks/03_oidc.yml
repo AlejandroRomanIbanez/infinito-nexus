@@ -1,0 +1,21 @@
+---
+- name: "apply Social Login Key for Keycloak"
+  ansible.builtin.shell: |
+    set -euo pipefail
+    container exec -i \
+      -e SITE_NAME -e PROVIDER_NAME -e BUTTON_TEXT \
+      -e CLIENT_ID -e CLIENT_SECRET -e ISSUER_URL \
+      -e GROUP_ROLE_MAP_JSON \
+      {{ ERPNEXT_BACKEND_CONTAINER }} \
+      bash -c 'cd /home/frappe/frappe-bench/sites && /home/frappe/frappe-bench/env/bin/python -' < {{ role_path }}/files/scripts/apply_oidc_settings.py
+  environment:
+    SITE_NAME: "{{ ERPNEXT_SITE_NAME }}"
+    PROVIDER_NAME: "keycloak"
+    BUTTON_TEXT: "{{ OIDC.BUTTON_TEXT }}"
+    CLIENT_ID: "{{ OIDC.CLIENT.ID }}"
+    CLIENT_SECRET: "{{ OIDC.CLIENT.SECRET }}"
+    ISSUER_URL: "{{ OIDC.CLIENT.ISSUER_URL }}"
+    GROUP_ROLE_MAP_JSON: "{{ ERPNEXT_OIDC_GROUP_ROLE_MAP | to_json }}"
+  register: erpnext_oidc_apply
+  changed_when: false
+  timeout: 60
