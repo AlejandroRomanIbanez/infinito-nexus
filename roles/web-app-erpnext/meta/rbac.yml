@@ -1,0 +1,8 @@
+---
+roles:
+  administrator:
+    description: ERPNext System Manager (full admin desk + role profile management)
+  manager:
+    description: ERPNext business operations manager (Sales + Purchase + Stock + Accounts roles)
+  customer:
+    description: ERPNext customer (portal access, can view own quotes/orders)
