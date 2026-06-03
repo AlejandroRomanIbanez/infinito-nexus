@@ -121,6 +121,13 @@
     loop_var: role_group
     label: "{{ role_group }}-roles.yml"
 
+- name: "Bootstrap cluster-local Docker Hub pull-through cache (after swarm, before apps)"
+  ansible.builtin.include_role:
+    name: svc-cache-registry
+  when:
+    - "'svc-cache-registry' | application_allowed(group_names, lookup('deployment').whitelist)"
+    - run_once_svc_cache_registry is not defined
+
 - name: Preload shared services
   ansible.builtin.include_role:
     name: sys-service-loader
