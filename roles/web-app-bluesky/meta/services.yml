@@ -74,6 +74,8 @@ broker:
   # is built from `files/login-broker/`.
   name: bluesky-broker
   image: bluesky-broker
+  base_image: node
+  base_version: 22-alpine
   port: 8080
   ports:
     local:
