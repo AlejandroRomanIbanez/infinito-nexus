@@ -35,6 +35,8 @@ GROUP_HOSTS = [
     ("svc-docker-registry", "swarm-mgr-01"),
     ("svc-cache-registry", "swarm-mgr-01"),
     (APP_ID, "swarm-mgr-01"),
+    (APP_ID, "swarm-wrk-01"),
+    (APP_ID, "swarm-wrk-02"),
 ]
 if DB_DEP == "mariadb":
     GROUP_HOSTS.append(("svc-db-mariadb", "swarm-mgr-01"))

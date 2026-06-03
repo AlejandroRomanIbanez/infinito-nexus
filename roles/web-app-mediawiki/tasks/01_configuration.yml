@@ -1,5 +1,5 @@
 ---
-- name: "MEDIAWIKI | Ensure required host directories exist (local)"
+- name: "MEDIAWIKI | Ensure required host directories exist"
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -8,23 +8,7 @@
     - "{{ MEDIAWIKI_LOCAL_MOUNT_DIR }}"
     - "{{ MEDIAWIKI_CONFIG_DIR }}"
 
-- name: "[swarm] MEDIAWIKI | Ensure required host directories exist on swarm peers"
-  ansible.builtin.file:
-    path: "{{ item.0 }}"
-    state: directory
-    mode: "0755"
-  loop: >-
-    {{
-      [MEDIAWIKI_LOCAL_MOUNT_DIR, MEDIAWIKI_CONFIG_DIR]
-      | product((groups['svc-docker-swarm'] | default([])) | difference([inventory_hostname]))
-      | list
-    }}
-  loop_control:
-    label: "{{ item.0 }} -> {{ item.1 }}"
-  when: DEPLOYMENT_MODE == 'swarm'
-  delegate_to: "{{ item.1 }}"
-
-- name: "MEDIAWIKI | Render host-side PHP config files (local + swarm peers)"
+- name: "MEDIAWIKI | Render host-side PHP config files"
   ansible.builtin.include_tasks:
     file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
   vars:
