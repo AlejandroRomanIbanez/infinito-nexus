@@ -110,18 +110,6 @@ jobs:
       - name: "Create dedicated network for simulated cluster (MTU 1400)"
         run: ${{ env.SCRIPTS }}/01_create_network.sh
 
-      - name: "Restore apt-cacher-ng cache"
-        if: ${{ !env.ACT }}
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/apt-cacher-ng
-          key: apt-cacher-${{ runner.os }}-v1-${{ hashFiles('packaging/debian/control') }}
-          restore-keys: |
-            apt-cacher-${{ runner.os }}-v1-
-
-      - name: "Start apt-cacher-ng on swarm-lab network"
-        run: ${{ env.SCRIPTS }}/02b_start_apt_cache.sh
-
       - name: "Start NFSv4 server (empty systemd-Ubuntu)"
         run: ${{ env.SCRIPTS }}/02_start_nfs.sh
 
