@@ -3,7 +3,7 @@
   minio:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: {{ MINIO_IMAGE }}:{{ MINIO_VERSION }}
-    {{ lookup('compose_container_name', MINIO_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', MINIO_CONTAINER) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ MINIO_API_PORT_PUBLIC }}:{{ MINIO_API_PORT_INTERNAL }}"
       - "{{ DOCKER_BIND_HOST }}:{{ MINIO_CONSOLE_PORT_PUBLIC }}:{{ MINIO_CONSOLE_PORT_INTERNAL }}"

@@ -3,7 +3,7 @@
   ollama:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: {{ OLLAMA_IMAGE }}:{{ OLLAMA_VERSION }}
-    {{ lookup('compose_container_name', OLLAMA_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', OLLAMA_CONTAINER) }}
     expose:
       - "{{ OLLAMA_PORT }}"
     volumes:

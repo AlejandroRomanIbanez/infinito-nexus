@@ -3,7 +3,7 @@
   application:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ PROMETHEUS_IMAGE }}:{{ PROMETHEUS_VERSION }}"
-    {{ lookup('compose_container_name', PROMETHEUS_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', PROMETHEUS_CONTAINER) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.prometheus.ports.local.http') }}:9090"
     extra_hosts:
@@ -24,7 +24,7 @@
   blackbox-exporter:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ BLACKBOX_IMAGE }}:{{ BLACKBOX_VERSION }}"
-    {{ lookup('compose_container_name', BLACKBOX_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', BLACKBOX_CONTAINER) }}
     command:
       - "--config.file={{ BLACKBOX_CONFIG_DOCKER }}"
     volumes:
@@ -33,7 +33,7 @@
   alertmanager:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ ALERTMANAGER_IMAGE }}:{{ ALERTMANAGER_VERSION }}"
-    {{ lookup('compose_container_name', ALERTMANAGER_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', ALERTMANAGER_CONTAINER) }}
     command:
       - "--config.file={{ ALERTMANAGER_CONFIG_DOCKER }}"
       - "--storage.path=/alertmanager"
@@ -44,7 +44,7 @@
   cadvisor:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ CADVISOR_IMAGE }}:{{ CADVISOR_VERSION }}"
-    {{ lookup('compose_container_name', CADVISOR_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', CADVISOR_CONTAINER) }}
     privileged: true
     devices:
       - /dev/kmsg
@@ -58,7 +58,7 @@
   node-exporter:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ NODE_EXPORTER_IMAGE }}:{{ NODE_EXPORTER_VERSION }}"
-    {{ lookup('compose_container_name', NODE_EXPORTER_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', NODE_EXPORTER_CONTAINER) }}
     # network_mode: host — required so node-exporter sees the host's real network
     # interfaces, disk mounts, and process table. Without it, interface bandwidth
     # metrics reflect the container's virtual stack only and are meaningless.

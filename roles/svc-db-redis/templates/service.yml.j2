@@ -3,7 +3,7 @@
 {% set redis_version = lookup('config','svc-db-redis', 'services.redis.version')%}
   redis:
     image: "{{ redis_image }}:{{ redis_version }}"
-    {{ lookup('compose_container_name', ((application_id | get_entity_name) ~ '-redis')) }}
+    {{ lookup('compose_only', 'container_name', ((application_id | get_entity_name) ~ '-redis')) }}
     {{ lookup('compose_restart') }}
     logging:
       driver: journald

@@ -6,7 +6,7 @@
         JIRA_VERSION: "{{ JIRA_VERSION }}"
         JIRA_STORAGE_PATH: "{{ JIRA_STORAGE_PATH }}"
     image: "{{ JIRA_CUSTOM_IMAGE }}"
-    {{ lookup('compose_container_name', JIRA_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', JIRA_CONTAINER) }}
     hostname: '{{ JIRA_HOSTNAME }}'
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.jira.ports.local.http') }}:8080"

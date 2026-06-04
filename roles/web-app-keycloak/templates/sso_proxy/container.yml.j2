@@ -3,7 +3,7 @@
     image: {{ lookup('config','web-app-keycloak', 'services.sso_proxy.image') }}:{{ lookup('config','web-app-keycloak', 'services.sso_proxy.version') }}
     {{ lookup('compose_restart') }}
     command: --config /oauth2-proxy.cfg
-    {{ lookup('compose_container_name', ((application_id | get_entity_name) ~ '-sso-proxy')) }}
+    {{ lookup('compose_only', 'container_name', ((application_id | get_entity_name) ~ '-sso-proxy')) }}
     hostname: sso-proxy
     ports:
       - {{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.' ~ (application_id | get_entity_name) ~ '.ports.local.sso') }}:{{ lookup('config', 'web-app-keycloak', 'services.sso_proxy.ports.internal.http') }}/tcp

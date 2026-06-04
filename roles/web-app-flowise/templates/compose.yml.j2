@@ -3,7 +3,7 @@
 {% set service_name = 'litellm' %}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: {{ FLOWISE_LITELLM_IMAGE }}:{{ FLOWISE_LITELLM_VERSION }}
-    {{ lookup('compose_container_name', FLOWISE_LITELLM_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', FLOWISE_LITELLM_CONTAINER) }}
     expose:
       - {{ FLOWISE_LITELLM_PORT }}
     volumes:
@@ -18,7 +18,7 @@
 {% set service_name = 'qdrant' %}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: {{ FLOWISE_QDRANT_IMAGE }}:{{ FLOWISE_QDRANT_VERSION }}
-    {{ lookup('compose_container_name', FLOWISE_QDRANT_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', FLOWISE_QDRANT_CONTAINER) }}
     ports:
       - {{ FLOWISE_QDRANT_HTTP_PORT }}
       - {{ FLOWISE_QDRANT_GRPC_PORT }}
@@ -30,7 +30,7 @@
 {% set service_name = 'flowise' %}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: {{ FLOWISE_IMAGE }}:{{ FLOWISE_VERSION }}
-    {{ lookup('compose_container_name', FLOWISE_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', FLOWISE_CONTAINER) }}
     depends_on: 
       - qdrant
       - litellm

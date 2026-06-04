@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
   {{ FRIENDICA_SERVICE }}:
     image: "{{ FRIENDICA_IMAGE }}:{{ FRIENDICA_VERSION }}"
-    {{ lookup('compose_container_name', FRIENDICA_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', FRIENDICA_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     volumes:
       - html:{{ FRIENDICA_APPLICATION_DIR }}

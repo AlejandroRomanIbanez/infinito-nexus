@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
   postgres:
-    {{ lookup('compose_container_name', POSTGRES_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', POSTGRES_CONTAINER) }}
     image:            "{{ POSTGRES_CUSTOM_IMAGE }}"
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
     command:

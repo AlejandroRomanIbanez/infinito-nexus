@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
   application:
-    {{ lookup('compose_container_name', LAM_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', LAM_CONTAINER) }}
     image: "{{ LAM_IMAGE }}"
     ports:
       - {{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.lam.ports.local.http') }}:80 

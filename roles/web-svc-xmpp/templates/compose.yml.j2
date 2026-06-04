@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
   ejabberd:
     image: "{{ EJABBERD_IMAGE }}:{{ EJABBERD_VERSION }}"
-    {{ lookup('compose_container_name', EJABBERD_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', EJABBERD_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.xmpp.ports.local.http') }}:5280"

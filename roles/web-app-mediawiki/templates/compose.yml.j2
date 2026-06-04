@@ -5,7 +5,7 @@
       args:
         MEDIAWIKI_IMAGE: "{{ MEDIAWIKI_IMAGE }}"
         MEDIAWIKI_VERSION: "{{ MEDIAWIKI_VERSION }}"
-    {{ lookup('compose_container_name', MEDIAWIKI_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', MEDIAWIKI_CONTAINER) }}
     image: "{{ MEDIAWIKI_CUSTOM_IMAGE }}"
     volumes:
       - "images:/var/www/html/images"

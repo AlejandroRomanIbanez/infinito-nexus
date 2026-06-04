@@ -10,7 +10,7 @@
         SUITECRM_ENTRYPOINT_SCRIPT_HOST_REL: "{{ SUITECRM_ENTRYPOINT_SCRIPT_HOST_REL }}"
         SUITECRM_ENTRYPOINT_SCRIPT_DOCKER: "{{ SUITECRM_ENTRYPOINT_SCRIPT_DOCKER }}"
         SUITECRM_LDAP_EXTENSION_DIR: "{{ SUITECRM_LDAP_EXTENSION_DIR }}"
-    {{ lookup('compose_container_name', SUITECRM_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', SUITECRM_CONTAINER) }}
     image: "{{ SUITECRM_CUSTOM_IMAGE }}"
     init: true
     stop_signal: SIGTERM

@@ -2,7 +2,7 @@
 
   {{ JITSI_PROSODY_CONTAINER }}:
     image: "{{ JITSI_PROSODY_IMAGE }}:{{ JITSI_PROSODY_VERSION }}"
-    {{ lookup('compose_container_name', JITSI_PROSODY_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', JITSI_PROSODY_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     expose:
       - "5222"
@@ -15,7 +15,7 @@
 
   {{ JITSI_JICOFO_CONTAINER }}:
     image: "{{ JITSI_JICOFO_IMAGE }}:{{ JITSI_JICOFO_VERSION }}"
-    {{ lookup('compose_container_name', JITSI_JICOFO_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', JITSI_JICOFO_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     depends_on:
       {{ JITSI_PROSODY_CONTAINER }}:
@@ -26,7 +26,7 @@
 
   {{ JITSI_JVB_CONTAINER }}:
     image: "{{ JITSI_JVB_IMAGE }}:{{ JITSI_JVB_VERSION }}"
-    {{ lookup('compose_container_name', JITSI_JVB_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', JITSI_JVB_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     depends_on:
       {{ JITSI_PROSODY_CONTAINER }}:
@@ -39,7 +39,7 @@
 
   {{ JITSI_WEB_CONTAINER }}:
     image: "{{ JITSI_WEB_IMAGE }}:{{ JITSI_WEB_VERSION }}"
-    {{ lookup('compose_container_name', JITSI_WEB_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', JITSI_WEB_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     depends_on:
       {{ JITSI_PROSODY_CONTAINER }}:

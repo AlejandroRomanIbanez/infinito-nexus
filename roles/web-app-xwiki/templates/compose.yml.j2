@@ -6,7 +6,7 @@
         XWIKI_VERSION: "{{ XWIKI_VERSION }}"
         XWIKI_SUPERADMIN_PASSWORD: "{{ XWIKI_SUPERADMIN_PASSWORD }}"
     image: "{{ XWIKI_IMAGE_CUSTOM }}"
-    {{ lookup('compose_container_name', XWIKI_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', XWIKI_CONTAINER) }}
     hostname: '{{ XWIKI_HOSTNAME}}'
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ XWIKI_HOST_PORT }}:{{ container_port }}"

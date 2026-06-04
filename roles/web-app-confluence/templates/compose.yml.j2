@@ -6,7 +6,7 @@
         CONFLUENCE_VERSION: "{{ CONFLUENCE_VERSION }}"
         CONFLUENCE_HOME: "{{ CONFLUENCE_HOME }}"
     image: "{{ CONFLUENCE_CUSTOM_IMAGE }}"
-    {{ lookup('compose_container_name', CONFLUENCE_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', CONFLUENCE_CONTAINER) }}
     hostname: '{{ CONFLUENCE_HOSTNAME}}'
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.confluence.ports.local.http') }}:8090"

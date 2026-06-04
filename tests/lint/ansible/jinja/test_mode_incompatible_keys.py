@@ -8,8 +8,12 @@ the key per `DEPLOYMENT_MODE`.
 
 Currently enforced rules:
 
-* ``container-name`` -> ``compose_container_name`` lookup. Hard-rejected
-  in swarm when ``deploy.replicas > 1`` (deploy fails outright).
+* ``container-name`` -> ``compose_only('container_name', NAME)``.
+  Hard-rejected in swarm when ``deploy.replicas > 1`` (deploy fails
+  outright).
+* ``pull-policy-key`` -> ``compose_only('pull_policy', VALUE)``.
+  Swarm rejects ``pull_policy`` as "Additional property pull_policy is
+  not allowed" (compose-only extension).
 * ``restart-key`` -> ``compose_restart`` lookup. Silently ignored in
   swarm (operator's ``docker_restart_policy`` is dropped, swarm uses
   whatever ``deploy.restart_policy.condition`` is set to).
@@ -43,21 +47,32 @@ class ModeRule:
     extra_regexes: tuple[re.Pattern[str], ...] = field(default_factory=tuple)
 
 
-# container-name regexes -------------------------------------------------
-_CN_RAW = re.compile(r"(?m)^\s*container_name\s*:")
-_CN_LOOKUP_NAME = r"""['"]compose_container_name['"]"""
-# Split-Jinja form: lookup(..., A }}-{{ B) -> jinja parse error.
-_CN_BROKEN_SPLIT = re.compile(
-    rf"lookup\(\s*{_CN_LOOKUP_NAME}\s*,[^)]*\}}\}}[^{{]*\{{\{{",
+# Shared regexes for the `compose_only` lookup's broken call shapes. The
+# lookup name is matched with both quote styles; the literal key term
+# (`'container_name'` or `'pull_policy'` etc.) is the second positional
+# argument right after the lookup name.
+_CO_LOOKUP_NAME = r"""['"]compose_only['"]"""
+# Split-Jinja form: `{{ lookup('compose_only', 'key', A }}-{{ B) }}` ->
+# the outer `{{ }}` closes mid-call, Jinja raises a parse error.
+_CO_BROKEN_SPLIT = re.compile(
+    rf"lookup\(\s*{_CO_LOOKUP_NAME}\s*,[^)]*\}}\}}[^{{]*\{{\{{",
 )
-# Embedded-Jinja-in-literal-string: lookup(..., "{{ X }}_suffix")
-# Deprecated in ansible-core 2.23.
-_CN_BROKEN_EMBED = re.compile(
-    rf"lookup\(\s*{_CN_LOOKUP_NAME}\s*,\s*['\"][^'\"]*\{{\{{",
+# Embedded-Jinja-in-literal-string form: `lookup('compose_only', 'key',
+# "{{ X }}_suffix")` — deprecated in ansible-core 2.23. Use tilde
+# concatenation: `X ~ '_suffix'`.
+_CO_BROKEN_EMBED = re.compile(
+    rf"lookup\(\s*{_CO_LOOKUP_NAME}\s*,\s*['\"][^'\"]*['\"]\s*,\s*['\"][^'\"]*\{{\{{",
 )
 
-# restart-key regex ------------------------------------------------------
+# container-name regex --------------------------------------------------
+_CN_RAW = re.compile(r"(?m)^\s*container_name\s*:")
+
+# pull-policy regex -----------------------------------------------------
+_PP_RAW = re.compile(r"(?m)^\s*pull_policy\s*:")
+
+# restart-key regex -----------------------------------------------------
 _RESTART_RAW = re.compile(r"(?m)^\s*restart\s*:")
+
 
 _RULES: tuple[ModeRule, ...] = (
     ModeRule(
@@ -67,13 +82,27 @@ _RULES: tuple[ModeRule, ...] = (
             "and aborts `docker stack deploy`."
         ),
         raw_regex=_CN_RAW,
-        extra_regexes=(_CN_BROKEN_SPLIT, _CN_BROKEN_EMBED),
+        extra_regexes=(_CO_BROKEN_SPLIT, _CO_BROKEN_EMBED),
         remediation=(
-            "Route through the `compose_container_name` lookup "
-            "(plugins/lookup/compose_container_name.py) so swarm-mode "
-            "replicas do not collide on the static name. The lookup "
-            "expects a single string argument: "
-            "`{{ lookup('compose_container_name', MY_CONTAINER) }}`."
+            "Route through the generic `compose_only` lookup "
+            "(plugins/lookup/compose_only.py) so the key is emitted in "
+            "compose mode and omitted in swarm: "
+            "`{{ lookup('compose_only', 'container_name', MY_CONTAINER) }}`."
+        ),
+    ),
+    ModeRule(
+        name="pull-policy-key",
+        description=(
+            "Raw `pull_policy:` is a compose-only extension; "
+            "`docker stack deploy` rejects it with "
+            "'Additional property pull_policy is not allowed'."
+        ),
+        raw_regex=_PP_RAW,
+        remediation=(
+            "Route through the generic `compose_only` lookup "
+            "(plugins/lookup/compose_only.py) so the key is emitted in "
+            "compose mode and omitted in swarm: "
+            "`{{ lookup('compose_only', 'pull_policy', 'never') }}`."
         ),
     ),
     ModeRule(
@@ -87,8 +116,7 @@ _RULES: tuple[ModeRule, ...] = (
         remediation=(
             "Route through the `compose_restart` lookup "
             "(plugins/lookup/compose_restart.py). With no argument it "
-            "defers to `docker_restart_policy`/`DOCKER_RESTART_POLICY` "
-            "(matching the previous direct rendering): "
+            "defers to `DOCKER_RESTART_POLICY`: "
             "`{{ lookup('compose_restart') }}`. Pass an explicit policy "
             "if a service needs an override: "
             "`{{ lookup('compose_restart', 'on-failure') }}`."
@@ -125,6 +153,7 @@ def _hits_for(text: str, rule: ModeRule) -> set[int]:
 # does not appear in the file at all. Cheap text-membership check.
 _PREFILTER: dict[str, tuple[str, ...]] = {
     "container-name": ("container_name",),
+    "pull-policy-key": ("pull_policy",),
     "restart-key": ("restart:",),
 }
 

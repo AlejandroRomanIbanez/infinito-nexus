@@ -2,7 +2,7 @@
   application:
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: {{ WORDPRESS_CUSTOM_IMAGE }}
-    {{ lookup('compose_container_name', WORDPRESS_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', WORDPRESS_CONTAINER) }}
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
       args:
         WORDPRESS_IMAGE:           "{{ WORDPRESS_IMAGE }}"

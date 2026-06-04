@@ -3,7 +3,7 @@
   application:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ FIDER_IMAGE }}:{{ FIDER_VERSION }}"
-    {{ lookup('compose_container_name', FIDER_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', FIDER_CONTAINER) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.fider.ports.local.http') }}:{{ FIDER_CONTAINER_PORT }}"
     healthcheck:

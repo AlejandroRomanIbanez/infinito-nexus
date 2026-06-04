@@ -3,7 +3,7 @@
   application:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ BASEROW_IMAGE }}:{{ BASEROW_VERSION }}"
-    {{ lookup('compose_container_name', BASEROW_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', BASEROW_CONTAINER) }}
     volumes:
       - data:/baserow/data
     ports:

@@ -10,8 +10,7 @@ x-environment: &shopware
     - bundles:/var/www/html/public/bundles
     - "{{ SHOPWARE_FRAMEWORK_HOST }}:{{ SHOPWARE_FRAMEWORK_DOCKER }}:ro"
   working_dir: {{ SHOPWARE_ROOT }}
-  pull_policy: never
-
+  {{ lookup('compose_only', 'pull_policy', 'never') }}
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
 # -------------------------
@@ -23,7 +22,7 @@ x-environment: &shopware
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 {% set docker_restart_policy = DOCKER_RESTART_POLICY %}
     <<: *shopware
-    {{ lookup('compose_container_name', SHOPWARE_INIT_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', SHOPWARE_INIT_CONTAINER) }}
     entrypoint: [ "sh", "{{ SHOPWARE_INIT_DOCKER }}" ]
     user: "0:0"
 
@@ -46,7 +45,7 @@ x-environment: &shopware
         SHOPWARE_COMPOSER_PLATFORM_PHP: "{{ SHOPWARE_COMPOSER_PLATFORM_PHP }}"
         SHOPWARE_PHP_IMAGE: "{{ SHOPWARE_PHP_IMAGE }}"
         SHOPWARE_PHP_VERSION: "{{ SHOPWARE_PHP_VERSION }}"
-    {{ lookup('compose_container_name', SHOPWARE_WEB_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', SHOPWARE_WEB_CONTAINER) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.shopware.ports.local.http') }}:{{ container_port }}"
     depends_on:
@@ -69,7 +68,7 @@ x-environment: &shopware
   {{ service_name }}:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     <<: *shopware
-    {{ lookup('compose_container_name', SHOPWARE_WORKER_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', SHOPWARE_WORKER_CONTAINER) }}
     entrypoint: {{ SHOPWARE_WORKER_ENTRYPOINT }}
     depends_on:
       init:
@@ -93,7 +92,7 @@ x-environment: &shopware
   {{ service_name }}:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     <<: *shopware
-    {{ lookup('compose_container_name', SHOPWARE_SCHED_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', SHOPWARE_SCHED_CONTAINER) }}
     entrypoint: {{ SHOPWARE_SCHED_ENTRYPOINT }}
     depends_on:
       init:
@@ -113,7 +112,7 @@ x-environment: &shopware
   {{ service_name }}:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ SHOPWARE_OPENSEARCH_IMAGE }}:{{ SHOPWARE_OPENSEARCH_VERSION }}"
-    {{ lookup('compose_container_name', SHOPWARE_OPENSEARCH_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', SHOPWARE_OPENSEARCH_CONTAINER) }}
     environment:
       - discovery.type=single-node
       - plugins.security.disabled=true

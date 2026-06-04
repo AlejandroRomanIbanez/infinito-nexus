@@ -2,7 +2,7 @@
   openwebui:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: {{ OPENWEBUI_IMAGE }}:{{ OPENWEBUI_VERSION }}
-    {{ lookup('compose_container_name', OPENWEBUI_CONTAINER) }}
+    {{ lookup('compose_only', 'container_name', OPENWEBUI_CONTAINER) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ OPENWEBUI_PORT_PUBLIC }}:8080"
     volumes:
