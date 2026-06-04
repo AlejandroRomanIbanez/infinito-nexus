@@ -41,6 +41,8 @@ fi
 cmd+=(--concurrent-jobs "1")
 
 cmd+=(--pull="${ACT_PULL}")
+cmd+=(--action-offline-mode)
+cmd+=(--action-cache-path "${ACT_ACTION_CACHE_PATH:-/tmp/actcache/act}")
 if [[ "${ACT_RM}" == "true" ]]; then
 	cmd+=(--rm)
 fi
