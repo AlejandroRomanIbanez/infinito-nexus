@@ -23,7 +23,3 @@ cache-registry:
   lifecycle: alpha
   run_after:
     - svc-docker-swarm
-  required_by:
-    categories:
-      - svc-docker
-      - web-app

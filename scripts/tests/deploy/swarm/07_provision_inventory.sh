@@ -10,6 +10,7 @@ includes=(
 	svc-docker-swarm
 	svc-docker-swarm-manager
 	svc-storage-nfs-client
+	svc-cache-registry
 )
 case "${DB_DEP}" in
 mariadb) includes+=(svc-db-mariadb) ;;

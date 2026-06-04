@@ -130,9 +130,19 @@
   ansible.builtin.add_host:
     name: "{{ ansible_play_hosts | first }}"
     groups: svc-prx-openresty
+  vars:
+    _web_groups: >-
+      {{
+        groups
+        | dict2items
+        | selectattr('key', 'match', '^web-')
+        | rejectattr('value', 'equalto', [])
+        | list
+      }}
   when:
     - (groups['svc-docker-swarm-manager'] | default([]) | length) == 0
     - (groups['svc-prx-openresty'] | default([]) | length) == 0
+    - (_web_groups | length) > 0
   run_once: true
   changed_when: false
 
