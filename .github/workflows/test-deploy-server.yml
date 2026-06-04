@@ -152,3 +152,18 @@ jobs:
           name: playwright-server-${{ matrix.apps }}
           path: /tmp/playwright-artifacts/
           if-no-files-found: ignore
+
+      - name: Zip generated inventory for debugging
+        if: always()
+        shell: bash
+        env:
+          APP_ID: ${{ matrix.apps }}
+        run: bash scripts/github/inventory/zip_compose_for_upload.sh
+
+      - name: Upload inventory artifact
+        if: ${{ always() && !env.ACT }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: inventory-server-${{ matrix.apps }}
+          path: /tmp/inventory-server-${{ matrix.apps }}.zip
+          if-no-files-found: ignore

@@ -156,6 +156,21 @@ jobs:
         if: failure()
         run: ${{ env.SCRIPTS }}/16_collect_diagnostics.sh
 
+      - name: "Zip generated inventory for debugging"
+        if: always()
+        shell: bash
+        env:
+          APP_ID: ${{ matrix.apps }}
+        run: bash scripts/github/inventory/zip_swarm_for_upload.sh
+
+      - name: "Upload inventory artifact"
+        if: ${{ always() && !env.ACT }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: inventory-swarm-${{ matrix.apps }}
+          path: /tmp/inventory-swarm-${{ matrix.apps }}.zip
+          if-no-files-found: ignore
+
       - name: "Cleanup"
         if: always()
         run: ${{ env.SCRIPTS }}/17_cleanup.sh
