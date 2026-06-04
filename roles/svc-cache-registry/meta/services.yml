@@ -19,7 +19,7 @@ cache-registry:
     local:
       registry: 5001
   proxy:
-    remote_url: "https://registry-1.docker.io"
+    remote_url: "https://registry-1.docker.io" # nocheck: url
   lifecycle: alpha
   run_after:
     - svc-docker-swarm

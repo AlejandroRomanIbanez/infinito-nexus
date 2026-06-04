@@ -8,8 +8,7 @@ eliminating duplicate network transfers and avoiding Docker Hub rate limits.
 
 ## Overview
 
-The role deploys a single `registry:2` instance in pull-through proxy mode
-(`REGISTRY_PROXY_REMOTEURL=https://registry-1.docker.io`) on its inventory
+The role deploys a single `registry:2` instance in pull-through proxy mode on its inventory
 group's host. Because the group typically holds exactly one host (the swarm
 manager), `DEPLOYMENT_MODE` resolves to `compose` for the role; multi-host
 fan-out for the cache itself is out of scope for v1.

@@ -1,5 +1,5 @@
 Name:           infinito-nexus
-Version:        9.1.0
+Version:        9.2.0
 Release:        1%{?dist}
 Summary:        Meta package for Infinito.Nexus host dependencies
 
@@ -58,6 +58,14 @@ install -d %{buildroot}%{_docdir}/%{name}
 %doc %{_docdir}/%{name}/DEPENDENCIES
 
 %changelog
+* Wed Jun 03 2026 Kevin Veen-Birkenbach <kevin@veen.world> - 9.2.0-1
+- New ERPNext role that ships the upstream Frappe Framework v15 stack as a web-app-erpnext role — backend, frontend, websocket, scheduler and two queue workers — wired into the central Keycloak via a built-in Keycloak Social Login Key and into the central OpenLDAP via the LDAP Settings doctype. The three-variant matrix (SSO plus LDAP, no auth, LDAP only) is exercised end-to-end and a repo-wide lint caps Ansible task names at 120 characters.
+* New Jitsi Meet role that adds an oauth2-proxy gated meeting surface plus matching LDAP-variant Playwright coverage. The spec layout is reorganised into a shared module and per-scenario test files so future scenarios can be added without touching the monolith.
+* Outbound mail and Nix install resilience: the dev-nix role guards its set_fact against getent returning None on hosts without an nixbld group, and the host-stack mail health checks keep behaving cleanly on minimal images.
+* Routine maintenance: Docker image version bumps including Friendica 2026.01, eslint 10.4.0 to 10.4.1, and a dockerignore re-sync after the recent claude hooks addition.
+
+Release maintained by Kevin Veen-Birkenbach, <https://veen.world>.
+
 * Mon Jun 01 2026 Kevin Veen-Birkenbach <kevin@veen.world> - 9.1.0-1
 - * More robust Nix installer on Debian, Ubuntu, Fedora and CentOS systems: stale nixbld users from earlier installation attempts are cleaned up before the multi-user installer runs, and a long-standing crash on hosts where the nixbld group is absent has been resolved.
 * Outbound mail health checks no longer fail silently on minimal container images: the heartbeat-email script copes with images that ship without the hostname binary, and the SSL trust file path is detected automatically across Red Hat, Debian, Ubuntu, Alpine and NixOS layouts.
