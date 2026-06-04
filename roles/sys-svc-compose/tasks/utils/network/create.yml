@@ -13,7 +13,7 @@
       com.docker.compose.project: "{{ network_role_id | get_entity_name }}"
   when: SWARM_CLUSTER_AVAILABLE | bool
   run_once: true
-  delegate_to: "{{ (groups['svc-docker-swarm-manager'] | default([]))[0] | default(inventory_hostname) }}"
+  delegate_to: "{{ SWARM_PRIMARY_MANAGER }}"
 
 - name: "Ensure docker bridge network for '{{ network_role_id }}' exists (compose mode, no swarm)"
   community.docker.docker_network:

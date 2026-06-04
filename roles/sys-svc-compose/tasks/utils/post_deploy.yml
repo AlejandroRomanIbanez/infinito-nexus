@@ -9,7 +9,7 @@
   delay: 2
   until: (_app_db_health.stdout | trim) == 'healthy'
   changed_when: false
-  delegate_to: "{{ (groups['svc-docker-swarm-manager'] | default([]))[0] | default(inventory_hostname) }}"
+  delegate_to: "{{ SWARM_PRIMARY_MANAGER }}"
   run_once: true
   when:
     - DEPLOYMENT_MODE == 'swarm'
