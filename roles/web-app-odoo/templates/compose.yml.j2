@@ -6,7 +6,7 @@
       args:
         ODOO_IMAGE: "{{ ODOO_IMAGE }}"
         ODOO_VERSION: "{{ ODOO_VERSION }}"
-    container_name: {{ ODOO_CONTAINER }}
+    {{ lookup('compose_container_name', ODOO_CONTAINER) }}
     image: "{{ ODOO_CUSTOM_IMAGE }}"
     init: true
     stop_signal: SIGTERM

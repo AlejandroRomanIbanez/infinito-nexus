@@ -3,7 +3,7 @@
   gitlab:
     image: "{{ GITLAB_CUSTOM_IMAGE }}"
     hostname: '{{ GITLAB_HOSTNAME }}'
-    container_name:  "{{ GITLAB_CONTAINER }}"
+    {{ lookup('compose_container_name', GITLAB_CONTAINER) }}
     pull_policy: never
     build:
       context: .

@@ -1,6 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
   {{ FEDIWALL_SERVICE }}:
-    container_name: "{{ FEDIWALL_CONTAINER }}"
+    {{ lookup('compose_container_name', FEDIWALL_CONTAINER) }}
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
       args:
         FEDIWALL_IMAGE:         "{{ FEDIWALL_IMAGE }}"

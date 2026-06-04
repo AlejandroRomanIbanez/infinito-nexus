@@ -3,7 +3,7 @@
   {{ SNIPE_IT_SERVICE }}:
 {% set container_port = 80 %}
     image: "{{ SNIPE_IT_IMAGE }}:{{ SNIPE_IT_VERSION }}"
-    container_name: "{{ SNIPE_IT_CONTAINER }}"
+    {{ lookup('compose_container_name', SNIPE_IT_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     volumes:
       - data:/var/lib/snipeit

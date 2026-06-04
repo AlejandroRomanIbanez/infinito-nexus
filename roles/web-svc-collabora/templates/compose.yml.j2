@@ -3,7 +3,7 @@
   collabora:
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ COLLABORA_IMAGE }}:{{ COLLABORA_VERSION }}"
-    container_name: {{ COLLABORA_CONTAINER }}
+    {{ lookup('compose_container_name', COLLABORA_CONTAINER) }}
     security_opt:
       - seccomp=unconfined
       - apparmor=unconfined

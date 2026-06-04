@@ -1,6 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
   {{ MATOMO_SERVICE }}:
-    container_name:  {{ MATOMO_NAME }}
+    {{ lookup('compose_container_name', MATOMO_NAME) }}
 {% set container_port = 80 %}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ MATOMO_IMAGE }}:{{ MATOMO_VERSION }}"
@@ -28,7 +28,7 @@
 {% set docker_restart_policy = DOCKER_RESTART_POLICY %}
     profiles:
       - "{{ MATOMO_BOOTSTRAP_PROFILE }}"
-    container_name: {{ MATOMO_BOOTSTRAP_NAME }}
+    {{ lookup('compose_container_name', MATOMO_BOOTSTRAP_NAME) }}
     image: "{{ MATOMO_BOOTSTRAP_IMAGE }}:{{ MATOMO_BOOTSTRAP_VERSION }}"
     depends_on:
       {{ MATOMO_SERVICE }}:

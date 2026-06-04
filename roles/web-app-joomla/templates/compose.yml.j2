@@ -5,7 +5,7 @@
         JOOMLA_IMAGE: "{{ JOOMLA_IMAGE }}"
         JOOMLA_VERSION: "{{ JOOMLA_VERSION }}"
     image: "{{ JOOMLA_CUSTOM_IMAGE }}"
-    container_name: {{ JOOMLA_CONTAINER }}
+    {{ lookup('compose_container_name', JOOMLA_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     volumes:
       - data:/var/www/html

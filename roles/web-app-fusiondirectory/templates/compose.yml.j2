@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
   fusiondirectory:
     image: "{{ FUSIONDIRECTORY_IMAGE }}:{{ FUSIONDIRECTORY_VERSION }}"
-    container_name: {{ FUSIONDIRECTORY_CONTAINER }}
+    {{ lookup('compose_container_name', FUSIONDIRECTORY_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.fusiondirectory.ports.local.http') }}:80"

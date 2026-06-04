@@ -2,7 +2,7 @@
 
   {{ KIX_DB_CONTAINER }}:
     image: "{{ KIX_DB_IMAGE }}:{{ KIX_DB_VERSION }}"
-    container_name: "{{ KIX_DB_CONTAINER }}"
+    {{ lookup('compose_container_name', KIX_DB_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     hostname: db
     volumes:
@@ -12,7 +12,7 @@
 
   {{ KIX_BACKEND_CONTAINER }}:
     image: "{{ KIX_BACKEND_IMAGE }}:{{ KIX_BACKEND_VERSION }}"
-    container_name: "{{ KIX_BACKEND_CONTAINER }}"
+    {{ lookup('compose_container_name', KIX_BACKEND_CONTAINER) }}
     hostname: backend
     user: "110010100"
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -31,7 +31,7 @@
 
   {{ KIX_FRONTEND_CONTAINER }}:
     image: "{{ KIX_FRONTEND_IMAGE }}:{{ KIX_FRONTEND_VERSION }}"
-    container_name: "{{ KIX_FRONTEND_CONTAINER }}"
+    {{ lookup('compose_container_name', KIX_FRONTEND_CONTAINER) }}
     hostname: frontend
     user: "110010100"
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -54,7 +54,7 @@
 
   {{ KIX_PROXY_CONTAINER }}:
     image: "{{ KIX_PROXY_IMAGE }}:{{ KIX_PROXY_VERSION }}"
-    container_name: "{{ KIX_PROXY_CONTAINER }}"
+    {{ lookup('compose_container_name', KIX_PROXY_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     depends_on:
       - {{ KIX_BACKEND_CONTAINER }}

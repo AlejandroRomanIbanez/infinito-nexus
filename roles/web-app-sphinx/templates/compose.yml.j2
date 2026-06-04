@@ -2,7 +2,7 @@
   application:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ SPHINX_IMAGE }}:{{ SPHINX_VERSION }}"
-    container_name:  "{{ SPHINX_CONTAINER }}"
+    {{ lookup('compose_container_name', SPHINX_CONTAINER) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.sphinx.ports.local.http') }}:{{ container_port }}"
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}

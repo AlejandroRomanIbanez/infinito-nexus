@@ -2,7 +2,7 @@
   synapse:
 {% set container_port = MATRIX_SYNAPSE_CONTAINER_PORT %}
     image: "{{ MATRIX_SYNAPSE_IMAGE }}:{{ MATRIX_SYNAPSE_VERSION }}"
-    container_name: {{ MATRIX_SYNAPSE_NAME }}
+    {{ lookup('compose_container_name', MATRIX_SYNAPSE_NAME) }}
     restart: {{ DOCKER_RESTART_POLICY }}
     logging:
       driver: journald
@@ -31,7 +31,7 @@
   element:
 {% set container_port = 80 %}
     image: "{{ MATRIX_ELEMENT_IMAGE }}:{{ MATRIX_ELEMENT_VERSION }}"
-    container_name: {{ MATRIX_ELEMENT_NAME }}
+    {{ lookup('compose_container_name', MATRIX_ELEMENT_NAME) }}
     restart: {{ DOCKER_RESTART_POLICY }}
     volumes:
       - {{ MATRIX_ELEMENT_CONFIG_PATH_HOST }}:/app/config.json
@@ -42,7 +42,7 @@
 
 {% for item in MATRIX_BRIDGES %}
   mautrix-{{ item.bridge_name }}:
-    container_name: matrix-{{ item.bridge_name }}
+    {{ lookup('compose_container_name', 'matrix-' ~ item.bridge_name) }}
     image: dock.mau.dev/mautrix/{{ item.bridge_name }}:latest
     restart: {{ DOCKER_RESTART_POLICY }}
     volumes:
@@ -57,7 +57,7 @@
 {% if lookup('config', application_id, 'services.matrix.plugins.chatgpt') | bool %}
   matrix-chatgpt-bot:
     restart: {{ DOCKER_RESTART_POLICY }}
-    container_name: matrix-chatgpt
+    {{ lookup('compose_container_name', "matrix-chatgpt") }}
     image: "{{ MATRIX_CHATGPT_BOT_IMAGE }}:{{ MATRIX_CHATGPT_BOT_VERSION }}"
     volumes:
       - chatgpt_data:/storage

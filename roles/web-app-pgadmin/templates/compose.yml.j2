@@ -3,7 +3,7 @@
   {{ entity_name }}:
 {% set container_port = 80 %}
     image: {{ PGADMIN_IMAGE }}:{{ PGADMIN_VERSION }}
-    container_name: {{ entity_name }}
+    {{ lookup('compose_container_name', entity_name) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.pgadmin.ports.local.http') }}:80"

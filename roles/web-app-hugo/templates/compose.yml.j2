@@ -1,7 +1,7 @@
 ---
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
   {{ HUGO_SERVICE }}:
-    container_name: {{ HUGO_CONTAINER }}
+    {{ lookup('compose_container_name', HUGO_CONTAINER) }}
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
       args:
         HUGO_BUILDER_IMAGE: "{{ HUGO_BUILDER_IMAGE }}"

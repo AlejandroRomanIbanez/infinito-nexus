@@ -2,7 +2,7 @@
   dashboard:
 {% set container_port = 5000 %}
     image: {{ DASHBOARD_IMAGE }}:{{ DASHBOARD_VERSION }}
-    container_name: {{ DASHBOARD_CONTAINER }}
+    {{ lookup('compose_container_name', DASHBOARD_CONTAINER) }}
     ports:
       - {{ DOCKER_BIND_HOST }}:{{ http_port }}:{{ container_port }}
     volumes:

@@ -2,7 +2,7 @@
 {% if lookup('database', application_id, 'local') %}
 
   {{ lookup('database', application_id, 'host') }}:
-    container_name: {{ application_id | get_entity_name }}-database
+    {{ lookup('compose_container_name', ((application_id | get_entity_name) ~ '-database')) }}
     logging:
       driver: journald
     image: {{ lookup('database', application_id, 'image') }}:{{ lookup('database', application_id, 'version') }}

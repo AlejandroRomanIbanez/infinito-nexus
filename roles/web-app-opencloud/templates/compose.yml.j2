@@ -2,7 +2,7 @@
 
   application:
     image: "{{ OPENCLOUD_IMAGE }}:{{ OPENCLOUD_VERSION }}"
-    container_name: {{ OPENCLOUD_CONTAINER }}
+    {{ lookup('compose_container_name', OPENCLOUD_CONTAINER) }}
     user: "0:0"
     entrypoint:
       - /bin/sh

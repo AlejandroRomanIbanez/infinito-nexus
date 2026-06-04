@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
   {{ CHESS_SERVICE }}:
     image: "{{ CHESS_IMAGE }}:{{ CHESS_VERSION }}"
-    container_name: "{{ CHESS_CONTAINER }}"
+    {{ lookup('compose_container_name', CHESS_CONTAINER) }}
     hostname: "{{ CHESS_HOSTNAME }}"
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.chess.ports.local.http') }}:{{ container_port }}"

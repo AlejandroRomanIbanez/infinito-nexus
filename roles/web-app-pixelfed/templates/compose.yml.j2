@@ -2,7 +2,7 @@
 
   application:
     image: "{{ PIXELFED_IMAGE }}:{{ PIXELFED_VERSION }}"
-    container_name: {{ PIXELFED_CONTAINER }}
+    {{ lookup('compose_container_name', PIXELFED_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     # Keep the application on the repo-managed entrypoint so the container is
     # ready for the Ansible bootstrap before Pixelfed's own first-start logic.
@@ -16,7 +16,7 @@
 {{ lookup('container_depends_on', application_id) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
   worker:
-    container_name: {{ PIXELFED_WORKER_CONTAINER }}
+    {{ lookup('compose_container_name', PIXELFED_WORKER_CONTAINER) }}
     image: "{{ PIXELFED_IMAGE }}:{{ PIXELFED_VERSION }}"
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     environment:

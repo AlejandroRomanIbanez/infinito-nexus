@@ -33,7 +33,7 @@
       context: "{{ BLUESKY_BROKER_BUILD_CONTEXT }}"
       dockerfile: Dockerfile
     image: {{ BLUESKY_BROKER_IMAGE }}
-    container_name: {{ BLUESKY_BROKER_CONTAINER }}
+    {{ lookup('compose_container_name', BLUESKY_BROKER_CONTAINER) }}
     hostname: bluesky-broker
     pull_policy: never
     restart: {{ DOCKER_RESTART_POLICY }}

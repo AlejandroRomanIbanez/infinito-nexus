@@ -2,7 +2,7 @@
 
   moodle:
 {% set container_port = MOODLE_FPM_PORT %}
-    container_name: {{ MOODLE_CONTAINER }}
+    {{ lookup('compose_container_name', MOODLE_CONTAINER) }}
     pull_policy: never
     build:
       context: .
@@ -40,7 +40,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   nginx:
-    container_name: {{ MOODLE_NGINX_CONTAINER }}
+    {{ lookup('compose_container_name', MOODLE_NGINX_CONTAINER) }}
     image: {{ MOODLE_NGINX_IMAGE }}:{{ MOODLE_NGINX_VERSION }}
     depends_on:
       moodle:
@@ -54,7 +54,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   cron:
-    container_name: {{ MOODLE_CRON_CONTAINER }}
+    {{ lookup('compose_container_name', MOODLE_CRON_CONTAINER) }}
     image: {{ MOODLE_IMAGE_CUSTOM }}
     pull_policy: never
     depends_on:

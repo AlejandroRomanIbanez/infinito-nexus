@@ -7,7 +7,7 @@
         BRIDGY_REF: "{{ BRIDGY_REF }}"
         CONTAINER_PORT:  "{{ container_port | string }}"
     image: "{{ BRIDGY_IMAGE }}:{{ BRIDGY_VERSION }}"
-    container_name: "{{ BRIDGY_CONTAINER }}"
+    {{ lookup('compose_container_name', BRIDGY_CONTAINER) }}
     hostname: "{{ container_hostname }}"
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ http_port }}:{{ container_port }}"

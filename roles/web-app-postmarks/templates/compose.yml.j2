@@ -7,7 +7,7 @@
         POSTMARKS_REF: "{{ POSTMARKS_REF }}"
         CONTAINER_PORT: "{{ container_port | string }}"
     image: "{{ POSTMARKS_IMAGE }}:{{ POSTMARKS_VERSION }}"
-    container_name: "{{ POSTMARKS_CONTAINER }}"
+    {{ lookup('compose_container_name', POSTMARKS_CONTAINER) }}
     hostname: "{{ container_hostname }}"
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ http_port }}:{{ container_port }}"

@@ -5,9 +5,7 @@
       args:
         MEDIAWIKI_IMAGE: "{{ MEDIAWIKI_IMAGE }}"
         MEDIAWIKI_VERSION: "{{ MEDIAWIKI_VERSION }}"
-{% if DEPLOYMENT_MODE != 'swarm' %}
-    container_name: "{{ MEDIAWIKI_CONTAINER }}"
-{% endif %}
+    {{ lookup('compose_container_name', MEDIAWIKI_CONTAINER) }}
     image: "{{ MEDIAWIKI_CUSTOM_IMAGE }}"
     volumes:
       - "images:/var/www/html/images"

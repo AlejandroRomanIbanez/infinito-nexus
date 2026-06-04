@@ -9,7 +9,7 @@
         LUA_PROMETHEUS_URL_MAIN:      "{{ OPENRESTY_LUA_PROMETHEUS_URL_MAIN }}"
         LUA_PROMETHEUS_URL_COUNTER:   "{{ OPENRESTY_LUA_PROMETHEUS_URL_COUNTER }}"
         LUA_PROMETHEUS_URL_KEYS:      "{{ OPENRESTY_LUA_PROMETHEUS_URL_KEYS }}"
-    container_name: {{ OPENRESTY_CONTAINER }}
+    {{ lookup('compose_container_name', OPENRESTY_CONTAINER) }}
     image: {{ OPENRESTY_CUSTOM_IMAGE }}:{{ OPENRESTY_CUSTOM_VERSION }}
     network_mode: "host"
     volumes:

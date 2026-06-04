@@ -23,7 +23,7 @@ x-environment: &shopware
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 {% set docker_restart_policy = DOCKER_RESTART_POLICY %}
     <<: *shopware
-    container_name: "{{ SHOPWARE_INIT_CONTAINER }}"
+    {{ lookup('compose_container_name', SHOPWARE_INIT_CONTAINER) }}
     entrypoint: [ "sh", "{{ SHOPWARE_INIT_DOCKER }}" ]
     user: "0:0"
 
@@ -46,7 +46,7 @@ x-environment: &shopware
         SHOPWARE_COMPOSER_PLATFORM_PHP: "{{ SHOPWARE_COMPOSER_PLATFORM_PHP }}"
         SHOPWARE_PHP_IMAGE: "{{ SHOPWARE_PHP_IMAGE }}"
         SHOPWARE_PHP_VERSION: "{{ SHOPWARE_PHP_VERSION }}"
-    container_name: "{{ SHOPWARE_WEB_CONTAINER }}"
+    {{ lookup('compose_container_name', SHOPWARE_WEB_CONTAINER) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.shopware.ports.local.http') }}:{{ container_port }}"
     depends_on:
@@ -69,7 +69,7 @@ x-environment: &shopware
   {{ service_name }}:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     <<: *shopware
-    container_name: "{{ SHOPWARE_WORKER_CONTAINER }}"
+    {{ lookup('compose_container_name', SHOPWARE_WORKER_CONTAINER) }}
     entrypoint: {{ SHOPWARE_WORKER_ENTRYPOINT }}
     depends_on:
       init:
@@ -93,7 +93,7 @@ x-environment: &shopware
   {{ service_name }}:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     <<: *shopware
-    container_name: "{{ SHOPWARE_SCHED_CONTAINER }}"
+    {{ lookup('compose_container_name', SHOPWARE_SCHED_CONTAINER) }}
     entrypoint: {{ SHOPWARE_SCHED_ENTRYPOINT }}
     depends_on:
       init:
@@ -113,7 +113,7 @@ x-environment: &shopware
   {{ service_name }}:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ SHOPWARE_OPENSEARCH_IMAGE }}:{{ SHOPWARE_OPENSEARCH_VERSION }}"
-    container_name: "{{ SHOPWARE_OPENSEARCH_CONTAINER }}"
+    {{ lookup('compose_container_name', SHOPWARE_OPENSEARCH_CONTAINER) }}
     environment:
       - discovery.type=single-node
       - plugins.security.disabled=true

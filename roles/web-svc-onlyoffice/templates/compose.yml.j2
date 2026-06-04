@@ -3,7 +3,7 @@
   onlyoffice:
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ ONLYOFFICE_IMAGE }}:{{ ONLYOFFICE_VERSION }}"
-    container_name: {{ ONLYOFFICE_CONTAINER }}
+    {{ lookup('compose_container_name', ONLYOFFICE_CONTAINER) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ http_port }}:{{ container_port }}"
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}

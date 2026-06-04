@@ -2,7 +2,7 @@
   {{ entity_name }}:
     image: "{{ REGISTRY_CACHE_IMAGE }}:{{ REGISTRY_CACHE_VERSION }}"
 {% if DEPLOYMENT_MODE != 'swarm' %}
-    container_name: "{{ REGISTRY_CACHE_CONTAINER }}"
+    {{ lookup('compose_container_name', REGISTRY_CACHE_CONTAINER) }}
 {% endif %}
     environment:
       REGISTRY_PROXY_REMOTEURL: "{{ REGISTRY_CACHE_PROXY_REMOTE_URL }}"

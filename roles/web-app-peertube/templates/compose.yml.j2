@@ -3,7 +3,7 @@
   application:
 {% set container_port = 9000 %}
     image: {{ PEERTUBE_IMAGE }}:{{ PEERTUBE_VERSION }}
-    container_name: {{ PEERTUBE_CONTAINER }}
+    {{ lookup('compose_container_name', PEERTUBE_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     ports:
      - "1935:1935"  # @todo Add to ports

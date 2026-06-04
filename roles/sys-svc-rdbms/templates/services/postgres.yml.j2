@@ -4,7 +4,7 @@
 {% set _extensions = lookup('service_extensions', 'postgres').get(application_id, []) %}
 {% set _libraries = lookup('postgres_libraries', _extensions) %}
   {{ lookup('database', application_id, 'host') }}:
-    container_name: {{ application_id | get_entity_name }}-database
+    {{ lookup('compose_container_name', ((application_id | get_entity_name) ~ '-database')) }}
 {% if _libraries | length > 0 %}
     image: {{ application_id | get_entity_name }}-database:{{ lookup('database', application_id, 'version') }}
     pull_policy: never
