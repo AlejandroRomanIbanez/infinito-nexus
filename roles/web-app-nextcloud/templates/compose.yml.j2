@@ -6,7 +6,7 @@
     {{ lookup('compose_container_name', NEXTCLOUD_PROXY_CONTAINER) }}
     logging:
       driver: journald
-    restart: {{ DOCKER_RESTART_POLICY }}
+    {{ lookup('compose_restart') }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ NEXTCLOUD_PORT }}:{{ container_port }}"
     volumes:
@@ -97,7 +97,7 @@
   {{ service_name }}:
     {{ lookup('compose_container_name', NEXTCLOUD_CRON_CONTAINER) }}
     image: "{{ NEXTCLOUD_IMAGE }}:{{ NEXTCLOUD_VERSION }}"
-    restart: {{ DOCKER_RESTART_POLICY }}
+    {{ lookup('compose_restart') }}
     logging:
       driver: journald
     volumes:

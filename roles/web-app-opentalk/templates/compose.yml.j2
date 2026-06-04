@@ -26,7 +26,7 @@
   livekit:
     image: "{{ OPENTALK_LIVEKIT_IMAGE }}:{{ OPENTALK_LIVEKIT_VERSION }}"
     {{ lookup('compose_container_name', OPENTALK_LIVEKIT_CONTAINER) }}
-    restart: {{ docker_restart_policy | default(DOCKER_RESTART_POLICY) }}
+    {{ lookup('compose_restart') }}
     network_mode: host
     command:
       - --config
@@ -39,7 +39,7 @@
   minio:
     image: "{{ OPENTALK_MINIO_IMAGE }}:{{ OPENTALK_MINIO_VERSION }}"
     {{ lookup('compose_container_name', OPENTALK_MINIO_CONTAINER) }}
-    restart: {{ docker_restart_policy | default(DOCKER_RESTART_POLICY) }}
+    {{ lookup('compose_restart') }}
     command: ["server", "/data"]
     environment:
       MINIO_ROOT_USER: "{{ OPENTALK_MINIO_USER }}"
@@ -53,7 +53,7 @@
   rabbit:
     image: "{{ OPENTALK_RABBIT_IMAGE }}:{{ OPENTALK_RABBIT_VERSION }}"
     {{ lookup('compose_container_name', OPENTALK_RABBIT_CONTAINER) }}
-    restart: {{ docker_restart_policy | default(DOCKER_RESTART_POLICY) }}
+    {{ lookup('compose_restart') }}
     environment:
       RABBITMQ_SERVER_ADDITIONAL_ERL_ARGS: "-rabbit consumer_timeout 30000"
     healthcheck:
@@ -70,7 +70,7 @@
   recorder:
     image: "{{ OPENTALK_RECORDER_IMAGE }}:{{ OPENTALK_RECORDER_VERSION }}"
     {{ lookup('compose_container_name', OPENTALK_RECORDER_CONTAINER) }}
-    restart: {{ docker_restart_policy | default(DOCKER_RESTART_POLICY) }}
+    {{ lookup('compose_restart') }}
     volumes:
       - "{{ [lookup('container', application_id, 'directories.volumes'), 'recorder.toml'] | path_join }}:/recorder/recorder.toml:ro"
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}

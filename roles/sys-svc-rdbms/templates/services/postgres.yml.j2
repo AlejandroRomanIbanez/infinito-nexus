@@ -16,7 +16,7 @@
 {% endif %}
     env_file:
       - {{ lookup('database', application_id, 'env') }}
-    restart: {{ DOCKER_RESTART_POLICY }}
+    {{ lookup('compose_restart') }}
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U {{ lookup('database', application_id, 'username') }}"]
       interval: 10s

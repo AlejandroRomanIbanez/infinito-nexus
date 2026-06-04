@@ -4,7 +4,7 @@
   redis:
     image: "{{ redis_image }}:{{ redis_version }}"
     {{ lookup('compose_container_name', ((application_id | get_entity_name) ~ '-redis')) }}
-    restart: {{ DOCKER_RESTART_POLICY }}
+    {{ lookup('compose_restart') }}
     logging:
       driver: journald
     volumes:
@@ -33,5 +33,7 @@
   {%- endset -%}
 {{ _snippet | indent(indent, true) }}
 {%- endmacro %}
+{% if DEPLOYMENT_MODE != 'swarm' %}
 {{ include_resource_for('redis') }}
+{% endif %}
 {{ "\n" }}
