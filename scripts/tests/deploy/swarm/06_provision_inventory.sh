@@ -5,18 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/_context.sh"
 
-# nfs-server group is wired by 08_extend_inventory.sh; do not add via --include.
-includes=(
-	svc-docker-swarm
-	svc-docker-swarm-manager
-	svc-storage-nfs-client
-	svc-cache-registry
-)
-case "${DB_DEP}" in
-mariadb) includes+=(svc-db-mariadb) ;;
-postgres) includes+=(svc-db-postgres) ;;
-esac
-includes+=("${APP_ID}")
+# nfs-server group is wired by utils/tests/swarm/extend_inventory.py; not via --include.
+mapfile -t includes < <(python3 -m utils.tests.swarm.derive_includes)
 
 mkdir -p /tmp/inv
 

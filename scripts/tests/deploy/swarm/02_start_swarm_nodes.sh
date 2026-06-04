@@ -46,16 +46,7 @@ for node in "${MGR}" "${WRK1}" "${WRK2}"; do
 	fi
 done
 
-MGR_HOSTS_EXTRA="$(
-	cat <<'EOF'
-127.0.0.1 infinito.localhost
-127.0.0.1 admin.infinito.localhost
-127.0.0.1 auth.infinito.localhost
-127.0.0.1 m.wiki.infinito.localhost
-127.0.0.1 wiki.infinito.localhost
-127.0.0.1 mail.infinito.localhost
-EOF
-)"
+MGR_HOSTS_EXTRA="$(python3 -m utils.tests.swarm.write_hosts_entries)"
 docker exec -i "${MGR}" sh -c 'cat >> /etc/hosts' <<<"${MGR_HOSTS_EXTRA}"
 
 # Daemon DNS for containers spawned by the inner daemon; outer --dns is

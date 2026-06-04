@@ -108,53 +108,65 @@ jobs:
         uses: actions/checkout@v6
 
       - name: "Create dedicated network for simulated cluster (MTU 1400)"
-        run: ${{ env.SCRIPTS }}/01_create_network.sh
+        # MTU 1400: TLS ServerHello fragmentation drops on host PMTU < 1500.
+        run: |
+          docker network create \
+            --driver bridge \
+            --subnet 192.168.244.0/24 \
+            --opt com.docker.network.driver.mtu=1400 \
+            swarm-lab
 
       - name: "Start NFSv4 server (empty systemd-Ubuntu)"
-        run: ${{ env.SCRIPTS }}/02_start_nfs.sh
+        run: ${{ env.SCRIPTS }}/01_start_nfs.sh
 
       - name: "Start 3 simulated swarm nodes (systemd Ubuntu)"
-        run: ${{ env.SCRIPTS }}/03_start_swarm_nodes.sh
+        run: ${{ env.SCRIPTS }}/02_start_swarm_nodes.sh
 
       - name: "Capture node + NFS-server IPs"
-        run: ${{ env.SCRIPTS }}/04_capture_ips.sh
+        run: ${{ env.SCRIPTS }}/03_capture_ips.sh
 
       - name: "Bootstrap Python on every node (minimum Ansible can connect)"
-        run: ${{ env.SCRIPTS }}/05_bootstrap_nodes.sh
+        run: ${{ env.SCRIPTS }}/04_bootstrap_nodes.sh
 
       - name: "Install project + Ansible + collections on the act runner"
-        run: ${{ env.SCRIPTS }}/06_install_project.sh
+        run: ${{ env.SCRIPTS }}/05_install_project.sh
 
       - name: "Provision the base inventory via the canonical CLI"
-        run: ${{ env.SCRIPTS }}/07_provision_inventory.sh
+        run: ${{ env.SCRIPTS }}/06_provision_inventory.sh
 
       - name: "Extend inventory with workers + group memberships"
-        run: ${{ env.SCRIPTS }}/08_extend_inventory.sh
+        run: python3 -m utils.tests.swarm.extend_inventory
 
-      - name: "Write extras file (storage + swarm)"
-        run: ${{ env.SCRIPTS }}/09_write_extras.sh
+      - name: "Write runtime extras (cluster IPs + generated SSH key)"
+        run: python3 -m utils.tests.swarm.write_extras
 
       - name: "Debug: ansible-inventory --graph + groups for swarm-mgr-01"
-        run: ${{ env.SCRIPTS }}/10_debug_inventory.sh
+        run: ${{ env.SCRIPTS }}/07_debug_inventory.sh
 
-      - name: "Deploy ${{ matrix.apps }} via canonical cli.administration.deploy.dedicated"
-        run: ${{ env.SCRIPTS }}/11_deploy.sh
+      - name: "Deploy ${{ matrix.apps }} via cli.administration.deploy.swarm"
+        run: |
+          python3 -m cli.administration.deploy.swarm \
+            /tmp/inv/devices.yml \
+            -p /tmp/inv/.password \
+            --skip-build --skip-cleanup --skip-backup \
+            -e @inventories/development/swarm.yml \
+            -e @/tmp/swarm-nfs-extras.yml
 
       - name: "Wait for ${{ matrix.apps }} stack to converge with both services Running"
-        run: ${{ env.SCRIPTS }}/12_wait_converge.sh
+        run: ${{ env.SCRIPTS }}/08_wait_converge.sh
 
       - name: "Seed content (pre-drain marker on NFS volume)"
-        run: ${{ env.SCRIPTS }}/13_seed_content.sh
+        run: ${{ env.SCRIPTS }}/09_seed_content.sh
 
       - name: "Drain the worker running ${{ matrix.apps }} + force reschedule"
-        run: ${{ env.SCRIPTS }}/14_drain_worker.sh
+        run: ${{ env.SCRIPTS }}/10_drain_worker.sh
 
       - name: "Assert state survived the reschedule"
-        run: ${{ env.SCRIPTS }}/15_assert_state.sh
+        run: ${{ env.SCRIPTS }}/11_assert_state.sh
 
       - name: "Collect diagnostics on failure"
         if: failure()
-        run: ${{ env.SCRIPTS }}/16_collect_diagnostics.sh
+        run: ${{ env.SCRIPTS }}/12_collect_diagnostics.sh
 
       - name: "Zip generated inventory for debugging"
         if: always()
@@ -173,4 +185,4 @@ jobs:
 
       - name: "Cleanup"
         if: always()
-        run: ${{ env.SCRIPTS }}/17_cleanup.sh
+        run: ${{ env.SCRIPTS }}/13_cleanup.sh

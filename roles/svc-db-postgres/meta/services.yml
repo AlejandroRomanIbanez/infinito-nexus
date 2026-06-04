@@ -1,5 +1,6 @@
 ---
 postgres:
+  default_placement: manager
   enabled: true
   shared: true
   image: postgis/postgis

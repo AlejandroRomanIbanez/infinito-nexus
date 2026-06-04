@@ -5,14 +5,11 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/_context.sh"
 
-# DB_CONTAINER is the stateful-DB container name on the manager (DB roles use
-# `service_is_stateful: true`, so they run as plain compose containers — not
-# swarm tasks). Empty when the role has no DB dependency.
-case "${DB_DEP}" in
-mariadb) DB_CONTAINER=mariadb ;;
-postgres) DB_CONTAINER=postgres ;;
-*) DB_CONTAINER="" ;;
-esac
+# DB containers are stateful (service_is_stateful: true) so they run as plain
+# compose containers, not swarm tasks. Their container name equals DB_DEP for
+# every shipped DB role; empty when APP_ID has no DB dep.
+DB_CONTAINER=""
+[ "${DB_DEP}" != "none" ] && DB_CONTAINER="${DB_DEP}"
 
 converged=false
 for i in $(seq 1 90); do

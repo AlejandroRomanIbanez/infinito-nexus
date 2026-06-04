@@ -1,0 +1,27 @@
+# Static extras for the swarm-NFS test pipeline; runtime-only values
+# come from `utils.tests.swarm.write_extras`.
+# nocheck: hardcoded-dns-resolver — `1.1.1.1` is the upstream the
+# in-cluster simulated containers use; the host-network DNS-resolver
+# SPOT does not apply inside act-DinD nested containers.
+---
+TLS_MODE: "self_signed"
+
+networks:
+  internet:
+    dns: "1.1.1.1"
+
+storage:
+  backend: nfs
+  nfs:
+    export_base: /srv/nfs
+    # NFSv4 pseudo-root does not negotiate against the act kernel.
+    version: 3
+
+svc_storage_nfs_server_export_options: >-
+  rw,sync,no_subtree_check,no_root_squash,no_all_squash
+
+swarm:
+  network:
+    encryption: true
+  registry:
+    port: 5000
