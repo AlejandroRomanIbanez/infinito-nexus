@@ -139,11 +139,11 @@ jobs:
       - name: "Bootstrap Python on every node (minimum Ansible can connect)"
         run: ${{ env.SCRIPTS }}/04_bootstrap_nodes.sh
 
-      - name: "Install project + Ansible + collections on the act runner"
-        run: ${{ env.SCRIPTS }}/05_install_project.sh
+      - name: "Project setup (.dockerignore + dotenv + scripts/setup.sh)"
+        run: make setup
 
       - name: "Provision the base inventory via the canonical CLI"
-        run: ${{ env.SCRIPTS }}/06_provision_inventory.sh
+        run: ${{ env.SCRIPTS }}/05_provision_inventory.sh
 
       - name: "Extend inventory with workers + group memberships"
         run: python3 -m utils.tests.swarm.extend_inventory
@@ -152,7 +152,7 @@ jobs:
         run: python3 -m utils.tests.swarm.write_extras
 
       - name: "Debug: ansible-inventory --graph + groups for swarm-mgr-01"
-        run: ${{ env.SCRIPTS }}/07_debug_inventory.sh
+        run: ${{ env.SCRIPTS }}/06_debug_inventory.sh
 
       - name: "Deploy ${{ matrix.apps }} via cli.administration.deploy.swarm"
         run: |
@@ -164,20 +164,20 @@ jobs:
             -e @/tmp/swarm-nfs-extras.yml
 
       - name: "Wait for ${{ matrix.apps }} stack to converge with both services Running"
-        run: ${{ env.SCRIPTS }}/08_wait_converge.sh
+        run: ${{ env.SCRIPTS }}/07_wait_converge.sh
 
       - name: "Seed content (pre-drain marker on NFS volume)"
-        run: ${{ env.SCRIPTS }}/09_seed_content.sh
+        run: ${{ env.SCRIPTS }}/08_seed_content.sh
 
       - name: "Drain the worker running ${{ matrix.apps }} + force reschedule"
-        run: ${{ env.SCRIPTS }}/10_drain_worker.sh
+        run: ${{ env.SCRIPTS }}/09_drain_worker.sh
 
       - name: "Assert state survived the reschedule"
-        run: ${{ env.SCRIPTS }}/11_assert_state.sh
+        run: ${{ env.SCRIPTS }}/10_assert_state.sh
 
       - name: "Collect diagnostics on failure"
         if: failure()
-        run: ${{ env.SCRIPTS }}/12_collect_diagnostics.sh
+        run: ${{ env.SCRIPTS }}/11_collect_diagnostics.sh
 
       - name: "Zip generated inventory for debugging"
         if: always()
@@ -196,4 +196,4 @@ jobs:
 
       - name: "Cleanup"
         if: always()
-        run: ${{ env.SCRIPTS }}/13_cleanup.sh
+        run: ${{ env.SCRIPTS }}/12_cleanup.sh
