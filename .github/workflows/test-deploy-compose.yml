@@ -1,4 +1,4 @@
-name: "📦 Test: Deploy (server)"
+name: "📦 Test: Deploy (compose)"
 
 on:
   workflow_call:
@@ -28,7 +28,7 @@ env:
   INFINITO_APP_DISCOVERY_RUNNER: host
 jobs:
   discover:
-    name: 🌐 Discover apps
+    name: 🔍 Discover apps
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -78,8 +78,8 @@ jobs:
           INFINITO_WHITELIST: ${{ steps.resolve_wl.outputs.whitelist }}
         run: ./scripts/github/resolve/output_apps.sh
 
-  server:
-    name: 🌐 Server ${{ matrix.apps }}
+  compose:
+    name: 🐳 Compose ${{ matrix.apps }}
     if: needs.discover.outputs.apps != '' && needs.discover.outputs.apps != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 360
@@ -149,7 +149,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-server-${{ matrix.apps }}
+          name: playwright-compose-${{ matrix.apps }}
           path: /tmp/playwright-artifacts/
           if-no-files-found: ignore
 
@@ -164,6 +164,6 @@ jobs:
         if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@v7
         with:
-          name: inventory-server-${{ matrix.apps }}
-          path: /tmp/inventory-server-${{ matrix.apps }}.zip
+          name: inventory-compose-${{ matrix.apps }}
+          path: /tmp/inventory-compose-${{ matrix.apps }}.zip
           if-no-files-found: ignore
