@@ -175,18 +175,21 @@ jobs:
       - name: "Wait for ${{ matrix.apps }} stack to converge with both services Running"
         run: ${{ env.SCRIPTS }}/07_wait_converge.sh
 
+      - name: "Verify ${{ matrix.apps }} replicas accept routing-mesh traffic"
+        run: ${{ env.SCRIPTS }}/08_verify_reachable.sh
+
       - name: "Seed content (pre-drain marker on NFS volume)"
-        run: ${{ env.SCRIPTS }}/08_seed_content.sh
+        run: ${{ env.SCRIPTS }}/09_seed_content.sh
 
       - name: "Drain the worker running ${{ matrix.apps }} + force reschedule"
-        run: ${{ env.SCRIPTS }}/09_drain_worker.sh
+        run: ${{ env.SCRIPTS }}/10_drain_worker.sh
 
       - name: "Assert state survived the reschedule"
-        run: ${{ env.SCRIPTS }}/10_assert_state.sh
+        run: ${{ env.SCRIPTS }}/11_assert_state.sh
 
       - name: "Collect diagnostics on failure"
         if: failure()
-        run: ${{ env.SCRIPTS }}/11_collect_diagnostics.sh
+        run: ${{ env.SCRIPTS }}/12_collect_diagnostics.sh
 
       - name: "Zip generated inventory for debugging"
         if: always()
@@ -205,4 +208,4 @@ jobs:
 
       - name: "Cleanup"
         if: always()
-        run: ${{ env.SCRIPTS }}/12_cleanup.sh
+        run: ${{ env.SCRIPTS }}/13_cleanup.sh
