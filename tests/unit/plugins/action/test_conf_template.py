@@ -28,7 +28,9 @@ def _make_action(task, templar):
 
 class TestConfTemplate(unittest.TestCase):
     def test_skips_silently_on_non_stack_host(self):
-        task = _FakeTask(args={"src": "x.j2", "dest": "/etc/nginx/conf.d/global/x.conf"})
+        task = _FakeTask(
+            args={"src": "x.j2", "dest": "/etc/nginx/conf.d/global/x.conf"}
+        )
         action = _make_action(task, _FakeTemplar(is_stack_host=False))
 
         result = action.run(task_vars={})
@@ -38,7 +40,9 @@ class TestConfTemplate(unittest.TestCase):
         self.assertIn("IS_STACK_HOST", result["skip_reason"])
 
     def test_skips_when_templar_returns_string_false(self):
-        task = _FakeTask(args={"src": "x.j2", "dest": "/etc/nginx/conf.d/global/x.conf"})
+        task = _FakeTask(
+            args={"src": "x.j2", "dest": "/etc/nginx/conf.d/global/x.conf"}
+        )
         action = _make_action(task, _FakeTemplar(is_stack_host="False"))
 
         result = action.run(task_vars={})

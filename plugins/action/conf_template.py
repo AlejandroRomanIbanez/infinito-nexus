@@ -36,7 +36,9 @@ class ActionModule(TemplateActionModule):
         without touching the filesystem.
     """
 
-    def run(self, tmp: Any = None, task_vars: dict[str, Any] | None = None) -> dict[str, Any]:
+    def run(
+        self, tmp: Any = None, task_vars: dict[str, Any] | None = None
+    ) -> dict[str, Any]:
         if task_vars is None:
             task_vars = {}
 
