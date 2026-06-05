@@ -21,6 +21,7 @@
     '
   args:
     creates: "{{ [ (MAGENTO_VOLUME | docker_volume_path), 'bin/magento' ] | path_join }}"
+  when: IS_STACK_HOST | bool
 
 - name: "Run Magento setup:install (in container)"
   command: >
@@ -48,5 +49,6 @@
     (magento_install.stdout is defined and
      ('Magento installation complete' in magento_install.stdout
       or 'successfully installed' in magento_install.stdout))
+  when: IS_STACK_HOST | bool
 
 - include_tasks: utils/once/flag.yml
