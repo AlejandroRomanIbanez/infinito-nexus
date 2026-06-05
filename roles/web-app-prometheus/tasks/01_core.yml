@@ -8,10 +8,9 @@
     compose_handlers_flush: false
 
 - name: "Deploy prometheus nginx http-block config to {{ lookup('nginx','directories.configuration.global') }}prometheus.conf"
-  template:
+  conf_template:
     src: "roles/web-app-prometheus/templates/nginx/prometheus.conf.j2"
     dest: "{{ [ lookup('nginx','directories.configuration.global'), 'prometheus.conf' ] | path_join }}"
-    mode: "0644"
   notify: restart openresty
 
 - name: "Render Prometheus config files (local + swarm peers)"

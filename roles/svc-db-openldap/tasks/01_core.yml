@@ -5,7 +5,7 @@
   include_tasks: 02_docker.yml
 
 - name: Create {{ lookup('domain',application_id) }}.conf if LDAP is exposed to internet
-  template:
+  conf_template:
     src: "nginx.stream.conf.j2"
     dest: "{{ lookup('nginx','directories.configuration.streams') }}{{ lookup('domain',application_id) }}.conf"
   notify: restart openresty

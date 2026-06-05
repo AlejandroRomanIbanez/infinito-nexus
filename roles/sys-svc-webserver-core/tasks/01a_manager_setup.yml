@@ -18,13 +18,13 @@
     load_app_id: svc-prx-openresty
 
 - name: Deploy OpenResty NGINX Base Configuration
-  template:
+  conf_template:
     src: nginx.conf.j2
     dest: "{{ lookup('nginx', 'files.configuration') }}"
   notify: restart openresty
 
 - name: Deploy OpenResty default server configuration
-  template:
+  conf_template:
     src: default_server.conf.j2
     dest: "{{ [lookup('nginx', 'directories.configuration.global'), 'default_server.conf'] | path_join }}"
   notify: restart openresty
