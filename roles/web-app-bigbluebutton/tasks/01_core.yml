@@ -35,6 +35,7 @@
   copy:
     src: "websocket_upgrade.conf"
     dest: "{{ [ lookup('nginx','directories.configuration.maps'), 'websocket_upgrade.conf' ] | path_join }}"
+  when: SWARM_MANAGER_ACTIVE | bool
   notify: restart openresty
 
 - name: "Set BBB Facts"
