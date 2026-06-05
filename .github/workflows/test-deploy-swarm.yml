@@ -107,6 +107,17 @@ jobs:
         if: ${{ !env.ACT }}
         uses: actions/checkout@v6
 
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: Install project (host venv)
+        shell: bash
+        run: make install
+
       - name: "Create dedicated network for simulated cluster (MTU 1400)"
         # MTU 1400: TLS ServerHello fragmentation drops on host PMTU < 1500.
         run: |
