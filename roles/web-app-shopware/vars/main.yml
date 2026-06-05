@@ -32,10 +32,9 @@ SHOPWARE_INIT_DOCKER: "/usr/local/bin/init.sh"
 SHOPWARE_FRAMEWORK_HOST: "{{ [ lookup('container', application_id, 'directories.config'), 'framework.yaml' ] | path_join }}"
 SHOPWARE_FRAMEWORK_DOCKER: "/var/www/html/config/packages/framework.yaml"
 
-# Entrypoints & replicas
+# Entrypoints
 SHOPWARE_WORKER_ENTRYPOINT: "{{ lookup('config', application_id, 'services.worker.entrypoint') }}"
 SHOPWARE_SCHED_ENTRYPOINT: "{{ lookup('config', application_id, 'services.scheduler.entrypoint') }}"
-SHOPWARE_WORKER_REPLICAS: "{{ lookup('config', application_id, 'services.worker.replicas') }}"
 
 # Auth integrations
 SHOPWARE_OIDC_ENABLED: "{{ lookup('config', application_id, 'services.sso.enabled') }}"

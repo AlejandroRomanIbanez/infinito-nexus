@@ -73,9 +73,6 @@ x-environment: &shopware
     depends_on:
       init:
         condition: service_completed_successfully
-# @todo Activate for swarm deploy
-#    deploy:
-#      replicas: {{ SHOPWARE_WORKER_REPLICAS }}
     healthcheck:
       test: ["CMD", "php", "-v"]
       interval: 30s
