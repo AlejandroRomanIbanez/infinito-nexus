@@ -39,7 +39,7 @@ def _ensure_keypair(key_path: Path) -> str:
             ],
             check=True,
         )
-    return Path(f"{key_path}.pub").read_text(encoding="utf-8").strip()
+    return Path(f"{key_path}.pub").read_text(encoding="utf-8").strip()  # nocheck: cache-read — generated in the same flow
 
 
 def main() -> int:
@@ -65,7 +65,7 @@ def main() -> int:
     }
 
     dump_yaml(str(out_path), extras)
-    print(out_path.read_text())
+    print(out_path.read_text())  # nocheck: cache-read — re-reads the file just written
     return 0
 
 

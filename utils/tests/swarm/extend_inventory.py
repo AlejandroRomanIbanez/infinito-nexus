@@ -74,7 +74,7 @@ def main() -> int:
         children[group]["hosts"][host] = dict(_DOCKER_VARS)
 
     dump_yaml(str(inv_path), inv)
-    print(inv_path.read_text())
+    print(inv_path.read_text())  # nocheck: cache-read — re-reads the file just written
     return 0
 
 

@@ -14,7 +14,7 @@ def _load_closure():
     # Load the module by file path to avoid importing the package's
     # __init__.py, which transitively pulls in dedicated's heavy CLI
     # surface (and ruamel.yaml, not available in the unit-test env).
-    repo_root = Path(__file__).resolve().parents[6]
+    repo_root = Path(__file__).resolve().parents[6]  # nocheck: project-root-import — file-path loader bypasses the package __init__ to avoid the heavy dedicated CLI imports
     spec = importlib.util.spec_from_file_location(
         "cli_swarm_closure",
         str(repo_root / "cli/administration/deploy/swarm/closure.py"),
@@ -47,7 +47,7 @@ class _BaseClosureCase(unittest.TestCase):
         return roles_dir
 
 
-class TestIsSwarmInventory(_BaseClosureCase):
+class TestIsSwarmInventory(_BaseClosureCase, unittest.TestCase):
     def test_true_when_manager_group_present(self) -> None:
         path = self._write_inv(
             "swarm.yml",
@@ -75,7 +75,7 @@ class TestIsSwarmInventory(_BaseClosureCase):
         self.assertFalse(closure.is_swarm_inventory(path))
 
 
-class TestSwarmInfraClosure(_BaseClosureCase):
+class TestSwarmInfraClosure(_BaseClosureCase, unittest.TestCase):
     def test_returns_only_inventory_present_default_placement_roles(self) -> None:
         path = self._write_inv(
             "swarm.yml",
@@ -121,7 +121,7 @@ class TestSwarmInfraClosure(_BaseClosureCase):
             self.assertEqual(closure.swarm_infra_closure(path), [])
 
 
-class TestInventoryRoleGroups(_BaseClosureCase):
+class TestInventoryRoleGroups(_BaseClosureCase, unittest.TestCase):
     def test_returns_intersection_of_inventory_groups_and_roles_dir(self) -> None:
         path = self._write_inv(
             "inv.yml",
@@ -169,7 +169,7 @@ class TestInventoryRoleGroups(_BaseClosureCase):
         self.assertEqual(result, ["svc-docker-swarm"])
 
 
-class TestSwarmDeployTargets(_BaseClosureCase):
+class TestSwarmDeployTargets(_BaseClosureCase, unittest.TestCase):
     """Cover the layered closure: seed -> dep-walk -> safety net."""
 
     def _make_swarm_inv(self, extra_groups: dict[str, list[str]] | None = None) -> str:
