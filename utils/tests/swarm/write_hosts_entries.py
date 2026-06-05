@@ -3,8 +3,10 @@
 (plus ``www.`` redirects and the primary itself) owned by ``APP_ID``
 or its transitive deps.
 
-Inputs (env): ``APP_ID``, ``DOMAIN_PRIMARY`` (default
-``infinito.localhost``).
+Inputs (env): ``APP_ID``, ``INFINITO_DOMAIN`` (the SPOT for the
+deployment domain; defined in ``default.env`` and exported by
+``scripts/meta/env/load.sh``; ``inventories/development/default.yml``
+reads the same env var for the play's ``DOMAIN_PRIMARY``).
 """
 
 from __future__ import annotations
@@ -48,7 +50,7 @@ def _derived_domains(app_id: str, domain_primary: str) -> list[str]:
 
 def main() -> int:
     app_id = os.environ["APP_ID"]
-    domain_primary = os.environ.get("DOMAIN_PRIMARY", "infinito.localhost")
+    domain_primary = os.environ["INFINITO_DOMAIN"]
     for domain in _derived_domains(app_id, domain_primary):
         print(f"127.0.0.1 {domain}")
     return 0
