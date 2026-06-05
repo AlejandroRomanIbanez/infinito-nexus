@@ -10,10 +10,13 @@ mapfile -t includes < <(python3 -m utils.tests.swarm.derive_includes)
 
 mkdir -p /tmp/inv
 
+: "${INFINITO_INVENTORY_VARS_FILE:?INFINITO_INVENTORY_VARS_FILE is not set — source scripts/meta/env/load.sh first}"
+
 provision_args=(
 	--host "${MGR}"
 	--include "${includes[@]}"
 	--workers 2
+	--vars-file "${INFINITO_INVENTORY_VARS_FILE}"
 )
 if [[ "$(python3 -m cli.meta.runtime)" == "github" ]]; then
 	: "${INFINITO_GHCR_MIRROR_PREFIX:?required in github runtime}"

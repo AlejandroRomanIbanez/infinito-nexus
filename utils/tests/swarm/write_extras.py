@@ -13,13 +13,17 @@ Inputs (env): ``NFS_IP``, ``MGR_IP``, ``MGR``, ``OUT_PATH`` (default
 
 from __future__ import annotations
 
+import copy
 import os
 import subprocess
 import sys
 from pathlib import Path
 
 from cli.meta.runtime import detect_runtime
-from utils.cache.yaml import dump_yaml
+from utils import PROJECT_ROOT
+from utils.cache.yaml import dump_yaml, load_yaml
+
+_DEFAULT_INVENTORY = PROJECT_ROOT / "inventories" / "development" / "default.yml"
 
 
 def _ensure_keypair(key_path: Path) -> str:
@@ -52,6 +56,11 @@ def main() -> int:
 
     admin_pubkey = _ensure_keypair(key_path)
 
+    default_users = copy.deepcopy(load_yaml(str(_DEFAULT_INVENTORY)).get("users", {}))
+    admin = dict(default_users.get("administrator", {}))
+    admin["authorized_keys"] = [admin_pubkey]
+    default_users["administrator"] = admin
+
     extras = {
         "RUNTIME": detect_runtime(),
         "storage": {
@@ -68,9 +77,7 @@ def main() -> int:
             "network": {"encryption": True},
         },
         "nfs_server_ip": nfs_ip,
-        "users": {
-            "administrator": {"authorized_keys": [admin_pubkey]},
-        },
+        "users": default_users,
     }
 
     dump_yaml(str(out_path), extras)
