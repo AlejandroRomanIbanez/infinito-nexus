@@ -2,6 +2,9 @@
 - services:
     matrix:
       flavor: ansible
+    coturn:
+      enabled: true
+      shared: true
     css:
       enabled: true
       shared: true
@@ -19,6 +22,8 @@
       shared: true
     matomo:
       enabled: true
+      shared: true
+    postgres:
       shared: true
     sso:
       enabled: true
@@ -30,6 +35,9 @@
 - services:
     matrix:
       flavor: ansible
+    coturn:
+      enabled: false
+      shared: false
     css:
       enabled: false
       shared: false
@@ -47,6 +55,8 @@
       shared: false
     matomo:
       enabled: false
+      shared: false
+    postgres:
       shared: false
     sso:
       enabled: false
@@ -58,6 +68,9 @@
 - services:
     matrix:
       flavor: compose
+    coturn:
+      enabled: true
+      shared: true
     css:
       enabled: true
       shared: true
@@ -75,6 +88,8 @@
       shared: true
     matomo:
       enabled: true
+      shared: true
+    postgres:
       shared: true
     sso:
       enabled: true

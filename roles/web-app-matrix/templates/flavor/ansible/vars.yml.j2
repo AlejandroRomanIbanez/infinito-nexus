@@ -22,7 +22,21 @@ matrix_synapse_database_user: "{{ MATRIX_POSTGRES_USER }}"
 matrix_synapse_database_password: "{{ MATRIX_POSTGRES_PASSWORD }}"
 matrix_synapse_database_database: "{{ MATRIX_POSTGRES_DATABASE }}"
 
+matrix_homeserver_container_network: host
 matrix_synapse_container_network: host
+matrix_client_element_container_network: host
+matrix_coturn_docker_network: host
+
+{% if MATRIX_COTURN_SHARED %}
+matrix_coturn_enabled: false
+matrix_synapse_turn_uris:
+  - "turn:{{ MATRIX_COTURN_HOST }}:{{ MATRIX_COTURN_STUN_TURN_PORT }}?transport=udp"
+  - "turn:{{ MATRIX_COTURN_HOST }}:{{ MATRIX_COTURN_STUN_TURN_PORT }}?transport=tcp"
+  - "turns:{{ MATRIX_COTURN_HOST }}:{{ MATRIX_COTURN_STUN_TURN_TLS_PORT }}?transport=udp"
+  - "turns:{{ MATRIX_COTURN_HOST }}:{{ MATRIX_COTURN_STUN_TURN_TLS_PORT }}?transport=tcp"
+matrix_synapse_turn_shared_secret: "{{ MATRIX_COTURN_AUTH_SECRET }}"
+{% endif %}
+
 matrix_synapse_container_client_api_host_bind_port: "0.0.0.0:{{ MATRIX_SYNAPSE_PORT }}"
 matrix_synapse_container_federation_api_plain_host_bind_port: "0.0.0.0:{{ MATRIX_FEDERATION_PORT }}"
 matrix_client_element_container_http_host_bind_port: "0.0.0.0:{{ MATRIX_ELEMENT_PORT }}"

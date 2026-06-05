@@ -61,6 +61,12 @@ MATRIX_POSTGRES_USER: "{{ lookup('database', application_id, 'username') }}"
 MATRIX_POSTGRES_PASSWORD: "{{ lookup('database', application_id, 'password') }}"
 MATRIX_POSTGRES_DATABASE: "{{ lookup('database', application_id, 'name') }}"
 
+MATRIX_COTURN_SHARED: "{{ lookup('config', application_id, 'services.coturn.shared') | bool }}"
+MATRIX_COTURN_HOST: "{{ lookup('domain', 'web-svc-coturn') if MATRIX_COTURN_SHARED else '' }}"
+MATRIX_COTURN_STUN_TURN_PORT: "{{ lookup('config', 'web-svc-coturn', 'services.coturn.ports.public.stun_turn') if MATRIX_COTURN_SHARED else '' }}"
+MATRIX_COTURN_STUN_TURN_TLS_PORT: "{{ lookup('config', 'web-svc-coturn', 'services.coturn.ports.public.stun_turn_tls') if MATRIX_COTURN_SHARED else '' }}"
+MATRIX_COTURN_AUTH_SECRET: "{{ lookup('config', 'web-svc-coturn', 'credentials.auth_secret') if MATRIX_COTURN_SHARED else '' }}"
+
 MATRIX_OUTBOUND_MAIL_ENABLED: "{{ lookup('config', application_id, 'services.email.enabled') | bool }}"
 MATRIX_OUTBOUND_MAIL: "{{ lookup('email', application_id) if MATRIX_OUTBOUND_MAIL_ENABLED else {} }}"
 MATRIX_OUTBOUND_MAIL_HOST: "{{ MATRIX_OUTBOUND_MAIL.host | default('') }}"
