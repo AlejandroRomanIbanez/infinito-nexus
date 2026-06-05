@@ -60,6 +60,7 @@ PENPOT_FLAGS: >-
   enable-registration
   enable-login-with-password
   disable-telemetry
+  disable-onboarding
   {{ 'enable-login-with-oidc' if PENPOT_SSO_ENABLED | bool else '' }}
   {{ 'enable-login-with-ldap' if PENPOT_LDAP_ENABLED | bool else '' }}
 

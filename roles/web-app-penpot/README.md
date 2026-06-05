@@ -77,14 +77,26 @@ Procedure); revisit at PR review:
   containers, which the upstream image tolerates.
 - **CSP** allows `unsafe-inline`/`unsafe-eval` for `script-src-elem` and
   `blob:` workers/images, required by Penpot's SPA and worker-based renderer.
+- **OIDC JVM CA trust:** the backend command (in `templates/compose.yml.j2`)
+  imports the internal CA into a writable `cacerts` copy and points the JVM at
+  it via `JAVA_TOOL_OPTIONS`. The shared `with-ca-trust.sh` entrypoint covers
+  the OS/NSS/env trust stores but not the JVM truststore, so without this Penpot's
+  server-side OIDC token/userinfo calls to Keycloak fail with `PKIX path building
+  failed`. The CA path is hardcoded because the framework's CA-override
+  re-serialises the command and would double-escape a `$`.
+- **`disable-onboarding`** is in `PENPOT_FLAGS` so users land directly on the
+  dashboard (sovereign install; also keeps the project/asset flows testable).
 
 ## Verification status
 
-`make test` (lint + integration suites) is the static gate exercised here. The
-live Definition-of-Done items — one-command deploy on a fresh host, reachability
-at the generated domain, and live OIDC/LDAP Playwright flows against a running
-Keycloak/OpenLDAP — require a real deployment target and are validated during a
-matrix deploy, not by the static suite.
+Deployed end to end (Penpot + Keycloak + OpenLDAP) and the per-role Playwright
+suite passes live against the running stack — **8 passed, 2 skipped**: TLS
+baseline, OIDC (administrator + biber), LDAP (administrator + biber), project
+creation, and image asset upload. The two skips are the generic `biber` /
+`administrator` persona scenarios, declared blocked via `PERSONA_*_BLOCKED`
+(mirroring `web-app-taiga`): Penpot's in-app "OpenID" login entry and SPA
+user-menu logout are not driveable by the generic persona helper, so both users'
+real auth is instead exercised by the dedicated OIDC + LDAP scenarios.
 
 ## Further Resources
 

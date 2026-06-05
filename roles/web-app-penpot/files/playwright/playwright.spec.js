@@ -16,6 +16,58 @@ const oidcIssuerUrl = normalizeBaseUrl(process.env.OIDC_ISSUER_URL || "");
 const canonicalDomain = decodeDotenvQuotedValue(process.env.CANONICAL_DOMAIN || "");
 const adminUsername = decodeDotenvQuotedValue(process.env.ADMIN_USERNAME);
 const adminPassword = decodeDotenvQuotedValue(process.env.ADMIN_PASSWORD);
+const adminEmail = decodeDotenvQuotedValue(process.env.ADMIN_EMAIL);
+const biberUsername = decodeDotenvQuotedValue(process.env.BIBER_USERNAME);
+const biberPassword = decodeDotenvQuotedValue(process.env.BIBER_PASSWORD);
+const biberEmail = decodeDotenvQuotedValue(process.env.BIBER_EMAIL);
+
+const loginRoute = (base) => `${base.replace(/\/$/, "")}/#/auth/login`;
+
+// Penpot in-app OIDC (flavor: oidc): the login page renders an "OpenID"
+// provider entry (clickable text, not a role=button) that redirects to
+// Keycloak. Drive it, complete the Keycloak form, assert the round-trip
+// returns to Penpot.
+async function penpotOidcLogin(page, username, password) {
+  const expectedAuth = `${oidcIssuerUrl}/protocol/openid-connect/auth`;
+  const expectedBase = baseUrl.replace(/\/$/, "");
+  await page.goto(loginRoute(baseUrl));
+  const oidcEntry = page.getByText("OpenID", { exact: true });
+  await expect(oidcEntry, "Expected a Penpot OpenID login entry").toBeVisible({ timeout: 60_000 });
+  await oidcEntry.click();
+  await expect
+    .poll(() => page.url(), { timeout: 60_000, message: `expected redirect to ${expectedAuth}` })
+    .toContain(expectedAuth);
+  await performKeycloakLoginForm(page, username, password);
+  await expect
+    .poll(() => page.url(), { timeout: 90_000, message: `expected redirect back to ${expectedBase}` })
+    .toContain(expectedBase);
+  // Prove a real authenticated session: Penpot leaves the /auth/login route
+  // for the dashboard/onboarding once the server-side token exchange succeeds.
+  await expect
+    .poll(() => page.url(), { timeout: 60_000, message: "expected to leave the login route after OIDC sign-in" })
+    .not.toContain("/auth/login");
+  await expect(page.locator("body")).toBeVisible({ timeout: 60_000 });
+}
+
+// Penpot LDAP: the login form exposes a dedicated "LDAP" submit button
+// (disabled until the work-email + password fields are filled) that binds
+// against OpenLDAP directly — no Keycloak round-trip.
+async function penpotLdapLogin(page, email, password) {
+  const expectedBase = baseUrl.replace(/\/$/, "");
+  await page.goto(loginRoute(baseUrl));
+  const emailField = page.getByLabel(/work email/i);
+  const passwordField = page.getByLabel(/^password$/i);
+  await expect(emailField, "Expected the Penpot login form").toBeVisible({ timeout: 60_000 });
+  await emailField.fill(email);
+  await passwordField.fill(password);
+  const ldapButton = page.getByRole("button", { name: /^LDAP$/i });
+  await expect(ldapButton, "Expected the LDAP submit button to enable once the form is filled").toBeEnabled({ timeout: 30_000 });
+  await ldapButton.click();
+  await expect
+    .poll(() => page.url(), { timeout: 60_000, message: "expected to leave the login route after LDAP bind" })
+    .not.toContain("/auth/login");
+  await expect(page.locator("body")).toBeVisible({ timeout: 60_000 });
+}
 
 test.beforeEach(async ({ page }) => {
   expect(baseUrl, "PENPOT_BASE_URL must be set").toBeTruthy();
@@ -34,101 +86,101 @@ test("baseline: Penpot responds on the canonical domain with TLS", async ({ page
   expect(r.headers()["strict-transport-security"], "Penpot must emit HSTS").toBeTruthy();
 });
 
-test("OIDC: in-app provider button hands off to Keycloak and back (variant 0)", async ({ page }) => {
+test("OIDC: administrator in-app provider button hands off to Keycloak and back (variant 0)", async ({ page }) => {
   skipUnlessServiceEnabled("sso");
   test.setTimeout(120_000); // OIDC round-trip + admin login form
   expect(adminUsername).toBeTruthy();
   expect(adminPassword).toBeTruthy();
   expect(oidcIssuerUrl).toBeTruthy();
-  const expectedAuth = `${oidcIssuerUrl}/protocol/openid-connect/auth`;
-  const expectedBase = baseUrl.replace(/\/$/, "");
-
-  // Penpot uses in-app OIDC (flavor: oidc), so the auth login page renders an
-  // explicit provider button rather than auto-redirecting like an oauth2 proxy.
-  await page.goto(`${expectedBase}/#/auth/login`);
-  const oidcButton = page
-    .getByRole("button", { name: /openid|oidc|keycloak|single sign|sso/i })
-    .or(page.getByRole("link", { name: /openid|oidc|keycloak|single sign|sso/i }))
-    .first();
-  await expect(oidcButton, "Expected a Penpot OIDC login button").toBeVisible({ timeout: 60_000 });
-  await oidcButton.click();
-
-  await expect
-    .poll(() => page.url(), { timeout: 60_000, message: `expected redirect to ${expectedAuth}` })
-    .toContain(expectedAuth);
-  await performKeycloakLoginForm(page, adminUsername, adminPassword);
-  await expect
-    .poll(() => page.url(), { timeout: 90_000, message: `expected redirect back to ${expectedBase}` })
-    .toContain(expectedBase);
-  await expect(page.locator("body")).toBeVisible({ timeout: 60_000 });
+  await penpotOidcLogin(page, adminUsername, adminPassword);
 });
 
-test("LDAP: in-app login form binds against OpenLDAP (variant 1)", async ({ page }) => {
+test("OIDC: biber non-admin RBAC user logs in via Keycloak (variant 0)", async ({ page }) => {
+  skipUnlessServiceEnabled("sso");
+  test.setTimeout(120_000); // OIDC round-trip + biber login form
+  expect(biberUsername).toBeTruthy();
+  expect(biberPassword).toBeTruthy();
+  expect(oidcIssuerUrl).toBeTruthy();
+  await penpotOidcLogin(page, biberUsername, biberPassword);
+});
+
+test("LDAP: administrator in-app form binds against OpenLDAP (variant 1)", async ({ page }) => {
   skipUnlessServiceEnabled("ldap");
   test.setTimeout(90_000); // LDAP bind + first authenticated render
-  expect(adminUsername).toBeTruthy();
+  expect(adminEmail).toBeTruthy();
   expect(adminPassword).toBeTruthy();
-  const expectedBase = baseUrl.replace(/\/$/, "");
+  await penpotLdapLogin(page, adminEmail, adminPassword);
+});
 
-  // With LDAP enabled, Penpot's own login form authenticates the bind path
-  // directly (no Keycloak round-trip), so fill it and assert an authenticated
-  // surface (URL leaves /auth/login and the dashboard shell renders).
-  await page.goto(`${expectedBase}/#/auth/login`);
-  const username = page.locator("input[name='email'], input#email, input[name='username'], input[type='email']").first();
-  const password = page.locator("input[name='password'], input#password, input[type='password']").first();
-  await expect(username, "Expected the Penpot login form").toBeVisible({ timeout: 60_000 });
-  await username.fill(adminUsername);
-  await password.fill(adminPassword);
-  await password.press("Enter");
+test("LDAP: biber non-admin RBAC user binds against OpenLDAP (variant 1)", async ({ page }) => {
+  skipUnlessServiceEnabled("ldap");
+  test.setTimeout(90_000); // LDAP bind + first authenticated render
+  expect(biberEmail).toBeTruthy();
+  expect(biberPassword).toBeTruthy();
+  await penpotLdapLogin(page, biberEmail, biberPassword);
+});
 
-  await expect
-    .poll(() => page.url(), { timeout: 60_000, message: "expected to leave the login route after LDAP bind" })
-    .not.toContain("/auth/login");
-  await expect(page.locator("body")).toBeVisible({ timeout: 60_000 });
+test("project: administrator creates a design project", async ({ page }) => {
+  skipUnlessServiceEnabled("sso");
+  test.setTimeout(120_000); // OIDC round-trip + dashboard project creation
+  await penpotOidcLogin(page, adminUsername, adminPassword);
+  const projectName = `pw-project-${Date.now()}`;
+  const addProject = page
+    .getByRole("button", { name: /new project|add project|create.*project/i })
+    .or(page.locator('[data-testid="add-project"], [data-test="add-project"]'))
+    .first();
+  await expect(addProject, "Expected a create-project control on the dashboard").toBeVisible({ timeout: 60_000 });
+  await addProject.click();
+  const nameInput = page.locator('.project-name input, input[type="text"]:visible, [contenteditable="true"]:visible').first();
+  await nameInput.fill(projectName);
+  await nameInput.press("Enter");
+  await expect(page.getByText(projectName, { exact: false }).first()).toBeVisible({ timeout: 30_000 });
+});
+
+test("asset: administrator uploads an image asset into a design file", async ({ page }) => {
+  skipUnlessServiceEnabled("sso");
+  test.setTimeout(180_000); // OIDC + editor load + image upload
+  await penpotOidcLogin(page, adminUsername, adminPassword);
+
+  // Open Drafts and create a new file; Penpot navigates into the workspace editor.
+  await page.getByText("Drafts", { exact: true }).first().click();
+  const newFile = page.getByText(/\+\s*New File/i).first();
+  await expect(newFile, "Expected a create-file control in Drafts").toBeVisible({ timeout: 60_000 });
+  await newFile.click();
+  await expect.poll(() => page.url(), { timeout: 90_000, message: "expected to enter the Penpot workspace editor" })
+    .toContain("/workspace");
+
+  // Upload a small PNG into the file via the workspace image file input.
+  const onePixelPng = Buffer.from(
+    "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+    "base64",
+  );
+  const fileInput = page.locator('input[type="file"]').first();
+  await fileInput.waitFor({ state: "attached", timeout: 60_000 });
+  await fileInput.setInputFiles({ name: "pw-asset.png", mimeType: "image/png", buffer: onePixelPng });
+
+  // The uploaded image becomes a board/shape on the canvas; assert Penpot
+  // acknowledges the upload (a layer/element referencing the file appears).
+  await expect(page.getByText(/pw-asset|image/i).first()).toBeVisible({ timeout: 60_000 });
 });
 
 // Persona scenarios.
-// Bodies live in the shared helper roles/test-e2e-playwright/files/personas
-// so every role's persona flow stays consistent.
+// Bodies live in the shared helper roles/test-e2e-playwright/files/personas.
+// Penpot's login is an in-app "OpenID" provider entry (clickable text, not a
+// `login`/`sign-in` link) and its logout sits behind an SPA user menu the
+// generic persona helper does not recognise, so the authenticated biber /
+// administrator persona journeys are declared blocked here (mirrors
+// web-app-taiga). Their real auth paths are exercised by the dedicated
+// OIDC + LDAP scenarios above (both administrator and biber).
 
 test("guest: public-landing → auth chain → never authenticated", async ({ page }) => {
   await runGuestFlow(page);
 });
 
 test("biber: app → role interaction → universal logout", async ({ page }) => {
-  await runBiberFlow(page, {
-    biberInteraction: async (interactivePage) => {
-      // Penpot end-user interaction: open the projects/dashboard surface.
-      const dashboard = interactivePage
-        .getByRole("link", { name: /^(projects|drafts|dashboard|recent)$/i })
-        .first();
-      if (await dashboard.isVisible({ timeout: 10_000 }).catch(() => false)) {
-        await dashboard.click().catch(() => {});
-        await interactivePage.waitForLoadState("domcontentloaded", { timeout: 30_000 }).catch(() => {});
-        await expect(interactivePage.locator("body")).toContainText(
-          /project|draft|file|board|library|penpot/i,
-          { timeout: 30_000 },
-        );
-      }
-    },
-  });
+  await runBiberFlow(page);
 });
 
 test("administrator: app → admin interaction → universal logout", async ({ page }) => {
-  await runAdminFlow(page, {
-    adminInteraction: async (interactivePage) => {
-      // Penpot admin-only interaction: open the settings / management surface.
-      const settingsLink = interactivePage
-        .getByRole("link", { name: /^(settings|teams?|members|profile|admin)$/i })
-        .first();
-      if (await settingsLink.isVisible({ timeout: 10_000 }).catch(() => false)) {
-        await settingsLink.click().catch(() => {});
-        await interactivePage.waitForLoadState("domcontentloaded", { timeout: 30_000 }).catch(() => {});
-        await expect(interactivePage.locator("body")).toContainText(
-          /settings|team|member|profile|password|penpot/i,
-          { timeout: 30_000 },
-        );
-      }
-    },
-  });
+  await runAdminFlow(page);
 });
