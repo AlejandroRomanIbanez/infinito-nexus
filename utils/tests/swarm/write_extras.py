@@ -54,10 +54,18 @@ def main() -> int:
 
     extras = {
         "RUNTIME": detect_runtime(),
-        "storage": {"nfs": {"server": nfs_ip}},
+        "storage": {
+            "backend": "nfs",
+            "nfs": {
+                "server": nfs_ip,
+                "export_base": "/srv/nfs",
+                "version": 3,
+            },
+        },
         "swarm": {
             "manager": {"advertise_addr": mgr_ip},
-            "registry": {"host": mgr},
+            "registry": {"host": mgr, "port": 5000},
+            "network": {"encryption": True},
         },
         "nfs_server_ip": nfs_ip,
         "users": {

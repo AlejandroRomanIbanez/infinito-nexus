@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# shellcheck source=scripts/meta/env/load.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)/scripts/meta/env/load.sh"
+
 # act's embedded resolver intermittently returns EAI_AGAIN.
 swarm_node_dns=(--dns 1.1.1.1 --dns 8.8.8.8) # nocheck: hardcoded-dns-resolver
 

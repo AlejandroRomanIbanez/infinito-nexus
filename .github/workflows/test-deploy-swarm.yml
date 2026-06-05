@@ -64,7 +64,11 @@ jobs:
 
       - name: Install project (host venv)
         shell: bash
-        run: make install
+        run: |
+          make install-force
+          # shellcheck source=/dev/null
+          source scripts/meta/env/load.sh
+          echo "${VENV}/bin" >> "${GITHUB_PATH}"
 
       - name: Resolve effective whitelist (diff vs origin/main)
         id: resolve_wl
@@ -116,7 +120,11 @@ jobs:
 
       - name: Install project (host venv)
         shell: bash
-        run: make install
+        run: |
+          make install-force
+          # shellcheck source=/dev/null
+          source scripts/meta/env/load.sh
+          echo "${VENV}/bin" >> "${GITHUB_PATH}"
 
       - name: "Create dedicated network for simulated cluster (MTU 1400)"
         # MTU 1400: TLS ServerHello fragmentation drops on host PMTU < 1500.

@@ -1,6 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# shellcheck source=scripts/meta/env/load.sh
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)/scripts/meta/env/load.sh"
+
 : "${APP_ID:?APP_ID required}"
 
 ENTITY="${APP_ID#web-app-}"
