@@ -164,6 +164,7 @@ jobs:
 
       - name: "Deploy ${{ matrix.apps }} via cli.administration.deploy.swarm"
         run: |
+          source scripts/meta/env/load.sh
           python3 -m cli.administration.deploy.swarm \
             /tmp/inv/devices.yml \
             -p /tmp/inv/.password \
