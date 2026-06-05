@@ -7,4 +7,4 @@
 
 - name: "EspoCRM manager-side operations (file deploys + container exec)"
   include_tasks: 02_manager_ops.yml
-  when: SWARM_MANAGER_ACTIVE | bool
+  when: IS_STACK_HOST | bool

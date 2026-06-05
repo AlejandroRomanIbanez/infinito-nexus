@@ -8,7 +8,7 @@
     mode: "{{ _tpl.mode | default('0640') }}"
   when:
     - (_tpl.when | default(true)) | bool
-    - SWARM_MANAGER_ACTIVE | bool
+    - IS_STACK_HOST | bool
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   register: _role_templates_render
   notify: "{{ _tpl.notify | default(['compose up']) }}"
@@ -34,5 +34,5 @@
   when:
     - (_tpl.when | default(true)) | bool
     - DEPLOYMENT_MODE == 'swarm'
-    - not (SWARM_MANAGER_ACTIVE | bool)
+    - not (IS_STACK_HOST | bool)
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"

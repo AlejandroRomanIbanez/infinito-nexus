@@ -3,7 +3,7 @@ DEPLOYMENT_MODE: "{{ 'swarm' if (groups[application_id] | default([]) | length) 
 
 SWARM_CLUSTER_AVAILABLE: "{{ (groups['svc-docker-swarm'] | default([]) | length) > 0 }}"
 
-SWARM_MANAGER_ACTIVE: >-
+IS_STACK_HOST: >-
   {{ DEPLOYMENT_MODE != 'swarm'
      or inventory_hostname in (groups['svc-docker-swarm-manager'] | default([])) }}
 
