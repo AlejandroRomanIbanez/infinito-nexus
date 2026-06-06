@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-set +e
-
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/_context.sh"
+set +e
+set +o pipefail
+set +u
 
 sep() {
 	echo "=========================================="
