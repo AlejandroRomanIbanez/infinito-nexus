@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -euo pipefail
+set +e
 
 : "${APP_ID:?APP_ID is required (matrix.apps)}"
 
@@ -9,3 +9,4 @@ if [[ -d /tmp/inv ]]; then
 else
 	echo "No inventory found at /tmp/inv"
 fi
+exit 0

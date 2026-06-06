@@ -70,3 +70,5 @@ for node in "${MGR}" "${WRK1}" "${WRK2}"; do
 	echo "=== ${node} mount points (nfs filter) ==="
 	docker exec "${node}" mount | grep -i nfs
 done
+
+exit 0
