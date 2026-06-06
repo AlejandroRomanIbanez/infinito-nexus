@@ -1,16 +1,9 @@
 #!/usr/bin/env python3
 #
-# Local action plugin: drop-in replacement for `template:` that gates
-# delivery on IS_STACK_HOST.
-#
-# Why this exists: directories like /etc/nginx/conf.d/global/ are
-# created exclusively on IS_STACK_HOST (see
-# roles/sys-svc-webserver-core/tasks/01_core.yml line 2-3); a raw
-# `template:` targeting that tree from a worker aborts with
-# "Destination directory does not exist". This wrapper turns the gate
-# into a SPOT so every consumer of a .conf.j2 destined for a
-# stack-host-only directory inherits the skip semantics without having
-# to repeat `when: IS_STACK_HOST | bool` on every task.
+# Local action plugin: drop-in replacement for `template:` that skips
+# delivery on non-stack hosts. Wrapped in trust_as_template because
+# Ansible 2.19+ refuses to render strings constructed in Python unless
+# they carry the TrustedAsTemplate tag.
 
 from __future__ import annotations
 
@@ -18,23 +11,19 @@ from typing import Any
 
 from ansible.module_utils.parsing.convert_bool import boolean as _to_bool
 from ansible.plugins.action.template import ActionModule as TemplateActionModule
-from ansible.template import Templar
+from ansible.template import trust_as_template
+
+_IS_STACK_HOST_EXPR = trust_as_template("{{ IS_STACK_HOST | bool }}")
 
 
 class ActionModule(TemplateActionModule):
     """Drop-in `template:` replacement that skips on non-stack hosts.
 
-    Inherits every `template:` argument (src, dest, owner, group,
-    backup, validate, ...). Required args (src, dest) are enforced by
-    the underlying template module; this wrapper adds no arguments of
-    its own.
-
-    Defaults:
-        mode: "0644" (only when caller omits it).
-
-    Skip semantics:
-        IS_STACK_HOST evaluated to false  ->  returns `skipped: true`
-        without touching the filesystem.
+    Inherits every `template:` argument. Adds:
+      * `mode` default of "0644" when omitted.
+      * `IS_STACK_HOST` gate: returns `skipped: true` on workers, so the
+        underlying `template:` never tries to write into the
+        stack-host-only nginx tree.
     """
 
     def run(
@@ -43,8 +32,8 @@ class ActionModule(TemplateActionModule):
         if task_vars is None:
             task_vars = {}
 
-        templar = Templar(loader=self._loader, variables=task_vars)
-        if not _to_bool(templar.template("{{ IS_STACK_HOST | bool }}")):
+        self._templar.available_variables = task_vars
+        if not _to_bool(self._templar.template(_IS_STACK_HOST_EXPR)):
             return {
                 "changed": False,
                 "skipped": True,
@@ -52,5 +41,4 @@ class ActionModule(TemplateActionModule):
             }
 
         self._task.args.setdefault("mode", "0644")
-
         return super().run(tmp=tmp, task_vars=task_vars)
