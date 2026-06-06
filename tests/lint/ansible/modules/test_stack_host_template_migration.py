@@ -1,30 +1,28 @@
-"""Drift guard: every `template:` task that ships a ``.conf.j2`` file
-must adopt the project's :mod:`plugins.action.conf_template` wrapper.
+"""Drift guard: every bare `template:` task must adopt the project's
+:mod:`plugins.action.stack_host_template` wrapper or carry an explicit
+`# nocheck: stack-host-template` marker.
 
 The wrapper folds the ``IS_STACK_HOST`` gate into the module so callers
-do not silently fail on worker hosts whose nginx/etc tree is owned
-exclusively by the stack host (the failure pattern that bit
-web-app-prometheus in CI run 27034636121). Keeping the bare
-``template:`` module reachable for ``.conf.j2`` payloads re-opens that
-class of bug.
+do not silently fail on hosts whose destination tree (compose dir,
+nginx tree, keycloak admin volumes, ...) is owned exclusively by the
+stack host. Keeping the bare ``template:`` module reachable re-opens
+that class of bug.
 
 Detection
 =========
 Line-based scan of every ``.yml`` file in the project. A finding is
-recorded when:
-
-* a line opens a ``template:`` (or ``ansible.builtin.template:``) task,
-  AND
-* the next ``src:`` line on the same task contains a ``.conf.j2``
-  literal.
+recorded for every line that opens a ``template:`` (or
+``ansible.builtin.template:``) task and does not carry the
+``stack-host-template`` nocheck marker anywhere inside the task body.
 
 Escape hatch
 ============
-Add ``# nocheck: conf-template`` on the ``template:`` line, on the
-``src:`` line, or anywhere else inside the task body when the bare
-``template:`` is genuinely required (e.g. the wrapper itself must not
-self-call, a destination is provably worker-local, or the task is
-inside a fixture). Use sparingly — each suppression is a missed SPOT.
+Add ``# nocheck: stack-host-template`` on the ``template:`` line, on
+the ``src:`` line, or anywhere else inside the task body when the bare
+``template:`` is genuinely required (per-host system config, app
+compose dir that is structurally only ever materialised on STACK_HOST
+via a parent IS_STACK_HOST gate, a fixture, ...). Use sparingly; each
+suppression is a missed SPOT.
 """
 
 from __future__ import annotations
@@ -40,15 +38,10 @@ from . import PROJECT_ROOT
 TEMPLATE_MODULE_PATTERN = re.compile(
     r"^(?P<indent>\s*)-?\s*(ansible\.builtin\.template|template)\s*:\s*(?:#.*)?$"
 )
-SRC_LINE_PATTERN = re.compile(r"^\s*src\s*:\s*[\"']?(?P<src>[^\"'\s#]+)")
-NOCHECK_MARKER = "nocheck: conf-template"
+NOCHECK_MARKER = "nocheck: stack-host-template"
 
 
 def _find_task_block_end(lines: list[str], start_idx: int, base_indent: int) -> int:
-    """Walk forward from start_idx until the indentation drops to or
-    below base_indent (== a new sibling task or the end of the task
-    list). Returns the exclusive end index.
-    """
     end = start_idx + 1
     while end < len(lines):
         line = lines[end]
@@ -61,8 +54,8 @@ def _find_task_block_end(lines: list[str], start_idx: int, base_indent: int) -> 
     return end
 
 
-class TestConfTemplateMigration(unittest.TestCase):
-    def test_no_bare_template_for_conf_j2_payloads(self):
+class TestStackHostTemplateMigration(unittest.TestCase):
+    def test_no_bare_template_without_stack_host_gate_or_nocheck(self):
         findings: list[tuple[str, int, str]] = []
 
         for path_str, content in iter_project_files_with_content(extensions=(".yml",)):
@@ -79,15 +72,6 @@ class TestConfTemplateMigration(unittest.TestCase):
                 block_end = _find_task_block_end(lines, idx, base_indent)
                 block_lines = lines[idx:block_end]
 
-                src_value: str | None = None
-                for inner in block_lines[1:]:
-                    src_match = SRC_LINE_PATTERN.match(inner)
-                    if src_match:
-                        src_value = src_match.group("src")
-                        break
-                if not src_value or ".conf.j2" not in src_value:
-                    continue
-
                 if any(NOCHECK_MARKER in inner for inner in block_lines):
                     continue
 
@@ -101,12 +85,14 @@ class TestConfTemplateMigration(unittest.TestCase):
                 )
             )
             self.fail(
-                "Found bare `template:` tasks that ship a `.conf.j2` payload.\n\n"
-                "Replace them with `conf_template:` so the IS_STACK_HOST gate is "
-                "enforced centrally and worker hosts no longer abort with "
+                "Found bare `template:` tasks without the stack-host-template "
+                "migration.\n\n"
+                "Replace them with `stack_host_template:` so the IS_STACK_HOST "
+                "gate is enforced centrally and workers no longer abort with "
                 "'Destination directory does not exist'.\n\n"
-                f"If a call site genuinely cannot use the wrapper, suppress with "
-                f"`# {NOCHECK_MARKER}` and add a one-line reason.\n\n"
+                f"If a call site genuinely needs `template:` (per-host system "
+                f"config, structurally parent-gated, fixture), suppress with "
+                f"`# {NOCHECK_MARKER} (<reason>)`.\n\n"
                 f"{formatted}"
             )
 

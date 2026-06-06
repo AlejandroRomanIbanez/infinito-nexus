@@ -6,7 +6,7 @@
     mode: "0755"
 
 - name: create {{ MATRIX_WELL_KNOWN_FILE }}
-  ansible.builtin.template:
+  stack_host_template:
     src: "well-known.j2"
     dest: "{{ MATRIX_WELL_KNOWN_FILE }}"
 
@@ -25,7 +25,7 @@
     http_port: "{{ MATRIX_SYNAPSE_PORT }}"
 
 - name: create {{ MATRIX_SYNAPSE_DOMAIN }}.conf
-  conf_template:
+  stack_host_template:
     src: "templates/synapse.conf.j2"
     dest: "{{ lookup('nginx', 'files.domain', MATRIX_SYNAPSE_DOMAIN) }}"
   vars:

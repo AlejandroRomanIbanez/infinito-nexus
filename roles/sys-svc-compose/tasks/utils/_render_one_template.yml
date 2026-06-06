@@ -1,6 +1,6 @@
 ---
 - name: "Render '{{ _tpl.dest }}' (on manager when swarm)"
-  ansible.builtin.template:
+  ansible.builtin.template: # nocheck: stack-host-template (structurally STACK_HOST-delegated already (delegate_to + run_once), uses its own swarm-distribution dance)
     src: "{{ _tpl.src }}"
     dest: "{{ _tpl.dest }}"
     owner: "{{ _tpl.owner | default('root') }}"

@@ -9,7 +9,7 @@
     mode: "0755"
 
 - name: "Render nginx vhost into compose dir"
-  ansible.builtin.template: # nocheck: conf-template (moodle compose dir, parent task IS_STACK_HOST-gated)
+  ansible.builtin.template: # nocheck: stack-host-template (moodle compose dir, parent task IS_STACK_HOST-gated)
     src: "nginx-moodle.conf.j2"
     dest: "{{ docker_compose.directories.instance | default(lookup('container', application_id, 'directories.instance')) }}/nginx.conf"
     mode: "0640"

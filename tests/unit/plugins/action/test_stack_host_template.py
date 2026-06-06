@@ -1,7 +1,7 @@
 import unittest
 from unittest.mock import patch
 
-from plugins.action.conf_template import ActionModule
+from plugins.action.stack_host_template import ActionModule
 
 
 class _FakeTask:
@@ -25,7 +25,7 @@ def _make_action(task, templar):
     return action
 
 
-class TestConfTemplate(unittest.TestCase):
+class TestStackHostTemplate(unittest.TestCase):
     def test_skips_silently_on_non_stack_host(self):
         task = _FakeTask(args={"src": "x.j2", "dest": "/etc/x.conf"})
         action = _make_action(task, _FakeTemplar(is_stack_host=False))
@@ -49,7 +49,7 @@ class TestConfTemplate(unittest.TestCase):
         action = _make_action(task, _FakeTemplar(is_stack_host=True))
 
         with patch(
-            "plugins.action.conf_template.TemplateActionModule.run",
+            "plugins.action.stack_host_template.TemplateActionModule.run",
             return_value={"changed": True},
         ) as super_run:
             action.run(task_vars={})
@@ -62,7 +62,7 @@ class TestConfTemplate(unittest.TestCase):
         action = _make_action(task, templar)
 
         with patch(
-            "plugins.action.conf_template.TemplateActionModule.run",
+            "plugins.action.stack_host_template.TemplateActionModule.run",
             return_value={"changed": True},
         ):
             action.run(task_vars={"IS_STACK_HOST": True, "ANSIBLE_VERSION": "9.0"})
@@ -75,7 +75,7 @@ class TestConfTemplate(unittest.TestCase):
         action = _make_action(task, _FakeTemplar(is_stack_host=True))
 
         with patch(
-            "plugins.action.conf_template.TemplateActionModule.run",
+            "plugins.action.stack_host_template.TemplateActionModule.run",
             return_value={"changed": True},
         ):
             action.run(task_vars={})
@@ -87,7 +87,7 @@ class TestConfTemplate(unittest.TestCase):
         action = _make_action(task, _FakeTemplar(is_stack_host=True))
 
         with patch(
-            "plugins.action.conf_template.TemplateActionModule.run",
+            "plugins.action.stack_host_template.TemplateActionModule.run",
             return_value={"changed": True},
         ):
             action.run(task_vars={})
@@ -97,7 +97,7 @@ class TestConfTemplate(unittest.TestCase):
     def test_is_stack_host_expr_carries_trust_tag(self):
         from ansible.template import is_trusted_as_template
 
-        from plugins.action.conf_template import _IS_STACK_HOST_EXPR
+        from plugins.action.stack_host_template import _IS_STACK_HOST_EXPR
 
         self.assertTrue(
             is_trusted_as_template(_IS_STACK_HOST_EXPR),

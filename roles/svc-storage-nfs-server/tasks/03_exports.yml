@@ -35,7 +35,7 @@
       facts have been gathered for every host in `svc-swarm`.
 
 - name: "Render /etc/exports"
-  ansible.builtin.template:
+  ansible.builtin.template: # nocheck: stack-host-template (per-host NFS server /etc/exports (NFS host is its own group, not the stack host))
     src: exports.j2
     dest: /etc/exports
     owner: root

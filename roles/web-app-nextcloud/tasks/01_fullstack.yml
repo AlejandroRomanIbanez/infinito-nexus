@@ -19,7 +19,7 @@
         mode: "0755"
 
     - name: "Deploy Whiteboard Dockerfile to '{{ NEXTCLOUD_WHITEBOARD_SERVICE_DOCKERFILE }}'"
-      template:
+      stack_host_template:
         src: "Dockerfiles/Whiteboard.j2"
         dest: "{{ NEXTCLOUD_WHITEBOARD_SERVICE_DOCKERFILE }}"
       notify: compose build

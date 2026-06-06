@@ -1,6 +1,6 @@
 ---
 - name: "Render allowed_hosts initializer for {{ application_id }}"
-  ansible.builtin.template:
+  stack_host_template:
     src: "allowed_hosts.rb.j2"
     dest: "{{ lookup('container', application_id, 'directories.instance') }}allowed_hosts.rb"
     mode: "0644"

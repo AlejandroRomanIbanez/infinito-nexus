@@ -1,6 +1,6 @@
 ---
 - name: "Deploy PHP error configuration (env aware)"
-  template:
+  stack_host_template:
     src: "php.ini.j2"
     dest: "{{ SUITECRM_PHP_CONFIG_HOST }}"
   notify:

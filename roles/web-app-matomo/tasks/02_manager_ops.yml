@@ -1,6 +1,6 @@
 ---
 - name: "Deploy '{{ MATOMO_BOOTSTRAP_ENV_FILE }}'"
-  template:
+  stack_host_template:
     src: "templates/bootstrap.env.j2"
     dest: "{{ MATOMO_BOOTSTRAP_ENV_FILE }}"
     mode: "0640"

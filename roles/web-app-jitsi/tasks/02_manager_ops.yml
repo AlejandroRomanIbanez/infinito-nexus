@@ -10,7 +10,7 @@
     - "{{ JITSI_PROSODY_CONFIG_HOST_PATH }}/conf.d"
 
 - name: "stage prosody LDAP authentication override (mod_auth_ldap2)"
-  ansible.builtin.template:
+  stack_host_template:
     src: prosody-ldap.cfg.lua.j2
     dest: "{{ JITSI_PROSODY_CONFIG_HOST_PATH }}/conf.d/ldap.cfg.lua"
     mode: "0644"

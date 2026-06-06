@@ -4,7 +4,7 @@
     file: "examples.yml"
 
 - name: "Render LittleJS index.html"
-  template:
+  stack_host_template:
     src: "html/index.html.j2"
     dest: "{{ LITTLEJS_INDEX_HOST_ABS }}"
     mode: "0644"
@@ -13,7 +13,7 @@
     - compose up
 
 - name: "Render LittleJS run.html for shorts"
-  template:
+  stack_host_template:
     src: "html/run.html.j2"
     dest: "{{ LITTLEJS_RUN_HOST_ABS }}"
     mode: "0644"

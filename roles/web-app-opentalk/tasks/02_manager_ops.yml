@@ -1,6 +1,6 @@
 ---
 - name: "Render OpenTalk controller config '{{ application_id }}'"
-  ansible.builtin.template:
+  stack_host_template:
     src: controller.toml.j2
     dest: "{{ [lookup('container', application_id, 'directories.volumes'), 'controller.toml'] | path_join }}"
     mode: "0644"
@@ -8,7 +8,7 @@
     - compose up
 
 - name: "Render LiveKit config '{{ application_id }}'"
-  ansible.builtin.template:
+  stack_host_template:
     src: livekit.yaml.j2
     dest: "{{ [lookup('container', application_id, 'directories.volumes'), 'livekit.yaml'] | path_join }}"
     mode: "0644"
@@ -16,7 +16,7 @@
     - compose up
 
 - name: "Render OpenTalk recorder config '{{ application_id }}'"
-  ansible.builtin.template:
+  stack_host_template:
     src: recorder.toml.j2
     dest: "{{ [lookup('container', application_id, 'directories.volumes'), 'recorder.toml'] | path_join }}"
     mode: "0644"

@@ -56,7 +56,7 @@
       }}
 
 - name: configure msmtprc.conf.j2
-  template: # nocheck: conf-template (per-host /root/.msmtprc, not stack-host-only)
+  template: # nocheck: stack-host-template (per-host /root/.msmtprc, not stack-host-only)
     src: "msmtprc.conf.j2"
     dest: "/root/.msmtprc"
     mode: 600

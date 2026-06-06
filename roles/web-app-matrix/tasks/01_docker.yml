@@ -32,14 +32,14 @@
   loop: "{{ MATRIX_BRIDGES }}"
 
 - name: add multiple mautrix bridge configuration
-  template:
+  stack_host_template:
     src: "mautrix/{{ item.bridge_name }}.config.yml.j2"
     dest: "{{ lookup('container', application_id, 'directories.instance') }}mautrix/{{ item.bridge_name }}/config.yaml"
   loop: "{{ MATRIX_BRIDGES }}"
   notify: compose up
 
 - name: add element configuration
-  template:
+  stack_host_template:
     src: "element.config.json.j2"
     dest: "{{ MATRIX_ELEMENT_CONFIG_PATH_HOST }}"
   notify: compose up
@@ -60,7 +60,7 @@
       --entrypoint /bin/sh matrixdotorg/synapse:latest -c 'chown -vR 991:991 /data'"
 
 - name: add compose.yml
-  template:
+  stack_host_template:
     src: "compose.yml.j2"
     dest: "{{ [ lookup('container', application_id, 'directories.instance'),'compose.yml' ] | path_join }}"
   notify: compose up

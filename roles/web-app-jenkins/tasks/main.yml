@@ -8,7 +8,7 @@
 # instance directory). Rendering before that fails with
 # `Destination directory /opt/compose/jenkins does not exist`.
 - name: "Render Jenkins JCasC config"
-  template:
+  stack_host_template:
     src: casc.yaml.j2
     dest: "{{ JENKINS_CASC_FILE }}"
     mode: "0644"

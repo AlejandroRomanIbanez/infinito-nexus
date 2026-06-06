@@ -16,7 +16,7 @@
     compose_handlers_flush: false
 
 - name: "Transfering upload.ini to {{ WORDPRESS_CONFIG_UPLD_ABS }}"
-  template:
+  stack_host_template:
     src: upload.ini.j2
     dest: "{{ WORDPRESS_CONFIG_UPLD_ABS }}"
   notify:
@@ -24,7 +24,7 @@
     - compose build
 
 - name: "Transfering msmtprc to {{ WORDPRESS_MSMTP_ABS }}"
-  template:
+  stack_host_template:
     src: "{{ WORDPRESS_MSMTP_SRC }}"
     dest: "{{ WORDPRESS_MSMTP_ABS }}"
   notify: compose up

@@ -57,7 +57,7 @@
     - compose up
 
 - name: "Render per-slug Fediwall wall-config.json for '{{ wall.slug }}'"
-  template:
+  stack_host_template:
     src: "wall-config.json.j2"
     dest: "{{ [ FEDIWALL_DIST_DIR_ABS, wall.slug, 'wall-config.json' ] | path_join }}"
     mode: "0644"
@@ -70,7 +70,7 @@
     - compose up
 
 - name: "Render Fediwall root link list at '{{ FEDIWALL_DIST_DIR_ABS }}/index.html'"
-  template:
+  stack_host_template:
     src: "index.html.j2"
     dest: "{{ [ FEDIWALL_DIST_DIR_ABS, 'index.html' ] | path_join }}"
     mode: "0644"

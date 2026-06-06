@@ -1,6 +1,6 @@
 ---
 - name: add config.toml
-  template:
+  stack_host_template:
     src: "config.toml.j2"
     dest: "{{ LISTMONK_CONFIG_HOST }}"
   notify: compose up

@@ -131,7 +131,7 @@
   until: _playwright_pull.rc == 0
 
 - name: Render package.json from template
-  ansible.builtin.template:
+  ansible.builtin.template: # nocheck: stack-host-template (per-host playwright stage dir, runs on every test host)
     src: "{{ _playwright_default_package_template }}"
     dest: "{{ _playwright_stage_dir }}/package.json"
     mode: "0644"
