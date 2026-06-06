@@ -94,7 +94,12 @@ class LookupModule(LookupBase):
             return [""]
 
         indent = int(kwargs.get("indent", 4))
-        body = dump_yaml_str({"depends_on": entries}).rstrip()
+        deployment_mode = str(vars_.get("DEPLOYMENT_MODE", "compose")).strip()
+        if deployment_mode == "swarm":
+            payload: dict[str, object] = {"depends_on": list(entries.keys())}
+        else:
+            payload = {"depends_on": entries}
+        body = dump_yaml_str(payload).rstrip()
         if indent <= 0:
             return [body]
         return [textwrap.indent(body, " " * indent)]

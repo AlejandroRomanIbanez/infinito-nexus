@@ -23,12 +23,12 @@ def _apps(*, db_enabled=False, db_shared=False, redis=False, oauth2=False):
     }
 
 
-def _run(app_id, applications, **kwargs):
+def _run(app_id, applications, *, variables=None, **kwargs):
     with patch(
         "plugins.lookup.container_depends_on.get_merged_applications",
         return_value=applications,
     ):
-        return LookupModule().run([app_id], variables={}, **kwargs)
+        return LookupModule().run([app_id], variables=variables or {}, **kwargs)
 
 
 def _parse(rendered: str) -> dict[str, Any]:
@@ -116,6 +116,28 @@ class TestContainerDependsOnLookup(unittest.TestCase):
     def test_indent_zero(self):
         out = _run("app", _apps(redis=True), indent=0)[0]
         self.assertTrue(out.startswith("depends_on:"))
+
+    def test_swarm_mode_emits_list_form_without_conditions(self):
+        out = _run(
+            "app",
+            _apps(db_enabled=True, redis=True),
+            variables={"DEPLOYMENT_MODE": "swarm"},
+        )[0]
+        parsed = _parse(out)
+        self.assertEqual(set(parsed.keys()), {"depends_on"})
+        self.assertEqual(sorted(parsed["depends_on"]), ["database", "redis"])
+        self.assertNotIn("condition", out)
+
+    def test_compose_mode_keeps_map_form_with_conditions(self):
+        out = _run(
+            "app",
+            _apps(db_enabled=True),
+            variables={"DEPLOYMENT_MODE": "compose"},
+        )[0]
+        self.assertEqual(
+            _parse(out),
+            {"depends_on": {"database": {"condition": "service_healthy"}}},
+        )
 
 
 if __name__ == "__main__":
