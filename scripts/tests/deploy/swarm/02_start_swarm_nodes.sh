@@ -63,8 +63,8 @@ docker exec "${MGR}" apt-get install -y -qq dnsmasq
 # bind-dynamic: pick up docker0 when the Ansible-installed dockerd creates it later.
 dnsmasq_conf="bind-dynamic
 no-resolv
-server=1.1.1.1
-server=8.8.8.8
+server=1.1.1.1 # nocheck: hardcoded-dns-resolver
+server=8.8.8.8 # nocheck: hardcoded-dns-resolver
 address=/${INFINITO_DOMAIN}/127.0.0.1"
 docker exec -i "${MGR}" sh -c 'cat > /etc/dnsmasq.d/infinito.conf' <<<"${dnsmasq_conf}"
 docker exec "${MGR}" systemctl enable --now dnsmasq

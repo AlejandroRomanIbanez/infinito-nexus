@@ -6,7 +6,7 @@
     mode: "0755"
 
 - name: Deploy systemd manager default timeout settings
-  template:  # nocheck: conf-template (per-host systemd config, not stack-host-only)
+  template: # nocheck: conf-template (per-host systemd config, not stack-host-only)
     src: timeouts.conf.j2
     dest: "{{ SYSTEMD_MANAGER_CONF_DIR }}/timeouts.conf"
     mode: "0644"
