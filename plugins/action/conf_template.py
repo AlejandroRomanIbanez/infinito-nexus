@@ -18,6 +18,7 @@ from typing import Any
 
 from ansible.module_utils.parsing.convert_bool import boolean as _to_bool
 from ansible.plugins.action.template import ActionModule as TemplateActionModule
+from ansible.template import Templar
 
 
 class ActionModule(TemplateActionModule):
@@ -42,10 +43,8 @@ class ActionModule(TemplateActionModule):
         if task_vars is None:
             task_vars = {}
 
-        self._templar.available_variables = task_vars
-        if not _to_bool(
-            self._templar.template("{{ IS_STACK_HOST | default(false) | bool }}")
-        ):
+        templar = Templar(loader=self._loader, variables=task_vars)
+        if not _to_bool(templar.template("{{ IS_STACK_HOST | bool }}")):
             return {
                 "changed": False,
                 "skipped": True,
