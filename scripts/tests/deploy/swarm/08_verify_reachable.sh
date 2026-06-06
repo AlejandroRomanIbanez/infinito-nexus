@@ -5,13 +5,6 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/_context.sh"
 
-# Verifies the swarm routing-mesh is functional for the just-deployed
-# service. TCP-connect probe (protocol-agnostic) via the manager's
-# published port confirms the mesh accepts and forwards requests to a
-# live task. With multiple replicas, additionally probe each worker
-# node's local routing-mesh entry to confirm the mesh works on every
-# node that hosts a task.
-
 mapfile -t PORTS < <(
 	docker exec "${MGR}" docker service inspect "${SERVICE_NAME}" \
 		--format '{{ range .Endpoint.Ports }}{{ .PublishedPort }}{{ "\n" }}{{ end }}' 2>/dev/null |
@@ -30,7 +23,6 @@ echo "${SERVICE_NAME}: replicas=${REPLICA_COUNT}, ports=[${PORTS[*]}]"
 
 fail=0
 
-# Probe via the manager (routing-mesh entry that every CI matrix uses)
 for port in "${PORTS[@]}"; do
 	if docker exec "${MGR}" timeout 5 bash -c "</dev/tcp/127.0.0.1/${port}" 2>/dev/null; then
 		echo "OK manager port ${port}/tcp reachable"
@@ -40,8 +32,6 @@ for port in "${PORTS[@]}"; do
 	fi
 done
 
-# Multi-replica: every node hosting a task must accept incoming traffic
-# locally (routing-mesh on each node forwards to a healthy backend).
 if [ "${REPLICA_COUNT}" -gt 1 ]; then
 	mapfile -t NODES < <(
 		docker exec "${MGR}" docker service ps "${SERVICE_NAME}" \

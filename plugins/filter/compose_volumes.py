@@ -127,8 +127,7 @@ def compose_volumes(
             f"{exc}. Simultaneous postgres + mariadb on the same role "
             "is not supported (the embedded service templates collide "
             "on the `database` service key, host name, and volume "
-            "key); pick one dbtype per role. Future support is tracked "
-            "in the filter's docstring TODO."
+            "key); pick one dbtype per role."
         ) from exc
     database_service = get_database_service_config(applications, application_id)
     database_needed = bool(database_service_key) and not bool(
@@ -178,10 +177,3 @@ def compose_volumes(
     payload = {"volumes": _to_plain(volumes)}
 
     return dump_yaml_str(payload).rstrip()
-
-
-# The Jinja filter registration was removed: the canonical entry point is
-# now the `compose_volumes` lookup at `plugins/lookup/compose_volumes.py`,
-# which absorbs the applications-lookup pipe step and auto-wires
-# DEPLOYMENT_MODE + storage from globals. This function stays exported
-# so the lookup (and tests) can import it directly.
