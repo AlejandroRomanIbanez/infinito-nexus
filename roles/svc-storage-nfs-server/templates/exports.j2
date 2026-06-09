@@ -1,4 +1,8 @@
 # Managed by Ansible role svc-storage-nfs-server.
 {% for ip in svc_storage_nfs_server_allowed_ips %}
-{{ storage.nfs.export_base }} {{ ip }}({{ svc_storage_nfs_server_export_options }})
+{{ storage.nfs.export_base }} {{ ip }}({{ SVC_STORAGE_NFS_SERVER_EXPORT_OPTIONS }})
+{% endfor %}
+{% set _state_path = [ storage.nfs.export_base, storage.nfs.state_subdir ] | path_join %}
+{% for cidr in SVC_STORAGE_NFS_SERVER_STATE_ALLOWED_CIDRS %}
+{{ _state_path }} {{ cidr }}({{ SVC_STORAGE_NFS_SERVER_STATE_EXPORT_OPTIONS }})
 {% endfor %}

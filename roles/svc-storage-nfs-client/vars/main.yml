@@ -1,7 +1,7 @@
 ---
 application_id: "svc-storage-nfs-client"
 
-svc_storage_nfs_client_packages:
+SVC_STORAGE_NFS_CLIENT_PACKAGES:
   Debian:
     - nfs-common
   Ubuntu:
@@ -15,4 +15,4 @@ svc_storage_nfs_client_packages:
   Alpine:
     - nfs-utils
 
-svc_storage_nfs_client_probe_dir: /run/svc-storage-nfs-client/probe
+SVC_STORAGE_NFS_CLIENT_PROBE_DIR: /run/svc-storage-nfs-client/probe

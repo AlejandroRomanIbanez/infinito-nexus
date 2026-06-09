@@ -8,3 +8,4 @@ storage:
     server: ""
     export_base: /srv/nfs
     version: 4
+    state_subdir: infinito-state

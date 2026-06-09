@@ -19,7 +19,7 @@ storage:
     # NFSv4 pseudo-root does not negotiate against the act kernel.
     version: 3
 
-svc_storage_nfs_server_export_options: >-
+SVC_STORAGE_NFS_SERVER_EXPORT_OPTIONS: >-
   rw,sync,no_subtree_check,no_root_squash,no_all_squash
 
 swarm:

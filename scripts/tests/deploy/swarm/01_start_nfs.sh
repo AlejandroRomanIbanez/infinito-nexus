@@ -3,7 +3,7 @@ set -euo pipefail
 
 mkdir -p "${RUNNER_TEMP}/nfs-export"
 docker run -d --name "${NFS_SERVER}" \
-	--network swarm-lab \
+	--network "${SWARM_LAB_NETWORK}" \
 	--hostname "${NFS_SERVER}" \
 	--privileged \
 	--cgroupns=host \

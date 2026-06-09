@@ -19,5 +19,3 @@ docker:
     local:
       registry: 5000
   lifecycle: alpha
-  run_after:
-    - svc-swarm

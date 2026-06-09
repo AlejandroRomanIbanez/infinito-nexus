@@ -7,6 +7,14 @@
     group: root
     mode: "0755"
 
+- name: "Pre-create cluster-shared state subdir under export base"
+  ansible.builtin.file:
+    path: "{{ [ storage.nfs.export_base, storage.nfs.state_subdir ] | path_join }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: "Gather facts on swarm members so their IPs become available"
   ansible.builtin.setup:
     gather_subset: network

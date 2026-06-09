@@ -29,7 +29,9 @@
     database_username: "postgres"
     database_password: "{{ lookup('config', application_id, 'credentials.postgresql_secret') }}"
     database_name: "" # Multiple databases
-  when: "'svc-bkp-container-2-local' in group_names"
+  when:
+    - "'svc-bkp-container-2-local' in group_names"
+    - IS_STACK_HOST | bool
 
 - name: configure websocket_upgrade.conf
   copy:

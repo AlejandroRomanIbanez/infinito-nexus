@@ -21,5 +21,3 @@ cache:
   proxy:
     remote_url: "https://registry-1.docker.io" # nocheck: url
   lifecycle: alpha
-  run_after:
-    - svc-swarm

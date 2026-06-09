@@ -10,7 +10,7 @@ swarm_node_dns=(--dns 1.1.1.1 --dns 8.8.8.8) # nocheck: hardcoded-dns-resolver
 # /tmp:exec: Docker's default tmpfs is noexec; dpkg-buildpackage execve()s debian/rules.
 for node in "${MGR}" "${WRK1}" "${WRK2}"; do
 	docker run -d --name "${node}" \
-		--network swarm-lab \
+		--network "${SWARM_LAB_NETWORK}" \
 		--hostname "${node}" \
 		--privileged \
 		--cgroupns=host \

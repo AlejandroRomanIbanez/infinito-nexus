@@ -1,6 +1,16 @@
 ---
 - include_tasks: utils/once/flag.yml
 
+- name: "Assert {{ DIR_VAR_LIB }} is cluster-shared in swarm mode"
+  ansible.builtin.assert:
+    that:
+      - (DEPLOYMENT_MODE != 'swarm') or ('svc-storage-nfs-client' in group_names)
+    fail_msg: >-
+      sys-svc-mail-msmtp in swarm mode requires svc-storage-nfs-client on
+      every host so {{ DIR_VAR_LIB }} is cluster-shared. Set
+      `storage.backend=nfs` and add this host to the
+      `svc-storage-nfs-client` group.
+
 - name: Enable EPEL repository on EL distributions
   package:
     name: epel-release

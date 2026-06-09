@@ -105,6 +105,7 @@ jobs:
       NFS_EXPORT_BASE: /srv/nfs
       RESCHED_TIMEOUT: "120"
       SCRIPTS: scripts/tests/deploy/swarm
+      SWARM_LAB_NETWORK: swarm-lab
 
     steps:
       - name: "Checkout"
@@ -133,7 +134,7 @@ jobs:
             --driver bridge \
             --subnet 192.168.244.0/24 \
             --opt com.docker.network.driver.mtu=1400 \
-            swarm-lab
+            "${SWARM_LAB_NETWORK}"
 
       - name: "Start NFSv4 server (empty systemd-Ubuntu)"
         run: ${{ env.SCRIPTS }}/01_start_nfs.sh
