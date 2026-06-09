@@ -51,8 +51,10 @@
     role_templates:
       - src: "synapse/homeserver.yaml.j2"
         dest: "{{ MATRIX_SYNAPSE_CONFIG_PATH_HOST }}"
+        mode: "{{ MATRIX_SYNAPSE_BIND_MOUNT_MODE }}"
       - src: "synapse/log.config.j2"
         dest: "{{ MATRIX_SYNAPSE_LOG_PATH_HOST }}"
+        mode: "{{ MATRIX_SYNAPSE_BIND_MOUNT_MODE }}"
 
 - name: set correct folder permissions
   command:
