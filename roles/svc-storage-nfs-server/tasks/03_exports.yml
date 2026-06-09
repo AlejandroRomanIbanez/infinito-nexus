@@ -9,7 +9,7 @@
 
 - name: "Pre-create cluster-shared state subdir under export base"
   ansible.builtin.file:
-    path: "{{ [ storage.nfs.export_base, storage.nfs.state_subdir ] | path_join }}"
+    path: "{{ STORAGE_NFS_STATE_PATH }}"
     state: directory
     owner: root
     group: root
