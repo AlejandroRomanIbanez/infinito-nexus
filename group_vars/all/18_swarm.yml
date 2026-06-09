@@ -1,5 +1,5 @@
 ---
-DEPLOYMENT_MODE: "{{ 'swarm' if (groups[application_id] | default([]) | length) > 1 else 'compose' }}"
+DEPLOYMENT_MODE: "{{ 'swarm' if (groups['svc-swarm'] | default([]) | length) > 1 else 'compose' }}"
 
 SWARM_CLUSTER_AVAILABLE: "{{ (groups['svc-swarm'] | default([]) | length) > 0 }}"
 
