@@ -3,10 +3,12 @@
 ``--include`` so the resulting inventory has every group APP_ID's
 transitive deps will need at deploy time.
 
-``svc-swarm-manager`` (subset marker) and
-``svc-storage-nfs-client`` (no ``application_id``) are added
-explicitly because the dep-walker only knows roles that are in the
-``applications`` dict.
+``svc-swarm-manager`` (subset marker),
+``svc-storage-nfs-client`` (no ``application_id``) and
+``svc-registry-docker`` (consumed by the swarm handler that pushes
+locally-built images, but not declared as a meta-dep so it stays
+out of compose-mode deploys) are added explicitly because the
+dep-walker only knows roles that are in the ``applications`` dict.
 
 Input (env): ``APP_ID``.
 """
@@ -25,6 +27,7 @@ _ROLES_DIR = PROJECT_ROOT / "roles"
 _EXPLICIT_INCLUDES: tuple[str, ...] = (
     "svc-swarm-manager",
     "svc-storage-nfs-client",
+    "svc-registry-docker",
 )
 
 
