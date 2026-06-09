@@ -1,4 +1,13 @@
 ---
+- name: "Ensure parent directory exists for '{{ _tpl.dest }}'"
+  ansible.builtin.file:
+    path: "{{ _tpl.dest | dirname }}"
+    state: directory
+    mode: "0755"
+  delegate_to: "{{ STACK_HOST }}"
+  run_once: true
+  when: (_tpl.when | default(true)) | bool
+
 - name: "Render '{{ _tpl.dest }}' (on manager when swarm)"
   ansible.builtin.template: # nocheck: stack-host-template (structurally STACK_HOST-delegated already (delegate_to + run_once), uses its own swarm-distribution dance)
     src: "{{ _tpl.src }}"
