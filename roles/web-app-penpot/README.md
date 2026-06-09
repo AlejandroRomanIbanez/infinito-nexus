@@ -52,9 +52,13 @@ Login methods are toggled through `PENPOT_FLAGS` and configured by Ansible:
   to set the password when a federated login already created it.
 
 **Self-registration** follows `services.penpot.registration_enabled` — the
-default is *on* when no IdP is configured and *off* once OIDC (Keycloak) is the
-login path, and it is overridable per inventory. `PENPOT_FLAGS` renders
-`enable-registration` / `disable-registration` accordingly.
+default is *on* when OIDC (Keycloak) is enabled and *off* otherwise, overridable
+per inventory. Penpot routes first-time OIDC logins through the registration
+path (a disabled flag makes the callback fail with
+`?error=registration-disabled` for not-yet-provisioned users), so registration
+must stay on wherever OIDC is. Native admin is bootstrapped and LDAP
+self-provisions without it. `PENPOT_FLAGS` renders `enable-registration` /
+`disable-registration` accordingly.
 
 ## Storage & scalability
 
@@ -100,14 +104,16 @@ Procedure); revisit at PR review:
 
 ## Testing
 
-The Playwright suite is split per login surface (the runner globs every `*.js`
-under `files/playwright/`):
+The Playwright suite is split per login surface **and persona** (the runner
+globs every `*.js` under `files/playwright/`):
 
 - `_shared.js` — env + login helpers (`penpotOidcLogin`, `penpotLdapLogin`,
   `penpotNativeLogin`, `penpotRegister`).
 - `test-login-native.js` — administrator native (local password) login.
-- `test-login-oidc.js` — OIDC via Keycloak for administrator **and** `biber`.
-- `test-login-ldap.js` — OpenLDAP bind for administrator **and** `biber`.
+- `test-login-oidc-admin.js` — OIDC via Keycloak, administrator.
+- `test-login-oidc-biber.js` — OIDC via Keycloak, `biber` (non-admin RBAC).
+- `test-login-ldap-admin.js` — OpenLDAP bind, administrator.
+- `test-login-ldap-biber.js` — OpenLDAP bind, `biber` (non-admin RBAC).
 - `playwright.spec.js` — orchestrator: TLS baseline, project creation, image
   asset upload, and the `guest`/`biber`/`administrator` personas. The `biber` /
   `administrator` personas are declared blocked via `PERSONA_*_BLOCKED`

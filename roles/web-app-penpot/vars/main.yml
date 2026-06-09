@@ -52,8 +52,9 @@ PENPOT_EXPORTER_URI: "http://{{ PENPOT_EXPORTER_SERVICE }}:{{ PENPOT_EXPORTER_IN
 # Auth integration flags
 PENPOT_SSO_ENABLED: "{{ lookup('config', application_id, 'services.sso.enabled') }}"
 PENPOT_LDAP_ENABLED: "{{ lookup('config', application_id, 'services.ldap.enabled') }}"
-# Self-registration toggle — default lives in meta/services.yml (off when OIDC
-# is enabled), overridable per inventory.
+# Self-registration toggle — default lives in meta/services.yml (on when OIDC
+# is enabled, since Penpot's OIDC JIT provisioning routes through registration),
+# overridable per inventory.
 PENPOT_REGISTRATION_ENABLED: "{{ lookup('config', application_id, 'services.penpot.registration_enabled') }}"
 
 # PENPOT_FLAGS — space-separated feature toggles consumed by every container.

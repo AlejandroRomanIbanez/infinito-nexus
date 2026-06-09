@@ -31,9 +31,13 @@ postgres:
   shared: "{{ 'svc-db-postgres' in group_names }}"
 penpot:
   version: "2.5.4"
-  # Self-registration default: on when no IdP, off once OIDC (Keycloak) is the
-  # login path. Overridable per inventory via services.penpot.registration_enabled.
-  registration_enabled: "{{ 'web-app-keycloak' not in group_names }}" # nocheck: dynamic-flag
+  # Self-registration default: follows OIDC. Penpot routes first-time OIDC
+  # (Keycloak) logins through the registration path — with registration off the
+  # callback fails `?error=registration-disabled` for users not yet provisioned —
+  # so registration MUST be on when OIDC is. Native admin is bootstrapped and
+  # LDAP self-provisions without it, so default off when no OIDC. Overridable
+  # per inventory via services.penpot.registration_enabled.
+  registration_enabled: "{{ 'web-app-keycloak' in group_names }}" # nocheck: dynamic-flag
   min_storage: 10GB
   cpus: "0.5"
   mem_reservation: 512m

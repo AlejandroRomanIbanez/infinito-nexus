@@ -37,7 +37,7 @@ Penpot's upstream stack is **frontend + backend + exporter + PostgreSQL + Redis*
 - [x] OIDC login is available via `web-app-keycloak`, enabled through `PENPOT_FLAGS` (e.g. `enable-login-with-oidc`). _(verified live against a Penpot + Keycloak deploy.)_
 - [x] LDAP login is available via `svc-db-openldap`, enabled through `PENPOT_FLAGS` (e.g. `enable-login-with-ldap`). _(verified live against a Penpot + OpenLDAP deploy.)_
 - [x] Native local email/password login is available (`enable-login-with-password`); the role bootstraps a local password for the `administrator` profile via the backend PREPL (`enable-prepl-server`) in `tasks/main.yml`, so native login works alongside OIDC/LDAP.
-- [x] Self-registration follows `services.penpot.registration_enabled` (default off once OIDC is the login path; overridable per inventory) and renders `enable-registration`/`disable-registration` in `PENPOT_FLAGS`.
+- [x] Self-registration follows `services.penpot.registration_enabled` (default **on** when OIDC is enabled — Penpot's OIDC JIT provisioning routes through the registration path — off otherwise; overridable per inventory) and renders `enable-registration`/`disable-registration` in `PENPOT_FLAGS`.
 - [x] OIDC and LDAP configuration is fully automated via Ansible (env vars / templated config), requiring no manual post-deploy steps.
 
 ### CSP & reverse proxy

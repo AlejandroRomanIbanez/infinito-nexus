@@ -25,10 +25,12 @@ test("baseline: Penpot responds on the canonical domain with TLS", async ({ page
   expect(r.headers()["strict-transport-security"], "Penpot must emit HSTS").toBeTruthy();
 });
 
-// Login surfaces — one companion per method.
+// Login surfaces — one companion per method × persona.
 require("./test-login-native").register(shared);
-require("./test-login-oidc").register(shared);
-require("./test-login-ldap").register(shared);
+require("./test-login-oidc-admin").register(shared);
+require("./test-login-oidc-biber").register(shared);
+require("./test-login-ldap-admin").register(shared);
+require("./test-login-ldap-biber").register(shared);
 
 test("project: administrator creates a design project", async ({ page }) => {
   skipUnlessServiceEnabled("sso");
