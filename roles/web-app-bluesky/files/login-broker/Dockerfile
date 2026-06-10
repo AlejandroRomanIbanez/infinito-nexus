@@ -2,7 +2,9 @@
 # broker uses only Node's stdlib (`node:http`, `node:https`,
 # `node:crypto`) so the image stays minimal and rebuild-fast and the
 # attack surface is small.
-FROM node:22-alpine
+ARG BLUESKY_BROKER_BASE_IMAGE
+ARG BLUESKY_BROKER_BASE_VERSION
+FROM ${BLUESKY_BROKER_BASE_IMAGE}:${BLUESKY_BROKER_BASE_VERSION}
 
 RUN apk add --no-cache ca-certificates && update-ca-certificates
 

@@ -1,0 +1,17 @@
+[Unit]
+Description=Bootstrap matrix-docker-ansible-deploy on first boot
+After=docker.service
+Requires=docker.service
+
+[Service]
+Type=oneshot
+Environment=PATH=/opt/ansible/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ExecStartPre=/usr/bin/docker info
+ExecStart=/usr/local/bin/matrix-mdad-bootstrap
+RemainAfterExit=yes
+StandardOutput=journal+console
+StandardError=journal+console
+TimeoutSec=0
+
+[Install]
+WantedBy=multi-user.target

@@ -3,6 +3,9 @@ sso:
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
   flavor: oidc
+ldap:
+  enabled: "{{ 'svc-db-openldap' in group_names }}"
+  shared: "{{ 'svc-db-openldap' in group_names }}"
 logout:
   enabled: "{{ 'web-svc-logout' in group_names }}"
   shared: "{{ 'web-svc-logout' in group_names }}"
@@ -15,9 +18,13 @@ matomo:
 email:
   enabled: "{{ 'web-app-mailu' in group_names }}"
   shared: "{{ 'web-app-mailu' in group_names }}"
+# nocheck: playwright-service-flag — TURN/STUN server, no Playwright surface (provider: web-svc-coturn)
+coturn:
+  enabled: "{{ 'web-svc-coturn' in group_names }}"
+  shared: "{{ 'web-svc-coturn' in group_names }}"
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 postgres:
-  enabled: true # nocheck: dynamic-flag
+  enabled: true # nocheck: dynamic-flag — matrix always needs a database
   shared: "{{ 'svc-db-postgres' in group_names }}"
 synapse:
   version: latest
@@ -71,17 +78,35 @@ prometheus:
   communication:
     channel: true
 matrix:
+  flavor: ansible
+  upstream:
+    repo: https://github.com/kevinveenbirkenbach/matrix-docker-ansible-deploy
+    ref: master
+    migration_validated_version: v2026.05.18.0
+  runner:
+    image: infinito/web-app-matrix-mdad-runner:1
+    base_image: python
+    base_version: 3.13-slim
+    docker_cli_image: docker
+    docker_cli_version: 28.0.4-cli
   playbook_tags: setup-all,start
   server_name: "{{ DOMAIN_PRIMARY }}"
   plugins:
+    appservice_irc: false
     chatgpt: false
-    facebook: false
-    immesage: false
-    instagram: false
-    signal: false
-    slack: false
-    telegram: false
-    whatsapp: false
+    discord: false
+    gitter: false
+    heisenbridge: true
+    hookshot: false
+    mautrix_discord: false
+    mautrix_signal: false
+    mautrix_slack: false
+    mautrix_telegram: false
+    mautrix_twitter: false
+    mautrix_whatsapp: false
+  conferencing:
+    element_call: true
+    jitsi: true
   run_after:
     - web-app-matomo
     - web-app-keycloak

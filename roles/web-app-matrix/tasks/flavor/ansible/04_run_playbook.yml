@@ -1,0 +1,6 @@
+---
+- name: "ansible-flavor: render compose.yml + start matrix-mdad via sys-stk-backend"
+  ansible.builtin.include_role:
+    name: sys-stk-backend
+  vars:
+    compose_handlers_flush: true

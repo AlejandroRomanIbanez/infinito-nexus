@@ -9,7 +9,7 @@ homeserver:
     # Standard Matrix homeservers like Synapse, Dendrite and Conduit should just use "standard" here.
     software: standard
     # The URL to push real-time bridge status to.
-    # If set, the bridge will make POST requests to this URL whenever a user's slack connection state changes.
+    # If set, the bridge will make POST requests to this URL whenever a user's discord connection state changes.
     # The bridge will use the appservice as_token to authorize requests.
     status_endpoint: null
     # Endpoint for reporting per-message status.
@@ -28,11 +28,11 @@ homeserver:
 # Changing these values requires regeneration of the registration.
 appservice:
     # The address that the homeserver can use to connect to this appservice.
-    address: http://mautrix-slack:29335
+    address: http://mautrix-signal:29328
 
     # The hostname and port where this appservice should listen.
     hostname: 0.0.0.0
-    port: 29335
+    port: 29328
 
     # Database config.
     database:
@@ -43,7 +43,7 @@ appservice:
         #           https://github.com/mattn/go-sqlite3#connection-string
         #   Postgres: Connection string. For example, postgres://user:password@host/database?sslmode=disable
         #             To connect via Unix socket, use something like postgres:///dbname?host=/var/run/postgresql
-        uri: postgres://mautrix_slack_bridge:{{ lookup('config', application_id, 'credentials.mautrix_slack_bridge_database_password')}}@{{ lookup('database', application_id, 'host') }}/mautrix_slack_bridge?sslmode=disable
+        uri: postgres://mautrix_signal_bridge:{{ lookup('config', application_id, 'credentials.mautrix_signal_bridge_database_password')}}@{{ MATRIX_POSTGRES_HOST }}/mautrix_signal_bridge?sslmode=disable
         # Maximum number of connections. Mostly relevant for Postgres.
         max_open_conns: 20
         max_idle_conns: 2
@@ -53,19 +53,18 @@ appservice:
         max_conn_lifetime: null
 
     # The unique ID of this appservice.
-    id: slack
+    id: signal
     # Appservice bot details.
     bot:
         # Username of the appservice bot.
-        username: slackbot
+        username: signalbot
         # Display name and avatar for bot. Set to "remove" to remove display name/avatar, leave empty
         # to leave display name/avatar as-is.
-        displayname: Slack bridge bot
-        avatar: mxc://maunium.net/pVtzLmChZejGxLqmXtQjFxem
+        displayname: Signal bridge bot
+        avatar: mxc://maunium.net/wPJgTQbZOtpBFmDNkiNEMDUp
 
     # Whether or not to receive ephemeral events via appservice transactions.
     # Requires MSC2409 support (i.e. Synapse 1.22+).
-    # You should disable bridge -> sync_with_custom_puppets when this is enabled.
     ephemeral_events: true
 
     # Should incoming events be handled asynchronously?
@@ -77,45 +76,69 @@ appservice:
     as_token: "This value is generated when generating the registration"
     hs_token: "This value is generated when generating the registration"
 
+# Prometheus config.
+metrics:
+    # Enable prometheus metrics?
+    enabled: false
+    # IP and port where the metrics listener should be. The path is always /metrics
+    listen: 127.0.0.1:8000
+
+signal:
+    # Default device name that shows up in the Signal app.
+    device_name: mautrix-signal
+
 # Bridge config
 bridge:
 {% raw %}
-    # Localpart template of MXIDs for Slack users.
-    # {{.}} is replaced with the internal ID of the Slack user.
-    username_template: slack_{{.}}
-    # Displayname template for Slack users.
-    # TODO: document variables
-    displayname_template: '{{.RealName}} (S)'
-    bot_displayname_template: '{{.Name}} (bot)'
-    channel_name_template: '#{{.Name}}'
+    # Localpart template of MXIDs for Signal users.
+    # {{.}} is replaced with the internal ID of the Signal user.
+    username_template: signal_{{.}}
+    # Displayname template for Signal users. This is also used as the room name in DMs if private_chat_portal_meta is enabled.
+    # {{.ProfileName}} - The Signal profile name set by the user.
+    # {{.ContactName}} - The name for the user from your phone's contact list. This is not safe on multi-user instances.
+    # {{.PhoneNumber}} - The phone number of the user.
+    # {{.UUID}} - The UUID of the Signal user.
+    # {{.AboutEmoji}} - The emoji set by the user in their profile.
+    displayname_template: '{{or .ProfileName .PhoneNumber "Unknown user"}}'
 {% endraw %}
-    portal_message_buffer: 128
-
-    # Should the bridge send a read receipt from the bridge bot when a message has been sent to Slack?
-    delivery_receipts: true
-    # Whether the bridge should send the message status as a custom com.beeper.message_send_status event.
-    message_status_events: false
-    # Whether the bridge should send error notices via m.notice events when a message fails to bridge.
-    message_error_notices: true
-    # Should incoming custom emoji reactions be bridged as mxc:// URIs?
-    # If set to false, custom emoji reactions will be bridged as the shortcode instead, and the image won't be available.
-    custom_emoji_reactions: true
-
-    # Should the bridge sync with double puppeting to receive EDUs that aren't normally sent to appservices.
-    sync_with_custom_puppets: false
-    # Should the bridge update the m.direct account data event when double puppeting is enabled.
-    # Note that updating the m.direct event is not atomic (except with mautrix-asmux)
-    # and is therefore prone to race conditions.
-    sync_direct_chat_list: false
-    # Whether or not created rooms should have federation enabled.
-    # If false, created portal rooms will never be federated.
-    federate_rooms: true
     # Whether to explicitly set the avatar and room name for private chat portal rooms.
     # If set to `default`, this will be enabled in encrypted rooms and disabled in unencrypted rooms.
     # If set to `always`, all DM rooms will have explicit names and avatars set.
     # If set to `never`, DM rooms will never have names and avatars set.
     private_chat_portal_meta: default
+    # Should avatars from the user's contact list be used? This is not safe on multi-user instances.
+    use_contact_avatars: false
+    # Should the Signal user's phone number be included in the room topic in private chat portal rooms?
+    number_in_topic: true
+    # Avatar image for the Note to Self room.
+    note_to_self_avatar: mxc://maunium.net/REBIVrqjZwmaWpssCZpBlmlL
 
+    portal_message_buffer: 128
+
+    # Should the bridge create a space for each logged-in user and add bridged rooms to it?
+    # Users who logged in before turning this on should run `!signal sync-space` to create and fill the space for the first time.
+    personal_filtering_spaces: false
+    # Should Matrix m.notice-type messages be bridged?
+    bridge_notices: true
+    # Should the bridge send a read receipt from the bridge bot when a message has been sent to Signal?
+    delivery_receipts: false
+    # Whether the bridge should send the message status as a custom com.beeper.message_send_status event.
+    message_status_events: false
+    # Whether the bridge should send error notices via m.notice events when a message fails to bridge.
+    message_error_notices: true
+    # Should the bridge update the m.direct account data event when double puppeting is enabled.
+    # Note that updating the m.direct event is not atomic (except with mautrix-asmux)
+    # and is therefore prone to race conditions.
+    sync_direct_chat_list: false
+    # Set this to true to tell the bridge to re-send m.bridge events to all rooms on the next run.
+    # This field will automatically be changed back to false after it, except if the config file is not writable.
+    resend_bridge_info: false
+    # Send captions in the same message as images. This will send data compatible with both MSC2530.
+    # This is currently not supported in most clients.
+    caption_in_message: false
+    # Whether or not created rooms should have federation enabled.
+    # If false, created portal rooms will never be federated.
+    federate_rooms: true
     # Servers to always allow double puppeting from
     double_puppet_server_map:
         {{ MATRIX_SERVER_NAME }}: {{ MATRIX_SYNAPSE_URL }}
@@ -129,59 +152,30 @@ bridge:
     login_shared_secret_map:
         {{ MATRIX_SERVER_NAME }}: {{ MATRIX_REGISTRATION_SHARED_SECRET }}
 
+    # Maximum time for handling Matrix events. Duration strings formatted for https://pkg.go.dev/time#ParseDuration
+    # Null means there's no enforced timeout.
     message_handling_timeout:
         # Send an error message after this timeout, but keep waiting for the response until the deadline.
         # This is counted from the origin_server_ts, so the warning time is consistent regardless of the source of delay.
         # If the message is older than this when it reaches the bridge, the message won't be handled at all.
-        error_after: 10s
+        error_after: null
         # Drop messages after this timeout. They may still go through if the message got sent to the servers.
         # This is counted from the time the bridge starts handling the message.
-        deadline: 60s
+        deadline: 120s
 
     # The prefix for commands. Only required in non-management rooms.
-    command_prefix: '!slack'
+    command_prefix: '!signal'
     # Messages sent upon joining a management room.
     # Markdown is supported. The defaults are listed below.
     management_room_text:
         # Sent when joining a room.
-        welcome: "Hello, I'm a Slack bridge bot."
+        welcome: "Hello, I'm a Signal bridge bot."
         # Sent when joining a management room and the user is already logged in.
         welcome_connected: "Use `help` for help."
         # Sent when joining a management room and the user is not logged in.
-        welcome_unconnected: "Use `help` for help, or `login-token` or `login-password` to log in."
+        welcome_unconnected: "Use `help` for help or `login` to log in."
         # Optional extra text sent when joining a management room.
         additional_help: ""
-
-    backfill:
-        # Allow backfilling at all? Requires MSC2716 support on homeserver.
-        enable: false
-
-        # Maximum number of conversations to fetch from Slack when syncing team from Slack.
-        # Must be 0-999
-        conversations_count: 200
-
-        # If a backfilled chat is older than this number of hours, mark it as read even if it's unread on Slack.
-        # Set to -1 to let any chat be unread.
-        unread_hours_threshold: 720
-
-        # Number of messages to immediately backfill when creating a portal.
-        immediate_messages: 10
-
-        # Settings for incremental backfill of history.
-        incremental:
-            # Maximum number of messages to backfill per batch.
-            messages_per_batch: 100
-            # The number of seconds to wait after backfilling the batch of messages.
-            post_batch_delay: 20
-            # The maximum number of messages to backfill per portal, split by the chat type.
-            # If set to -1, all messages in the chat will eventually be backfilled.
-            max_messages:
-                # Channels
-                channel: -1
-                # Group direct messages
-                group_dm: -1
-                # 1:1 direct messages
-                dm: -1
 
     # End-to-bridge encryption support options.
     #
@@ -231,7 +225,7 @@ bridge:
         #   verified - Require manual per-device verification
         #              (currently only possible by modifying the `trust` column in the `crypto_device` database table).
         verification_levels:
-            # Minimum level for which the bridge should send keys to when bridging messages from WhatsApp to Matrix.
+            # Minimum level for which the bridge should send keys to when bridging messages from Signal to Matrix.
             receive: unverified
             # Minimum level that the bridge should accept for incoming Matrix messages.
             send: unverified
@@ -266,11 +260,13 @@ bridge:
         # Shared secret for authentication. If set to "generate", a random secret will be generated,
         # or if set to "disable", the provisioning API will be disabled.
         shared_secret: generate
+        # Enable debug API at /debug with provisioning authentication.
+        debug_endpoints: false
 
     # Permissions for using the bridge.
     # Permitted values:
     #    relay - Talk through the relaybot (if enabled), no access otherwise
-    #     user - Access to use the bridge to chat with a Slack account.
+    #     user - Access to use the bridge to chat with a Signal account.
     #    admin - User level and some additional administration tools
     # Permitted keys:
     #        * - All Matrix users
@@ -281,6 +277,25 @@ bridge:
         "{{ MATRIX_SERVER_NAME }}": user
         "@{{ MATRIX_ADMINISTRATOR_USERNAME }}:{{ MATRIX_SERVER_NAME }}": admin
 
+    # Settings for relay mode
+    relay:
+        # Whether relay mode should be allowed. If allowed, `!wa set-relay` can be used to turn any
+        # authenticated user into a relaybot for that chat.
+        enabled: false
+        # Should only admins be allowed to set themselves as relay users?
+        admin_only: true
+        # The formats to use when sending messages to Signal via the relaybot.
+        message_formats:
+{% raw %}
+            m.text: "<b>{{ .Sender.Displayname }}</b>: {{ .Message }}"
+            m.notice: "<b>{{ .Sender.Displayname }}</b>: {{ .Message }}"
+            m.emote: "* <b>{{ .Sender.Displayname }}</b> {{ .Message }}"
+            m.file: "<b>{{ .Sender.Displayname }}</b> sent a file"
+            m.image: "<b>{{ .Sender.Displayname }}</b> sent an image"
+            m.audio: "<b>{{ .Sender.Displayname }}</b> sent an audio file"
+            m.video: "<b>{{ .Sender.Displayname }}</b> sent a video"
+            m.location: "<b>{{ .Sender.Displayname }}</b> sent a location"
+{% endraw %}
 # Logging config. See https://github.com/tulir/zeroconfig for details.
 logging:
     min_level: debug
@@ -289,7 +304,7 @@ logging:
       format: pretty-colored
     - type: file
       format: json
-      filename: ./logs/mautrix-slack.log
+      filename: ./logs/mautrix-signal.log
       max_size: 100
       max_backups: 10
       compress: true
