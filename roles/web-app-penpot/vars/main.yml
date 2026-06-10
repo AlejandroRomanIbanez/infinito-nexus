@@ -52,25 +52,21 @@ PENPOT_EXPORTER_URI: "http://{{ PENPOT_EXPORTER_SERVICE }}:{{ PENPOT_EXPORTER_IN
 # Auth integration flags
 PENPOT_SSO_ENABLED: "{{ lookup('config', application_id, 'services.sso.enabled') }}"
 PENPOT_LDAP_ENABLED: "{{ lookup('config', application_id, 'services.ldap.enabled') }}"
-# Self-registration toggle — default lives in meta/services.yml (on when OIDC
-# is enabled, since Penpot's OIDC JIT provisioning routes through registration),
-# overridable per inventory.
+# Login/registration toggles (defaults in meta/services.yml).
+PENPOT_NATIVE_LOGIN_ENABLED: "{{ lookup('config', application_id, 'services.penpot.native_login') }}"
 PENPOT_REGISTRATION_ENABLED: "{{ lookup('config', application_id, 'services.penpot.registration_enabled') }}"
 
 # PENPOT_FLAGS — space-separated feature toggles consumed by every container.
-# Registration follows services.penpot.registration_enabled; password login is
-# the local-account baseline; identity providers are appended per enabled service.
 PENPOT_FLAGS: >-
   {{ 'enable-registration' if PENPOT_REGISTRATION_ENABLED | bool else 'disable-registration' }}
-  enable-login-with-password
+  {{ 'enable-login-with-password' if PENPOT_NATIVE_LOGIN_ENABLED | bool else 'disable-login-with-password' }}
   enable-prepl-server
   disable-telemetry
   disable-onboarding
   {{ 'enable-login-with-oidc' if PENPOT_SSO_ENABLED | bool else '' }}
   {{ 'enable-login-with-ldap' if PENPOT_LDAP_ENABLED | bool else '' }}
 
-# Administrator local account — bootstrapped (tasks/main.yml) via the backend
-# PREPL so the native email/password login works alongside OIDC/LDAP.
+# Administrator local account — bootstrapped (tasks/main.yml) when native login is on.
 PENPOT_ADMIN_EMAIL: "{{ lookup('users', 'administrator').email }}"
 PENPOT_ADMIN_PASSWORD: "{{ lookup('users', 'administrator').password }}"
 PENPOT_ADMIN_FULLNAME: "{{ lookup('users', 'administrator').username }}"

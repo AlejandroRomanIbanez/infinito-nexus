@@ -8,11 +8,10 @@
     webserver_client_max_body_size: "100m"
     compose_handlers_flush: true
 
-# Bootstrap a local password for the administrator via the backend PREPL
-# (enable-prepl-server) so the native email/password login works alongside
-# OIDC/LDAP. create-profile makes an active local profile; if the profile
-# already exists (e.g. a federated login created it first), set its password.
+# Bootstrap the administrator's local password via the backend PREPL when native
+# login is on (skipped under OIDC). update-profile sets it if the profile exists.
 - name: "Bootstrap the Penpot administrator's local account (idempotent)"
+  when: PENPOT_NATIVE_LOGIN_ENABLED | bool
   ansible.builtin.command:
     argv:
       - compose
@@ -56,7 +55,9 @@
       - -p
       - "{{ PENPOT_ADMIN_PASSWORD }}"
     chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
-  when: "'already exists' in (penpot_admin_create.stdout | default('') ~ penpot_admin_create.stderr | default(''))"
+  when:
+    - PENPOT_NATIVE_LOGIN_ENABLED | bool
+    - "'already exists' in (penpot_admin_create.stdout | default('') ~ penpot_admin_create.stderr | default(''))"
   register: penpot_admin_update
   changed_when: "'Updated' in penpot_admin_update.stdout"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"

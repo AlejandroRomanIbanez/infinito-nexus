@@ -36,7 +36,7 @@ Penpot's upstream stack is **frontend + backend + exporter + PostgreSQL + Redis*
 
 - [x] OIDC login is available via `web-app-keycloak`, enabled through `PENPOT_FLAGS` (e.g. `enable-login-with-oidc`). _(verified live against a Penpot + Keycloak deploy.)_
 - [x] LDAP login is available via `svc-db-openldap`, enabled through `PENPOT_FLAGS` (e.g. `enable-login-with-ldap`). _(verified live against a Penpot + OpenLDAP deploy.)_
-- [x] Native local email/password login is available (`enable-login-with-password`); the role bootstraps a local password for the `administrator` profile via the backend PREPL (`enable-prepl-server`) in `tasks/main.yml`, so native login works alongside OIDC/LDAP.
+- [x] Native local email/password login follows `services.penpot.native_login` (default **off** under OIDC — `disable-login-with-password` forces users through SSO — on otherwise; overridable per inventory); when on, the role bootstraps a local password for the `administrator` profile via the backend PREPL (`enable-prepl-server`) in `tasks/main.yml`, and the bootstrap is skipped under OIDC.
 - [x] Self-registration follows `services.penpot.registration_enabled` (default **on** when OIDC is enabled — Penpot's OIDC JIT provisioning routes through the registration path — off otherwise; overridable per inventory) and renders `enable-registration`/`disable-registration` in `PENPOT_FLAGS`.
 - [x] OIDC and LDAP configuration is fully automated via Ansible (env vars / templated config), requiring no manual post-deploy steps.
 
@@ -57,7 +57,7 @@ Penpot's upstream stack is **frontend + backend + exporter + PostgreSQL + Redis*
 - [x] A per-role Playwright spec exists and gates authenticated scenarios via `skipUnlessServiceEnabled` per [006 - Service-gated Playwright tests](README.md#archive).
 - [x] A **separate** OIDC login scenario and LDAP login scenario exist (not combined into one test body) per [018](018-playwright-ldap-coverage.md).
 - [x] Both the canonical admin persona and the non-admin RBAC persona `biber` are exercised per [017](017-playwright-biber-rbac-coverage.md).
-- [x] A native (local-password) admin login scenario exists (`test-login-native.js`), separate from the OIDC/LDAP companions.
+- [x] A native (local-password) admin login scenario exists (`test-login-native.js`), separate from the OIDC/LDAP companions, and is skipped when `sso` is enabled (native login disabled under OIDC).
 - [x] A scenario verifies project creation.
 - [x] A scenario verifies asset upload.
 

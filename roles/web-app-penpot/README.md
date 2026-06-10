@@ -45,11 +45,15 @@ Login methods are toggled through `PENPOT_FLAGS` and configured by Ansible:
   `enable-login-with-oidc`.
 - **LDAP** via [`svc-db-openldap`](../svc-db-openldap/) — enabled when the
   `ldap` service is active. Adds `enable-login-with-ldap`.
-- **Native** local email/password login (`enable-login-with-password`). The role
-  bootstraps a local password for the `administrator` profile via the backend
-  PREPL (`enable-prepl-server`) in `tasks/main.yml`, so native login works
-  alongside OIDC/LDAP — `create-profile` for a fresh profile, `update-profile`
-  to set the password when a federated login already created it.
+- **Native** local email/password login follows `services.penpot.native_login` —
+  *off* once OIDC (Keycloak) is the login path so users are forced through SSO,
+  *on* otherwise; overridable per inventory. `PENPOT_FLAGS` renders
+  `enable-login-with-password` / `disable-login-with-password` accordingly (no JS
+  injection needed — Penpot disables the password form natively). When native
+  login is on, the role bootstraps a local password for the `administrator`
+  profile via the backend PREPL (`enable-prepl-server`) in `tasks/main.yml` —
+  `create-profile` for a fresh profile, `update-profile` to set the password when
+  a federated login already created it; the bootstrap is skipped under OIDC.
 
 **Self-registration** follows `services.penpot.registration_enabled` — the
 default is *on* when OIDC (Keycloak) is enabled and *off* otherwise, overridable
@@ -109,7 +113,8 @@ globs every `*.js` under `files/playwright/`):
 
 - `_shared.js` — env + login helpers (`penpotOidcLogin`, `penpotLdapLogin`,
   `penpotNativeLogin`, `penpotRegister`).
-- `test-login-native.js` — administrator native (local password) login.
+- `test-login-native.js` — administrator native (local password) login;
+  skipped when `sso` is enabled (native login is disabled under OIDC).
 - `test-login-oidc-admin.js` — OIDC via Keycloak, administrator.
 - `test-login-oidc-biber.js` — OIDC via Keycloak, `biber` (non-admin RBAC).
 - `test-login-ldap-admin.js` — OpenLDAP bind, administrator.

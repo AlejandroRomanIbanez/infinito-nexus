@@ -1,11 +1,10 @@
-// Native (local-DB) login: the administrator authenticates with the
-// email/password form ("Login" button). The role bootstraps a local password
-// for the administrator profile (tasks/main.yml) so this path works alongside
-// OIDC/LDAP.
+// Native (local-DB) email/password login for the administrator. Disabled under
+// OIDC (disable-login-with-password), so skip when `sso` is on.
 exports.register = (shared) => {
-  const { test, expect, env, penpotNativeLogin } = shared;
+  const { test, expect, isServiceEnabled, env, penpotNativeLogin } = shared;
 
   test("native: administrator local password login", async ({ page }) => {
+    test.skip(isServiceEnabled("sso"), "native password login is disabled when OIDC is enabled");
     test.setTimeout(90_000);
     expect(env.adminEmail, "ADMIN_EMAIL must be set").toBeTruthy();
     expect(env.adminPassword, "ADMIN_PASSWORD must be set").toBeTruthy();
