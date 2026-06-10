@@ -61,7 +61,7 @@
 - name: "Assert no pre-existing local data at {{ DIR_VAR_LIB }} (mount-over would hide it)"
   ansible.builtin.assert:
     that:
-      - _svc_storage_nfs_client_premount_state.stdout in ["mounted", "empty"]
+      - (_svc_storage_nfs_client_premount_state.stdout | trim) in ["mounted", "empty"]
     fail_msg: >-
       Pre-existing local data found at {{ DIR_VAR_LIB }}; NFS mount-over
       would silently hide it. Migrate or remove the local tree manually,
