@@ -39,4 +39,4 @@
         state: started
   when:
     - MODE_ASSERT_LOCAL | bool
-    - not (_service_loader_preloading | default(false) | bool)
+    - not (service_loader_preloading | default(false) | bool)

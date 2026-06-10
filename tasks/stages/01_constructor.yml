@@ -151,6 +151,12 @@
     name: svc-swarm-node
   when: "'svc-swarm-node' | application_allowed(group_names, lookup('deployment').whitelist)"
 
+- name: "Open service-loader preload context BEFORE Bootstrap"
+  ansible.builtin.set_fact:
+    service_loader_post_run: []
+    service_loader_preloading: true
+  changed_when: false
+
 - name: "Bootstrap registry + NFS clients (MUST precede Preload)"
   ansible.builtin.include_tasks: "./tasks/groups/{{ role_group }}-roles.yml"
   loop:
