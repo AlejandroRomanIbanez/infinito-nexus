@@ -32,6 +32,9 @@
     build:
       context: "{{ BLUESKY_BROKER_BUILD_CONTEXT }}"
       dockerfile: Dockerfile
+      args:
+        BLUESKY_BROKER_BASE_IMAGE: "{{ BLUESKY_BROKER_BASE_IMAGE }}"
+        BLUESKY_BROKER_BASE_VERSION: "{{ BLUESKY_BROKER_BASE_VERSION }}"
     image: {{ BLUESKY_BROKER_IMAGE }}
     container_name: {{ BLUESKY_BROKER_CONTAINER }}
     hostname: bluesky-broker
