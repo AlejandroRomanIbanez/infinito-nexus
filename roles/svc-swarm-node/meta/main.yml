@@ -3,7 +3,7 @@ galaxy_info:
   author: Kevin Veen-Birkenbach
   description: |
     Bootstrap and manage a Docker Swarm cluster across the hosts in the
-    Ansible group `svc-swarm`. The manager is the single host in
+    Ansible group `svc-swarm-node`. The manager is the single host in
     `svc-swarm-manager`; every other group member joins as a worker.
     Single-manager scope; multi-manager Raft HA is not in scope.
   license: Infinito.Nexus Community License (Non-Commercial)

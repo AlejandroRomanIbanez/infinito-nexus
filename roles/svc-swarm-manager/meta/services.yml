@@ -1,9 +1,9 @@
 ---
 # nocheck: required-by-coverage
-swarm:
-  enabled: "{{ 'svc-swarm' in group_names }}"
-  shared: "{{ 'svc-swarm' in group_names }}"
-swarm-manager:
+node:
+  enabled: "{{ 'svc-swarm-node' in group_names }}"
+  shared: "{{ 'svc-swarm-node' in group_names }}"
+manager:
   name: swarm-manager
   lifecycle: pre-alpha
   min_storage: "1MB"
@@ -12,4 +12,4 @@ swarm-manager:
   mem_limit: "16m"
   pids_limit: 8
   run_after:
-    - svc-swarm
+    - svc-swarm-node

@@ -148,6 +148,11 @@ roles:
       description: "Shared persistent-storage backends used by multi-node deployments — NFSv4 server and client roles."
       icon: "fas fa-hdd"
       invokable: true
+    swarm:
+      title: "Container Orchestration"
+      description: "Docker Swarm cluster bootstrap and node-membership roles for multi-host service deployment."
+      icon: "fas fa-network-wired"
+      invokable: true
   user:
     title: "Users & Access"
     description: "User accounts & access control"

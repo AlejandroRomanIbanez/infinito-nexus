@@ -10,7 +10,7 @@
     that:
       - (groups['svc-swarm-manager'] | default([]) | length) >= 1
     fail_msg: |
-      svc-swarm requires AT LEAST ONE host in the
+      svc-swarm-node requires AT LEAST ONE host in the
       `svc-swarm-manager` group. Multi-manager (Raft-quorum HA) is
       supported: list every manager host in this group, the first becomes
       the bootstrap manager that runs `docker swarm init`, the rest join
@@ -18,13 +18,13 @@
       Found: {{ groups['svc-swarm-manager'] | default([]) | length }} members.
   run_once: true
 
-- name: "Assert every svc-swarm-manager member is also in svc-swarm"
+- name: "Assert every svc-swarm-manager member is also in svc-swarm-node"
   ansible.builtin.assert:
     that:
-      - item in (groups['svc-swarm'] | default([]))
+      - item in (groups['svc-swarm-node'] | default([]))
     fail_msg: |
       Host '{{ item }}' is in svc-swarm-manager but missing from
-      svc-swarm. A manager MUST also be a regular cluster member.
+      svc-swarm-node. A manager MUST also be a regular cluster member.
   loop: "{{ groups['svc-swarm-manager'] | default([]) }}"
   run_once: true
 
@@ -41,7 +41,7 @@
 - name: "Worker: include worker-join tasks"
   ansible.builtin.include_tasks: 03_worker.yml
   when:
-    - "'svc-swarm' in group_names"
+    - "'svc-swarm-node' in group_names"
     - "'svc-swarm-manager' not in group_names"
 
 - name: "Apply node labels (bootstrap manager dispatches to all nodes)"

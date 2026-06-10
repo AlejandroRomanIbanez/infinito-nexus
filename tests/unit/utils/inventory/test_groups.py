@@ -27,7 +27,7 @@ class TestInventoryHasGroupYaml(unittest.TestCase):
             """
             all:
               children:
-                svc-swarm:
+                svc-swarm-node:
                   hosts:
                     swarm-mgr-01: {}
                 svc-swarm-manager:
@@ -36,7 +36,7 @@ class TestInventoryHasGroupYaml(unittest.TestCase):
             """,
         )
         self.assertTrue(inventory_has_group(path, "svc-swarm-manager"))
-        self.assertTrue(inventory_has_group(path, "svc-swarm"))
+        self.assertTrue(inventory_has_group(path, "svc-swarm-node"))
 
     def test_yaml_missing_group_returns_false(self) -> None:
         path = self._write(
@@ -44,7 +44,7 @@ class TestInventoryHasGroupYaml(unittest.TestCase):
             """
             all:
               children:
-                svc-swarm:
+                svc-swarm-node:
                   hosts:
                     swarm-mgr-01: {}
             """,

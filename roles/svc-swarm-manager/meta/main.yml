@@ -4,7 +4,7 @@ galaxy_info:
   description: |
     Tag role that marks a host as the swarm cluster manager. Has no
     tasks of its own — the actual init+token-publish logic lives in
-    svc-swarm and is gated on `'svc-swarm-manager' in
+    svc-swarm-node and is gated on `'svc-swarm-manager' in
     group_names`. This role exists so the project's inventory
     validator (`cli.administration.inventory.validate`) accepts the
     group as a legitimate application_id.

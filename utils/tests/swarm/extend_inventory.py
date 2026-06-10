@@ -33,8 +33,8 @@ _NFS_SERVER = "nfs-server"
 
 def _host_topology(app_id: str) -> list[tuple[str, str]]:
     return [
-        ("svc-swarm", _MANAGER),
-        *[("svc-swarm", w) for w in _WORKERS],
+        ("svc-swarm-node", _MANAGER),
+        *[("svc-swarm-node", w) for w in _WORKERS],
         ("svc-swarm-manager", _MANAGER),
         ("svc-storage-nfs-client", _MANAGER),
         *[("svc-storage-nfs-client", w) for w in _WORKERS],

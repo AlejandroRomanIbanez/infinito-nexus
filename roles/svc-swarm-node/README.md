@@ -10,7 +10,7 @@ replicate tasks, and route traffic via an internal mesh.
 ## Overview
 
 This role bootstraps and manages a Docker Swarm cluster across the
-hosts in the Ansible group `svc-swarm`. The manager is the single
+hosts in the Ansible group `svc-swarm-node`. The manager is the single
 host in `svc-swarm-manager`; every other group member joins as a
 worker. Membership is expressed via group membership only, never via
 duplicated lists in `group_vars`. Inventory node labels are pushed to
@@ -20,13 +20,13 @@ the cluster after the join phase.
 
 - **Single-manager bootstrap:** Initialises the cluster on the manager
   with the configured advertise address; idempotent on re-runs.
-- **Auto-derived workers:** `svc-swarm - svc-swarm-manager`
+- **Auto-derived workers:** `svc-swarm-node - svc-swarm-manager`
   yields the worker set; no separate `worker_nodes` list to drift.
 - **Token publishing:** Manager-fetched worker/manager join tokens are
   published as facts to every cluster member.
 - **Node labels:** Per-host labels declared via `swarm_node_labels` in
   inventory are applied to the joining node.
-- **Mode-selection trigger:** Membership in `svc-swarm` resolves
+- **Mode-selection trigger:** Membership in `svc-swarm-node` resolves
   `DEPLOYMENT_MODE = swarm` for every web-app role on that host.
 
 ## Credits

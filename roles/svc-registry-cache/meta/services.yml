@@ -1,6 +1,6 @@
 ---
 # nocheck: dynamic-flag
-swarm:
+node:
   enabled: true
   shared: true
 cache:

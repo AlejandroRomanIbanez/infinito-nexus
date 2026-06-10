@@ -1,6 +1,6 @@
 ---
 # nocheck: required-by-coverage
-swarm:
+node:
   name: swarm
   lifecycle: pre-alpha
   enabled: true

@@ -37,4 +37,4 @@
     svc_swarm_manager_addr: "{{ docker_swarm_manager_addr.stdout }}"
   delegate_to: "{{ item }}"
   delegate_facts: true
-  loop: "{{ groups['svc-swarm'] }}"
+  loop: "{{ groups['svc-swarm-node'] }}"

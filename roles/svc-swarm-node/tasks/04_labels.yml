@@ -6,6 +6,6 @@
     --label-add {{ k }}={{ v }}
     {% endfor %}
     {{ hostvars[item].ansible_facts.hostname | default(item) }}
-  loop: "{{ groups['svc-swarm'] }}"
+  loop: "{{ groups['svc-swarm-node'] }}"
   when: hostvars[item].swarm_node_labels is defined
   changed_when: true

@@ -1,9 +1,9 @@
 ---
 - services:
-    swarm:
+    node:
       enabled: true
       shared: true
 - services:
-    swarm:
+    node:
       enabled: false
       shared: false

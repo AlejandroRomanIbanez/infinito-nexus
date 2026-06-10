@@ -3,7 +3,7 @@ galaxy_info:
   author: Kevin Veen-Birkenbach
   description: |
     Provision an NFSv4 server exposing the project's persistent-volume
-    base path to every host in the `svc-swarm` group. Exports are
+    base path to every host in the `svc-swarm-node` group. Exports are
     restricted by IP to the swarm members declared in inventory.
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |

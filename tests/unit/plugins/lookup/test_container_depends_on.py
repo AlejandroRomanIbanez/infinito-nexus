@@ -141,7 +141,7 @@ class TestContainerDependsOnLookup(unittest.TestCase):
 
     def test_unresolved_jinja_deployment_mode_is_templated(self):
         jinja_expr = (
-            "{{ 'swarm' if (groups['svc-swarm'] | default([]) | length) > 1 "
+            "{{ 'swarm' if (groups['svc-swarm-node'] | default([]) | length) > 1 "
             "else 'compose' }}"
         )
 

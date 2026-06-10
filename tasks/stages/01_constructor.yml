@@ -146,10 +146,10 @@
   run_once: true
   changed_when: false
 
-- name: "Bootstrap svc-swarm"
+- name: "Bootstrap svc-swarm-node"
   ansible.builtin.include_role:
-    name: svc-swarm
-  when: "'svc-swarm' | application_allowed(group_names, lookup('deployment').whitelist)"
+    name: svc-swarm-node
+  when: "'svc-swarm-node' | application_allowed(group_names, lookup('deployment').whitelist)"
 
 - name: "Bootstrap registry + NFS clients (MUST precede Preload)"
   ansible.builtin.include_tasks: "./tasks/groups/{{ role_group }}-roles.yml"

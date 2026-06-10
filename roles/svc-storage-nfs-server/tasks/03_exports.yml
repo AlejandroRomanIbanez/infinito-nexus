@@ -20,14 +20,14 @@
     gather_subset: network
   delegate_to: "{{ item }}"
   delegate_facts: true
-  loop: "{{ groups['svc-swarm'] | default([]) }}"
+  loop: "{{ groups['svc-swarm-node'] | default([]) }}"
   when: hostvars[item].ansible_default_ipv4 is not defined
 
 - name: "Compute swarm-member IPs allowed to mount"
   ansible.builtin.set_fact:
     svc_storage_nfs_server_allowed_ips: >-
       {{
-        groups['svc-swarm']
+        groups['svc-swarm-node']
         | default([])
         | map('extract', hostvars, ['ansible_default_ipv4', 'address'])
         | select('defined')
@@ -40,7 +40,7 @@
       - svc_storage_nfs_server_allowed_ips | length > 0
     fail_msg: |
       Could not resolve any swarm-member IPs from inventory. Make sure
-      facts have been gathered for every host in `svc-swarm`.
+      facts have been gathered for every host in `svc-swarm-node`.
 
 - name: "Render /etc/exports"
   ansible.builtin.template: # nocheck: stack-host-template (per-host NFS server /etc/exports (NFS host is its own group, not the stack host))

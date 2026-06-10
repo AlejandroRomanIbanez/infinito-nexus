@@ -1,7 +1,7 @@
 ---
-DEPLOYMENT_MODE: "{{ 'swarm' if (groups['svc-swarm'] | default([]) | length) > 1 else 'compose' }}"
+DEPLOYMENT_MODE: "{{ 'swarm' if (groups['svc-swarm-node'] | default([]) | length) > 1 else 'compose' }}"
 
-SWARM_CLUSTER_AVAILABLE: "{{ (groups['svc-swarm'] | default([]) | length) > 0 }}"
+SWARM_CLUSTER_AVAILABLE: "{{ (groups['svc-swarm-node'] | default([]) | length) > 0 }}"
 
 IS_STACK_HOST: >-
   {{ DEPLOYMENT_MODE != 'swarm'
