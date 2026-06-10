@@ -71,6 +71,11 @@
     dest: "/root/.msmtprc"
     mode: 600
 
-- include_role:
-    name: sys-ctl-hlth-msmtp
+- name: "Route hlth-msmtp through service-loader so it runs after web-app-mailu compose-up"
+  ansible.builtin.include_role:
+    name: sys-service-loader
+    tasks_from: list_or_shoot.yml
+  vars:
+    list_or_shoot_roles:
+      - sys-ctl-hlth-msmtp
   when: run_once_sys_ctl_hlth_msmtp is not defined
