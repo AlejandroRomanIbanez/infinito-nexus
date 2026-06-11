@@ -4,7 +4,14 @@
     {{ lookup('compose_only', 'container_name', REGISTRY_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     ports:
-      - "{{ REGISTRY_PORT }}:5000"
+{% if DEPLOYMENT_MODE == 'swarm' %}
+      - target: {{ REGISTRY_CONTAINER_PORT }}
+        published: {{ REGISTRY_PORT }}
+        protocol: tcp
+        mode: host
+{% else %}
+      - "{{ REGISTRY_PORT }}:{{ REGISTRY_CONTAINER_PORT }}"
+{% endif %}
     volumes:
       - "data:/var/lib/registry"
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
