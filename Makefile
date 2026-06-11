@@ -25,6 +25,11 @@ act-all:
 act-app:
 	@bash scripts/tests/deploy/act/app.sh
 
+.PHONY: act-debug
+# Param: node=<container_name> cmd='<shell pipeline>'
+act-debug:
+	@docker exec $(node) bash --noprofile --norc -c "$(cmd)"
+
 .PHONY: act-workflow
 # Run the act-based workflow deploy check.
 act-workflow:
