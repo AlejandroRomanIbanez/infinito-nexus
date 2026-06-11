@@ -87,11 +87,6 @@
   ansible.builtin.include_role:
     name: sys-version
 
-- name: Include Token Store
-  ansible.builtin.include_role:
-    name: sys-token-store
-  when: run_once_sys_token_store is not defined
-
 - name: init root user
   ansible.builtin.include_role:
     name: user-root
@@ -157,14 +152,19 @@
     service_loader_preloading: true
   changed_when: false
 
-- name: "Bootstrap registry + NFS clients (MUST precede Preload)"
+- name: "Bootstrap NFS clients + registry (MUST precede Preload)"
   ansible.builtin.include_tasks: "./tasks/groups/{{ role_group }}-roles.yml"
   loop:
-    - svc-registry
     - svc-storage
+    - svc-registry
   loop_control:
     loop_var: role_group
     label: "{{ role_group }}-roles.yml"
+
+- name: Include Token Store
+  ansible.builtin.include_role:
+    name: sys-token-store
+  when: run_once_sys_token_store is not defined
 
 - name: Preload shared services
   ansible.builtin.include_role:
