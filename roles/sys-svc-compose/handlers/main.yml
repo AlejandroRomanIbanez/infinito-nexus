@@ -119,6 +119,10 @@
       swarm_registry_push.py
       --chdir {{ lookup('container', application_id, 'directories.instance') }}
       --registry-prefix {{ SWARM_REGISTRY_PREFIX | quote }}
+  register: _swarm_registry_push
+  retries: 10
+  delay: 6
+  until: _swarm_registry_push is succeeded
   listen:
     - compose up
     - swarm deploy

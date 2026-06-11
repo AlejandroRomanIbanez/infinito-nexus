@@ -2,6 +2,11 @@
 {{ "\n" }}
     deploy:
       {{ lookup('compose_replicas') }}
+{% if application_id in lookup('roles_with_default_placement', 'manager') %}
+      placement:
+        constraints:
+          - node.role == manager
+{% endif %}
       update_config:
         parallelism: {{ service_update_parallelism | default(1) }}
         delay: {{ service_update_delay | default('10s') }}
