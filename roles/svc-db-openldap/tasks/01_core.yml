@@ -1,6 +1,13 @@
 ---
 - include_tasks: utils/once/flag.yml
 
+- name: "Create LDIF directories under {{ OPENLDAP_LDIF_PATH_HOST }} (must exist before swarm stack bind-mount)"
+  file:
+    path: "{{ OPENLDAP_LDIF_PATH_HOST }}{{ item }}"
+    state: directory
+    mode: "0755"
+  loop: "{{ OPENLDAP_LDIF_TYPES }}"
+
 - name: Initialize docker
   include_tasks: 02_docker.yml
 
@@ -24,6 +31,7 @@
     delay: 5
     timeout: 120
     state: started
+  when: DEPLOYMENT_MODE != 'swarm'
 
 - name: Check if current RootDN/RootPW already work
   ansible.builtin.shell: >
@@ -41,13 +49,6 @@
     - openldap_bind_check.rc != 0
 
 # NOTE: Credentials reset removed (Bitnami-specific). RootDN/RootPW are bootstrapped via container env.
-
-- name: "Create LDIF directories under {{ OPENLDAP_LDIF_PATH_HOST }}"
-  file:
-    path: "{{ OPENLDAP_LDIF_PATH_HOST }}{{ item }}"
-    state: directory
-    mode: "0755"
-  loop: "{{ OPENLDAP_LDIF_TYPES }}"
 
 - name: Set OPENLDAP_MODULE_DN (from filesystem)
   shell: >
