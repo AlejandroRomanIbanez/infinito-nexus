@@ -118,4 +118,9 @@ class LookupModule(LookupBase):
                 f"application_id '{application_id}'"
             )
 
-        return [f"{stack_name}_{bare_name}"]
+        # docker stack deploy creates service names as
+        # `<stack>_<compose-yaml-service-key>`. The compose-side `name:`
+        # field maps to `container_name` (compose) and is ignored by swarm.
+        # Hence the swarm-addressable name uses the SERVICE KEY, not the
+        # `services.<key>.name` value.
+        return [f"{stack_name}_{service_key}"]
