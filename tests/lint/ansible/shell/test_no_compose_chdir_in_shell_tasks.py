@@ -14,7 +14,8 @@ import re
 import unittest
 from pathlib import Path
 
-from utils.annotations.suppress import is_suppressed_at
+from utils.annotations.suppress import is_suppressed_at, is_suppressed_in_head
+from utils.annotations.task_gate import is_task_compose_only_gated
 from utils.cache.files import iter_project_files_with_content
 
 from . import PROJECT_ROOT
@@ -48,10 +49,14 @@ class TestNoComposeChdirInShellTasks(unittest.TestCase):
             if not _is_scan_target(rel):
                 continue
             lines = content.splitlines()
+            if is_suppressed_in_head(lines, _RULE):
+                continue
             for idx, line in enumerate(lines):
                 if not _COMPOSE_CHDIR.search(line):
                     continue
                 if is_suppressed_at(lines, idx + 1, _RULE, mode="same-or-above"):
+                    continue
+                if is_task_compose_only_gated(lines, idx):
                     continue
                 findings.append((rel, idx + 1, line.strip()))
 

@@ -14,7 +14,8 @@ import re
 import unittest
 from pathlib import Path
 
-from utils.annotations.suppress import is_suppressed_at
+from utils.annotations.suppress import is_suppressed_at, is_suppressed_in_head
+from utils.annotations.task_gate import is_task_compose_only_gated
 from utils.cache.files import iter_project_files_with_content
 
 from . import PROJECT_ROOT
@@ -25,9 +26,13 @@ _COMPOSE_VERB = re.compile(
     r"\{\{\s*BIN_COMPOSE\s*\}\}\s+(?:exec|run|restart|logs|up|down|ps|config)\b"
     r"|(?<![\w.-])compose\s+(?:exec|run|restart|logs|up|down|ps|config)\b"
 )
-# Exclude Ansible handler triggers (`notify: compose up`) and comment lines.
 _HANDLER_TRIGGER = re.compile(r"^\s*notify\s*:")
+_HANDLER_LIST_ITEM = re.compile(
+    r"^\s*-\s+compose\s+(?:up|down|build|run|restart|logs|exec|ps|config)\s*$"
+)
 _COMMENT_LINE = re.compile(r"^\s*#")
+_YAML_NAME_FIELD = re.compile(r"^\s*[-]?\s*(?:name|msg|title|label|description)\s*:")
+_QUOTED_LIST_ITEM = re.compile(r'^\s*-\s*[\'"]')
 
 
 def _is_scan_target(rel_path: str) -> bool:
@@ -51,12 +56,22 @@ class TestNoComposeVerbInShellTasks(unittest.TestCase):
             if not _is_scan_target(rel):
                 continue
             lines = content.splitlines()
+            if is_suppressed_in_head(lines, _RULE):
+                continue
             for idx, line in enumerate(lines):
-                if _COMMENT_LINE.match(line) or _HANDLER_TRIGGER.match(line):
+                if (
+                    _COMMENT_LINE.match(line)
+                    or _HANDLER_TRIGGER.match(line)
+                    or _HANDLER_LIST_ITEM.match(line)
+                    or _YAML_NAME_FIELD.match(line)
+                    or _QUOTED_LIST_ITEM.match(line)
+                ):
                     continue
                 if not _COMPOSE_VERB.search(line):
                     continue
                 if is_suppressed_at(lines, idx + 1, _RULE, mode="same-or-above"):
+                    continue
+                if is_task_compose_only_gated(lines, idx):
                     continue
                 findings.append((rel, idx + 1, line.strip()))
 

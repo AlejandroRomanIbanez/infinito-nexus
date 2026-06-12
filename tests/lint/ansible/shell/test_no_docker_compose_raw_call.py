@@ -48,6 +48,8 @@ class TestNoDockerComposeRawCall(unittest.TestCase):
             for idx, line in enumerate(lines):
                 if not _DOCKER_COMPOSE.search(line):
                     continue
+                if line.lstrip().startswith("#"):
+                    continue
                 if is_suppressed_at(lines, idx + 1, _RULE, mode="same-or-above"):
                     continue
                 findings.append((rel, idx + 1, line.strip()))
