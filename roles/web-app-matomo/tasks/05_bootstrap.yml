@@ -23,7 +23,7 @@
 
   rescue:
     - name: "Load Bootstrap Debug Info"
-      include_tasks: 03b_bootstrap_debug.yml
+      include_tasks: 06_bootstrap_debug.yml
       when: MODE_DEBUG | bool
 
     - name: "Matomo bootstrap | Abort with bootstrap root cause"

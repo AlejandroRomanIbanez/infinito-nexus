@@ -26,6 +26,7 @@ MASK_CREDENTIALS_IN_LOGS: true
 
 HOST_CURRENCY: "EUR"
 HOST_TIMEZONE: "UTC"
+HOST_TIMEZONE_LABEL: "United Kingdom"
 
 # https://en.wikipedia.org/wiki/ISO_639
 HOST_LL: "en" # Some applications are case sensitive

@@ -11,5 +11,5 @@
     compose_handlers_flush: false
 
 - name: "Matomo manager-side operations (file deploys + container exec)"
-  include_tasks: 02_manager_ops.yml
+  include_tasks: 03_manager_ops.yml
   when: IS_STACK_HOST | bool

@@ -1,0 +1,25 @@
+---
+- name: "Deploy '{{ MATOMO_BOOTSTRAP_ENV_FILE }}'"
+  stack_host_template:
+    src: "templates/bootstrap.env.j2"
+    dest: "{{ MATOMO_BOOTSTRAP_ENV_FILE }}"
+    mode: "0640"
+    force: true
+  notify: compose up
+
+- name: flush docker service
+  meta: flush_handlers
+
+- name: "Matomo install | Wait for Matomo container to be running (any state)"
+  ansible.builtin.shell: >
+    container inspect -f '{{ "{{" }}.State.Running{{ "}}" }}'
+    {{ lookup('container_address', application_id, MATOMO_SERVICE) }}
+  register: matomo_running
+  changed_when: false
+  retries: 150
+  delay: 2
+  until: >
+    matomo_running.rc == 0 and (matomo_running.stdout | trim) == 'true'
+
+- name: "Matomo install | Run downstream install path"
+  include_tasks: 04_install_path.yml
