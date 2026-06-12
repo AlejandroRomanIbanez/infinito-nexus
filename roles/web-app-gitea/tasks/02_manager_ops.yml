@@ -13,8 +13,6 @@
   shell: |
     container exec -i --user {{ GITEA_USER }} {{ GITEA_CONTAINER_ADDRESS }} \
       /app/gitea/gitea migrate
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
   register: migrate
   changed_when: "'migrations completed' in migrate.stdout"
 
@@ -27,8 +25,6 @@
         --password {{ lookup('users', 'administrator').password | quote }} \
         --email    "{{ lookup('users', 'administrator').email }}" \
         -c {{ GITEA_CONFIG }}
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
   register: create_admin
   changed_when: "'has been successfully created' in create_admin.stdout"
   failed_when: create_admin.rc != 0 and 'user already exists' not in create_admin.stderr

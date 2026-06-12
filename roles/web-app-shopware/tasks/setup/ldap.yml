@@ -9,8 +9,6 @@
       php bin/console plugin:install --activate INFX_LDAP_PLUGIN || true
       php bin/console cache:clear
     '
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
 
 - name: "Configure LDAP connection"
   shell: |
@@ -24,5 +22,3 @@
       php bin/console system:config:set "InfxLdap.config.userBase" "{{ LDAP.DN.OU.USERS }}"
       php bin/console cache:clear
     '
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"

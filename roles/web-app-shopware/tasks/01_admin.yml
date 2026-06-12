@@ -6,8 +6,6 @@
     -e NEW_USER={{ lookup('users', 'administrator').username | quote }}
     {{ SHOPWARE_WEB_CONTAINER_ADDRESS }}
     sh < {{ role_path }}/files/rename_admin_user.sh
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
@@ -22,6 +20,4 @@
     -e ADMIN_EMAIL={{ lookup('users', 'administrator').email | quote }}
     {{ SHOPWARE_WEB_CONTAINER_ADDRESS }}
     sh < {{ role_path }}/files/ensure_admin_user.sh
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"

@@ -7,5 +7,3 @@
       php bin/console plugin:uninstall INFX_OIDC_PLUGIN --keep-user-data || true
       php bin/console cache:clear
     '
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"

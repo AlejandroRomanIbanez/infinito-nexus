@@ -9,8 +9,6 @@
         --secret   "{{ OIDC.CLIENT.SECRET }}" \
         --auto-discover-url "{{ OIDC.CLIENT.DISCOVERY_DOCUMENT }}" \
         --scopes   "openid profile email"
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
   register: oidc_manage
   failed_when: oidc_manage.rc != 0 and "login source already exists" not in oidc_manage.stderr
 
@@ -21,8 +19,6 @@
       | tail -n +2 \
       | grep -F "{{ OIDC.BUTTON_TEXT }}" \
       | awk '{print $1; exit}'
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
   register: oidc_source_id_raw
   failed_when:
     - oidc_source_id_raw.rc != 0
@@ -44,7 +40,5 @@
         --secret   "{{ OIDC.CLIENT.SECRET }}" \
         --auto-discover-url "{{ OIDC.CLIENT.DISCOVERY_DOCUMENT }}" \
         --scopes   "openid profile email"
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
   register: oidc_manage
   failed_when: oidc_manage.rc != 0

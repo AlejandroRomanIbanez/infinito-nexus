@@ -9,8 +9,6 @@
       php bin/console plugin:install --activate INFX_OIDC_PLUGIN || true
       php bin/console cache:clear
     '
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
 
 - name: "Configure OIDC via system:config"
   shell: |
@@ -23,5 +21,3 @@
       php bin/console system:config:set "InfxOidc.config.scopes"          "openid profile email"
       php bin/console cache:clear
     '
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"

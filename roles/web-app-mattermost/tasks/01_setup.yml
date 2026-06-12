@@ -3,8 +3,6 @@
   shell: |
     container exec -i {{ MATTERMOST_CONTAINER_ADDRESS }} \
       /mattermost/bin/mmctl --local system status
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
   register: mm_ready_wait
   retries: 60
   delay: 5
@@ -20,8 +18,6 @@
         --username "{{ lookup('users', 'administrator').username }}" \
         --password {{ lookup('users', 'administrator').password | quote }} \
         --system-admin
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
   register: mm_create_admin
   changed_when: mm_create_admin.rc == 0
   failed_when: mm_create_admin.rc != 0 and 'already exists' not in (mm_create_admin.stdout + mm_create_admin.stderr)
@@ -32,8 +28,6 @@
       /mattermost/bin/mmctl --local team create \
         --name         "main" \
         --display-name "{{ ORGANIZATION }}"
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
   register: mm_create_team
   changed_when: mm_create_team.rc == 0
   failed_when: mm_create_team.rc != 0 and 'already exists' not in (mm_create_team.stdout + mm_create_team.stderr) and 'existing team' not in
@@ -50,8 +44,6 @@
   shell: |
     container exec -i {{ MATTERMOST_CONTAINER_ADDRESS }} \
       /mattermost/bin/mmctl --local user list --team main
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
   register: mm_team_members
   changed_when: false
 
@@ -61,8 +53,6 @@
       /mattermost/bin/mmctl --local team users add \
         main \
         "{{ lookup('users', 'administrator').email }}"
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
   when: lookup('users', 'administrator').email not in mm_team_members.stdout
 
 - name: "Mattermost | Check administrator auth service"
@@ -86,8 +76,6 @@
         -b {{ LDAP.DN.OU.USERS | quote }} \
         "(uid={{ lookup('users', 'administrator').username }})" uidNumber \
     | grep '^uidNumber:' | awk '{print $2}'
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
   register: mm_admin_uidnumber
   changed_when: false
   failed_when: mm_admin_uidnumber.rc != 0 or mm_admin_uidnumber.stdout | trim == ''

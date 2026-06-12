@@ -31,5 +31,3 @@
     --admin_password={{ WORDPRESS_ADMIN_PASSWORD | quote }}
     --admin_email={{ WORDPRESS_ADMIN_EMAIL | quote }}
     --path={{ WORDPRESS_DOCKER_HTML_PATH | quote }}
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
