@@ -45,8 +45,12 @@
     {{ lookup('compose_only', 'container_name', MOODLE_NGINX_CONTAINER) }}
     image: {{ MOODLE_NGINX_IMAGE }}:{{ MOODLE_NGINX_VERSION }}
     depends_on:
+{% if DEPLOYMENT_MODE == 'swarm' %}
+      - moodle
+{% else %}
       moodle:
         condition: service_healthy
+{% endif %}
     ports:
       - {{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.moodle.ports.local.http') }}:{{ MOODLE_NGINX_PORT }}
     volumes:
@@ -62,8 +66,12 @@
     image: {{ MOODLE_IMAGE_CUSTOM }}
     {{ lookup('compose_only', 'pull_policy', 'never') }}
     depends_on:
+{% if DEPLOYMENT_MODE == 'swarm' %}
+      - moodle
+{% else %}
       moodle:
         condition: service_healthy
+{% endif %}
     volumes:
       - 'code:{{ MOODLE_CODE_DIR }}'
       - 'data:{{ MOODLE_DATA_DIR }}'

@@ -30,8 +30,12 @@
     {{ lookup('compose_only', 'container_name', ERPNEXT_BACKEND_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     depends_on:
+{% if DEPLOYMENT_MODE == 'swarm' %}
+      - {{ ERPNEXT_CONFIGURATOR_CONTAINER }}
+{% else %}
       {{ ERPNEXT_CONFIGURATOR_CONTAINER }}:
         condition: service_completed_successfully
+{% endif %}
     volumes:
       - {{ ERPNEXT_SITES_VOLUME }}:/home/frappe/frappe-bench/sites
       - {{ ERPNEXT_ASSETS_VOLUME }}:/home/frappe/frappe-bench/sites/assets
@@ -44,8 +48,12 @@
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
     depends_on:
+{% if DEPLOYMENT_MODE == 'swarm' %}
+      - {{ ERPNEXT_CONFIGURATOR_CONTAINER }}
+{% else %}
       {{ ERPNEXT_CONFIGURATOR_CONTAINER }}:
         condition: service_completed_successfully
+{% endif %}
     volumes:
       - {{ ERPNEXT_SITES_VOLUME }}:/home/frappe/frappe-bench/sites
       - {{ ERPNEXT_ASSETS_VOLUME }}:/home/frappe/frappe-bench/sites/assets

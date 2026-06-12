@@ -19,8 +19,12 @@
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["zammad-railsserver"]
     depends_on:
+{% if DEPLOYMENT_MODE == 'swarm' %}
+      - {{ ZAMMAD_INIT_CONTAINER }}
+{% else %}
       {{ ZAMMAD_INIT_CONTAINER }}:
         condition: service_completed_successfully
+{% endif %}
     volumes:
       - zammad_storage:/opt/zammad/storage
       - "{{ ZAMMAD_AUTO_WIZARD_HOST_PATH }}:/opt/zammad/auto_wizard.json:ro"

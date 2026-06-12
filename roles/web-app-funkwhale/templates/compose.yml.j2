@@ -62,8 +62,10 @@
     volumes:
       - ./typesense/data:/data
     command: --data-dir /data --enable-cors
+{% if DEPLOYMENT_MODE != 'swarm' %}
     profiles:
       - typesense
+{% endif %}
 
 {{ lookup('compose_volumes', application_id,
     extra_volumes={'media': {'name': FUNKWHALE_MEDIA_VOLUME}, 'music': {'name': FUNKWHALE_MUSIC_VOLUME}, 'static': {'name': FUNKWHALE_STATIC_VOLUME}}

@@ -89,8 +89,12 @@
     shm_size: 1g
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
     depends_on:
+{% if DEPLOYMENT_MODE == 'swarm' %}
+      - redis
+{% else %}
       redis:
         condition: service_healthy
+{% endif %}
 {% endif %}
 
 

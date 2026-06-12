@@ -67,6 +67,7 @@
     # monitoring container, which is the standard accepted practice for node-exporter.
     # Port note: node-exporter binds on host port 9100. Ensure nothing else on the
     # host uses port 9100 to avoid a conflict at startup.
+    # nocheck: network-mode-host-without-swarm-gate
     network_mode: host
     pid: host
     volumes:

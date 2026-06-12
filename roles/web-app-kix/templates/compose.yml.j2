@@ -17,10 +17,15 @@
     user: "110010100"
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     depends_on:
+{% if DEPLOYMENT_MODE == 'swarm' %}
+      - {{ KIX_DB_CONTAINER }}
+      - redis
+{% else %}
       {{ KIX_DB_CONTAINER }}:
         condition: service_healthy
       redis:
         condition: service_healthy
+{% endif %}
     volumes:
       - kix_shared:/mnt/shared
       - kix_backend:/mnt/data
@@ -36,10 +41,15 @@
     user: "110010100"
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     depends_on:
+{% if DEPLOYMENT_MODE == 'swarm' %}
+      - {{ KIX_BACKEND_CONTAINER }}
+      - redis
+{% else %}
       {{ KIX_BACKEND_CONTAINER }}:
         condition: service_healthy
       redis:
         condition: service_healthy
+{% endif %}
     environment:
       - USE_SSL=0
       - REDIS_CACHE_HOST=redis

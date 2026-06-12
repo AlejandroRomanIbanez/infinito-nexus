@@ -29,6 +29,7 @@
     image: "{{ OPENTALK_LIVEKIT_IMAGE }}:{{ OPENTALK_LIVEKIT_VERSION }}"
     {{ lookup('compose_only', 'container_name', OPENTALK_LIVEKIT_CONTAINER) }}
     {{ lookup('compose_restart') }}
+    # nocheck: network-mode-host-without-swarm-gate
     network_mode: host
     command:
       - --config
@@ -83,10 +84,15 @@
       - "{{ [lookup('container', application_id, 'directories.volumes'), 'recorder.toml'] | path_join }}:/recorder/recorder.toml:ro"
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
     depends_on:
+{% if DEPLOYMENT_MODE == 'swarm' %}
+      - rabbit
+      - controller
+{% else %}
       rabbit:
         condition: service_healthy
       controller:
         condition: service_started
+{% endif %}
     logging:
       driver: journald
 

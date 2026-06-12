@@ -11,7 +11,19 @@
         LUA_PROMETHEUS_URL_KEYS:      "{{ OPENRESTY_LUA_PROMETHEUS_URL_KEYS }}"
     {{ lookup('compose_only', 'container_name', OPENRESTY_CONTAINER) }}
     image: {{ OPENRESTY_CUSTOM_IMAGE }}:{{ OPENRESTY_CUSTOM_VERSION }}
+{% if DEPLOYMENT_MODE == 'swarm' %}
+    ports:
+      - target: 80
+        published: 80
+        protocol: tcp
+        mode: host
+      - target: 443
+        published: 443
+        protocol: tcp
+        mode: host
+{% else %}
     network_mode: "host"
+{% endif %}
     volumes:
       - {{ lookup('nginx','files.configuration') }}:/usr/local/openresty/nginx/conf/nginx.conf:ro
       - {{ lookup('nginx','directories.configuration.base') }}:/usr/local/openresty/nginx/conf/conf.d:ro
