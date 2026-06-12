@@ -12,8 +12,9 @@
     -e DOMAIN={{ lookup('domain', 'web-app-matomo') | quote }}
     -e SERVICE={{ MATOMO_SERVICE | quote }}
     -e LOCAL={{ DOCKER_REACH_HOST }}:{{ http_port }}
-    {{ lookup('container_address', application_id, MATOMO_SERVICE) }}
+    {{ MATOMO_LOCAL_CID | quote }}
     sh -s
   args:
     stdin: "{{ lookup('file', role_path ~ '/files/patch_trusted_hosts.sh') }}"
+  delegate_to: "{{ MATOMO_HOST_NODE }}"
   notify: compose up

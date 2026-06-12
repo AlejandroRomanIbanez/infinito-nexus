@@ -1,12 +1,12 @@
 ---
 - name: "Matomo install | Check whether Matomo is already installed (config.ini.php exists)"
   ansible.builtin.shell: >
-    container exec
-    {{ lookup('container_address', application_id, MATOMO_SERVICE) }}
-    sh -lc 'test -f "{{ MATOMO_CONFIG }}"'
+    container exec {{ MATOMO_LOCAL_CID | quote }}
+    sh -lc 'test -f {{ MATOMO_CONFIG | quote }}'
   register: matomo_config_exists
   changed_when: false
   failed_when: false
+  delegate_to: "{{ MATOMO_HOST_NODE }}"
 
 - name: "Bootstrap Matomo (Initialisation and setting of API token if not defined)"
   include_tasks: 05_bootstrap.yml
@@ -29,13 +29,14 @@
 - name: "Matomo install | Wait for Matomo container to be healthy"
   ansible.builtin.shell: >
     container inspect -f '{{ "{{" }}.State.Health.Status{{ "}}" }}'
-    {{ lookup('container_address', application_id, MATOMO_SERVICE) }}
+    {{ MATOMO_LOCAL_CID | quote }}
   register: matomo_health
   changed_when: false
   retries: 60
   delay: 2
   until: >
     matomo_health.rc == 0 and (matomo_health.stdout | trim) == 'healthy'
+  delegate_to: "{{ MATOMO_HOST_NODE }}"
 
 - name: "Config '{{ application_id }}' via API"
   include_tasks: 09_config.yml

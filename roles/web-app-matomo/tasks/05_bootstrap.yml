@@ -1,6 +1,6 @@
 ---
 - block:
-    - name: "Matomo bootstrap | Run one-shot bootstrap via compose profile"
+    - name: "Matomo bootstrap | Compose: Run one-shot bootstrap via compose profile"
       ansible.builtin.command:
         argv:
           - "{{ BIN_COMPOSE }}"
@@ -20,6 +20,20 @@
       retries: "{{ MATOMO_BOOTSTRAP_RETRIES | int }}"
       delay: "{{ MATOMO_BOOTSTRAP_RETRY_DELAY_S | int }}"
       until: matomo_bootstrap_run.rc == 0
+      when: DEPLOYMENT_MODE != 'swarm'
+
+    - name: "Matomo bootstrap | Swarm: Wait for in-stack bootstrap service to emit a token"
+      ansible.builtin.shell: |
+        container service logs --no-task-ids \
+          {{ lookup('container_service', application_id, MATOMO_BOOTSTRAP_SERVICE) | quote }} 2>&1 \
+          | grep -oE '^[a-f0-9]{32,64}$' | tail -1
+      register: matomo_bootstrap_run
+      changed_when: false
+      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+      retries: "{{ MATOMO_BOOTSTRAP_RETRIES | int }}"
+      delay: "{{ MATOMO_BOOTSTRAP_RETRY_DELAY_S | int }}"
+      until: (matomo_bootstrap_run.stdout | default('') | length) > 0
+      when: DEPLOYMENT_MODE == 'swarm'
 
   rescue:
     - name: "Load Bootstrap Debug Info"
