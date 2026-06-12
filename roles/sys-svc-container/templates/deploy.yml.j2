@@ -11,7 +11,7 @@
         parallelism: {{ service_update_parallelism | default(1) }}
         delay: {{ service_update_delay | default('10s') }}
       restart_policy:
-        condition: any
+        condition: {{ docker_restart_policy | default(DOCKER_RESTART_POLICY) | swarm_restart_condition }}
       resources:
         limits:
           cpus: "{{ lookup('applications') | resource_filter(application_id, 'cpus', service_name | default(''), RESOURCE_CPUS) | string }}"
