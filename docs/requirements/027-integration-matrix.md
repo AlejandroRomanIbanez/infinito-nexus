@@ -17,6 +17,7 @@ A cell marks whether the **row** role ships an addon/plugin that wires in the **
 | — | Same role (diagonal). |
 
 Notes:
+
 - The matrix is **directional**: the row hosts the plugin/flag. Bidirectional pairs (e.g. `nextcloud`↔`openproject`) carry a symbol in both cells, each linking to that side.
 - ☑️ edges are derived automatically by scanning every role's `meta/services.yml` for integration service keys (`sso`→keycloak, `matomo`→matomo, `prometheus`→prometheus, `email`→mailu, `dashboard`, `css`, `logout`, `cdn`, `coturn`, `collabora`, `onlyoffice`, `libretranslate`). `ldap`/`redis`/`mariadb` map to `svc-db-*` roles that are off these axes and are not shown.
 - `→ keycloak` ☑️ cells are the central `sso` service (requirement 021); a ✅/🪙 on `→ keycloak` instead means a role-local OIDC/SAML addon path beyond the central service.
