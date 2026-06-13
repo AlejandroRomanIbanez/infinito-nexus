@@ -69,6 +69,12 @@ class LookupModule(LookupBase):
             templar=getattr(self, "_templar", None),
         )
         path_instances = self._require_var(vars_, "DIR_COMPOSITIONS")
+        if (
+            isinstance(path_instances, str)
+            and "{{" in path_instances
+            and self._templar is not None
+        ):
+            path_instances = self._templar.template(path_instances)
 
         consumer_entity = get_entity_name(consumer_id)
 

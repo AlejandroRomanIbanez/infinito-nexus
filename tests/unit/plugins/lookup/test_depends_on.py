@@ -12,7 +12,6 @@ Covers the four orthogonal axes:
 
 from __future__ import annotations
 
-import textwrap
 import unittest
 
 from ansible.errors import AnsibleError
