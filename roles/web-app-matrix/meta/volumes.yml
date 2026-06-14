@@ -36,3 +36,24 @@ element_config:
   mounts:
     - service: element
       target: /app/config.json
+
+matrix_mdad_docker:
+  type: volume
+  name: matrix_mdad_docker
+  mounts:
+    - service: matrix-mdad
+      target: /var/lib/docker
+
+matrix_mdad_state:
+  type: volume
+  name: matrix_mdad_state
+  mounts:
+    - service: matrix-mdad
+      target: /var/lib/matrix-mdad
+
+matrix_mdad_matrix:
+  type: volume
+  name: matrix_mdad_matrix
+  mounts:
+    - service: matrix-mdad
+      target: /matrix

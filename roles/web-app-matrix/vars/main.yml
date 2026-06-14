@@ -20,6 +20,9 @@ MATRIX_SYNAPSE_IMAGE: "{{ lookup('config', application_id, 'services.synapse.ima
 MATRIX_SYNAPSE_NAME: "{{ lookup('config', application_id, 'services.synapse.name') }}"
 MATRIX_SYNAPSE_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'synapse') }}"
 MATRIX_SYNAPSE_VOLUME: "{{ lookup('volume', application_id, 'synapse_data').name }}"
+MATRIX_MDAD_SERVICE: "matrix-mdad"
+MATRIX_MDAD_CONTAINER: "matrix-mdad"
+MATRIX_MDAD_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, MATRIX_MDAD_SERVICE) }}"
 MATRIX_SYNAPSE_DOMAIN: "{{ lookup('domains', application_id).synapse }}"
 MATRIX_SYNAPSE_PORT: "{{ lookup('config', 'web-app-matrix', 'services.synapse.ports.local.http') }}"
 MATRIX_SYNAPSE_CONTAINER_PORT: "{{ lookup('config', application_id, 'services.synapse.ports.internal.http') }}"
@@ -40,3 +43,40 @@ MATRIX_ELEMENT_CONFIG_PATH_HOST: "{{ [ lookup('container', application_id, 'dire
 
 MATRIX_CHATGPT_BOT_VERSION: "{{ lookup('config', application_id, 'services.matrix-chatgpt-bot.version') }}"
 MATRIX_CHATGPT_BOT_IMAGE: "{{ lookup('config', application_id, 'services.matrix-chatgpt-bot.image') }}"
+
+MATRIX_MDAD_DIR: "{{ lookup('container', application_id, 'directories.instance') }}mdad"
+MATRIX_MDAD_PLAYBOOK_TAGS: "{{ lookup('config', application_id, 'services.matrix.playbook_tags') }}"
+MATRIX_MDAD_MIGRATION_VALIDATED_VERSION: "{{ lookup('config', application_id, 'services.matrix.upstream.migration_validated_version') }}"
+MATRIX_MDAD_RUNNER_IMAGE: "{{ lookup('config', application_id, 'services.matrix.runner.image') }}"
+MATRIX_MDAD_RUNNER_BASE_IMAGE: "{{ lookup('config', application_id, 'services.matrix.runner.base_image') }}"
+MATRIX_MDAD_RUNNER_BASE_VERSION: "{{ lookup('config', application_id, 'services.matrix.runner.base_version') }}"
+MATRIX_MDAD_RUNNER_DOCKER_CLI_IMAGE: "{{ lookup('config', application_id, 'services.matrix.runner.docker_cli_image') }}"
+MATRIX_MDAD_RUNNER_DOCKER_CLI_VERSION: "{{ lookup('config', application_id, 'services.matrix.runner.docker_cli_version') }}"
+
+MATRIX_BRIDGE: "{{ lookup('config', application_id, 'services.matrix.plugins') }}"
+
+MATRIX_CONFERENCING_JITSI: "{{ lookup('config', application_id, 'services.matrix.conferencing.jitsi') | bool }}"
+MATRIX_CONFERENCING_ELEMENT_CALL: "{{ lookup('config', application_id, 'services.matrix.conferencing.element_call') | bool }}"
+
+MATRIX_LDAP_ENABLED: "{{ lookup('config', application_id, 'services.ldap.enabled') | bool }}"
+
+MATRIX_CA_MOUNT_PATH: "/etc/ssl/certs/infinito-ca.pem"
+
+MATRIX_POSTGRES_HOST: "{{ lookup('database', application_id, 'host') }}"
+MATRIX_POSTGRES_PORT: "{{ lookup('database', application_id, 'port') }}"
+MATRIX_POSTGRES_USER: "{{ lookup('database', application_id, 'username') }}"
+MATRIX_POSTGRES_PASSWORD: "{{ lookup('database', application_id, 'password') }}"
+MATRIX_POSTGRES_DATABASE: "{{ lookup('database', application_id, 'name') }}"
+
+MATRIX_COTURN_SHARED: "{{ lookup('config', application_id, 'services.coturn.shared') | bool }}"
+MATRIX_COTURN_HOST: "{{ lookup('domain', 'web-svc-coturn') if MATRIX_COTURN_SHARED else '' }}"
+MATRIX_COTURN_STUN_TURN_PORT: "{{ lookup('config', 'web-svc-coturn', 'services.coturn.ports.public.stun_turn') if MATRIX_COTURN_SHARED else '' }}"
+MATRIX_COTURN_STUN_TURN_TLS_PORT: "{{ lookup('config', 'web-svc-coturn', 'services.coturn.ports.public.stun_turn_tls') if MATRIX_COTURN_SHARED else '' }}"
+MATRIX_COTURN_AUTH_SECRET: "{{ lookup('config', 'web-svc-coturn', 'credentials.auth_secret') if MATRIX_COTURN_SHARED else '' }}"
+
+MATRIX_OUTBOUND_MAIL_ENABLED: "{{ lookup('config', application_id, 'services.email.enabled') | bool }}"
+MATRIX_OUTBOUND_MAIL: "{{ lookup('email', application_id) if MATRIX_OUTBOUND_MAIL_ENABLED else {} }}"
+MATRIX_OUTBOUND_MAIL_HOST: "{{ MATRIX_OUTBOUND_MAIL.host | default('') }}"
+MATRIX_OUTBOUND_MAIL_PORT: "{{ MATRIX_OUTBOUND_MAIL.port | default(587) }}"
+MATRIX_OUTBOUND_MAIL_USER: "{{ MATRIX_OUTBOUND_MAIL.username | default('') }}"
+MATRIX_OUTBOUND_MAIL_PASS: "{{ MATRIX_OUTBOUND_MAIL.password | default('') }}"

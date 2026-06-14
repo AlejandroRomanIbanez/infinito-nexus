@@ -1,4 +1,5 @@
 ---
+# include-gated: when: DEPLOYMENT_MODE != "swarm"
 - name: "load docker and db for {{ application_id }}"
   include_role:
     name: sys-stk-backend
@@ -13,7 +14,6 @@
     database_name: "{{ item.database_name }}"
   loop: "{{ MATRIX_BRIDGES }}"
 
-# The following taks are necessary because a clean setup is necessary
 - name: shut down compose project
   command:
     cmd: "{{ BIN_COMPOSE }} down"
@@ -34,14 +34,14 @@
 
 - name: add multiple mautrix bridge configuration
   stack_host_template:
-    src: "mautrix/{{ item.bridge_name }}.config.yml.j2"
+    src: "flavor/compose/mautrix/{{ item.bridge_name }}.config.yml.j2"
     dest: "{{ lookup('container', application_id, 'directories.instance') }}mautrix/{{ item.bridge_name }}/config.yaml"
   loop: "{{ MATRIX_BRIDGES }}"
   notify: compose up
 
 - name: add element configuration
   stack_host_template:
-    src: "element.config.json.j2"
+    src: "flavor/compose/element.config.json.j2"
     dest: "{{ MATRIX_ELEMENT_CONFIG_PATH_HOST }}"
   notify: compose up
 
@@ -50,10 +50,10 @@
     file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
   vars:
     role_templates:
-      - src: "synapse/homeserver.yaml.j2"
+      - src: "flavor/compose/synapse/homeserver.yaml.j2"
         dest: "{{ MATRIX_SYNAPSE_CONFIG_PATH_HOST }}"
         mode: "{{ MATRIX_SYNAPSE_BIND_MOUNT_MODE }}"
-      - src: "synapse/log.config.j2"
+      - src: "flavor/compose/synapse/log.config.j2"
         dest: "{{ MATRIX_SYNAPSE_LOG_PATH_HOST }}"
         mode: "{{ MATRIX_SYNAPSE_BIND_MOUNT_MODE }}"
 

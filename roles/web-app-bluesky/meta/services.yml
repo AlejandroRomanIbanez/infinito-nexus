@@ -51,7 +51,7 @@ web:
 view:
   enabled: false
   repository: https://github.com/bluesky-social/social-app.git
-  ref: "1.122.0"
+  ref: "1.124.0"
   ports:
     local:
       http: 8051
@@ -74,6 +74,8 @@ broker:
   # is built from `files/login-broker/`.
   name: bluesky-broker
   image: bluesky-broker
+  base_image: node
+  base_version: 22-alpine
   port: 8080
   ports:
     local:

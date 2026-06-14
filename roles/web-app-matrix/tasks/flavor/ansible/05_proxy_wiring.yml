@@ -1,0 +1,70 @@
+---
+- name: "ansible-flavor: probe Synapse client API on host loopback (cold MDAD bootstrap ~10-15min)"
+  uri_retry:
+    url: "http://127.0.0.1:{{ MATRIX_SYNAPSE_PORT }}/_matrix/client/versions"
+    status_code: 200
+    follow_redirects: none
+  register: matrix_synapse_loopback_probe
+  retries: 180
+  delay: 5
+  until: matrix_synapse_loopback_probe.status == 200
+  ignore_errors: true
+
+- name: "ansible-flavor: diagnostics — matrix-mdad container + systemd + bootstrap status (on probe failure)"
+  ansible.builtin.script:
+    cmd: "{{ role_path }}/files/flavor/ansible/diagnostics.sh"
+  register: matrix_mdad_diagnostics
+  changed_when: false
+  failed_when: false
+  when:
+    - matrix_synapse_loopback_probe is failed
+    - MODE_DEBUG | bool
+
+- name: "ansible-flavor: dump matrix-mdad diagnostics"
+  ansible.builtin.debug:
+    var: matrix_mdad_diagnostics
+  when:
+    - matrix_synapse_loopback_probe is failed
+    - MODE_DEBUG | bool
+
+- name: "ansible-flavor: fail after diagnostics if probe never succeeded"
+  ansible.builtin.fail:
+    msg: "Synapse loopback probe never reached 200 — see matrix_mdad_diagnostics above."
+  when: matrix_synapse_loopback_probe is failed
+
+- name: "ansible-flavor: probe Element web client on host loopback"
+  uri_retry:
+    url: "http://127.0.0.1:{{ MATRIX_ELEMENT_PORT }}/"
+    status_code: 200
+    follow_redirects: none
+  register: matrix_element_loopback_probe
+  retries: 30
+  delay: 2
+  until: matrix_element_loopback_probe.status == 200
+
+- name: "ansible-flavor: create native admin in Synapse (DiD, idempotent via shared-secret)"
+  when: IS_STACK_HOST | bool
+  ansible.builtin.shell:
+    cmd: >- # nocheck: raw-docker, container-exec-resolver  inner docker CLI talks to the DiD daemon inside matrix-mdad; no host docker involved
+      container exec {{ MATRIX_MDAD_CONTAINER_ADDRESS | quote }} docker exec matrix-synapse register_new_matrix_user
+      -u {{ MATRIX_ADMINISTRATOR_USERNAME | quote }}
+      -p {{ MATRIX_ADMINISTRATOR_PASSWORD | quote }}
+      -a -c /data/homeserver.yaml http://localhost:8008
+  register: matrix_admin_create
+  changed_when: matrix_admin_create.rc == 0 and 'User ID already taken' not in (matrix_admin_create.stdout + matrix_admin_create.stderr)
+  failed_when: matrix_admin_create.rc != 0 and 'User ID already taken' not in (matrix_admin_create.stdout + matrix_admin_create.stderr)
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+- name: "front-proxy: Element web client"
+  ansible.builtin.include_role:
+    name: sys-stk-front-proxy
+  vars:
+    domain: "{{ MATRIX_ELEMENT_DOMAIN }}"
+    http_port: "{{ MATRIX_ELEMENT_PORT }}"
+
+- name: "front-proxy: Synapse client/federation"
+  ansible.builtin.include_role:
+    name: sys-stk-front-proxy
+  vars:
+    domain: "{{ MATRIX_SYNAPSE_DOMAIN }}"
+    http_port: "{{ MATRIX_SYNAPSE_PORT }}"

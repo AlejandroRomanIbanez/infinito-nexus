@@ -1,4 +1,5 @@
 ---
+# include-gated: when: DEPLOYMENT_MODE != "swarm"
 # Expected from caller (loop):
 # - database_name
 # - database_username
@@ -19,8 +20,8 @@
     database_consumer_id: "{{ application_id }}"
     database_type: "{{ lookup('database', application_id, 'type') }}"
     database_instance: "{{ lookup('database', application_id, 'instance') }}"
-    database_host: "{{ lookup('database', application_id, 'host') }}"
-    database_port: "{{ lookup('database', application_id, 'port') }}"
+    database_host: "{{ MATRIX_POSTGRES_HOST }}"
+    database_port: "{{ MATRIX_POSTGRES_PORT }}"
     database_name: "{{ database_name }}"
     database_username: "{{ database_username }}"
     database_password: "{{ database_password }}"

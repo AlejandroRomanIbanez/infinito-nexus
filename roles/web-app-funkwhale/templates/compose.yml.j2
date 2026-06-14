@@ -20,6 +20,7 @@
   api:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ FUNKWHALE_API_IMAGE }}:{{ FUNKWHALE_API_VERSION }}"
+    command: gunicorn
     {{ lookup('container_volumes', application_id, 'api') | indent(4) }}
     ports:
       - "{{ FUNKWHALE_DOCKER_API_PORT }}"

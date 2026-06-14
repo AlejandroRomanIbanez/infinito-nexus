@@ -1,0 +1,9 @@
+---
+assets:
+  type: volume
+  name: penpot_assets
+  mounts:
+    - service: frontend
+      target: /opt/data/assets
+    - service: backend
+      target: /opt/data/assets
