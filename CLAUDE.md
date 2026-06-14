@@ -35,6 +35,12 @@ At the start of every new conversation (after reading `AGENTS.md`), you MUST rea
 
 Anything else — restating code, section banners, "Note that …", step narration outside sequential test specs, untracked TODO/FIXME — **DELETE before the edit lands**. Applies to every language and file kind under version control. When in doubt, delete.
 
+## Command output logging 📜
+
+- For ANY non-trivial command (test runs, deploys, long pipelines), you MUST stream the FULL output to a file under `/tmp/` via `… 2>&1 | tee /tmp/<name>.log` and grep / inspect that file repeatedly instead of re-running the command. Reason: re-running `make test` to "find the failure I just lost" costs 2 minutes per cycle; grepping the saved log costs milliseconds.
+- Default the filename to a meaningful slug + monotonically increasing index (`/tmp/make-test-<slug>-<N>.log`, `/tmp/act-<slug>-<N>.log`) so you can compare runs.
+- Tell the operator the exact `tail -f /tmp/<name>.log` command for background runs, per the existing rule.
+
 ## Pushing 🚢
 
 - You MUST NOT push, directly or through wrappers that push implicitly.
