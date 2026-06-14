@@ -46,9 +46,9 @@ infinito_conf:
       target: /var/www/html/config/infinito/
 
 nextcloud_includes:
-  type: bind
+  type: config
   source: "{{ [ lookup('container', 'web-app-nextcloud', 'directories.volumes'), 'includes.php' ] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: nextcloud
       target: /tmp/includes.php

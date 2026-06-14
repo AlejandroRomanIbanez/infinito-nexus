@@ -14,33 +14,33 @@ alertmanager_data:
       target: /alertmanager
 
 prometheus_config:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-prometheus', 'directories.config'), 'prometheus.yml'] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: application
       target: /etc/prometheus/prometheus.yml
 
 alert_rules:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-prometheus', 'directories.config'), 'alert_rules.yml'] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: application
       target: /etc/prometheus/alert_rules.yml
 
 blackbox_config:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-prometheus', 'directories.config'), 'blackbox.yml'] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: blackbox-exporter
       target: /etc/blackbox_exporter/config.yml
 
 alertmanager_config:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-prometheus', 'directories.config'), 'alertmanager.yml'] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: alertmanager
       target: /etc/alertmanager/alertmanager.yml

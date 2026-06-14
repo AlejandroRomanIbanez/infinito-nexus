@@ -36,9 +36,9 @@ static-data:
     - service: manager
       target: /taiga-back/static
 frontend-conf:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-taiga', 'directories.config'), 'conf.json'] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: front
       target: /usr/share/nginx/html/conf.json
@@ -64,8 +64,9 @@ urls-py:
       target: /taiga-back/settings/urls.py
       when: "{{ lookup('config', 'web-app-taiga', 'services.sso.enabled') | bool }}"
 gateway-conf:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-taiga', 'directories.services'), 'repository/taiga-gateway/taiga.conf'] | path_join }}"
+  mode: "0440"
   mounts:
     - service: gateway
       target: /etc/nginx/conf.d/default.conf

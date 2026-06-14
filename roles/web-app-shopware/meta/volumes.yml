@@ -82,9 +82,9 @@ thumbnail:
       target: /var/www/html/public/thumbnail
 
 init_script:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-shopware', 'directories.volumes'), 'init.sh'] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: init
       target: /usr/local/bin/init.sh
@@ -96,9 +96,9 @@ init_script:
       target: /usr/local/bin/init.sh
 
 framework_yaml:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-shopware', 'directories.config'), 'framework.yaml'] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: init
       target: /var/www/html/config/packages/framework.yaml

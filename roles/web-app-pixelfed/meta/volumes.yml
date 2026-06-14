@@ -19,10 +19,9 @@ env:
       target: /var/www/.env
 
 entrypoint:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-pixelfed', 'directories.instance'), 'docker-entrypoint.sh'] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: application
       target: /infinito-pixelfed-entrypoint.sh
-      read_only: true

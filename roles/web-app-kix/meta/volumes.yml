@@ -30,18 +30,18 @@ kix_frontend:
       target: /mnt/data
 
 auth_ldap:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-kix', 'directories.volumes'), 'auth_ldap.xml'] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: kix-backend
       target: /opt/kix/Kernel/Config/Files/zzz_auth_ldap.xml
       when: "{{ lookup('config', 'web-app-kix', 'services.ldap.enabled') | bool }}"
 
 proxy_nginx_conf:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-kix', 'directories.volumes'), 'kix-proxy.default.conf'] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: kix-proxy
       target: /etc/nginx/conf.d/default.conf

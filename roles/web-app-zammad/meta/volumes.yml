@@ -14,9 +14,9 @@ zammad_search:
     - service: zammad-elasticsearch
       target: /usr/share/elasticsearch/data
 auto_wizard:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-zammad', 'directories.volumes'), 'auto_wizard.json'] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: zammad-init
       target: /opt/zammad/auto_wizard.json

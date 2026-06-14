@@ -139,10 +139,11 @@ class TestPrometheusServicePresence(unittest.TestCase):
         )
 
     def test_alert_rules_mounted_in_prometheus_container(self):
-        """meta/volumes.yml must declare a bind that mounts the rendered
-        alert_rules.yml into the Prometheus container, otherwise the file
-        is materialised on disk but never loaded — all alerts are dead.
-        Post-canonical-migration this lives in meta, not compose.yml.j2.
+        """meta/volumes.yml must declare a mount that lands the rendered
+        alert_rules.yml inside the Prometheus container, otherwise the
+        file is materialised on disk but never loaded and all alerts are
+        dead. Accepts either type:bind (compose mode) or type:config
+        (swarm-distributed, the file-bind-should-be-config canonical).
         """
         roles_dir = ROLES_DIR
         meta_path = roles_dir / PROMETHEUS_APP_ID / ROLE_FILE_META_VOLUMES
@@ -155,16 +156,16 @@ class TestPrometheusServicePresence(unittest.TestCase):
         alert_rules_mounts = [
             mount
             for semantic_name, entry in entries.items()
-            if isinstance(entry, dict) and entry.get("type") == "bind"
+            if isinstance(entry, dict) and entry.get("type") in ("bind", "config")
             for mount in entry.get("mounts") or []
             if isinstance(mount, dict)
             and mount.get("target") == "/etc/prometheus/alert_rules.yml"
         ]
         self.assertTrue(
             alert_rules_mounts,
-            "meta/volumes.yml must declare a bind whose target is "
-            "/etc/prometheus/alert_rules.yml so the rendered alert rules file "
-            "is loaded by the container.",
+            "meta/volumes.yml must declare a type:bind or type:config entry "
+            "whose mount target is /etc/prometheus/alert_rules.yml so the "
+            "rendered alert rules file is loaded by the container.",
         )
 
 

@@ -52,9 +52,9 @@ webmail_data:
     - service: webmail
       target: /data
 unbound_conf:
-  type: bind
+  type: config
   source: "{{ [ lookup('container', 'web-app-mailu', 'directories.volumes'), 'overrides/unbound/unbound.conf' ] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: resolver
       target: /unbound.conf

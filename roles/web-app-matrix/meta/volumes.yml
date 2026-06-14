@@ -14,9 +14,9 @@ chatgpt_data:
       target: /storage
 
 synapse_config:
-  type: bind
+  type: config
   source: "{{ [ lookup('container', 'web-app-matrix', 'directories.config'), 'homeserver.yaml' ] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: synapse
       target: /data/homeserver.yaml
@@ -30,8 +30,9 @@ synapse_log:
       target: "/data/{{ lookup('domains', 'web-app-matrix').synapse }}.log.config"
 
 element_config:
-  type: bind
+  type: config
   source: "{{ [ lookup('container', 'web-app-matrix', 'directories.config'), 'element-config.json' ] | path_join }}"
+  mode: "0440"
   mounts:
     - service: element
       target: /app/config.json

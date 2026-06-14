@@ -12,9 +12,9 @@ data:
     - service: friendica
       target: /var/www/data
 ldapauth_config:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-friendica', 'directories.volumes'), 'ldapauth.config.php'] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: friendica
       target: /var/www/html/config/ldapauth.config.php

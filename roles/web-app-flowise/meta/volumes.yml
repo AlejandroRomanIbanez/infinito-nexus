@@ -13,10 +13,9 @@ qdrant_data:
       target: /qdrant/storage
 
 litellm_config:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-flowise', 'directories.config'), 'litellm.config.yaml'] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: litellm
       target: /etc/litellm/config.yaml
-      read_only: true

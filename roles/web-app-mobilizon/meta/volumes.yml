@@ -7,9 +7,9 @@ uploads:
       target: /var/lib/mobilizon/uploads
 
 config_exs:
-  type: bind
+  type: config
   source: "{{ [ lookup('container', 'web-app-mobilizon', 'directories.config'), 'config.exs' ] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: application
       target: /etc/mobilizon/config.exs

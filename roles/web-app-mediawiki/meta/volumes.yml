@@ -15,13 +15,12 @@ extensions:
       target: /var/www/html/extensions
 
 localsettings:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-mediawiki', 'directories.config'), 'LocalSettings.php'] | path_join }}"
-  read_only: true
+  mode: "0440"
   mounts:
     - service: mediawiki
       target: /var/www/html/LocalSettings.php
-      read_only: true
 
 mw_local:
   type: bind
