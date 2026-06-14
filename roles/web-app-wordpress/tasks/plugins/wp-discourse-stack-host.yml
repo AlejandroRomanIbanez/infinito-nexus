@@ -3,8 +3,7 @@
   shell: >
     container exec {{ WORDPRESS_DISCOURSE_CONTAINER_ADDRESS }} \
       git config --global --add safe.directory /var/www/discourse
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
+
   changed_when: false
 
 - name: Revoke old WP Discourse API keys via Rails
@@ -18,8 +17,7 @@
           revoked_at: nil\
         ).update_all(revoked_at: Time.current)\
       \""
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
+
   changed_when: false
   failed_when: false
 
@@ -29,8 +27,7 @@
       cd /var/www/discourse && \
       bin/rake api_key:create_master['WP Discourse Integration']\
     "
-  args:
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
+
   register: discourse_generated_api_key
 
 - name: Store the new WP Discourse API key in a fact
