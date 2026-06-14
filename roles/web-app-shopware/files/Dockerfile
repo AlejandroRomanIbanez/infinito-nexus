@@ -26,7 +26,8 @@ ARG SHOPWARE_COMPOSER_PLATFORM_PHP
 # 1) Scaffold project without installing dependencies
 RUN set -eux; \
     composer create-project "${SHOPWARE_PKG_NAME}:${SHOPWARE_PKG_VERSION}" /app --no-install; \
-    composer config platform.php "${SHOPWARE_COMPOSER_PLATFORM_PHP}"
+    composer config platform.php "${SHOPWARE_COMPOSER_PLATFORM_PHP}"; \
+    composer config policy.advisories.block false
 
 # 2) Install dependencies (ignoring build-time extension checks) + add Redis transport
 RUN set -eux; \
