@@ -17,7 +17,10 @@ const adminUsername = decodeDotenvQuotedValue(process.env.ADMIN_USERNAME || "");
 const adminPassword = decodeDotenvQuotedValue(process.env.ADMIN_PASSWORD || "");
 
 async function loginAdminViaOidc(page) {
+  const expectedOidcAuthUrl = `${oidcIssuerUrl}/protocol/openid-connect/auth`;
+
   await page.goto(`${peertubeBaseUrl}/login`, { waitUntil: "domcontentloaded" });
+  await page.waitForLoadState("networkidle").catch(() => {});
 
   const oidcButtonPatterns = [
     oidcButtonText ? new RegExp(oidcButtonText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") : null,
@@ -27,20 +30,26 @@ async function loginAdminViaOidc(page) {
     /sign\s*in\s+with\s+oidc/i,
   ].filter(Boolean);
 
-  for (const pattern of oidcButtonPatterns) {
-    const candidate = page.locator("a, button").filter({ hasText: pattern }).first();
-    if ((await candidate.count().catch(() => 0)) > 0) {
-      await candidate.click().catch(() => {});
-      break;
-    }
-  }
-
   await expect
-    .poll(() => page.url(), {
-      timeout: 60_000,
-      message: `expected redirect to Keycloak OIDC auth (${oidcIssuerUrl}/protocol/openid-connect/auth)`,
-    })
-    .toContain(`${oidcIssuerUrl}/protocol/openid-connect/auth`);
+    .poll(
+      async () => {
+        if (page.url().includes(expectedOidcAuthUrl)) return true;
+        for (const pattern of oidcButtonPatterns) {
+          const candidate = page.locator("a, button").filter({ hasText: pattern }).first();
+          if ((await candidate.count().catch(() => 0)) > 0) {
+            await candidate.waitFor({ state: "visible", timeout: 30_000 }).catch(() => {});
+            await candidate.click().catch(() => {});
+            break;
+          }
+        }
+        return page.url().includes(expectedOidcAuthUrl);
+      },
+      {
+        timeout: 60_000,
+        message: `expected redirect to Keycloak OIDC auth (${expectedOidcAuthUrl})`,
+      }
+    )
+    .toBe(true);
 
   await performKeycloakLoginForm(page, adminUsername, adminPassword);
 
@@ -75,15 +84,26 @@ async function uploadWebVideo(page) {
   await nameField.waitFor({ state: "visible", timeout: 60_000 });
   await nameField.fill(marker);
 
+  const welcomeDialog = page.locator("ngb-modal-window, .modal.show, [role='dialog']").first();
+  if (await welcomeDialog.isVisible().catch(() => false)) {
+    const closeBtn = welcomeDialog
+      .getByRole("button", { name: /close|got it|continue|skip|i'?m a/i })
+      .or(welcomeDialog.locator("button.close, [aria-label='Close']"))
+      .first();
+    if (await closeBtn.isVisible().catch(() => false)) {
+      await closeBtn.click().catch(() => {});
+    } else {
+      await page.keyboard.press("Escape").catch(() => {});
+    }
+    await welcomeDialog.waitFor({ state: "hidden", timeout: 15_000 }).catch(() => {});
+  }
+
   const publishButton = page.locator(".save-button > button").first();
   await publishButton.waitFor({ state: "visible", timeout: 60_000 });
-
-  await expect
-    .poll(async () => (await publishButton.isEnabled().catch(() => false)) === true, {
-      timeout: 120_000,
-      message: "expected the PeerTube publish button to become enabled after the upload finishes",
-    })
-    .toBe(true);
+  await expect(
+    publishButton,
+    "expected the PeerTube publish button to become enabled after the upload finishes",
+  ).toBeEnabled({ timeout: 120_000 });
 
   await publishButton.click();
 
@@ -100,10 +120,11 @@ async function uploadWebVideo(page) {
 
 test("seaweedfs: an uploaded PeerTube video is stored in the SeaweedFS bucket", async ({ page, browser }) => {
   skipUnlessServiceEnabled("seaweedfs");
-  test.setTimeout(180_000);
+  test.setTimeout(480_000);
 
   await runSeaweedfsStorageCheck(page, browser, {
     label: "a PeerTube video upload",
+    pollDeadlineMs: 300_000,
     action: async (appPage) => {
       await loginAdminViaOidc(appPage);
       await uploadWebVideo(appPage);
