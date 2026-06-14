@@ -1,7 +1,7 @@
 ---
 - name: "Fetch existing API tokens via curl inside admin container"
   ansible.builtin.shell: >-
-    container exec -T {{ MAILU_ADMIN_CONTAINER_ADDRESS }}
+    container exec -i {{ MAILU_ADMIN_CONTAINER_ADDRESS }}
       curl -sS --fail -X GET {{ MAILU_API_SERVICE_BASE_URL }}/token
         -H "Authorization: Bearer {{ MAILU_API_TOKEN }}"
   register: mailu_tokens_cli
