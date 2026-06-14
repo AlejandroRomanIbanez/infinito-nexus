@@ -1,3 +1,15 @@
 ---
 data:
+  type: volume
   name: suitecrm_data
+  mounts:
+    - service: suitecrm
+      target: /var/www/html/
+
+php_config:
+  type: bind
+  source: "{{ [lookup('container', 'web-app-suitecrm', 'directories.config'), 'php.ini'] | path_join }}"
+  mounts:
+    - service: suitecrm
+      target: "/usr/local/etc/php/conf.d/{{ SOFTWARE_DOMAIN | replace('.', '-') }}.ini"
+      read_only: true

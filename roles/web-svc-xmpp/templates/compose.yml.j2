@@ -1,5 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-  ejabberd:
+{% set service_name = 'ejabberd' %}
+  {{ service_name }}:
     image: "{{ EJABBERD_IMAGE }}:{{ EJABBERD_VERSION }}"
     {{ lookup('compose_only', 'container_name', EJABBERD_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -7,20 +8,8 @@
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.xmpp.ports.local.http') }}:5280"
       - "5222:5222"
       - "5269:5269"
-    volumes:
-      - data:/home/ejabberd/database
-      - conf:/home/ejabberd/conf
-      - upload:/home/ejabberd/upload
-      - logs:/home/ejabberd/logs
-      - {{ XMPP_CONFIG_FILE }}:/home/ejabberd/conf/ejabberd.yml:ro
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={
-      'data':   {'name': XMPP_VOLUME},
-      'conf':   {'name': XMPP_CONF_VOLUME},
-      'upload': {'name': XMPP_UPLOAD_VOLUME},
-      'logs':   {'name': XMPP_LOGS_VOLUME}
-    }
-) }}
+{{ lookup('compose_volumes', application_id) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}

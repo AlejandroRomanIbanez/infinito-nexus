@@ -25,12 +25,7 @@
       - "{{ COTURN_RELAY_PORT_RANGE }}/udp"
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 {% endif %}
-    volumes:
-{% if COTURN_TLS_ENABLED| bool %}
-      - "{{ COTURN_TLS_CERT_PATH }}:{{ COTURN_TLS_CERT_PATH }}:ro"
-      - "{{ COTURN_TLS_KEY_PATH }}:{{ COTURN_TLS_KEY_PATH }}:ro"
-{% endif %}
-      - "data:/var/lib/coturn"
+    {{ lookup('container_volumes', application_id, 'coturn') | indent(4) }}
     command: >
 {% if COTURN_USER_AUTH_ENABLED | bool %}
       --lt-cred-mech
@@ -67,6 +62,4 @@
       start_period: 10s
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={'data': {'name': COTURN_DATA_VOLUME}}
-) }}
+{{ lookup('compose_volumes', application_id) }}

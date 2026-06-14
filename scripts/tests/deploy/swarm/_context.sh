@@ -38,9 +38,18 @@ if [ -f "${ROLE_DIR}/meta/volumes.yml" ]; then
 import sys, yaml
 with open('${ROLE_DIR}/meta/volumes.yml') as f:
     data = yaml.safe_load(f) or {}
-for v in data.values():
-    if isinstance(v, dict) and v.get('nfs') is not None and isinstance(v.get('name'), str):
-        print(v['name'])
+if isinstance(data, list):
+    entries = [e for e in data if isinstance(e, dict)]
+elif isinstance(data, dict):
+    entries = [v for v in data.values() if isinstance(v, dict)]
+else:
+    entries = []
+for v in entries:
+    if v.get('nfs') is None:
+        continue
+    docker_name = v.get('docker_name') or v.get('name')
+    if isinstance(docker_name, str):
+        print(docker_name)
 ")"
 fi
 

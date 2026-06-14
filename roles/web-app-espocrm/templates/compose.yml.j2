@@ -21,8 +21,7 @@
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.espocrm.ports.local.http') }}:80"
 {{ lookup('container_depends_on', application_id) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
-    volumes:
-      - data:/var/www/html/
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 
 {% set service_name = 'daemon' %}
   {{ service_name }}:
@@ -35,8 +34,7 @@
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     entrypoint: docker-daemon.sh
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
-    volumes:
-      - data:/var/www/html/
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {{ lookup('container_depends_on', application_id, extra={
   ESPOCRM_SERVICE: {'condition': 'service_healthy'},
 }) }}
@@ -63,15 +61,12 @@
       - ESPOCRM_CONFIG_WEB_SOCKET_ZERO_M_Q_SUBMISSION_DSN=tcp://websocket:7777
     entrypoint: docker-websocket.sh
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
-    volumes:
-      - data:/var/www/html/
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.espocrm.ports.local.websocket') }}:8080"
 {{ lookup('container_depends_on', application_id, extra={
   ESPOCRM_SERVICE: {'condition': 'service_healthy'},
 }) }}
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={'data': {'name': ESPOCRM_DATA_VOLUME}}
-) }}
+{{ lookup('compose_volumes', application_id) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}

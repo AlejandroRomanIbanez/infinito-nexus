@@ -5,12 +5,9 @@
     {{ lookup('compose_only', 'container_name', OPENWEBUI_CONTAINER) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ OPENWEBUI_PORT_PUBLIC }}:8080"
-    volumes:
-      - openwebui_data:/app/backend/data
+    {{ lookup('container_volumes', application_id, 'openwebui') | indent(4) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={'openwebui_data': {'name': OPENWEBUI_DATA_VOLUME}}
-) }}
+{{ lookup('compose_volumes', application_id) }}

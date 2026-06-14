@@ -1,0 +1,7 @@
+---
+config:
+  type: bind
+  source: "{{ [ lookup('container', 'web-app-listmonk', 'directories.config'), 'config.toml' ] | path_join }}"
+  mounts:
+    - service: application
+      target: /listmonk/config.toml

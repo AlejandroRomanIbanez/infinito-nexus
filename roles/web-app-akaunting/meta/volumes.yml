@@ -1,3 +1,7 @@
 ---
 data:
+  type: volume
   name: akaunting_data
+  mounts:
+    - service: application
+      target: /var/www/html

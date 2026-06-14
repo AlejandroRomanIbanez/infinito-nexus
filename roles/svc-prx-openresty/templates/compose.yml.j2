@@ -24,20 +24,7 @@
 {% else %}
     network_mode: "host"
 {% endif %}
-    volumes:
-      - {{ lookup('nginx','files.configuration') }}:/usr/local/openresty/nginx/conf/nginx.conf:ro
-      - {{ lookup('nginx','directories.configuration.base') }}:/usr/local/openresty/nginx/conf/conf.d:ro
-      - {{ lookup('nginx','files.configuration') }}:{{ lookup('nginx','files.configuration') }}:ro
-      - {{ lookup('nginx','directories.configuration.base') }}:{{ lookup('nginx','directories.configuration.base') }}:ro
-      - {{ lookup('nginx','directories.data.www') }}:{{ lookup('nginx','directories.data.www') }}:ro
-      - {{ lookup('nginx','directories.data.well_known') }}:{{ lookup('nginx','directories.data.well_known') }}:ro
-      - {{ LETSENCRYPT_WEBROOT_PATH }}:{{ LETSENCRYPT_WEBROOT_PATH }}:ro
-      - {{ LETSENCRYPT_BASE_PATH }}:{{ LETSENCRYPT_BASE_PATH }}:ro
-      - {{ TLS_SELFSIGNED_BASE_PATH }}:{{ TLS_SELFSIGNED_BASE_PATH }}:ro
-      # Docker socket (read-only) — lets the Lua health-polling timer query
-      # container state so /healthz/live can reflect Docker health, not just
-      # HTTP reachability.
-      - /var/run/docker.sock:/var/run/docker.sock:ro
+    {{ lookup('container_volumes', application_id, 'openresty') | indent(4) }}
     command: ["openresty", "-g", "daemon off;"]
     healthcheck:
       test: ["CMD", "openresty", "-t", "-q"]

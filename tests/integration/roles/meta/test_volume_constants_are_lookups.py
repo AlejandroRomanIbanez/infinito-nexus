@@ -1,5 +1,8 @@
 """Every ``*_VOLUME`` constant in a role's vars/main.yml MUST read its
-value through ``lookup('config', application_id, 'volumes.<key>.<attr>')``.
+value through one of two accepted forms:
+
+1. Legacy: ``lookup('config', application_id, 'volumes.<key>.<attr>')``
+2. New:    ``lookup('volume', application_id, '<key>').<attr>``
 
 A hardcoded volume name (e.g. ``MAILU_ADMIN_DATA_VOLUME: "mailu_admin_data"``)
 silently bypasses ``meta/volumes.yml`` and breaks the swarm + NFS rewrite
@@ -21,6 +24,8 @@ VOLUME_CONST_LINE_RE = re.compile(
 )
 LOOKUP_VOLUMES_RE = re.compile(
     r"""lookup\(\s*['"]config['"]\s*,\s*[^,]+,\s*['"]volumes\.[A-Za-z0-9_.\-]+['"]"""
+    r"""|"""
+    r"""lookup\(\s*['"]volume['"]\s*,\s*[^,]+,\s*['"][A-Za-z0-9_-]+['"]\s*\)\.(?:name|path|type|source|nfs|docker_name|semantic_name)"""
 )
 
 
@@ -44,7 +49,8 @@ class TestVolumeConstantsAreLookups(unittest.TestCase):
                     offenders.append(
                         f"{role_name}: vars/main.yml:{line}: '{name}' value "
                         f"does not read from meta/volumes.yml via "
-                        f"lookup('config', ..., 'volumes.<key>.name'); got: "
+                        f"lookup('config', ..., 'volumes.<key>.<attr>') "
+                        f"or lookup('volume', ..., '<key>').<attr>; got: "
                         f"{value}"
                     )
         if offenders:

@@ -7,11 +7,7 @@
         MEDIAWIKI_VERSION: "{{ MEDIAWIKI_VERSION }}"
     {{ lookup('compose_only', 'container_name', MEDIAWIKI_CONTAINER) }}
     image: "{{ MEDIAWIKI_CUSTOM_IMAGE }}"
-    volumes:
-      - "images:/var/www/html/images"
-      - "extensions:/var/www/html/extensions"
-      - "{{ MEDIAWIKI_LOCALSETTINGS_HOST_PATH }}:{{ MEDIAWIKI_LOCALSETTINGS_CONTAINER_PATH }}:ro"
-      - "{{ MEDIAWIKI_LOCAL_MOUNT_DIR }}:{{ MEDIAWIKI_LOCAL_PATH }}:ro"
+    {{ lookup('container_volumes', application_id, entity_name) | indent(4) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.mediawiki.ports.local.http') }}:{{ container_port }}"
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
@@ -19,10 +15,6 @@
 {{ lookup('container_depends_on', application_id) }}
 
 {{ lookup('compose_volumes', application_id,
-    extra_volumes={
-      'extensions': {'name': MEDIAWIKI_VOLUME_EXTENSIONS},
-      'images': {'name': MEDIAWIKI_VOLUME_IMAGES},
-    },
     deployment_mode=DEPLOYMENT_MODE,
     storage=storage | default({}),
 ) }}

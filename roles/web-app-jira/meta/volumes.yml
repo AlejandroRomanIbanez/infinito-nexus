@@ -1,3 +1,7 @@
 ---
 data:
+  type: volume
   name: jira_data
+  mounts:
+    - service: jira
+      target: "/var/atlassian/application-data/jira"

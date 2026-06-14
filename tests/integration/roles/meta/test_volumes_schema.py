@@ -1,14 +1,12 @@
 """Schema + lookup contract for meta/volumes.yml.
 
-Every entry MUST be a mapping with a non-empty ``name`` (the docker volume
-name). Optional ``nfs`` block carries ``uid`` / ``gid`` / ``mode`` for the
-NFS subdir pre-create in sys-svc-compose. Unknown keys at either level fail
-the test so the schema stays the single source of truth.
-
-The companion check sweeps every YAML/Jinja file for
-``lookup('config', <app>, 'volumes.<key>.<attr...>')`` calls and verifies
-that ``<attr...>`` resolves to a declared field; this catches drift between
-volumes.yml and consumers without running a deploy.
+Canonical shape is dict-of-dicts: the top-level YAML key is the semantic
+short name (consumed by ``lookup('config', <app>, 'volumes.<key>.<attr>')``)
+and the entry body carries ``type``, optional ``name`` (container volume
+name, defaults to the key), ``source``, ``mounts``, ``nfs`` etc. The
+schema itself is enforced by ``utils.roles.applications.mounts.validate_volumes_meta``;
+this test reuses that validator on every role's file and additionally
+verifies that lookup callers reference declared attributes.
 """
 
 import re
@@ -19,12 +17,10 @@ import yaml
 
 from utils.cache.files import iter_project_files_with_content
 from utils.cache.yaml import load_yaml_any
+from utils.roles.applications.mounts import validate_volumes_meta
 from utils.roles.mapping import ROLE_FILE_META_VOLUMES
 
 from . import PROJECT_ROOT
-
-ALLOWED_ENTRY_KEYS = {"name", "path", "nfs"}
-ALLOWED_NFS_KEYS = {"uid", "gid", "mode"}
 
 VOLUMES_LOOKUP_PATTERN = re.compile(
     r"""lookup\(\s*['"]config['"]\s*,\s*[^,]+,\s*['"]volumes\.([A-Za-z0-9_.\-]+)['"]"""
@@ -35,64 +31,12 @@ def _collect_volumes_files() -> list[Path]:
     return sorted((PROJECT_ROOT / "roles").glob(f"*/{ROLE_FILE_META_VOLUMES}"))
 
 
-def _validate_entry(entry: object) -> list[str]:
-    errors: list[str] = []
-    if not isinstance(entry, dict):
-        errors.append(f"entry must be a mapping, got {type(entry).__name__}")
-        return errors
-    has_name = "name" in entry
-    has_path = "path" in entry
-    if not has_name and not has_path:
-        errors.append("missing mandatory key 'name' or 'path' (exactly one)")
-    if has_name and has_path:
-        errors.append("'name' and 'path' are mutually exclusive; declare only one")
-    if has_name:
-        name = entry["name"]
-        if not isinstance(name, str) or not name.strip():
-            errors.append(f"'name' must be a non-empty string, got {name!r}")
-        elif "/" in name:
-            errors.append(
-                f"'name' is a docker volume name and MUST NOT contain '/'; "
-                f"use 'path' for filesystem paths (got {name!r})"
-            )
-    if has_path:
-        path = entry["path"]
-        if not isinstance(path, str) or not path.strip():
-            errors.append(f"'path' must be a non-empty string, got {path!r}")
-        elif "{{" not in path and "/" not in path:
-            errors.append(
-                f"'path' is a filesystem path and MUST contain at least one '/'; "
-                f"use 'name' for docker volume names (got {path!r})"
-            )
-    extra = set(entry.keys()) - ALLOWED_ENTRY_KEYS
-    if extra:
-        errors.append(f"unknown key(s): {sorted(extra)}")
-    nfs = entry.get("nfs")
-    if nfs is not None:
-        if not isinstance(nfs, dict):
-            errors.append(f"'nfs' must be a mapping, got {type(nfs).__name__}")
-        else:
-            extra_nfs = set(nfs.keys()) - ALLOWED_NFS_KEYS
-            if extra_nfs:
-                errors.append(f"unknown nfs key(s): {sorted(extra_nfs)}")
-    return errors
-
-
-def _resolve_attr_path(spec: dict, parts: list[str]) -> bool:
-    cursor: object = spec
-    for part in parts:
-        if not isinstance(cursor, dict):
-            return False
-        if part not in cursor:
-            return False
-        cursor = cursor[part]
-    return True
-
-
 def _allowed_attr_paths(entry: dict) -> set[tuple[str, ...]]:
     paths: set[tuple[str, ...]] = set()
     if "name" in entry:
         paths.add(("name",))
+    if "source" in entry:
+        paths.add(("source",))
     if "path" in entry:
         paths.add(("path",))
     nfs = entry.get("nfs")
@@ -100,40 +44,39 @@ def _allowed_attr_paths(entry: dict) -> set[tuple[str, ...]]:
         paths.add(("nfs",))
         for key in nfs:
             paths.add(("nfs", key))
+    elif nfs is not None:
+        paths.add(("nfs",))
     return paths
 
 
 class TestVolumesSchema(unittest.TestCase):
-    def test_every_volumes_yml_entry_has_mandatory_name(self):
+    def test_every_volumes_yml_matches_canonical_dict_schema(self):
         files = _collect_volumes_files()
         self.assertTrue(files, "no meta/volumes.yml files found")
         offenders: list[str] = []
         for path in files:
+            rel = path.relative_to(PROJECT_ROOT)
+            role_id = path.parent.parent.name
             try:
                 data = load_yaml_any(str(path))
             except yaml.YAMLError as exc:
-                offenders.append(
-                    f"{path.relative_to(PROJECT_ROOT)}: invalid YAML ({exc})"
-                )
+                offenders.append(f"{rel}: invalid YAML ({exc})")
                 continue
             if data is None:
                 continue
             if not isinstance(data, dict):
                 offenders.append(
-                    f"{path.relative_to(PROJECT_ROOT)}: top-level must be a mapping"
+                    f"{rel}: top-level must be a mapping (dict-of-dicts), "
+                    f"got {type(data).__name__}"
                 )
                 continue
-            for key, value in data.items():
-                errs = _validate_entry(value)
-                offenders.extend(
-                    f"{path.relative_to(PROJECT_ROOT)}: volumes.{key}: {err}"
-                    for err in errs
-                )
+            offenders.extend(
+                f"{rel}: {v}" for v in validate_volumes_meta(data, role_id)
+            )
         if offenders:
             self.fail(
-                "meta/volumes.yml schema violations (every entry MUST be a "
-                "mapping with a mandatory 'name' string; optional 'nfs' "
-                "mapping accepts only uid/gid/mode):\n"
+                "meta/volumes.yml schema violations (canonical dict-of-dicts "
+                "shape; per-entry rules enforced by validate_volumes_meta):\n"
                 + "\n".join(f"  - {o}" for o in offenders)
             )
 
@@ -147,10 +90,12 @@ class TestVolumesLookupAttrs(unittest.TestCase):
                 data = load_yaml_any(str(path))
             except yaml.YAMLError:
                 continue
+            role_name = path.parent.parent.name
             if isinstance(data, dict):
-                role_name = path.parent.parent.name
                 per_role_schema[role_name] = {
-                    k: v for k, v in data.items() if isinstance(v, dict)
+                    semantic_name: entry
+                    for semantic_name, entry in data.items()
+                    if isinstance(entry, dict)
                 }
 
         offenders: list[str] = []
@@ -181,6 +126,11 @@ class TestVolumesLookupAttrs(unittest.TestCase):
                     )
                     continue
                 allowed = _allowed_attr_paths(entry)
+                # Semantic-name lookups (`.name` defaulting to the dict
+                # key when the entry omits an explicit docker name) are
+                # always permitted for type: volume entries.
+                if entry.get("type", "volume") == "volume":
+                    allowed.add(("name",))
                 if tuple(attr_parts) not in allowed:
                     line = content[: match.start()].count("\n") + 1
                     offenders.append(

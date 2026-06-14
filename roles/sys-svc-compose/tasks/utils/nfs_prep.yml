@@ -8,7 +8,7 @@
     mode: "{{ item.value.nfs.mode | default('0755') }}"
   delegate_to: "{{ (groups['svc-storage-nfs-server'] | default([]))[0] | default(inventory_hostname) }}"
   run_once: true
-  loop: "{{ (lookup('config', application_id, 'volumes', {}) | default({}, true)) | dict2items }}"
+  loop: "{{ lookup('volume', application_id) | dict2items }}"
   when:
     - DEPLOYMENT_MODE == 'swarm'
     - (storage.backend | default('local')) == 'nfs'

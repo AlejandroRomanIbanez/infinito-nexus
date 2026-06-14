@@ -10,8 +10,7 @@
     {{ lookup('compose_restart') }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ NEXTCLOUD_PORT }}:{{ container_port }}"
-    volumes:
-      - "{{ NEXTCLOUD_HOST_NGINX_PATH }}:/etc/nginx/nginx.conf:ro"
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     volumes_from:
       - {{ NEXTCLOUD_SERVICE }}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2'  %}
@@ -27,10 +26,7 @@
     {{ lookup('compose_only', 'container_name', NEXTCLOUD_CONTAINER) }}
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
 
-    volumes:
-      - data:{{ NEXTCLOUD_DOCKER_WORK_DIRECTORY }}
-      - {{ NEXTCLOUD_HOST_CONF_ADD_PATH }}:{{ NEXTCLOUD_DOCKER_CONF_ADD_PATH }}:ro
-      - {{ NEXTCLOUD_HOST_INCL_PATH }}:{{ NEXTCLOUD_DOCKER_INCL_PATH }}:ro
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     sysctls:
       net.ipv6.conf.all.disable_ipv6: "{{ (not NETWORK_IPV6_ENABLED | bool) | int }}"
     healthcheck:
@@ -79,9 +75,7 @@
     image: "{{ NEXTCLOUD_WHITEBOARD_IMAGE_CUSTOM }}"
 {% include 'roles/sys-svc-container/templates/healthcheck/nc.yml.j2' %}
     {{ lookup('compose_only', 'container_name', NEXTCLOUD_WHITEBOARD_CONTAINER) }}
-    volumes:
-      - whiteboard_tmp:/tmp
-      - whiteboard_fontcache:/var/cache/fontconfig
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     environment:
       - NODE_OPTIONS=--max-old-space-size={{ NEXTCLOUD_WHITEBOARD_MAX_OLD_SPACE_SIZE }}
     expose:
@@ -100,8 +94,7 @@
     {{ lookup('compose_restart') }}
     logging:
       driver: journald
-    volumes:
-      - data:{{ NEXTCLOUD_DOCKER_WORK_DIRECTORY }}
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     entrypoint: /cron.sh
     sysctls:
       net.ipv6.conf.all.disable_ipv6: "{{ (not NETWORK_IPV6_ENABLED | bool) | int }}"
@@ -128,8 +121,7 @@
     expose:
       - "{{ NEXTCLOUD_RECORDING_PORT }}"
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
-    volumes:
-      - talk_recording_tmp:/tmp
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% endif %}
 
 {% set _extra_volumes = {'data': {'name': NEXTCLOUD_VOLUME}} %}

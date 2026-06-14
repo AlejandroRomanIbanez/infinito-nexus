@@ -1,6 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
   minio:
+{% set service_name = 'minio' %}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: {{ MINIO_IMAGE }}:{{ MINIO_VERSION }}
     {{ lookup('compose_only', 'container_name', MINIO_CONTAINER) }}
@@ -8,12 +9,9 @@
       - "{{ DOCKER_BIND_HOST }}:{{ MINIO_API_PORT_PUBLIC }}:{{ MINIO_API_PORT_INTERNAL }}"
       - "{{ DOCKER_BIND_HOST }}:{{ MINIO_CONSOLE_PORT_PUBLIC }}:{{ MINIO_CONSOLE_PORT_INTERNAL }}"
     command: server /data --console-address ":{{ MINIO_CONSOLE_PORT_INTERNAL }}"
-    volumes:
-      - data:/data
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={'data': {'name': MINIO_VOLUME}}
-) }}
+{{ lookup('compose_volumes', application_id) }}

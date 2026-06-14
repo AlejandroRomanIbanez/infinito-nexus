@@ -8,13 +8,11 @@
     {{ lookup('compose_restart') }}
     logging:
       driver: journald
-    volumes:
-      - synapse_data:/data
-      - {{ MATRIX_SYNAPSE_CONFIG_PATH_HOST }}:{{ MATRIX_SYNAPSE_CONFIG_PATH_CONTAINER }}:ro
-      - {{ MATRIX_SYNAPSE_LOG_PATH_HOST }}:{{ MATRIX_SYNAPSE_LOG_PATH_CONTAINER }}:ro
+{% set _synapse_extra_mounts = [] %}
 {% for item in MATRIX_BRIDGES %}
-      - {{ lookup('container', application_id, 'directories.instance') }}mautrix/{{ item.bridge_name }}/registration.yaml:{{ MATRIX_REGISTRATION_FILE_FOLDER }}{{ item.bridge_name }}.registration.yaml:ro
+{%   set _ = _synapse_extra_mounts.append(lookup('container', application_id, 'directories.instance') ~ 'mautrix/' ~ item.bridge_name ~ '/registration.yaml:' ~ MATRIX_REGISTRATION_FILE_FOLDER ~ item.bridge_name ~ '.registration.yaml:ro') %}
 {% endfor %}
+    {{ lookup('container_volumes', application_id, service_name, extra_volumes=_synapse_extra_mounts) | indent(4) }}
     environment:
       - SYNAPSE_SERVER_NAME={{ MATRIX_SYNAPSE_DOMAIN }}
       - SYNAPSE_REPORT_STATS=no
@@ -35,8 +33,7 @@
     image: "{{ MATRIX_ELEMENT_IMAGE }}:{{ MATRIX_ELEMENT_VERSION }}"
     {{ lookup('compose_only', 'container_name', MATRIX_ELEMENT_NAME) }}
     {{ lookup('compose_restart') }}
-    volumes:
-      - {{ MATRIX_ELEMENT_CONFIG_PATH_HOST }}:/app/config.json
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ MATRIX_ELEMENT_PORT }}:{{ container_port }}"
 {% include 'roles/sys-svc-container/templates/healthcheck/wget.yml.j2' %}
@@ -49,7 +46,7 @@
     {{ lookup('compose_only', 'container_name', 'matrix-' ~ item.bridge_name) }}
     image: dock.mau.dev/mautrix/{{ item.bridge_name }}:latest
     {{ lookup('compose_restart') }}
-    volumes:
+    volumes: # nocheck: compose-inline-mount-section
       - ./mautrix/{{ item.bridge_name }}:/data
     healthcheck:
       test: ["CMD-SHELL", "test -f {{ MATRIX_REGISTRATION_FILE_FOLDER }}registration.yaml || exit 1"]
@@ -65,8 +62,7 @@
     {{ lookup('compose_restart') }}
     {{ lookup('compose_only', 'container_name', "matrix-chatgpt") }}
     image: "{{ MATRIX_CHATGPT_BOT_IMAGE }}:{{ MATRIX_CHATGPT_BOT_VERSION }}"
-    volumes:
-      - chatgpt_data:/storage
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     environment:
       OPENAI_API_KEY: "{{ lookup('config', application_id, 'credentials.chatgpt_bridge_openai_api_key')}}"
       # Uncomment the next two lines if you are using Azure OpenAI API
@@ -102,12 +98,6 @@
       MATRIX_RICH_TEXT: 'true'
 {% endif %}
 
-{% set _extra_volumes={'synapse_data': {'name': MATRIX_SYNAPSE_DATA_VOLUME}, 'chatgpt_data': {'name': MATRIX_CHATGPT_DATA_VOLUME}} %}
-{% if lookup('config', application_id, 'services.matrix.plugins.chatgpt') | bool %}
-{%   set _ = _extra_volumes.update({'chatgpt_data': {}}) %}
-{% endif %}
-{{ lookup('compose_volumes', application_id,
-    extra_volumes=_extra_volumes
-) }}
+{{ lookup('compose_volumes', application_id) }}
 
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}

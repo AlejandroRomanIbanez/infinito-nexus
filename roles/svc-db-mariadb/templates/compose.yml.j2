@@ -16,8 +16,7 @@
     ports: 
       - "{{ DOCKER_BIND_HOST }}:{{ MARIADB_PORT }}:3306"
 {% endif %}
-    volumes:
-      - "data:/var/lib/mysql"
+    {{ lookup('container_volumes', application_id, 'mariadb') | indent(4) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
     healthcheck:
       test:
@@ -28,7 +27,5 @@
       retries: 18
       start_period: 90s
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={'data': {'name': MARIADB_VOLUME}}
-) }}
+{{ lookup('compose_volumes', application_id) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}

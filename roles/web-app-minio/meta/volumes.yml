@@ -1,3 +1,7 @@
 ---
 data:
+  type: volume
   name: minio_data
+  mounts:
+    - service: minio
+      target: /data

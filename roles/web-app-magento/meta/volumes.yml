@@ -1,3 +1,9 @@
 ---
 data:
+  type: volume
   name: magento_data
+  mounts:
+    - service: nginx
+      target: /var/www/html
+    - service: php
+      target: /var/www/html

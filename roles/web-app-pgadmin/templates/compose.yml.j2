@@ -10,14 +10,7 @@
 {{ lookup('container_depends_on', application_id) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 {% include 'roles/sys-svc-container/templates/healthcheck/wget.yml.j2' %}
-    volumes:
-      - "data:/var/lib/pgadmin"
-{% if PGADMIN_SERVER_MODE | bool %}
-      - "{{ pgadmin_host_server_file }}:{{ pgadmin_docker_server_file }}"
-      - "{{ pgadmin_host_password_file }}:{{ pgadmin_docker_password_file }}"
-{% endif %}
+    {{ lookup('container_volumes', application_id, entity_name) | indent(4) }}
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={'data': {'name': PGADMIN_DATA_VOLUME}}
-) }}
+{{ lookup('compose_volumes', application_id) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}

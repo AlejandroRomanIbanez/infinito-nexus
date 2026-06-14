@@ -17,18 +17,10 @@
     command: bundle exec puma -C config/puma.rb
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.decidim.ports.local.http') }}:{{ container_port }}"
-    volumes:
-      - uploads:/app/public/uploads
-      - logs:/app/log
-      - "{{ lookup('container', application_id, 'directories.instance') }}allowed_hosts.rb:/code/config/initializers/allowed_hosts.rb:ro"
+    {{ lookup('container_volumes', application_id, 'decidim') | indent(4) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 {{ lookup('container_depends_on', application_id) }}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={
-      'uploads': {'name': DECIDIM_VOLUME_UPLOADS},
-      'logs':    {'name': DECIDIM_VOLUME_LOGS},
-    }
-) }}
+{{ lookup('compose_volumes', application_id) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}

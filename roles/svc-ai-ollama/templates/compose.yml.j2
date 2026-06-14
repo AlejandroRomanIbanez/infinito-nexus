@@ -6,12 +6,9 @@
     {{ lookup('compose_only', 'container_name', OLLAMA_CONTAINER) }}
     expose:
       - "{{ OLLAMA_PORT }}"
-    volumes:
-      - ollama_models:/root/.ollama
+{{ lookup('container_volumes', application_id, 'ollama') | indent(4) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
-  
+
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={'ollama_models': {'name': OLLAMA_MODELS_VOLUME}}
-) }}
+{{ lookup('compose_volumes', application_id) }}

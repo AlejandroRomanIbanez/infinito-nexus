@@ -9,8 +9,7 @@
       PHP_HOST: "php"
       PHP_PORT: "9000"
     {{ lookup('depends_on', ['php', 'search']) }}
-    volumes:
-      - "data:/var/www/html"
+    {{ lookup('container_volumes', application_id, 'nginx') | indent(4) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.magento.ports.local.http') }}:{{ container_port }}"
     healthcheck:
@@ -24,8 +23,7 @@
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     image: "{{ MAGENTO_PHP_IMAGE }}:{{ MAGENTO_PHP_VERSION }}"
     {{ lookup('compose_only', 'container_name', MAGENTO_PHP_CONTAINER) }}
-    volumes:
-      - "data:/var/www/html"
+    {{ lookup('container_volumes', application_id, 'php') | indent(4) }}
 {{ lookup('container_depends_on', application_id, extra={
   'search': {'condition': 'service_started'},
 }) }}
@@ -43,8 +41,6 @@
 {% include 'roles/sys-svc-container/templates/healthcheck/tcp.yml.j2' %}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={'data': {'name': MAGENTO_VOLUME}}
-) }}
+{{ lookup('compose_volumes', application_id) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
 

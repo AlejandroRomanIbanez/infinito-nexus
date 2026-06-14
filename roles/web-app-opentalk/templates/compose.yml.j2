@@ -15,9 +15,7 @@
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ OPENTALK_CTRL_HTTP_PORT }}:11311"
-    volumes:
-      - "{{ [lookup('container', application_id, 'directories.volumes'), 'controller.toml'] | path_join }}:/controller/controller.toml:ro"
-      - data:/var/lib/opentalk
+    {{ lookup('container_volumes', application_id, 'controller') | indent(4) }}
 {{ lookup('container_depends_on', application_id) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
@@ -32,8 +30,7 @@
     command:
       - --config
       - /etc/livekit/livekit.yaml
-    volumes:
-      - "{{ [lookup('container', application_id, 'directories.volumes'), 'livekit.yaml'] | path_join }}:/etc/livekit/livekit.yaml:ro"
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     logging:
       driver: journald
 
@@ -47,8 +44,7 @@
     environment:
       MINIO_ROOT_USER: "{{ OPENTALK_MINIO_USER }}"
       MINIO_ROOT_PASSWORD: "{{ OPENTALK_MINIO_PASSWORD }}"
-    volumes:
-      - minio:/data
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
     logging:
       driver: journald
@@ -66,8 +62,7 @@
       interval: 30s
       timeout: 10s
       retries: 5
-    volumes:
-      - rabbit:/var/lib/rabbitmq
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
     logging:
       driver: journald
@@ -78,19 +73,11 @@
     image: "{{ OPENTALK_RECORDER_IMAGE }}:{{ OPENTALK_RECORDER_VERSION }}"
     {{ lookup('compose_only', 'container_name', OPENTALK_RECORDER_CONTAINER) }}
     {{ lookup('compose_restart') }}
-    volumes:
-      - "{{ [lookup('container', application_id, 'directories.volumes'), 'recorder.toml'] | path_join }}:/recorder/recorder.toml:ro"
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
     {{ lookup('depends_on', {'rabbit': 'service_healthy', 'controller': 'service_started'}) }}
     logging:
       driver: journald
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={
-      'data':   {'name': OPENTALK_DATA_VOLUME},
-      'config': {'name': OPENTALK_CONFIG_VOLUME},
-      'minio':  {'name': OPENTALK_MINIO_VOLUME},
-      'rabbit': {'name': OPENTALK_RABBIT_VOLUME}
-    }
-) }}
+{{ lookup('compose_volumes', application_id) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}

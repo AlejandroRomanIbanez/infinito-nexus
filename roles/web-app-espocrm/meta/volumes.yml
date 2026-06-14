@@ -1,3 +1,11 @@
 ---
 data:
+  type: volume
   name: espocrm_data
+  mounts:
+    - service: espocrm
+      target: /var/www/html/
+    - service: daemon
+      target: /var/www/html/
+    - service: websocket
+      target: /var/www/html/

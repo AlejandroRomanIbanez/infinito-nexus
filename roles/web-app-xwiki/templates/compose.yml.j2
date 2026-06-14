@@ -33,15 +33,11 @@
         -Dxwiki.authentication.authservice=standard
         -Dxwiki.authentication.authclass=com.xpn.xwiki.user.impl.xwiki.XWikiAuthServiceImpl
 {% endif %}
-    volumes:
-      - "{{ XWIKI_HOST_PROPERTIES_PATH }}:/usr/local/tomcat/webapps/ROOT/WEB-INF/xwiki.properties"
-      - 'data:{{ XWIKI_DOCK_DATA_DIR }}'
+    {{ lookup('container_volumes', application_id, 'application') | indent(4) }}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 {{ lookup('container_depends_on', application_id) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={'data': {'name': XWIKI_DATA_VOLUME}}
-) }}
+{{ lookup('compose_volumes', application_id) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}

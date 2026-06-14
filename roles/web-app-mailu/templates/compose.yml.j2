@@ -1,13 +1,11 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
-  # Core services
   resolver:
 {% set service_name = 'resolver' %}
     image: {{ MAILU_DOCKER_FLAVOR }}/unbound:{{ MAILU_VERSION }}
     {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_resolver') }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    volumes:
-      - "{{ MAILU_UNBOUND_CONF_FILE }}:/unbound.conf:ro"
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
         ipv4_address: {{ MAILU_DNS_RESOLVER }}
 
@@ -26,9 +24,7 @@
       - "{{ MAILU_IP4_PUBLIC }}:143:143"
       - "{{ MAILU_IP4_PUBLIC }}:993:993"
       - "{{ MAILU_IP4_PUBLIC }}:4190:4190"
-    volumes:
-      - "{{ [ MAILU_OVERRIDES_DIR, 'nginx' ] | path_join }}:/overrides:ro"
-      - "{{ MAILU_CERT_DIR }}:/certs:ro"
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {{ lookup('container_depends_on', application_id, extra={
   'resolver': {'condition': 'service_started'},
 }) }}
@@ -43,9 +39,7 @@
     {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_admin') }}
     image: {{ MAILU_DOCKER_FLAVOR }}/admin:{{ MAILU_VERSION }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    volumes:
-      - "admin_data:/data"
-      - "dkim:/dkim"
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {{ lookup('container_depends_on', application_id, extra={
   'resolver': {'condition': 'service_started'},
   'front': {'condition': 'service_started'},
@@ -65,9 +59,7 @@
     {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_imap') }}
     image: {{ MAILU_DOCKER_FLAVOR }}/dovecot:{{ MAILU_VERSION }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    volumes:
-      - "dovecot_mail:/mail"
-      - "{{ MAILU_OVERRIDES_DIR }}:/overrides:ro"
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     {{ lookup('depends_on', ['front', 'resolver']) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
@@ -78,9 +70,7 @@
     {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_smtp') }}
     image: {{ MAILU_DOCKER_FLAVOR }}/postfix:{{ MAILU_VERSION }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    volumes:
-      - "{{ MAILU_OVERRIDES_DIR }}:/overrides:ro"
-      - "smtp_queue:/queue"
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     {{ lookup('depends_on', ['front', 'resolver']) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
@@ -103,10 +93,7 @@
     {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_antispam') }}
     image: {{ MAILU_DOCKER_FLAVOR }}/rspamd:{{ MAILU_VERSION }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    volumes:
-      - "filter:/var/lib/rspamd"
-      - "dkim:/dkim"
-      - "{{ MAILU_RSPAMD_HOST_DIR }}:/overrides:ro"
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     {{ lookup('depends_on', ['front', 'redis', 'antivirus', 'resolver']) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
@@ -118,8 +105,7 @@
     {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_antivirus') }}
     image: {{ MAILU_ANTIVIRUS_IMAGE }}:{{ MAILU_ANTIVIRUS_VERSION }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    volumes:
-      - "clamav_db:/var/lib/clamav"
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     {{ lookup('depends_on', ['resolver']) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
@@ -130,8 +116,7 @@
     {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_webdav') }}
     image: {{ MAILU_DOCKER_FLAVOR }}/radicale:{{ MAILU_VERSION }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    volumes:
-      - "webdav_data:/data"
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     {{ lookup('depends_on', ['resolver']) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
@@ -142,8 +127,7 @@
 {% set service_name = 'fetchmail' %}
     {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_fetchmail') }}
     image: {{ MAILU_DOCKER_FLAVOR }}/fetchmail:{{ MAILU_VERSION }}
-    volumes:
-      - "admin_data:/data"
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('depends_on', ['admin', 'smtp', 'imap', 'resolver']) }}
     dns:
@@ -155,9 +139,7 @@
     {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_webmail') }}
     image: {{ MAILU_DOCKER_FLAVOR }}/webmail:{{ MAILU_VERSION }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    volumes:
-      - "webmail_data:/data"
-      - "{{ MAILU_OVERRIDES_DIR }}:/overrides:ro"
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     {{ lookup('depends_on', ['imap', 'front', 'resolver']) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
@@ -168,6 +150,18 @@
     extra_volumes={'admin_data': {'name': MAILU_ADMIN_DATA_VOLUME}, 'clamav_db': {'name': MAILU_CLAMAV_DB_VOLUME}, 'dkim': {'name': MAILU_DKIM_VOLUME}, 'dovecot_mail': {'name': MAILU_DOVECOT_MAIL_VOLUME}, 'filter': {'name': MAILU_FILTER_VOLUME}, 'smtp_queue': {'name': MAILU_SMTP_QUEUE_VOLUME}, 'webdav_data': {'name': MAILU_WEBDAV_DATA_VOLUME}, 'webmail_data': {'name': MAILU_WEBMAIL_DATA_VOLUME}}
 ) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{% if DEPLOYMENT_MODE == 'swarm' %}
+  radicale:
+    driver: overlay
+    attachable: true
+  webmail:
+    driver: overlay
+    attachable: true
+  noinet:
+    driver: overlay
+    attachable: true
+    internal: true
+{% else %}
   radicale:
     driver: bridge
   webmail:
@@ -175,3 +169,4 @@
   noinet:
     driver: bridge
     internal: true
+{% endif %}

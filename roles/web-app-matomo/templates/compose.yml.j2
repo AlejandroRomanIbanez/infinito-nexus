@@ -6,8 +6,7 @@
     image: "{{ MATOMO_IMAGE }}:{{ MATOMO_VERSION }}"
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.matomo.ports.local.http') }}:{{ container_port }}"
-    volumes:
-      - data:/var/www/html
+    {{ lookup('container_volumes', application_id, MATOMO_SERVICE) | indent(4) }}
     healthcheck:
       test:
         - CMD-SHELL
@@ -34,7 +33,5 @@
     image: "{{ MATOMO_BOOTSTRAP_IMAGE }}:{{ MATOMO_BOOTSTRAP_VERSION }}"
     {{ lookup('depends_on', {MATOMO_SERVICE: 'service_healthy'}) }}
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={'data': {'name': MATOMO_DATA}}
-) }}
+{{ lookup('compose_volumes', application_id) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}

@@ -1,3 +1,7 @@
 ---
 openwebui_data:
+  type: volume
   name: ai_openwebui_data
+  mounts:
+    - service: openwebui
+      target: /app/backend/data

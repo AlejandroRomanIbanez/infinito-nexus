@@ -1,3 +1,14 @@
 ---
 jenkins_data:
-  name: jenkins_data
+  type: volume
+  mounts:
+    - service: application
+      target: /var/jenkins_home
+
+casc:
+  type: config
+  source: "{{ [ lookup('container', 'web-app-jenkins', 'directories.instance'), 'casc.yaml' ] | path_join }}"
+  mode: "0440"
+  mounts:
+    - service: application
+      target: /var/jenkins_home/casc.yaml

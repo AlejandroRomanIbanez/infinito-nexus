@@ -4,11 +4,13 @@ For every role that ships `templates/compose.yml.j2` and uses one or more
 named volumes there, this test enforces a four-step contract per used
 volume so the deployment is swarm + NFS portable:
 
-1. The volume short-name MUST be declared in `meta/volumes.yml`.
-2. The declared entry MUST be a `name:`-form mapping (filesystem-path
-   `path:` entries cannot be docker named volumes).
+1. The volume short-name MUST be declared as a top-level key in
+   `meta/volumes.yml` (dict-of-dicts canonical shape).
+2. The declared entry MUST be a `type: volume` mapping (bind / config /
+   secret / tmpfs entries cannot be docker named volumes).
 3. `vars/main.yml` MUST expose an UPPERCASE constant whose value reads
-   `lookup('config', application_id, 'volumes.<key>.name')`.
+   `lookup('config', application_id, 'volumes.<key>.name')` or the
+   equivalent `lookup('volume', application_id, '<key>').name` form.
 4. That constant MUST be referenced from `templates/compose.yml.j2`.
 
 A literal volume name in the compose template silently bypasses
@@ -32,7 +34,9 @@ from . import PROJECT_ROOT
 
 CONST_NAME_RE = re.compile(r"^([A-Z][A-Z0-9_]*)\s*:")
 LOOKUP_VOLUME_RE = re.compile(
-    r"""lookup\(\s*['"]config['"]\s*,\s*[^,]+,\s*['"]volumes\.([A-Za-z0-9_\-]+)\.(name|path)['"]"""
+    r"""lookup\(\s*['"]config['"]\s*,\s*[^,]+,\s*['"]volumes\.(?P<cfg_key>[A-Za-z0-9_\-]+)\.(?:name|path)['"]"""
+    r"""|"""
+    r"""lookup\(\s*['"]volume['"]\s*,\s*[^,]+,\s*['"](?P<vol_key>[A-Za-z0-9_\-]+)['"]\s*\)\s*\.\s*(?:name|path)"""
 )
 EXTRA_VOLUMES_KEY_RE = re.compile(
     r"""extra_volumes\s*=\s*\{(?P<body>(?:[^{}]|\{[^{}]*\})*)\}""",
@@ -87,7 +91,8 @@ def _constants_referencing_volume(vars_text: str, volume_key: str) -> list[str]:
 def _block_references(volume_key: str, lines: list[str]) -> bool:
     body = "\n".join(lines)
     for match in LOOKUP_VOLUME_RE.finditer(body):
-        if match.group(1) == volume_key:
+        matched_key = match.group("cfg_key") or match.group("vol_key")
+        if matched_key == volume_key:
             return True
     return False
 
@@ -120,12 +125,12 @@ class TestVolumesComposeChain(unittest.TestCase):
                         f"meta/volumes.yml"
                     )
                     continue
-                if "name" not in entry:
+                if entry.get("type", "volume") != "volume":
                     offenders.append(
                         f"{role_name}: compose.yml.j2 uses named volume "
                         f"'{volume_key}' but meta/volumes.yml entry has "
-                        f"no 'name:' field (path:-only entries cannot be "
-                        f"docker named volumes)"
+                        f"type={entry.get('type')!r} (only type: volume "
+                        f"entries can be docker named volumes)"
                     )
                     continue
                 constants = _constants_referencing_volume(vars_text, volume_key)
@@ -134,7 +139,8 @@ class TestVolumesComposeChain(unittest.TestCase):
                         f"{role_name}: compose.yml.j2 uses named volume "
                         f"'{volume_key}' but no UPPERCASE constant in "
                         f"vars/main.yml reads "
-                        f"lookup('config', ..., 'volumes.{volume_key}.name')"
+                        f"lookup('config', ..., 'volumes.{volume_key}.name') "
+                        f"or lookup('volume', ..., '{volume_key}').name"
                     )
                     continue
                 used = [

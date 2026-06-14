@@ -6,8 +6,7 @@
     {{ lookup('compose_only', 'container_name', FLOWISE_LITELLM_CONTAINER) }}
     expose:
       - {{ FLOWISE_LITELLM_PORT }}
-    volumes:
-      - {{ FLOWISE_LITELLM_CONFIG_PATH_HOST }}:{{ FLOWISE_LITELLM_CONFIG_PATH_DOCKER }}:ro
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     command: >
       --host 0.0.0.0
       --port {{ FLOWISE_LITELLM_PORT }}
@@ -22,8 +21,7 @@
     ports:
       - {{ FLOWISE_QDRANT_HTTP_PORT }}
       - {{ FLOWISE_QDRANT_GRPC_PORT }}
-    volumes:
-      - qdrant_data:/qdrant/storage
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   flowise:
@@ -34,12 +32,9 @@
     {{ lookup('depends_on', ['qdrant', 'litellm']) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ FLOWISE_PORT_PUBLIC }}:{{ FLOWISE_PORT_INTERNAL }}"
-    volumes:
-      - flowise_data:/root/.flowise
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={'flowise_data': {'name': FLOWISE_DATA_VOLUME}, 'qdrant_data': {'name': FLOWISE_QDRANT_DATA_VOLUME}}
-) }}
+{{ lookup('compose_volumes', application_id) }}

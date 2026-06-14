@@ -1,3 +1,6 @@
 ---
 ollama_models:
-  name: ollama_models
+  type: volume
+  mounts:
+    - service: ollama
+      target: /root/.ollama

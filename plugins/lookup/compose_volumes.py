@@ -1,26 +1,6 @@
 """Lookup `compose_volumes`: render the top-level `volumes:` block for
-a given application_id.
-
-Single SPOT replacement for the previous
-
-    {{ lookup('applications') | compose_volumes(application_id) }}
-
-pipe pattern. The lookup auto-wires the `applications` registry, the
-DEPLOYMENT_MODE, and the `storage` mapping from the templating context
-so call sites only pass what genuinely varies per service.
-
-Call sites:
-
-    {{ lookup('compose_volumes', application_id) }}
-    {{ lookup('compose_volumes', application_id, extra_volumes={'data': {'name': MY_VOL}}) }}
-
-`deployment_mode` and `storage` may still be overridden per call when a
-template needs a non-default rendering, but the common case is the
-auto-wired defaults from `DEPLOYMENT_MODE` and the `storage` group var.
-
-The underlying rendering function lives in `plugins/filter/compose_volumes.py`
-(kept as an importable utility); only the Jinja filter registration was
-removed so the deprecated pipe form fails fast.
+a given application_id. Auto-wires the `applications` registry,
+DEPLOYMENT_MODE, and `storage` mapping from the templating context.
 """
 
 from __future__ import annotations
@@ -85,6 +65,8 @@ class LookupModule(LookupBase):
             applications,
             application_id,
             extra_volumes=kwargs.get("extra_volumes"),
+            extra_configs=kwargs.get("extra_configs"),
+            extra_secrets=kwargs.get("extra_secrets"),
             deployment_mode=str(deployment_mode).strip(),
             storage=storage,
             dir_var_lib=str(dir_var_lib).strip(),

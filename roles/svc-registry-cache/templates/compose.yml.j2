@@ -9,11 +9,8 @@
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     ports:
       - "{{ REGISTRY_CACHE_PORT }}:5000"
-    volumes:
-      - "data:/var/lib/registry"
+    {{ lookup('container_volumes', application_id, entity_name) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={'data': {'name': REGISTRY_CACHE_DATA_VOLUME}}
-) }}
+{{ lookup('compose_volumes', application_id) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}

@@ -5,12 +5,9 @@
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.fusiondirectory.ports.local.http') }}:80"
-    volumes:
-      - data:/assets/fusiondirectory
+{{ lookup('container_volumes', application_id, 'fusiondirectory') | indent(4) }}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
-{{ lookup('compose_volumes', application_id,
-    extra_volumes={'data': {'name': FUSIONDIRECTORY_VOLUME}}
-) }}
+{{ lookup('compose_volumes', application_id) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
