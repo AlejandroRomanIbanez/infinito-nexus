@@ -14,7 +14,17 @@ def run(cmd: list[str]) -> int:
     return subprocess.run(cmd, check=False).returncode
 
 
-def retag_push_and_rewrite(*, compose_file: Path, prefix: str) -> int:
+def manifest_exists(image: str) -> bool:
+    rc = subprocess.run(
+        ["docker", "manifest", "inspect", image],
+        check=False,
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    ).returncode
+    return rc == 0
+
+
+def sync(*, compose_file: Path, prefix: str) -> int:
     with compose_file.open() as f:
         doc = yaml.safe_load(f)  # nocheck: direct-yaml
 
@@ -28,15 +38,28 @@ def retag_push_and_rewrite(*, compose_file: Path, prefix: str) -> int:
     for svc in services.values():
         if not isinstance(svc, dict):
             continue
-        if "build" not in svc:
-            continue
         image = svc.get("image")
         if not isinstance(image, str) or not image:
             continue
+
         if image.startswith(prefix):
             targets.append(image)
             continue
+
+        if "build" in svc:
+            new_image = f"{prefix}{image}"
+            rc = run(["docker", "tag", image, new_image])
+            if rc != 0:
+                raise RuntimeError(f"docker tag {image} {new_image} failed (rc={rc})")
+            svc["image"] = new_image
+            targets.append(new_image)
+            changed = True
+            continue
+
         new_image = f"{prefix}{image}"
+        rc = run(["docker", "pull", image])
+        if rc != 0:
+            raise RuntimeError(f"docker pull {image} failed (rc={rc})")
         rc = run(["docker", "tag", image, new_image])
         if rc != 0:
             raise RuntimeError(f"docker tag {image} {new_image} failed (rc={rc})")
@@ -51,6 +74,9 @@ def retag_push_and_rewrite(*, compose_file: Path, prefix: str) -> int:
             )  # nocheck: direct-yaml
 
     for image in targets:
+        if manifest_exists(image):
+            print(f">>> skip push (already in registry): {image}", file=sys.stderr)
+            continue
         rc = run(["docker", "push", image])
         if rc != 0:
             raise RuntimeError(f"docker push {image} failed (rc={rc})")
@@ -61,10 +87,10 @@ def retag_push_and_rewrite(*, compose_file: Path, prefix: str) -> int:
 def main() -> int:
     ap = argparse.ArgumentParser(
         description=(
-            "Retag locally-built compose images with the swarm registry "
-            "prefix, push them, and rewrite compose.yml so subsequent "
-            "`docker stack deploy --resolve-image never` references the "
-            "registry-qualified names."
+            "Cache upstream images and retag locally-built compose images "
+            "with the swarm registry prefix, push them, and rewrite "
+            "compose.yml so subsequent `docker stack deploy "
+            "--resolve-image never` references the registry-qualified names."
         )
     )
     ap.add_argument("--chdir", required=True, help="Compose instance directory")
@@ -83,7 +109,7 @@ def main() -> int:
     if not compose_file.is_file():
         raise RuntimeError(f"compose.yml not found at {compose_file}")
 
-    return retag_push_and_rewrite(compose_file=compose_file, prefix=prefix)
+    return sync(compose_file=compose_file, prefix=prefix)
 
 
 if __name__ == "__main__":
