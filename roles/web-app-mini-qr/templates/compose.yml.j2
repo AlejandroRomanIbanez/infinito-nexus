@@ -3,7 +3,7 @@
 {% set container_port = 8080 %}  
   {{ application_id | get_entity_name }}:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: "{{ MINI_QR_IMAGE }}:{{ MINI_QR_VERSION }}"
+    {{ lookup('container_image', application_id, 'mini-qr') }}
     {{ lookup('compose_only', 'container_name', MINI_QR_CONTAINER) }}
     ports:
       - {{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.mini-qr.ports.local.http') }}:{{ container_port }}

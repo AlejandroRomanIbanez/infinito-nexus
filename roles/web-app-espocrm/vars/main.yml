@@ -9,7 +9,6 @@ webserver_vhost_flavour: "ws_generic"
 
 ESPOCRM_VERSION: "{{ lookup('config', application_id, 'services.' ~ entity_name ~'.version') }}"
 ESPOCRM_IMAGE: "{{ lookup('config', application_id, 'services.' ~ entity_name ~'.image') }}"
-ESPOCRM_CUSTOM_IMAGE: "{{ entity_name }}_custom:{{ ESPOCRM_VERSION }}"
 ESPOCRM_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ entity_name ~'.name') }}"
 ESPOCRM_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, entity_name) }}"
 ESPOCRM_SERVICE: "{{ entity_name }}"

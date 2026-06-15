@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
   celeryworker:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: "{{ FUNKWHALE_API_IMAGE }}:{{ FUNKWHALE_API_VERSION }}"
+    {{ lookup('container_image', application_id, 'api') }}
     command: celery -A funkwhale_api.taskapp worker -l INFO --concurrency={{FUNKWHALE_CELERYD_CONCURRENCY}}
     environment:
       - C_FORCE_ROOT=true
@@ -11,7 +11,7 @@
 
   celerybeat:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: "{{ FUNKWHALE_API_IMAGE }}:{{ FUNKWHALE_API_VERSION }}"
+    {{ lookup('container_image', application_id, 'api') }}
     command: celery -A funkwhale_api.taskapp beat --pidfile= -l INFO
     {{ lookup('container_volumes', application_id, 'celerybeat') | indent(4) }}
 {{ lookup('container_depends_on', application_id) }}
@@ -19,7 +19,7 @@
 
   api:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: "{{ FUNKWHALE_API_IMAGE }}:{{ FUNKWHALE_API_VERSION }}"
+    {{ lookup('container_image', application_id, 'api') }}
     command: gunicorn
     {{ lookup('container_volumes', application_id, 'api') | indent(4) }}
     ports:
@@ -29,7 +29,7 @@
 
   front:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: "{{ FUNKWHALE_FRONT_IMAGE }}:{{ FUNKWHALE_FRONT_VERSION }}"
+    {{ lookup('container_image', application_id, 'funkwhale') }}
     {{ lookup('depends_on', ['api']) }}
     environment:
       - "NGINX_MAX_BODY_SIZE=100M"
@@ -39,7 +39,7 @@
 
   typesense:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: "{{ FUNKWHALE_TYPESENSE_IMAGE }}:{{ FUNKWHALE_TYPESENSE_VERSION }}"
+    {{ lookup('container_image', application_id, 'typesense') }}
     {{ lookup('container_volumes', application_id, 'typesense') | indent(4) }}
     command: --data-dir /data --enable-cors
 {% if DEPLOYMENT_MODE != 'swarm' %}

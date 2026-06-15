@@ -2,8 +2,6 @@
 application_id: "web-app-pixelfed"
 webserver_extra_configuration: "client_max_body_size 512M;"
 
-PIXELFED_VERSION: "{{ lookup('config', application_id, 'services.pixelfed.version') }}"
-PIXELFED_IMAGE: "{{ lookup('config', application_id, 'services.pixelfed.image') }}"
 PIXELFED_CONTAINER: "{{ lookup('config', application_id, 'services.pixelfed.name') }}"
 PIXELFED_WORKER_CONTAINER: "{{ lookup('config', application_id, 'services.worker.name') }}"
 PIXELFED_TITEL: "{{ lookup('config', application_id, 'services.pixelfed.titel') }}"

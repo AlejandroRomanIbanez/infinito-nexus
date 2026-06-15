@@ -4,8 +4,6 @@ application_id: "web-app-akaunting"
 database_password: "{{ lookup('config', application_id, 'credentials.database_password') }}" # nocheck: lookup-config-path
 
 AKAUNTING_URL: "{{ lookup('tls', application_id, 'url.base') }}"
-AKAUNTING_VERSION: "{{ lookup('config', application_id, 'services.akaunting.version') }}"
-AKAUNTING_IMAGE: "{{ lookup('config', application_id, 'services.akaunting.image') }}"
 AKAUNTING_REPOSITORY: "{{ lookup('config', application_id, 'services.akaunting.repository') }}"
 AKAUNTING_REF: "{{ lookup('config', application_id, 'services.akaunting.ref') }}"
 AKAUNTING_CONTAINER: "{{ lookup('config', application_id, 'services.akaunting.name') }}"

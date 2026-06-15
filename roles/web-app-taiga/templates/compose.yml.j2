@@ -4,7 +4,7 @@
 build:
   context: "{{ compose_repository_path }}"
   dockerfile: Dockerfile.taiga-back
-image: "{{ TAIGA_DOCKER_IMAGE_BACKEND_AUTH }}"
+{{ lookup('container_image', application_id, 'taiga', image=entity_name ~ '-back-auth', version=TAIGA_VERSION) }}
 {{ lookup('compose_only', 'pull_policy', 'never') }}
 {%- endset %}
 
@@ -25,7 +25,7 @@ image: "{{ TAIGA_DOCKER_IMAGE_BACKEND_AUTH }}"
     command:
       - "if ! grep -qF {{ TAIGA_CONFIG_APPEND_MARKER | quote }} /taiga-back/settings/config.py; then cat /taiga-back/settings/config.append.py >> /taiga-back/settings/config.py; fi; exec /taiga-back/docker/entrypoint.sh"
 {% else %}
-    image: "{{ TAIGA_DOCKER_IMAGE_BACKEND }}:{{ TAIGA_VERSION }}"
+    {{ lookup('container_image', application_id, 'taiga', image='taigaio/taiga-back', version=TAIGA_VERSION) }}
 {% endif %}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
@@ -51,7 +51,7 @@ image: "{{ TAIGA_DOCKER_IMAGE_BACKEND_AUTH }}"
     command:
       - "if ! grep -qF {{ TAIGA_CONFIG_APPEND_MARKER | quote }} /taiga-back/settings/config.py; then cat /taiga-back/settings/config.append.py >> /taiga-back/settings/config.py; fi; exec /taiga-back/docker/async_entrypoint.sh"
 {% else %}
-    image: "{{ TAIGA_DOCKER_IMAGE_BACKEND }}:{{ TAIGA_VERSION }}"
+    {{ lookup('container_image', application_id, 'async', image='taigaio/taiga-back', version=TAIGA_VERSION) }}
     entrypoint: ["/taiga-back/docker/async_entrypoint.sh"]
 {% endif %}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
@@ -65,7 +65,7 @@ image: "{{ TAIGA_DOCKER_IMAGE_BACKEND_AUTH }}"
 {% set service_name = TAIGA_ASYNC_RABBITMQ_SERVICE %}
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', TAIGA_CONTAINER ~ '-' ~ service_name) }}
-    image: "{{ TAIGA_DOCKER_IMAGE_ASYNC_RABBITMQ }}:{{ TAIGA_DOCKER_VERSION_ASYNC_RABBITMQ }}"
+    {{ lookup('container_image', application_id, 'async-rabbitmq') }}
     hostname: "{{ TAIGA_ASYNC_RABBITMQ_SERVICE }}"
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -86,10 +86,10 @@ image: "{{ TAIGA_DOCKER_IMAGE_BACKEND_AUTH }}"
     build:
       context: "{{ compose_repository_path }}"
       dockerfile: Dockerfile.taiga-front
-    image: "{{ TAIGA_DOCKER_IMAGE_FRONTEND_OIDC }}"
+    {{ lookup('container_image', application_id, 'front', image=entity_name ~ '-front-oidc', version=TAIGA_VERSION) }}
     {{ lookup('compose_only', 'pull_policy', 'never') }}
 {% else %}
-    image: "{{ TAIGA_DOCKER_IMAGE_FRONTEND }}:{{ TAIGA_VERSION }}"
+    {{ lookup('container_image', application_id, 'front', image='taigaio/taiga-front', version=TAIGA_VERSION) }}
 {% endif %}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 {% filter indent(4) %}
@@ -103,7 +103,7 @@ image: "{{ TAIGA_DOCKER_IMAGE_BACKEND_AUTH }}"
 {% set service_name = TAIGA_EVENTS_SERVICE %}
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', TAIGA_CONTAINER ~ '-' ~ service_name) }}
-    image: "{{ TAIGA_DOCKER_IMAGE_EVENTS }}:{{ TAIGA_DOCKER_VERSION_EVENTS }}"
+    {{ lookup('container_image', application_id, 'events') }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     healthcheck:
       test: ["CMD-SHELL", "nc -z 127.0.0.1 8888"]
@@ -118,7 +118,7 @@ image: "{{ TAIGA_DOCKER_IMAGE_BACKEND_AUTH }}"
 {% set service_name = TAIGA_EVENTS_RABBITMQ_SERVICE %}
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', TAIGA_CONTAINER ~ '-' ~ service_name) }}
-    image: "{{ TAIGA_DOCKER_IMAGE_EVENTS_RABBITMQ }}:{{ TAIGA_DOCKER_VERSION_EVENTS_RABBITMQ }}"
+    {{ lookup('container_image', application_id, 'events-rabbitmq') }}
     hostname: {{ service_name }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -134,7 +134,7 @@ image: "{{ TAIGA_DOCKER_IMAGE_BACKEND_AUTH }}"
 {% set service_name = 'protected' %}
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', TAIGA_CONTAINER ~ '-' ~ service_name) }}
-    image: "{{ TAIGA_DOCKER_IMAGE_PROTECTED }}:{{ TAIGA_DOCKER_VERSION_PROTECTED }}"
+    {{ lookup('container_image', application_id, 'protected') }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     healthcheck:
       test: ["CMD", "python", "-c", "import socket; socket.create_connection(('127.0.0.1',8003),5).close()"]
@@ -149,7 +149,7 @@ image: "{{ TAIGA_DOCKER_IMAGE_BACKEND_AUTH }}"
 {% set container_port = 80 %}
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', TAIGA_CONTAINER ~ '-' ~ service_name) }}
-    image: "{{ TAIGA_DOCKER_IMAGE_GATEWAY }}:{{ TAIGA_DOCKER_VERSION_GATEWAY }}"
+    {{ lookup('container_image', application_id, 'gateway') }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.taiga.ports.local.http') }}:{{ container_port }}"
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}

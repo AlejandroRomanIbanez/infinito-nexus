@@ -7,7 +7,7 @@
         MATRIX_MDAD_RUNNER_BASE_VERSION: {{ MATRIX_MDAD_RUNNER_BASE_VERSION }}
         MATRIX_MDAD_RUNNER_DOCKER_CLI_IMAGE: {{ MATRIX_MDAD_RUNNER_DOCKER_CLI_IMAGE }}
         MATRIX_MDAD_RUNNER_DOCKER_CLI_VERSION: {{ MATRIX_MDAD_RUNNER_DOCKER_CLI_VERSION }}
-    image: {{ MATRIX_MDAD_RUNNER_IMAGE }}
+    image: "{{ MATRIX_MDAD_RUNNER_IMAGE }}"  # nocheck: container-image-lookup
     {{ lookup('compose_only', 'restart', DOCKER_RESTART_POLICY) }}
     privileged: true
     cgroup: host

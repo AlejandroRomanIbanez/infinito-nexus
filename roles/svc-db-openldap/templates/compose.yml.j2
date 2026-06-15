@@ -7,7 +7,7 @@
       args:
         OPENLDAP_IMAGE: "{{ OPENLDAP_IMAGE }}"
         OPENLDAP_VERSION: "{{ OPENLDAP_VERSION }}"
-    image: "{{ OPENLDAP_IMAGE_CUSTOM }}"
+    {{ lookup('container_image', application_id, 'openldap', custom=True) }}
     {{ lookup('compose_only', 'container_name', OPENLDAP_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 

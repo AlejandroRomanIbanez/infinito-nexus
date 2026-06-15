@@ -6,7 +6,7 @@
         ROULETTE_IMAGE:         "{{ ROULETTE_IMAGE }}"
         ROULETTE_VERSION:       "{{ ROULETTE_VERSION }}"
         ROULETTE_WHEEL_APP_REL: "{{ ROULETTE_WHEEL_APP_REL }}"
-    image: {{ ROULETTE_IMAGE_CUSTOM }}
+    {{ lookup('container_image', application_id, 'roulette-wheel', custom=True) }}
     ports:
       - {{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.roulette-wheel.ports.local.http') }}:8080
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}

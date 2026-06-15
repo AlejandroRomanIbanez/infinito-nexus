@@ -2,7 +2,7 @@
 
   onlyoffice:
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: "{{ ONLYOFFICE_IMAGE }}:{{ ONLYOFFICE_VERSION }}"
+    {{ lookup('container_image', application_id, 'onlyoffice') }}
     {{ lookup('compose_only', 'container_name', ONLYOFFICE_CONTAINER) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ http_port }}:{{ container_port }}"

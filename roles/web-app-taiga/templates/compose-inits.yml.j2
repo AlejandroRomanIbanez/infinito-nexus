@@ -3,7 +3,7 @@
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', TAIGA_CONTAINER ~ '-' ~ service_name) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: taigaio/taiga-back:latest
+    {{ lookup('container_image', application_id, 'manager', image='taigaio/taiga-back', version=TAIGA_VERSION) }}
     environment:
       CELERY_ENABLED: "False"
 {{ lookup('container_depends_on', application_id) }}

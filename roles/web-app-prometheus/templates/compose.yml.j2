@@ -2,7 +2,7 @@
 
   application:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: "{{ PROMETHEUS_IMAGE }}:{{ PROMETHEUS_VERSION }}"
+    {{ lookup('container_image', application_id, 'prometheus') }}
     {{ lookup('compose_only', 'container_name', PROMETHEUS_CONTAINER) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.prometheus.ports.local.http') }}:9090"
@@ -20,7 +20,7 @@
 {% endfor %}
   blackbox-exporter:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: "{{ BLACKBOX_IMAGE }}:{{ BLACKBOX_VERSION }}"
+    {{ lookup('container_image', application_id, 'blackbox-exporter') }}
     {{ lookup('compose_only', 'container_name', BLACKBOX_CONTAINER) }}
     command:
       - "--config.file={{ BLACKBOX_CONFIG_DOCKER }}"
@@ -28,7 +28,7 @@
 
   alertmanager:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: "{{ ALERTMANAGER_IMAGE }}:{{ ALERTMANAGER_VERSION }}"
+    {{ lookup('container_image', application_id, 'alertmanager') }}
     {{ lookup('compose_only', 'container_name', ALERTMANAGER_CONTAINER) }}
     command:
       - "--config.file={{ ALERTMANAGER_CONFIG_DOCKER }}"
@@ -37,7 +37,7 @@
 
   cadvisor:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: "{{ CADVISOR_IMAGE }}:{{ CADVISOR_VERSION }}"
+    {{ lookup('container_image', application_id, 'cadvisor') }}
     {{ lookup('compose_only', 'container_name', CADVISOR_CONTAINER) }}
     privileged: true
     devices:
@@ -46,7 +46,7 @@
 
   node-exporter:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: "{{ NODE_EXPORTER_IMAGE }}:{{ NODE_EXPORTER_VERSION }}"
+    {{ lookup('container_image', application_id, 'node-exporter') }}
     {{ lookup('compose_only', 'container_name', NODE_EXPORTER_CONTAINER) }}
     # network_mode: host is required so node-exporter sees the host's real
     # network interfaces, disk mounts, and process table. Without it, interface

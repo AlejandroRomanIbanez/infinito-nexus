@@ -9,9 +9,6 @@ OPENRESTY_VERSION: "{{ lookup('config','svc-prx-openresty', 'services.openresty.
 OPENRESTY_CONTAINER: "{{ lookup('config','svc-prx-openresty', 'services.openresty.name') }}"
 OPENRESTY_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, entity_name) }}"
 
-OPENRESTY_CUSTOM_IMAGE: "openresty_custom"
-OPENRESTY_CUSTOM_VERSION: "{{ OPENRESTY_VERSION }}"
-
 OPENRESTY_PROMETHEUS_ENABLED: "{{ ('web-app-prometheus' in lookup('applications')) | lower }}"
 OPENRESTY_LUA_PROMETHEUS_URL_MAIN: "https://raw.githubusercontent.com/infinito-nexus/nginx-lua-prometheus/master/prometheus.lua"
 OPENRESTY_LUA_PROMETHEUS_URL_COUNTER: "https://raw.githubusercontent.com/infinito-nexus/nginx-lua-prometheus/master/prometheus_resty_counter.lua"

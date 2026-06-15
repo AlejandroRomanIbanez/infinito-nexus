@@ -3,11 +3,6 @@
 application_id: "web-app-penpot"
 entity_name: "{{ application_id | get_entity_name }}"
 
-# Penpot images / versions (all three containers share the upstream tag)
-PENPOT_VERSION: "{{ lookup('config', application_id, 'services.penpot.version') }}"
-PENPOT_FRONTEND_IMAGE: "{{ lookup('config', application_id, 'services.frontend.image') }}"
-PENPOT_BACKEND_IMAGE: "{{ lookup('config', application_id, 'services.backend.image') }}"
-PENPOT_EXPORTER_IMAGE: "{{ lookup('config', application_id, 'services.exporter.image') }}"
 PENPOT_FRONTEND_CONTAINER: "{{ lookup('config', application_id, 'services.frontend.name') }}"
 PENPOT_BACKEND_CONTAINER: "{{ lookup('config', application_id, 'services.backend.name') }}"
 PENPOT_EXPORTER_CONTAINER: "{{ lookup('config', application_id, 'services.exporter.name') }}"

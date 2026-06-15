@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
   {{ ZAMMAD_INIT_CONTAINER }}:
-    image: "{{ ZAMMAD_IMAGE }}:{{ ZAMMAD_VERSION }}"
+    {{ lookup('container_image', application_id, 'zammad') }}
     {{ lookup('compose_only', 'container_name', ZAMMAD_INIT_CONTAINER) }}
 {% set docker_restart_policy = 'on-failure' %}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -14,7 +14,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ ZAMMAD_RAILS_CONTAINER }}:
-    image: "{{ ZAMMAD_IMAGE }}:{{ ZAMMAD_VERSION }}"
+    {{ lookup('container_image', application_id, 'zammad') }}
     {{ lookup('compose_only', 'container_name', ZAMMAD_RAILS_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["zammad-railsserver"]
@@ -31,7 +31,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ ZAMMAD_WEBSOCKET_CONTAINER }}:
-    image: "{{ ZAMMAD_IMAGE }}:{{ ZAMMAD_VERSION }}"
+    {{ lookup('container_image', application_id, 'zammad') }}
     {{ lookup('compose_only', 'container_name', ZAMMAD_WEBSOCKET_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["zammad-websocket"]
@@ -40,7 +40,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ ZAMMAD_SCHEDULER_CONTAINER }}:
-    image: "{{ ZAMMAD_IMAGE }}:{{ ZAMMAD_VERSION }}"
+    {{ lookup('container_image', application_id, 'zammad') }}
     {{ lookup('compose_only', 'container_name', ZAMMAD_SCHEDULER_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["zammad-scheduler"]
@@ -49,7 +49,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ ZAMMAD_SEARCH_CONTAINER }}:
-    image: "{{ ZAMMAD_SEARCH_IMAGE }}:{{ ZAMMAD_SEARCH_VERSION }}"
+    {{ lookup('container_image', application_id, 'search') }}
     {{ lookup('compose_only', 'container_name', ZAMMAD_SEARCH_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     environment:
@@ -60,14 +60,14 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ ZAMMAD_MEMCACHED_CONTAINER }}:
-    image: "{{ ZAMMAD_MEMCACHED_IMAGE }}:{{ ZAMMAD_MEMCACHED_VERSION }}"
+    {{ lookup('container_image', 'svc-db-memcached', 'memcached') }}
     {{ lookup('compose_only', 'container_name', ZAMMAD_MEMCACHED_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["memcached", "-m", "256"]
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ ZAMMAD_NGINX_CONTAINER }}:
-    image: "{{ ZAMMAD_IMAGE }}:{{ ZAMMAD_VERSION }}"
+    {{ lookup('container_image', application_id, 'zammad') }}
     {{ lookup('compose_only', 'container_name', ZAMMAD_NGINX_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     # Upstream `grep "nameserver"` substring-matches Docker's `# Overrides:` comment lines, breaking the resolver directive.

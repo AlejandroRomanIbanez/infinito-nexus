@@ -5,7 +5,7 @@
     {{ lookup('compose_only', 'container_name', ((application_id | get_entity_name) ~ '-database')) }}
     logging:
       driver: journald
-    image: {{ lookup('database', application_id, 'image') }}:{{ lookup('database', application_id, 'version') }}
+    {{ lookup('container_image', 'svc-db-mariadb', 'mariadb', version=lookup('database', application_id, 'version')) }}
     {{ lookup('compose_restart') }}
     env_file:
       - {{ lookup('database', application_id, 'env') }}

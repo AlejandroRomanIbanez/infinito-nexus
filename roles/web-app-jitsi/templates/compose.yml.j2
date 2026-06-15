@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
   {{ JITSI_PROSODY_CONTAINER }}:
-    image: "{{ JITSI_PROSODY_IMAGE }}:{{ JITSI_PROSODY_VERSION }}"
+    {{ lookup('container_image', application_id, 'prosody') }}
     {{ lookup('compose_only', 'container_name', JITSI_PROSODY_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     expose:
@@ -12,7 +12,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ JITSI_JICOFO_CONTAINER }}:
-    image: "{{ JITSI_JICOFO_IMAGE }}:{{ JITSI_JICOFO_VERSION }}"
+    {{ lookup('container_image', application_id, 'jicofo') }}
     {{ lookup('compose_only', 'container_name', JITSI_JICOFO_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('depends_on', {JITSI_PROSODY_CONTAINER: 'service_started'}) }}
@@ -20,7 +20,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ JITSI_JVB_CONTAINER }}:
-    image: "{{ JITSI_JVB_IMAGE }}:{{ JITSI_JVB_VERSION }}"
+    {{ lookup('container_image', application_id, 'jvb') }}
     {{ lookup('compose_only', 'container_name', JITSI_JVB_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('depends_on', {JITSI_PROSODY_CONTAINER: 'service_started'}) }}
@@ -30,7 +30,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ JITSI_WEB_CONTAINER }}:
-    image: "{{ JITSI_WEB_IMAGE }}:{{ JITSI_WEB_VERSION }}"
+    {{ lookup('container_image', application_id, 'jitsi') }}
     {{ lookup('compose_only', 'container_name', JITSI_WEB_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('depends_on', {JITSI_PROSODY_CONTAINER: 'service_started'}) }}

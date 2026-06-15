@@ -13,7 +13,6 @@ XWIKI_HOSTNAME: "{{ container_hostname }}"
 XWIKI_HOST_PROPERTIES_PATH: "{{ [lookup('container', application_id, 'directories.config'), 'xwiki.properties'] | path_join }}"
 XWIKI_DOCK_DATA_DIR: "/usr/local/xwiki"
 
-XWIKI_IMAGE_CUSTOM: "xwiki_custom"
 XWIKI_IMAGE: "{{ lookup('config', application_id, 'services.xwiki.image') }}"
 XWIKI_VERSION: "{{ lookup('config', application_id, 'services.xwiki.version') }}"
 XWIKI_CONTAINER: "{{ lookup('config', application_id, 'services.xwiki.name') }}"

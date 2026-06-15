@@ -3,7 +3,7 @@
     {{ lookup('compose_only', 'container_name', MATOMO_NAME) }}
 {% set container_port = 80 %}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: "{{ MATOMO_IMAGE }}:{{ MATOMO_VERSION }}"
+    {{ lookup('container_image', application_id, 'matomo') }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.matomo.ports.local.http') }}:{{ container_port }}"
     {{ lookup('container_volumes', application_id, MATOMO_SERVICE) | indent(4) }}
@@ -30,7 +30,7 @@
       - "{{ MATOMO_BOOTSTRAP_PROFILE }}"
 {% endif %}
     {{ lookup('compose_only', 'container_name', MATOMO_BOOTSTRAP_NAME) }}
-    image: "{{ MATOMO_BOOTSTRAP_IMAGE }}:{{ MATOMO_BOOTSTRAP_VERSION }}"
+    {{ lookup('container_image', application_id, 'bootstrap') }}
     {{ lookup('depends_on', {MATOMO_SERVICE: 'service_healthy'}) }}
 
 {{ lookup('compose_volumes', application_id) }}

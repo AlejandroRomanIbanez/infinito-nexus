@@ -1,6 +1,6 @@
 {% if lookup('sso', application_id, 'is_proxy_gated') %}
   sso-proxy:
-    image: {{ lookup('config','web-app-keycloak', 'services.sso_proxy.image') }}:{{ lookup('config','web-app-keycloak', 'services.sso_proxy.version') }}
+    {{ lookup('container_image', 'web-app-keycloak', 'sso_proxy') }}
     {{ lookup('compose_restart') }}
     command: --config /oauth2-proxy.cfg
     {{ lookup('compose_only', 'container_name', ((application_id | get_entity_name) ~ '-sso-proxy')) }}

@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
   keycloak:
-    image: "{{ KEYCLOAK_IMAGE }}:{{ KEYCLOAK_VERSION }}"
+    {{ lookup('container_image', application_id, 'keycloak') }}
     {{ lookup('compose_only', 'container_name', KEYCLOAK_CONTAINER) }}
     hostname: {{ KEYCLOAK_CONTAINER_HOSTNAME }}
     command: start{% if KEYCLOAK_DEBUG_ENABLED %} --verbose{% endif %}

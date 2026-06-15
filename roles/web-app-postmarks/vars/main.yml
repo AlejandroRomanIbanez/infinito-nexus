@@ -10,8 +10,6 @@ container_hostname: "{{ lookup('domain', application_id) }}"
 
 # App container
 POSTMARKS_CONTAINER: "{{ lookup('config', application_id, 'services.application.name') }}"
-POSTMARKS_IMAGE: "{{ lookup('config', application_id, 'services.application.image') }}"
-POSTMARKS_VERSION: "{{ lookup('config', application_id, 'services.application.version') }}"
 
 # Source
 POSTMARKS_REPO_URL: "{{ lookup('config', application_id, 'services.application.repository') }}"

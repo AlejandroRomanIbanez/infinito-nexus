@@ -21,7 +21,7 @@
         MOODLE_TARBALL_FILENAME: "{{ MOODLE_TARBALL_FILENAME }}"
         MOODLE_VERSION_FILE: "{{ MOODLE_VERSION_FILE }}"
         MOODLE_AUTH_SUBDIR: "{{ MOODLE_AUTH_SUBDIR }}"
-    image: {{ MOODLE_IMAGE_CUSTOM }}
+    {{ lookup('container_image', application_id, 'moodle', custom=True) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_volumes', application_id, 'moodle') | indent(4) }}
     # FPM speaks FastCGI, not HTTP: bare TCP probe instead of curl.
@@ -40,7 +40,7 @@
   {{ service_name }}:
 {% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
     {{ lookup('compose_only', 'container_name', MOODLE_NGINX_CONTAINER) }}
-    image: {{ MOODLE_NGINX_IMAGE }}:{{ MOODLE_NGINX_VERSION }}
+    {{ lookup('container_image', application_id, 'nginx') }}
     {{ lookup('depends_on', {'moodle': 'service_healthy'}) }}
     ports:
       - {{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.moodle.ports.local.http') }}:{{ MOODLE_NGINX_PORT }}
@@ -52,7 +52,7 @@
   {{ service_name }}:
 {% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
     {{ lookup('compose_only', 'container_name', MOODLE_CRON_CONTAINER) }}
-    image: {{ MOODLE_IMAGE_CUSTOM }}
+    {{ lookup('container_image', application_id, 'cron', custom=True, version=MOODLE_VERSION) }}
     {{ lookup('compose_only', 'pull_policy', 'never') }}
     {{ lookup('depends_on', {'moodle': 'service_healthy'}) }}
     {{ lookup('container_volumes', application_id, 'cron') | indent(4) }}

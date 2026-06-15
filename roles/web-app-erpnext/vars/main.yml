@@ -2,9 +2,6 @@
 application_id: "web-app-erpnext"
 entity_name: "{{ application_id | get_entity_name }}"
 
-ERPNEXT_IMAGE: "{{ lookup('config', application_id, 'services.erpnext.image') }}"
-ERPNEXT_VERSION: "{{ lookup('config', application_id, 'services.erpnext.version') }}"
-
 ERPNEXT_BACKEND_CONTAINER: "erpnext-backend"
 ERPNEXT_FRONTEND_CONTAINER: "erpnext-frontend"
 ERPNEXT_BACKEND_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'backend') }}"

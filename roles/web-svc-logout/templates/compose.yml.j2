@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
   logout:
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: "{{ LOGOUT_IMAGE }}:{{ LOGOUT_VERSION }}"
+    {{ lookup('container_image', application_id, 'logout') }}
     {{ lookup('compose_only', 'container_name', LOGOUT_CONTAINER) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ http_port }}:{{ container_port }}"

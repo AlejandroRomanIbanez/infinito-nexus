@@ -2,15 +2,6 @@
 application_id: "web-app-jitsi"
 entity_name: "{{ application_id | get_entity_name }}"
 
-JITSI_WEB_IMAGE: "{{ lookup('config', application_id, 'services.jitsi.image') }}"
-JITSI_WEB_VERSION: "{{ lookup('config', application_id, 'services.jitsi.version') }}"
-JITSI_PROSODY_IMAGE: "{{ lookup('config', application_id, 'services.prosody.image') }}"
-JITSI_PROSODY_VERSION: "{{ lookup('config', application_id, 'services.prosody.version') }}"
-JITSI_JICOFO_IMAGE: "{{ lookup('config', application_id, 'services.jicofo.image') }}"
-JITSI_JICOFO_VERSION: "{{ lookup('config', application_id, 'services.jicofo.version') }}"
-JITSI_JVB_IMAGE: "{{ lookup('config', application_id, 'services.jvb.image') }}"
-JITSI_JVB_VERSION: "{{ lookup('config', application_id, 'services.jvb.version') }}"
-
 JITSI_WEB_CONTAINER: "jitsi-web"
 JITSI_PROSODY_CONTAINER: "jitsi-prosody"
 JITSI_JICOFO_CONTAINER: "jitsi-jicofo"

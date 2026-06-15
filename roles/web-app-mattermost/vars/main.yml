@@ -4,8 +4,6 @@ entity_name: "{{ application_id | get_entity_name }}"
 
 container_port: "{{ lookup('config', application_id, 'services.mattermost.ports.local.http') }}"
 
-MATTERMOST_VERSION: "{{ lookup('config', application_id, 'services.mattermost.version') }}"
-MATTERMOST_IMAGE: "{{ lookup('config', application_id, 'services.mattermost.image') }}"
 MATTERMOST_CONTAINER: "{{ lookup('config', application_id, 'services.mattermost.name') }}"
 MATTERMOST_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, entity_name) }}"
 

@@ -13,7 +13,9 @@ BUILD_LOOKUP_RE = re.compile(
 
 
 def image_key_re(indent: str) -> re.Pattern:
-    return re.compile(rf"^{re.escape(indent)}image\s*:")
+    return re.compile(
+        rf"^{re.escape(indent)}(image\s*:|\{{\{{\s*lookup\(\s*['\"]container_image['\"]\s*,)"
+    )
 
 
 def merge_key_re(indent: str) -> re.Pattern:

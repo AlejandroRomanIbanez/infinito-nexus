@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
   {{ ERPNEXT_CONFIGURATOR_CONTAINER }}:
-    image: "{{ ERPNEXT_IMAGE }}:{{ ERPNEXT_VERSION }}"
+    {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_CONFIGURATOR_CONTAINER) }}
 {% set docker_restart_policy = 'no' %}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -23,7 +23,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ ERPNEXT_BACKEND_CONTAINER }}:
-    image: "{{ ERPNEXT_IMAGE }}:{{ ERPNEXT_VERSION }}"
+    {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_BACKEND_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('depends_on', {ERPNEXT_CONFIGURATOR_CONTAINER: 'service_completed_successfully'}) }}
@@ -31,7 +31,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ ERPNEXT_WEBSOCKET_CONTAINER }}:
-    image: "{{ ERPNEXT_IMAGE }}:{{ ERPNEXT_VERSION }}"
+    {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_WEBSOCKET_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
@@ -40,7 +40,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ ERPNEXT_SCHEDULER_CONTAINER }}:
-    image: "{{ ERPNEXT_IMAGE }}:{{ ERPNEXT_VERSION }}"
+    {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_SCHEDULER_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["bench", "schedule"]
@@ -49,7 +49,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ ERPNEXT_QUEUE_SHORT_CONTAINER }}:
-    image: "{{ ERPNEXT_IMAGE }}:{{ ERPNEXT_VERSION }}"
+    {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_QUEUE_SHORT_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["bench", "worker", "--queue", "short,default"]
@@ -58,7 +58,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ ERPNEXT_QUEUE_LONG_CONTAINER }}:
-    image: "{{ ERPNEXT_IMAGE }}:{{ ERPNEXT_VERSION }}"
+    {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_QUEUE_LONG_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["bench", "worker", "--queue", "long,default,short"]
@@ -67,7 +67,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ ERPNEXT_FRONTEND_CONTAINER }}:
-    image: "{{ ERPNEXT_IMAGE }}:{{ ERPNEXT_VERSION }}"
+    {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_FRONTEND_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["nginx-entrypoint.sh"]

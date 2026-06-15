@@ -25,7 +25,6 @@ CONFLUENCE_OIDC_UNIQUE_ATTRIBUTE: "{{ OIDC.ATTRIBUTES.USERNAME }}"
 CONFLUENCE_VERSION: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.version') }}"
 CONFLUENCE_IMAGE: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.image') }}"
 CONFLUENCE_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.name') }}"
-CONFLUENCE_CUSTOM_IMAGE: "{{ entity_name }}_custom:{{ CONFLUENCE_VERSION }}"
 
 CONFLUENCE_JVM_MAX: "{{ lookup('applications') | jvm_max_mb(application_id) }}m"
 CONFLUENCE_JVM_MIN: "{{ lookup('applications') | jvm_min_mb(application_id) }}m"

@@ -1,7 +1,7 @@
 x-op-app: &app
   logging:
     driver: journald
-  image: {{ OPENPROJECT_CUSTOM_IMAGE }}
+  {{ lookup('container_image', application_id, 'web', custom=True) }}
   {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(2) }}
     args:
       OPENPROJECT_IMAGE:   "{{ OPENPROJECT_IMAGE }}"
@@ -11,14 +11,14 @@ x-op-app: &app
 
   cache:
 {% set service_name = 'cache' %}
-    image: "{{ OPENPROJECT_CACHE_IMAGE}}:{{ OPENPROJECT_CACHE_VERSION }}"
+    {{ lookup('container_image', 'svc-db-memcached', 'memcached') }}
     {{ lookup('compose_only', 'container_name', OPENPROJECT_CACHE_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 
   proxy:
 {% set service_name = 'proxy' %}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: {{ OPENPROJECT_CUSTOM_IMAGE }}
+    {{ lookup('container_image', application_id, 'proxy', custom=True, version=OPENPROJECT_VERSION) }}
     {{ lookup('compose_only', 'container_name', OPENPROJECT_PROXY_CONTAINER) }}
     {{ lookup('compose_only', 'pull_policy', 'never') }}
     command: "./docker/prod/proxy"

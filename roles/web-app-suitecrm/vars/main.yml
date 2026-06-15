@@ -12,7 +12,6 @@ SUITECRM_BASE_IMAGE: "{{ lookup('config', application_id, 'services.' ~ entity_n
 SUITECRM_BASE_VERSION: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.version') }}"
 SUITECRM_APP_VERSION: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.app_version') }}"
 
-SUITECRM_CUSTOM_IMAGE: "{{ entity_name }}_custom:{{ SUITECRM_APP_VERSION }}"
 SUITECRM_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.name') }}"
 SUITECRM_SERVICE: "{{ entity_name }}"
 

@@ -3,7 +3,7 @@
   pds:
 {% set container_port = 3000 %}
 {% set container_healthcheck = 'xrpc/_health' %}
-    image: "{{ BLUESKY_PDS_IMAGE }}:{{ BLUESKY_PDS_VERSION }}"
+    {{ lookup('container_image', application_id, 'pds') }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_volumes', application_id, 'pds') | indent(4) }}
     ports:
@@ -21,7 +21,7 @@
     build:
       context: "{{ BLUESKY_SOCIAL_APP_DIR }}"
       dockerfile: Dockerfile
-    image: {{ BLUESKY_WEB_IMAGE_CUSTOM }}
+    {{ lookup('container_image', application_id, 'web', image=BLUESKY_WEB_IMAGE_CUSTOM) }}
     {{ lookup('compose_only', 'pull_policy', 'never') }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ BLUESKY_WEB_PORT }}:{{ container_port }}"
@@ -37,7 +37,7 @@
       args:
         BLUESKY_BROKER_BASE_IMAGE: "{{ BLUESKY_BROKER_BASE_IMAGE }}"
         BLUESKY_BROKER_BASE_VERSION: "{{ BLUESKY_BROKER_BASE_VERSION }}"
-    image: {{ BLUESKY_BROKER_IMAGE }}
+    {{ lookup('container_image', application_id, 'broker', image=BLUESKY_BROKER_IMAGE) }}
     {{ lookup('compose_only', 'container_name', BLUESKY_BROKER_CONTAINER) }}
     hostname: {{ service_name }}
     {{ lookup('compose_only', 'pull_policy', 'never') }}

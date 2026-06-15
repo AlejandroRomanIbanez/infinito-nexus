@@ -39,8 +39,6 @@ DASHBOARD_KEYCLOAK_IFRAME_ENABLED: "{{ lookup('config','web-app-keycloak', 'serv
 DASHBOARD_OIDC_ENABLED: "{{ lookup('config', DASHBOARD_APPLICATION_ID, 'services.sso.enabled') }}"
 
 DASHBOARD_CONTAINER: "{{ lookup('config', DASHBOARD_APPLICATION_ID, 'services.dashboard.name') }}"
-DASHBOARD_IMAGE: "{{ lookup('config', DASHBOARD_APPLICATION_ID, 'services.dashboard.image') }}"
-DASHBOARD_VERSION: "{{ lookup('config', DASHBOARD_APPLICATION_ID, 'services.dashboard.version') }}"
 
 DASHBOARD_PLATFORM_LOGO_SOURCE: "{{ service_provider.platform.logo | string }}"
 DASHBOARD_PLATFORM_LOGO_URL: "{{ ('https:' ~ DASHBOARD_PLATFORM_LOGO_SOURCE) if DASHBOARD_PLATFORM_LOGO_SOURCE.startswith('//') else DASHBOARD_PLATFORM_LOGO_SOURCE

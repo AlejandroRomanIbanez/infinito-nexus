@@ -29,6 +29,9 @@ if TYPE_CHECKING:
 
 BUILD_RE = re.compile(r"^(?P<indent>[ \t]*)build:\s*(#.*)?$")
 IMAGE_RE = re.compile(r"^(?P<indent>[ \t]*)image:\s*(?P<rest>.+)?$")
+CONTAINER_IMAGE_LOOKUP_RE = re.compile(
+    r"^(?P<indent>[ \t]*)\{\{\s*lookup\(\s*['\"]container_image['\"]\s*,"
+)
 COMMENTED_RE = re.compile(r"^\s*#")
 BLANK_RE = re.compile(r"^\s*$")
 
@@ -101,17 +104,17 @@ def _block_bounds_for_key(
 def _has_image_same_indent(
     lines: list[str], start: int, end: int, indent_str: str
 ) -> bool:
-    """
-    Check if an `image:` key exists at the same indent (exact prefix match) within [start, end).
-    """
     needle = f"{indent_str}image:"
+    container_image_lookup_needle = f"{indent_str}{{{{"
     for i in range(start, end):
         ln = lines[i]
         if _is_ignored_line(ln):
             continue
-        # Must match exact indent string + "image:" (same mapping level)
         if ln.startswith(needle):
-            # also ensure it's not commented (already handled) and looks like a key
+            return True
+        if ln.startswith(
+            container_image_lookup_needle
+        ) and CONTAINER_IMAGE_LOOKUP_RE.match(ln):
             return True
     return False
 

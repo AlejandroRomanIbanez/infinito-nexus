@@ -2,15 +2,6 @@
 application_id: "web-app-kix"
 entity_name: "{{ application_id | get_entity_name }}"
 
-KIX_PROXY_IMAGE: "{{ lookup('config', application_id, 'services.kix.image') }}"
-KIX_PROXY_VERSION: "{{ lookup('config', application_id, 'services.kix.version') }}"
-KIX_BACKEND_IMAGE: "{{ lookup('config', application_id, 'services.backend.image') }}"
-KIX_BACKEND_VERSION: "{{ lookup('config', application_id, 'services.backend.version') }}"
-KIX_FRONTEND_IMAGE: "{{ lookup('config', application_id, 'services.frontend.image') }}"
-KIX_FRONTEND_VERSION: "{{ lookup('config', application_id, 'services.frontend.version') }}"
-KIX_DB_IMAGE: "{{ lookup('config', application_id, 'services.db.image') }}"
-KIX_DB_VERSION: "{{ lookup('config', application_id, 'services.db.version') }}"
-
 KIX_PROXY_CONTAINER: "kix-proxy"
 KIX_BACKEND_CONTAINER: "kix-backend"
 KIX_FRONTEND_CONTAINER: "kix-frontend"

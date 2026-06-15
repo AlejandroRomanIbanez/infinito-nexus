@@ -69,11 +69,8 @@ MOODLE_MSMTP_ABS: "{{ [ lookup('container', application_id, 'directories.config'
 # Container image / build identity
 MOODLE_IMAGE: "{{ lookup('config', application_id, 'services.moodle.image') }}"
 MOODLE_VERSION: "{{ lookup('config', application_id, 'services.moodle.version') }}"
-MOODLE_IMAGE_CUSTOM: "{{ entity_name }}_custom"
 MOODLE_CONTAINER: "{{ lookup('config', application_id, 'services.moodle.name') }}"
 MOODLE_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, entity_name) }}"
-MOODLE_NGINX_IMAGE: "{{ lookup('config', application_id, 'services.nginx.image') }}"
-MOODLE_NGINX_VERSION: "{{ lookup('config', application_id, 'services.nginx.version') }}"
 MOODLE_NGINX_CONTAINER: "{{ lookup('config', application_id, 'services.nginx.name') }}"
 MOODLE_CRON_CONTAINER: "{{ lookup('config', application_id, 'services.cron.name') }}"
 

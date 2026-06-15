@@ -133,9 +133,10 @@ class TestPrometheusServicePresence(unittest.TestCase):
             "via config/main.yml (services.blackbox-exporter.version)",
         )
         self.assertIn(
-            "BLACKBOX_VERSION",
+            "lookup('container_image', application_id, 'blackbox-exporter')",
             content,
-            "compose.yml.j2 must reference BLACKBOX_VERSION for a reproducible image tag",
+            "compose.yml.j2 must resolve the blackbox-exporter image via the "
+            "container_image lookup so the version comes from meta/services.yml",
         )
 
     def test_alert_rules_mounted_in_prometheus_container(self):

@@ -2,7 +2,7 @@
   {{ service_name }}:
 {% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
 {% set container_port = MATRIX_SYNAPSE_CONTAINER_PORT %}
-    image: "{{ MATRIX_SYNAPSE_IMAGE }}:{{ MATRIX_SYNAPSE_VERSION }}"
+    {{ lookup('container_image', application_id, 'synapse') }}
     {{ lookup('compose_only', 'container_name', MATRIX_SYNAPSE_NAME) }}
     {{ lookup('compose_restart') }}
     logging:
@@ -29,7 +29,7 @@
   {{ service_name }}:
 {% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
 {% set container_port = 80 %}
-    image: "{{ MATRIX_ELEMENT_IMAGE }}:{{ MATRIX_ELEMENT_VERSION }}"
+    {{ lookup('container_image', application_id, 'element') }}
     {{ lookup('compose_only', 'container_name', MATRIX_ELEMENT_NAME) }}
     {{ lookup('compose_restart') }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
@@ -43,7 +43,7 @@
   {{ service_name }}:
 {% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
     {{ lookup('compose_only', 'container_name', 'matrix-' ~ item.bridge_name) }}
-    image: dock.mau.dev/mautrix/{{ item.bridge_name }}:latest
+    image: "dock.mau.dev/mautrix/{{ item.bridge_name }}:latest"  # nocheck: container-image-lookup
     {{ lookup('compose_restart') }}
     volumes: # nocheck: compose-inline-mount-section
       - ./mautrix/{{ item.bridge_name }}:/data
@@ -60,7 +60,7 @@
 {% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
     {{ lookup('compose_restart') }}
     {{ lookup('compose_only', 'container_name', "matrix-chatgpt") }}
-    image: "{{ MATRIX_CHATGPT_BOT_IMAGE }}:{{ MATRIX_CHATGPT_BOT_VERSION }}"
+    {{ lookup('container_image', application_id, 'matrix-chatgpt-bot') }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     environment:
       OPENAI_API_KEY: "{{ lookup('config', application_id, 'credentials.chatgpt_bridge_openai_api_key')}}"

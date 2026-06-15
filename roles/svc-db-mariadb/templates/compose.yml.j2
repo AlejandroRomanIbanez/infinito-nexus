@@ -2,7 +2,7 @@
 
   mariadb:
     {{ lookup('compose_only', 'container_name', MARIADB_NAME) }}
-    image:            "{{ MARIADB_CUSTOM_IMAGE }}"
+    {{ lookup('container_image', application_id, 'mariadb', custom=True) }}
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
       args:
         MARIADB_IMAGE:   "{{ MARIADB_IMAGE }}"

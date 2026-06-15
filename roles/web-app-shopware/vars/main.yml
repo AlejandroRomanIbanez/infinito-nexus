@@ -10,7 +10,6 @@ SHOPWARE_CONTAINER_VERSION: "{{ lookup('config', application_id, 'services.' ~ e
 SHOPWARE_CONTAINER_IMAGE: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.image') }}"
 SHOPWARE_PKG_VERSION: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.package.version') }}"
 SHOPWARE_PKG_NAME: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.package.name') }}"
-SHOPWARE_CUSTOM_IMAGE: "{{ entity_name }}_custom:{{ SHOPWARE_PKG_VERSION }}"
 SHOPWARE_USER: "www-data"
 SHOPWARE_ROOT: "/var/www/html"
 
@@ -38,8 +37,6 @@ SHOPWARE_REDIS_ADDRESS: "redis:6379"
 
 SHOPWARE_OPENSEARCH_PORT: "9200"
 SHOPWARE_OPENSEARCH_ENABLED: "{{ lookup('config', application_id, 'services.opensearch.enabled') }}"
-SHOPWARE_OPENSEARCH_IMAGE: "{{ lookup('config', application_id, 'services.opensearch.image') }}"
-SHOPWARE_OPENSEARCH_VERSION: "{{ lookup('config', application_id, 'services.opensearch.version') }}"
 SHOPWARE_OPENSEARCH_CONTAINER: "{{ lookup('config', application_id, 'services.opensearch.name') }}"
 SHOPWARE_OPENSEARCH_MEM_RESERVATION: "{{ lookup('config', application_id, 'services.opensearch.mem_reservation') }}"
 SHOPWARE_OPENSEARCH_INITIAL_ADMIN_PASSWORD: "{{ lookup('config', application_id, 'credentials.opensearch_initial_admin_password') }}"

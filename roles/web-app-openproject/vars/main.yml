@@ -20,12 +20,8 @@ OPENPROJECT_ADMINISTRATOR_PASSWORD: "{{ lookup('users', 'administrator').passwor
 OPENPROJECT_ADMINISTRATOR_EMAIL: "{{ lookup('users', 'administrator').email }}"
 
 OPENPROJECT_CACHE_CONTAINER: "{{ lookup('config', application_id, 'services.cache.name') }}"
-OPENPROJECT_CACHE_IMAGE: "{{ lookup('config','svc-db-memcached', 'services.memcached.image') }}"
-OPENPROJECT_CACHE_VERSION: "{{ lookup('config','svc-db-memcached', 'services.memcached.version') }}"
 
 OPENPROJECT_PLUGINS_FOLDER: "{{ lookup('container', application_id, 'directories.volumes') }}plugins/"
-
-OPENPROJECT_CUSTOM_IMAGE: "{{ entity_name }}_custom:{{ OPENPROJECT_VERSION }}"
 
 # The following volume doesn't have a practcical function. It just exist to prevent the creation of unnecessary anonymous volumes
 OPENPROJECT_DUMMY_DIR: "{{ lookup('container', application_id, 'directories.volumes') }}dummy_volume"

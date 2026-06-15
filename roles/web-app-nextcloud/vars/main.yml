@@ -36,12 +36,9 @@ NEXTCLOUD_VERSION: "{{ lookup('config', application_id, 'services.'~ NEXTCLOUD_S
 NEXTCLOUD_IMAGE: "{{ lookup('config', application_id, 'services.'~ NEXTCLOUD_SERVICE ~'.image') }}"
 NEXTCLOUD_CONTAINER: "{{ lookup('config', application_id, 'services.'~ NEXTCLOUD_SERVICE ~'.name') }}"
 NEXTCLOUD_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, NEXTCLOUD_SERVICE) }}"
-NEXTCLOUD_CUSTOM_IMAGE: "{{ entity_name }}_custom:{{ NEXTCLOUD_VERSION }}"
 
 NEXTCLOUD_PROXY_SERVICE: "proxy"
 NEXTCLOUD_PROXY_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ NEXTCLOUD_PROXY_SERVICE ~ '.name') }}"
-NEXTCLOUD_PROXY_IMAGE: "{{ lookup('config', application_id, 'services.' ~ NEXTCLOUD_PROXY_SERVICE ~ '.image') }}"
-NEXTCLOUD_PROXY_VERSION: "{{ lookup('config', application_id, 'services.' ~ NEXTCLOUD_PROXY_SERVICE ~ '.version') }}"
 
 NEXTCLOUD_CRON_SERVICE: "cron"
 NEXTCLOUD_CRON_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ NEXTCLOUD_CRON_SERVICE ~ '.name') }}"
@@ -50,8 +47,6 @@ NEXTCLOUD_CRON_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ NEX
 # https://github.com/nextcloud-snap/nextcloud-snap/wiki/How-to-configure-talk-HPB-with-Docker
 NEXTCLOUD_HPB_SERVICE: "talk"
 NEXTCLOUD_HPB_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ NEXTCLOUD_HPB_SERVICE ~ '.name') }}"
-NEXTCLOUD_HPB_IMAGE: "{{ lookup('config', application_id, 'services.' ~ NEXTCLOUD_HPB_SERVICE ~ '.image') }}"
-NEXTCLOUD_HPB_VERSION: "{{ lookup('config', application_id, 'services.' ~ NEXTCLOUD_HPB_SERVICE ~ '.version') }}"
 NEXTCLOUD_HPB_NETWORK_MODE: "{{ lookup('config', application_id, 'services.' ~ NEXTCLOUD_HPB_SERVICE ~ '.network_mode') }}"
 NEXTCLOUD_HPB_PLUGIN_ENABLED: "{{ lookup('config', application_id, 'services.nextcloud.plugins.spreed.enabled') }}"
 NEXTCLOUD_HPB_INTERNAL_SECRET: "{{ lookup('config', application_id, 'credentials.talk_internal_secret') }}"
@@ -139,8 +134,6 @@ NEXTCLOUD_WHITEBOARD_MAX_OLD_SPACE_SIZE: "{{ lookup('applications') | node_max_o
 
 NEXTCLOUD_RECORDING_SERVICE: "talk_recording"
 NEXTCLOUD_RECORDING_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ NEXTCLOUD_RECORDING_SERVICE ~ '.name') }}"
-NEXTCLOUD_RECORDING_IMAGE: "{{ lookup('config', application_id, 'services.' ~ NEXTCLOUD_RECORDING_SERVICE ~ '.image') }}"
-NEXTCLOUD_RECORDING_VERSION: "{{ lookup('config', application_id, 'services.' ~ NEXTCLOUD_RECORDING_SERVICE ~ '.version') }}"
 NEXTCLOUD_RECORDING_ENABLED: "{{ NEXTCLOUD_HPB_PLUGIN_ENABLED }}"
 NEXTCLOUD_RECORDING_PORT: 1234
 NEXTCLOUD_RECORDING_SECRET: "{{ lookup('config', application_id, 'credentials.talk_recording_secret') }}"

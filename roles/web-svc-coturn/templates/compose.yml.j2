@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
   nginx:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: {{ COTURN_GATEWAY_IMAGE }}:{{ COTURN_GATEWAY_VERSION }}
+    {{ lookup('container_image', application_id, 'gateway') }}
     {{ lookup('compose_only', 'container_name', entity_name ~ '_nginx') }}
     ports:
       - {{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.coturn.ports.local.http') }}:80
@@ -12,7 +12,7 @@
 
   coturn:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    image: {{ COTURN_IMAGE }}:{{ COTURN_VERSION }}
+    {{ lookup('container_image', application_id, 'coturn') }}
     {{ lookup('compose_only', 'container_name', COTURN_CONTAINER) }}
     network_mode: {{ COTURN_NETWORK_MODE }}
 {% if COTURN_NETWORK_MODE == 'bridge' %}

@@ -4,7 +4,7 @@
       args:
         JENKINS_IMAGE: "{{ JENKINS_IMAGE }}"
         JENKINS_VERSION: "{{ JENKINS_VERSION }}"
-    image: "{{ JENKINS_CUSTOM_IMAGE }}"
+    {{ lookup('container_image', application_id, 'jenkins', custom=True) }}
     {{ lookup('compose_only', 'container_name', JENKINS_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     environment:

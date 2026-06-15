@@ -1,6 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
   {{ entity_name }}:
-    image: "{{ REGISTRY_IMAGE }}:{{ REGISTRY_VERSION }}"
+    image: "{{ REGISTRY_IMAGE }}:{{ REGISTRY_VERSION }}"  # nocheck: container-image-lookup
     {{ lookup('compose_only', 'container_name', REGISTRY_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     ports:

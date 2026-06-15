@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
   {{ KIX_DB_CONTAINER }}:
-    image: "{{ KIX_DB_IMAGE }}:{{ KIX_DB_VERSION }}"
+    {{ lookup('container_image', application_id, 'db') }}
     {{ lookup('compose_only', 'container_name', KIX_DB_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     hostname: db
@@ -10,7 +10,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ KIX_BACKEND_CONTAINER }}:
-    image: "{{ KIX_BACKEND_IMAGE }}:{{ KIX_BACKEND_VERSION }}"
+    {{ lookup('container_image', application_id, 'backend') }}
     {{ lookup('compose_only', 'container_name', KIX_BACKEND_CONTAINER) }}
     hostname: backend
     user: "110010100"
@@ -20,7 +20,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ KIX_FRONTEND_CONTAINER }}:
-    image: "{{ KIX_FRONTEND_IMAGE }}:{{ KIX_FRONTEND_VERSION }}"
+    {{ lookup('container_image', application_id, 'frontend') }}
     {{ lookup('compose_only', 'container_name', KIX_FRONTEND_CONTAINER) }}
     hostname: frontend
     user: "110010100"
@@ -37,7 +37,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
   {{ KIX_PROXY_CONTAINER }}:
-    image: "{{ KIX_PROXY_IMAGE }}:{{ KIX_PROXY_VERSION }}"
+    {{ lookup('container_image', application_id, 'kix') }}
     {{ lookup('compose_only', 'container_name', KIX_PROXY_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('depends_on', [KIX_BACKEND_CONTAINER, KIX_FRONTEND_CONTAINER]) }}

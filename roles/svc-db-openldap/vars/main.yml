@@ -19,7 +19,6 @@ OPENLDAP_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, enti
 OPENLDAP_IMAGE: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.image') }}"
 OPENLDAP_VERSION: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.version') }}"
 OPENLDAP_SERVICE: "{{ entity_name }}"
-OPENLDAP_IMAGE_CUSTOM: "infinito/openldap:local"
 OPENLDAP_BIND_DN: "{{ LDAP.DN.ADMINISTRATOR.DATA }}"
 OPENLDAP_BIND_PW: "{{ LDAP.BIND_CREDENTIAL }}"
 

@@ -11,7 +11,7 @@
         ESPOCRM_ENTRYPOINT_SCRIPT_HOST_REL: "{{ ESPOCRM_ENTRYPOINT_SCRIPT_HOST_REL }}"
         ESPOCRM_ENTRYPOINT_SCRIPT_DOCKER: "{{ ESPOCRM_ENTRYPOINT_SCRIPT_DOCKER }}"
     {{ lookup('compose_only', 'container_name', ESPOCRM_CONTAINER) }}
-    image: "{{ ESPOCRM_CUSTOM_IMAGE }}"
+    {{ lookup('container_image', application_id, 'espocrm', custom=True) }}
     init: true
     stop_signal: SIGTERM
     stop_grace_period: 30s
@@ -25,7 +25,7 @@
 
 {% set service_name = 'daemon' %}
   {{ service_name }}:
-    image: "{{ ESPOCRM_CUSTOM_IMAGE }}"
+    {{ lookup('container_image', application_id, 'daemon', custom=True, version=ESPOCRM_VERSION) }}
     {{ lookup('compose_only', 'container_name', ESPOCRM_CONTAINER ~ '_' ~ service_name) }}
     {{ lookup('compose_only', 'pull_policy', 'never') }}
     init: true
@@ -47,7 +47,7 @@
 
 {% set service_name = 'websocket' %}
   {{ service_name }}:
-    image: "{{ ESPOCRM_CUSTOM_IMAGE }}"
+    {{ lookup('container_image', application_id, 'websocket', custom=True, version=ESPOCRM_VERSION) }}
     {{ lookup('compose_only', 'container_name', ESPOCRM_CONTAINER ~ '_' ~ service_name) }}
     {{ lookup('compose_only', 'pull_policy', 'never') }}
     init: true
