@@ -14,6 +14,18 @@ set -euo pipefail
 : "${ACT_INPUTS:=}"
 : "${ACT_ENV:=}"
 
+_act_cache_path="${ACT_ACTION_CACHE_PATH:-/tmp/actcache/act}"
+_stale_mounts=$(mount | grep -E " on ${_act_cache_path}/[^ ]+ type devtmpfs " || true)
+if [[ -n "${_stale_mounts}" ]]; then
+	echo "ERROR: stale devtmpfs bind-mounts inside ${_act_cache_path} block act from refreshing the actions cache." >&2
+	echo "Affected mountpoints:" >&2
+	echo "${_stale_mounts}" | awk '{print "  " $3}' >&2
+	echo "Fix (run on the host, outside the agent sandbox):" >&2
+	echo "  mount | awk -v p='${_act_cache_path}/' '\$5==\"devtmpfs\" && index(\$3,p)==1 {print \$3}' | sudo xargs -r umount" >&2
+	echo "  sudo rm -rf ${_act_cache_path}" >&2
+	exit 3
+fi
+
 echo "=== act: workflow=${ACT_WORKFLOW} event=${ACT_EVENT} job=${ACT_JOB:-<all>} matrix=${ACT_MATRIX:-<none>} inputs=${ACT_INPUTS:-<none>} ==="
 
 cmd=(act "${ACT_EVENT}" -W "${ACT_WORKFLOW}")
