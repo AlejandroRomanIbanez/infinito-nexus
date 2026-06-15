@@ -1,6 +1,7 @@
 import re
 import unittest
 from collections.abc import Iterable
+from pathlib import Path
 from typing import Any
 
 import yaml
@@ -107,25 +108,48 @@ def _expand_dynamic_notify(value: str) -> list[str]:
 # ---------- Extraction from handlers/tasks ----------
 
 
+_IMPORT_TASKS_KEYS = ("import_tasks", "ansible.builtin.import_tasks")
+
+
+def _resolve_handler_import_target(entry: dict, handler_file: str) -> str | None:
+    for key in _IMPORT_TASKS_KEYS:
+        value = entry.get(key)
+        if isinstance(value, str) and value.strip():
+            ref = value.strip()
+            return str((Path(handler_file).parent / ref).resolve())
+        if isinstance(value, dict):
+            ref = value.get("file")
+            if isinstance(ref, str) and ref.strip():
+                return str((Path(handler_file).parent / ref.strip()).resolve())
+    return None
+
+
 def collect_handler_groups(handler_file: str) -> list[set[str]]:
     """
     Build groups of acceptable targets for each handler task from a handlers file.
     For each handler, collect its 'name' and all 'listen' aliases.
     A handler is considered covered if ANY alias in its group is notified.
+
+    Follows ``import_tasks`` references to sibling handler files so a role
+    can split its handlers by mode (e.g. ``compose.yml`` / ``swarm.yml``)
+    without breaking the notifier check.
     """
     groups: list[set[str]] = []
     docs = load_yaml_documents(handler_file)
 
     for entry in iter_task_like_entries(docs):
+        import_target = _resolve_handler_import_target(entry, handler_file)
+        if import_target and Path(import_target).is_file():
+            groups.extend(collect_handler_groups(import_target))
+            continue
+
         names: set[str] = set()
 
-        # primary name
         if isinstance(entry.get("name"), str):
             nm = entry["name"].strip()
             if nm:
                 names.add(nm)
 
-        # listen aliases (string or list)
         if "listen" in entry:
             for raw_item in as_str_list(entry["listen"]):
                 item = raw_item.strip()
