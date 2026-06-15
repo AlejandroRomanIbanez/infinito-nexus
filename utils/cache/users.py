@@ -352,6 +352,45 @@ def get_user_defaults(
     return copy.deepcopy(cached)
 
 
+def _substitute_primary_domain_placeholder(
+    users: dict[str, Any],
+    variables: dict[str, Any],
+    *,
+    templar: Any,
+) -> dict[str, Any]:
+    raw = variables.get("DOMAIN_PRIMARY")
+    if not raw:
+        return users
+    text = str(raw).strip()
+    if not text:
+        return users
+    if "{{" in text or "{%" in text:
+        from utils.templating.ansible import _templar_render_best_effort
+
+        text = str(_templar_render_best_effort(templar, text, dict(variables))).strip()
+    if "://" in text:
+        parsed = urlparse(text)
+        text = parsed.hostname or text
+    text = text.split("/", 1)[0].split(":", 1)[0].strip()
+    if not text or "{{" in text or "{%" in text:
+        return users
+
+    placeholder = "{{ DOMAIN_PRIMARY }}"
+
+    def _walk(value: Any) -> Any:
+        if isinstance(value, str):
+            return value.replace(placeholder, text) if placeholder in value else value
+        if isinstance(value, Mapping):
+            return {k: _walk(v) for k, v in value.items()}
+        if isinstance(value, list):
+            return [_walk(v) for v in value]
+        if isinstance(value, tuple):
+            return tuple(_walk(v) for v in value)
+        return value
+
+    return _walk(users)
+
+
 def get_merged_users(
     *,
     variables: dict[str, Any] | None = None,
@@ -360,6 +399,11 @@ def get_merged_users(
 ) -> dict[str, Any]:
     source_variables = variables
     variables = dict(variables or {})
+    if templar is not None:
+        templar_avail = getattr(templar, "available_variables", None) or {}
+        for key in ("DOMAIN_PRIMARY", "SYSTEM_EMAIL_DOMAIN"):
+            if not variables.get(key) and templar_avail.get(key):
+                variables[key] = templar_avail[key]
     if not variables.get("DOMAIN_PRIMARY") and variables.get("SYSTEM_EMAIL_DOMAIN"):
         variables["DOMAIN_PRIMARY"] = variables["SYSTEM_EMAIL_DOMAIN"]
 
@@ -393,6 +437,9 @@ def get_merged_users(
             hydrated,
             variables,
             templar=templar,
+        )
+        materialized = _substitute_primary_domain_placeholder(
+            materialized, variables, templar=templar
         )
         rendered = _render_with_templar(
             materialized,
