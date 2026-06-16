@@ -123,7 +123,13 @@ class TestContainerExecAddrLookup(unittest.TestCase):
             ['"$(/opt/scripts/resolve-id mattermost mattermost)"'],
         )
 
-    def test_swarm_mode_uses_resolved_service_name(self):
+    def test_swarm_mode_uses_compose_yaml_service_key(self):
+        # The resolver script composes the docker-swarm service name as
+        # `<stack>_<service_key>` because the compose-yaml service key
+        # is what `docker stack deploy` names the service after.
+        # `services.<key>.name` is the compose-side `container_name`
+        # override and is ignored by swarm, so the lookup MUST pass
+        # the service_key (not the bare name) to the resolver.
         apps = _apps(service_name="custom-mm-name")
         out = _run(
             "web-app-mattermost",
@@ -133,7 +139,7 @@ class TestContainerExecAddrLookup(unittest.TestCase):
         )
         self.assertEqual(
             out,
-            ['"$(/usr/bin/resolve-container-id mattermost custom-mm-name)"'],
+            ['"$(/usr/bin/resolve-container-id mattermost mattermost)"'],
         )
 
     def test_service_with_empty_name_raises(self):

@@ -74,6 +74,10 @@ def _resolve_bare_name(
             f"container_address: '{application_id}' has no services dict"
         )
     entry = services.get(service_key)
+    if not isinstance(entry, dict) and service_key == "application":
+        entity = get_entity_name(application_id)
+        if entity:
+            entry = services.get(entity)
     if not isinstance(entry, dict):
         raise AnsibleError(
             f"container_address: service '{service_key}' missing in "
@@ -147,5 +151,5 @@ class LookupModule(LookupBase):
 
         return [
             f'"$({shlex.quote(bin_resolver)} '
-            f'{shlex.quote(stack_name)} {shlex.quote(bare_name)})"'
+            f'{shlex.quote(stack_name)} {shlex.quote(service_key)})"'
         ]
