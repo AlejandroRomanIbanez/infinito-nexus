@@ -17,10 +17,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import urlparse
 
-from utils.roles.mapping import ROLE_FILE_META_USERS
-
-from . import base as _base
-from .base import (
+from utils.cache import base as _base
+from utils.cache.base import (
     _RENDER_GUARD,
     _cache_key,
     _deep_merge,
@@ -30,7 +28,14 @@ from .base import (
     _stable_variables_signature,
     _tokens_file_signature,
 )
-from .yaml import load_yaml as _load_yaml_cached
+from utils.cache.users.placeholders import (
+    substitute_primary_domain_placeholder as _substitute_primary_domain_placeholder,
+)
+from utils.cache.users.placeholders import (
+    substitute_scalar_placeholders as _substitute_scalar_placeholders,
+)
+from utils.cache.yaml import load_yaml as _load_yaml_cached
+from utils.roles.mapping import ROLE_FILE_META_USERS
 
 _USERS_DEFAULTS_CACHE: dict[str, dict[str, Any]] = {}
 _MERGED_USERS_CACHE: dict[tuple, dict[str, Any]] = {}
@@ -352,45 +357,6 @@ def get_user_defaults(
     return copy.deepcopy(cached)
 
 
-def _substitute_primary_domain_placeholder(
-    users: dict[str, Any],
-    variables: dict[str, Any],
-    *,
-    templar: Any,
-) -> dict[str, Any]:
-    raw = variables.get("DOMAIN_PRIMARY")
-    if not raw:
-        return users
-    text = str(raw).strip()
-    if not text:
-        return users
-    if "{{" in text or "{%" in text:
-        from utils.templating.ansible import _templar_render_best_effort
-
-        text = str(_templar_render_best_effort(templar, text, dict(variables))).strip()
-    if "://" in text:
-        parsed = urlparse(text)
-        text = parsed.hostname or text
-    text = text.split("/", 1)[0].split(":", 1)[0].strip()
-    if not text or "{{" in text or "{%" in text:
-        return users
-
-    placeholder = "{{ DOMAIN_PRIMARY }}"
-
-    def _walk(value: Any) -> Any:
-        if isinstance(value, str):
-            return value.replace(placeholder, text) if placeholder in value else value
-        if isinstance(value, Mapping):
-            return {k: _walk(v) for k, v in value.items()}
-        if isinstance(value, list):
-            return [_walk(v) for v in value]
-        if isinstance(value, tuple):
-            return tuple(_walk(v) for v in value)
-        return value
-
-    return _walk(users)
-
-
 def get_merged_users(
     *,
     variables: dict[str, Any] | None = None,
@@ -439,6 +405,9 @@ def get_merged_users(
             templar=templar,
         )
         materialized = _substitute_primary_domain_placeholder(
+            materialized, variables, templar=templar
+        )
+        materialized = _substitute_scalar_placeholders(
             materialized, variables, templar=templar
         )
         rendered = _render_with_templar(
