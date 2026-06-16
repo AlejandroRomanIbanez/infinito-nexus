@@ -31,6 +31,15 @@ SERVICE="${STACK}_${SERVICE_KEY}"
 container node ls >/dev/null 2>&1 || {
   echo "resolve-container-id: must run on a Swarm manager node" >&2; exit 64; }
 
+LOCAL_ID=$(container ps \
+  --filter "label=com.docker.swarm.service.name=$SERVICE" \
+  --filter status=running \
+  --format '{{.ID}}' 2>/dev/null | head -1)
+if [ -n "$LOCAL_ID" ]; then
+  echo "${LOCAL_ID:0:12}"
+  exit 0
+fi
+
 TASK_ID=$(container service ps \
   --filter desired-state=running \
   --no-trunc \
