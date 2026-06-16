@@ -17,7 +17,7 @@
       interval: 10s
       timeout: 5s
       retries: 5
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   php:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -27,7 +27,7 @@
 {{ lookup('container_depends_on', application_id, extra={
   'search': {'condition': 'service_started'},
 }) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   search:
 {% set container_port = 9200 %}
@@ -39,8 +39,8 @@
       - plugins.security.disabled=true
       - OPENSEARCH_JAVA_OPTS=-Xms512m -Xmx512m
 {% include 'roles/sys-svc-container/templates/healthcheck/tcp.yml.j2' %}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}
 

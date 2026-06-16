@@ -34,7 +34,7 @@
       retries: 5
       start_period: 60s
 {{ lookup('container_depends_on', application_id) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {% set service_name = 'nginx' %}
   {{ service_name }}:
@@ -46,7 +46,7 @@
       - {{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.moodle.ports.local.http') }}:{{ MOODLE_NGINX_PORT }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     {{ lookup('compose_restart') }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {% set service_name = 'cron' %}
   {{ service_name }}:
@@ -68,7 +68,7 @@
           sleep 60
         done
     {{ lookup('compose_restart') }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

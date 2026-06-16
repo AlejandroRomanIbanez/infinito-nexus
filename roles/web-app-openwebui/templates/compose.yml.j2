@@ -6,8 +6,8 @@
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ OPENWEBUI_PORT_PUBLIC }}:8080"
     {{ lookup('container_volumes', application_id, 'openwebui') | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}
 
 {{ lookup('compose_volumes', application_id) }}

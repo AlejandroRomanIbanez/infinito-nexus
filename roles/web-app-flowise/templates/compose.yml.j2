@@ -11,7 +11,7 @@
       --host 0.0.0.0
       --port {{ FLOWISE_LITELLM_PORT }}
       --config {{ FLOWISE_LITELLM_CONFIG_PATH_DOCKER }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   qdrant:
 {% set service_name = 'qdrant' %}
@@ -22,7 +22,7 @@
       - {{ FLOWISE_QDRANT_HTTP_PORT }}
       - {{ FLOWISE_QDRANT_GRPC_PORT }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   flowise:
 {% set service_name = 'flowise' %}
@@ -33,8 +33,8 @@
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ FLOWISE_PORT_PUBLIC }}:{{ FLOWISE_PORT_INTERNAL }}"
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}
 
 {{ lookup('compose_volumes', application_id) }}

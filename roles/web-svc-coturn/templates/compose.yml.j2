@@ -23,7 +23,7 @@
       - "{{ COTURN_STUN_TURN_PORT_TLS }}:{{ COTURN_STUN_TURN_PORT_TLS }}/tcp"
 {% endif %}
       - "{{ COTURN_RELAY_PORT_RANGE }}/udp"
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 {% endif %}
     {{ lookup('container_volumes', application_id, 'coturn') | indent(4) }}
     command: >
@@ -60,6 +60,6 @@
       timeout: 5s
       retries: 3
       start_period: 10s
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}
 
 {{ lookup('compose_volumes', application_id) }}

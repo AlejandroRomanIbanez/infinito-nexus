@@ -17,7 +17,7 @@
       - "{{ DOCKER_BIND_HOST }}:{{ MARIADB_PORT }}:3306"
 {% endif %}
     {{ lookup('container_volumes', application_id, 'mariadb') | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
     healthcheck:
       test:
         - "CMD-SHELL"
@@ -28,4 +28,4 @@
       start_period: 90s
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

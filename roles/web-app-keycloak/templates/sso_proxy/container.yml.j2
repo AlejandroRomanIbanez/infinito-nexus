@@ -13,7 +13,7 @@
       - "{{ CA_TRUST.cert_host }}:{{ CA_TRUST.cert_container }}:ro"
 {% endif %}
 {% if DEPLOYMENT_MODE == 'swarm' %}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
     deploy:
       placement:
         constraints:

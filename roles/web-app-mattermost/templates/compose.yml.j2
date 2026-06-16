@@ -15,8 +15,8 @@
       retries: 3
       start_period: 30s
 
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 {{ lookup('container_depends_on', application_id) }}
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

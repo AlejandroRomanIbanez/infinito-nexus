@@ -10,7 +10,7 @@
     ports:
       - "{{ REGISTRY_CACHE_PORT }}:5000"
     {{ lookup('container_volumes', application_id, entity_name) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

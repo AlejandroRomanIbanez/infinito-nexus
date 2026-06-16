@@ -17,7 +17,7 @@
       retries: 12
       start_period: 60s
 {{ lookup('container_depends_on', application_id) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ MATOMO_BOOTSTRAP_SERVICE }}:
 {% set docker_restart_policy = 'no' %}
@@ -34,4 +34,4 @@
     {{ lookup('depends_on', {MATOMO_SERVICE: 'service_healthy'}) }}
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

@@ -1,21 +1,22 @@
-"""Render-snapshot tests for the registry-driven networks templates.
+"""Render-snapshot tests for the registry-driven networks lookups.
 
-Both `sys-svc-compose/networks.yml.j2` (top-level networks block) and
-`sys-svc-container/networks.yml.j2` (service-level networks attachment)
-iterate the service_registry and emit overlay attachments based on each
-entry's `server.networks.overlay` metadata. These tests pin the exact
-rendered YAML for four representative scenarios so future template edits
-have to update the expected snapshots — guarding against silent regressions
-between `make test green` and `actual deploy works`.
+The ``compose_networks`` and ``container_networks`` lookup plugins emit
+overlay attachments based on each service_registry entry's
+``server.networks.overlay`` metadata. These tests pin the exact rendered
+YAML for representative scenarios against the pure-Python rendering
+functions so future schema edits have to update the expected snapshots --
+guarding against silent regressions between `make test green` and
+`actual deploy works`.
 """
 
 from __future__ import annotations
 
 import unittest
 
-import jinja2
-
-from utils import PROJECT_ROOT
+from utils.networks.render import (
+    render_compose_networks,
+    render_container_networks,
+)
 from utils.roles.entity_name import get_entity_name
 
 
@@ -94,112 +95,57 @@ def _registry():
     }
 
 
-def _make_env() -> jinja2.Environment:
-    env = jinja2.Environment(
-        loader=jinja2.FileSystemLoader(str(PROJECT_ROOT)),
-        trim_blocks=True,
-        lstrip_blocks=True,
-        autoescape=False,  # noqa: S701
-    )
-    env.filters["get_entity_name"] = get_entity_name
-    env.filters["bool"] = lambda v: (
-        bool(v) if not isinstance(v, str) else v.lower() in ("true", "1", "yes")
-    )
-    return env
-
-
-def _make_lookup(database_data, config_data, domain_data):
-    def lookup(plugin, *args):
-        if plugin == "database":
-            app, key = args
-            return database_data.get(app, {}).get(key, "")
-        if plugin == "config":
-            app, path = args[0], args[1]
-            default = args[2] if len(args) > 2 else None
-            cur = config_data.get(app, {})
-            for part in path.split("."):
-                if isinstance(cur, dict) and part in cur:
-                    cur = cur[part]
-                else:
-                    return default
-            return cur
-        if plugin == "domain":
-            (app,) = args
-            return domain_data.get(app, "")
-        raise NotImplementedError(plugin)
-
-    return lookup
-
-
-def _make_query(registry):
-    def query(plugin):
-        if plugin == "service_registry":
-            return [registry]
-        raise NotImplementedError(plugin)
-
-    return query
-
-
-def _render(
-    template_rel_path: str,
-    *,
-    application_id: str,
-    deployment_mode: str,
-    database: dict | None = None,
-    services: dict | None = None,
-    subnet: str = "",
-) -> str:
-    env = _make_env()
-    template = env.get_template(template_rel_path)
-    registry = _registry()
-    database_data = {application_id: database} if database else {}
+def _make_lookups(*, database=None, services=None, subnet=""):
+    """Return (config_lookup, database_lookup) closures matching the
+    pure-Python rendering API."""
+    services = services or {}
+    database = database or {}
     config_data = {
-        application_id: {
-            "services": services or {},
-            "server": {"networks": {"local": {"subnet": subnet} if subnet else {}}},
-        }
+        "server": {"networks": {"local": {"subnet": subnet} if subnet else {}}},
+        "services": services,
     }
-    domain_data = {"web-app-keycloak": "auth.example.com"}
-    out = template.render(
+
+    def lookup_config(_app, path, default):
+        cur = config_data
+        for part in path.split("."):
+            if isinstance(cur, dict) and part in cur:
+                cur = cur[part]
+            else:
+                return default
+        return cur
+
+    def lookup_database(_app, key):
+        return database.get(key, "")
+
+    return lookup_config, lookup_database
+
+
+def _compose(application_id, deployment_mode, **lookup_kwargs):
+    config, db = _make_lookups(**lookup_kwargs)
+    return render_compose_networks(
         application_id=application_id,
-        DEPLOYMENT_MODE=deployment_mode,
-        swarm={"network": {"encryption": True}},
-        lookup=_make_lookup(database_data, config_data, domain_data),
-        query=_make_query(registry),
+        deployment_mode=deployment_mode,
+        registry=_registry(),
+        get_entity_name=get_entity_name,
+        lookup_config=config,
+        lookup_database=db,
     )
-    return _normalize(out)
 
 
-def _normalize(text: str) -> str:
-    lines = [line.rstrip() for line in text.splitlines()]
-    collapsed: list[str] = []
-    blank_run = False
-    for line in lines:
-        if not line:
-            if blank_run:
-                continue
-            blank_run = True
-        else:
-            blank_run = False
-        collapsed.append(line)
-    while collapsed and not collapsed[0]:
-        collapsed.pop(0)
-    while collapsed and not collapsed[-1]:
-        collapsed.pop()
-    return "\n".join(collapsed) + "\n"
-
-
-COMPOSE_TMPL = "roles/sys-svc-compose/templates/networks.yml.j2"
-CONTAINER_TMPL = "roles/sys-svc-container/templates/networks.yml.j2"
+def _container(application_id, deployment_mode, **lookup_kwargs):
+    config, db = _make_lookups(**lookup_kwargs)
+    return render_container_networks(
+        application_id=application_id,
+        deployment_mode=deployment_mode,
+        registry=_registry(),
+        get_entity_name=get_entity_name,
+        lookup_config=config,
+        lookup_database=db,
+    )
 
 
 class TestNetworksRender(unittest.TestCase):
     def test_openresty_swarm_top_level(self):
-        rendered = _render(
-            COMPOSE_TMPL,
-            application_id="svc-prx-openresty",
-            deployment_mode="swarm",
-        )
         expected = (
             "networks:\n"
             "  default:\n"
@@ -209,29 +155,13 @@ class TestNetworksRender(unittest.TestCase):
             "    driver_opts:\n"
             '      encrypted: "true"\n'
         )
-        self.assertEqual(rendered, expected)
+        self.assertEqual(_compose("svc-prx-openresty", "swarm"), expected)
 
     def test_openresty_swarm_service_level_collects_keycloak_alias(self):
-        rendered = _render(
-            CONTAINER_TMPL,
-            application_id="svc-prx-openresty",
-            deployment_mode="swarm",
-        )
-        expected = (
-            "    networks:\n"
-            "      default:\n"
-            "        aliases:\n"
-            "          - auth.example.com\n"
-        )
-        self.assertEqual(rendered, expected)
+        expected = "\nnetworks:\n  default:\n    aliases:\n      - auth.example.com"
+        self.assertEqual(_container("svc-prx-openresty", "swarm"), expected)
 
     def test_openresty_compose_skips_overlay(self):
-        rendered = _render(
-            COMPOSE_TMPL,
-            application_id="svc-prx-openresty",
-            deployment_mode="compose",
-            subnet="192.168.105.32/28",
-        )
         expected = (
             "networks:\n"
             "  default:\n"
@@ -242,16 +172,12 @@ class TestNetworksRender(unittest.TestCase):
             "      config:\n"
             "        - subnet: 192.168.105.32/28\n"
         )
-        self.assertEqual(rendered, expected)
+        self.assertEqual(
+            _compose("svc-prx-openresty", "compose", subnet="192.168.105.32/28"),
+            expected,
+        )
 
     def test_consumer_swarm_attaches_to_postgres_and_openresty(self):
-        rendered = _render(
-            COMPOSE_TMPL,
-            application_id="web-app-baserow",
-            deployment_mode="swarm",
-            database={"enabled": True, "shared": True, "id": "svc-db-postgres"},
-            services={"sso": {"enabled": True}},
-        )
         expected = (
             "networks:\n"
             "  postgres:\n"
@@ -265,42 +191,29 @@ class TestNetworksRender(unittest.TestCase):
             "    driver_opts:\n"
             '      encrypted: "true"\n'
         )
-        self.assertEqual(rendered, expected)
+        self.assertEqual(
+            _compose(
+                "web-app-baserow",
+                "swarm",
+                database={"enabled": True, "shared": True, "id": "svc-db-postgres"},
+                services={"sso": {"enabled": True}},
+            ),
+            expected,
+        )
 
     def test_consumer_swarm_service_attaches_without_keycloak(self):
-        rendered = _render(
-            CONTAINER_TMPL,
-            application_id="web-app-baserow",
-            deployment_mode="swarm",
-            database={"enabled": True, "shared": True, "id": "svc-db-postgres"},
-            services={"sso": {"enabled": True}},
+        expected = "\nnetworks:\n  postgres:\n    {}\n  openresty:\n    {}\n  default:"
+        self.assertEqual(
+            _container(
+                "web-app-baserow",
+                "swarm",
+                database={"enabled": True, "shared": True, "id": "svc-db-postgres"},
+                services={"sso": {"enabled": True}},
+            ),
+            expected,
         )
-        expected = (
-            "    networks:\n"
-            "      postgres:\n"
-            "        {}\n"
-            "      openresty:\n"
-            "        {}\n"
-            "      default:\n"
-        )
-        self.assertEqual(rendered, expected)
-
-    def test_mariadb_provider_swarm_suppresses_default(self):
-        rendered = _render(
-            COMPOSE_TMPL,
-            application_id="svc-db-mariadb",
-            deployment_mode="swarm",
-        )
-        expected = "networks:\n  mariadb:\n    external: true\n"
-        self.assertEqual(rendered, expected)
 
     def test_ldap_consumer_swarm_uses_default_consumer_derivation(self):
-        rendered = _render(
-            COMPOSE_TMPL,
-            application_id="web-app-bookwyrm",
-            deployment_mode="swarm",
-            services={"ldap": {"enabled": True, "shared": True}},
-        )
         expected = (
             "networks:\n"
             "  openldap:\n"
@@ -312,28 +225,63 @@ class TestNetworksRender(unittest.TestCase):
             "    driver_opts:\n"
             '      encrypted: "true"\n'
         )
-        self.assertEqual(rendered, expected)
+        self.assertEqual(
+            _compose(
+                "web-app-bookwyrm",
+                "swarm",
+                services={"ldap": {"enabled": True, "shared": True}},
+            ),
+            expected,
+        )
 
     def test_ollama_consumer_swarm_uses_default_consumer_derivation(self):
-        rendered = _render(
-            CONTAINER_TMPL,
-            application_id="web-app-openwebui",
-            deployment_mode="swarm",
-            services={"ollama": {"enabled": True, "shared": True}},
+        expected = "\nnetworks:\n  ollama:\n    {}\n  default:"
+        self.assertEqual(
+            _container(
+                "web-app-openwebui",
+                "swarm",
+                services={"ollama": {"enabled": True, "shared": True}},
+            ),
+            expected,
         )
-        expected = "    networks:\n      ollama:\n        {}\n      default:\n"
-        self.assertEqual(rendered, expected)
+
+    def test_matrix_mdad_consumer_attaches_postgres_ldap_sso(self):
+        # Matrix MDAD service used to hand-code three attachments:
+        #   default + (postgres if database.shared) + (openldap if MATRIX_LDAP_ENABLED)
+        # The registry-driven lookup adds a fourth: openresty, because matrix
+        # sets services.sso.enabled=true (keycloak group). This is a deliberate
+        # behaviour change -- pin the new contract so future template edits
+        # cannot silently drop or add an attachment.
+        expected = (
+            "\nnetworks:\n"
+            "  openldap:\n"
+            "    {}\n"
+            "  postgres:\n"
+            "    {}\n"
+            "  openresty:\n"
+            "    {}\n"
+            "  default:"
+        )
+        self.assertEqual(
+            _container(
+                "web-app-matrix",
+                "swarm",
+                database={"enabled": True, "shared": True, "id": "svc-db-postgres"},
+                services={
+                    "ldap": {"enabled": True, "shared": True},
+                    "sso": {"enabled": True},
+                },
+            ),
+            expected,
+        )
+
+    def test_mariadb_provider_swarm_suppresses_default(self):
+        expected = "networks:\n  mariadb:\n    external: true\n"
+        self.assertEqual(_compose("svc-db-mariadb", "swarm"), expected)
 
     def test_mariadb_provider_swarm_service_attaches_with_alias(self):
-        rendered = _render(
-            CONTAINER_TMPL,
-            application_id="svc-db-mariadb",
-            deployment_mode="swarm",
-        )
-        expected = (
-            "    networks:\n      mariadb:\n        aliases:\n          - mariadb\n"
-        )
-        self.assertEqual(rendered, expected)
+        expected = "\nnetworks:\n  mariadb:\n    aliases:\n      - mariadb"
+        self.assertEqual(_container("svc-db-mariadb", "swarm"), expected)
 
 
 if __name__ == "__main__":

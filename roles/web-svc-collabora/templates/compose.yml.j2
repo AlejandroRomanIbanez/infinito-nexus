@@ -17,8 +17,8 @@
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.collabora.ports.local.http') }}:{{ container_port }}"
 {% set container_healthcheck = COLLABORA_DISCOVERY_PATH %}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}
 
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

@@ -32,7 +32,7 @@
         target: /docker-entrypoint-initdb.d
         read_only: true
 {% endif %}
-    networks:
+    networks:  # nocheck: networks-literal  local sidecar inside consumer stack, default-only attachment
       - default
 {% endif %}
 {{ "\n" }}

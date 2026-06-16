@@ -6,7 +6,7 @@
     {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_resolver') }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
         ipv4_address: {{ MAILU_DNS_RESOLVER }}
 
   {{ MAILU_FRONT_SERVICE }}:
@@ -28,7 +28,7 @@
 {{ lookup('container_depends_on', application_id, extra={
   'resolver': {'condition': 'service_started'},
 }) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
       webmail:
       radicale:
     dns:
@@ -52,7 +52,7 @@
       - "{{ MAILU_OIDC_HOST }}:host-gateway"
 {% endif %}
 
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   imap:
 {% set service_name = 'imap' %}
@@ -63,7 +63,7 @@
     {{ lookup('depends_on', ['front', 'resolver']) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   smtp:
 {% set service_name = 'smtp' %}
@@ -74,7 +74,7 @@
     {{ lookup('depends_on', ['front', 'resolver']) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   oletools:
 {% set service_name = 'oletools' %}
@@ -85,7 +85,7 @@
     {{ lookup('depends_on', ['resolver']) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
       noinet:
 
   antispam:
@@ -97,7 +97,7 @@
     {{ lookup('depends_on', ['front', 'redis', 'antivirus', 'resolver']) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
       noinet:  
 
   antivirus:
@@ -109,7 +109,7 @@
     {{ lookup('depends_on', ['resolver']) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   webdav:
 {% set service_name = 'webdav' %}
@@ -120,7 +120,7 @@
     {{ lookup('depends_on', ['resolver']) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
       radicale:
 
   fetchmail:
@@ -132,7 +132,7 @@
     {{ lookup('depends_on', ['admin', 'smtp', 'imap', 'resolver']) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   webmail:
 {% set service_name = 'webmail' %}
@@ -143,13 +143,13 @@
     {{ lookup('depends_on', ['imap', 'front', 'resolver']) }}
     dns:
       - {{ MAILU_DNS_RESOLVER }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
       webmail:
 
 {{ lookup('compose_volumes', application_id,
     extra_volumes={'admin_data': {'name': MAILU_ADMIN_DATA_VOLUME}, 'clamav_db': {'name': MAILU_CLAMAV_DB_VOLUME}, 'dkim': {'name': MAILU_DKIM_VOLUME}, 'dovecot_mail': {'name': MAILU_DOVECOT_MAIL_VOLUME}, 'filter': {'name': MAILU_FILTER_VOLUME}, 'smtp_queue': {'name': MAILU_SMTP_QUEUE_VOLUME}, 'webdav_data': {'name': MAILU_WEBDAV_DATA_VOLUME}, 'webmail_data': {'name': MAILU_WEBMAIL_DATA_VOLUME}}
 ) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}
 {% if DEPLOYMENT_MODE == 'swarm' %}
   radicale:
     driver: overlay

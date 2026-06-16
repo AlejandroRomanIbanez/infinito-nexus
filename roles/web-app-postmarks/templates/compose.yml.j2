@@ -13,7 +13,7 @@
       - "{{ DOCKER_BIND_HOST }}:{{ http_port }}:{{ container_port }}"
 {% include 'roles/sys-svc-container/templates/healthcheck/tcp.yml.j2' %}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {# `compose_volumes` declares the top-level `volumes:` map (redis,
    application data, etc.). Required when `services.sso.enabled`
@@ -23,4 +23,4 @@
 {{ lookup('compose_volumes', application_id,
 ) }}
 
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

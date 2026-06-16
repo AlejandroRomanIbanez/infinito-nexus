@@ -14,7 +14,7 @@
     volumes_from:
       - {{ NEXTCLOUD_SERVICE }}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2'  %}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 {% if NEXTCLOUD_HPB_NETWORK_MODE == 'host' %}
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -36,7 +36,7 @@
       retries: 3
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 {{ lookup('container_depends_on', application_id) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {% if NEXTCLOUD_HPB_SIGNALING_ENABLED | bool %}
 {% set service_name = NEXTCLOUD_HPB_SERVICE %}
@@ -57,7 +57,7 @@
 {% endif %}
     expose:
       - "{{ container_port }}"
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 {% else %}
     network_mode: {{ NEXTCLOUD_HPB_NETWORK_MODE }}
 {% endif %}
@@ -81,7 +81,7 @@
     expose:
       - "{{ container_port }}"
     shm_size: 1g
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
     {{ lookup('depends_on', {'redis': 'service_healthy'}) }}
 {% endif %}
 
@@ -104,7 +104,7 @@
       timeout: 10s
       retries: 3
 {{ lookup('container_depends_on', application_id) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {% if NEXTCLOUD_RECORDING_ENABLED | bool %}
 {% set service_name = 'talk_recording' %}
@@ -120,7 +120,7 @@
       - TZ={{ HOST_TIMEZONE }}
     expose:
       - "{{ NEXTCLOUD_RECORDING_PORT }}"
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% endif %}
 
@@ -138,4 +138,4 @@
     extra_volumes=_extra_volumes
 ) }}
 
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

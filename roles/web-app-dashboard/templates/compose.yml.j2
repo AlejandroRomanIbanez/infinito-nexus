@@ -9,9 +9,9 @@
       - {{ DOCKER_BIND_HOST }}:{{ http_port }}:{{ container_port }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     {{ lookup('compose_restart') }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 {% include 'roles/sys-svc-container/templates/healthcheck/tcp.yml.j2' %}
 
 {{ lookup('compose_volumes', application_id) }}
 
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

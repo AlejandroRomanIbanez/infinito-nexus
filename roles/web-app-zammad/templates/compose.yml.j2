@@ -11,7 +11,7 @@
         ZAMMAD_TELEGRAM_HELPER_HOST_PATH ~ ':' ~ ZAMMAD_TELEGRAM_HELPER_CONTAINER_PATH ~ ':ro',
     ]) | indent(4) }}
 {{ lookup('container_depends_on', application_id) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ ZAMMAD_RAILS_CONTAINER }}:
     {{ lookup('container_image', application_id, 'zammad') }}
@@ -28,7 +28,7 @@
 {%   set _ = _rails_extra_volumes.append(ZAMMAD_OIDC_GROUP_ROLE_MAP_HOST_PATH ~ ':' ~ ZAMMAD_OIDC_GROUP_ROLE_MAP_CONTAINER_PATH ~ ':ro') %}
 {% endif %}
     {{ lookup('container_volumes', application_id, ZAMMAD_RAILS_CONTAINER, extra_volumes=_rails_extra_volumes) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ ZAMMAD_WEBSOCKET_CONTAINER }}:
     {{ lookup('container_image', application_id, 'zammad') }}
@@ -37,7 +37,7 @@
     command: ["zammad-websocket"]
     {{ lookup('depends_on', {ZAMMAD_RAILS_CONTAINER: 'service_started'}, indent=4) }}
     {{ lookup('container_volumes', application_id, ZAMMAD_WEBSOCKET_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ ZAMMAD_SCHEDULER_CONTAINER }}:
     {{ lookup('container_image', application_id, 'zammad') }}
@@ -46,7 +46,7 @@
     command: ["zammad-scheduler"]
     {{ lookup('depends_on', {ZAMMAD_RAILS_CONTAINER: 'service_started'}, indent=4) }}
     {{ lookup('container_volumes', application_id, ZAMMAD_SCHEDULER_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ ZAMMAD_SEARCH_CONTAINER }}:
     {{ lookup('container_image', application_id, 'search') }}
@@ -57,14 +57,14 @@
       - xpack.security.enabled=false
       - ES_JAVA_OPTS=-Xms512m -Xmx512m
     {{ lookup('container_volumes', application_id, ZAMMAD_SEARCH_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ ZAMMAD_MEMCACHED_CONTAINER }}:
     {{ lookup('container_image', 'svc-db-memcached', 'memcached') }}
     {{ lookup('compose_only', 'container_name', ZAMMAD_MEMCACHED_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["memcached", "-m", "256"]
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ ZAMMAD_NGINX_CONTAINER }}:
     {{ lookup('container_image', application_id, 'zammad') }}
@@ -82,7 +82,7 @@
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.zammad.ports.local.http') }}:8080"
     {{ lookup('container_volumes', application_id, ZAMMAD_NGINX_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

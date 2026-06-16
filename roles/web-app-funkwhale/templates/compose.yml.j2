@@ -7,7 +7,7 @@
       - C_FORCE_ROOT=true
     {{ lookup('container_volumes', application_id, 'celeryworker') | indent(4) }}
 {{ lookup('container_depends_on', application_id) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   celerybeat:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -15,7 +15,7 @@
     command: celery -A funkwhale_api.taskapp beat --pidfile= -l INFO
     {{ lookup('container_volumes', application_id, 'celerybeat') | indent(4) }}
 {{ lookup('container_depends_on', application_id) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   api:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -25,7 +25,7 @@
     ports:
       - "{{ FUNKWHALE_DOCKER_API_PORT }}"
 {{ lookup('container_depends_on', application_id) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   front:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -48,4 +48,4 @@
 {% endif %}
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

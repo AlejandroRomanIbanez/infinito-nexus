@@ -14,14 +14,7 @@
     stop_signal: SIGRTMIN+3
     environment:
       MATRIX_MDAD_PLAYBOOK_TAGS: "{{ MATRIX_MDAD_PLAYBOOK_TAGS }}"
-    networks:
-      default: {}
-{% if lookup('database', application_id, 'enabled') and lookup('database', application_id, 'shared') %}
-      postgres: {}
-{% endif %}
-{% if MATRIX_LDAP_ENABLED %}
-      openldap: {}
-{% endif %}
+    {{ lookup('container_networks') | indent(4) }}
     volumes:
       - {{ MATRIX_MDAD_DIR }}:/mdad
       - {{ lookup('volume', application_id, 'matrix_mdad_docker').name }}:/var/lib/docker

@@ -41,9 +41,7 @@ SERVICE_ENTRY_RE = re.compile(r"^  (?! )\S.*:\s*$")
 LOOKUP_CALL_RE = re.compile(r"lookup\(\s*['\"]" + re.escape(LOOKUP_NAME) + r"['\"]")
 
 SVC_COMPOSE_BASE_INCLUDE = "{% include 'roles/sys-svc-compose/templates/base.yml.j2' %}"
-SVC_COMPOSE_NETWORKS_INCLUDE = (
-    "{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}"
-)
+SVC_COMPOSE_NETWORKS_INCLUDE = "{{ lookup('compose_networks') }}"
 
 CTX_SERVICES = "services"
 CTX_OTHER = "other"

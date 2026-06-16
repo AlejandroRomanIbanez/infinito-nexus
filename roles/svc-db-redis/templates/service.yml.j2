@@ -22,7 +22,7 @@
       interval: 1s
       timeout: 3s
       retries: 30
-    networks:
+    networks:  # nocheck: networks-literal  local sidecar inside consumer stack, default-only attachment
       - default
 {% macro include_resource_for(svc, indent=4) -%}
   {% set service_name = svc -%}

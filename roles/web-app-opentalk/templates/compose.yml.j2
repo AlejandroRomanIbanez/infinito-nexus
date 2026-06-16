@@ -6,7 +6,7 @@
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ OPENTALK_FRONTEND_HTTP_PORT }}:80"
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
     {{ lookup('depends_on', {'controller': 'service_started'}) }}
 
   controller:
@@ -17,7 +17,7 @@
       - "{{ DOCKER_BIND_HOST }}:{{ OPENTALK_CTRL_HTTP_PORT }}:11311"
     {{ lookup('container_volumes', application_id, 'controller') | indent(4) }}
 {{ lookup('container_depends_on', application_id) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {% set service_name = 'livekit' %}
   {{ service_name }}:
@@ -45,7 +45,7 @@
       MINIO_ROOT_USER: "{{ OPENTALK_MINIO_USER }}"
       MINIO_ROOT_PASSWORD: "{{ OPENTALK_MINIO_PASSWORD }}"
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
     logging:
       driver: journald
 
@@ -63,7 +63,7 @@
       timeout: 10s
       retries: 5
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
     logging:
       driver: journald
 
@@ -74,10 +74,10 @@
     {{ lookup('compose_only', 'container_name', OPENTALK_RECORDER_CONTAINER) }}
     {{ lookup('compose_restart') }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
     {{ lookup('depends_on', {'rabbit': 'service_healthy', 'controller': 'service_started'}) }}
     logging:
       driver: journald
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

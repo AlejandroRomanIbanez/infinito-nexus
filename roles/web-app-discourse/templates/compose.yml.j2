@@ -3,6 +3,6 @@
 {{ lookup('compose_volumes', application_id,
 ) }}
 
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}
   {{ DISCOURSE_NETWORK }}:
     external: true

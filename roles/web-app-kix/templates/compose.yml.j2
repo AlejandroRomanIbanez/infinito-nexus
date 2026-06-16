@@ -7,7 +7,7 @@
     hostname: db
     {{ lookup('container_volumes', application_id, KIX_DB_CONTAINER) | indent(4) }}
     shm_size: '2gb'
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ KIX_BACKEND_CONTAINER }}:
     {{ lookup('container_image', application_id, 'backend') }}
@@ -17,7 +17,7 @@
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('depends_on', {KIX_DB_CONTAINER: 'service_healthy', 'redis': 'service_healthy'}) }}
     {{ lookup('container_volumes', application_id, KIX_BACKEND_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ KIX_FRONTEND_CONTAINER }}:
     {{ lookup('container_image', application_id, 'frontend') }}
@@ -34,7 +34,7 @@
       - NOTIFICATION_URL=http://frontend:3000/notifications
       - BACKEND_API_URL=http://backend:8080/api/v1
     {{ lookup('container_volumes', application_id, KIX_FRONTEND_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ KIX_PROXY_CONTAINER }}:
     {{ lookup('container_image', application_id, 'kix') }}
@@ -44,7 +44,7 @@
     {{ lookup('container_volumes', application_id, KIX_PROXY_CONTAINER) | indent(4) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.kix.ports.local.http') }}:80"
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

@@ -20,7 +20,7 @@
         bench set-config -g host_name "{{ lookup('tls', application_id, 'url.base') | regex_replace('/+$', '') }}";
     {{ lookup('container_volumes', application_id, ERPNEXT_CONFIGURATOR_CONTAINER) | indent(4) }}
 {{ lookup('container_depends_on', application_id) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ ERPNEXT_BACKEND_CONTAINER }}:
     {{ lookup('container_image', application_id, 'erpnext') }}
@@ -28,7 +28,7 @@
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('depends_on', {ERPNEXT_CONFIGURATOR_CONTAINER: 'service_completed_successfully'}) }}
     {{ lookup('container_volumes', application_id, ERPNEXT_BACKEND_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ ERPNEXT_WEBSOCKET_CONTAINER }}:
     {{ lookup('container_image', application_id, 'erpnext') }}
@@ -37,7 +37,7 @@
     command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
     {{ lookup('depends_on', {ERPNEXT_CONFIGURATOR_CONTAINER: 'service_completed_successfully'}) }}
     {{ lookup('container_volumes', application_id, ERPNEXT_WEBSOCKET_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ ERPNEXT_SCHEDULER_CONTAINER }}:
     {{ lookup('container_image', application_id, 'erpnext') }}
@@ -46,7 +46,7 @@
     command: ["bench", "schedule"]
     {{ lookup('depends_on', {ERPNEXT_BACKEND_CONTAINER: 'service_started'}) }}
     {{ lookup('container_volumes', application_id, ERPNEXT_SCHEDULER_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ ERPNEXT_QUEUE_SHORT_CONTAINER }}:
     {{ lookup('container_image', application_id, 'erpnext') }}
@@ -55,7 +55,7 @@
     command: ["bench", "worker", "--queue", "short,default"]
     {{ lookup('depends_on', {ERPNEXT_BACKEND_CONTAINER: 'service_started'}) }}
     {{ lookup('container_volumes', application_id, ERPNEXT_QUEUE_SHORT_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ ERPNEXT_QUEUE_LONG_CONTAINER }}:
     {{ lookup('container_image', application_id, 'erpnext') }}
@@ -64,7 +64,7 @@
     command: ["bench", "worker", "--queue", "long,default,short"]
     {{ lookup('depends_on', {ERPNEXT_BACKEND_CONTAINER: 'service_started'}) }}
     {{ lookup('container_volumes', application_id, ERPNEXT_QUEUE_LONG_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ ERPNEXT_FRONTEND_CONTAINER }}:
     {{ lookup('container_image', application_id, 'erpnext') }}
@@ -85,7 +85,7 @@
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.erpnext.ports.local.http') }}:{{ ERPNEXT_FRONTEND_PORT }}"
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.erpnext.ports.local.websocket') }}:{{ ERPNEXT_WEBSOCKET_PORT }}"
     {{ lookup('container_volumes', application_id, ERPNEXT_FRONTEND_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

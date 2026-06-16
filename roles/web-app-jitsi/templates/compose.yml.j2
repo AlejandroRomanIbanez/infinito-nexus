@@ -9,7 +9,7 @@
       - "5347"
       - "5280"
     {{ lookup('container_volumes', application_id, JITSI_PROSODY_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ JITSI_JICOFO_CONTAINER }}:
     {{ lookup('container_image', application_id, 'jicofo') }}
@@ -17,7 +17,7 @@
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('depends_on', {JITSI_PROSODY_CONTAINER: 'service_started'}) }}
     {{ lookup('container_volumes', application_id, JITSI_JICOFO_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ JITSI_JVB_CONTAINER }}:
     {{ lookup('container_image', application_id, 'jvb') }}
@@ -27,7 +27,7 @@
     ports:
       - "{{ JITSI_JVB_MEDIA_PORT }}:{{ JITSI_JVB_MEDIA_PORT }}/udp"
     {{ lookup('container_volumes', application_id, JITSI_JVB_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
   {{ JITSI_WEB_CONTAINER }}:
     {{ lookup('container_image', application_id, 'jitsi') }}
@@ -37,9 +37,9 @@
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ JITSI_WEB_HTTP_PORT }}:80"
     {{ lookup('container_volumes', application_id, JITSI_WEB_CONTAINER) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id,
     extra_volumes={}
 ) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

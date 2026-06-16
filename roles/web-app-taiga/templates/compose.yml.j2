@@ -28,7 +28,7 @@ build:
     {{ lookup('container_image', application_id, 'taiga', image='taigaio/taiga-back', version=TAIGA_VERSION) }}
 {% endif %}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
       taiga:
 {{ lookup('container_depends_on', application_id, extra={
   TAIGA_EVENTS_RABBITMQ_SERVICE: {'condition': 'service_started'},
@@ -55,7 +55,7 @@ build:
     entrypoint: ["/taiga-back/docker/async_entrypoint.sh"]
 {% endif %}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
       taiga:
 {{ lookup('container_depends_on', application_id, extra={
   TAIGA_EVENTS_RABBITMQ_SERVICE: {'condition': 'service_started'},
@@ -75,7 +75,7 @@ build:
       timeout: 5s
       retries: 5
       start_period: 20s
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
       taiga:
 
 {% set service_name = TAIGA_FRONT_SERVICE %}
@@ -97,7 +97,7 @@ build:
 {% endfilter %}
 
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
       taiga:
 
 {% set service_name = TAIGA_EVENTS_SERVICE %}
@@ -111,7 +111,7 @@ build:
       timeout: 5s
       retries: 5
       start_period: 30s
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
       taiga:
     {{ lookup('depends_on', {TAIGA_EVENTS_RABBITMQ_SERVICE: 'service_started'}) }}
 
@@ -128,7 +128,7 @@ build:
       timeout: 5s
       retries: 5
       start_period: 20s
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
       taiga:
 
 {% set service_name = 'protected' %}
@@ -142,7 +142,7 @@ build:
       timeout: 5s
       retries: 5
       start_period: 20s
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
       taiga:
 
 {% set service_name = 'gateway' %}
@@ -158,9 +158,9 @@ build:
     {% include 'roles/sys-svc-container/templates/healthcheck/http.yml.j2' %}
 {% endfilter %}
 
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
       taiga:
     {{ lookup('depends_on', [TAIGA_FRONT_SERVICE, TAIGA_SERVICE, TAIGA_EVENTS_SERVICE]) }}
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}
   taiga:

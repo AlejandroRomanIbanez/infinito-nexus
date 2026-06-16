@@ -7,8 +7,8 @@
     environment:
       CELERY_ENABLED: "False"
 {{ lookup('container_depends_on', application_id) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
     entrypoint: "python manage.py"
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}
   taiga:

@@ -15,7 +15,7 @@ x-environment: &shopware
     user: "0:0"
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {% set service_name = 'web' %}
 {% set container_port = lookup('config',application_id, 'services.web.ports.internal.http') %}
@@ -44,7 +44,7 @@ x-environment: &shopware
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 
 
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {% set service_name = 'worker' %}
   {{ service_name }}:
@@ -61,7 +61,7 @@ x-environment: &shopware
       start_period: 10s
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {% set service_name = 'scheduler' %}
   {{ service_name }}:
@@ -79,7 +79,7 @@ x-environment: &shopware
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 
 
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {% if SHOPWARE_OPENSEARCH_ENABLED %}
 {% set service_name = 'opensearch' %}
@@ -101,8 +101,8 @@ x-environment: &shopware
       timeout: 10s
       retries: 5
       start_period: 60s
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 {% endif %}
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

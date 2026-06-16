@@ -14,7 +14,7 @@
       - "--web.enable-lifecycle"
     {{ lookup('container_volumes', application_id, 'application') | indent(4) }}
 
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 {% for metrics_app_id in lookup('native_metrics_apps') %}
       {{ metrics_app_id | get_entity_name }}:
 {% endfor %}
@@ -67,7 +67,7 @@
       - "--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)"
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}
 {% for metrics_app_id in lookup('native_metrics_apps') %}
   {{ metrics_app_id | get_entity_name }}:
     external: true

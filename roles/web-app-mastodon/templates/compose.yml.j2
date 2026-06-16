@@ -13,7 +13,7 @@
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.mastodon.ports.local.http') }}:{{ container_port }}"
 {{ lookup('container_depends_on', application_id) }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {% set service_name = MASTODON_STREAMING_SERVICE_NAME %}
 {% set container_port = 4000 %}
@@ -27,7 +27,7 @@
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.mastodon.ports.local.websocket') }}:{{ container_port }}"
 {{ lookup('container_depends_on', application_id) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {% set service_name = MASTODON_SIDEKIQ_SERVICE_NAME %}
   {{ service_name }}:
@@ -42,7 +42,7 @@
       interval: 1m
       timeout: 10s
       retries: 3
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

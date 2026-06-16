@@ -23,7 +23,7 @@
       - "{{ DOCKER_BIND_HOST }}:{{ POSTGRES_PORT }}:5432"
 {% endif %}
     {{ lookup('container_volumes', application_id, 'postgres') | indent(4) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}

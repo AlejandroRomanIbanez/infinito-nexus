@@ -10,7 +10,7 @@
       - "{{ DOCKER_BIND_HOST }}:{{ BLUESKY_API_PORT }}:{{ container_port }}"
 
 {% include 'roles/sys-svc-container/templates/healthcheck/wget.yml.j2' %}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {% if BLUESKY_WEB_ENABLED %}
 {% set container_port = 8100 %}
@@ -26,7 +26,7 @@
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ BLUESKY_WEB_PORT }}:{{ container_port }}"
 {% include 'roles/sys-svc-container/templates/healthcheck/tcp.yml.j2' %}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 
 {% set service_name = 'bluesky-broker' %}
   {{ service_name }}:
@@ -57,8 +57,8 @@
       interval: 30s
       timeout: 5s
       retries: 3
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_networks') | indent(4) }}
 {% endif %}
 
 {{ lookup('compose_volumes', application_id) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_networks') }}
