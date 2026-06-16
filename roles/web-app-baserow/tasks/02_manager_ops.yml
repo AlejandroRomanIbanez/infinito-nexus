@@ -6,7 +6,7 @@
       -e DJANGO_SETTINGS_MODULE={{ BASEROW_DJANGO_SETTINGS_MODULE | quote }}
       -e SECRET_KEY={{ BASEROW_SECRET_KEY | quote }}
       -e BASEROW_SECRET_KEY={{ BASEROW_SECRET_KEY | quote }}
-      {{ BASEROW_APP_CONTAINER_ADDRESS | quote }}
+      {{ BASEROW_APP_CONTAINER_ADDRESS }}
       {{ BASEROW_PYTHON }} {{ BASEROW_MANAGE_PY }} migrate --noinput
   register: baserow_migrate_result
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
@@ -44,7 +44,7 @@
       -e BOOTSTRAP_ADMIN_USERNAME={{ BASEROW_BOOTSTRAP_ADMIN_USERNAME | quote }}
       -e BOOTSTRAP_ADMIN_EMAIL={{ BASEROW_BOOTSTRAP_ADMIN_EMAIL | quote }}
       -e BOOTSTRAP_ADMIN_PASSWORD={{ BASEROW_BOOTSTRAP_ADMIN_PASSWORD | quote }}
-      {{ BASEROW_APP_CONTAINER_ADDRESS | quote }}
+      {{ BASEROW_APP_CONTAINER_ADDRESS }}
       {{ BASEROW_PYTHON }} {{ BASEROW_MANAGE_PY }} shell -c {{ lookup('file', role_path ~ '/files/bootstrap_admin.py') | quote }}
   register: baserow_bootstrap_admin_result
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
