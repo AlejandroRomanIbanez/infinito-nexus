@@ -89,13 +89,17 @@ def swarm_deploy_targets(
 
     walked = set(_dep_walk_closure(seed, roles_dir=roles_dir))
     safety_net = swarm_infra_closure(inventory_path)
+    inventory_groups = set(inventory_role_groups(inventory_path, roles_dir=roles_dir))
 
     base = list(seed)
     seen = set(base)
     for role in sorted(walked):
-        if role not in seen:
-            base.append(role)
-            seen.add(role)
+        if role in seen:
+            continue
+        if role not in inventory_groups:
+            continue
+        base.append(role)
+        seen.add(role)
     for role in safety_net:
         if role not in seen:
             base.append(role)

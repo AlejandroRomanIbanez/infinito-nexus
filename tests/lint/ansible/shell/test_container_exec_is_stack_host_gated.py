@@ -137,8 +137,9 @@ def _collect_gated_ranges(content: str) -> list[tuple[int, int]]:
 
 def _include_target_paths(task: dict, tasks_dir: Path, parent_dir: Path) -> list[Path]:
     """Resolve the file path(s) an include task references. Handles the
-    static form (``include_tasks: 04_admin.yml``) and the loop form
-    (``include_tasks: "{{ step }}" loop: [step1.yml, step2.yml]``).
+    static form (``include_tasks: 04_admin.yml``), the dict form
+    (``include_tasks: { file: 04_admin.yml, apply: ... }``) and the loop
+    form (``include_tasks: "{{ step }}" loop: [step1.yml, step2.yml]``).
 
     Ansible resolves relative includes against the including file's
     directory first, then falls back to ``<role>/tasks/``."""
@@ -153,6 +154,8 @@ def _include_target_paths(task: dict, tasks_dir: Path, parent_dir: Path) -> list
     targets: list[Path] = []
     for key in _INCLUDE_KEYS:
         inc = task.get(key)
+        if isinstance(inc, dict):
+            inc = inc.get("file")
         if not isinstance(inc, str):
             continue
         if "{{" in inc and isinstance(task.get("loop"), list):

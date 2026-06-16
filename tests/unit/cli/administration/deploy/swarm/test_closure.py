@@ -211,7 +211,12 @@ class TestSwarmDeployTargets(_BaseClosureCase, unittest.TestCase):
         ]
 
     def test_seed_from_inventory_when_no_operator_ids(self) -> None:
-        path = self._make_swarm_inv(extra_groups={"svc-storage-nfs-server": ["nfs-01"]})
+        path = self._make_swarm_inv(
+            extra_groups={
+                "svc-storage-nfs-server": ["nfs-01"],
+                "svc-db-mariadb": ["mgr-01"],
+            }
+        )
         roles_dir = self._write_roles(
             "svc-swarm-node",
             "svc-storage-nfs-server",
@@ -231,15 +236,21 @@ class TestSwarmDeployTargets(_BaseClosureCase, unittest.TestCase):
             result = closure.swarm_deploy_targets(None, path, roles_dir=roles_dir)
         self.assertIn("svc-db-mariadb", result)
         self.assertIn("web-app-mediawiki", result)
-        # Inventory-seed entries appear first, dep-walk-added in alpha order after.
+        # Inventory-seed entries appear first; dep-walk-added entries are now
+        # filtered against inventory presence (entries the operator disabled
+        # via the `disable` env stay out of the deploy target list).
         self.assertEqual(
-            result[:3],
-            ["svc-storage-nfs-server", "svc-swarm-node", "web-app-mediawiki"],
+            result[:4],
+            [
+                "svc-db-mariadb",
+                "svc-storage-nfs-server",
+                "svc-swarm-node",
+                "web-app-mediawiki",
+            ],
         )
-        self.assertEqual(result[3], "svc-db-mariadb")
 
     def test_operator_ids_seed_dep_walk(self) -> None:
-        path = self._make_swarm_inv()
+        path = self._make_swarm_inv(extra_groups={"svc-db-mariadb": ["mgr-01"]})
         roles_dir = self._write_roles(
             "svc-swarm-node", "web-app-mediawiki", "svc-db-mariadb"
         )
@@ -252,6 +263,25 @@ class TestSwarmDeployTargets(_BaseClosureCase, unittest.TestCase):
                 ["web-app-mediawiki"], path, roles_dir=roles_dir
             )
         self.assertEqual(result, ["web-app-mediawiki", "svc-db-mariadb"])
+
+    def test_operator_ids_dep_walked_not_in_inventory_dropped(self) -> None:
+        """When `disable` removes a dep-walked role from the inventory,
+        the closure must drop it so validate_application_ids doesn't reject
+        the whole deploy.
+        """
+        path = self._make_swarm_inv()
+        roles_dir = self._write_roles(
+            "svc-swarm-node", "web-app-mediawiki", "svc-db-mariadb"
+        )
+        patches = self._patches(
+            dep_walked=["web-app-mediawiki", "svc-db-mariadb"],
+            default_placement=[],
+        )
+        with patches[0], patches[1]:
+            result = closure.swarm_deploy_targets(
+                ["web-app-mediawiki"], path, roles_dir=roles_dir
+            )
+        self.assertEqual(result, ["web-app-mediawiki"])
 
     def test_default_placement_safety_net_picks_up_inventory_extras(self) -> None:
         path = self._make_swarm_inv(extra_groups={"svc-registry-cache": ["mgr-01"]})
@@ -279,7 +309,7 @@ class TestSwarmDeployTargets(_BaseClosureCase, unittest.TestCase):
         """Regression guard: with both DBs carrying default_placement:
         manager, the dep-walk must only include the DB the app actually
         depends on (mariadb in this case), not both."""
-        path = self._make_swarm_inv()
+        path = self._make_swarm_inv(extra_groups={"svc-db-mariadb": ["mgr-01"]})
         roles_dir = self._write_roles(
             "svc-swarm-node",
             "web-app-mediawiki",
