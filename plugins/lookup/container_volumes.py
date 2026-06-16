@@ -69,4 +69,6 @@ class LookupModule(LookupBase):
             extra_secrets=kwargs.get("extra_secrets"),
             render_jinja=render_jinja,
         )
+        if rendered and not rendered.startswith("\n"):
+            rendered = "\n" + rendered
         return [rendered]
