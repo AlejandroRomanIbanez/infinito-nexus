@@ -45,9 +45,9 @@ if [[ -n "${ACT_INPUTS}" ]]; then
 		cmd+=(--input "${pair}")
 	done
 fi
-# Param ACT_ENV: comma-separated KEY=VALUE pairs forwarded to the act runner via --env (values must not contain commas).
+# Param ACT_ENV: semicolon-separated KEY=VALUE pairs forwarded to the act runner via --env (values may contain commas).
 if [[ -n "${ACT_ENV}" ]]; then
-	IFS=',' read -ra _act_env_pairs <<<"${ACT_ENV}"
+	IFS=';' read -ra _act_env_pairs <<<"${ACT_ENV}"
 	for pair in "${_act_env_pairs[@]}"; do
 		cmd+=(--env "${pair}")
 	done

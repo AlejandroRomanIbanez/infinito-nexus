@@ -53,14 +53,15 @@ act-swarm-shell:
 .PHONY: act-swarm-zombie
 # Run a swarm matrix-app test and leave the cluster alive afterwards for post-mortem inspection.
 # Param app: matrix application id (e.g. web-app-baserow).
+# Param disable: optional comma-separated provider keys removed from the test inventory (e.g. matomo,dashboard,prometheus,email,css).
 # Note: Use `make act-swarm-exec` / `make act-swarm-shell` to inspect, `make act-swarm-down` to release.
 act-swarm-zombie:
-	@test -n '$(app)' || { echo 'usage: make act-swarm-zombie app=<application_id>'; exit 2; }
+	@test -n '$(app)' || { echo 'usage: make act-swarm-zombie app=<application_id> [disable=<keys>]'; exit 2; }
 	@INFINITO_KEEP_SWARM_NODES=false bash scripts/tests/deploy/swarm/13_cleanup.sh
 	@bash scripts/tests/deploy/act/down_act_outer.sh
 	@ACT_RM=false \
 	 ACT_BIND=true \
-	 ACT_ENV='INFINITO_KEEP_SWARM_NODES=true' \
+	 ACT_ENV='INFINITO_KEEP_SWARM_NODES=true;disable=$(disable)' \
 	 ACT_WORKFLOW=.github/workflows/test-deploy-swarm.yml \
 	 ACT_JOB=swarm \
 	 ACT_MATRIX='apps:$(app)' \
