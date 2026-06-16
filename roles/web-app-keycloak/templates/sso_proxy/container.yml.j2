@@ -9,6 +9,17 @@
       - {{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.' ~ (application_id | get_entity_name) ~ '.ports.local.sso') }}:{{ lookup('config', 'web-app-keycloak', 'services.sso_proxy.ports.internal.http') }}/tcp
     volumes:
       - "{{ lookup('container', application_id, 'directories.volumes') }}{{ lookup('config', 'web-app-keycloak', 'services.sso_proxy.configuration_file') }}:/oauth2-proxy.cfg"
+{% if (TLS_MODE | lower) == 'self_signed' %}
+      - "{{ CA_TRUST.cert_host }}:{{ CA_TRUST.cert_container }}:ro"
+{% endif %}
+    extra_hosts:
+      - "{{ lookup('domain', 'web-app-keycloak') }}:host-gateway"
+{% if DEPLOYMENT_MODE == 'swarm' %}
+    deploy:
+      placement:
+        constraints:
+          - node.role == manager
+{% endif %}
     healthcheck:
       test: ["CMD", "/bin/oauth2-proxy", "--version"]
       interval: 30s

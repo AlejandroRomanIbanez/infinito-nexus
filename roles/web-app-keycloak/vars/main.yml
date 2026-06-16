@@ -74,7 +74,8 @@ KEYCLOAK_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, enti
 # Exception: KEYCLOAK_LOCAL_CID is set by 04_login.yml after resolving the swarm-hosting
 # node; fall back to the compose-mode container_address when the fact is not yet set
 # so vars resolve cleanly before the manager-side ops kick in.
-KEYCLOAK_EXEC_CONTAINER: "container exec -i {{ KEYCLOAK_LOCAL_CID | default(KEYCLOAK_CONTAINER_ADDRESS) }}" # nocheck: container-exec-resolver  KEYCLOAK_LOCAL_CID resolved at 04_login runtime; container_address used only as compose-mode fallback
+KEYCLOAK_TARGET_CONTAINER: "{{ KEYCLOAK_LOCAL_CID | default(KEYCLOAK_CONTAINER_ADDRESS) }}"
+KEYCLOAK_EXEC_CONTAINER: "container exec -i {{ KEYCLOAK_TARGET_CONTAINER }}" # nocheck: container-exec-resolver
 KEYCLOAK_KCADM: "/opt/keycloak/bin/kcadm.sh"
 KEYCLOAK_EXEC_KCADM: "{{ KEYCLOAK_EXEC_CONTAINER }} {{ KEYCLOAK_KCADM }}"
 KEYCLOAK_IMAGE: "{{ lookup('config', application_id, 'services.keycloak.image') }}"

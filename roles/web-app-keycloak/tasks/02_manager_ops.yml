@@ -9,9 +9,10 @@
     state: present
 
 - name: "Keycloak | Manager-side updates delegated to the hosting node"
-  include_tasks: 02a_manager_ops_on_host.yml
-  apply:
-    delegate_to: "{{ KEYCLOAK_HOST_NODE }}"
+  include_tasks:
+    file: 02a_manager_ops_on_host.yml
+    apply:
+      delegate_to: "{{ KEYCLOAK_HOST_NODE }}"
 
 - name: "Flush handlers before leaving Keycloak scope"
   meta: flush_handlers
