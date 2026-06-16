@@ -6,3 +6,10 @@ domains:
 networks:
   local:
     subnet: 192.168.105.32/28
+  overlay:
+    modes: [swarm]
+    topology: default_net
+    consumer:
+      kind: services_flags
+      key: sso
+      flags: [enabled]

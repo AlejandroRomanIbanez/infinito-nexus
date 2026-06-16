@@ -1,49 +1,82 @@
 {# This template needs to be included in compose.yml containers #}
-{# Per: each role's docker network name is its primary entity name
-   (e.g. svc-db-mariadb -> "mariadb"). The legacy `compose.network` config
-   path no longer exists; derive the name from the role id directly. #}
-{% set _db_provider_role = application_id if application_id in ['svc-db-mariadb', 'svc-db-postgres'] else '' %}
-{% set _db_role_id = _db_provider_role or lookup('database', application_id, 'id') %}
-{% set _db_network_name = (_db_role_id | get_entity_name) if _db_role_id else '' %}
-{% set _db_network_alias = (application_id | get_entity_name) if _db_provider_role else lookup('database', application_id, 'type') %}
-{% set _service_registry = query('service_registry') | first %}
-{% set _ldap_provider_role = _service_registry.get('ldap', {}).get('role', '') %}
-{% set _ldap_network_name = (_ldap_provider_role | get_entity_name) if _ldap_provider_role else '' %}
-{% set _ldap_shared = application_id == _ldap_provider_role or (
-  lookup('config', application_id, 'services.ldap.enabled', False)
-  and lookup('config', application_id, 'services.ldap.shared', False)
-) %}
-{% set _ollama_provider_role = _service_registry.get('ollama', {}).get('role', '') %}
-{% set _ollama_network_name = (_ollama_provider_role | get_entity_name) if _ollama_provider_role else '' %}
-{% set _ollama_shared = application_id == _ollama_provider_role or (
-  lookup('config', application_id, 'services.ollama.enabled', False)
-  and lookup('config', application_id, 'services.ollama.shared', False)
-) %}
+{% set _registry = query('service_registry') | first %}
+{% set _ns = namespace(att=[], default_aliases=[]) %}
+{% for _service_key, _entry in _registry.items() %}
+{%   if 'canonical' not in _entry %}
+{%     set _overlay = _entry.get('overlay') %}
+{%     if _overlay and DEPLOYMENT_MODE in _overlay.modes %}
+{%       set _is_provider = application_id == _entry.role %}
+{%       set _is_consumer = false %}
+{%       set _topology = _overlay.get('topology') %}
+{%       if (not _is_provider) and _topology %}
+{%         set _consumer = _overlay.get('consumer', {}) %}
+{%         set _kind = _consumer.get('kind') or 'services_flags' %}
+{%         if _kind == 'database' %}
+{%           set _is_consumer = (lookup('database', application_id, 'enabled') | bool)
+                              and (lookup('database', application_id, 'shared') | bool)
+                              and (lookup('database', application_id, 'id') == _entry.role) %}
+{%         elif _kind == 'services_flags' %}
+{%           set _key = _consumer.get('key') or _entry.get('provides') or _entry.entity_name %}
+{%           set _flags = _consumer.get('flags') or ['enabled', 'shared'] %}
+{%           set _flags_ns = namespace(ok=true) %}
+{%           for _flag in _flags %}
+{%             if not (lookup('config', application_id, 'services.' ~ _key ~ '.' ~ _flag, False) | bool) %}
+{%               set _flags_ns.ok = false %}
+{%             endif %}
+{%           endfor %}
+{%           set _is_consumer = _flags_ns.ok %}
+{%         endif %}
+{%       endif %}
+{%       if _is_provider %}
+{%         if _topology == 'default_net' %}
+{%           set _own_aliases = _overlay.get('aliases', []) %}
+{%           for _alias in _own_aliases %}
+{%             set _ = _ns.default_aliases.append(_alias) %}
+{%           endfor %}
+{%           for _peer_key, _peer in _registry.items() %}
+{%             set _peer_overlay = _peer.get('overlay') %}
+{%             if _peer_overlay
+                  and _peer_overlay.get('proxy_resolvable')
+                  and DEPLOYMENT_MODE in _peer_overlay.modes
+                  and 'canonical' not in _peer
+                  and _peer.role != _entry.role %}
+{%               for _alias in _peer_overlay.aliases | default([]) %}
+{%                 set _ = _ns.default_aliases.append(_alias) %}
+{%               endfor %}
+{%             endif %}
+{%           endfor %}
+{%         elif _topology %}
+{%           set _own_aliases = _overlay.get('aliases', [_entry.entity_name]) %}
+{%           set _ = _ns.att.append({'role': _entry.role, 'aliases': _own_aliases}) %}
+{%         endif %}
+{%       elif _is_consumer %}
+{%         set _ = _ns.att.append({'role': _entry.role, 'aliases': []}) %}
+{%       endif %}
+{%     endif %}
+{%   endif %}
+{% endfor %}
     networks:
-{# Central RDMS-Database Network #}
-{% if 
-  (
-    lookup('database', application_id, 'enabled') and
-    lookup('database', application_id, 'shared')
-  )
-  or
-  application_id in ['svc-db-mariadb','svc-db-postgres']
-%}
-      {{ _db_network_name }}:
-{% if application_id in ['svc-db-mariadb','svc-db-postgres'] %}
-          aliases:
-            - {{ _db_network_alias }}
-{% endif %}
-{% endif %}
-{# Central LDAP Network #}
-{% if _ldap_shared and _ldap_network_name %}
-      {{ _ldap_network_name }}:
-{% endif %}
-{# Central AI Network #}
-{% if _ollama_shared and _ollama_network_name %}
-      {{ _ollama_network_name }}:
-{% endif %}
-{% if not application_id.startswith('svc-db-') and not application_id.startswith('svc-ai-') %}
+{% for _a in _ns.att %}
+      {{ _a.role | get_entity_name }}:
+{%   if _a.aliases %}
+        aliases:
+{%     for _alias in _a.aliases %}
+          - {{ _alias }}
+{%     endfor %}
+{%   else %}
+        {}
+{%   endif %}
+{% endfor %}
+{% set _suppress_default = application_id.startswith('svc-db-') or application_id.startswith('svc-ai-') %}
+{% if not _suppress_default %}
+{% if _ns.default_aliases %}
       default:
+        aliases:
+{% for _alias in _ns.default_aliases %}
+          - {{ _alias }}
+{% endfor %}
+{% else %}
+      default:
+{% endif %}
 {% endif %}
 {{ "\n" }}

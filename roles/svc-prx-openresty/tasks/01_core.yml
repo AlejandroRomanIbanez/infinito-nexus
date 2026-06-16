@@ -1,4 +1,6 @@
 ---
+- include_tasks: utils/once/flag.yml
+
 - name: "Ensure all openresty bind-mount source dirs exist (must precede swarm stack-deploy)"
   ansible.builtin.file:
     path: "{{ item }}"

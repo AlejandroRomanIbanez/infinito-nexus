@@ -21,6 +21,7 @@
         published: 443
         protocol: tcp
         mode: host
+{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 {% else %}
     network_mode: "host"
 {% endif %}
