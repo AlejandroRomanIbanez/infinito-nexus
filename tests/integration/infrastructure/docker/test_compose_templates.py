@@ -56,11 +56,11 @@ class TestDockerComposeTemplates(unittest.TestCase):
                 # If not host‑mode, NET_INCLUDE must occur exactly once
                 count_net = lines.count(self.NET_INCLUDE)
                 if host_mode:
-                    # No network include needed for host mode
-                    self.assertEqual(
+                    # mode-conditional templates keep the swarm-branch include
+                    self.assertLessEqual(
                         count_net,
-                        0,
-                        f"{template_path}: '{self.NET_INCLUDE}' should be omitted when using host networking",
+                        1,
+                        f"{template_path}: '{self.NET_INCLUDE}' occurs {count_net} times with host networking, expected 0 or 1",
                     )
                 else:
                     # Must include networks.yml exactly once

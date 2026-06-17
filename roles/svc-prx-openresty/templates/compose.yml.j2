@@ -1,4 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
+{# host-mode 80/443: stop-first avoids the rolling-update port-bind deadlock #}
+{% set service_update_order = 'stop-first' %}
   openresty:
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
@@ -34,3 +36,4 @@
       retries: 3
 
 {{ lookup('compose_volumes', application_id) }}
+{{ lookup('compose_networks') }}

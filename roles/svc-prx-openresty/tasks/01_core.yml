@@ -24,13 +24,10 @@
       events {}
       http { server { listen 8080; return 200; } }
 
-- name: "For '{{ application_id }}': Load sys-svc-compose"
-  include_role:
-    name: sys-svc-compose
+- name: "Setup container network for {{ application_id }}"
+  include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/network/routine.yml' ] | path_join }}"
   vars:
-    compose_repository_pull: false # Deactivated here to deactivate inhirement
     compose_handlers_flush: true
-    application_id: svc-prx-openresty
 
 - name: "Verify that '{{ role_name }}' works"
   include_tasks: 02_assert.yml
