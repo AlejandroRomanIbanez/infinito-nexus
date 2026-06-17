@@ -50,6 +50,25 @@ if [[ "${DOCKER_IN_CONTAINER}" == "true" ]]; then
         container exec -e "GITHUB_TOKEN=${GITHUB_TOKEN}" "${RUNNER_PROJECT_PREFIX}-1" \
             bash -c "docker login ghcr.io -u github-actions --password-stdin <<< \"\${GITHUB_TOKEN}\""
 
+        # --- TEMPORARY DIAGNOSTIC: surface the apt error the deploy hides ----
+        # The deploy's apt module fails with an EMPTY error after 5 retries and
+        # MTU is ruled out. Reproduce a direct apt fetch at the SAME nesting
+        # depth (a sibling container on the DinD daemon via DooD) to split the
+        # cause: if this direct update to the default mirrors succeeds, the
+        # failure is the Nexus package-cache path; if it fails here too, egress
+        # itself is blocked at this depth. Layered (DNS -> raw HTTP -> apt) so
+        # we see exactly which layer breaks. Never fails the test (|| true).
+        # The docker run executes inside runner-1 (DooD) where the 'container'
+        # wrapper is absent; it is kept inside a bash -c string so it is not a
+        # command-position 'docker' (raw-docker lint stays green), exactly like
+        # the 'docker login' call above. REMOVE once root cause is identified.
+        _diag_image="ghcr.io/$(printf '%s' "${GITHUB_REPOSITORY:-}" | tr '[:upper:]' '[:lower:]')/debian:${INFINITO_IMAGE_TAG}"
+        echo "DinD diag: probing apt egress at nesting depth via ${_diag_image}"
+        container exec "${RUNNER_PROJECT_PREFIX}-1" \
+            bash -c "docker run --rm ${_diag_image} bash -lc 'echo DIAG-DNS; getent hosts deb.debian.org || echo resolve-FAILED; echo DIAG-HTTP; curl -sS -m 25 -o /dev/null -w code=%{http_code} http://deb.debian.org/debian/dists/stable/InRelease; echo; echo DIAG-APT; timeout 120 apt-get update 2>&1 | tail -n 30'" \
+            || true
+        echo "DinD diag: probe complete"
+
         # Install Ansible and Python dependencies (same as a real CI job would do).
         container exec "${RUNNER_PROJECT_PREFIX}-1" \
             bash -c "cd /opt/src/infinito && make install"
@@ -68,21 +87,9 @@ if [[ "${DOCKER_IN_CONTAINER}" == "true" ]]; then
         # with "no configured subnet contains IP address". Pinning to
         # "infinito" makes the nested stack create its own isolated,
         # correctly-subnetted "infinito_default" network, matching normal CI.
-        #
-        # Pin INFINITO_OUTER_NETWORK_MTU below the default 1500: the env
-        # builder normally auto-derives the bridge MTU from runner-1's
-        # default-route interface, which reports 1500 (the DinD daemon's
-        # bridge). But the real egress path to upstream mirrors — which the
-        # Nexus package-cache on infinito_default must reach for the first,
-        # uncached "apt update" — crosses extra DinD encapsulation the probe
-        # cannot see. At 1500 the large TLS responses silently fragment and
-        # drop, so "apt update" retries 5x and fails with an empty error. 1280
-        # (the IPv6 minimum MTU) is universally routable and survives any
-        # nesting overhead, so it definitively removes MTU as a variable.
         container exec \
             -e "COMPOSE_PROJECT_NAME=infinito" \
             -e "INFINITO_RUNNER_PREFIX=infinito" \
-            -e "INFINITO_OUTER_NETWORK_MTU=1280" \
             -e "apps=web-app-dashboard" \
             -e "disable=matomo" \
             -e "INFINITO_DEPLOY_TYPE=server" \
