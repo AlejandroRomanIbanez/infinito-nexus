@@ -32,7 +32,7 @@ hugo:
   ports:
     local:
       http: 8008
-  lifecycle: alpha
+  lifecycle: beta
   min_storage: 1GB
   cpus: "0.2"
   mem_reservation: 128m

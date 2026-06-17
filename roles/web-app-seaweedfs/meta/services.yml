@@ -38,7 +38,7 @@ seaweedfs:
   pids_limit: 2048
   run_after:
     - web-app-keycloak
-  lifecycle: alpha
+  lifecycle: beta
   ports:
     local:
       http: 8085

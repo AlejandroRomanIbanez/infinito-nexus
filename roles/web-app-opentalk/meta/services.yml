@@ -57,7 +57,7 @@ opentalk:
       http: 8073
   run_after:
     - web-app-keycloak
-  lifecycle: alpha
+  lifecycle: beta
 controller:
   name: opentalk-controller
   image: registry.opencode.de/opentalk/controller

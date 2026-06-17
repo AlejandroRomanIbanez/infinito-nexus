@@ -51,7 +51,7 @@ erpnext:
     - svc-db-mariadb
     - web-app-keycloak
     - web-app-mailu
-  lifecycle: alpha
+  lifecycle: beta
   cpus: "2.0"
   mem_reservation: 2g
   mem_limit: 4g

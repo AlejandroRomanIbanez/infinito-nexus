@@ -36,7 +36,7 @@ opencloud:
       http: 8071
   run_after:
     - web-app-keycloak
-  lifecycle: alpha
+  lifecycle: beta
 # nocheck: playwright-service-flag — verified by web-svc-css provider spec
 css:
   enabled: "{{ 'web-svc-css' in group_names }}"
