@@ -68,9 +68,21 @@ if [[ "${DOCKER_IN_CONTAINER}" == "true" ]]; then
         # with "no configured subnet contains IP address". Pinning to
         # "infinito" makes the nested stack create its own isolated,
         # correctly-subnetted "infinito_default" network, matching normal CI.
+        #
+        # Pin INFINITO_OUTER_NETWORK_MTU below the default 1500: the env
+        # builder normally auto-derives the bridge MTU from runner-1's
+        # default-route interface, which reports 1500 (the DinD daemon's
+        # bridge). But the real egress path to upstream mirrors — which the
+        # Nexus package-cache on infinito_default must reach for the first,
+        # uncached "apt update" — crosses extra DinD encapsulation the probe
+        # cannot see. At 1500 the large TLS responses silently fragment and
+        # drop, so "apt update" retries 5x and fails with an empty error. 1280
+        # (the IPv6 minimum MTU) is universally routable and survives any
+        # nesting overhead, so it definitively removes MTU as a variable.
         container exec \
             -e "COMPOSE_PROJECT_NAME=infinito" \
             -e "INFINITO_RUNNER_PREFIX=infinito" \
+            -e "INFINITO_OUTER_NETWORK_MTU=1280" \
             -e "apps=web-app-dashboard" \
             -e "disable=matomo" \
             -e "INFINITO_DEPLOY_TYPE=server" \
