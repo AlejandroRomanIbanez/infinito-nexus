@@ -26,6 +26,7 @@ kinds:
   - tasks: "roles/*/tasks/*.yml"
   - tasks: "tasks/**/*.yml"
   - vars: "roles/*/vars/*.yml"
+  - vars: "roles/*/meta/addons/*.yml"
   - vars: "group_vars/**/*.yml"
   - vars: "host_vars/**/*.yml"
   - meta: "roles/*/meta/main.yml"

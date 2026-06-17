@@ -2,6 +2,12 @@
 
 This document is the central reference for plugin types and plugin placement in Infinito.Nexus.
 
+> **Not to be confused with application addons.**
+> This `plugins/` directory holds **Ansible** plugins (action / filter / lookup) that extend the automation engine itself.
+> Some applications *also* call their own extensions "plugins" (e.g. Nextcloud, WordPress).
+> Those application-level extensions, whatever the app calls them natively, are declared through the unified `meta/addons/` contract, documented in [Unified Addons](../docs/contributing/design/role/services/layout.md#unified-addons-metaaddons-).
+> An app "plugin" is an *addon*; an Ansible plugin lives here.
+
 ## Current Project Layout 🗂️
 
 ```text
@@ -113,6 +119,6 @@ Use to add custom Jinja2 test operators for conditional logic.
 
 ## References 🔗
 
-- Ansible plugin development: <https://docs.ansible.com/ansible/latest/dev_guide/developing_plugins.html>
-- Ansible plugin index (all types): <https://docs.ansible.com/ansible/latest/plugins/plugins.html>
+- Ansible plugin development: [docs.ansible.com](https://docs.ansible.com/ansible/latest/dev_guide/developing_plugins.html)
+- Ansible plugin index (all types): [docs.ansible.com](https://docs.ansible.com/ansible/latest/plugins/plugins.html)
 - Ansible `ansible-doc` plugin types: `ansible-doc -t ...`
