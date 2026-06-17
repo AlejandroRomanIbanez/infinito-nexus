@@ -7,10 +7,11 @@ nginx:
   type: volume
   path: /etc/nginx/
 
+# nocheck: meta-volume-file-bind-should-be-config  nginx.conf is rewritten post-deploy; bind reflects the live file (openresty is manager-pinned)
 nginx_conf:
-  type: config
+  type: bind
   source: "{{ lookup('nginx', 'files.configuration') }}"
-  mode: "0440"
+  read_only: true
   mounts:
     - service: openresty
       target: /usr/local/openresty/nginx/conf/nginx.conf
