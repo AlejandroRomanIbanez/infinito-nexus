@@ -33,8 +33,14 @@ cert_still_valid() {
 	openssl x509 -in "${crt}" -noout -checkend 2592000 >/dev/null 2>&1
 }
 
+# OpenSSL 3.x rejects a trust-anchor CA that lacks keyUsage, so a CA generated
+# before that extension was added must be regenerated even while still valid.
+ca_has_key_usage() {
+	openssl x509 -in "$1" -noout -text 2>/dev/null | grep -q "Key Usage"
+}
+
 ensure_ca() {
-	if cert_still_valid "${CA_CRT}" && [ -s "${CA_KEY}" ]; then
+	if cert_still_valid "${CA_CRT}" && [ -s "${CA_KEY}" ] && ca_has_key_usage "${CA_CRT}"; then
 		log "CA already valid: ${CA_CRT}"
 		return 0
 	fi
