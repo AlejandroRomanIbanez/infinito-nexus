@@ -148,27 +148,12 @@
     dest: "{{ _playwright_stage_dir }}/playwright.config.js"
     mode: "0644"
 
-- name: Copy role Playwright files (spec + companion modules) into staging tests directory
+- name: Copy role Playwright tree (spec + companions + addons/ + fixtures/) into staging tests directory
   ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: "{{ _playwright_stage_tests_dir }}/{{ item | basename }}"
+    src: "{{ _playwright_files_dir }}/"
+    dest: "{{ _playwright_stage_tests_dir }}/"
     mode: "0644"
-  with_fileglob:
-    - "{{ _playwright_files_dir }}/*.js"
-
-- name: Create staging fixtures directory
-  ansible.builtin.file:
-    path: "{{ _playwright_stage_tests_dir }}/fixtures"
-    state: directory
-    mode: "0755"
-
-- name: Copy role Playwright binary fixtures into staging fixtures directory
-  ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: "{{ _playwright_stage_tests_dir }}/fixtures/{{ item | basename }}"
-    mode: "0644"
-  with_fileglob:
-    - "{{ _playwright_files_dir }}/fixtures/*"
+    directory_mode: "0755"
 
 # Stage the shared service-gating helper next to the spec so the spec can
 # `require("./service-gating")`.
@@ -176,6 +161,12 @@
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/roles/test-e2e-playwright/files/service-gating.js"
     dest: "{{ _playwright_stage_tests_dir }}/service-gating.js"
+    mode: "0644"
+
+- name: Copy shared addon-gating helper into staging tests directory
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/roles/test-e2e-playwright/files/addon-gating.js"
+    dest: "{{ _playwright_stage_tests_dir }}/addon-gating.js"
     mode: "0644"
 
 # Stage the shared persona-flow helpers.

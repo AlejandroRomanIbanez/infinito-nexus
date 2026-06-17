@@ -6,6 +6,7 @@ const keepAll = (process.env.INFINITO_PLAYWRIGHT_KEEP || "").toLowerCase() === "
 
 module.exports = defineConfig({
   testDir: "./tests",
+  testMatch: "**/*.@(spec|test).js",
   timeout: 300_000,
   retries: 2,
   workers: 1,

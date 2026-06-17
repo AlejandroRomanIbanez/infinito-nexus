@@ -177,6 +177,12 @@ def validate_env_file(path: Path, *, strict: bool) -> list[Violation]:
         match = _ENTRY_RE.match(raw)
 
         if match is None:
+            if is_jinja and ("{{" in key_part or "{%" in key_part):
+                # Dynamic templated key (e.g. a {% for %}-generated KEY in a
+                # .j2 template); the rendered keys are validated at deploy
+                # time, not by this static scan.
+                pending = []
+                continue
             if key_part != key_part.rstrip() or value_part != value_part.lstrip():
                 violations.append(
                     Violation(
