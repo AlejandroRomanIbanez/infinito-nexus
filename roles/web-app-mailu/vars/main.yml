@@ -4,6 +4,7 @@ http_port: "{{ lookup('config', application_id, 'services.mailu.ports.local.http
 webserver_extra_configuration: "client_max_body_size 31M;"
 database_password: "{{ lookup('config', application_id, 'credentials.database_password') }}"
 MAILU_VOLUMES_DIR: "{{ lookup('container', application_id, 'directories.volumes') }}"
+MAILU_INSTANCE_DIR: "{{ lookup('container', application_id, 'directories.instance') }}"
 MAILU_OVERRIDES_DIR: "{{ [ MAILU_VOLUMES_DIR, 'overrides' ] | path_join }}"
 MAILU_WEBSITE: "{{ lookup('tls', application_id, 'url.base') }}"
 # Port 8080 is where gunicorn binds inside the admin container (see start.py in ghcr.io/mailu/admin).

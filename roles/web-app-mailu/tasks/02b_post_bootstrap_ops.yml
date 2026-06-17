@@ -28,6 +28,9 @@
     name: sys-ctl-mtn-cert-deploy
   when: lookup('tls', application_id, 'enabled') | bool
 
+- name: Wait for Mailu antispam
+  include_tasks: 07_wait_for_antispam.yml
+
 - name: Generate DKIM public key
   include_tasks: 05_generate-and-read-dkim.yml
 

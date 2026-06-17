@@ -25,6 +25,8 @@ SHOPWARE_SCHED_CONTAINER: "{{ lookup('config', application_id, 'services.schedul
 SHOPWARE_INIT_HOST: "{{ [ lookup('container', application_id, 'directories.volumes'), 'init.sh' ] | path_join }}"
 SHOPWARE_INIT_DOCKER: "/usr/local/bin/init.sh"
 SHOPWARE_FRAMEWORK_HOST: "{{ [ lookup('container', application_id, 'directories.config'), 'framework.yaml' ] | path_join }}"
+SHOPWARE_FILESYSTEM_HOST: "{{ [ lookup('container', application_id, 'directories.config'), 'shopware.yaml' ] | path_join }}"
+SHOPWARE_OBJSTORE_ENABLED: "{{ lookup('objstore', application_id, 'enabled') }}"
 
 SHOPWARE_WORKER_ENTRYPOINT: "{{ lookup('config', application_id, 'services.worker.entrypoint') }}"
 SHOPWARE_SCHED_ENTRYPOINT: "{{ lookup('config', application_id, 'services.scheduler.entrypoint') }}"
