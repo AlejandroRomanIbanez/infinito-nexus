@@ -178,6 +178,7 @@ jobs:
         env:
           apps: ${{ matrix.apps }}
           INFINITO_TIMEOUT_MULTIPLIER: ${{ vars.INFINITO_TIMEOUT_MULTIPLIER || '1' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./scripts/tests/deploy/ci/all.sh
 
       - name: Dump runner state (on failure)

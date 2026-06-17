@@ -99,6 +99,8 @@ def _run_deploy(
         "GITHUB_TOKEN",
         "GITHUB_REPOSITORY_OWNER",
         "GITHUB_REPOSITORY",
+        "INFINITO_IMAGE_TAG",
+        "INFINITO_GHCR_MIRROR_PREFIX",
     ):
         val = os.environ.get(key)
         if val:
