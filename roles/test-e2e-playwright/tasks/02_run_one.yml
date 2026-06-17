@@ -253,31 +253,24 @@
 
 - name: Run Playwright container
   ansible.builtin.command:
-    argv:
-      - container
-      - run
-      - --rm
-      - --ipc=host
-      - --shm-size=1g
-      - --add-host=host.docker.internal:host-gateway
-      - --env-file
-      - "{{ _playwright_stage_dir }}/.env"
-      - -e
-      - "INFINITO_PLAYWRIGHT_KEEP={{ TEST_E2E_PLAYWRIGHT_KEEP }}"
-      - -v
-      - "{{ _playwright_stage_dir }}:/e2e"
-      - -v
-      - "{{ _playwright_stage_dir }}/volume:/volume"
-      - -v
-      - "{{ _playwright_reports_dir }}:/reports"
-      - -v
-      - "{{ TEST_E2E_PLAYWRIGHT_SHARED_NODE_MODULES }}:/e2e/node_modules:ro"
-      - -w
-      - /e2e
-      - "{{ TEST_E2E_PLAYWRIGHT_IMAGE }}"
-      - /bin/bash
-      - -lc
-      - "{{ TEST_E2E_PLAYWRIGHT_COMMAND }}"
+    argv: >-
+      {{
+        ['container', 'run', '--rm', '--ipc=host', '--shm-size=1g']
+        + (
+            ['--network', 'host']
+            if DEPLOYMENT_MODE == 'swarm'
+            else ['--add-host=host.docker.internal:host-gateway']
+          )
+        + ['--env-file', _playwright_stage_dir ~ '/.env']
+        + ['-e', 'INFINITO_PLAYWRIGHT_KEEP=' ~ TEST_E2E_PLAYWRIGHT_KEEP]
+        + ['-v', _playwright_stage_dir ~ ':/e2e']
+        + ['-v', _playwright_stage_dir ~ '/volume:/volume']
+        + ['-v', _playwright_reports_dir ~ ':/reports']
+        + ['-v', TEST_E2E_PLAYWRIGHT_SHARED_NODE_MODULES ~ ':/e2e/node_modules:ro']
+        + ['-w', '/e2e']
+        + [TEST_E2E_PLAYWRIGHT_IMAGE]
+        + ['/bin/bash', '-lc', TEST_E2E_PLAYWRIGHT_COMMAND]
+      }}
   timeout: "{{ TEST_E2E_PLAYWRIGHT_RUN_TIMEOUT | int }}"
   environment: >-
     {{
