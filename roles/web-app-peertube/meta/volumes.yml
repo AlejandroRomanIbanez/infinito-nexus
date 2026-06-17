@@ -3,19 +3,19 @@ assets:
   type: volume
   name: peertube_assets
   mounts:
-    - service: application
+    - service: peertube
       target: /app/client/dist
 
 data:
   type: volume
   name: peertube_data
   mounts:
-    - service: application
+    - service: peertube
       target: /data
 
 config:
   type: volume
   name: peertube_config
   mounts:
-    - service: application
+    - service: peertube
       target: /config

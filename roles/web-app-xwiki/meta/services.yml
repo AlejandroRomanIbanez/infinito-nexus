@@ -59,6 +59,8 @@ xwiki:
   ports:
     local:
       http: 8054
+    internal:
+      http: 8080
   run_after:
     - web-app-matomo
     - web-app-keycloak

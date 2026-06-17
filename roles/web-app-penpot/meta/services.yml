@@ -40,6 +40,10 @@ penpot:
     local:
       http: 8041
       sso: 16506
+    internal:
+      http: 8080
+  proxy:
+    service_key: frontend
   run_after:
     - web-app-matomo
     - web-app-keycloak

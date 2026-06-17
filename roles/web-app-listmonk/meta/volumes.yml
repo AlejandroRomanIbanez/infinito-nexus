@@ -4,5 +4,5 @@ config:
   source: "{{ [ lookup('container', 'web-app-listmonk', 'directories.config'), 'config.toml' ] | path_join }}"
   mode: "0440"
   mounts:
-    - service: application
+    - service: listmonk
       target: /listmonk/config.toml

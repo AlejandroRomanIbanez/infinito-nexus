@@ -34,6 +34,8 @@ fider:
   ports:
     local:
       http: 8067
+    internal:
+      http: 3000
   run_after:
     - web-app-keycloak
     - web-app-mailu

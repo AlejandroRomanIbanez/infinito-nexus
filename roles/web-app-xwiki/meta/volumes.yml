@@ -3,7 +3,7 @@ data:
   type: volume
   name: xwiki_data
   mounts:
-    - service: application
+    - service: xwiki
       target: /usr/local/xwiki
 
 properties:
@@ -11,5 +11,5 @@ properties:
   source: "{{ [lookup('container', 'web-app-xwiki', 'directories.config'), 'xwiki.properties'] | path_join }}"
   mode: "0440"
   mounts:
-    - service: application
+    - service: xwiki
       target: /usr/local/tomcat/webapps/ROOT/WEB-INF/xwiki.properties

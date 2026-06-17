@@ -77,6 +77,10 @@ magento:
     local:
       sso: 16504
       http: 8052
+    internal:
+      http: 8000
+  proxy:
+    service_key: nginx
   run_after:
     - web-app-keycloak
   lifecycle: unsupported

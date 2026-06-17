@@ -27,6 +27,10 @@ onlyoffice:
   ports:
     local:
       http: 8061
+    internal:
+      http: 80
+  proxy:
+    service_key: onlyoffice
   lifecycle: beta
 css:
   enabled: "{{ 'web-svc-css' in group_names }}"

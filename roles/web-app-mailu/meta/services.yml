@@ -27,6 +27,10 @@ mailu:
   ports:
     local:
       http: 8007
+    internal:
+      http: 80
+  proxy:
+    service_key: front
   run_after:
     - web-app-matomo
   lifecycle: beta

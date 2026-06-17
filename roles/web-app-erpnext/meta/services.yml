@@ -46,6 +46,10 @@ erpnext:
     local:
       http: 8079
       websocket: 4004
+    internal:
+      http: 8080
+  proxy:
+    service_key: erpnext-frontend
   run_after:
     - svc-db-mariadb
     - web-app-keycloak

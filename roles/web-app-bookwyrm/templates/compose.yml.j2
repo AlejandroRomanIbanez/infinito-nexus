@@ -1,6 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
-  application:
+  bookwyrm:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: >-
       bash -c '
@@ -21,7 +21,7 @@
     hostname: "{{ BOOKWYRM_HOSTNAME }}"
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.bookwyrm.ports.local.http') }}:{{ container_port }}"
-    {{ lookup('container_volumes', application_id, 'application') | indent(4) }}
+    {{ lookup('container_volumes', application_id, 'bookwyrm') | indent(4) }}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
 {{ lookup('container_depends_on', application_id) }}
     {{ lookup('container_networks') | indent(4) }}

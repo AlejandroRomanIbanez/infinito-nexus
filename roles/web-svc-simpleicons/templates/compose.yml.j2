@@ -1,5 +1,5 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-  application:
+  simpleicons:
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
       args:
         SIMPLEICONS_IMAGE: "{{ SIMPLEICONS_IMAGE }}"

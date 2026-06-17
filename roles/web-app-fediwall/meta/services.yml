@@ -77,6 +77,10 @@ fediwall:
   ports:
     local:
       http: 8074
+    internal:
+      http: 80
+  proxy:
+    service_key: fediwall
   lifecycle: alpha
   min_storage: 1GB
   cpus: "0.2"

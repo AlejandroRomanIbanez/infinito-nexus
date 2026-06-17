@@ -1,5 +1,5 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-  application:
+  jenkins:
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
       args:
         JENKINS_IMAGE: "{{ JENKINS_IMAGE }}"
@@ -12,7 +12,7 @@
       CASC_JENKINS_CONFIG: /var/jenkins_home/casc.yaml
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.jenkins.ports.local.http') }}:8080"
-    {{ lookup('container_volumes', application_id, 'application') | indent(4) }}
+    {{ lookup('container_volumes', application_id, 'jenkins') | indent(4) }}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
     {{ lookup('container_networks') | indent(4) }}
 

@@ -1,5 +1,5 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-  application:
+  wordpress:
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'wordpress', custom=True) }}
     {{ lookup('compose_only', 'container_name', WORDPRESS_CONTAINER) }}
@@ -10,7 +10,7 @@
         WORDPRESS_CONFIG_UPLD_REL: "{{ WORDPRESS_CONFIG_UPLD_REL }}"
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.wordpress.ports.local.http') }}:80"
-{{ lookup('container_volumes', application_id, 'application') | indent(4) }}
+{{ lookup('container_volumes', application_id, 'wordpress') | indent(4) }}
 
 {% include 'roles/sys-svc-container/templates/healthcheck/msmtp_curl.yml.j2' %}
 {{ lookup('container_depends_on', application_id) }}

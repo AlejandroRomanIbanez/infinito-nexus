@@ -49,6 +49,10 @@ keycloak:
   ports:
     local:
       http: 8032
+    internal:
+      http: 8080
+  proxy:
+    service_key: keycloak
   run_after:
     - web-app-matomo
     - web-app-mailu

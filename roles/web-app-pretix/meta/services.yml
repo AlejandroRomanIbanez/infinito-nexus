@@ -41,6 +41,8 @@ pretix:
   ports:
     local:
       http: 8046
+    internal:
+      http: 80
   run_after:
     - web-app-matomo
     - web-app-keycloak

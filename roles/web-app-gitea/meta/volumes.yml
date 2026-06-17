@@ -3,7 +3,7 @@ data:
   type: volume
   name: gitea_data
   mounts:
-    - service: application
+    - service: gitea
       target: /data
 
 timezone:
@@ -11,7 +11,7 @@ timezone:
   source: /etc/timezone
   read_only: true
   mounts:
-    - service: application
+    - service: gitea
       target: /etc/timezone
 
 localtime:
@@ -19,5 +19,5 @@ localtime:
   source: /etc/localtime
   read_only: true
   mounts:
-    - service: application
+    - service: gitea
       target: /etc/localtime

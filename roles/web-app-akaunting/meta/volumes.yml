@@ -3,5 +3,5 @@ data:
   type: volume
   name: akaunting_data
   mounts:
-    - service: application
+    - service: akaunting
       target: /var/www/html

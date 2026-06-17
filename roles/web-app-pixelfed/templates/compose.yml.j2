@@ -1,13 +1,13 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
-  application:
+  pixelfed:
     {{ lookup('container_image', application_id, 'pixelfed') }}
     {{ lookup('compose_only', 'container_name', PIXELFED_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     # Keep the application on the repo-managed entrypoint so the container is
     # ready for the Ansible bootstrap before Pixelfed's own first-start logic.
     entrypoint: "{{ PIXELFED_ENTRYPOINT_DOCKER }}"
-    {{ lookup('container_volumes', application_id, 'application') | indent(4) }}
+    {{ lookup('container_volumes', application_id, 'pixelfed') | indent(4) }}
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.pixelfed.ports.local.http') }}:80"
 {{ lookup('container_depends_on', application_id) }}
@@ -29,7 +29,7 @@
       timeout: 5s
       retries: 1
 {{ lookup('container_depends_on', application_id, extra={
-  'application': {'condition': 'service_started'},
+  'pixelfed': {'condition': 'service_started'},
 }) }}
     {{ lookup('container_networks') | indent(4) }}
 

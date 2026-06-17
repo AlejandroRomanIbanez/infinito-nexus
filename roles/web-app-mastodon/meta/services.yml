@@ -46,6 +46,10 @@ mastodon:
     local:
       websocket: 4001
       http: 8009
+    internal:
+      http: 3000
+  proxy:
+    service_key: mastodon
   run_after:
     - web-app-keycloak
   lifecycle: beta

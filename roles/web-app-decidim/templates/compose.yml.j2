@@ -1,6 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
-  application:
+  decidim:
 {% set service_name = 'decidim' %}
 {% set container_healthcheck = 'health_check' %}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}

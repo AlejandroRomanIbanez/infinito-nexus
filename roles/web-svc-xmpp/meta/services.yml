@@ -20,6 +20,10 @@ xmpp:
   ports:
     local:
       http: 8082
+    internal:
+      http: 5280
+  proxy:
+    service_key: ejabberd
   run_after:
     - web-app-keycloak
     - svc-db-openldap

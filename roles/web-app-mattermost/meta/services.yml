@@ -36,6 +36,8 @@ mattermost:
   ports:
     local:
       http: 8065
+    internal:
+      http: 8065
   run_after:
     - web-app-keycloak
     - web-app-mailu

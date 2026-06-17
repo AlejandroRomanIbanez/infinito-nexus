@@ -3,7 +3,7 @@ data:
   type: volume
   name: joomla_data
   mounts:
-    - service: application
+    - service: joomla
       target: /var/www/html
 
 php_upload:
@@ -11,5 +11,5 @@ php_upload:
   source: "{{ [lookup('container', 'web-app-joomla', 'directories.instance'), 'php-upload.ini'] | path_join }}"
   mode: "0440"
   mounts:
-    - service: application
+    - service: joomla
       target: /usr/local/etc/php/conf.d/uploads.ini

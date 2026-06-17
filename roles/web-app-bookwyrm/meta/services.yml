@@ -5,7 +5,7 @@ sso:
   flavor: oauth2
   oauth2:
     origin:
-      host: application
+      host: bookwyrm
       port: 8000
     allowed_groups:
       - "{{ lookup('rbac_group_path', application_id='web-app-bookwyrm', role='administrator') }}"
@@ -52,6 +52,8 @@ bookwyrm:
     local:
       http: 8049
       sso: 16498
+    internal:
+      http: 8000
   run_after:
     - web-app-matomo
     - web-app-keycloak

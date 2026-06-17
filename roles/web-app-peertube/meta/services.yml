@@ -44,6 +44,8 @@ peertube:
   ports:
     local:
       http: 8011
+    internal:
+      http: 9000
   run_after:
     - web-app-keycloak
   lifecycle: beta

@@ -38,6 +38,10 @@ gitlab:
       http: 8024
     public:
       ssh: 2202
+    internal:
+      http: 80
+  proxy:
+    service_key: gitlab
   run_after:
     - web-app-matomo
     - web-app-keycloak

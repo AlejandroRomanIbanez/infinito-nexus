@@ -3,35 +3,35 @@ config:
   type: volume
   name: mattermost_config
   mounts:
-    - service: application
+    - service: mattermost
       target: /mattermost/config
 
 data:
   type: volume
   name: mattermost_data
   mounts:
-    - service: application
+    - service: mattermost
       target: /mattermost/data
 
 logs:
   type: volume
   name: mattermost_logs
   mounts:
-    - service: application
+    - service: mattermost
       target: /mattermost/logs
 
 plugins:
   type: volume
   name: mattermost_plugins
   mounts:
-    - service: application
+    - service: mattermost
       target: /mattermost/plugins
 
 client-plugins:
   type: volume
   name: mattermost_client_plugins
   mounts:
-    - service: application
+    - service: mattermost
       target: /mattermost/client/plugins
 
 timezone:
@@ -39,7 +39,7 @@ timezone:
   source: /etc/timezone
   read_only: true
   mounts:
-    - service: application
+    - service: mattermost
       target: /etc/timezone
 
 localtime:
@@ -47,5 +47,5 @@ localtime:
   source: /etc/localtime
   read_only: true
   mounts:
-    - service: application
+    - service: mattermost
       target: /etc/localtime

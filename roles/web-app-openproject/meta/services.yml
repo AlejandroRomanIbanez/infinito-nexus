@@ -95,6 +95,10 @@ openproject:
     local:
       sso: 16483
       http: 8023
+    internal:
+      http: 8080
+  proxy:
+    service_key: web
   run_after:
     - web-app-keycloak
   lifecycle: beta

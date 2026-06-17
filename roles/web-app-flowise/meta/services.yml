@@ -58,6 +58,10 @@ flowise:
     local:
       http: 8056
       sso: 16480
+    internal:
+      http: 3000
+  proxy:
+    service_key: flowise
   run_after:
     - web-app-keycloak
     - web-app-matomo

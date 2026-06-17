@@ -3,12 +3,12 @@ data:
   type: volume
   name: opencloud_data
   mounts:
-    - service: application
+    - service: opencloud
       target: /var/lib/opencloud
 
 config:
   type: volume
   name: opencloud_config
   mounts:
-    - service: application
+    - service: opencloud
       target: /etc/opencloud

@@ -49,6 +49,10 @@ odoo:
     local:
       websocket: 4003
       http: 8068
+    internal:
+      http: 8069
+  proxy:
+    service_key: odoo
   run_after:
     - web-app-keycloak
     - web-app-mailu

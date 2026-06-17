@@ -3,7 +3,7 @@ data:
   type: volume
   name: bookwyrm_data
   mounts:
-    - service: application
+    - service: bookwyrm
       target: /app/data
     - service: worker
       target: /app/data
@@ -11,7 +11,7 @@ media:
   type: volume
   name: bookwyrm_media
   mounts:
-    - service: application
+    - service: bookwyrm
       target: /app/media
     - service: worker
       target: /app/media

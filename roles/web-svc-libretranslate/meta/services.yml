@@ -10,6 +10,10 @@ libretranslate:
     local:
       http: 8045
       sso: 16493
+    internal:
+      http: 5000
+  proxy:
+    service_key: libretranslate
   lifecycle: beta
   cpus: "0.2"
   mem_reservation: 128m

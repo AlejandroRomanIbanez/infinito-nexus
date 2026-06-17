@@ -53,6 +53,8 @@ opentalk:
   ports:
     local:
       http: 8073
+    internal:
+      http: 80
   run_after:
     - web-app-keycloak
   lifecycle: alpha

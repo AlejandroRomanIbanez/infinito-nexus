@@ -17,7 +17,7 @@ sso:
   flavor: oauth2
   oauth2:
     origin:
-      host: application
+      host: baserow
       port: 80
     allowed_groups:
       - "{{ lookup('rbac_group_path', application_id='web-app-baserow', role='administrator') }}"
@@ -50,6 +50,10 @@ baserow:
     local:
       http: 8017
       sso: 16495
+    internal:
+      http: 80
+  proxy:
+    service_key: baserow
   run_after:
     - web-app-matomo
     - web-app-keycloak

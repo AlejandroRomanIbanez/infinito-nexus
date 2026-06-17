@@ -36,6 +36,10 @@ snipe-it:
     local:
       sso: 16489
       http: 8035
+    internal:
+      http: 80
+  proxy:
+    service_key: snipe-it
   run_after:
     - web-app-matomo
     - web-app-keycloak

@@ -11,7 +11,7 @@ sso:
   flavor: oauth2
   oauth2:
     origin:
-      host: application
+      host: gitea
       port: "{{ lookup('config', 'web-app-gitea', 'services.gitea.ports.internal.http') }}"
     acl:
       blacklist:

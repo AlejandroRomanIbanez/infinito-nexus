@@ -3,7 +3,7 @@ data:
   type: volume
   name: prometheus_data
   mounts:
-    - service: application
+    - service: prometheus
       target: /prometheus
 
 alertmanager_data:
@@ -18,7 +18,7 @@ prometheus_config:
   source: "{{ [lookup('container', 'web-app-prometheus', 'directories.config'), 'prometheus.yml'] | path_join }}"
   mode: "0440"
   mounts:
-    - service: application
+    - service: prometheus
       target: /etc/prometheus/prometheus.yml
 
 alert_rules:
@@ -26,7 +26,7 @@ alert_rules:
   source: "{{ [lookup('container', 'web-app-prometheus', 'directories.config'), 'alert_rules.yml'] | path_join }}"
   mode: "0440"
   mounts:
-    - service: application
+    - service: prometheus
       target: /etc/prometheus/alert_rules.yml
 
 blackbox_config:
