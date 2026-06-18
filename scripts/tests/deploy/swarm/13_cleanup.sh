@@ -19,6 +19,10 @@ if mountpoint -q "${DIR_VAR_LIB}" 2>/dev/null; then
 	umount -lf "${DIR_VAR_LIB}" || true
 fi
 
-docker rm -f "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}" 2>/dev/null
+for _node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}"; do
+	docker kill "${_node}" 2>/dev/null
+	docker network disconnect -f "${SWARM_LAB_NETWORK}" "${_node}" 2>/dev/null
+	docker rm -f "${_node}" 2>/dev/null
+done
 docker network rm "${SWARM_LAB_NETWORK}" 2>/dev/null
 exit 0
