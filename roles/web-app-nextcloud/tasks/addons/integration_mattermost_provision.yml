@@ -1,0 +1,71 @@
+---
+- name: Wait until Mattermost mmctl local mode is ready
+  command: >
+    container exec -i {{ nextcloud_mm_container }}
+    /mattermost/bin/mmctl --local system status
+  args:
+    chdir: "{{ nextcloud_mm_instance_dir }}"
+  register: nextcloud_mm_ready
+  retries: 60
+  delay: 5
+  until: nextcloud_mm_ready.rc == 0
+  changed_when: false
+  failed_when: nextcloud_mm_ready.rc != 0 and nextcloud_mm_ready.attempts | default(0) >= 60
+
+- name: Enable the Mattermost OAuth 2.0 service provider (required for the connector)
+  command: >
+    container exec -i {{ nextcloud_mm_container }}
+    /mattermost/bin/mmctl --local config set ServiceSettings.EnableOAuthServiceProvider true
+  args:
+    chdir: "{{ nextcloud_mm_instance_dir }}"
+  register: nextcloud_mm_oauth_provider
+  changed_when: "'true' in nextcloud_mm_oauth_provider.stdout"
+
+- name: Provision (idempotently) the Mattermost OAuth app for Nextcloud and capture credentials
+  command: >
+    container exec -i
+    -e MM_LOCAL_URL={{ nextcloud_mm_local_url }}
+    -e MM_ADMIN_LOGIN={{ lookup('users', 'administrator').email }}
+    -e MM_ADMIN_PASS={{ lookup('users', 'administrator').password }}
+    -e MM_APP_NAME=Nextcloud
+    -e MM_CALLBACK={{ nextcloud_mm_callback_url }}
+    -e MM_HOMEPAGE={{ NEXTCLOUD_URL }}
+    {{ nextcloud_mm_container }}
+    bash -s
+  args:
+    chdir: "{{ nextcloud_mm_instance_dir }}"
+    stdin: "{{ lookup('file', 'mattermost/provision_oauth_app.sh') }}"
+  register: nextcloud_mm_provision
+  changed_when: false
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+- name: Parse Mattermost OAuth client credentials
+  set_fact:
+    nextcloud_mm_client_id: "{{ nextcloud_mm_provision.stdout | regex_search('CLIENT_ID=(.+)', '\\1') | first }}"
+    nextcloud_mm_client_secret: "{{ nextcloud_mm_provision.stdout | regex_search('CLIENT_SECRET=(.+)', '\\1') | first }}"
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+- name: Point integration_mattermost at the partner instance (admin OAuth instance URL)
+  command: >
+    {{ NEXTCLOUD_DOCKER_EXEC_OCC }}
+    config:app:set integration_mattermost oauth_instance_url
+    --value '{{ nextcloud_mm_base_url }}'
+  register: nextcloud_mm_oauth_url_set
+  changed_when: "' set to ' in nextcloud_mm_oauth_url_set.stdout"
+
+- name: Set integration_mattermost OAuth client_id
+  command: >
+    {{ NEXTCLOUD_DOCKER_EXEC_OCC }}
+    config:app:set integration_mattermost client_id
+    --value '{{ nextcloud_mm_client_id }}'
+  register: nextcloud_mm_client_id_set
+  changed_when: "' set to ' in nextcloud_mm_client_id_set.stdout"
+
+- name: Set integration_mattermost OAuth client_secret
+  command: >
+    {{ NEXTCLOUD_DOCKER_EXEC_OCC }}
+    config:app:set integration_mattermost client_secret
+    --value '{{ nextcloud_mm_client_secret }}'
+  register: nextcloud_mm_client_secret_set
+  changed_when: "' set to ' in nextcloud_mm_client_secret_set.stdout"
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"

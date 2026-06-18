@@ -8,5 +8,5 @@ bridges:
 config:
   plugin_configuration:
     - appid: "integration_peertube"
-      configkey: "url"
+      configkey: "instances"
       configvalue: "{{ lookup('tls', 'web-app-peertube', 'url.base') }}"

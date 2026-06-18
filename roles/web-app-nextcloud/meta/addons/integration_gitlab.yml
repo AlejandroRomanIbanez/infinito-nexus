@@ -8,5 +8,5 @@ bridges:
 config:
   plugin_configuration:
     - appid: "integration_gitlab"
-      configkey: "url"
+      configkey: "oauth_instance_url"
       configvalue: "{{ lookup('tls', 'web-app-gitlab', 'url.base') }}"
