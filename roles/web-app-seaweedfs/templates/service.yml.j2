@@ -4,13 +4,7 @@
     image: "{{ _objstore.image }}:{{ _objstore.version }}"  # nocheck: container-image-lookup
     {{ lookup('compose_only', 'container_name', _objstore.container) }}
     {{ lookup('compose_restart', DOCKER_RESTART_POLICY) }}
-    command:
-      - server
-      - -dir=/data
-      - -ip=localhost
-      - -ip.bind=0.0.0.0
-      - -filer
-      - -s3
+    command: {{ '' | seaweedfs_command | to_json }}
     volumes:
       - seaweedfs:/data
     networks:  # nocheck: networks-literal
