@@ -92,9 +92,18 @@ fi
 
 cmd="${TEST_E2E_PLAYWRIGHT_COMMAND:-npm install --no-fund --no-audit && npx playwright test${*:+ $*}}"
 
+# Swarm reruns need the node's network namespace to reach cross-app canonical domains
+# (mirrors roles/test-e2e-playwright/tasks/02_run_one.yml); compose uses host-gateway.
+# The act-swarm-playwright helper sets the flag; compose-playwright leaves it unset.
+if [[ "${TEST_E2E_PLAYWRIGHT_NETWORK_HOST:-}" == "true" ]]; then
+	net_args=(--network host)
+else
+	net_args=(--add-host=host.docker.internal:host-gateway)
+fi
+
 exec docker run --rm \
 	--ipc=host --shm-size=1g \
-	--add-host=host.docker.internal:host-gateway \
+	"${net_args[@]}" \
 	--env-file "$env_file" \
 	-v "$stage_dir:/e2e" \
 	-v "$stage_dir/volume:/volume" \

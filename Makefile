@@ -44,6 +44,16 @@ act-swarm-down:
 act-swarm-exec:
 	@node='$(node)' cmd='$(cmd)' bash scripts/tests/deploy/act/exec_node.sh
 
+.PHONY: act-swarm-playwright
+# Rerun a role-local Playwright spec against the live swarm-test cluster (no redeploy).
+# Note: nodes hold a frozen bootstrap copy (not a compose-style mount), so the working-tree's modified+untracked files are copied into the node before rerunning via the same rerun-spec.sh engine as compose-playwright; solve ALL of a role's tests (no pw= narrowing) before any redeploy.
+# Usage: make act-swarm-playwright role=<role> [pw="--grep <pattern>"] [keep=true] [node=swarm-mgr-01]
+# Example: make act-swarm-playwright role=web-svc-logout pw="--grep baserow" keep=true
+act-swarm-playwright:
+	@: $${role:?role=<role> required, e.g. role=web-svc-logout}
+	@node='$(or $(node),swarm-mgr-01)' bash scripts/tests/deploy/act/copy_worktree_to_node.sh
+	@node='$(or $(node),swarm-mgr-01)' cmd='cd /opt/infinito-nexus && TEST_E2E_PLAYWRIGHT_NETWORK_HOST=true $(if $(keep),INFINITO_PLAYWRIGHT_KEEP=$(keep) )bash scripts/tests/e2e/rerun-spec.sh $(role) $(pw)' bash scripts/tests/deploy/act/exec_node.sh
+
 .PHONY: act-swarm-shell
 # Drop into an interactive shell on one of the swarm-test DinD nodes.
 # Param node: container name (defaults to swarm-mgr-01).
