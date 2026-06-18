@@ -11,7 +11,7 @@
     {% for item in (addon_spec.config.plugin_configuration | default([])) %}
     {{ NEXTCLOUD_DOCKER_EXEC_OCC }} \
       config:app:set {{ item.appid }} {{ item.configkey }} \
-      --value '{{ ( (item.configvalue | to_json) if (item.configvalue is mapping) else (item.configvalue | string) )
+      --value '{{ ( (item.configvalue | to_json) if (item.configvalue is mapping or (item.configvalue is sequence and item.configvalue is not string)) else (item.configvalue | string) )
             | regex_replace("'", "'" ~ '"' ~ "'" ~ '"' ~ "'") }}'
     {% endfor %}
   args:
