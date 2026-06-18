@@ -50,50 +50,6 @@ if [[ "${DOCKER_IN_CONTAINER}" == "true" ]]; then
         container exec -e "GITHUB_TOKEN=${GITHUB_TOKEN}" "${RUNNER_PROJECT_PREFIX}-1" \
             bash -c "docker login ghcr.io -u github-actions --password-stdin <<< \"\${GITHUB_TOKEN}\""
 
-        # --- TEMPORARY DIAGNOSTIC: surface the apt error the deploy hides ----
-        # The deploy's apt module fails with an EMPTY error after 5 retries and
-        # MTU is ruled out. Reproduce a direct apt fetch at the SAME nesting
-        # depth (a sibling container on the DinD daemon via DooD) to split the
-        # cause: if this direct update to the default mirrors succeeds, the
-        # failure is the Nexus package-cache path; if it fails here too, egress
-        # itself is blocked at this depth. Layered (DNS -> raw HTTP -> apt) so
-        # we see exactly which layer breaks. Never fails the test (|| true).
-        # The docker run executes inside runner-1 (DooD) where the 'container'
-        # wrapper is absent; it is kept inside a bash -c string so it is not a
-        # command-position 'docker' (raw-docker lint stays green), exactly like
-        # the 'docker login' call above. REMOVE once root cause is identified.
-        _diag_image="ghcr.io/$(printf '%s' "${GITHUB_REPOSITORY:-}" | tr '[:upper:]' '[:lower:]')/debian:${INFINITO_IMAGE_TAG}"
-        echo "DinD diag: probing apt egress at nesting depth via ${_diag_image}"
-        container exec "${RUNNER_PROJECT_PREFIX}-1" \
-            bash -c "docker run --rm ${_diag_image} bash -lc 'echo DIAG-DNS; getent hosts deb.debian.org || echo resolve-FAILED; echo DIAG-HTTP; curl -sS -m 25 -o /dev/null -w code=%{http_code} http://deb.debian.org/debian/dists/stable/InRelease; echo; echo DIAG-APT; timeout 120 apt-get update 2>&1 | tail -n 30'" \
-            || true
-        echo "DinD diag: probe complete"
-
-        # Probe 2: mimic the deploy's network conditions — a CUSTOM bridge
-        # (like infinito_default) and coredns's upstream public resolver (via
-        # --dns below). Probe 1 proved the default bridge + host DNS egress works,
-        # so if this one fails it isolates the cause to custom-bridge NAT or
-        # upstream-DNS (UDP/53) forwarding at this depth; if it succeeds, the
-        # fault is purely the Nexus package-cache path. Each docker command is
-        # a separate bash -c so none sits at command position (raw-docker lint).
-        # REMOVE with probe 1 once root cause is identified.
-        echo "DinD diag 2: probing custom-bridge + upstream-DNS path"
-        # Literal resolver IP required here: this diagnostic shell runs inside
-        # runner-1 and cannot consume NETWORK_PUBLIC_DNS_RESOLVERS. Hoisted to
-        # its own line so the nocheck marker applies (the docker line below ends
-        # in a backslash and cannot carry a trailing comment).
-        _diag_dns="1.1.1.1"  # nocheck: hardcoded-dns-resolver
-        container exec "${RUNNER_PROJECT_PREFIX}-1" \
-            bash -c "docker network create --subnet 172.31.250.0/24 infinito-diagnet" \
-            || true
-        container exec "${RUNNER_PROJECT_PREFIX}-1" \
-            bash -c "docker run --rm --network infinito-diagnet --dns ${_diag_dns} ${_diag_image} bash -lc 'echo DIAG2-DNS; getent hosts deb.debian.org || echo resolve-FAILED; echo DIAG2-HTTP; curl -sS -m 25 -o /dev/null -w code=%{http_code} http://deb.debian.org/debian/dists/stable/InRelease; echo; echo DIAG2-APT; timeout 120 apt-get update 2>&1 | tail -n 20'" \
-            || true
-        container exec "${RUNNER_PROJECT_PREFIX}-1" \
-            bash -c "docker network rm infinito-diagnet" \
-            || true
-        echo "DinD diag 2: probe complete"
-
         # Install Ansible and Python dependencies (same as a real CI job would do).
         container exec "${RUNNER_PROJECT_PREFIX}-1" \
             bash -c "cd /opt/src/infinito && make install"

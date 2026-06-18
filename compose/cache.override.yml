@@ -110,6 +110,11 @@ services:
     environment:
       INFINITO_CACHE_PACKAGE_FRONTEND_IP: ${INFINITO_CACHE_PACKAGE_FRONTEND_IP:?Run 'make dotenv' to generate the .env single source of truth}
     extra_hosts:
+      # apt mirrors → cache frontend, like the package managers below.
+      # /etc/hosts beats coredns, which can't resolve the `package-cache` name.
+      - "deb.debian.org:${INFINITO_CACHE_PACKAGE_FRONTEND_IP:?Run 'make dotenv' to generate the .env single source of truth}"
+      - "archive.ubuntu.com:${INFINITO_CACHE_PACKAGE_FRONTEND_IP:?Run 'make dotenv' to generate the .env single source of truth}"
+      - "security.ubuntu.com:${INFINITO_CACHE_PACKAGE_FRONTEND_IP:?Run 'make dotenv' to generate the .env single source of truth}"
       - "pypi.org:${INFINITO_CACHE_PACKAGE_FRONTEND_IP:?Run 'make dotenv' to generate the .env single source of truth}"
       - "files.pythonhosted.org:${INFINITO_CACHE_PACKAGE_FRONTEND_IP:?Run 'make dotenv' to generate the .env single source of truth}"
       - "registry.npmjs.org:${INFINITO_CACHE_PACKAGE_FRONTEND_IP:?Run 'make dotenv' to generate the .env single source of truth}"
