@@ -50,7 +50,8 @@ for node in "${MGR}" "${WRK1}" "${WRK2}"; do
 done
 
 HOSTS_EXTRA="$(python3 -m utils.tests.swarm.write_hosts_entries)"
-for node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}"; do
+# Workers excluded: a "127.0.0.1 <domain>" entry would shadow the dnsmasq -> MGR_IP below.
+for node in "${MGR}" "${NFS_SERVER}"; do
 	docker exec -i "${node}" sh -c 'cat >> /etc/hosts' <<<"${HOSTS_EXTRA}"
 done
 
@@ -77,6 +78,34 @@ docker exec "${MGR}" sh -c "
 	echo 'FAILURE: dnsmasq did not resolve ${INFINITO_DOMAIN} to 127.0.0.1 after 30s' >&2
 	exit 1
 "
+
+# openresty is mode:host + manager-pinned, so workers resolve the domain to the manager IP (not their dead 127.0.0.1).
+MGR_IP=$(docker inspect "${MGR}" \
+	--format "{{(index .NetworkSettings.Networks \"${SWARM_LAB_NETWORK}\").IPAddress}}")
+: "${MGR_IP:?Failed to capture ${MGR} IP on ${SWARM_LAB_NETWORK}}"
+wrk_dnsmasq_conf="bind-dynamic
+no-resolv
+server=1.1.1.1 # nocheck: hardcoded-dns-resolver
+server=8.8.8.8 # nocheck: hardcoded-dns-resolver
+address=/${INFINITO_DOMAIN}/${MGR_IP}"
+for node in "${WRK1}" "${WRK2}"; do
+	docker exec "${node}" systemctl stop systemd-resolved 2>/dev/null || true
+	docker exec "${node}" systemctl mask systemd-resolved 2>/dev/null || true
+	docker exec "${node}" sh -c 'echo "nameserver 1.1.1.1" > /etc/resolv.conf' # nocheck: hardcoded-dns-resolver
+	docker exec "${node}" apt-get update -qq
+	docker exec "${node}" apt-get install -y -qq dnsmasq
+	docker exec -i "${node}" sh -c 'cat > /etc/dnsmasq.d/infinito.conf' <<<"${wrk_dnsmasq_conf}"
+	docker exec "${node}" systemctl enable --now dnsmasq
+	docker exec "${node}" sh -c 'echo "nameserver 127.0.0.1" > /etc/resolv.conf'
+	docker exec "${node}" sh -c "
+		for i in \$(seq 1 30); do
+			getent ahosts test.${INFINITO_DOMAIN} 2>/dev/null | head -1 | grep -qF '${MGR_IP} ' && exit 0
+			sleep 1
+		done
+		echo 'FAILURE: dnsmasq on ${node} did not resolve test.${INFINITO_DOMAIN} to ${MGR_IP} after 30s' >&2
+		exit 1
+	"
+done
 
 # Daemon DNS for containers spawned by the inner daemon; outer --dns is
 # clobbered by systemd-resolved inside DinD.
