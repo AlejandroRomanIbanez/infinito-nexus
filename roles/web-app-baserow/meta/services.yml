@@ -63,6 +63,7 @@ baserow:
     - web-app-matomo
     - web-app-keycloak
     - web-app-mailu
+    - web-app-seaweedfs
   lifecycle: beta
 # nocheck: playwright-service-flag — css consumer, no Playwright surface (provider: web-svc-css)
 css:
