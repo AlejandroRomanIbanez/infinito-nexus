@@ -4,30 +4,32 @@
 # source inode changes; the running task keeps the old, deleted inode
 # mounted and `openresty -s reload` reads stale config. Force a task
 # redeploy on the manager to remount the live inode.
-- name: Compose-mode validate + in-place reload (swarm uses service-update instead)
+- name: Compose-mode force-recreate (file bind-mount pins the inode; -s reload reads stale config)
   when: DEPLOYMENT_MODE != 'swarm'
   block:
-    - name: Validate OpenResty configuration (Pre-Flight-Check)
-      ansible.builtin.shell: >
-        container exec {{ lookup('container_address', 'svc-prx-openresty', 'openresty') }} openresty -t -q
-      register: openresty_test_pre
-      changed_when: false
-      failed_when: >
-        openresty_test_pre.rc != 0 and
-        ('is not running' not in ((openresty_test_pre.stderr | default('')) | lower)) and
-        ('no such container' not in ((openresty_test_pre.stderr | default('')) | lower)) and
-        ('is restarting' not in ((openresty_test_pre.stderr | default('')) | lower))
-
-    - name: Reload OpenResty configuration (in-place, preserves listeners)
-      ansible.builtin.shell: >
-        container exec {{ lookup('container_address', 'svc-prx-openresty', 'openresty') }}
-        openresty -s reload
+    - name: Force-recreate OpenResty (remounts the config bind to the live inode)
+      ansible.builtin.shell: |
+        set -euo pipefail
+        compose up -d --force-recreate --remove-orphans
+      args:
+        chdir: "{{ lookup('container', 'svc-prx-openresty', 'directories.instance') }}"
+        executable: /bin/bash
       register: openresty_restart
       changed_when: true
+
+    - name: Validate OpenResty configuration (Post-Flight-Check)
+      ansible.builtin.shell: >
+        container exec {{ lookup('container_address', 'svc-prx-openresty', 'openresty') }} openresty -t -q
+      register: openresty_test_post
+      changed_when: false
+      retries: 10
+      delay: 3
+      until: openresty_test_post.rc == 0
       failed_when: >
-        openresty_restart.rc != 0 and
-        ('is not running' not in ((openresty_restart.stderr | default('')) | lower)) and
-        ('no such container' not in ((openresty_restart.stderr | default('')) | lower))
+        openresty_test_post.rc != 0 and
+        ('is not running' not in ((openresty_test_post.stderr | default('')) | lower)) and
+        ('no such container' not in ((openresty_test_post.stderr | default('')) | lower)) and
+        ('is restarting' not in ((openresty_test_post.stderr | default('')) | lower))
 
 - name: Force OpenResty service redeploy (remounts bind to live inode)
   ansible.builtin.command: >-

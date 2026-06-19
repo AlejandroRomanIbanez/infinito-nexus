@@ -72,6 +72,13 @@
       ansible.builtin.set_fact:
         KEYCLOAK_LOCAL_CID: "{{ kc_local_cid_query.stdout | trim }}"
 
+- name: "Keycloak login | Resolve local container ID on hosting node (compose only)"
+  ansible.builtin.set_fact:
+    KEYCLOAK_LOCAL_CID: "{{ lookup('container_address', application_id, entity_name) }}"
+  when:
+    - DEPLOYMENT_MODE != 'swarm'
+    - KEYCLOAK_LOCAL_CID is not defined or KEYCLOAK_LOCAL_CID is none
+
 - name: "Keycloak login | Wait for keycloak container to be healthy"
   ansible.builtin.shell: >
     container inspect --format '{{ "{{" }}.State.Health.Status{{ "}}" }}'
