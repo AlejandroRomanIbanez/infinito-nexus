@@ -14,6 +14,7 @@
     'No migrations to apply' not in
     ((baserow_migrate_result.stdout | default('')) ~ (baserow_migrate_result.stderr | default('')))
   failed_when: baserow_migrate_result.rc != 0
+  timeout: 600
   retries: 60
   delay: 5
   until: baserow_migrate_result.rc == 0
@@ -50,6 +51,7 @@
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   changed_when: "'created' in baserow_bootstrap_admin_result.stdout"
   failed_when: baserow_bootstrap_admin_result.rc != 0
+  timeout: 600
   retries: 60
   delay: 5
   until: baserow_bootstrap_admin_result.rc == 0
