@@ -37,7 +37,7 @@ jobs:
       apps: ${{ steps.discover.outputs.apps }}
 
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
@@ -104,7 +104,7 @@ jobs:
     steps:
       - name: "Checkout"
         if: ${{ !env.ACT }}
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
 
       - name: "Load swarm topology SPOT into job env"
         shell: bash
