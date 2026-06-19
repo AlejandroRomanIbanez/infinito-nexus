@@ -6,7 +6,7 @@
     compose_handlers_flush: false
 
 - name: "Stage trusted-header SSO build-context files for {{ application_id }}"
-  ansible.builtin.copy:
+  stack_host_copy:
     src: "{{ item.src }}"
     dest: "{{ [ lookup('container', application_id, 'directories.instance'), item.dest ] | path_join }}"
     mode: "0644"
@@ -14,7 +14,6 @@
     - { src: "Dockerfile", dest: "Dockerfile" }
     - { src: "sso/infinito_sso.py", dest: "infinito_sso.py" }
     - { src: "sso/settings_patch.py", dest: "settings_patch.py" }
-  when: IS_STACK_HOST | bool
 
 - name: "Flush compose handlers for {{ application_id }}"
   ansible.builtin.meta: flush_handlers

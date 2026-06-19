@@ -23,7 +23,7 @@
 # `docker compose build` step fails with `failed to calculate checksum
 # of ref ...: "/plugins.txt": not found`.
 - name: "Stage Jenkins build-context sidecar files into the compose dir"
-  ansible.builtin.copy:
+  stack_host_copy:
     src: "{{ item }}"
     dest: "{{ [ lookup('container', application_id, 'directories.instance'), item ] | path_join }}"
     mode: "0644"
@@ -33,4 +33,3 @@
   notify:
     - compose build
     - compose up
-  when: IS_STACK_HOST | bool
