@@ -27,7 +27,7 @@
 
 - name: Parse the OpenProject OAuth application credentials
   set_fact:
-    nextcloud_op_oauth: "{{ nextcloud_op_storage_create.stdout | trim | from_json }}"
+    nextcloud_op_oauth: "{{ nextcloud_op_storage_create.stdout | regex_search('{.*}') | from_json }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
 - name: Resolve the effective OpenProject OAuth client secret (fresh or persisted)

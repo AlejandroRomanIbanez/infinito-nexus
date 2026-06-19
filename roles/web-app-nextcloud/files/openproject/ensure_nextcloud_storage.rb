@@ -5,9 +5,10 @@ name = ENV.fetch("STORAGE_NAME")
 nc_client_id = ENV["NC_OAUTH_CLIENT_ID"].to_s.strip
 nc_client_secret = ENV["NC_OAUTH_CLIENT_SECRET"].to_s.strip
 
+admins = User.where(admin: true)
 creator =
-  User.find_by(admin: true, status: User::STATUSES[:active]) ||
-  User.where(admin: true).first ||
+  (admins.respond_to?(:active) ? admins.active.first : nil) ||
+  admins.first ||
   User.where(login: "admin").first
 
 raise "No administrator user available to own the Nextcloud storage" if creator.nil?
