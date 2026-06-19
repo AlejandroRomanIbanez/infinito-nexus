@@ -4,4 +4,4 @@ mechanism: extension
 source: upstream
 config:
   uuid: "nasa_apod@elinvention.ovh"
-  url: "https://github.com/Elinvention/gnome-shell-extension-nasa-apod.git"  # nocheck: repository-declared
+  url: "https://github.com/Elinvention/gnome-shell-extension-nasa-apod.git" # nocheck: repository-declared
