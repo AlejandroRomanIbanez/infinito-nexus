@@ -31,7 +31,7 @@
   when: _ca_regen_needed | bool
 
 - name: "CA | render openssl config (v3_ca)"
-  ansible.builtin.template:
+  ansible.builtin.template: # nocheck: stack-host-template (delegated to STACK_HOST + run_once by the parent include)
     src: "openssl-root-ca.cnf.j2"
     dest: "{{ CA_ROOT.openssl_conf_host }}"
     owner: root
