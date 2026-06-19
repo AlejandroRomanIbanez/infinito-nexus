@@ -128,7 +128,7 @@ async function inAppLogout(page) {
       tried.add(key);
       await trigger.click({ timeout: 5_000 }).catch(() => {});
       // Give the dropdown / popover time to render its items.
-      await page.waitForTimeout(750);
+      await page.waitForTimeout(1_500);
       if (await tryLogoutFrom(page)) {
         await page.waitForLoadState("domcontentloaded", { timeout: 30_000 }).catch(() => {});
         return;
