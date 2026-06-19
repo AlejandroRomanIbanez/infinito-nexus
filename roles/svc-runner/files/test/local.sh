@@ -83,11 +83,14 @@ if [[ "${DOCKER_IN_CONTAINER}" == "true" ]]; then
         # correctly-subnetted "infinito_default" network, matching normal CI.
         # RUNTIME=github runs the E2E roles (test-e2e-cli + test-e2e-playwright)
         # like a real CI deploy; the required_by guard expects test-e2e-cli to
-        # execute. Confined to this nested deploy.
+        # execute. CI=true makes the deploy behave like GitHub-hosted CI:
+        # the package-cache stays off (registry_cache_active = not is_ci), so
+        # apt/pip/npm/image pulls go direct — avoiding the flaky nested cache.
         container exec \
             -e "COMPOSE_PROJECT_NAME=infinito" \
             -e "INFINITO_RUNNER_PREFIX=infinito" \
             -e "RUNTIME=github" \
+            -e "CI=true" \
             -e "apps=web-app-dashboard" \
             -e "disable=matomo" \
             -e "INFINITO_DEPLOY_TYPE=server" \
