@@ -88,7 +88,7 @@ jobs:
     name: "🐝 Swarm ${{ matrix.apps }}"
     if: needs.discover.outputs.apps != '' && needs.discover.outputs.apps != '[]'
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 360
     needs: discover
 
     strategy:
@@ -149,33 +149,10 @@ jobs:
       - name: "Project setup (.dockerignore + dotenv + scripts/setup.sh)"
         run: make setup
 
-      - name: "Provision the base inventory via the canonical CLI"
-        run: ${{ env.SCRIPTS }}/05_provision_inventory.sh
-
-      - name: "Extend inventory with workers + group memberships"
-        run: python3 -m utils.tests.swarm.extend_inventory
-
-      - name: "Write runtime extras (cluster IPs + generated SSH key)"
-        run: python3 -m utils.tests.swarm.write_extras
-
-      - name: "Debug: ansible-inventory --graph + groups for swarm-mgr-01"
-        run: ${{ env.SCRIPTS }}/06_debug_inventory.sh
-
-      - name: "Deploy ${{ matrix.apps }} via cli.administration.deploy.swarm"
+      - name: "Matrix-deploy ${{ matrix.apps }} across variant rounds (provision + deploy + in-deploy e2e + converge/verify per round)"
         run: |
           source scripts/meta/env/load.sh
-          python3 -m cli.administration.deploy.swarm \
-            /tmp/inv/devices.yml \
-            -p /tmp/inv/.password \
-            --skip-build --skip-cleanup --skip-backup \
-            -e @inventories/development/swarm.yml \
-            -e @/tmp/swarm-nfs-extras.yml
-
-      - name: "Wait for ${{ matrix.apps }} stack to converge with both services Running"
-        run: ${{ env.SCRIPTS }}/07_wait_converge.sh
-
-      - name: "Verify ${{ matrix.apps }} replicas accept routing-mesh traffic"
-        run: ${{ env.SCRIPTS }}/08_verify_reachable.sh
+          python3 -m cli.administration.deploy.swarm.matrix
 
       - name: "Seed content (pre-drain marker on NFS volume)"
         run: ${{ env.SCRIPTS }}/09_seed_content.sh
