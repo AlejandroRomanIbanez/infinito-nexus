@@ -20,6 +20,12 @@ on:
         default: ""
         type: string
 
+# A new pipeline run on the same ref cancels an in-progress smoke run,
+# freeing the self-hosted runner instead of queueing behind a ~2h deploy.
+concurrency:
+  group: runner-smoke-${{ github.ref }}
+  cancel-in-progress: true
+
 permissions:
   contents: read
   packages: read
