@@ -12,14 +12,15 @@
           - --profile
           - "{{ MATOMO_BOOTSTRAP_PROFILE }}"
           - run
+          - "-T"
           - --rm
           - "{{ MATOMO_BOOTSTRAP_SERVICE }}"
-      register: matomo_bootstrap_run
+      register: matomo_bootstrap_compose
       no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
       changed_when: true
       retries: "{{ MATOMO_BOOTSTRAP_RETRIES | int }}"
       delay: "{{ MATOMO_BOOTSTRAP_RETRY_DELAY_S | int }}"
-      until: matomo_bootstrap_run.rc == 0
+      until: matomo_bootstrap_compose.rc == 0
       when: DEPLOYMENT_MODE != 'swarm'
 
     - name: "Matomo bootstrap | Swarm: Wait for in-stack bootstrap service to emit a token"
@@ -27,15 +28,19 @@
         container service logs --no-task-ids \
           {{ lookup('container_service', application_id, MATOMO_BOOTSTRAP_SERVICE) | quote }} 2>&1 \
           | grep -oE '^[a-f0-9]{32,64}$' | tail -1
-      register: matomo_bootstrap_run
+      register: matomo_bootstrap_swarm
       changed_when: false
       no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
       retries: "{{ MATOMO_BOOTSTRAP_RETRIES | int }}"
       delay: "{{ MATOMO_BOOTSTRAP_RETRY_DELAY_S | int }}"
-      until: (matomo_bootstrap_run.stdout | length) > 0
+      until: (matomo_bootstrap_swarm.stdout | length) > 0
       when: DEPLOYMENT_MODE == 'swarm'
 
   rescue:
+    - name: "Matomo bootstrap | Select effective bootstrap result for diagnostics"
+      ansible.builtin.set_fact:
+        matomo_bootstrap_run: "{{ matomo_bootstrap_compose if DEPLOYMENT_MODE != 'swarm' else matomo_bootstrap_swarm }}"
+
     - name: "Load Bootstrap Debug Info"
       include_tasks: 06_bootstrap_debug.yml
       when: MODE_DEBUG | bool
@@ -57,7 +62,7 @@
         (matomo_token_value | default('') | string | trim)
         if (matomo_token_value is defined and (matomo_token_value | string | trim) != '')
         else (
-          (matomo_bootstrap_run.stdout | default('') | string)
+          ((matomo_bootstrap_compose.stdout if DEPLOYMENT_MODE != 'swarm' else matomo_bootstrap_swarm.stdout) | default('') | string)
           | regex_search('(?m)^[a-f0-9]{32,64}$')
           | default('', true)
           | trim
@@ -72,7 +77,7 @@
       - matomo_token_value is match("^[a-f0-9]{32,64}$")
     fail_msg: >-
       Matomo bootstrap did not yield a valid token.
-      stdout={{ matomo_bootstrap_run.stdout | default('') | trim }}
+      stdout={{ (matomo_bootstrap_compose.stdout if DEPLOYMENT_MODE != 'swarm' else matomo_bootstrap_swarm.stdout) | default('') | trim }}
   when: MODE_ASSERT_LOCAL | bool
 
 - name: "Matomo | Persist + inject token via sys-token-store (store + runtime users)"
