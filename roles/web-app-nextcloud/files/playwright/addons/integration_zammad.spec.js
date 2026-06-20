@@ -2,20 +2,7 @@ const { test, expect } = require("@playwright/test");
 const { skipUnlessAddonEnabled } = require("../addon-gating");
 const shared = require("../_shared");
 
-// Verifies the nextcloud/integration_zammad app is installed, enabled and — the
-// part the generic loader does NOT do — pinned to the deployed partner Zammad
-// instance. The app drives its OAuth flow from the admin-level
-// `oauth_instance_url` appValue (AdminSettings.vue -> state.oauth_instance_url),
-// which the generic config leaves empty. The addon hook
-// (tasks/addons/integration_zammad.yml) sets it to the partner base URL via occ.
-// This spec proves the coupling held end-to-end:
-//   1) the Zammad admin settings section (#zammad_prefs) renders, and
-//   2) its "Zammad instance address" field holds a real partner URL — NOT empty
-//      and NOT Nextcloud itself.
-// It then drives the per-user connect control as a best-effort extra and, when
-// an OAuth client is provisioned, asserts the authorize redirect targets the
-// partner host rather than Nextcloud.
-test("integration integration_zammad: pinned to partner Zammad instance and connectable", async ({ browser }) => {
+test("integration integration_zammad: per-user OAuth connect reaches the partner Zammad authorize endpoint", async ({ browser }) => {
   skipUnlessAddonEnabled("integration_zammad");
   test.setTimeout(120_000);
 
@@ -25,8 +12,6 @@ test("integration integration_zammad: pinned to partner Zammad instance and conn
   try {
     await shared.loginToStandaloneNextcloud(page);
 
-    // 1) Activation + coupling: the Zammad admin settings section must render
-    //    and the instance address must be pinned to the partner instance.
     await page.goto(
       new URL("settings/admin/connected-accounts", shared.env.nextcloudBaseUrl).toString(),
       { waitUntil: "domcontentloaded", timeout: 60_000 }
@@ -39,11 +24,9 @@ test("integration integration_zammad: pinned to partner Zammad instance and conn
       "the Zammad integration admin section (#zammad_prefs) must render when integration_zammad is enabled"
     ).toBeVisible({ timeout: 60_000 });
 
-    // The instance-address NcTextField has no fixed id; locate it by its label.
     const instanceInput = zammadPrefs
       .getByRole("textbox", { name: /zammad instance address/i })
-      .or(zammadPrefs.locator('input[type="text"]'));
-
+      .or(zammadPrefs.locator('input[type="text"], input[type="url"]'));
     await expect(
       instanceInput.first(),
       "the Zammad instance-address field must be present in the admin section"
@@ -51,18 +34,17 @@ test("integration integration_zammad: pinned to partner Zammad instance and conn
 
     const instanceUrl = ((await instanceInput.first().inputValue()) || "").trim();
     expect(
-      instanceUrl.length,
-      "oauth_instance_url must be configured (the addon hook pins it to the partner Zammad base URL)"
-    ).toBeGreaterThan(0);
+      /^https?:\/\//i.test(instanceUrl),
+      "oauth_instance_url must be a real partner URL (the addon hook pins it to the partner Zammad base URL)"
+    ).toBeTruthy();
 
     const nextcloudHost = new URL(shared.env.nextcloudBaseUrl).host;
-    const instanceHost = new URL(instanceUrl).host;
+    const partnerHost = new URL(instanceUrl).host;
     expect(
-      instanceHost,
+      partnerHost,
       "the Zammad instance URL must not point back at Nextcloud itself"
     ).not.toBe(nextcloudHost);
 
-    // 2) Best-effort cross-role check: drive the per-user OAuth connect flow.
     await page.goto(
       new URL("settings/user/connected-accounts", shared.env.nextcloudBaseUrl).toString(),
       { waitUntil: "domcontentloaded", timeout: 60_000 }
@@ -70,38 +52,49 @@ test("integration integration_zammad: pinned to partner Zammad instance and conn
     await shared.dismissBlockingNextcloudModals(page, page);
 
     const connect = page
-      .getByRole("button", { name: /connect to zammad/i })
-      .or(page.getByRole("link", { name: /connect to zammad/i }));
+      .locator('a[href*="/oauth/authorize"]')
+      .or(page.getByRole("button", { name: /connect to zammad/i }))
+      .or(page.getByRole("link", { name: /connect to zammad/i }))
+      .first();
+    await expect(
+      connect,
+      "the personal 'Connect to Zammad' control must render once the partner OAuth client is provisioned — its absence means the coupling failed to land"
+    ).toBeVisible({ timeout: 60_000 });
 
-    if ((await connect.count()) === 0) {
-      // The admin pinning asserted above already proves the integration is
-      // coupled to the partner instance; the OAuth client (client_id/secret)
-      // is a separate vault-backed provisioning step, so its absence is not a
-      // failure.
-      return;
+    let authorizeHref = await connect.getAttribute("href").catch(() => null);
+    if (!authorizeHref || !/\/oauth\/authorize/i.test(authorizeHref)) {
+      const popupPromise = context.waitForEvent("page", { timeout: 15_000 }).catch(() => null);
+      await Promise.all([
+        page.waitForURL((u) => new URL(u).host === partnerHost, { timeout: 30_000 }).catch(() => {}),
+        connect.click({ timeout: 10_000 }).catch(() => {}),
+      ]);
+      const popup = await popupPromise;
+      const target = popup || page;
+      await target.waitForLoadState("domcontentloaded", { timeout: 30_000 }).catch(() => {});
+      authorizeHref = target.url();
     }
 
-    await Promise.all([
-      page.waitForEvent("framenavigated", { timeout: 60_000 }).catch(() => {}),
-      connect.first().click(),
-    ]);
-
-    await expect
-      .poll(() => page.url(), { timeout: 60_000 })
-      .toMatch(/\/oauth\/authorize\??|connected-accounts/i);
-
-    if (/\/oauth\/authorize/i.test(page.url())) {
-      const authorizeUrl = new URL(page.url());
-      expect(
-        authorizeUrl.host,
-        "Zammad OAuth authorize must be served by the partner instance, not Nextcloud"
-      ).not.toBe(nextcloudHost);
-      expect(
-        authorizeUrl.host,
-        "the OAuth authorize host must match the configured partner instance URL"
-      ).toBe(instanceHost);
-      expect(authorizeUrl.searchParams.get("client_id")).toBeTruthy();
-    }
+    const authorize = new URL(authorizeHref, instanceUrl);
+    expect(
+      authorize.host,
+      "the Zammad OAuth authorize must be served by the partner instance, not Nextcloud"
+    ).not.toBe(nextcloudHost);
+    expect(
+      authorize.host,
+      "the OAuth authorize host must match the configured partner instance URL"
+    ).toBe(partnerHost);
+    expect(
+      authorize.pathname,
+      "the per-user connect must initiate OAuth on the partner /oauth/authorize endpoint"
+    ).toContain("/oauth/authorize");
+    expect(
+      (authorize.searchParams.get("client_id") || "").length,
+      "the authorize request must carry the provisioned OAuth client_id (proves the partner-registered app)"
+    ).toBeGreaterThan(0);
+    expect(
+      authorize.searchParams.get("response_type"),
+      "the coupling must use the authorization-code grant"
+    ).toBe("code");
   } finally {
     await page.close().catch(() => {});
     await context.close().catch(() => {});
