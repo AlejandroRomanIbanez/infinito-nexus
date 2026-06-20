@@ -5,7 +5,6 @@ http_port: "{{ lookup('config', application_id, 'services.matomo.ports.local.htt
 entity_name: "{{ application_id | get_entity_name }}"
 
 MATOMO_SERVICE: "{{ entity_name }}"
-MATOMO_APP_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, MATOMO_SERVICE) }}"
 MATOMO_NAME: "{{ lookup('config', application_id, 'services.' ~ MATOMO_SERVICE ~ '.name') }}"
 MATOMO_CONFIG: "/var/www/html/config/config.ini.php"
 MATOMO_SERVICE_URL: "http://{{ MATOMO_SERVICE }}"
