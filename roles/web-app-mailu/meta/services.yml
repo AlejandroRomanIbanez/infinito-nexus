@@ -43,6 +43,7 @@ mailu:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 redis:
+  name: mailu-redis
   backup:
     disabled: true
   enabled: true
@@ -61,6 +62,7 @@ mariadb:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — internal sub-component
 admin:
+  name: mailu-admin
   enabled: true
   shared: false
   cpus: "0.3"
@@ -70,6 +72,7 @@ admin:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — internal sub-component
 imap:
+  name: mailu-imap
   enabled: true
   shared: false
   cpus: "0.5"
@@ -79,6 +82,7 @@ imap:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — internal sub-component
 smtp:
+  name: mailu-smtp
   enabled: true
   shared: false
   cpus: "0.5"
@@ -88,6 +92,7 @@ smtp:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — internal sub-component
 antispam:
+  name: mailu-antispam
   enabled: true
   shared: false
   cpus: "0.6"
@@ -97,6 +102,7 @@ antispam:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — internal sub-component
 antivirus:
+  name: mailu-antivirus
   enabled: true
   shared: false
   image: clamav/clamav-debian
@@ -108,6 +114,7 @@ antivirus:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — internal sub-component
 oletools:
+  name: mailu-oletools
   enabled: true
   shared: false
   cpus: "0.2"
@@ -117,6 +124,7 @@ oletools:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — internal sub-component
 webdav:
+  name: mailu-webdav
   enabled: true
   shared: false
   cpus: "0.2"
@@ -126,6 +134,7 @@ webdav:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — internal sub-component
 fetchmail:
+  name: mailu-fetchmail
   enabled: true
   shared: false
   cpus: "0.2"
@@ -135,6 +144,7 @@ fetchmail:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — internal sub-component
 webmail:
+  name: mailu-webmail
   enabled: true
   shared: false
   cpus: "0.3"
@@ -144,6 +154,7 @@ webmail:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — internal sub-component
 resolver:
+  name: mailu-resolver
   enabled: true
   shared: false
   cpus: "0.2"
@@ -153,6 +164,7 @@ resolver:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — internal sub-component
 front:
+  name: mailu-front
   enabled: true
   shared: false
   cpus: "0.3"

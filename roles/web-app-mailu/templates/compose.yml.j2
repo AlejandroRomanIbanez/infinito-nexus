@@ -3,7 +3,7 @@
   resolver:
 {% set service_name = 'resolver' %}
     {{ lookup('container_image', application_id, 'resolver', image=MAILU_DOCKER_FLAVOR ~ '/unbound', version=MAILU_VERSION) }}
-    {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_resolver') }}
+    {{ lookup('compose_only', 'container_name', MAILU_RESOLVER_CONTAINER_ADDRESS) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
@@ -11,7 +11,7 @@
 
   {{ MAILU_FRONT_SERVICE }}:
 {% set service_name = MAILU_FRONT_SERVICE %}
-    {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_' ~ MAILU_FRONT_SERVICE) }}
+    {{ lookup('compose_only', 'container_name', MAILU_FRONT_CONTAINER_ADDRESS) }}
     {{ lookup('container_image', application_id, 'front', image=MAILU_DOCKER_FLAVOR ~ '/nginx', version=MAILU_VERSION) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     ports:
@@ -36,7 +36,7 @@
 
   admin:
 {% set service_name = 'admin' %}
-    {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_admin') }}
+    {{ lookup('compose_only', 'container_name', MAILU_ADMIN_CONTAINER_ADDRESS) }}
     {{ lookup('container_image', application_id, 'admin', image=MAILU_DOCKER_FLAVOR ~ '/admin', version=MAILU_VERSION) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
@@ -56,7 +56,7 @@
 
   imap:
 {% set service_name = 'imap' %}
-    {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_imap') }}
+    {{ lookup('compose_only', 'container_name', MAILU_IMAP_CONTAINER_ADDRESS) }}
     {{ lookup('container_image', application_id, 'imap', image=MAILU_DOCKER_FLAVOR ~ '/dovecot', version=MAILU_VERSION) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
@@ -67,7 +67,7 @@
 
   smtp:
 {% set service_name = 'smtp' %}
-    {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_smtp') }}
+    {{ lookup('compose_only', 'container_name', MAILU_SMTP_CONTAINER_ADDRESS) }}
     {{ lookup('container_image', application_id, 'smtp', image=MAILU_DOCKER_FLAVOR ~ '/postfix', version=MAILU_VERSION) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
@@ -79,7 +79,7 @@
   oletools:
 {% set service_name = 'oletools' %}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_oletools') }}
+    {{ lookup('compose_only', 'container_name', MAILU_OLETOOLS_CONTAINER_ADDRESS) }}
     {{ lookup('container_image', application_id, 'oletools', image=MAILU_DOCKER_FLAVOR ~ '/oletools', version=MAILU_VERSION) }}
     hostname: oletools
     {{ lookup('depends_on', ['resolver']) }}
@@ -90,7 +90,7 @@
 
   antispam:
 {% set service_name = 'antispam' %}
-    {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_antispam') }}
+    {{ lookup('compose_only', 'container_name', MAILU_ANTISPAM_CONTAINER_ADDRESS) }}
     {{ lookup('container_image', application_id, 'antispam', image=MAILU_DOCKER_FLAVOR ~ '/rspamd', version=MAILU_VERSION) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
@@ -102,7 +102,7 @@
 
   antivirus:
 {% set service_name = 'antivirus' %}
-    {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_antivirus') }}
+    {{ lookup('compose_only', 'container_name', MAILU_ANTIVIRUS_CONTAINER_ADDRESS) }}
     {{ lookup('container_image', application_id, 'antivirus') }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
@@ -113,7 +113,7 @@
 
   webdav:
 {% set service_name = 'webdav' %}
-    {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_webdav') }}
+    {{ lookup('compose_only', 'container_name', MAILU_WEBDAV_CONTAINER_ADDRESS) }}
     {{ lookup('container_image', application_id, 'webdav', image=MAILU_DOCKER_FLAVOR ~ '/radicale', version=MAILU_VERSION) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
@@ -125,7 +125,7 @@
 
   fetchmail:
 {% set service_name = 'fetchmail' %}
-    {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_fetchmail') }}
+    {{ lookup('compose_only', 'container_name', MAILU_FETCHMAIL_CONTAINER_ADDRESS) }}
     {{ lookup('container_image', application_id, 'fetchmail', image=MAILU_DOCKER_FLAVOR ~ '/fetchmail', version=MAILU_VERSION) }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -136,7 +136,7 @@
 
   webmail:
 {% set service_name = 'webmail' %}
-    {{ lookup('compose_only', 'container_name', MAILU_CONTAINER ~ '_webmail') }}
+    {{ lookup('compose_only', 'container_name', MAILU_WEBMAIL_CONTAINER_ADDRESS) }}
     {{ lookup('container_image', application_id, 'webmail', image=MAILU_DOCKER_FLAVOR ~ '/webmail', version=MAILU_VERSION) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
