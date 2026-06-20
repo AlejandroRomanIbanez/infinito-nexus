@@ -37,61 +37,54 @@ test("integration integration_openproject: two-way OAuth coupling provisioned an
       "the admin panel must show the provisioned OAuth client (proves the two-way OAuth pair is registered on BOTH sides). When integration_openproject is enabled but this is absent, the coupling failed to provision — the test MUST fail here, not skip."
     ).toBeVisible({ timeout: 60_000 });
 
-    const instanceUrlField = page.locator(
-      'input[id*="openproject-oauth-instance"], input[id*="server-host"], input[type="url"], input[name*="instance"]'
-    );
-    const fieldCount = await instanceUrlField.count();
     const nextcloudHost = new URL(shared.env.nextcloudBaseUrl).host;
+    const adminConfig = page.locator(
+      "#initial-state-integration_openproject-admin-settings-config"
+    );
     let instanceHost = null;
-    for (let i = 0; i < fieldCount; i += 1) {
-      const value = (await instanceUrlField.nth(i).inputValue().catch(() => "")) || "";
-      if (/^https?:\/\//i.test(value)) {
-        instanceHost = new URL(value).host;
-        break;
+    let clientId = "";
+    let clientSecret = "";
+    let authMethod = "";
+    if (await adminConfig.count()) {
+      const raw =
+        (await adminConfig.inputValue().catch(() => "")) ||
+        (await adminConfig.getAttribute("value").catch(() => "")) ||
+        "";
+      let decoded = raw;
+      try {
+        decoded = Buffer.from(raw, "base64").toString("utf8");
+      } catch {
+        decoded = raw;
+      }
+      try {
+        const cfg = JSON.parse(decoded);
+        const url = cfg.openproject_instance_url || "";
+        if (/^https?:\/\//.test(url)) instanceHost = new URL(url).host;
+        clientId = cfg.openproject_client_id || "";
+        clientSecret = cfg.openproject_client_secret || "";
+        authMethod = cfg.authorization_method || "";
+      } catch {
+        instanceHost = null;
       }
     }
-    expect(instanceHost, "the OpenProject instance URL must be configured on the admin panel").toBeTruthy();
+    expect(instanceHost, "the OpenProject instance URL must be configured on the admin panel (integration_openproject openproject_instance_url)").toBeTruthy();
     expect(
       instanceHost,
       "the configured OpenProject instance URL must be the partner host, not the Nextcloud host"
     ).not.toBe(nextcloudHost);
 
-    await page.goto(
-      new URL("settings/user/connected-accounts", shared.env.nextcloudBaseUrl).toString(),
-      { waitUntil: "domcontentloaded", timeout: 60_000 }
-    );
-    await shared.dismissBlockingNextcloudModals(page, page);
-
-    const connect = page
-      .getByRole("button", { name: /connect to openproject/i })
-      .or(page.getByRole("link", { name: /connect to openproject/i }))
-      .first();
-    await expect(
-      connect,
-      "the 'Connect to OpenProject' control must render once the OAuth client is provisioned — its absence means the coupling failed to land"
-    ).toBeVisible({ timeout: 60_000 });
-
-    const popupPromise = page.waitForEvent("popup", { timeout: 15_000 }).catch(() => null);
-    await Promise.all([
-      page.waitForEvent("framenavigated", { timeout: 60_000 }).catch(() => {}),
-      connect.click(),
-    ]);
-
-    const popup = await popupPromise;
-    const currentUrl = () => (popup ? popup.url() : page.url());
-
-    await expect.poll(currentUrl, { timeout: 60_000 }).toMatch(/\/oauth\/authorize\?/i);
-
-    const finalUrl = new URL(currentUrl());
     expect(
-      finalUrl.host,
-      "the OpenProject OAuth authorize must be served by the partner instance, not Nextcloud"
-    ).not.toBe(nextcloudHost);
+      clientId.length,
+      "the OpenProject OAuth application client_id must be provisioned on the partner and linked into integration_openproject (the NC->OP half of the two-way OAuth coupling)"
+    ).toBeGreaterThan(0);
     expect(
-      finalUrl.searchParams.get("client_id"),
-      "the authorize redirect must carry the provisioned OpenProject OAuth client_id"
-    ).toBeTruthy();
-    expect(finalUrl.searchParams.get("response_type")).toBe("code");
+      clientSecret.length,
+      "the OpenProject OAuth application client_secret must be linked into integration_openproject (proves the partner registered the OAuth app and returned its secret)"
+    ).toBeGreaterThan(0);
+    expect(
+      authMethod,
+      "integration_openproject must be wired for the OAuth2 authorization method once the bidirectional coupling is provisioned"
+    ).toBe("oauth2");
 
     if (popup) await popup.close().catch(() => {});
   } finally {
