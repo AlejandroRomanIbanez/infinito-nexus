@@ -23,17 +23,10 @@
       until: matomo_bootstrap_compose.rc == 0
       when: DEPLOYMENT_MODE != 'swarm'
 
-    - name: "Matomo bootstrap | Swarm: Wait for in-stack bootstrap service to emit a token"
-      ansible.builtin.shell: |
-        container service logs --no-task-ids \
-          {{ lookup('container_service', application_id, MATOMO_BOOTSTRAP_SERVICE) | quote }} 2>&1 \
-          | grep -oE '^[a-f0-9]{32,64}$' | tail -1
-      register: matomo_bootstrap_swarm
-      changed_when: false
-      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-      retries: "{{ MATOMO_BOOTSTRAP_RETRIES | int }}"
-      delay: "{{ MATOMO_BOOTSTRAP_RETRY_DELAY_S | int }}"
-      until: (matomo_bootstrap_swarm.stdout | length) > 0
+    - name: "Matomo bootstrap | Swarm: bootstrap against a healthy Matomo"
+      ansible.builtin.include_tasks: 05_bootstrap_swarm.yml
+      vars:
+        matomo_bootstrap_service_ref: "{{ lookup('container_service', application_id, MATOMO_BOOTSTRAP_SERVICE) }}"
       when: DEPLOYMENT_MODE == 'swarm'
 
   rescue:
