@@ -37,6 +37,10 @@ redis:
   backup:
     disabled: true
   enabled: true
+  cpus: "0.5"
+  mem_reservation: 128m
+  mem_limit: 512m
+  pids_limit: 512
 # nocheck: playwright-service-flag — self-provider
 discourse:
   # `shared: true` is required so the service registry recognises this

@@ -83,3 +83,7 @@ console:
 client:
   image: quay.io/minio/mc
   version: "RELEASE.2025-08-13T08-35-41Z" # nocheck: docker-version
+  cpus: "0.2"
+  mem_reservation: 128m
+  mem_limit: 256m
+  pids_limit: 256

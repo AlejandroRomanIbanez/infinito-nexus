@@ -3,6 +3,11 @@
 css:
   enabled: true
   shared: true
+  cpus: "0.2"
+  mem_reservation: 128m
+  mem_limit: 256m
+  pids_limit: 128
+  min_storage: "1GB"
   lifecycle: beta
 # nocheck: playwright-service-flag — provider role; no consumer surface to gate
 # nocheck: dynamic-flag

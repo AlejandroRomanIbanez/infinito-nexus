@@ -28,6 +28,10 @@ redis:
   backup:
     disabled: true
   enabled: true
+  cpus: "0.5"
+  mem_reservation: 128m
+  mem_limit: 512m
+  pids_limit: 512
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 postgres:
   enabled: true # nocheck: dynamic-flag

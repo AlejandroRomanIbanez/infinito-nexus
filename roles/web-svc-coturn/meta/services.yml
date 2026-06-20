@@ -28,6 +28,10 @@ coturn:
 gateway:
   image: nginx
   version: alpine
+  cpus: "0.3"
+  mem_reservation: 256m
+  mem_limit: 512m
+  pids_limit: 256
 # nocheck: dynamic-flag
 redis:
   backup:

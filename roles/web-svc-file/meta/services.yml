@@ -6,6 +6,7 @@ file:
   mem_reservation: 128m
   mem_limit: 256m
   pids_limit: 128
+  min_storage: "1GB"
   lifecycle: beta
 matomo:
   enabled: "{{ 'web-app-matomo' in group_names }}"

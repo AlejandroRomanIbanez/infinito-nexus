@@ -1,19 +1,28 @@
 """Lint compose service resource limits in role configs.
 
-Every **invokable** role's primary compose service (``services.<entity_name>``)
-MUST declare the host-resource guard rails:
+Every container service that a role runs **itself** (i.e. that is not provided
+by another role via the service registry) MUST declare host-resource guard
+rails, so the aggregate-resources tooling and the deploy can always resolve a
+real budget instead of silently falling back to the dynamic fair-share default.
 
-- ``min_storage``
-- ``cpus``
-- ``mem_reservation``
-- ``mem_limit``
-- ``pids_limit``
+Two scopes:
+
+- **Primary entity** (``services.<entity_name>``) of every invokable role MUST
+  declare ``min_storage``, ``cpus``, ``mem_reservation``, ``mem_limit`` and
+  ``pids_limit``.
+- **Sidecar containers** (every other enabled, container-shaped service entry)
+  MUST declare ``cpus``, ``mem_reservation``, ``mem_limit`` and ``pids_limit``
+  (``min_storage`` is the role/entity's concern, not a sidecar's).
+
+A service entry is **exempt** when another role covers it — i.e. the service
+key resolves through the service registry to a *different* role (e.g.
+discourse's ``postgres`` is provided by ``svc-db-postgres``, whose entity
+declares the limits). Pure config toggles / cross-role integration flags that
+are not container-shaped are ignored.
 
 Scope: only roles whose directory name starts with an invokable prefix from
-``roles/categories.yml`` (resolved via
-``plugins.filter.invokable_paths.get_invokable_paths``) are checked. Non-
-invokable categories (``sys-*``, ``dev-*``, …) are infrastructural and ship
-no top-level compose service of their own.
+``roles/categories.yml`` are checked. Non-invokable categories (``dev-*``,
+``sys-*``) ship no compose service of their own.
 
 Missing keys emit a ``::warning`` annotation each so CI annotates the source
 line and **fail the test** so the regression blocks the merge.
@@ -24,7 +33,7 @@ from __future__ import annotations
 import re
 import unittest
 from dataclasses import dataclass
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import yaml
 
@@ -32,6 +41,10 @@ from plugins.filter.invokable_paths import get_invokable_paths
 from utils.annotations.message import in_github_actions, warning
 from utils.cache.files import read_text
 from utils.cache.yaml import load_yaml_any
+from utils.roles.applications.services.registry import (
+    build_service_registry_from_applications,
+    load_applications_from_roles_dir,
+)
 from utils.roles.entity_name import get_entity_name
 from utils.roles.mapping import ROLE_FILE_META_SERVICES
 
@@ -40,12 +53,31 @@ from . import PROJECT_ROOT
 if TYPE_CHECKING:
     from pathlib import Path
 
-REQUIRED_KEYS = (
+ENTITY_REQUIRED_KEYS = (
     "min_storage",
     "cpus",
     "mem_reservation",
     "mem_limit",
     "pids_limit",
+)
+SIDECAR_REQUIRED_KEYS = (
+    "cpus",
+    "mem_reservation",
+    "mem_limit",
+    "pids_limit",
+)
+_CONTAINER_HINT_KEYS = (
+    "image",
+    "name",
+    "version",
+    "container",
+    "ports",
+    "backup",
+    "ref",
+    "repository",
+    "network_mode",
+    "min_storage",
+    *SIDECAR_REQUIRED_KEYS,
 )
 
 
@@ -64,6 +96,27 @@ def _load_yaml(path: Path) -> dict:
     except yaml.YAMLError:
         return {}
     return data if isinstance(data, dict) else {}
+
+
+def _is_enabled(service_conf: dict[str, Any]) -> bool:
+    raw = service_conf.get("enabled", True)
+    if isinstance(raw, bool):
+        return raw
+    return bool(raw)
+
+
+def _looks_like_container(service_conf: dict[str, Any]) -> bool:
+    return any(key in service_conf for key in _CONTAINER_HINT_KEYS)
+
+
+def _covered_by_other_role(
+    service_key: str,
+    role: str,
+    registry: dict[str, dict[str, Any]],
+) -> bool:
+    provider = registry.get(service_key) or {}
+    provider_role = provider.get("role")
+    return bool(provider_role and provider_role != role)
 
 
 def _find_service_line(config_path: Path, service_name: str) -> int:
@@ -85,6 +138,9 @@ def _find_service_line(config_path: Path, service_name: str) -> int:
 def _collect_findings(root: Path) -> list[MissingKeyFinding]:
     findings: list[MissingKeyFinding] = []
     roles_dir = root / "roles"
+    registry = build_service_registry_from_applications(
+        load_applications_from_roles_dir(roles_dir)
+    )
     invokable_prefixes = tuple(get_invokable_paths(suffix="-"))
     for role_dir in sorted(roles_dir.iterdir()):
         if not role_dir.is_dir():
@@ -101,26 +157,33 @@ def _collect_findings(root: Path) -> list[MissingKeyFinding]:
             continue
 
         entity_name = get_entity_name(role_dir.name)
-        if not entity_name or entity_name not in services:
-            continue
-        primary_conf = services.get(entity_name)
-        if not isinstance(primary_conf, dict):
-            continue
-        if primary_conf.get("shared") is True:
-            continue
+        for service_key, raw_conf in services.items():
+            if not isinstance(raw_conf, dict):
+                continue
+            is_entity = service_key == entity_name
 
-        service_line = _find_service_line(config_path, entity_name)
-        findings.extend(
-            MissingKeyFinding(
-                role=role_dir.name,
-                service=entity_name,
-                key=key,
-                config_path=config_path,
-                line=service_line,
+            if not is_entity:
+                if not _is_enabled(raw_conf):
+                    continue
+                if not _looks_like_container(raw_conf):
+                    continue
+
+            if _covered_by_other_role(service_key, role_dir.name, registry):
+                continue
+
+            required = ENTITY_REQUIRED_KEYS if is_entity else SIDECAR_REQUIRED_KEYS
+            service_line = _find_service_line(config_path, service_key)
+            findings.extend(
+                MissingKeyFinding(
+                    role=role_dir.name,
+                    service=service_key,
+                    key=key,
+                    config_path=config_path,
+                    line=service_line,
+                )
+                for key in required
+                if key not in raw_conf
             )
-            for key in REQUIRED_KEYS
-            if key not in primary_conf
-        )
 
     findings.sort(key=lambda f: (f.role, f.service, f.key))
     return findings
@@ -147,9 +210,9 @@ def _print_summary(findings: list[MissingKeyFinding], root: Path) -> None:
 
 
 class TestComposeResourceLimits(unittest.TestCase):
-    def test_primary_services_declare_resource_limits(self) -> None:
-        """Fail loudly when an invokable role's primary compose service is
-        missing one of the required resource keys.
+    def test_self_run_services_declare_resource_limits(self) -> None:
+        """Fail loudly when a role's own (not externally-provided) container
+        service is missing one of the required resource keys.
         """
         root = PROJECT_ROOT
         findings = _collect_findings(root)
@@ -167,9 +230,9 @@ class TestComposeResourceLimits(unittest.TestCase):
                 for f in findings
             ]
             self.fail(
-                f"Missing required compose-service resource keys "
-                f"({', '.join(REQUIRED_KEYS)}) on {len(findings)} entries:\n"
-                + "\n".join(lines)
+                f"Missing required compose-service resource keys on "
+                f"{len(findings)} entries (entity needs {ENTITY_REQUIRED_KEYS}, "
+                f"sidecar needs {SIDECAR_REQUIRED_KEYS}):\n" + "\n".join(lines)
             )
 
 
