@@ -1,6 +1,7 @@
 ---
 # nocheck: playwright-service-flag — self-provider
 css:
+  bond: 1
   enabled: true
   shared: true
   cpus: "0.2"
@@ -12,6 +13,7 @@ css:
 # nocheck: playwright-service-flag — provider role; no consumer surface to gate
 # nocheck: dynamic-flag
 cdn:
+  bond: 1
   enabled: true
   shared: true
 # nocheck: playwright-service-flag — provider role; no consumer surface to gate
@@ -20,5 +22,6 @@ matomo:
   enabled: false
   shared: false
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

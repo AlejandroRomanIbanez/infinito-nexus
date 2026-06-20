@@ -1,5 +1,6 @@
 ---
 postgres:
+  bond: 1
   enabled: true
   shared: true
   image: postgis/postgis

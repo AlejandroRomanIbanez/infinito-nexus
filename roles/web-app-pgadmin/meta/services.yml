@@ -20,21 +20,27 @@ pgadmin:
   mem_limit: 256m
   pids_limit: 256
 logout:
+  bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
   shared: "{{ 'web-svc-logout' in group_names }}"
 dashboard:
+  bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
   shared: "{{ 'web-app-dashboard' in group_names }}"
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 email:
+  bond: 1
   enabled: "{{ 'web-app-mailu' in group_names }}"
   shared: "{{ 'web-app-mailu' in group_names }}"
 postgres:
+  bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 sso:
+  bond: 1
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
   flavor: oauth2
@@ -45,8 +51,10 @@ sso:
     allowed_groups:
       - "{{ lookup('rbac_group_path', application_id='web-app-pgadmin', role='administrator') }}"
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

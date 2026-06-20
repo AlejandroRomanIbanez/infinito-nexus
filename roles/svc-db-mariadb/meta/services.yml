@@ -1,5 +1,6 @@
 ---
 mariadb:
+  bond: 1
   enabled: true
   shared: true
   version: "12.3"

@@ -1,8 +1,10 @@
 ---
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 coturn:
+  bond: 1
   enabled: true
   shared: true
   image: coturn/coturn
@@ -38,8 +40,10 @@ redis:
     disabled: true
   enabled: false
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

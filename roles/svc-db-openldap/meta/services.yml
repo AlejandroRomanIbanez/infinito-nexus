@@ -1,5 +1,6 @@
 ---
 openldap:
+  bond: 1
   enabled: true
   shared: true
   provides: ldap

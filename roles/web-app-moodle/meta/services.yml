@@ -1,26 +1,33 @@
 ---
 # nocheck: seaweedfs-required — object storage not implemented for this role
 sso:
+  bond: 1
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
   flavor: oidc
 logout:
+  bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
   shared: "{{ 'web-svc-logout' in group_names }}"
 dashboard:
+  bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
   shared: "{{ 'web-app-dashboard' in group_names }}"
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 email:
+  bond: 1
   enabled: "{{ 'web-app-mailu' in group_names }}"
   shared: "{{ 'web-app-mailu' in group_names }}"
 ldap:
+  bond: 1
   enabled: "{{ 'svc-db-openldap' in group_names }}"
   shared: "{{ 'svc-db-openldap' in group_names }}"
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 mariadb:
+  bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
 moodle:
@@ -71,8 +78,10 @@ cron:
   pids_limit: 256
 # nocheck: playwright-service-flag — verified by web-svc-css provider spec
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

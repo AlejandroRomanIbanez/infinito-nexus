@@ -1,22 +1,28 @@
 ---
 sso:
+  bond: 1
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
   flavor: oidc
 ldap:
+  bond: 1
   enabled: "{{ 'svc-db-openldap' in group_names }}"
   shared: "{{ 'svc-db-openldap' in group_names }}"
 logout:
+  bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
   shared: "{{ 'web-svc-logout' in group_names }}"
 dashboard:
+  bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
   shared: "{{ 'web-app-dashboard' in group_names }}"
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 # nocheck: playwright-service-flag — central object-store provider entity
 minio:
+  bond: 1
   enabled: true
   shared: true
   backup:
@@ -47,6 +53,7 @@ redis:
   enabled: false
 # nocheck: playwright-service-flag — css consumer, no Playwright surface (provider: web-svc-css)
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 # nocheck: dynamic-flag
@@ -56,9 +63,11 @@ javascript:
   shared: true
 # nocheck: playwright-service-flag — AI backend, infrastructural
 ollama:
+  bond: 1
   enabled: "{{ 'svc-ai-ollama' in group_names }}"
   shared: "{{ 'svc-ai-ollama' in group_names }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
 api:

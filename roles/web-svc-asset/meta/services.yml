@@ -1,5 +1,6 @@
 ---
 asset:
+  bond: 1
   enabled: true
   shared: true
   cpus: "0.2"
@@ -13,9 +14,11 @@ asset:
     - web-svc-file
   lifecycle: beta
 file:
+  bond: 1
   enabled: "{{ 'web-svc-file' in group_names }}"
   shared: "{{ 'web-svc-file' in group_names }}"
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 # nocheck: dynamic-flag
@@ -23,5 +26,6 @@ css:
   enabled: false
   shared: false
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

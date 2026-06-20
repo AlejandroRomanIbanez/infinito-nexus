@@ -1,15 +1,19 @@
 ---
 # nocheck: seaweedfs-required — object storage not implemented for this role
 logout:
+  bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
   shared: "{{ 'web-svc-logout' in group_names }}"
 dashboard:
+  bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
   shared: "{{ 'web-app-dashboard' in group_names }}"
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 mariadb:
+  bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
 phpmyadmin:
@@ -31,6 +35,7 @@ phpmyadmin:
   mem_limit: 256m
   pids_limit: 256
 sso:
+  bond: 1
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
   flavor: oauth2
@@ -41,6 +46,7 @@ sso:
     allowed_groups:
       - "{{ lookup('rbac_group_path', application_id='web-app-phpmyadmin', role='administrator') }}"
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 # nocheck: email
@@ -49,5 +55,6 @@ email:
   enabled: false
   shared: false
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

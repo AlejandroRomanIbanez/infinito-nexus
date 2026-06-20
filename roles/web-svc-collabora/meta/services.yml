@@ -1,5 +1,6 @@
 ---
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 # nocheck: dynamic-flag
@@ -8,6 +9,7 @@ redis:
     disabled: true
   enabled: false
 collabora:
+  bond: 1
   enabled: true
   shared: true
   image: collabora/code
@@ -23,5 +25,6 @@ collabora:
       http: 8042
   lifecycle: beta
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

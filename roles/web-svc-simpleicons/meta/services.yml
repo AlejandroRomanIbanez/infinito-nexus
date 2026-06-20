@@ -29,6 +29,7 @@ recaptcha:
   enabled: false
 # nocheck: playwright-service-flag — self-provider
 simpleicons:
+  bond: 1
   enabled: true
   shared: true
   image: node
@@ -45,5 +46,6 @@ simpleicons:
       http: 8044
   lifecycle: beta
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

@@ -1,21 +1,27 @@
 ---
 logout:
+  bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
   shared: "{{ 'web-svc-logout' in group_names }}"
 dashboard:
+  bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
   shared: "{{ 'web-app-dashboard' in group_names }}"
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 email:
+  bond: 1
   enabled: "{{ 'web-app-mailu' in group_names }}"
   shared: "{{ 'web-app-mailu' in group_names }}"
 sso:
+  bond: 1
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
   flavor: oidc
 ldap:
+  bond: 1
   enabled: "{{ 'svc-db-openldap' in group_names }}"
   shared: "{{ 'svc-db-openldap' in group_names }}"
 # nocheck: shared
@@ -31,6 +37,7 @@ redis:
   pids_limit: 512
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 postgres:
+  bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 # nocheck: playwright-service-flag — object store, no Playwright surface
@@ -38,6 +45,7 @@ minio:
   enabled: false # nocheck: dynamic-flag
   shared: false # nocheck: dynamic-flag
 seaweedfs:
+  bond: 1
   enabled: "{{ 'web-app-seaweedfs' in group_names }}"
   shared: "{{ 'web-app-seaweedfs' in group_names }}"
 penpot:
@@ -79,6 +87,7 @@ exporter:
   pids_limit: 512
 # nocheck: playwright-service-flag — css consumer, no Playwright surface (provider: web-svc-css)
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 # nocheck: dynamic-flag
@@ -87,5 +96,6 @@ javascript:
   enabled: false
   shared: false
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

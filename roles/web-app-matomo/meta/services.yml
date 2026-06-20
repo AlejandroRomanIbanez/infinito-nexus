@@ -7,13 +7,16 @@ sso:
   shared: false
 # nocheck: dynamic-flag
 logout:
+  bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
   shared: "{{ 'web-svc-logout' in group_names }}"
 dashboard:
+  bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
   shared: "{{ 'web-app-dashboard' in group_names }}"
 # nocheck: playwright-service-flag — self-provider
 matomo:
+  bond: 1
   enabled: true
   shared: true
   image: matomo
@@ -48,6 +51,7 @@ bootstrap:
   min_storage: 1GB
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 mariadb:
+  bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
 # nocheck: dynamic-flag
@@ -58,8 +62,10 @@ redis:
   enabled: false
 # nocheck: playwright-service-flag — verified by web-svc-css provider spec
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
