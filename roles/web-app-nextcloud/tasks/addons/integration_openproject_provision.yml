@@ -50,21 +50,6 @@
       is created; reset the integration_openproject app config (openproject_client_id,
       openproject_client_secret, nc_oauth_client_id) and the OpenProject storage to re-provision.
 
-- name: Register a Nextcloud OAuth2 client for OpenProject
-  command: >
-    {{ NEXTCLOUD_DOCKER_EXEC_OCC }} oauth2:add-client
-    "OpenProject client"
-    "{{ nextcloud_op_expected_url }}/oauth_clients/%s/callback"
-    --output=json
-  register: nextcloud_op_ncclient_create
-  changed_when: true
-  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-
-- name: Parse the Nextcloud OAuth2 client credentials
-  set_fact:
-    nextcloud_op_ncclient: "{{ nextcloud_op_ncclient_create.stdout | trim | from_json }}"
-  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-
 - name: Push the OpenProject OAuth application credentials into Nextcloud
   command: >
     {{ NEXTCLOUD_DOCKER_EXEC_OCC }} config:app:set integration_openproject {{ item.key }}
@@ -73,30 +58,55 @@
     - { key: "authorization_method", value: "oauth2" }
     - { key: "openproject_client_id", value: "{{ nextcloud_op_oauth.openproject_client_id }}" }
     - { key: "openproject_client_secret", value: "{{ nextcloud_op_client_secret }}" }
-    - { key: "nc_oauth_client_id", value: "{{ nextcloud_op_ncclient.clientId }}" }
   loop_control:
     label: "{{ item.key }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: Register the Nextcloud OAuth2 client back on the OpenProject storage
-  ansible.builtin.command:
-    argv:
-      - container
-      - exec
-      - -i
-      - -e
-      - "NEXTCLOUD_HOST={{ lookup('tls', 'web-app-nextcloud', 'url.base') }}"
-      - -e
-      - "STORAGE_NAME={{ nextcloud_op_storage_name }}"
-      - -e
-      - "NC_OAUTH_CLIENT_ID={{ nextcloud_op_ncclient.clientId }}"
-      - -e
-      - "NC_OAUTH_CLIENT_SECRET={{ nextcloud_op_ncclient.clientSecret }}"
-      - "{{ nextcloud_op_web_container }}"
-      - bash
-      - -lc
-      - "cd /app && bundle exec rails runner -"
-    stdin: "{{ lookup('file', 'openproject/ensure_nextcloud_storage.rb') }}"
-  register: nextcloud_op_client_store
-  changed_when: true
+- name: Register a Nextcloud OAuth2 client for OpenProject
+  command: >
+    {{ NEXTCLOUD_DOCKER_EXEC_OCC }} oauth2:add-client
+    "OpenProject client"
+    "{{ nextcloud_op_expected_url }}/oauth_clients/%s/callback"
+    --output=json
+  register: nextcloud_op_ncclient_create
+  changed_when: nextcloud_op_ncclient_create.rc == 0
+  failed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+- name: Wire the Nextcloud OAuth2 client into both sides when it was created
+  when: (nextcloud_op_ncclient_create.rc | default(1)) == 0
+  block:
+    - name: Parse the Nextcloud OAuth2 client credentials
+      set_fact:
+        nextcloud_op_ncclient: "{{ nextcloud_op_ncclient_create.stdout | trim | from_json }}"
+      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+    - name: Push the Nextcloud OAuth2 client id into integration_openproject
+      command: >
+        {{ NEXTCLOUD_DOCKER_EXEC_OCC }} config:app:set integration_openproject nc_oauth_client_id
+        --value '{{ nextcloud_op_ncclient.clientId }}'
+      changed_when: true
+      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+    - name: Register the Nextcloud OAuth2 client back on the OpenProject storage
+      ansible.builtin.command:
+        argv:
+          - container
+          - exec
+          - -i
+          - -e
+          - "NEXTCLOUD_HOST={{ lookup('tls', 'web-app-nextcloud', 'url.base') }}"
+          - -e
+          - "STORAGE_NAME={{ nextcloud_op_storage_name }}"
+          - -e
+          - "NC_OAUTH_CLIENT_ID={{ nextcloud_op_ncclient.clientId }}"
+          - -e
+          - "NC_OAUTH_CLIENT_SECRET={{ nextcloud_op_ncclient.clientSecret }}"
+          - "{{ nextcloud_op_web_container }}"
+          - bash
+          - -lc
+          - "cd /app && bundle exec rails runner -"
+        stdin: "{{ lookup('file', 'openproject/ensure_nextcloud_storage.rb') }}"
+      register: nextcloud_op_client_store
+      changed_when: true
+      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
