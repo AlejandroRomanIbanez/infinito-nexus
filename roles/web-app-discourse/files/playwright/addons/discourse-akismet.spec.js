@@ -42,7 +42,11 @@ async function signInViaOidc(page) {
     .toContain(discourseBaseUrl);
 }
 
-test("discourse-akismet: spam-filtering plugin is registered on the admin plugins surface", async ({ page }) => {
+function findSetting(settings, name) {
+  return settings.find((s) => s && s.setting === name);
+}
+
+test("discourse-akismet: spam-filtering plugin is installed and coupled to the Akismet partner API", async ({ page }) => {
   skipUnlessAddonEnabled("discourse-akismet");
 
   expect(oidcIssuerUrl, "OIDC_ISSUER_URL must be set").toBeTruthy();
@@ -54,19 +58,55 @@ test("discourse-akismet: spam-filtering plugin is registered on the admin plugin
     await page.context().clearCookies();
     await signInViaOidc(page);
 
-    const response = await page
-      .goto(`${discourseBaseUrl}/admin/plugins`, { waitUntil: "domcontentloaded" })
-      .catch(() => null);
-
-    if (!response || response.status() >= 400 || !page.url().includes("/admin/plugins")) {
-      test.skip(true, "discourse-akismet: spam-filtering backend, no dedicated user surface and admin plugins page not reachable (verified at deploy/config level)");
-      return;
-    }
-
     await expect(page.locator("body")).toContainText(
-      /plugin|discourse|admin/i,
+      /topic|category|welcome|latest|discourse/i,
       { timeout: 60_000 },
     );
+
+    const siteSettings = await page.evaluate(async (base) => {
+      const res = await fetch(`${base}/admin/site_settings.json`, {
+        headers: { Accept: "application/json" },
+        credentials: "include",
+      });
+      if (!res.ok) return { ok: false, status: res.status };
+      const body = await res.json();
+      return { ok: true, settings: (body && body.site_settings) || [] };
+    }, discourseBaseUrl);
+
+    expect(
+      siteSettings.ok,
+      `expected /admin/site_settings.json to be reachable as admin (status ${siteSettings.status})`,
+    ).toBe(true);
+
+    const akismetEnabled = findSetting(siteSettings.settings, "akismet_enabled");
+    expect(
+      akismetEnabled,
+      "akismet_enabled site setting must exist (Akismet plugin installed)",
+    ).toBeTruthy();
+    expect(
+      String(akismetEnabled.value).toLowerCase(),
+      "akismet_enabled must be active (spam filtering wired up)",
+    ).toBe("true");
+
+    const antiSpamService = findSetting(siteSettings.settings, "anti_spam_service");
+    expect(
+      antiSpamService,
+      "anti_spam_service site setting must exist (Akismet plugin installed)",
+    ).toBeTruthy();
+    expect(
+      String(antiSpamService.value).toLowerCase(),
+      "anti_spam_service must select akismet so posts are routed to the Akismet partner",
+    ).toBe("akismet");
+
+    const akismetApiKey = findSetting(siteSettings.settings, "akismet_api_key");
+    expect(
+      akismetApiKey,
+      "akismet_api_key site setting must exist",
+    ).toBeTruthy();
+    expect(
+      String(akismetApiKey.value).trim().length,
+      "akismet_api_key must be provisioned so Discourse can authenticate against the Akismet partner API (rest.akismet.com) — without it the spam-check coupling cannot reach the partner",
+    ).toBeGreaterThan(0);
   } finally {
     await page.context().clearCookies().catch(() => {});
   }
