@@ -8,6 +8,8 @@
     "allow": [
       "Bash(*)",
       "Bash(docker exec *)",
+      "Bash(git --no-pager log --oneline -5)",
+      "Bash(git add *)",
       "Bash(make compose-exec *)",
       "Edit",
       "Read",
