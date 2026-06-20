@@ -4,22 +4,6 @@ const shared = require("../_shared");
 
 test.use({ ignoreHTTPSErrors: true });
 
-// Verifies the coupling of the spreed (Nextcloud Talk) High-Performance Backend
-// to its partner services. The generic loader enables the app and persists
-// signaling_servers / stun_servers / turn_servers / recording_servers via
-// config:app:set; the spreed addon flag binds meta `enabled:` to
-// `services.talk.enabled` with `required: true`, so skipUnlessAddonEnabled is the
-// complete gate. Reaching the body means Talk is enabled.
-//
-// DETERMINISTIC coupling (always asserted): the OCS capabilities advertise a
-// spreed signaling config (the HPB wiring is live) AND the Talk admin settings
-// surface the persisted TURN server, whose host is the distinct web-svc-coturn
-// partner host (NEXTCLOUD_TALK_EXPECTED_TURN_SERVER) — not the Nextcloud host.
-// The signaling URL is path-on-NC-host so it is asserted as a presence check, but
-// the TURN coupling is the discriminating partner-host assertion.
-//
-// The live "Test this server" reachability handoff is asserted BEST-EFFORT only,
-// so a transient HPB/coturn network hiccup never overrides the config coupling.
 test("spreed addon: Talk HPB signaling/turn backends are configured and coupled", async ({ browser }) => {
   skipUnlessAddonEnabled("spreed");
   test.setTimeout(120_000);
@@ -29,9 +13,6 @@ test("spreed addon: Talk HPB signaling/turn backends are configured and coupled"
   const expectedTurnServer = unquote(process.env.NEXTCLOUD_TALK_EXPECTED_TURN_SERVER);
   const expectedStunServer = unquote(process.env.NEXTCLOUD_TALK_EXPECTED_STUN_SERVER);
 
-  // SKIP WHEN GENUINELY ABSENT: when the HPB is not wired (no signaling URL and no
-  // TURN server rendered into the env) there is no coupling to assert. The loader
-  // would not have persisted the backends, so a positive assertion would false-fail.
   test.skip(
     !expectedSignalingUrl && !expectedTurnServer,
     "Talk HPB not configured in this env (no signaling/turn server rendered) — nothing to couple",
@@ -43,8 +24,6 @@ test("spreed addon: Talk HPB signaling/turn backends are configured and coupled"
   try {
     await shared.loginToStandaloneNextcloud(page);
 
-    // 1) WIRING PROOF: OCS capabilities must advertise a spreed signaling config.
-    // This is the app's OWN capability surface, not the lazy-loaded apps list.
     const capabilitiesUrl = new URL(
       "ocs/v2.php/cloud/capabilities?format=json",
       shared.env.nextcloudBaseUrl,
@@ -64,7 +43,6 @@ test("spreed addon: Talk HPB signaling/turn backends are configured and coupled"
       "spreed must expose a signaling configuration, proving the HPB signaling_servers wiring is live",
     ).toMatch(/signaling/i);
 
-    // 2) ENABLED SIGNAL: the Talk admin settings section must render.
     const talkAdminUrl = new URL("settings/admin/talk", shared.env.nextcloudBaseUrl).toString();
     await page.goto(talkAdminUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
     await shared.dismissBlockingNextcloudModals(page, page);
@@ -74,8 +52,6 @@ test("spreed addon: Talk HPB signaling/turn backends are configured and coupled"
       "the Talk admin settings must render the High-Performance Backend (signaling) section",
     ).toBeVisible({ timeout: 60_000 });
 
-    // Talk admin settings are part plain text, part <input value="…">. innerText
-    // alone misses input values, so collect both before asserting coupling.
     const collectSettingsText = async () => {
       const bodyText = await page.locator("body").innerText().catch(() => "");
       const formValues = await page
@@ -94,8 +70,6 @@ test("spreed addon: Talk HPB signaling/turn backends are configured and coupled"
       return [bodyText, ...formValues].filter(Boolean).join("\n");
     };
 
-    // 3a) REAL COUPLING (discriminating): the persisted TURN server points at the
-    // distinct web-svc-coturn partner host, surfaced in the Talk admin settings.
     if (expectedTurnServer) {
       await expect
         .poll(collectSettingsText, {
@@ -105,7 +79,6 @@ test("spreed addon: Talk HPB signaling/turn backends are configured and coupled"
         .toContain(expectedTurnServer);
     }
 
-    // 3b) Coupling: the persisted STUN server (coturn partner host:port) is shown.
     if (expectedStunServer) {
       await expect
         .poll(collectSettingsText, {
@@ -115,8 +88,6 @@ test("spreed addon: Talk HPB signaling/turn backends are configured and coupled"
         .toContain(expectedStunServer);
     }
 
-    // 3c) Presence: the configured signaling server host (path on the NC host) is
-    // shown. Asserted as a host-presence check since signaling is same-host.
     if (expectedSignalingUrl) {
       let signalingNeedle = expectedSignalingUrl;
       try {
@@ -132,9 +103,6 @@ test("spreed addon: Talk HPB signaling/turn backends are configured and coupled"
         .toContain(signalingNeedle);
     }
 
-    // 4) LIVE HANDOFF (BEST-EFFORT): clicking "Test this server" should report an
-    // OK row, but a transient HPB/coturn reachability hiccup must never override
-    // the deterministic config coupling proven above.
     const connectionSpans = page.locator("span.test-connection");
     await connectionSpans
       .first()
