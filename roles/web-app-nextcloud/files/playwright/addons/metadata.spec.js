@@ -4,10 +4,7 @@ const shared = require("../_shared");
 
 test.use({ ignoreHTTPSErrors: true });
 
-// metadata extracts file metadata (EXIF/GPS etc.) shown in the Files sidebar;
-// it has no standalone route. Log in, open Files, and assert the Files app
-// content renders with the metadata provider registered.
-test("metadata addon: Files app loads with the metadata provider registered", async ({ browser }) => {
+test("metadata addon: Files app loads the metadata app's own provider bundle", async ({ browser }) => {
   skipUnlessAddonEnabled("metadata");
   test.setTimeout(120_000);
 
@@ -23,8 +20,23 @@ test("metadata addon: Files app loads with the metadata provider registered", as
 
     await expect(
       page.locator("#app-content, #app-content-vue, #app-navigation-vue").first(),
-      "the Nextcloud Files app content must be visible with the metadata provider registered",
+      "the Nextcloud Files app shell must render before checking the metadata provider",
     ).toBeVisible({ timeout: 60_000 });
+
+    const metadataEnabled = await page.evaluate(() => {
+      const oc = window.OC || {};
+      const webroots = oc.appswebroots || (oc.appConfig && oc.appConfig.appswebroots) || {};
+      return Object.prototype.hasOwnProperty.call(webroots, "metadata");
+    });
+    expect(
+      metadataEnabled,
+      "the metadata app must be registered in OC.appswebroots for the logged-in user: this is populated only when the metadata app is installed AND enabled, so a disabled/broken app fails here",
+    ).toBe(true);
+
+    await expect(
+      page.locator('script[src*="/apps/metadata/"]'),
+      "the metadata app's own frontend bundle must be injected into the Files page (apps/metadata/...), proving the metadata provider is actually loaded and coupled to Files, not just listed as available",
+    ).not.toHaveCount(0, { timeout: 30_000 });
   } finally {
     await page.close().catch(() => {});
     await context.close().catch(() => {});
