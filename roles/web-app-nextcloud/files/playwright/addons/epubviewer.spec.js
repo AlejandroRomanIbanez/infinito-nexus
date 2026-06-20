@@ -16,31 +16,17 @@ test("addon epubviewer: EPUB reader personal settings panel renders and reflects
 
     const settingsUrl = new URL("settings/user/epubviewer", shared.env.nextcloudBaseUrl).toString();
     const response = await page.goto(settingsUrl, { waitUntil: "domcontentloaded", timeout: 60_000 });
-    test.skip(
-      response !== null && response.status() === 404,
-      "epubviewer settings section absent (app disabled/absent at runtime) — nothing to assert",
-    );
+    expect(
+      response === null || response.status() !== 404,
+      "the epubviewer app must register its settings/user/epubviewer section (app installed + enabled)",
+    ).toBeTruthy();
     await shared.dismissBlockingNextcloudModals(page, page);
 
-    // app-present signal from epubviewer's OWN personal settings panel, never the lazy
-    // settings/apps/enabled [data-id] list; the panel only mounts when the app is enabled.
-    const panel = page.locator("#reader-personal");
-    const panelMounted = await panel
-      .first()
-      .isVisible({ timeout: 60_000 })
-      .catch(() => false);
-    test.skip(
-      !panelMounted,
-      "epubviewer personal settings panel did not mount (app disabled/absent) — nothing to assert",
-    );
-
     await expect(
-      panel.first(),
+      page.locator("#reader-personal").first(),
       "the epubviewer app must render its own EPUB reader personal settings panel",
     ).toBeVisible({ timeout: 60_000 });
 
-    // real config coupling: EPUB handling defaults to enabled (epub_enable=true) and the
-    // persisted user value is reflected as the checked state of the panel's own checkbox.
     await expect(
       page.locator("#EpubEnable").first(),
       "the EPUB-enable checkbox must reflect the persisted epubviewer user config",
