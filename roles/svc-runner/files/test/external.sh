@@ -13,11 +13,13 @@ fail_count=0
 
 # 4) GitHub API: verify at least RUNNER_COUNT runners are registered and online.
 echo "Checking GitHub runner registration via API..."
-runners_json=$(curl -sf \
+if ! runners_json=$(curl -sf \
     -H "Authorization: Bearer ${RUNNER_API_TOKEN}" \
     -H "Accept: application/vnd.github+json" \
-    "https://api.github.com/repos/${RUNNER_GITHUB_OWNER}/${RUNNER_GITHUB_REPO}/actions/runners" \
-    || echo "{}")
+    "https://api.github.com/repos/${RUNNER_GITHUB_OWNER}/${RUNNER_GITHUB_REPO}/actions/runners"); then
+    echo "FAIL: GitHub API unreachable while checking runner registration"
+    exit 1
+fi
 online_count=$(echo "${runners_json}" | python3 -c "
 import json, sys
 data = json.load(sys.stdin)
