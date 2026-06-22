@@ -371,6 +371,113 @@ class TestComposeCaInject(unittest.TestCase):
             ok = self.m.docker_image_has_bin_sh("img:1", cwd=Path("/tmp"), env={})
         self.assertFalse(ok)
 
+    def test_docker_image_has_bin_sh_ambiguous_on_timeout(self):
+        def fake_run(cmd, *, cwd, env, timeout=None, capture=True):
+            return self.m.TIMEOUT_RC, "", "timed out after 60s"
+
+        with patch.object(self.m, "run", side_effect=fake_run):
+            state = self.m.docker_image_has_bin_sh("img:1", cwd=Path("/tmp"), env={})
+        self.assertIsNone(state)
+
+    def test_render_override_wraps_when_probe_ambiguous(self):
+        services = {"svc": {"image": "img:1"}}
+        service_to_cmd = {"svc": ["docker", "compose", "-p", "p", "-f", "compose.yml"]}
+
+        with patch.object(
+            self.m,
+            "gather_image_meta",
+            return_value={"img:1": (True, ["/entry"], ["run"], None)},
+        ):
+            doc = self.m.render_override(
+                services,
+                service_to_cmd,
+                cwd=Path("/tmp"),
+                env={},
+                ca_host="/host/ca.crt",
+                wrapper_host="/host/with-ca-trust.sh",
+                trust_name="infinito.local",
+            )
+
+        out = doc["services"]["svc"]
+        self.assertEqual(out.get("entrypoint"), ["/tmp/infinito/bin/with-ca-trust.sh"])
+        self.assertEqual(out.get("command"), ["/entry", "run"])
+
+    def test_render_override_wraps_when_inspect_ambiguous(self):
+        services = {
+            "svc": {
+                "image": "img:1",
+                "entrypoint": ["/svc-entry"],
+                "command": ["svc-run"],
+            }
+        }
+        service_to_cmd = {"svc": ["docker", "compose", "-p", "p", "-f", "compose.yml"]}
+
+        with patch.object(
+            self.m,
+            "gather_image_meta",
+            return_value={"img:1": (False, [], [], None)},
+        ):
+            doc = self.m.render_override(
+                services,
+                service_to_cmd,
+                cwd=Path("/tmp"),
+                env={},
+                ca_host="/host/ca.crt",
+                wrapper_host="/host/with-ca-trust.sh",
+                trust_name="infinito.local",
+            )
+
+        out = doc["services"]["svc"]
+        self.assertEqual(out.get("entrypoint"), ["/tmp/infinito/bin/with-ca-trust.sh"])
+        self.assertEqual(out.get("command"), ["/svc-entry", "svc-run"])
+
+    def test_render_override_env_only_when_probe_clean_negative(self):
+        services = {"svc": {"image": "img:1"}}
+        service_to_cmd = {"svc": ["docker", "compose", "-p", "p", "-f", "compose.yml"]}
+
+        with patch.object(
+            self.m,
+            "gather_image_meta",
+            return_value={"img:1": (True, ["/entry"], ["run"], False)},
+        ):
+            doc = self.m.render_override(
+                services,
+                service_to_cmd,
+                cwd=Path("/tmp"),
+                env={},
+                ca_host="/host/ca.crt",
+                wrapper_host="/host/with-ca-trust.sh",
+                trust_name="infinito.local",
+            )
+
+        out = doc["services"]["svc"]
+        self.assertNotIn("entrypoint", out)
+        self.assertNotIn("command", out)
+        self.assertIn("environment", out)
+        self.assertIn("volumes", out)
+
+    def test_gather_one_image_inspect_timeout_is_ambiguous(self):
+        def fake_run(cmd, *, cwd, env, timeout=None, capture=True):
+            if cmd[:3] == ["docker", "image", "inspect"]:
+                return self.m.TIMEOUT_RC, "", "timed out after 90s"
+            return 1, "", "unexpected"
+
+        with patch.object(self.m, "run", side_effect=fake_run):
+            meta = self.m._gather_one_image("img:1", cwd=Path("/tmp"), env={})
+
+        self.assertEqual(meta, (False, [], [], None))
+
+    def test_gather_one_image_inspect_clean_negative_no_shell(self):
+        def fake_run(cmd, *, cwd, env, timeout=None, capture=True):
+            if cmd[:3] == ["docker", "image", "inspect"]:
+                return 1, "", "no such image"
+            return 1, "", "unexpected"
+
+        with patch.object(self.m, "run", side_effect=fake_run):
+            meta = self.m._gather_one_image("img:1", cwd=Path("/tmp"), env={})
+
+        self.assertEqual(meta, (False, [], [], False))
+
     def test_render_override_sets_env_and_mounts_always(self):
         """
         render_override(): must always set CA env vars + fallback envs and always mount CA+wrapper.

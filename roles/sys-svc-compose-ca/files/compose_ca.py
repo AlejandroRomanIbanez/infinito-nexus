@@ -270,16 +270,13 @@ def docker_image_exists(image: str, *, cwd: Path, env: dict[str, str]) -> bool:
     return rc == 0
 
 
-def docker_image_has_bin_sh(image: str, *, cwd: Path, env: dict[str, str]) -> bool:
-    """
-    Best-effort detection whether the image provides /bin/sh.
+TIMEOUT_RC = 124
 
-    We need /bin/sh to implement a runtime wrapper entrypoint that can:
-      - run the CA wrapper when executable
-      - otherwise print a warning and continue
 
-    Distroless images usually do not have /bin/sh.
-    """
+def docker_image_has_bin_sh(
+    image: str, *, cwd: Path, env: dict[str, str]
+) -> bool | None:
+    """Best-effort detection whether the image provides /bin/sh."""
     rc, _out, _err = run(
         ["docker", "run", "--rm", "--entrypoint", "/bin/sh", image, "-c", "exit 0"],
         cwd=cwd,
@@ -287,10 +284,14 @@ def docker_image_has_bin_sh(image: str, *, cwd: Path, env: dict[str, str]) -> bo
         timeout=60,
         capture=False,
     )
-    return rc == 0
+    if rc == 0:
+        return True
+    if rc == TIMEOUT_RC:
+        return None
+    return False
 
 
-ImageMeta = tuple[bool, list[str], list[str], bool]  # (exists, entrypoint, cmd, has_sh)
+ImageMeta = tuple[bool, list[str], list[str], bool | None]
 
 
 def _gather_one_image(image: str, *, cwd: Path, env: dict[str, str]) -> ImageMeta:
@@ -298,7 +299,7 @@ def _gather_one_image(image: str, *, cwd: Path, env: dict[str, str]) -> ImageMet
         ["docker", "image", "inspect", image], cwd=cwd, env=env, timeout=90
     )
     if rc != 0:
-        return (False, [], [], False)
+        return (False, [], [], None if rc == TIMEOUT_RC else False)
     try:
         data = json.loads(out)
     except json.JSONDecodeError:
@@ -572,12 +573,10 @@ def render_override(
             has_sh = False
         else:
             img_name = image.strip()
-            exists, raw_ep, raw_cmd, has_sh = image_meta.get(
-                img_name, (False, [], [], False)
+            _exists, raw_ep, raw_cmd, sh_state = image_meta.get(
+                img_name, (False, [], [], None)
             )
-            # Unreadable image (missing, or inspect stalled under load) -> env-only.
-            if not exists:
-                has_sh = False
+            has_sh = sh_state is not False
             img_ep = normalize_entrypoint(raw_ep)
             img_cmd = normalize_cmd(raw_cmd)
 
