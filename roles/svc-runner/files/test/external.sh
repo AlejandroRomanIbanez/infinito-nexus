@@ -32,9 +32,8 @@ else
     echo "OK: ${online_count} runner(s) online on GitHub (${RUNNER_GITHUB_OWNER}/${RUNNER_GITHUB_REPO})"
 fi
 
-# 5) Dispatch test-runner-smoke.yml and wait for success.
-# This is the real E2E gate: a runner picks up the job, checks out the repo,
-# accesses Docker via DooD, and runs a full Ansible deploy (web-app-dashboard).
+# Dispatch test-runner-smoke.yml and wait for success — the real E2E gate
+# (runner picks up the job, checks out, reaches Docker via DooD, deploys).
 echo "Dispatching test-runner-smoke.yml against ref=${RUNNER_GIT_REF}..."
 dispatch_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 

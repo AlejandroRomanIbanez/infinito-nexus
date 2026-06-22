@@ -10,6 +10,7 @@
     path: "{{ lookup('nginx','files.configuration') }}"
   register: _openresty_conf_stat
 
+# Nested DinD auto-creates a missing bind-mount source as a dir; drop it so the copy works.
 - name: Drop nginx.conf if a container bind-mount created it as a directory
   ansible.builtin.file:
     path: "{{ lookup('nginx','files.configuration') }}"

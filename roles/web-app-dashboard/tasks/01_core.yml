@@ -36,6 +36,7 @@
   set_fact:
     portfolio_menu_data: "{{ lookup('docker_cards_grouped', portfolio_cards, portfolio_menu_categories) }}"
 
+# Nested DinD auto-creates a missing bind-mount source as a dir; drop it so the template works.
 - name: Stat the rendered dashboard config path
   ansible.builtin.stat:
     path: "{{ DASHBOARD_CONFIG_YML_DEST }}"
