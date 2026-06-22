@@ -1,4 +1,11 @@
 ---
+# May run before the `update` role, so refresh the cache first; raw apt-get
+# because the apt module needs python3-apt, which is what's missing on a fresh image.
+- name: Refresh apt cache before first install (Debian family)
+  ansible.builtin.command: apt-get update
+  changed_when: false
+  when: ansible_facts['os_family'] == 'Debian'
+
 - name: Install OpenSSH client
   package:
     name: >-
