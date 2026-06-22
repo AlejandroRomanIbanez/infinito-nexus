@@ -62,9 +62,7 @@ class TestExpandApps(unittest.TestCase):
         )
 
     def test_mixed_list_preserves_app_order(self) -> None:
-        out = vb.expand_apps(
-            ["web-app-single", "web-app-five"], self.VARIANTS, 3
-        )
+        out = vb.expand_apps(["web-app-single", "web-app-five"], self.VARIANTS, 3)
         self.assertEqual(
             out,
             [

@@ -11,9 +11,8 @@ if TYPE_CHECKING:
 
 KEY = "INFINITO_VARIANT_TIME_OVERFLOW"
 COMMENT = (
-    "Variant-iteration budget overflow policy "
-    "(cli.administration.deploy.development): cut = warn and skip the rounds "
-    "that no longer fit INFINITO_MAX_RUNTIME; fail = abort the deploy instead."
+    "Variant overflow policy: cut = warn+skip rounds that exceed "
+    "INFINITO_MAX_RUNTIME; fail = abort the deploy."
 )
 
 

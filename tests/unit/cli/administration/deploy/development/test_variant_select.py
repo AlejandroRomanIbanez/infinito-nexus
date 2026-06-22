@@ -49,9 +49,7 @@ class TestApplyVariantFilter(unittest.TestCase):
         return argparse.Namespace(variant=variant)
 
     def test_none_returns_full_plan(self) -> None:
-        self.assertEqual(
-            vs.apply_variant_filter(self.PLAN, self._args()), self.PLAN
-        )
+        self.assertEqual(vs.apply_variant_filter(self.PLAN, self._args()), self.PLAN)
 
     def test_single_index_pins_one_round(self) -> None:
         out = vs.apply_variant_filter(self.PLAN, self._args(variant=[1]))
@@ -64,7 +62,6 @@ class TestApplyVariantFilter(unittest.TestCase):
         )
 
     def test_empty_list_falls_back_to_full_matrix(self) -> None:
-        # Empty slice must NOT silently yield an empty plan (green no-op).
         self.assertEqual(
             vs.apply_variant_filter(self.PLAN, self._args(variant=[])), self.PLAN
         )
