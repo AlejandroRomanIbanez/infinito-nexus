@@ -709,7 +709,12 @@ class TestComposeCaInject(unittest.TestCase):
             self.m,
             "gather_image_meta",
             return_value={
-                "img:1": (True, [], ["sh", "-lc", 'exec "$CHESS_ENTRYPOINT_INT"'], False)
+                "img:1": (
+                    True,
+                    [],
+                    ["sh", "-lc", 'exec "$CHESS_ENTRYPOINT_INT"'],
+                    False,
+                )
             },
         ):
             doc = self.m.render_override(
