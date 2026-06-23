@@ -102,9 +102,26 @@ jobs:
       SCRIPTS: scripts/tests/deploy/swarm
 
     steps:
+      - name: 🧹 Free disk space
+        if: ${{ !env.ACT }}
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: true
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: true
+          swap-storage: true
+
       - name: "Checkout"
         if: ${{ !env.ACT }}
         uses: actions/checkout@v7
+
+      - name: 💾 Enlarge swap space
+        if: ${{ !env.ACT }}
+        shell: bash
+        run: ./scripts/github/runner/enlarge_swap.sh
 
       - name: "Resolve SWARM_NAME (mandatory; default to the matrix app)"
         shell: bash
