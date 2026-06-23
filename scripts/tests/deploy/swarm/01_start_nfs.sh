@@ -2,6 +2,8 @@
 set -euo pipefail
 
 mkdir -p "${RUNNER_TEMP}/nfs-export"
+# A killed prior run leaves the nfs-server container behind; --name then conflicts.
+docker rm -f "${NFS_SERVER}" >/dev/null 2>&1 || true
 docker run -d --name "${NFS_SERVER}" \
 	--network "${SWARM_LAB_NETWORK}" \
 	--hostname "${NFS_SERVER}" \
