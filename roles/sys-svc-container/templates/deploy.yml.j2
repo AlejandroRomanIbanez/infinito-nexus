@@ -20,6 +20,8 @@
           cpus: "{{ lookup('applications') | resource_filter(application_id, 'cpus', service_name | default(''), RESOURCE_CPUS) | string }}"
           memory: {{ lookup('applications') | resource_filter(application_id, 'mem_limit', service_name | default(''), RESOURCE_MEM_LIMIT) }}
           pids: {{ lookup('applications') | resource_filter(application_id, 'pids_limit', service_name | default(''), RESOURCE_PIDS_LIMIT) }}
+{% if RUNTIME != 'github' %}
         reservations:
           memory: {{ lookup('applications') | resource_filter(application_id, 'mem_reservation', service_name | default(''), RESOURCE_MEM_RESERVATION) }}
+{% endif %}
 {% endif %}
