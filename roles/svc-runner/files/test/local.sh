@@ -77,23 +77,6 @@ if [[ -n "${GITHUB_TOKEN:-}" ]] && [[ "${INFINITO_IMAGE_TAG:-}" == ci-* ]]; then
         -e "ANSIBLE_LOG_PATH=/tmp/ansible-runner-dind-test.log" \
         "${RUNNER_PROJECT_PREFIX}-1" \
         bash "${_iso_src}/scripts/tests/deploy/ci/all.sh"; then
-
-        # Failure-only diagnostic: the deploy fails at the first apt install
-        # ("python3-apt has no installation candidate"). Dump the nested image's
-        # apt sources + update result + python3-apt candidate from a throwaway
-        # container on the DinD daemon so we can see which source/component is
-        # missing instead of guessing. Best-effort; never masks the failure.
-        echo "=== APT DIAGNOSTIC (nested deploy failed) ==="
-        container exec "${RUNNER_PROJECT_PREFIX}-1" \
-            bash -c "docker images" || true
-        _img=$(container exec "${RUNNER_PROJECT_PREFIX}-1" \
-            bash -c "docker images --format '{{.Repository}}:{{.Tag}}' | grep -iE 'debian|infinito|:ci' | head -1" || true)
-        echo "=== probing image: ${_img} ==="
-        container exec "${RUNNER_PROJECT_PREFIX}-1" \
-            bash -c "docker run --rm --entrypoint /bin/bash ${_img} -c 'echo [os-release]; cat /etc/os-release; echo [sources]; cat /etc/apt/sources.list /etc/apt/sources.list.d/* 2>/dev/null; echo [update]; apt-get update 2>&1 | tail -50; echo [policy]; apt-cache policy python3-apt'" \
-            || echo "WARN: apt diagnostic dump failed"
-        echo "=== END APT DIAGNOSTIC ==="
-
         echo "FAIL: nested deploy failed"
         exit 1
     fi
