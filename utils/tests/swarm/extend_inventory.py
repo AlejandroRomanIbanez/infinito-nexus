@@ -26,9 +26,13 @@ _DOCKER_VARS: dict[str, str] = {
     "ansible_user": "root",
 }
 
-_MANAGER = "swarm-mgr-01"
-_WORKERS = ("swarm-wrk-01", "swarm-wrk-02")
-_NFS_SERVER = "nfs-server"
+# Mirror the mandatory SWARM_NAME prefix from topology.sh so inventory host names
+# match the actual container names. The get() keeps import side-effect-free (tests);
+# main() enforces that SWARM_NAME is actually set at run time.
+_PREFIX = f"{os.environ['SWARM_NAME']}-" if os.environ.get("SWARM_NAME") else ""
+_MANAGER = f"{_PREFIX}swarm-mgr-01"
+_WORKERS = (f"{_PREFIX}swarm-wrk-01", f"{_PREFIX}swarm-wrk-02")
+_NFS_SERVER = f"{_PREFIX}nfs-server"
 
 
 def _host_topology(app_id: str) -> list[tuple[str, str]]:
@@ -62,6 +66,8 @@ def _default_placement_dep_groups(app_id: str) -> list[tuple[str, str]]:
 
 
 def main() -> int:
+    if not os.environ.get("SWARM_NAME"):
+        raise SystemExit("extend_inventory: SWARM_NAME is required (cluster id)")
     app_id = os.environ["APP_ID"]
     inv_path = Path(os.environ.get("INV_PATH", "/tmp/inv/devices.yml"))  # noqa: S108
 

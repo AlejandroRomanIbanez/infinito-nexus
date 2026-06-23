@@ -106,9 +106,23 @@ jobs:
         if: ${{ !env.ACT }}
         uses: actions/checkout@v7
 
+      - name: "Resolve SWARM_NAME (mandatory; default to the matrix app)"
+        shell: bash
+        run: echo "SWARM_NAME=${SWARM_NAME:-${{ matrix.apps }}}" >> "$GITHUB_ENV"
+
       - name: "Load swarm topology SPOT into job env"
         shell: bash
-        run: grep -vE '^(#|$)' scripts/tests/deploy/swarm/topology.sh >> "$GITHUB_ENV"
+        # Source (not literal-dump) so the mandatory SWARM_NAME prefix expands.
+        run: |
+          . scripts/tests/deploy/swarm/topology.sh
+          {
+            echo "MGR=$MGR"
+            echo "WRK1=$WRK1"
+            echo "WRK2=$WRK2"
+            echo "NFS_SERVER=$NFS_SERVER"
+            echo "NFS_EXPORT_BASE=$NFS_EXPORT_BASE"
+            echo "SWARM_LAB_NETWORK=$SWARM_LAB_NETWORK"
+          } >> "$GITHUB_ENV"
 
       - name: Set up Python
         uses: actions/setup-python@v6
@@ -157,7 +171,7 @@ jobs:
           if [ "$(id -u)" -eq 0 ]; then
             python3 -m cli.administration.deploy.swarm.matrix
           else
-            sudo -E env "PATH=$PATH" "HOME=$HOME" python3 -m cli.administration.deploy.swarm.matrix
+            sudo -E env "PATH=$PATH" "HOME=$HOME" "SWARM_NAME=${SWARM_NAME:-}" python3 -m cli.administration.deploy.swarm.matrix
           fi
 
       - name: "Seed content (pre-drain marker on NFS volume)"

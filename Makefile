@@ -38,15 +38,17 @@ act-runner-image:
 	@bash scripts/tests/deploy/act/build_runner_image.sh
 
 .PHONY: act-swarm-down
-# Release the preserved swarm-test cluster (DinD nodes, lab network, act outer container).
+# Release a named swarm-test cluster (DinD nodes, lab network, act outer container).
+# Param name: REQUIRED cluster id matching the one act-swarm-zombie used (the app id when no name= was passed).
 # Note: Safe to run multiple times.
 act-swarm-down:
-	@INFINITO_KEEP_SWARM_NODES=false bash scripts/tests/deploy/swarm/13_cleanup.sh
+	@test -n '$(name)' || { echo 'usage: make act-swarm-down name=<cluster-id> (the app id if you did not pass name=)'; exit 2; }
+	@SWARM_NAME='$(name)' INFINITO_KEEP_SWARM_NODES=false bash scripts/tests/deploy/swarm/13_cleanup.sh
 	@bash scripts/tests/deploy/act/down_act_outer.sh
 
 .PHONY: act-swarm-exec
 # Run a one-off command inside one of the swarm-test DinD nodes.
-# Param node: container name (swarm-mgr-01 | swarm-wrk-01 | swarm-wrk-02 | nfs-server).
+# Param node: full container name (e.g. <cluster>-swarm-mgr-01 | <cluster>-nfs-server; cluster = name= or the app id).
 # Param cmd: shell pipeline executed inside that container.
 act-swarm-exec:
 	@node='$(node)' cmd='$(cmd)' bash scripts/tests/deploy/act/exec_node.sh
@@ -54,31 +56,35 @@ act-swarm-exec:
 .PHONY: act-swarm-playwright
 # Rerun a role-local Playwright spec against the live swarm-test cluster (no redeploy).
 # Note: nodes hold a frozen bootstrap copy (not a compose-style mount), so the working-tree's modified+untracked files are copied into the node before rerunning via the same rerun-spec.sh engine as compose-playwright; solve ALL of a role's tests (no pw= narrowing) before any redeploy.
-# Usage: make act-swarm-playwright role=<role> [pw="--grep <pattern>"] [keep=true] [node=swarm-mgr-01]
-# Example: make act-swarm-playwright role=web-svc-logout pw="--grep baserow" keep=true
+# Usage: make act-swarm-playwright role=<role> name=<cluster-id> [pw="--grep <pattern>"] [keep=true] [node=<container>]
+# Example: make act-swarm-playwright role=web-svc-logout name=web-app-baserow pw="--grep baserow" keep=true
 act-swarm-playwright:
 	@: $${role:?role=<role> required, e.g. role=web-svc-logout}
-	@node='$(or $(node),swarm-mgr-01)' bash scripts/tests/deploy/act/copy_worktree_to_node.sh
-	@node='$(or $(node),swarm-mgr-01)' cmd='cd /opt/infinito-nexus && TEST_E2E_PLAYWRIGHT_NETWORK_HOST=true $(if $(keep),INFINITO_PLAYWRIGHT_KEEP=$(keep) )bash scripts/tests/e2e/rerun-spec.sh $(role) $(pw)' bash scripts/tests/deploy/act/exec_node.sh
+	@test -n '$(name)' || { echo 'name=<cluster-id> required (the app id when no name= was passed to act-swarm-zombie)'; exit 2; }
+	@node='$(or $(node),$(name)-swarm-mgr-01)' bash scripts/tests/deploy/act/copy_worktree_to_node.sh
+	@node='$(or $(node),$(name)-swarm-mgr-01)' cmd='cd /opt/infinito-nexus && TEST_E2E_PLAYWRIGHT_NETWORK_HOST=true $(if $(keep),INFINITO_PLAYWRIGHT_KEEP=$(keep) )bash scripts/tests/e2e/rerun-spec.sh $(role) $(pw)' bash scripts/tests/deploy/act/exec_node.sh
 
 .PHONY: act-swarm-shell
 # Drop into an interactive shell on one of the swarm-test DinD nodes.
-# Param node: container name (defaults to swarm-mgr-01).
+# Param name: REQUIRED cluster id (the app id when no name= was passed); node defaults to <name>-swarm-mgr-01.
+# Param node: full container name to target (overrides the default).
 act-swarm-shell:
-	@node='$(node)' bash scripts/tests/deploy/act/shell_node.sh
+	@test -n '$(name)' || { echo 'usage: make act-swarm-shell name=<cluster-id> [node=<container>]'; exit 2; }
+	@SWARM_NAME='$(name)' node='$(node)' bash scripts/tests/deploy/act/shell_node.sh
 
 .PHONY: act-swarm-zombie
 # Run a swarm matrix-app test and leave the cluster alive afterwards for post-mortem inspection.
 # Param app: matrix application id (e.g. web-app-baserow).
 # Param disable: optional comma-separated provider keys removed from the test inventory (e.g. matomo,dashboard,prometheus,email,css).
+# Param name: optional cluster-id prefix for the container + network names (parallel/named clusters); release with the same name=.
 # Note: Use `make act-swarm-exec` / `make act-swarm-shell` to inspect, `make act-swarm-down` to release.
 act-swarm-zombie:
-	@test -n '$(app)' || { echo 'usage: make act-swarm-zombie app=<application_id> [disable=<keys>]'; exit 2; }
-	@INFINITO_KEEP_SWARM_NODES=false bash scripts/tests/deploy/swarm/13_cleanup.sh
+	@test -n '$(app)' || { echo 'usage: make act-swarm-zombie app=<application_id> [name=<cluster-id>] [disable=<keys>]'; exit 2; }
+	@SWARM_NAME='$(or $(name),$(app))' INFINITO_KEEP_SWARM_NODES=false bash scripts/tests/deploy/swarm/13_cleanup.sh
 	@bash scripts/tests/deploy/act/down_act_outer.sh
 	@ACT_RM=false \
 	 ACT_BIND=true \
-	 ACT_ENV='INFINITO_KEEP_SWARM_NODES=true;INFINITO_APP_DISCOVERY_RUNNER=host;disable=$(disable)' \
+	 ACT_ENV='INFINITO_KEEP_SWARM_NODES=true;INFINITO_APP_DISCOVERY_RUNNER=host;disable=$(disable);SWARM_NAME=$(or $(name),$(app))' \
 	 ACT_WORKFLOW=.github/workflows/test-deploy-swarm.yml \
 	 ACT_JOB=swarm \
 	 ACT_MATRIX='apps:$(app)' \
