@@ -33,7 +33,10 @@ litellm:
   mem_limit: 1g
   pids_limit: 1024
   min_storage: 1GB
+# nocheck: playwright-service-flag — vector engine, covered by role-local integration tests
 qdrant:
+  enabled: true # nocheck: dynamic-flag
+  shared: "{{ 'svc-db-qdrant' in group_names }}"
   backup:
     no_stop_required: true
   image: qdrant/qdrant
@@ -45,6 +48,8 @@ qdrant:
   pids_limit: 2048
   min_storage: 1GB
 flowise:
+  # nocheck: default-placement-manager  embedded qdrant + sqlite engine state; node-local in swarm
+  default_placement: manager
   backup:
     no_stop_required: false
   image: flowiseai/flowise
@@ -74,6 +79,7 @@ redis:
   backup:
     disabled: true
   enabled: false
+  shared: "{{ 'svc-db-redis' in group_names }}"
 # nocheck: playwright-service-flag — AI backend, infrastructural
 ollama:
   enabled: "{{ 'svc-ai-ollama' in group_names }}"

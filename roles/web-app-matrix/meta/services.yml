@@ -83,6 +83,8 @@ prometheus:
   communication:
     channel: true
 matrix:
+  # nocheck: default-placement-manager  inner docker-in-docker storage; node-local in swarm
+  default_placement: manager
   flavor: ansible
   upstream:
     repo: https://github.com/spantaleev/matrix-docker-ansible-deploy

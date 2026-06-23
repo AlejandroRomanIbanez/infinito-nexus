@@ -24,6 +24,7 @@ email:
 # nocheck: dynamic-flag
 redis:
   enabled: false
+  shared: "{{ 'svc-db-redis' in group_names }}"
   backup:
     disabled: true
 postgres:

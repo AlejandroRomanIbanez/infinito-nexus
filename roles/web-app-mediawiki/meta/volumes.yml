@@ -2,7 +2,6 @@
 images:
   type: volume
   name: mediawiki_images
-  nfs: true
   mounts:
     - service: mediawiki
       target: /var/www/html/images

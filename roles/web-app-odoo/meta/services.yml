@@ -62,7 +62,7 @@ odoo:
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 redis:
   enabled: true
-  shared: false
+  shared: "{{ 'svc-db-redis' in group_names }}"
   cpus: "0.5"
   mem_reservation: 256m
   mem_limit: 512m

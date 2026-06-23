@@ -36,10 +36,8 @@ PENPOT_DATABASE_PORT: "{{ lookup('database', application_id, 'port') }}"
 PENPOT_DATABASE_PASSWORD: "{{ lookup('database', application_id, 'password') }}"
 PENPOT_DATABASE_URI: "postgresql://{{ PENPOT_DATABASE_HOST }}:{{ PENPOT_DATABASE_PORT }}/{{ PENPOT_DATABASE_NAME }}"
 
-# Redis (role-local sidecar emitted by sys-svc-compose; service name == "redis")
-PENPOT_REDIS_HOST: "redis"
-PENPOT_REDIS_PORT: 6379
-PENPOT_REDIS_URI: "redis://{{ PENPOT_REDIS_HOST }}:{{ PENPOT_REDIS_PORT }}/0"
+# Redis (central svc-db-redis when shared, role-local sidecar otherwise)
+PENPOT_REDIS_URI: "{{ lookup('engine', 'redis', application_id, 'url') }}/0"
 
 # Internal service URIs (frontend ↔ backend ↔ exporter)
 PENPOT_BACKEND_URI: "http://{{ PENPOT_BACKEND_SERVICE }}:{{ PENPOT_BACKEND_INTERNAL_PORT }}"

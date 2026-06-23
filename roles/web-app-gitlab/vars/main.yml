@@ -39,8 +39,9 @@ GITLAB_OMNIBUS_BASE:
   - "gitlab_rails['initial_root_password']={{ GITLAB_INIT_ROOT_PASSWORD | ruby_dq }}"
   - ""
   - "redis['enable']=false"
-  - "gitlab_rails['redis_host']='redis'"
-  - "gitlab_rails['redis_port']='6379'"
+  - "gitlab_rails['redis_host']='{{ lookup('engine', 'redis', application_id, 'host') }}'"
+  - "gitlab_rails['redis_port']='{{ lookup('engine', 'redis', application_id, 'port') }}'"
+  - "gitlab_rails['redis_password']={{ lookup('engine', 'redis', application_id, 'password') | ruby_dq }}"
 
 GITLAB_OMNIBUS_OIDC:
   - ""

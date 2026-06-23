@@ -27,6 +27,8 @@ postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 taiga:
+  # nocheck: default-placement-manager  embedded rabbitmq engine state; node-local in swarm
+  default_placement: manager
   repository: https://github.com/taigaio/taiga-docker
   ref: main
   version: latest

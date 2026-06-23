@@ -34,6 +34,7 @@ redis:
   backup:
     disabled: true
   enabled: true
+  shared: "{{ 'svc-db-redis' in group_names }}"
 bookwyrm:
   name: bookwyrm
   image: python

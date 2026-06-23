@@ -13,9 +13,9 @@
         ls -1 apps > sites/apps.txt;
         bench set-config -g db_host "{{ ERPNEXT_DB_HOST }}";
         bench set-config -gp db_port {{ ERPNEXT_DB_PORT }};
-        bench set-config -g redis_cache    "redis://{{ ERPNEXT_REDIS_HOST }}:{{ ERPNEXT_REDIS_PORT }}/0";
-        bench set-config -g redis_queue    "redis://{{ ERPNEXT_REDIS_HOST }}:{{ ERPNEXT_REDIS_PORT }}/1";
-        bench set-config -g redis_socketio "redis://{{ ERPNEXT_REDIS_HOST }}:{{ ERPNEXT_REDIS_PORT }}/2";
+        bench set-config -g redis_cache    "{{ ERPNEXT_REDIS_URL }}/0";
+        bench set-config -g redis_queue    "{{ ERPNEXT_REDIS_URL }}/1";
+        bench set-config -g redis_socketio "{{ ERPNEXT_REDIS_URL }}/2";
         bench set-config -gp socketio_port {{ ERPNEXT_WEBSOCKET_PORT }};
         bench set-config -g host_name "{{ lookup('tls', application_id, 'url.base') | regex_replace('/+$', '') }}";
     {{ lookup('container_volumes', application_id, ERPNEXT_CONFIGURATOR_CONTAINER) | indent(4) }}

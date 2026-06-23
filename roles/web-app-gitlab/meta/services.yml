@@ -22,6 +22,7 @@ redis:
   backup:
     disabled: true
   enabled: true
+  shared: "{{ 'svc-db-redis' in group_names }}"
 postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"

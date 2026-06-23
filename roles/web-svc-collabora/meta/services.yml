@@ -7,6 +7,7 @@ redis:
   backup:
     disabled: true
   enabled: false
+  shared: "{{ 'svc-db-redis' in group_names }}"
 collabora:
   enabled: true
   shared: true

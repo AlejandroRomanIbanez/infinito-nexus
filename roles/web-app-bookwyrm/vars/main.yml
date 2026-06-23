@@ -34,9 +34,9 @@ BOOKWYRM_REPOSITORY: "{{ lookup('config', application_id, 'services.' ~ entity_n
 BOOKWYRM_REF: "{{ lookup('config', application_id, 'services.' ~ entity_name ~'.ref') }}"
 BOOKWYRM_WORKER_CONTAINER: "{{ BOOKWYRM_CONTAINER }}-worker"
 
-BOOKWYRM_REDIS_HOST: "redis"
-BOOKWYRM_REDIS_PORT: 6379
-BOOKWYRM_REDIS_BASE_URL: "redis://{{ BOOKWYRM_REDIS_HOST }}:{{ BOOKWYRM_REDIS_PORT }}"
+BOOKWYRM_REDIS_HOST: "{{ lookup('engine', 'redis', application_id, 'host') }}"
+BOOKWYRM_REDIS_PORT: "{{ lookup('engine', 'redis', application_id, 'port') }}"
+BOOKWYRM_REDIS_BASE_URL: "{{ lookup('engine', 'redis', application_id, 'url') }}"
 BOOKWYRM_REDIS_BROKER_URL: "{{ BOOKWYRM_REDIS_BASE_URL }}/0"
 BOOKWYRM_REDIS_CACHE_URL: "{{ BOOKWYRM_REDIS_BASE_URL }}/1"
 BOOKWYRM_REDIS_BROKER_DB: 0

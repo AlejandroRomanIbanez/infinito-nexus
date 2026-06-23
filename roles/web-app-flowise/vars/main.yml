@@ -19,4 +19,4 @@ FLOWISE_LITELLM_MASTER_KEY: "{{ lookup('config', application_id, 'credentials.ll
 FLOWISE_QDRANT_CONTAINER: "{{ lookup('config', application_id, 'services.qdrant.name') }}"
 FLOWISE_QDRANT_HTTP_PORT: 6333
 FLOWISE_QDRANT_GRPC_PORT: 6334
-FLOWISE_QDRANT_INTERNAL_URL: "http://qdrant:{{ FLOWISE_QDRANT_HTTP_PORT }}"
+FLOWISE_QDRANT_INTERNAL_URL: "{{ lookup('engine', 'qdrant', application_id, 'url') }}"

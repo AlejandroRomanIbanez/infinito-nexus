@@ -103,6 +103,8 @@ api:
   mem_limit: 1g
   pids_limit: 512
 bluesky:
+  # nocheck: default-placement-manager  embedded sqlite (PDS) engine state; node-local in swarm
+  default_placement: manager
   ports:
     local:
       # oauth2-proxy listens here; the front-proxy routes the gated

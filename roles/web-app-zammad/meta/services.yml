@@ -45,6 +45,8 @@ memcached:
   enabled: true
   shared: "{{ 'svc-db-memcached' in group_names }}"
 zammad:
+  # nocheck: default-placement-manager  embedded elasticsearch engine state; node-local in swarm
+  default_placement: manager
   image: ghcr.io/zammad/zammad
   version: "6.5.0"
   name: zammad-railsserver

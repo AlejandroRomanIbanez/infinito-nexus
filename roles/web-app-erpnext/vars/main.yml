@@ -39,8 +39,7 @@ ERPNEXT_DB_ROOT_PASSWORD: >-
      if (lookup('config', application_id, 'services.mariadb.shared') | bool)
      else lookup('database', application_id, 'password') }}
 
-ERPNEXT_REDIS_HOST: "redis"
-ERPNEXT_REDIS_PORT: 6379
+ERPNEXT_REDIS_URL: "{{ lookup('engine', 'redis', application_id, 'url') }}"
 
 ERPNEXT_MAIL: "{{ lookup('email', application_id) if ERPNEXT_EMAIL_ENABLED else {} }}"
 

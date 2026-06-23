@@ -1,5 +1,7 @@
 ---
 funkwhale:
+  # nocheck: default-placement-manager  embedded typesense index; node-local in swarm
+  default_placement: manager
   image: funkwhale/front
   version: 2.0.4
   min_storage: 20GB
@@ -25,6 +27,8 @@ api:
   mem_limit: 1g
   pids_limit: 512
 typesense:
+  enabled: true # nocheck: dynamic-flag
+  shared: "{{ 'svc-db-typesense' in group_names }}"
   image: typesense/typesense
   version: "30.2"
   min_storage: 1GB
@@ -53,6 +57,7 @@ redis:
   backup:
     disabled: true
   enabled: true
+  shared: "{{ 'svc-db-redis' in group_names }}"
 postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"

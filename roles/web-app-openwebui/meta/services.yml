@@ -16,6 +16,8 @@ matomo:
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 openwebui:
+  # nocheck: default-placement-manager  embedded sqlite engine state; node-local in swarm
+  default_placement: manager
   backup:
     no_stop_required: true
   image: ghcr.io/open-webui/open-webui

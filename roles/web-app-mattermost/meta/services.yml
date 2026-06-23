@@ -48,6 +48,7 @@ redis:
   backup:
     disabled: true
   enabled: false
+  shared: "{{ 'svc-db-redis' in group_names }}"
 # nocheck: playwright-service-flag — object store, no Playwright surface
 minio:
   enabled: false # nocheck: dynamic-flag

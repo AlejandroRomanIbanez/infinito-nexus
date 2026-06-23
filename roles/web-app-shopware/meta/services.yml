@@ -105,6 +105,7 @@ redis:
   backup:
     disabled: true
   enabled: true
+  shared: "{{ 'svc-db-redis' in group_names }}"
   image: redis
   version: 8-alpine
   cpus: 0.25

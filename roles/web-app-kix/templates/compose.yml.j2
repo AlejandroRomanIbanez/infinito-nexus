@@ -15,7 +15,7 @@
     hostname: backend
     user: "110010100"
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    {{ lookup('depends_on', {KIX_DB_CONTAINER: 'service_healthy', 'redis': 'service_healthy'}) }}
+    {{ lookup('depends_on', {KIX_DB_CONTAINER: 'service_healthy'} | combine({'redis': 'service_healthy'} if lookup('engine', 'redis', application_id, 'local') else {})) }}
     {{ lookup('container_volumes', application_id, KIX_BACKEND_CONTAINER) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
@@ -25,10 +25,10 @@
     hostname: frontend
     user: "110010100"
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    {{ lookup('depends_on', {KIX_BACKEND_CONTAINER: 'service_healthy', 'redis': 'service_healthy'}) }}
+    {{ lookup('depends_on', {KIX_BACKEND_CONTAINER: 'service_healthy'} | combine({'redis': 'service_healthy'} if lookup('engine', 'redis', application_id, 'local') else {})) }}
     environment:
       - USE_SSL=0
-      - REDIS_CACHE_HOST=redis
+      - REDIS_CACHE_HOST={{ lookup('engine', 'redis', application_id, 'host') }}
       - FRONTEND_CLIENT_ID=kix-agent-frontend
       - FRONTEND_NOTIFICATION_ID=kix-agent-frontend
       - NOTIFICATION_URL=http://frontend:3000/notifications

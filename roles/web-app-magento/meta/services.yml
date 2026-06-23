@@ -55,6 +55,7 @@ redis:
   backup:
     disabled: true
   enabled: true
+  shared: "{{ 'svc-db-redis' in group_names }}"
 # nocheck: shared
 # nocheck: dynamic-flag
 search:

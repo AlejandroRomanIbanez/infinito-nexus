@@ -23,9 +23,9 @@ BASEROW_DATABASE_PASSWORD: "{{ lookup('database', application_id, 'password') }}
 BASEROW_DATABASE_URL: "postgresql://{{ BASEROW_DATABASE_USER }}:{{ BASEROW_DATABASE_PASSWORD }}@{{ BASEROW_DATABASE_HOST }}:{{ BASEROW_DATABASE_PORT }}/{{ BASEROW_DATABASE_NAME
   }}"
 
-BASEROW_REDIS_HOST: "redis"
-BASEROW_REDIS_PORT: 6379
-BASEROW_REDIS_URL: "redis://{{ BASEROW_REDIS_HOST }}:{{ BASEROW_REDIS_PORT }}"
+BASEROW_REDIS_HOST: "{{ lookup('engine', 'redis', application_id, 'host') }}"
+BASEROW_REDIS_PORT: "{{ lookup('engine', 'redis', application_id, 'port') }}"
+BASEROW_REDIS_URL: "{{ lookup('engine', 'redis', application_id, 'url') }}"
 
 BASEROW_DJANGO_SETTINGS_MODULE: "baserow.config.settings.base"
 BASEROW_PYTHON: "/baserow/venv/bin/python"

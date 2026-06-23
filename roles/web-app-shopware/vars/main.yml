@@ -35,7 +35,7 @@ SHOPWARE_OIDC_ENABLED: "{{ lookup('config', application_id, 'services.sso.enable
 SHOPWARE_LDAP_ENABLED: "{{ lookup('config', application_id, 'services.ldap.enabled') }}"
 
 SHOPWARE_REDIS_ENABLED: "{{ lookup('config', application_id, 'services.redis.enabled') }}"
-SHOPWARE_REDIS_ADDRESS: "redis:6379"
+SHOPWARE_REDIS_URL: "{{ lookup('engine', 'redis', application_id, 'url') }}"
 
 SHOPWARE_OPENSEARCH_PORT: "9200"
 SHOPWARE_OPENSEARCH_ENABLED: "{{ lookup('config', application_id, 'services.opensearch.enabled') }}"

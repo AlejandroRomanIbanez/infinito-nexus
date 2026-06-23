@@ -89,6 +89,10 @@ env:
 
   # Redis Configuration
   DISCOURSE_REDIS_HOST: {{ DISCOURSE_REDIS_HOST }}
+  DISCOURSE_REDIS_PORT: {{ DISCOURSE_REDIS_PORT }}
+{% if DISCOURSE_REDIS_PASSWORD | length > 0 %}
+  DISCOURSE_REDIS_PASSWORD: "{{ DISCOURSE_REDIS_PASSWORD }}"
+{% endif %}
 
   ## If you added the Lets Encrypt template, uncomment below to get a free SSL certificate
   #LETSENCRYPT_ACCOUNT_EMAIL: administrator@veen.world
