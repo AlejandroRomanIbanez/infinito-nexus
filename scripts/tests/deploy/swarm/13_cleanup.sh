@@ -23,6 +23,9 @@ for _node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}"; do
 	docker kill "${_node}" 2>/dev/null
 	docker network disconnect -f "${SWARM_LAB_NETWORK}" "${_node}" 2>/dev/null
 	docker rm -f "${_node}" 2>/dev/null
+	if docker inspect "${_node}" >/dev/null 2>&1; then
+		echo "WARNING: could not remove '${_node}' (kernel D-state? stuck NFS mount); a host reboot may be required." >&2
+	fi
 done
 docker network rm "${SWARM_LAB_NETWORK}" 2>/dev/null
 exit 0

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set +e
 
-label='ancestor=catthehacker/ubuntu:act-latest'
-ids="$(docker ps -aq --filter "${label}")"
+# Match act's outer-runner name prefix, not the image: ACT_PLATFORM_IMAGE varies the ancestor.
+ids="$(docker ps -aq --filter "name=^act-")"
 if [ -n "${ids}" ]; then
 	echo "→ removing act outer container(s): ${ids}"
 	# Word-splitting on $ids is intentional: docker rm -f wants each ID as its own argv element.
