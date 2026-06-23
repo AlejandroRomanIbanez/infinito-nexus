@@ -223,6 +223,7 @@
       "WebFetch(domain:testemail.de)",
       "WebFetch(domain:therobbiedavis.com)",
       "WebFetch(domain:translate.google.com)",
+      "WebFetch(domain:typesense.org)",
       "WebFetch(domain:ubuntu.com)",
       "WebFetch(domain:unix.stackexchange.com)",
       "WebFetch(domain:unpkg.com)",
