@@ -57,7 +57,7 @@
   register: nextcloud_zammad_oauth_url_set
   changed_when: "' set to ' in nextcloud_zammad_oauth_url_set.stdout"
 
-- name: Store integration_zammad OAuth credentials Nextcloud-encrypted (ICrypto, lazy)
+- name: Store integration_zammad OAuth credentials Nextcloud-encrypted (sensitive, lazy)
   ansible.builtin.command:
     argv:
       - container

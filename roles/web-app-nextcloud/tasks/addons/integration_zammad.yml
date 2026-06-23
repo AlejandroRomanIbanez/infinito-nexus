@@ -40,4 +40,5 @@
     and (
       (nextcloud_zammad_client_id_current.stdout | trim) | length == 0
       or (nextcloud_zammad_client_secret_current.stdout | trim) | length == 0
+      or ('|' in (nextcloud_zammad_client_id_current.stdout | trim))
     )

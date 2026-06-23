@@ -18,12 +18,10 @@ if (!is_array($entries)) {
     exit(1);
 }
 
-$crypto = \OC::$server->get(\OCP\Security\ICrypto::class);
 $appConfig = \OC::$server->get(\OCP\IAppConfig::class);
 
 foreach ($entries as $key => $value) {
-    $stored = ($value === "") ? "" : $crypto->encrypt((string) $value);
-    $appConfig->setValueString($appId, (string) $key, $stored, lazy: true);
+    $appConfig->setValueString($appId, (string) $key, (string) $value, lazy: true, sensitive: true);
 }
 
 echo "OK\n";
