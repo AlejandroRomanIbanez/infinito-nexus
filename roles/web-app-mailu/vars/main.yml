@@ -6,6 +6,7 @@ database_password: "{{ lookup('config', application_id, 'credentials.database_pa
 MAILU_VOLUMES_DIR: "{{ lookup('container', application_id, 'directories.volumes') }}"
 MAILU_INSTANCE_DIR: "{{ lookup('container', application_id, 'directories.instance') }}"
 MAILU_OVERRIDES_DIR: "{{ [ MAILU_VOLUMES_DIR, 'overrides' ] | path_join }}"
+MAILU_CERTS_HOST_DIR: "{{ [ MAILU_VOLUMES_DIR, 'certs' ] | path_join }}"
 MAILU_WEBSITE: "{{ lookup('tls', application_id, 'url.base') }}"
 # Port 8080 is where gunicorn binds inside the admin container (see start.py in ghcr.io/mailu/admin).
 # Calling localhost directly avoids routing through the front nginx proxy, which causes 502s in DinD.
@@ -16,7 +17,6 @@ MAILU_EMAIL: "{{ lookup('email', application_id) }}"
 MAILU_HOSTNAME: "{{ MAILU_EMAIL.host }}"
 MAILU_HOSTNAME_DNS_ZONE: "{{ MAILU_HOSTNAME | to_zone }}"
 MAILU_VERSION: "{{ lookup('config', application_id, 'services.mailu.version') }}"
-MAILU_RESOLVER_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'resolver') }}"
 MAILU_FRONT_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'front') }}"
 MAILU_ADMIN_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'admin') }}"
 MAILU_IMAP_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'imap') }}"
@@ -34,7 +34,13 @@ MAILU_ADMIN_DATA_VOLUME: "{{ lookup('volume', application_id, 'admin_data').name
 MAILU_FILTER_VOLUME: "{{ lookup('volume', application_id, 'filter').name }}"
 MAILU_DKIM_VOLUME: "{{ lookup('volume', application_id, 'dkim').name }}"
 MAILU_DOVECOT_MAIL_VOLUME: "{{ lookup('volume', application_id, 'dovecot_mail').name }}"
-MAILU_DNS_RESOLVER: "{{ lookup('config', 'web-app-mailu', 'server.networks.local.dns_resolver') }}"
+MAILU_DNS_RESOLVER: "{{ lookup('config', 'svc-dns-unbound', 'server.networks.local.dns_resolver') }}"
+# Names the admin container dials at startup (must match env.j2 verbatim) and the
+# swarm overlay each shares with the central service. On swarm admin's `dns:` is
+# pinned to a public DNSSEC resolver, so these names are served via extra_hosts.
+MAILU_SWARM_DB_HOST: "{{ lookup('database', application_id, 'host') }}"
+MAILU_SWARM_DB_ENGINE: "{{ lookup('database', application_id, 'type') }}"
+MAILU_SWARM_REDIS_HOST: "{{ lookup('engine', 'redis', application_id, 'host') }}"
 MAILU_IP4_PUBLIC: "{{ DOCKER_PUBLIC_BIND_HOST }}"
 MAILU_IP6_PUBLIC: "" # Deactivated atm. but cloudflare logic present @todo activate it when it's configured for docker.
 MAILU_SUBNET: "{{ lookup('config', 'web-app-mailu', 'server.networks.local.subnet') }}"
@@ -50,11 +56,7 @@ MAILU_DOCKER_FLAVOR: "{{ 'ghcr.io/heviat' if MAILU_OIDC_ENABLED | bool else 'ghc
 MAILU_DMARC_RUF: "{{ lookup('config', application_id, 'users.administrator.email') }}"
 MAILU_DKIM_KEY_FILE: "{{ MAILU_DOMAIN }}.dkim.key"
 MAILU_DKIM_KEY_PATH: "/dkim/{{ MAILU_DKIM_KEY_FILE }}"
-# Set to true in WSL2/DinD environments where iterative DNS resolution via
-# root-hints is not supported. Forwards all queries to public resolvers instead.
-# On bare-metal this must remain false to preserve DNSSEC validation.
-MAILU_UNBOUND_FORWARD_DNS: "{{ 'microsoft' in lookup('file', '/proc/version') | lower }}"
-MAILU_UNBOUND_CONF_FILE: "{{ [ MAILU_OVERRIDES_DIR, 'unbound/unbound.conf' ] | path_join }}"
+MAILU_NGINX_HOST_DIR: "{{ [ MAILU_OVERRIDES_DIR, 'nginx' ] | path_join }}"
 MAILU_RSPAMD_HOST_DIR: "{{ [ MAILU_OVERRIDES_DIR, 'rspamd' ] | path_join }}"
 MAILU_RSPAMD_HOST_FILE: "{{ [ MAILU_RSPAMD_HOST_DIR,'ratelimit.conf' ] | path_join }}"
 MAILU_RSPAMD_LIMITS_DEFAULTS:

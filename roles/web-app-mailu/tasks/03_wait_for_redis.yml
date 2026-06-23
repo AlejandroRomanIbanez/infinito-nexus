@@ -30,6 +30,7 @@
 
               --- Mailu redis container logs (last 300 lines) ---
               {{ mailu_redis_logs.stdout | default('No logs available') }}
+  when: lookup('engine', 'redis', application_id, 'local')
 
 - name: "Wait until Mailu admin HTTP API listens on :8080"
   block:

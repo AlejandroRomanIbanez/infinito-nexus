@@ -17,10 +17,15 @@
       shared: true
     mariadb:
       shared: true
+    redis:
+      shared: true
     matomo:
       enabled: true
       shared: true
     sso:
+      enabled: true
+      shared: true
+    unbound:
       enabled: true
       shared: true
     prometheus:
@@ -38,10 +43,15 @@
       shared: false
     mariadb:
       shared: false
+    redis:
+      shared: false
     matomo:
       enabled: false
       shared: false
     sso:
+      enabled: false
+      shared: false
+    unbound:
       enabled: false
       shared: false
     prometheus:

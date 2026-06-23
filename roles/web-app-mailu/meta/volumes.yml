@@ -51,13 +51,6 @@ webmail_data:
   mounts:
     - service: webmail
       target: /data
-unbound_conf:
-  type: config
-  source: "{{ [ lookup('container', 'web-app-mailu', 'directories.volumes'), 'overrides/unbound/unbound.conf' ] | path_join }}"
-  mode: "0440"
-  mounts:
-    - service: resolver
-      target: /unbound.conf
 nginx_overrides:
   type: bind
   source: "{{ [ lookup('container', 'web-app-mailu', 'directories.volumes'), 'overrides/nginx' ] | path_join }}"

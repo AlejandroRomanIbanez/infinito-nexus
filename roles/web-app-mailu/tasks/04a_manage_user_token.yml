@@ -21,12 +21,14 @@
            | list
          ).0 | default(None) }}
 
-- name: "Start Mailu token procedures if token missing"
+- name: "Start Mailu token procedures if token missing locally or absent in Mailu"
   when: >-
     (
-      lookup('users').get(mailu_user_key, {}).get('tokens', {}).get(application_id, '')
-      | string | trim
-    ) == ''
+      (
+        lookup('users').get(mailu_user_key, {}).get('tokens', {}).get(application_id, '')
+        | string | trim
+      ) == ''
+    ) or (mailu_user_existing_token is none)
   ansible.builtin.include_tasks:
     file: 04b_create_user_token.yml
     apply:
