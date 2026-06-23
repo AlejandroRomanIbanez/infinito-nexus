@@ -5,3 +5,4 @@ realm_import:
   mounts:
     - service: keycloak
       target: /opt/keycloak/data/import/
+      when: "{{ DEPLOYMENT_MODE != 'swarm' }}"
