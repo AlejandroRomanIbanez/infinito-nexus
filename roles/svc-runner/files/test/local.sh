@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# nocheck: raw-docker  # manages a throwaway dind sandbox daemon directly; the container/compose wrappers don't apply here
 # Local checks for svc-runner: container health, DooD socket, and a full nested
 # deploy. Only runs via test-e2e-cli (RUNTIME dev/act/github), always
 # containerized — no bare-host path. The deploy builds the infinito image locally
@@ -40,6 +41,7 @@ container exec --user root "${RUNNER_PROJECT_PREFIX}-1" \
     bash -c "rm -rf ${_iso_src} && mkdir -p ${_iso_src} && tar -C /opt/src/infinito --exclude='./.env' --exclude='./compose/coredns/Corefile' --exclude='./.venvs' --exclude='./venv' --exclude='*/node_modules' --exclude='*/__pycache__' -cf - . | tar -C ${_iso_src} -xf - && chown -R github-runner:github-runner ${_iso_src}"
 container exec "${RUNNER_PROJECT_PREFIX}-1" bash -c "cd ${_iso_src} && make install"
 
+# shellcheck disable=SC2016  # inner $VARs run in the sandbox shell; outer values spliced via '"..."'
 if ! container exec "${RUNNER_PROJECT_PREFIX}-1" bash -c '
     set -euo pipefail
     cd "'"${_iso_src}"'"
