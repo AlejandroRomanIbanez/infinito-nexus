@@ -1,7 +1,8 @@
 ---
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: Central Redis engine running in a standalone Docker stack, with per-consumer ACL-user provisioning (key-prefix isolation). Doubles as the embedded sidecar snippet when a consumer opts out of the central instance.
+  description: The Docker Qdrant Role offers an easy and efficient way to run a Qdrant vector database inside a Docker container. Manage your embeddings securely and
+    effectively, making it ideal for production or local development.
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach
@@ -24,10 +25,9 @@ galaxy_info:
       versions:
         - all
   galaxy_tags:
-    - redis
+    - qdrant
     - docker
-    - cache
-    - engine
+    - database
+    - vector
     - central-database
   issue_tracker_url: https://s.infinito.nexus/issues
-dependencies: []

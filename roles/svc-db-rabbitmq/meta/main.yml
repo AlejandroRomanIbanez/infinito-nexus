@@ -1,7 +1,8 @@
 ---
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: Central Redis engine running in a standalone Docker stack, with per-consumer ACL-user provisioning (key-prefix isolation). Doubles as the embedded sidecar snippet when a consumer opts out of the central instance.
+  description: The Docker RabbitMQ Role offers an easy and efficient way to run a central RabbitMQ message broker inside a Docker container, with per-consumer
+    vhost and user isolation, making it ideal for production or local development.
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach
@@ -24,10 +25,9 @@ galaxy_info:
       versions:
         - all
   galaxy_tags:
-    - redis
+    - rabbitmq
     - docker
-    - cache
-    - engine
+    - queue
+    - administration
     - central-database
   issue_tracker_url: https://s.infinito.nexus/issues
-dependencies: []

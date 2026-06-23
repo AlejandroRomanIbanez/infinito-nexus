@@ -1,0 +1,74 @@
+---
+- name: "Assert correct context"
+  ansible.builtin.assert:
+    that:
+      - application_id == 'svc-db-typesense'
+      - database_consumer_id != 'svc-db-typesense'
+
+- name: Resolve consumer typesense provisioning facts
+  ansible.builtin.set_fact:
+    typesense_consumer_prefix: "{{ lookup('engine', 'typesense', database_consumer_id, 'prefix') }}"
+    typesense_consumer_key: "{{ lookup('engine', 'typesense', database_consumer_id, 'password') | string }}"
+    typesense_consumer_username: "{{ lookup('engine', 'typesense', database_consumer_id, 'username') }}"
+  changed_when: false
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+- name: "Assert the consumer provisioned an API key"
+  ansible.builtin.assert:
+    that:
+      - typesense_consumer_key | length > 0
+    fail_msg: >-
+      No Typesense API key resolved for consumer '{{ database_consumer_id }}'.
+      The consumer must declare services.typesense.password (shared: true).
+
+- name: Wait until Typesense accepts the admin API key
+  block:
+    - name: "TYPESENSE | Probe /health with admin key (inside container)"
+      ansible.builtin.shell: >
+        {{ TYPESENSE_EXEC_SHELL }}
+        'curl -fsS -H "X-TYPESENSE-API-KEY: {{ TYPESENSE_API_KEY }}"
+        http://127.0.0.1:8108/health'
+      register: ts_admin_ready
+      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+      changed_when: false
+      retries: 30
+      delay: 5
+      until: ts_admin_ready.rc == 0 and (ts_admin_ready.stdout is search('"ok"\\s*:\\s*true'))
+
+  rescue:
+    - name: "TYPESENSE | container logs (last 200 lines)"
+      ansible.builtin.command: "container logs --tail 200 {{ TYPESENSE_NAME }}"
+      register: dbg_ts_logs
+      changed_when: false
+      failed_when: false
+
+    - name: "TYPESENSE | Failure report"
+      ansible.builtin.debug:
+        msg:
+          typesense_container: "{{ TYPESENSE_NAME }}"
+          typesense_host: "{{ TYPESENSE_HOST }}"
+          typesense_port: "{{ TYPESENSE_PORT }}"
+          last_logs: "{{ dbg_ts_logs.stdout | default('') }}"
+
+    - name: "TYPESENSE | Fail explicitly after logs"
+      ansible.builtin.fail:
+        msg: >-
+          Typesense did not become ready for admin API authentication.
+          Last 200 container log lines were printed above.
+
+- name: "Create scoped API key for {{ typesense_consumer_username }} (collections '{{ typesense_consumer_prefix }}_*')"
+  ansible.builtin.shell: >
+    {{ TYPESENSE_EXEC_SHELL }}
+    'curl -sS -o /dev/null -w "%{http_code}"
+    -X POST http://127.0.0.1:8108/keys
+    -H "X-TYPESENSE-API-KEY: {{ TYPESENSE_API_KEY }}"
+    -H "Content-Type: application/json"
+    -d {{ {"value": typesense_consumer_key, "description": "scoped key for " ~ database_consumer_id, "actions": ["*"], "collections": [typesense_consumer_prefix ~
+    "_*"]} | to_json | quote }}'
+  register: ts_key_create
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+  changed_when: ts_key_create.stdout is search('^20[01]$')
+  failed_when: not (ts_key_create.stdout is search('^(20[01]|409)$'))
+  retries: "{{ TYPESENSE_RETRIES }}"
+  delay: "{{ TYPESENSE_DELAY }}"
+  until: ts_key_create.rc == 0
