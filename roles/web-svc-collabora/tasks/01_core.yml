@@ -15,7 +15,7 @@
   when: IS_STACK_HOST | bool
   block:
     - name: Update Collabora systemplate to include new fonts
-      command: "{{ COLLABORA_DOCKER_CONF_EXEC }} update-system-template"
+      shell: "{{ COLLABORA_DOCKER_CONF_EXEC }} update-system-template"
       register: collabora_fonts
       changed_when: >
         (not ASYNC_ENABLED | bool )
@@ -25,7 +25,7 @@
       poll: "{{ ASYNC_POLL if (ASYNC_ENABLED |  bool) else omit }}"
 
     - name: Allow Nextcloud host IP for Collabora preview conversion
-      command: "{{ COLLABORA_DOCKER_CONF_EXEC }} set net.post_allow.host {{ networks.internet.ip4 }}"
+      shell: "{{ COLLABORA_DOCKER_CONF_EXEC }} set net.post_allow.host {{ networks.internet.ip4 }}"
       register: collabora_preview
       changed_when: >
         (not ASYNC_ENABLED | bool )
