@@ -15,6 +15,7 @@
     container service update --force
     {{ matomo_bootstrap_service_ref }}
   changed_when: true
+  timeout: 600
 
 - name: "Matomo bootstrap | Swarm: wait for the bootstrap service to emit a token"
   ansible.builtin.shell: |

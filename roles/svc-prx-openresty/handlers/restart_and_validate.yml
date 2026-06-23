@@ -33,10 +33,11 @@
 
 - name: Force OpenResty service redeploy (remounts bind to live inode)
   ansible.builtin.command: >-
-    container service update --force
+    container service update --force --detach
     {{ lookup('container_service', 'svc-prx-openresty', 'openresty') }}
   register: openresty_swarm_update
   changed_when: openresty_swarm_update.rc == 0
+  timeout: 600
   when:
     - DEPLOYMENT_MODE == 'swarm'
     - IS_STACK_HOST | bool

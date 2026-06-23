@@ -31,6 +31,7 @@
   ansible.builtin.command: "container service update --force {{ lookup('container_service', application_id, BASEROW_SERVICE_NAME) }}"
   register: baserow_swarm_restart
   changed_when: baserow_swarm_restart.rc == 0
+  timeout: 600
   when:
     - baserow_migrate_result.changed
     - DEPLOYMENT_MODE == 'swarm'
