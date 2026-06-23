@@ -11,6 +11,8 @@
   retries: 60
   delay: 2
   until: redis_ping.stdout is search('PONG')
+  changed_when: false
+  when: lookup('engine', 'redis', application_id, 'local')
 
 - name: Update\Upgrade Nextcloud
   include_tasks: 03_upgrade.yml

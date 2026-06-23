@@ -32,6 +32,8 @@ javascript:
   shared: "{{ lookup('config', 'web-app-prometheus', 'services.sso.enabled') | bool }}"
 # nocheck: playwright-service-flag — self-provider
 prometheus:
+  # nocheck: default-placement-manager  TSDB on-disk data; node-local in swarm
+  default_placement: manager
   enabled: true
   shared: true
   provides:

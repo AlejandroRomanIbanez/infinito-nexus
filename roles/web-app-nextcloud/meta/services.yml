@@ -31,6 +31,7 @@ redis:
   backup:
     disabled: true
   enabled: true
+  shared: "{{ 'svc-db-redis' in group_names }}"
   cpus: "1"
   mem_reservation: 1g
   mem_limit: 8g

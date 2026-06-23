@@ -82,7 +82,7 @@
       - "{{ container_port }}"
     shm_size: 1g
     {{ lookup('container_networks') | indent(4) }}
-    {{ lookup('depends_on', {'redis': 'service_healthy'}) }}
+    {% if lookup('engine', 'redis', application_id, 'local') %}{{ lookup('depends_on', {'redis': 'service_healthy'}) }}{% endif %}
 {% endif %}
 
 

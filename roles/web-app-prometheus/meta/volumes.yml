@@ -13,10 +13,13 @@ alertmanager_data:
     - service: alertmanager
       target: /alertmanager
 
+# Swarm materialises config objects as root:root; the prom/* images run as
+# `nobody`, so 0440 (no "other" read bit) makes them unreadable -> exit 2.
+# 0444 keeps them read-only while letting the non-root runtime user load them.
 prometheus_config:
   type: config
   source: "{{ [lookup('container', 'web-app-prometheus', 'directories.config'), 'prometheus.yml'] | path_join }}"
-  mode: "0440"
+  mode: "0444"
   mounts:
     - service: prometheus
       target: /etc/prometheus/prometheus.yml
@@ -24,7 +27,7 @@ prometheus_config:
 alert_rules:
   type: config
   source: "{{ [lookup('container', 'web-app-prometheus', 'directories.config'), 'alert_rules.yml'] | path_join }}"
-  mode: "0440"
+  mode: "0444"
   mounts:
     - service: prometheus
       target: /etc/prometheus/alert_rules.yml
@@ -32,7 +35,7 @@ alert_rules:
 blackbox_config:
   type: config
   source: "{{ [lookup('container', 'web-app-prometheus', 'directories.config'), 'blackbox.yml'] | path_join }}"
-  mode: "0440"
+  mode: "0444"
   mounts:
     - service: blackbox-exporter
       target: /etc/blackbox_exporter/config.yml
@@ -40,7 +43,7 @@ blackbox_config:
 alertmanager_config:
   type: config
   source: "{{ [lookup('container', 'web-app-prometheus', 'directories.config'), 'alertmanager.yml'] | path_join }}"
-  mode: "0440"
+  mode: "0444"
   mounts:
     - service: alertmanager
       target: /etc/alertmanager/alertmanager.yml
@@ -81,6 +84,10 @@ host_var_lib_docker:
     - service: cadvisor
       target: /var/lib/docker
 
+# /dev/disk does not exist on swarm DinD nodes, so the bind makes the swarm
+# service Reject ("bind source path does not exist"). cadvisor only uses it to
+# enrich per-disk stats, which is optional, so gate the mount to compose where
+# the host path is real.
 host_dev_disk:
   type: bind
   source: "/dev/disk/"
@@ -88,6 +95,7 @@ host_dev_disk:
   mounts:
     - service: cadvisor
       target: /dev/disk
+      when: "{{ DEPLOYMENT_MODE != 'swarm' }}"
 
 host_proc:
   type: bind

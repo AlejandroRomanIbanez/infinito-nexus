@@ -60,6 +60,7 @@ redis:
   backup:
     disabled: true
   enabled: false
+  shared: "{{ 'svc-db-redis' in group_names }}"
 # nocheck: playwright-service-flag — verified by web-svc-css provider spec
 css:
   enabled: "{{ 'web-svc-css' in group_names }}"
