@@ -17,4 +17,4 @@ redis:
   ports:
     local:
       redis: 6379
-  lifecycle: pre-alpha
+  lifecycle: beta

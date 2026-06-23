@@ -5,7 +5,7 @@ node:
   shared: "{{ 'svc-swarm-node' in group_names }}"
 manager:
   name: swarm-manager
-  lifecycle: pre-alpha
+  lifecycle: beta
   min_storage: "1MB"
   cpus: "0.01"
   mem_reservation: "8m"

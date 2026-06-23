@@ -4,7 +4,7 @@ nfs-server:
   shared: "{{ 'svc-storage-nfs-server' in group_names }}"
 nfs-client:
   name: nfs-client
-  lifecycle: pre-alpha
+  lifecycle: beta
   min_storage: "50MB"
   cpus: "0.1"
   mem_reservation: "32m"

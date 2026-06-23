@@ -2,7 +2,7 @@
 # nocheck: required-by-coverage
 node:
   name: swarm
-  lifecycle: pre-alpha
+  lifecycle: beta
   enabled: true
   shared: true
   min_storage: "100MB"

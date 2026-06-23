@@ -1,7 +1,7 @@
 ---
 nfs-server:
   name: nfs-server
-  lifecycle: pre-alpha
+  lifecycle: beta
   enabled: true
   shared: true
   min_storage: "100MB"

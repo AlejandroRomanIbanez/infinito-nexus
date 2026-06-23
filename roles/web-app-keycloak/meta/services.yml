@@ -73,7 +73,6 @@ sso_proxy:
   ports:
     internal:
       http: 4180
-  lifecycle: pre-alpha
   cpus: "0.25"
   mem_reservation: "64m"
   mem_limit: "128m"

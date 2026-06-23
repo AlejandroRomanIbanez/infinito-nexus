@@ -17,4 +17,4 @@ unbound:
   ports:
     local:
       unbound: 53
-  lifecycle: pre-alpha
+  lifecycle: beta
