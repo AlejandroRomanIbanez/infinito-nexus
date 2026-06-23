@@ -12,6 +12,7 @@ Every prompt below instructs the agent to first clarify all open requirements th
 |---|---|
 | Building a new feature, app, or larger change | [Development](#development-) |
 | Fixing or evolving a single web app role with the deploy/test loop | [Web Development Iteration](#web-development-iteration-) |
+| Validating or debugging one or more roles (or every app) across both deploy modes, compose then swarm | [Cross-Mode Roundtrip](#cross-mode-roundtrip-) |
 | Running or validating tests for a specific scope | [Testing](#testing-) |
 | Writing or updating a Playwright spec for a `web-*` role | [Playwright Tests](#playwright-tests-) |
 | Cleaning up code, docs, or roles after a change | [Refactor and Optimize](#refactor-and-optimize-) |
@@ -43,6 +44,14 @@ Follow the instructions from AGENTS.md, iterate on web app role <role> by follow
 ```
 
 SPOT: [Role Loop](../../../agents/action/iteration/role.md)
+
+## Cross-Mode Roundtrip 🔄
+
+```
+Follow the instructions from AGENTS.md, roundtrip-validate <roles> (or omit them to sweep every application, most-complex first) across all deploy modes, compose then swarm, by following the procedure in docs/agents/action/iteration/roundtrip.md. Drive it with `make roundtrip apps="<roles>"`, or `make roundtrip` with no apps to iterate every application ranked by complexity. Begin by clarifying every open requirement through active listening, then act autonomously through to completion with as few follow-up questions as possible. When a step fails, read its log under `${TMPDIR:-/tmp}/roundtrip-<app>-<mode>.log`, drop into the matching focused loop (docs/agents/action/iteration/role.md for the compose step, docs/agents/action/iteration/workflow.md for the swarm step), confirm the fix on live state in-container before any redeploy, apply the real fix in the repository, then re-run the roundtrip. You MUST NOT use any commit command, push command, or any command that would require an `ask`-mode approval. You MUST NOT stop the iteration early under any circumstance. Premature termination is explicitly forbidden. The iteration is finished only when every role is green in compose AND swarm.
+```
+
+SPOT: [Roundtrip Loop](../../../agents/action/iteration/roundtrip.md)
 
 ## Testing ✅
 
