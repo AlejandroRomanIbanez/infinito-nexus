@@ -1,7 +1,8 @@
 ---
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: Central Redis engine running in a standalone Docker stack, with per-consumer ACL-user provisioning (key-prefix isolation). Doubles as the embedded sidecar snippet when a consumer opts out of the central instance.
+  description: Central Redis engine running in a standalone Docker stack, with per-consumer ACL-user provisioning (key-prefix isolation). Doubles as the
+    embedded sidecar snippet when a consumer opts out of the central instance.
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach
