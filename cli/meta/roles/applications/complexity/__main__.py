@@ -305,13 +305,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     p.add_argument(
         "--format",
-        choices=("cli", "json"),
+        choices=("cli", "json", "string"),
         default="cli",
         help=(
-            "Output format. 'cli' (default) shows counts only — name, "
-            "embeds, consumers — for a compact terminal view. 'json' "
+            "Output format. 'cli' (default) shows counts only (name, "
+            "embeds, consumers) for a compact terminal view. 'json' "
             "emits the full payload including the resolved service and "
-            "consumer role lists."
+            "consumer role lists. 'string' prints only the role names, "
+            "one per line (feed into `make roundtrip apps=...`)."
         ),
     )
     p.add_argument(
@@ -355,7 +356,12 @@ def main(argv: list[str] | None = None) -> int:
         needle = args.filter.lower()
         rows = [r for r in rows if needle in r[0].lower()]
 
-    rendered = _render_json(rows) if args.format == "json" else _render_table(rows)
+    if args.format == "json":
+        rendered = _render_json(rows)
+    elif args.format == "string":
+        rendered = "\n".join(row[0] for row in rows)
+    else:
+        rendered = _render_table(rows)
     if rendered:
         print(rendered)
     return 0
