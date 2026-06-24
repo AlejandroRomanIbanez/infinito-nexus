@@ -1,26 +1,9 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-
-  configurator:
-    {{ lookup('container_image', application_id, 'erpnext') }}
-    {{ lookup('compose_only', 'container_name', ERPNEXT_CONFIGURATOR_CONTAINER) }}
-{% set docker_restart_policy = 'no' %}
-    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    entrypoint:
-      - bash
-      - -c
-    command:
-      - >
-        ls -1 apps > sites/apps.txt;
-        bench set-config -g db_host "{{ ERPNEXT_DB_HOST }}";
-        bench set-config -gp db_port {{ ERPNEXT_DB_PORT }};
-        bench set-config -g redis_cache    "{{ ERPNEXT_REDIS_URL }}/0";
-        bench set-config -g redis_queue    "{{ ERPNEXT_REDIS_URL }}/1";
-        bench set-config -g redis_socketio "{{ ERPNEXT_REDIS_URL }}/2";
-        bench set-config -gp socketio_port {{ ERPNEXT_WEBSOCKET_PORT }};
-        bench set-config -g host_name "{{ lookup('tls', application_id, 'url.base') | regex_replace('/+$', '') }}";
-    {{ lookup('container_volumes', application_id, ERPNEXT_CONFIGURATOR_CONTAINER) | indent(4) }}
-{{ lookup('container_depends_on', application_id) }}
-    {{ lookup('container_networks') | indent(4) }}
+{# Replica policy: backend, queue workers and the nginx frontend scale to node-count
+   (stateless; state in MariaDB/Redis; swarm reaches them via the overlay VIP and the
+   published port is ingress, so host binding does not pin them). websocket (no socket.io
+   redis adapter -> needs sticky sessions), scheduler (singleton crons) and configurator
+   (one-shot) stay at one replica below the `{% set service_replicas = 1 %}` line. #}
 
   backend:
     {{ lookup('container_image', application_id, 'erpnext') }}
@@ -28,24 +11,6 @@
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('depends_on', {'configurator': 'service_completed_successfully'}) }}
     {{ lookup('container_volumes', application_id, ERPNEXT_BACKEND_CONTAINER) | indent(4) }}
-    {{ lookup('container_networks') | indent(4) }}
-
-  websocket:
-    {{ lookup('container_image', application_id, 'erpnext') }}
-    {{ lookup('compose_only', 'container_name', ERPNEXT_WEBSOCKET_CONTAINER) }}
-    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
-    {{ lookup('depends_on', {'configurator': 'service_completed_successfully'}) }}
-    {{ lookup('container_volumes', application_id, ERPNEXT_WEBSOCKET_CONTAINER) | indent(4) }}
-    {{ lookup('container_networks') | indent(4) }}
-
-  scheduler:
-    {{ lookup('container_image', application_id, 'erpnext') }}
-    {{ lookup('compose_only', 'container_name', ERPNEXT_SCHEDULER_CONTAINER) }}
-    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    command: ["bench", "schedule"]
-    {{ lookup('depends_on', {'backend': 'service_started'}) }}
-    {{ lookup('container_volumes', application_id, ERPNEXT_SCHEDULER_CONTAINER) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
   queue-short:
@@ -85,6 +50,49 @@
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.erpnext.ports.local.http') }}:{{ ERPNEXT_FRONTEND_PORT }}"
       - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.erpnext.ports.local.websocket') }}:{{ ERPNEXT_WEBSOCKET_PORT }}"
     {{ lookup('container_volumes', application_id, ERPNEXT_FRONTEND_CONTAINER) | indent(4) }}
+    {{ lookup('container_networks') | indent(4) }}
+
+{% set service_replicas = 1 %}
+  websocket:
+    {{ lookup('container_image', application_id, 'erpnext') }}
+    {{ lookup('compose_only', 'container_name', ERPNEXT_WEBSOCKET_CONTAINER) }}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    command: ["node", "/home/frappe/frappe-bench/apps/frappe/socketio.js"]
+    {{ lookup('depends_on', {'configurator': 'service_completed_successfully'}) }}
+    {{ lookup('container_volumes', application_id, ERPNEXT_WEBSOCKET_CONTAINER) | indent(4) }}
+    {{ lookup('container_networks') | indent(4) }}
+
+  scheduler:
+    {{ lookup('container_image', application_id, 'erpnext') }}
+    {{ lookup('compose_only', 'container_name', ERPNEXT_SCHEDULER_CONTAINER) }}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    command: ["bench", "schedule"]
+    {{ lookup('depends_on', {'backend': 'service_started'}) }}
+    {{ lookup('container_volumes', application_id, ERPNEXT_SCHEDULER_CONTAINER) | indent(4) }}
+    {{ lookup('container_networks') | indent(4) }}
+
+{# configurator stays LAST: its `docker_restart_policy = 'no'` set is template-scoped
+   and would otherwise leak restart:no / swarm condition:none onto every service above it. #}
+  configurator:
+    {{ lookup('container_image', application_id, 'erpnext') }}
+    {{ lookup('compose_only', 'container_name', ERPNEXT_CONFIGURATOR_CONTAINER) }}
+{% set docker_restart_policy = 'no' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    entrypoint:
+      - bash
+      - -c
+    command:
+      - >
+        ls -1 apps > sites/apps.txt;
+        bench set-config -g db_host "{{ ERPNEXT_DB_HOST }}";
+        bench set-config -gp db_port {{ ERPNEXT_DB_PORT }};
+        bench set-config -g redis_cache    "{{ ERPNEXT_REDIS_URL }}/0";
+        bench set-config -g redis_queue    "{{ ERPNEXT_REDIS_URL }}/1";
+        bench set-config -g redis_socketio "{{ ERPNEXT_REDIS_URL }}/2";
+        bench set-config -gp socketio_port {{ ERPNEXT_WEBSOCKET_PORT }};
+        bench set-config -g host_name "{{ lookup('tls', application_id, 'url.base') | regex_replace('/+$', '') }}";
+    {{ lookup('container_volumes', application_id, ERPNEXT_CONFIGURATOR_CONTAINER) | indent(4) }}
+{{ lookup('container_depends_on', application_id) }}
     {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}
