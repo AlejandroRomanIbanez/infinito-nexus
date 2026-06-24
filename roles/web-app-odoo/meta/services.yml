@@ -52,6 +52,7 @@ odoo:
       http: 8068
     internal:
       http: 8069
+      websocket: 8072
   proxy:
     service_key: odoo
   run_after:

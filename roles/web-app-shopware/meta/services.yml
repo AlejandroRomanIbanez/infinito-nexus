@@ -44,6 +44,8 @@ shopware:
     version: 6.7.8.2
   title: "{{ ORGANIZATION }} Shop"
   ports:
+    internal:
+      http: 8000
     local:
       sso: 16503
       http: 8060

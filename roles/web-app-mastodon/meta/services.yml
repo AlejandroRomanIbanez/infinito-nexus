@@ -49,6 +49,7 @@ mastodon:
       http: 8009
     internal:
       http: 3000
+      websocket: 4000
   proxy:
     service_key: mastodon
   run_after:

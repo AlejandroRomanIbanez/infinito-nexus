@@ -55,6 +55,8 @@ pihole:
   min_storage: "1GB"
   pids_limit: 512
   ports:
+    internal:
+      http: 80
     local:
       http: 8078
       sso: 16508

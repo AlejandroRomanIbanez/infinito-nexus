@@ -42,6 +42,7 @@ gitlab:
       ssh: 2202
     internal:
       http: 80
+      ssh: 22
   proxy:
     service_key: gitlab
   run_after:

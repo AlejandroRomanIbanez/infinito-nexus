@@ -1,19 +1,20 @@
-"""Every role whose ``templates/compose.yml.j2`` publishes a
-``services.<entity>.ports.local.<kind>`` port mapping must also declare the
-matching ``ports.internal.<kind>`` for that entity in ``meta/services.yml``.
+"""Every role whose ``templates/compose.yml.j2`` publishes a port mapping
+(``services.<entity>.ports.<local|public>.<kind>``) must declare the matching
+``ports.internal.<kind>`` for that entity in ``meta/services.yml``.
 
 The swarm ``resolve_upstream`` (``utils/networks/proxy.py``) reads
-``services.<entity>.ports.internal.<port_kind>`` and **hard-fails** (ValueError)
-when it is absent, so a proxied role that exposes a port in compose but never
-declares its internal (container-side) port breaks every swarm deploy that
-proxies it. Compose mode reads only ``ports.local`` and is unaffected, so the
-gap is invisible until a swarm deploy.
+``services.<entity>.ports.internal.http`` and **hard-fails** (ValueError) when it
+is absent. The lint extends that requirement to every published kind
+(http, websocket, ssh, ...): each compose mapping has a container-side port, and
+declaring it under ``ports.internal`` keeps the role's port surface complete and
+consistent for the swarm path (and ready should another kind become proxied).
+Compose ignores ``ports.internal``, so the gap stays invisible until a swarm
+deploy.
 
-The internal value is the container-side port of the compose mapping
-(``- "<host>:<...ports.local.kind...>:<container_port>"``).
+The internal value is the container-side port of the compose mapping (the last
+segment of ``- "<host>:<published>:<container_port>"``; literal or Jinja).
 
-Per-role opt-out: ``# nocheck: swarm-internal-port`` in the services.yml head,
-only when the role is genuinely never proxied in swarm.
+Per-role opt-out: ``# nocheck: swarm-internal-port`` in the services.yml head.
 """
 
 from __future__ import annotations
@@ -28,10 +29,8 @@ from utils.annotations.suppress import is_suppressed_in_head
 from . import PROJECT_ROOT
 
 _RULE = "swarm-internal-port"
-# `services.<entity>.ports.local.<kind>` reference inside a compose mapping.
-_LOCAL_REF = re.compile(r"services\.([\w-]+)\.ports\.local\.(\w+)")
-# A compose publish mapping ends in `:<container_port>"`.
-_PUBLISH = re.compile(r'-\s*"[^"]*:\s*\d+"\s*$')
+# `services.<entity>.ports.<local|public>.<kind>` reference inside a mapping.
+_PUBLISHED_REF = re.compile(r"services\.([\w-]+)\.ports\.(?:local|public)\.(\w+)")
 
 
 def _entity_internal_kinds(data: object, entity: str) -> set[str]:
@@ -45,8 +44,19 @@ def _entity_internal_kinds(data: object, entity: str) -> set[str]:
     return set()
 
 
+def _published(compose_text: str) -> set[tuple[str, str]]:
+    out: set[tuple[str, str]] = set()
+    for line in compose_text.splitlines():
+        stripped = line.strip()
+        # A `- "<host>:<published>:<container>"` publish mapping; `- "KEY=..."`
+        # env / command list entries carry `=` and are excluded.
+        if stripped.startswith('- "') and "ports." in stripped and "=" not in stripped:
+            out.update(_PUBLISHED_REF.findall(stripped))
+    return out
+
+
 class TestSwarmInternalPorts(unittest.TestCase):
-    def test_published_local_ports_declare_internal(self) -> None:
+    def test_published_ports_declare_internal(self) -> None:
         findings: list[str] = []
         for role_dir in sorted((PROJECT_ROOT / "roles").iterdir()):
             compose = role_dir / "templates" / "compose.yml.j2"
@@ -54,10 +64,7 @@ class TestSwarmInternalPorts(unittest.TestCase):
             if not compose.is_file() or not services.is_file():
                 continue
 
-            published: set[tuple[str, str]] = set()
-            for line in compose.read_text().splitlines():
-                if "ports.local." in line and _PUBLISH.search(line):
-                    published.update(_LOCAL_REF.findall(line))
+            published = _published(compose.read_text())
             if not published:
                 continue
 
@@ -74,15 +81,17 @@ class TestSwarmInternalPorts(unittest.TestCase):
 
         if findings:
             self.fail(
-                "Roles publish a `ports.local.<kind>` mapping in compose.yml.j2 but "
-                "do not declare the matching `ports.internal.<kind>` in "
-                "meta/services.yml. The swarm resolve_upstream "
-                "(utils/networks/proxy.py) hard-fails (ValueError) at deploy for "
-                "these.\n\nAdd `ports.internal.<kind>: <container_port>` (the "
-                "container-side port of the compose mapping) on that entity. "
-                "Suppress with `# nocheck: swarm-internal-port` in the services.yml "
-                "head only when the role is genuinely never proxied in swarm.\n\n"
-                "Missing declarations:\n" + "\n".join(sorted(set(findings)))
+                "Roles publish a port mapping (services.<entity>.ports.<local|"
+                "public>.<kind>) in compose.yml.j2 but do not declare the matching "
+                "`ports.internal.<kind>` in meta/services.yml. The swarm "
+                "resolve_upstream (utils/networks/proxy.py) hard-fails for the http "
+                "upstream, and every published kind needs its container-side port "
+                "declared for a complete, swarm-consistent port surface.\n\nAdd "
+                "`ports.internal.<kind>: <container_port>` (the container-side port "
+                "of the compose mapping) on that entity. Suppress with "
+                "`# nocheck: swarm-internal-port` in the services.yml head only when "
+                "the kind is genuinely never reached in swarm.\n\nMissing "
+                "declarations:\n" + "\n".join(sorted(set(findings)))
             )
 
 

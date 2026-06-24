@@ -54,6 +54,7 @@ gitea:
   ports:
     internal:
       http: 3000
+      ssh: 22
     local:
       sso: 16488
       http: 8002

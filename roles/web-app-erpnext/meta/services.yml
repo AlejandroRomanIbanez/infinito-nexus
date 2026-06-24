@@ -52,6 +52,7 @@ erpnext:
       websocket: 4004
     internal:
       http: 8080
+      websocket: 9000
   proxy:
     service_key: erpnext-frontend
   run_after:
