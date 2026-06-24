@@ -1,19 +1,9 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Deploy exactly ONE app on ONE distro against the same stack, with the
-# matrix-aware sync + async passes co-located per variant.
-#
-# Flow:
-#   1) Ensure compose stack is up (reuse if already running)
-#   2) Init inventory once (ASYNC_ENABLED=false baked into host_vars).
-#      For roles with `meta/variants.yml` this materialises one folder
-#      per variant; otherwise a single unsuffixed folder.
-#   3) Deploy with `--full-cycle`: per matrix round the dev wrapper runs
-#      the sync deploy, then immediately the async re-deploy with
-#      `-e ASYNC_ENABLED=true`, BEFORE moving to the next variant.
-#      Inter-round cleanup runs only for apps whose variant changed.
-#   4) Always remove stack so the next distro starts fresh.
+# Deploy one app on one distro: bring the stack up, init the inventory (one folder
+# per meta/variants.yml round), deploy --full-cycle (sync + async per variant), then
+# always remove the stack so the next distro starts fresh.
 #
 # Required env:
 #   INFINITO_DISTRO="arch|debian|ubuntu|fedora|centos"
@@ -113,12 +103,8 @@ cleanup() {
 	# 4) Optional: leftover stopped containers (usually redundant after rm -f)
 	docker container prune -f >/dev/null 2>&1 || true
 
-	# 5) Remove ALL images and build cache.
-	# Important for serial multi-distro CI runs on GitHub runners (limited disk).
-	# Skipped on self-hosted (INFINITO_PRESERVE_DOCKER_CACHE=true) so outer images
-	# (infinito, coredns) stay in the Docker cache.  Combined with pull_policy:always
-	# they become fast manifest checks (~5 s) instead of full 3-5 min GHCR pulls
-	# for every subsequent distro run and for every subsequent job.
+	# 5) Remove all images + build cache (frees disk on GitHub runners).
+	# Skipped on self-hosted (INFINITO_PRESERVE_DOCKER_CACHE=true) to keep the cache warm.
 	if [[ "${INFINITO_PRESERVE_DOCKER_CACHE}" != "true" ]]; then
 		docker image prune -af >/dev/null 2>&1 || true
 		docker buildx prune -af >/dev/null 2>&1 || true
@@ -141,13 +127,8 @@ cleanup() {
 		fi
 	fi
 
-	# 6) Remove host-mounted Docker data dir (CI runner only)
-	# IMPORTANT:
-	# - In CI, Docker/DIND/buildx may create root-owned files under this directory.
-	# - A plain 'rm -rf' can fail with "Permission denied" and poison the next distro run.
-	# - Use sudo for a hard reset, then recreate the directory.
-	# Skip when INFINITO_PRESERVE_DOCKER_CACHE=true so inner Docker image layers
-	# survive across distro runs within the same job (pulled once, reused 5x).
+	# 6) Reset the host-mounted Docker data dir (sudo: the container leaves root-owned
+	# files that would break the next checkout). Skipped when preserving the cache.
 	if [[ "${INFINITO_PRESERVE_DOCKER_CACHE}" == "true" ]]; then
 		echo ">>> INFINITO_PRESERVE_DOCKER_CACHE=true — keeping Docker root for next distro: ${INFINITO_DOCKER_VOLUME}"
 	elif [[ -n "${INFINITO_DOCKER_VOLUME:-}" ]]; then
@@ -171,8 +152,7 @@ cleanup() {
 		fi
 	fi
 
-	# 7) Remove root-owned __pycache__ and .pyc files left by the privileged container.
-	# Without this, the next actions/checkout fails with EACCES when trying to delete them.
+	# 7) Remove root-owned __pycache__/.pyc (else the next checkout fails with EACCES).
 	echo ">>> Removing root-owned Python bytecode from workspace"
 	sudo find "${REPO_ROOT}" -type d -name "__pycache__" -exec rm -rf {} + 2>/dev/null || true
 	sudo find "${REPO_ROOT}" -name "*.pyc" -delete 2>/dev/null || true
@@ -184,12 +164,8 @@ cleanup() {
 }
 trap cleanup EXIT
 
-# Wipe stale inner-Docker state before starting so credentials are always fresh.
-# Done before `up` to avoid a race with the inner Docker daemon.
-# Image layers (overlay2/, image/) are preserved for cache; only volumes/ and
-# containers/ are removed so old DB passwords and auto-restart state don't survive.
-# Exception: if disk usage exceeds 70%, wipe the full volume so a cancelled or
-# failed prior run cannot fill the disk before the next job starts.
+# Wipe stale inner-Docker volumes/containers before `up` (fresh credentials), keeping
+# image layers for cache. If disk >70%, wipe the whole volume to reclaim space.
 if [[ "${INFINITO_PRESERVE_DOCKER_CACHE}" == "true" ]]; then
 	_disk_pct=$(df --output=pcent / | tail -1 | tr -d ' %')
 	if [[ "${_disk_pct}" -ge 70 && -n "${INFINITO_DOCKER_VOLUME:-}" && "${INFINITO_DOCKER_VOLUME}" == /* ]]; then
@@ -208,11 +184,9 @@ echo ">>> Ensuring stack is up for distro ${INFINITO_DISTRO}"
 # This avoids reusing a pre-started stack with a different INFINITO_DISTRO.
 "${PYTHON}" -m cli.administration.deploy.development up
 
-# Pre-install the CA trust wrapper so the sys-svc-container DNS handler does not
-# fail before sys-ca-selfsigned has run.  When the bind-mount target is absent at
-# the time of the first `docker run --entrypoint` call Docker creates a *directory*
-# there instead of a file, causing every subsequent exec to exit rc=126 ("is a
-# directory").  sys-ca-selfsigned will overwrite this stub with the real version.
+# Pre-install the CA trust wrapper: if the bind-mount target is missing, Docker
+# creates it as a directory (every exec then exits rc=126). sys-ca-selfsigned
+# overwrites this stub with the real version later.
 _up_container="${INFINITO_CONTAINER:?INFINITO_CONTAINER is not set (run make dotenv)}"
 docker exec "${_up_container}" install -m 755 \
 	/opt/src/infinito/roles/sys-ca-selfsigned/files/with-ca-trust.sh \
@@ -251,12 +225,8 @@ echo ">>> init inventory (ASYNC_ENABLED=false baked into host_vars)"
 	"${_init_args[@]}" \
 	--vars '{"ASYNC_ENABLED": false}'
 
-# PASS 1 (sync) + PASS 2 (async) co-located per variant: the wrapper
-# runs each round's deploy twice, second call with `-e ASYNC_ENABLED=true`
-# overriding the host_var, BEFORE moving to the next variant. That keeps
-# the async re-deploy targeting exactly the host state the matching sync
-# deploy just produced and avoids the matrix-twice race the previous
-# split passes had on multi-variant roles.
+# Per variant: sync deploy, then async re-deploy (-e ASYNC_ENABLED=true) before the
+# next variant, so async targets the exact host state sync just produced.
 echo ">>> deploy (PASS 1 sync + PASS 2 async per variant, --full-cycle)"
 "${PYTHON}" -m cli.administration.deploy.development deploy "${deploy_args[@]}" --full-cycle
 

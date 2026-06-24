@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
-# nocheck: raw-docker  # manages a throwaway dind sandbox daemon directly; the container/compose wrappers don't apply here
-# Local checks for svc-runner: container health, DooD socket, and a full nested
-# deploy. Only runs via test-e2e-cli (RUNTIME dev/act/github), always
-# containerized — no bare-host path. The deploy builds the infinito image locally
-# (no GitHub/GHCR) and runs in a sealed throwaway dockerd.
+# nocheck: raw-docker  # drives a throwaway dind sandbox; the container/compose wrappers aren't available there
+# svc-runner checks: container health, DooD socket, and (sync pass only) a full
+# nested web-app-dashboard deploy in a sealed throwaway dockerd. No GitHub/GHCR.
 set -euo pipefail
 
 fail_count=0
 
 echo "DinD mode: verifying runner containers started..."
 for i in $(seq 1 "${RUNNER_COUNT}"); do
-    # || echo: inspect exits non-zero if absent; keeps set -e from aborting first.
     state=$(container inspect --format '{{.State.Status}}' "${RUNNER_PROJECT_PREFIX}-${i}" 2>/dev/null || echo "not found")
     if [[ "${state}" != "running" ]]; then
         echo "FAIL: ${RUNNER_PROJECT_PREFIX}-${i} is not running (state=${state})"
@@ -21,7 +18,6 @@ for i in $(seq 1 "${RUNNER_COUNT}"); do
 done
 [[ "${fail_count}" -eq 0 ]] || { echo "FAIL: ${fail_count} container(s) not healthy in DinD"; exit 1; }
 
-# DooD socket reachable — core capability for running CI jobs.
 echo "DinD mode: verifying DooD socket in ${RUNNER_PROJECT_PREFIX}-1..."
 if ! docker exec "${RUNNER_PROJECT_PREFIX}-1" docker version >/dev/null 2>&1; then
     echo "FAIL: Docker socket not accessible inside ${RUNNER_PROJECT_PREFIX}-1 — DooD broken in DinD"
@@ -29,12 +25,15 @@ if ! docker exec "${RUNNER_PROJECT_PREFIX}-1" docker version >/dev/null 2>&1; th
 fi
 echo "OK: DooD socket accessible inside ${RUNNER_PROJECT_PREFIX}-1"
 
-# Full deploy test — purely local, no GitHub. Builds the infinito image on the
-# runner (cached on the outer daemon) and deploys web-app-dashboard in a throwaway,
-# sealed dockerd so the nested stack can't touch the host's own stack. Same path in
-# CI and on a server; tear-down on exit takes the whole nested stack with it.
-# Per-instance repo copy: the shared /opt/src/infinito .env/Corefile would make
-# inner coredns serve the wrong IP.
+# The full deploy is identical across the sync/async passes; run it once (sync).
+if [[ "${ASYNC_ENABLED:-false}" == "true" ]]; then
+    echo "Skipping full deploy on async pass (validated on sync pass)"
+    echo "ALL LOCAL CHECKS PASSED (DinD)"
+    exit 0
+fi
+
+# Build the infinito image locally and deploy web-app-dashboard in a sealed
+# throwaway dockerd (host stack untouched). No GitHub/GHCR.
 _iso_src="${RUNNER_INSTALL_DIR}/1/nested-src"
 echo "DinD mode: running full local deploy test inside ${RUNNER_PROJECT_PREFIX}-1..."
 container exec --user root "${RUNNER_PROJECT_PREFIX}-1" \
@@ -45,14 +44,11 @@ container exec "${RUNNER_PROJECT_PREFIX}-1" bash -c "cd ${_iso_src} && make inst
 if ! container exec "${RUNNER_PROJECT_PREFIX}-1" bash -c '
     set -euo pipefail
     cd "'"${_iso_src}"'"
-
-    # Build the infinito image locally (cached on the outer daemon) — no GHCR pull.
     INFINITO_DISTRO=debian make build
     img="$(INFINITO_DISTRO=debian bash scripts/meta/resolve/image/local.sh)"
 
-    # Throwaway sealed dockerd sharing runner-1 netns (reach at 127.0.0.1:2375);
-    # torn down on exit. The repo is mounted in at the same path so the sealed
-    # daemon can satisfy the infinito compose bind-mount (.:/opt/src/infinito).
+    # Throwaway sealed dockerd (runner-1 netns); repo mounted at the same path for
+    # the infinito compose bind-mount; torn down on exit.
     SB="runner-dind-sandbox"
     docker rm -f "$SB" >/dev/null 2>&1 || true
     trap '"'"'docker rm -f "$SB" >/dev/null 2>&1 || true'"'"' EXIT
@@ -68,9 +64,8 @@ if ! container exec "${RUNNER_PROJECT_PREFIX}-1" bash -c '
     done
     [ "$ready" = 1 ] || { echo "FAIL: sealed dind daemon did not come up"; exit 1; }
 
-    # Move the local image into the sealed daemon, then deploy with no build/pull
-    # so it uses exactly that image. Owner/repo cleared so all.sh never swaps in a
-    # GHCR image; RUNTIME=github runs the E2E roles; CI=true keeps the cache off.
+    # Deploy the loaded local image (no build/pull); owner/repo cleared so all.sh
+    # never swaps in a GHCR image.
     DOCKER_HOST= docker save "$img" | docker load
     COMPOSE_PROJECT_NAME=infinito INFINITO_RUNNER_PREFIX=infinito \
     RUNTIME=github CI=true apps=web-app-dashboard disable=matomo \
