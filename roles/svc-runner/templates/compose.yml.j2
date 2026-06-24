@@ -10,9 +10,6 @@
       - "{{ RUNNER_INSTALL_DIR }}/{{ i }}:{{ RUNNER_INSTALL_DIR }}/{{ i }}"
       - /var/run/docker.sock:/var/run/docker.sock
       - "{{ RUNNER_DOCKER_BASE }}/{{ i }}:{{ RUNNER_DOCKER_BASE }}/{{ i }}"
-{% if DOCKER_IN_CONTAINER | bool %}
-      - /opt/src/infinito:/opt/src/infinito
-{% endif %}
     group_add:
       - "{{ _runner_docker_gid }}"
 {% endfor %}

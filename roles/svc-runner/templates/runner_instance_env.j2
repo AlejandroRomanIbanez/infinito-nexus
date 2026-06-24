@@ -11,8 +11,8 @@ INFINITO_BIND_IP=172.30.{{ runner_instance }}.1
 # rejects them with "no configured subnet contains IP address".
 INFINITO_CACHE_PACKAGE_FRONTEND_IP=172.30.{{ runner_instance }}.4
 INFINITO_CACHE_REGISTRY_IP=172.30.{{ runner_instance }}.6
-DOMAIN=infinito.example
-DOMAIN_RE=infinito\.example
+DOMAIN={{ DOMAIN_PRIMARY }}
+DOMAIN_RE={{ DOMAIN_PRIMARY | replace('.', '\\.') }}
 INVENTORY_DIR={{ RUNNER_INSTALL_DIR }}/{{ runner_instance }}/inventories/github
 INFINITO_DOCKER_VOLUME={{ RUNNER_DOCKER_BASE }}/{{ runner_instance }}
 INFINITO_PRESERVE_DOCKER_CACHE=true

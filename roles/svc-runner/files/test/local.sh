@@ -36,6 +36,10 @@ fi
 # throwaway dockerd (host stack untouched). No GitHub/GHCR.
 _iso_src="${RUNNER_INSTALL_DIR}/1/nested-src"
 echo "DinD mode: running full local deploy test inside ${RUNNER_PROJECT_PREFIX}-1..."
+# container cp the repo into runner-1 (no compose mount — keeps test wiring here),
+# then isolate a per-instance copy (drop .env/Corefile so inner coredns serves the right IP).
+container exec "${RUNNER_PROJECT_PREFIX}-1" mkdir -p /opt/src/infinito
+container cp /opt/src/infinito/. "${RUNNER_PROJECT_PREFIX}-1:/opt/src/infinito"
 container exec --user root "${RUNNER_PROJECT_PREFIX}-1" \
     bash -c "rm -rf ${_iso_src} && mkdir -p ${_iso_src} && tar -C /opt/src/infinito --exclude='./.env' --exclude='./compose/coredns/Corefile' --exclude='./.venvs' --exclude='./venv' --exclude='*/node_modules' --exclude='*/__pycache__' -cf - . | tar -C ${_iso_src} -xf - && chown -R github-runner:github-runner ${_iso_src}"
 container exec "${RUNNER_PROJECT_PREFIX}-1" bash -c "cd ${_iso_src} && make install"
@@ -68,7 +72,8 @@ if ! container exec "${RUNNER_PROJECT_PREFIX}-1" bash -c '
     # never swaps in a GHCR image.
     DOCKER_HOST= docker save "$img" | docker load
     COMPOSE_PROJECT_NAME=infinito INFINITO_RUNNER_PREFIX=infinito \
-    RUNTIME=github CI=true apps=web-app-dashboard disable=matomo \
+    RUNTIME=github CI=true apps=web-app-dashboard \
+    disable=matomo,sso,asset,simpleicons,logout \
     INFINITO_DEPLOY_TYPE=server INFINITO_DISTROS=debian \
     INFINITO_IMAGE="$img" INFINITO_BUILD=0 INFINITO_PULL_POLICY=never \
     GITHUB_REPOSITORY_OWNER= GITHUB_REPOSITORY= \
