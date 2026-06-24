@@ -38,7 +38,7 @@ _iso_src="${RUNNER_INSTALL_DIR}/1/nested-src"
 echo "DinD mode: running full local deploy test inside ${RUNNER_PROJECT_PREFIX}-1..."
 # container cp the repo into runner-1 (no compose mount — keeps test wiring here),
 # then isolate a per-instance copy (drop .env/Corefile so inner coredns serves the right IP).
-container exec "${RUNNER_PROJECT_PREFIX}-1" mkdir -p /opt/src/infinito
+container exec --user root "${RUNNER_PROJECT_PREFIX}-1" mkdir -p /opt/src/infinito
 container cp /opt/src/infinito/. "${RUNNER_PROJECT_PREFIX}-1:/opt/src/infinito"
 container exec --user root "${RUNNER_PROJECT_PREFIX}-1" \
     bash -c "rm -rf ${_iso_src} && mkdir -p ${_iso_src} && tar -C /opt/src/infinito --exclude='./.env' --exclude='./compose/coredns/Corefile' --exclude='./.venvs' --exclude='./venv' --exclude='*/node_modules' --exclude='*/__pycache__' -cf - . | tar -C ${_iso_src} -xf - && chown -R github-runner:github-runner ${_iso_src}"
