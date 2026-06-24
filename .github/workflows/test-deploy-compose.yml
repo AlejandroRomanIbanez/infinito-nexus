@@ -27,7 +27,7 @@ env:
   INFINITO_APP_DISCOVERY_RUNNER: host
 jobs:
   discover:
-    name: 🔍 Discover apps
+    name: ⛵ Navigate compositions
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
