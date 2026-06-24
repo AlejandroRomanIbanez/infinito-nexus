@@ -27,6 +27,13 @@ act-debug:
 act-runner-image:
 	@bash scripts/tests/deploy/act/build_runner_image.sh
 
+.PHONY: act-swarm-clean
+# Reclaim ALL leftover act-swarm state (DinD nodes, NFS sidecars, lab networks, act outer containers) from aborted/wedged roundtrip runs, across every cluster id.
+# Note: removes what the docker CLI can; D-state remnants (wedged kernel NFS) need a host docker restart under sudo, or are reported in a no-priv sandbox.
+# Note: run BETWEEN swarm runs; it would kill an in-flight one.
+act-swarm-clean:
+	@bash scripts/tests/deploy/swarm/clean_all.sh
+
 .PHONY: act-swarm-down
 # Release a named swarm-test cluster (DinD nodes, lab network, act outer container).
 # Param name: REQUIRED cluster id matching the one act-swarm-zombie used (the app id when no name= was passed).
@@ -35,15 +42,6 @@ act-swarm-down:
 	@test -n '$(name)' || { echo 'usage: make act-swarm-down name=<cluster-id> (the app id if you did not pass name=)'; exit 2; }
 	@SWARM_NAME='$(name)' INFINITO_KEEP_SWARM_NODES=false bash scripts/tests/deploy/swarm/13_cleanup.sh
 	@bash scripts/tests/deploy/act/down_act_outer.sh
-
-.PHONY: act-swarm-clean
-# Reclaim ALL leftover act-swarm state (DinD nodes, NFS sidecars, lab networks,
-# act outer containers) from aborted/wedged roundtrip runs, across every cluster
-# id. Removes what the docker CLI can; D-state remnants (wedged kernel NFS) are
-# cleared via a host docker restart under sudo, or reported in a no-priv sandbox.
-# Note: run BETWEEN swarm runs; it would kill an in-flight one.
-act-swarm-clean:
-	@bash scripts/tests/deploy/swarm/clean_all.sh
 
 .PHONY: act-swarm-exec
 # Run a one-off command inside one of the swarm-test DinD nodes.

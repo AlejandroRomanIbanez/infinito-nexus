@@ -42,7 +42,9 @@ class TestRubySingleLine(unittest.TestCase):
         self.assertEqual(self.f('a = "x\\"y"\nb = 2'), 'a = "x\\"y";b = 2')
 
     def test_realistic_gitlab_omnibus_config(self):
-        src = "external_url 'https://gitlab.example'\ngitlab_rails['smtp_enable'] = true"
+        src = (
+            "external_url 'https://gitlab.example'\ngitlab_rails['smtp_enable'] = true"
+        )
         self.assertEqual(
             self.f(src),
             "external_url 'https://gitlab.example';gitlab_rails['smtp_enable'] = true",
