@@ -14,6 +14,19 @@
 - name: "Collabora stack-host-only coolconfig setup"
   when: IS_STACK_HOST | bool
   block:
+    - name: "Collabora resolve | Wait for collabora task to converge"
+      ansible.builtin.shell: |
+        container service ps {{ lookup('container_service', application_id, entity_name) | quote }} \
+          --filter desired-state=running \
+          --format '{{ "{{.CurrentState}}" }}' \
+          | head -1 | grep -qE '^Running'
+      register: collabora_running_swarm
+      changed_when: false
+      retries: 600
+      delay: 2
+      until: collabora_running_swarm.rc == 0
+      when: DEPLOYMENT_MODE == 'swarm'
+
     - name: Update Collabora systemplate to include new fonts
       shell: "{{ COLLABORA_DOCKER_CONF_EXEC }} update-system-template"
       register: collabora_fonts
