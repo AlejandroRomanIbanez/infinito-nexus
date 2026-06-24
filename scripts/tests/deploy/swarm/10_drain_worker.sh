@@ -5,6 +5,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/_context.sh"
 
+skip_if_no_swarm_service
 skip_chaos_if_manager_pinned
 
 [ -n "${INITIAL_NODE}" ] || {
