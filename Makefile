@@ -512,7 +512,7 @@ requirements-archive:
 
 .PHONY: roundtrip
 # Validate one or more roles through every deploy mode in order (compose, then swarm), stopping at the first failure.
-# Param apps: space-separated role ids; default = every application, most-complex first (complexity CLI).
+# Param apps: space-separated role ids; default = one role per base cluster, most-complex first (complexity --unique).
 # Param modes: optional mode sequence (default "compose swarm"; append k8s once it exists).
 # Param keep: true keeps each validated swarm cluster instead of releasing it.
 roundtrip:
