@@ -8,8 +8,8 @@ if [ "${INFINITO_KEEP_SWARM_NODES}" = "true" ]; then
 	exit 0
 fi
 
-# shellcheck source=scripts/tests/deploy/swarm/topology.sh
-. "$(dirname "$0")/topology.sh"
+# shellcheck source=scripts/tests/deploy/swarm/00_topology.sh
+. "$(dirname "$0")/00_topology.sh"
 
 REPO_ROOT="$(cd "$(dirname "$0")/../../../.." && pwd)"
 DIR_VAR_LIB="$(python3 -c "import yaml,sys;print(yaml.safe_load(open(sys.argv[1]))['DIR_VAR_LIB'])" \

@@ -131,7 +131,7 @@ jobs:
         shell: bash
         # Source (not literal-dump) so the mandatory SWARM_NAME prefix expands.
         run: |
-          . scripts/tests/deploy/swarm/topology.sh
+          . scripts/tests/deploy/swarm/00_topology.sh
           {
             echo "MGR=$MGR"
             echo "WRK1=$WRK1"

@@ -26,7 +26,7 @@ echo "INITIAL_NODE=${NODE}" >>"$GITHUB_ENV"
 if [ -n "${PRIMARY_NFS_VOLUME}" ]; then
 	echo "Seeding pre-drain marker on NFS volume '${PRIMARY_NFS_VOLUME}'"
 	docker exec "${NFS_SERVER}" sh -c \
-		"echo 'pre-drain marker' > /srv/nfs/${PRIMARY_NFS_VOLUME}/.pre-drain"
+		"echo 'pre-drain marker' > ${NFS_EXPORT_BASE}/${PRIMARY_NFS_VOLUME}/.pre-drain"
 else
 	echo "Role '${APP_ID}' declares no NFS-flagged volume in meta/volumes.yml — skipping NFS marker seed"
 fi

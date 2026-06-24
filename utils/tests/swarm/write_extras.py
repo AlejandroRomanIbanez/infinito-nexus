@@ -22,6 +22,7 @@ from pathlib import Path
 from cli.meta.runtime import detect_runtime
 from utils import PROJECT_ROOT
 from utils.cache.yaml import dump_yaml, load_yaml
+from utils.env.parser import parse_static_env
 
 _DEFAULT_INVENTORY = PROJECT_ROOT / "inventories" / "development" / "default.yml"
 
@@ -67,7 +68,9 @@ def main() -> int:
             "backend": "nfs",
             "nfs": {
                 "server": nfs_ip,
-                "export_base": "/srv/nfs",
+                "export_base": parse_static_env(PROJECT_ROOT / "default.env")[
+                    "INFINITO_SWARM_NFS_EXPORT_BASE"
+                ],
                 "version": 3,
             },
         },

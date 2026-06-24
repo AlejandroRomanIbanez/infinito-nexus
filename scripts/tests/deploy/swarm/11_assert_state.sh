@@ -23,7 +23,7 @@ echo "${REPL}" | grep -qE '^([0-9]+)/\1$' || {
 if [ -n "${PRIMARY_NFS_VOLUME}" ]; then
 	docker exec "${NEW_NODE}" sh -c "
     mkdir -p /mnt/nfs-check
-    mount -t nfs -o vers=3,nolock ${NFS_IP}:/srv/nfs /mnt/nfs-check
+    mount -t nfs -o vers=3,nolock ${NFS_IP}:${NFS_EXPORT_BASE} /mnt/nfs-check
     grep -q 'pre-drain marker' /mnt/nfs-check/${PRIMARY_NFS_VOLUME}/.pre-drain
     umount /mnt/nfs-check
   " || {

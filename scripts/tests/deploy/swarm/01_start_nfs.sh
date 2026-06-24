@@ -5,6 +5,7 @@ mkdir -p "${RUNNER_TEMP}/nfs-export"
 # A killed prior run leaves the nfs-server container behind; --name then conflicts.
 docker rm -f "${NFS_SERVER}" >/dev/null 2>&1 || true
 docker run -d --name "${NFS_SERVER}" \
+	--label "${INFINITO_SWARM_TEST_LABEL}" \
 	--network "${SWARM_LAB_NETWORK}" \
 	--hostname "${NFS_SERVER}" \
 	--privileged \
@@ -16,7 +17,7 @@ docker run -d --name "${NFS_SERVER}" \
 	--tmpfs /tmp:exec \
 	-v /sys/fs/cgroup:/sys/fs/cgroup:rw \
 	-v /lib/modules:/lib/modules:ro \
-	-v "${RUNNER_TEMP}/nfs-export:/srv/nfs" \
+	-v "${RUNNER_TEMP}/nfs-export:${NFS_EXPORT_BASE}" \
 	jrei/systemd-ubuntu:24.04
 
 SYSTEMD_TIMEOUT="${SWARM_PILOT_SYSTEMD_TIMEOUT:-180}"

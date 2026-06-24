@@ -15,6 +15,7 @@ from pathlib import Path
 from utils import PROJECT_ROOT
 from utils.cache.applications import get_merged_applications
 from utils.cache.yaml import dump_yaml, load_yaml_any
+from utils.env.parser import parse_static_env
 from utils.roles.applications.in_group_deps import applications_if_group_and_all_deps
 from utils.roles.meta_lookup import get_role_default_placement
 
@@ -26,13 +27,17 @@ _DOCKER_VARS: dict[str, str] = {
     "ansible_user": "root",
 }
 
-# Mirror the mandatory SWARM_NAME prefix from topology.sh so inventory host names
-# match the actual container names. The get() keeps import side-effect-free (tests);
-# main() enforces that SWARM_NAME is actually set at run time.
+# Node base names are the SPOT in default.env (shared with 00_topology.sh); only the
+# SWARM_NAME prefix is applied here so host names match the containers. The get()
+# keeps SWARM_NAME import-safe; main() enforces it at run time.
+_NAMES = parse_static_env(PROJECT_ROOT / "default.env")
 _PREFIX = f"{os.environ['SWARM_NAME']}-" if os.environ.get("SWARM_NAME") else ""
-_MANAGER = f"{_PREFIX}swarm-mgr-01"
-_WORKERS = (f"{_PREFIX}swarm-wrk-01", f"{_PREFIX}swarm-wrk-02")
-_NFS_SERVER = f"{_PREFIX}nfs-server"
+_MANAGER = f"{_PREFIX}{_NAMES['INFINITO_SWARM_MGR_NAME']}"
+_WORKERS = (
+    f"{_PREFIX}{_NAMES['INFINITO_SWARM_WRK1_NAME']}",
+    f"{_PREFIX}{_NAMES['INFINITO_SWARM_WRK2_NAME']}",
+)
+_NFS_SERVER = f"{_PREFIX}{_NAMES['INFINITO_SWARM_NFS_NAME']}"
 
 
 def _host_topology(app_id: str) -> list[tuple[str, str]]:

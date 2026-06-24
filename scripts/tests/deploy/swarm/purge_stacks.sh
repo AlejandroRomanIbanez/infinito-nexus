@@ -8,11 +8,11 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
-# shellcheck source=scripts/tests/deploy/swarm/topology.sh
-source "${SCRIPT_DIR}/topology.sh"
+# shellcheck source=scripts/tests/deploy/swarm/00_topology.sh
+source "${SCRIPT_DIR}/00_topology.sh"
 
 : "${apps:?apps is not set (e.g. apps=web-app-keycloak,svc-db-postgres)}"
-: "${MGR:?MGR is not set; topology.sh must define it}"
+: "${MGR:?MGR is not set; 00_topology.sh must define it}"
 
 # NFS volumes bind to ${DIR_VAR_LIB}/<docker_name> on every node (the shared NFS
 # mount), so clearing them on the manager wipes the round's shared state.
