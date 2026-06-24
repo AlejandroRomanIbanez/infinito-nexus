@@ -45,6 +45,8 @@ kix:
   version: stable
   min_storage: 10GB
   ports:
+    internal:
+      http: 80
     local:
       http: 8083
       sso: 16500

@@ -6,6 +6,8 @@ funkwhale:
   version: 2.0.4
   min_storage: 20GB
   ports:
+    internal:
+      http: 80
     local:
       sso: 16502
       http: 8012

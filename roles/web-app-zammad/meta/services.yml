@@ -52,6 +52,8 @@ zammad:
   name: zammad-railsserver
   min_storage: 15GB
   ports:
+    internal:
+      http: 8080
     local:
       http: 8077
   run_after:
