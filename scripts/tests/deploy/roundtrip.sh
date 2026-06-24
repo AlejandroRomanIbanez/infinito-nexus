@@ -13,7 +13,7 @@ _repo_root="$(cd "$(dirname "$0")/../../.." && pwd)"
 . "${_repo_root}/scripts/meta/env/load.sh"
 
 if [ -z "${apps:-}" ]; then
-	apps="$("${PYTHON:-python3}" -m cli.meta.roles.applications.complexity \
+	apps="$("${PYTHON}" -m cli.meta.roles.applications.complexity \
 		--sort total --order desc --unique --format string)"
 fi
 [ -n "${apps// /}" ] || {
@@ -32,7 +32,7 @@ read -ra _modes <<<"$modes"
 for app in "${_apps[@]}"; do
 	# A role's meta/services.yml `skip` list opts it out of given deploy modes
 	# (same SPOT the CI discovery honours via apps.sh); honour it here too.
-	app_skip="$("${PYTHON:-python3}" -c "import sys; sys.path.insert(0, '${_repo_root}'); from utils.roles.meta_lookup import get_role_skip; print(' '.join(get_role_skip('${app}')))" 2>/dev/null || true)"
+	app_skip="$("${PYTHON}" -c "import sys; sys.path.insert(0, '${_repo_root}'); from utils.roles.meta_lookup import get_role_skip; print(' '.join(get_role_skip('${app}')))")"
 	for mode in "${_modes[@]}"; do
 		if [[ " ${app_skip} " == *" ${mode} "* ]]; then
 			echo "==> roundtrip: ${app} [${mode}]  SKIPPED (meta/services.yml skip)"
