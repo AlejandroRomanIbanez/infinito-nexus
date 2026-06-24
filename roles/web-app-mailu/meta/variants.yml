@@ -25,9 +25,6 @@
     sso:
       enabled: true
       shared: true
-    unbound:
-      enabled: true
-      shared: true
     prometheus:
       enabled: true
       shared: true
@@ -49,9 +46,6 @@
       enabled: false
       shared: false
     sso:
-      enabled: false
-      shared: false
-    unbound:
       enabled: false
       shared: false
     prometheus:

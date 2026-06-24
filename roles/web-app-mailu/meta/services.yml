@@ -57,11 +57,10 @@ redis:
   mem_limit: 512m
   pids_limit: 256
 # nocheck: playwright-service-flag - central DNS resolver, infrastructural (no Playwright surface)
+# nocheck: dynamic-flag  enabled+shared (not the `in group_names` form) marks svc-dns-unbound `required` so the loader deploys it every compose round; reverting reintroduces the admin DNS hang.
 unbound:
-  # Swarm ignores ipv4_address + per-service dns:, so the svc-dns-unbound resolver
-  # is unreachable there; attaching its overlay only worsens the mailu VIP deadlock.
-  enabled: "{{ ('svc-dns-unbound' in group_names) and (DEPLOYMENT_MODE != 'swarm') }}"
-  shared: "{{ ('svc-dns-unbound' in group_names) and (DEPLOYMENT_MODE != 'swarm') }}"
+  enabled: "{{ DEPLOYMENT_MODE != 'swarm' }}"
+  shared: true
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 mariadb:
   enabled: true # nocheck: dynamic-flag
