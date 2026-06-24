@@ -68,8 +68,7 @@ per-network DB password is referenced from
 | `mautrix-telegram` | `bridge` | disabled | external network |
 | `mautrix-signal` | `bridge` | disabled | external network |
 | `mautrix-slack` | `bridge` | disabled | external network |
-| `mautrix-facebook` | `bridge` | disabled | external network |
-| `mautrix-instagram` | `bridge` | disabled | external network |
+| `mautrix-meta` | `bridge` | disabled | external network |
 
 The compose flavor derives `MATRIX_BRIDGES` from the enabled bridge addons'
 `config:` blocks; the enabled/disabled split is exercised by the compose

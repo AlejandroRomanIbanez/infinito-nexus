@@ -80,9 +80,7 @@
       enabled: true
     mautrix-slack:
       enabled: true
-    mautrix-facebook:
-      enabled: true
-    mautrix-instagram:
+    mautrix-meta:
       enabled: true
   services:
     matrix:

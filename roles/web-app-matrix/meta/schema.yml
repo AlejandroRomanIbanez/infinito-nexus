@@ -36,12 +36,8 @@ credentials:
     description: Matrix user password used by the ChatGPT bridge
     algorithm: sha256
     validation: ^[a-f0-9]{64}$
-  mautrix_facebook_bridge_database_password:
-    description: Database password for the mautrix-facebook bridge
-    algorithm: bcrypt
-    validation: ^\$2[aby]\$.{56}$
-  mautrix_instagram_bridge_database_password:
-    description: Database password for the mautrix-instagram bridge
+  mautrix_meta_bridge_database_password:
+    description: Database password for the mautrix-meta bridge (Facebook Messenger + Instagram)
     algorithm: bcrypt
     validation: ^\$2[aby]\$.{56}$
   mautrix_signal_bridge_database_password:
