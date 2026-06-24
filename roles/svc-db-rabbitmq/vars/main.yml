@@ -16,4 +16,4 @@ RABBITMQ_RETRIES: 30
 RABBITMQ_DELAY: 5
 
 # nocheck: container-exec  in-container rabbitmqctl reaches the broker over the local Erlang dist port; the resolver address is mode-aware (compose service key / swarm task id)
-RABBITMQ_EXEC_SHELL: "container exec {{ RABBITMQ_CONTAINER_ADDRESS }} sh -lc"
+RABBITMQ_EXEC_SHELL: "container exec {{ RABBITMQ_CONTAINER_ADDRESS }} sh -c"

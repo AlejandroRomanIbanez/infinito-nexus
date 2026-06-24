@@ -3,7 +3,7 @@
   shell: >-
     container exec -i --user {{ FRIENDICA_USER }}
     --workdir {{ FRIENDICA_APPLICATION_DIR }}
-    {{ FRIENDICA_CONTAINER_ADDRESS | quote }}
+    {{ FRIENDICA_CONTAINER_ADDRESS }}
     {{ FRIENDICA_APPLICATION_DIR }}/bin/console user search nick administrator
   register: friendica_admin_search
   changed_when: false
@@ -13,7 +13,7 @@
   shell: >-
     container exec -i --user {{ FRIENDICA_USER }}
     --workdir {{ FRIENDICA_APPLICATION_DIR }}
-    {{ FRIENDICA_CONTAINER_ADDRESS | quote }}
+    {{ FRIENDICA_CONTAINER_ADDRESS }}
     {{ FRIENDICA_APPLICATION_DIR }}/bin/console user add
     "{{ lookup('users', 'administrator').firstname | default('Administrator') }}"
     administrator

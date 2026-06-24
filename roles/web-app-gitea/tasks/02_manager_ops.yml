@@ -12,7 +12,7 @@
 - name: "Run DB migrations inside Gitea container"
   shell: |
     container exec -i --user {{ GITEA_USER }} {{ GITEA_CONTAINER_ADDRESS }} \
-      /app/gitea/gitea migrate
+      /app/gitea/gitea migrate -c {{ GITEA_CONFIG }}
   register: migrate
   changed_when: "'migrations completed' in migrate.stdout"
 
