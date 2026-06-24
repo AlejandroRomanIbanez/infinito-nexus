@@ -45,7 +45,9 @@ class ComplexityRow(NamedTuple):
 
 def _base_hash(name: str, services: list[str]) -> str:
     members = sorted({name, *services})
-    return hashlib.sha1("\n".join(members).encode("utf-8")).hexdigest()
+    return hashlib.sha1(
+        "\n".join(members).encode("utf-8"), usedforsecurity=False
+    ).hexdigest()
 
 
 def _attach_siblings(rows: list[ComplexityRow]) -> list[ComplexityRow]:

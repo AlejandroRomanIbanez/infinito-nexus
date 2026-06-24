@@ -38,8 +38,7 @@ def render_table(rows: list[ComplexityRow]) -> str:
         _line([title for title, _, _ in cols]),
         "  ".join("-" * w for w in widths),
     ]
-    for i in range(len(rows)):
-        lines.append(_line([cells[i] for _, _, cells in cols]))
+    lines.extend(_line([cells[i] for _, _, cells in cols]) for i in range(len(rows)))
     return "\n".join(lines)
 
 
