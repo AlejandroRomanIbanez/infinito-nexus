@@ -5,6 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/_context.sh"
 
+skip_chaos_if_manager_pinned
+
 # Drain a WORKER running the app, never the manager: the manager pins the
 # registry, DB and edge proxy, so draining it kills services the rescheduled
 # task depends on (and they cannot move). Worker failure is the recoverable
@@ -14,7 +16,7 @@ NODE=$(docker exec "${MGR}" sh -c "
     --format '{{.Node}} {{.CurrentState}}' \
     ${SERVICE_NAME} \
   | awk '\$2 == \"Running\" { print \$1 }'
-" | grep -vx "${MGR}" | head -1)
+" | grep -vx "${MGR}" | head -1 || true)
 if [ -z "${NODE}" ]; then
 	echo "FAILURE: no running ${ENTITY} task on a worker node"
 	docker exec "${MGR}" docker service ps "${SERVICE_NAME}"

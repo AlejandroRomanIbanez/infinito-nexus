@@ -32,6 +32,14 @@ if [ -f "${ROLE_DIR}/meta/services.yml" ]; then
 	fi
 fi
 
+# Manager-pinned roles get no worker replica, so the drain-a-worker reschedule
+# chaos (09-11) cannot apply to them.
+DEFAULT_PLACEMENT_MANAGER=false
+if [ -f "${ROLE_DIR}/meta/services.yml" ] &&
+	grep -qE "default_placement:[[:space:]]*manager\b" "${ROLE_DIR}/meta/services.yml"; then
+	DEFAULT_PLACEMENT_MANAGER=true
+fi
+
 NFS_VOLUMES=""
 if [ -f "${ROLE_DIR}/meta/volumes.yml" ]; then
 	NFS_VOLUMES="$(python3 -c "
@@ -55,7 +63,16 @@ fi
 
 PRIMARY_NFS_VOLUME="$(printf '%s\n' "${NFS_VOLUMES}" | head -n1)"
 
-export APP_ID ENTITY STACK_NAME SERVICE_NAME CUSTOM_IMAGE_REPO DB_DEP NFS_VOLUMES PRIMARY_NFS_VOLUME
+export APP_ID ENTITY STACK_NAME SERVICE_NAME CUSTOM_IMAGE_REPO DB_DEP NFS_VOLUMES PRIMARY_NFS_VOLUME DEFAULT_PLACEMENT_MANAGER
+
+# Exits the calling chaos step (09/10/11) with success when the role is
+# manager-pinned (no worker task exists to drain).
+skip_chaos_if_manager_pinned() {
+	if [ "${DEFAULT_PLACEMENT_MANAGER}" = true ]; then
+		echo "SKIP: ${ENTITY} declares default_placement: manager (single-node on the swarm manager) — drain-a-worker reschedule chaos does not apply"
+		exit 0
+	fi
+}
 
 if [ "${SWARM_NFS_PILOT_VERBOSE:-0}" = "1" ]; then
 	echo "==> APP_ID=${APP_ID}"
@@ -65,4 +82,5 @@ if [ "${SWARM_NFS_PILOT_VERBOSE:-0}" = "1" ]; then
 	echo "    CUSTOM_IMAGE_REPO=${CUSTOM_IMAGE_REPO}"
 	echo "    DB_DEP=${DB_DEP}"
 	echo "    PRIMARY_NFS_VOLUME=${PRIMARY_NFS_VOLUME}"
+	echo "    DEFAULT_PLACEMENT_MANAGER=${DEFAULT_PLACEMENT_MANAGER}"
 fi

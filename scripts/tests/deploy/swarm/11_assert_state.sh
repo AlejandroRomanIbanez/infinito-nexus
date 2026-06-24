@@ -5,6 +5,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
 source "${SCRIPT_DIR}/_context.sh"
 
+skip_chaos_if_manager_pinned
+
 REPL=""
 for i in $(seq 1 60); do
 	REPL=$(docker exec "${MGR}" docker service ls \
