@@ -16,7 +16,7 @@
         set -euo pipefail
         container exec -i \
           -e DB_ROOT_USER -e DB_ROOT_PASSWORD -e ADMIN_PASSWORD \
-          {{ ERPNEXT_BACKEND_CONTAINER }} bash -c '
+          {{ ERPNEXT_BACKEND_CONTAINER_ADDRESS }} bash -c '
             bench new-site \
               --no-mariadb-socket \
               --mariadb-user-host-login-scope=% \
@@ -74,7 +74,7 @@
     set -euo pipefail
     container exec -i \
       -e SITE_NAME -e API_BOT_LOGIN -e API_BOT_EMAIL -e API_BOT_FIRSTNAME -e API_BOT_LASTNAME -e API_BOT_PASSWORD -e API_KEY_SECRET \
-      {{ ERPNEXT_BACKEND_CONTAINER }} \
+      {{ ERPNEXT_BACKEND_CONTAINER_ADDRESS }} \
       bash -c 'cd /home/frappe/frappe-bench/sites && /home/frappe/frappe-bench/env/bin/python -' < {{ role_path }}/files/scripts/apply_api_bot.py
   environment:
     SITE_NAME: "{{ ERPNEXT_SITE_NAME }}"

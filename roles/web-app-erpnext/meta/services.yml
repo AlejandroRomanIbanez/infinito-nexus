@@ -62,3 +62,5 @@ erpnext:
   mem_reservation: 2g
   mem_limit: 4g
   pids_limit: 2048
+backend:
+  name: erpnext-backend

@@ -2,6 +2,7 @@
 # nocheck: seaweedfs-required — object storage not implemented for this role
 # nocheck: playwright-service-flag — self-provider
 friendica:
+  name: friendica
   shared: true
   enabled: true
   image: friendica
