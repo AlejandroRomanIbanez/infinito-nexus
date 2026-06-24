@@ -42,6 +42,8 @@ web:
     local:
       http: 8031
       sso: 16496
+    internal:
+      http: 8100
   min_storage: 5GB
   cpus: "0.5"
   mem_reservation: 256m
@@ -56,6 +58,8 @@ view:
   ports:
     local:
       http: 8051
+    internal:
+      http: 8100
   min_storage: 1GB
   cpus: "0.2"
   mem_reservation: 128m
@@ -81,6 +85,8 @@ broker:
   ports:
     local:
       http: 8076
+    internal:
+      http: 8080
   min_storage: 1GB
   cpus: "0.2"
   mem_reservation: 128m
@@ -97,6 +103,8 @@ api:
   ports:
     local:
       http: 8030
+    internal:
+      http: 3000
   min_storage: 5GB
   cpus: "0.5"
   mem_reservation: 256m
