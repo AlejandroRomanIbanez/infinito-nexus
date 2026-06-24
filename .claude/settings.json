@@ -55,6 +55,7 @@
       "WebFetch(domain:call.element.dev)",
       "WebFetch(domain:cdn.gtranslate.net)",
       "WebFetch(domain:cdn.jsdelivr.net)",
+      "WebFetch(domain:cdn01.quay.io)",
       "WebFetch(domain:cdnjs.cloudflare.com)",
       "WebFetch(domain:certbot.eff.org)",
       "WebFetch(domain:charts.bitnami.com)",
