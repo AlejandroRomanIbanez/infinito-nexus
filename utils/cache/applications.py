@@ -404,10 +404,11 @@ def get_canonical_volumes(application_id: str) -> dict[str, Any]:
 
     Lives outside the applications payload so its embedded Jinja `source:`
     strings stay raw — see the `_CANONICAL_VOLUMES_BY_ROLE` doc-comment.
-    The registry populates lazily: callers should hold a reference to the
-    role's config_data (which forces `_build_application_defaults` to run
-    first) or call `get_application_defaults` explicitly before this.
     """
+    if not _CANONICAL_VOLUMES_BY_ROLE:
+        # Force a real rebuild, not get_application_defaults() which no-ops on a warm
+        # defaults cache and would leave this registry empty (nfs_prep then skips the subdir).
+        _build_application_defaults(_resolve_roles_dir(roles_dir=None))
     return _CANONICAL_VOLUMES_BY_ROLE.get(application_id, {})
 
 
