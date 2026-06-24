@@ -21,6 +21,7 @@ from utils.roles.meta_lookup import (
     get_role_default_placement,
     get_role_lifecycle,
     get_role_run_after,
+    get_role_skip,
     iter_roles_with_default_placement,
 )
 
@@ -216,6 +217,43 @@ class TestMetaLookup(unittest.TestCase):
             ),
             [],
         )
+
+    def test_skip_returns_modes(self) -> None:
+        role_dir = self.fx.write(
+            "svc-storage-nfs-client",
+            """
+            nfs-client:
+              lifecycle: beta
+              skip:
+                - compose
+                - swarm
+            """,
+        )
+        self.assertEqual(
+            get_role_skip(role_dir, role_name="svc-storage-nfs-client"),
+            ["compose", "swarm"],
+        )
+
+    def test_skip_absent_returns_empty(self) -> None:
+        role_dir = self.fx.write(
+            "web-app-yourls",
+            """
+            yourls:
+              lifecycle: beta
+            """,
+        )
+        self.assertEqual(get_role_skip(role_dir, role_name="web-app-yourls"), [])
+
+    def test_skip_non_list_raises(self) -> None:
+        role_dir = self.fx.write(
+            "web-app-broken",
+            """
+            broken:
+              skip: compose
+            """,
+        )
+        with self.assertRaises(MetaServicesShapeError):
+            get_role_skip(role_dir, role_name="web-app-broken")
 
 
 if __name__ == "__main__":

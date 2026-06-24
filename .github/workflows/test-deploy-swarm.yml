@@ -26,6 +26,7 @@ env:
   INFINITO_IMAGE_TAG: ci-${{ github.sha }}
   INFINITO_GHCR_MIRROR_PREFIX: mirror
   INFINITO_APP_DISCOVERY_RUNNER: host
+  INFINITO_DEPLOY_MODE: swarm
 
 jobs:
   discover:

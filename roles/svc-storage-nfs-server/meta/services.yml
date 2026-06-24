@@ -2,6 +2,9 @@
 nfs-server:
   name: nfs-server
   lifecycle: beta
+  skip:
+    - compose
+    - swarm
   enabled: true
   shared: true
   min_storage: "100MB"

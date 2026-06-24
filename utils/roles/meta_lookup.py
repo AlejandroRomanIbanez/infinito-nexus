@@ -122,6 +122,34 @@ def get_role_lifecycle(role: PathLike, *, role_name: str | None = None) -> str |
     return str(raw).strip().lower() if isinstance(raw, str) else None
 
 
+def get_role_skip(role: PathLike, *, role_name: str | None = None) -> list[str]:
+    """Return the role's ``skip`` list: deployment modes the role is excluded
+    from in test-deploy discovery (e.g. ``[compose, swarm]``), or ``[]`` when
+    absent. Lives at ``meta/services.yml.<primary_entity>.skip``."""
+    role_dir, name = _resolve_role(role, role_name)
+    services = _read_meta_services(role_dir)
+    primary = _primary_entry(name, services)
+    if primary is None:
+        return []
+    raw = primary.get("skip")
+    if raw is None:
+        return []
+    if not isinstance(raw, list):
+        raise MetaServicesShapeError(
+            f"Invalid skip type in meta/services.yml for role '{name}': "
+            f"expected list, got {type(raw).__name__}."
+        )
+    out: list[str] = []
+    for item in raw:
+        if not isinstance(item, str) or not item.strip():
+            raise MetaServicesShapeError(
+                f"Invalid skip entry in meta/services.yml for role "
+                f"'{name}': {item!r} (expected non-empty string)."
+            )
+        out.append(item.strip().lower())
+    return out
+
+
 def get_role_default_placement(
     role: PathLike, *, role_name: str | None = None
 ) -> str | None:

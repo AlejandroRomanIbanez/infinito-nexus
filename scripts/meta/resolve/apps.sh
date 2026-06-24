@@ -33,17 +33,6 @@ json_compact_array() {
 	jq -c 'if type=="array" then . else [] end'
 }
 
-jq_exclude_regex() {
-	# Args: regex
-	# Reads JSON array from stdin, filters out entries matching regex, outputs compact JSON.
-	local re="$1"
-	if [[ -z "${re}" ]]; then
-		json_compact_array
-		return 0
-	fi
-	jq -c --arg re "${re}" 'map(select(test($re) | not))'
-}
-
 jq_whitelist_filter() {
 	# Args: whitelist (space-separated app ids)
 	# Reads JSON array from stdin, keeps only entries in whitelist, outputs compact JSON.
@@ -82,25 +71,24 @@ run_meta_cli() {
 # ------------------------------------------------------------
 lifecycles_args=(--lifecycles alpha beta rc stable)
 
+# Per-mode discovery opt-out: the workflow sets INFINITO_DEPLOY_MODE so a
+# role's meta/services.yml `skip` list can drop it from this mode's matrix.
+skip_mode_args=()
+if [[ -n "${INFINITO_DEPLOY_MODE:-}" ]]; then
+	skip_mode_args=(--skip-mode "${INFINITO_DEPLOY_MODE}")
+fi
+
 # ------------------------------------------------------------
-# 1) Resolve the candidate app set: every type's apps (lifecycle-filtered),
-#    flattened across the type groups + deduped into one JSON array.
+# 1) Resolve the candidate app set: every type's apps (lifecycle- and
+#    skip-mode-filtered), flattened across the type groups + deduped.
 # ------------------------------------------------------------
 apps_json="$(
 	run_meta_cli \
 		-m cli.meta.roles.applications.type \
 		--format json \
-		"${lifecycles_args[@]}" |
+		"${lifecycles_args[@]}" \
+		"${skip_mode_args[@]}" |
 		jq -c '[.[][]] | unique'
-)"
-
-# ------------------------------------------------------------
-# 2) Global hard excludes (regex over app ids)
-# ------------------------------------------------------------
-# TODO: Remove exclude condition
-apps_json="$(
-	printf '%s\n' "${apps_json}" |
-		jq_exclude_regex '^(web-opt-rdr-www)$'
 )"
 
 # ------------------------------------------------------------

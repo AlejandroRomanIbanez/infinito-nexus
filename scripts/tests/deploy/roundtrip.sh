@@ -9,9 +9,10 @@ set -euo pipefail
 #   keep  - true keeps each validated swarm cluster instead of releasing it
 _repo_root="$(cd "$(dirname "$0")/../../.." && pwd)"
 
+# shellcheck source=scripts/meta/env/load.sh
+. "${_repo_root}/scripts/meta/env/load.sh"
+
 if [ -z "${apps:-}" ]; then
-	# shellcheck source=scripts/meta/env/load.sh
-	. "${_repo_root}/scripts/meta/env/load.sh"
 	apps="$("${PYTHON:-python3}" -m cli.meta.roles.applications.complexity \
 		--sort total --order desc --unique --format string)"
 fi
@@ -29,7 +30,14 @@ read -ra _apps <<<"${apps//$'\n'/ }"
 read -ra _modes <<<"$modes"
 
 for app in "${_apps[@]}"; do
+	# A role's meta/services.yml `skip` list opts it out of given deploy modes
+	# (same SPOT the CI discovery honours via apps.sh); honour it here too.
+	app_skip="$("${PYTHON:-python3}" -c "import sys; sys.path.insert(0, '${_repo_root}'); from utils.roles.meta_lookup import get_role_skip; print(' '.join(get_role_skip('${app}')))" 2>/dev/null || true)"
 	for mode in "${_modes[@]}"; do
+		if [[ " ${app_skip} " == *" ${mode} "* ]]; then
+			echo "==> roundtrip: ${app} [${mode}]  SKIPPED (meta/services.yml skip)"
+			continue
+		fi
 		log="${_log_dir}/roundtrip-${app}-${mode}.log"
 		echo "==> roundtrip: ${app} [${mode}]  (log: ${log})"
 		case "$mode" in
