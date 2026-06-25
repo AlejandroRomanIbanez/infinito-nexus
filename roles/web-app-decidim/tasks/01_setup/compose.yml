@@ -1,5 +1,0 @@
----
-- name: "Decidim resolve | Set hosting node + local container ID (compose)"
-  ansible.builtin.set_fact:
-    DECIDIM_HOST_NODE: "{{ inventory_hostname }}"
-    DECIDIM_LOCAL_CID: "{{ DECIDIM_CONTAINER }}"

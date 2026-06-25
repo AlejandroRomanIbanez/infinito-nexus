@@ -1,6 +1,10 @@
 ---
 - name: "Decidim | Resolve hosting node + container ID ({{ DEPLOYMENT_MODE }})"
-  ansible.builtin.include_tasks: "01_setup/{{ DEPLOYMENT_MODE }}.yml"
+  ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml'] | path_join }}"
+  vars:
+    resolve_service_key: decidim
+    resolve_output_prefix: DECIDIM
+    resolve_compose_cid: "{{ DECIDIM_CONTAINER }}"
 
 - name: "Decidim | Wait for web container to be healthy"
   ansible.builtin.shell: >

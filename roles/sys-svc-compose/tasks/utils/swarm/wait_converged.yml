@@ -1,0 +1,21 @@
+---
+# Block until a swarm service's task reaches desired-state=running. Swarm only;
+# in compose the flushed `compose up` already blocks until the container is up.
+#
+# Param: wait_service_key    - swarm service key
+# Param: wait_retries        - retries (default 600)
+# Param: wait_delay          - delay seconds (default 2)
+# Param: wait_run_host       - host that runs the manager-only query (default: inventory_hostname)
+- name: "swarm | wait for '{{ wait_service_key }}' task to converge"
+  ansible.builtin.shell: |
+    container service ps {{ lookup('container_service', application_id, wait_service_key) | quote }} \
+      --filter desired-state=running \
+      --format '{{ "{{.CurrentState}}" }}' \
+      | head -1 | grep -qE '^Running'
+  register: _swarm_converged
+  changed_when: false
+  retries: "{{ wait_retries | default(600) }}"
+  delay: "{{ wait_delay | default(2) }}"
+  until: _swarm_converged.rc == 0
+  delegate_to: "{{ wait_run_host | default(inventory_hostname) }}"
+  when: DEPLOYMENT_MODE == 'swarm'

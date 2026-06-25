@@ -27,6 +27,13 @@
       Please ensure the shared PostgreSQL stack is running.
   when: not listmonk_db_reachable
 
+- name: Wait for Listmonk task to converge before container exec
+  ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/wait_converged.yml'] | path_join }}"
+  vars:
+    wait_service_key: "{{ LISTMONK_SERVICE }}"
+    wait_retries: 600
+    wait_delay: 2
+
 - name: Run Listmonk initial database setup
   shell: |
     container exec -i {{ LISTMONK_CONTAINER_ADDRESS }} sh -c 'set -euo pipefail; yes | ./listmonk --install'

@@ -1,5 +1,6 @@
 ---
 application_id: "web-app-listmonk"
+entity_name: "{{ application_id | get_entity_name }}"
 container_port: "{{ lookup('config', application_id, 'services.listmonk.ports.internal.http') }}"
 
 LISTMONK_NAME: "{{ lookup('config', application_id, 'services.listmonk.name') }}"
@@ -11,7 +12,8 @@ LISTMONK_PUBLIC_API_ENABLED: "{{ lookup('config', application_id, 'services.list
 LISTMONK_USER_SEND: "newsletter"
 LISTMONK_USER_BOUNCE: "bounce"
 
-LISTMONK_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'application') }}"
+LISTMONK_SERVICE: "{{ entity_name }}"
+LISTMONK_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, LISTMONK_SERVICE) }}"
 LISTMONK_EXEC_DATABASE: "container exec -i {{ lookup('database', application_id, 'address') }} psql -U {{ lookup('database', application_id, 'username') }} -d {{
   lookup('database', application_id, 'name') }}"
 LISTMONK_EMAIL: "{{ lookup('email', application_id) }}"

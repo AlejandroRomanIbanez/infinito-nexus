@@ -93,27 +93,11 @@
   until: kc_replicas_stable.rc == 0
   delegate_to: "{{ STACK_HOST }}"
 
-- name: "Keycloak realm-import | Re-resolve hosting node after scale-up"
-  ansible.builtin.shell: |
-    container service ps {{ lookup('container_service', application_id, entity_name) | quote }} \
-      --filter desired-state=running \
-      --format '{{ "{{.Node}}" }}' | head -1
-  register: kc_swarm_node_after_import
-  changed_when: false
-  delegate_to: "{{ STACK_HOST }}"
-
-- name: "Keycloak realm-import | Re-resolve local container ID after scale-up"
-  ansible.builtin.shell: |
-    container ps \
-      --filter "label=com.docker.swarm.service.name={{ lookup('container_service', application_id, entity_name) }}" \
-      --filter status=running \
-      --filter health=healthy \
-      --format '{{ "{{.ID}}" }}' | head -1
-  register: kc_local_cid_after_import
-  changed_when: false
-  delegate_to: "{{ kc_swarm_node_after_import.stdout | trim }}"
-
-- name: "Keycloak realm-import | Refresh host-node/local-cid facts"
-  ansible.builtin.set_fact:
-    KEYCLOAK_HOST_NODE: "{{ kc_swarm_node_after_import.stdout | trim }}"
-    KEYCLOAK_LOCAL_CID: "{{ kc_local_cid_after_import.stdout | trim }}"
+- name: "Keycloak realm-import | Re-resolve hosting node + container id after scale-up"
+  ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml'] | path_join }}"
+  vars:
+    resolve_service_key: "{{ entity_name }}"
+    resolve_output_prefix: KEYCLOAK
+    resolve_compose_cid: "{{ lookup('container_address', application_id, entity_name) }}"
+    resolve_cid_filters: "--filter health=healthy"
+    resolve_run_host: "{{ STACK_HOST }}"

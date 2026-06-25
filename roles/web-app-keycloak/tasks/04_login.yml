@@ -1,40 +1,6 @@
 ---
-- name: "Keycloak login | Manager-side path (swarm)"
+- name: "Keycloak login | Resolve hosting node + container id"
   when:
-    - DEPLOYMENT_MODE == 'swarm'
-    - KEYCLOAK_HOST_NODE is not defined or KEYCLOAK_HOST_NODE is none
-  block:
-    - name: "Keycloak login | Wait for keycloak task to converge"
-      ansible.builtin.shell: |
-        container service ps {{ lookup('container_service', application_id, entity_name) | quote }} \
-          --filter desired-state=running \
-          --format '{{ "{{.CurrentState}}" }}' \
-          | head -1 | grep -qE '^Running'
-      register: kc_running_swarm
-      changed_when: false
-      retries: 60
-      delay: 5
-      until: kc_running_swarm.rc == 0
-      # Exception: explicit delegate to inventory_hostname overrides any outer
-      # block delegation; container service ps must run on a swarm manager.
-      delegate_to: "{{ inventory_hostname }}"
-
-    - name: "Keycloak login | Resolve hosting node"
-      ansible.builtin.shell: |
-        container service ps {{ lookup('container_service', application_id, entity_name) | quote }} \
-          --filter desired-state=running \
-          --format '{{ "{{.Node}}" }}' | head -1
-      register: kc_swarm_node_query
-      changed_when: false
-      delegate_to: "{{ inventory_hostname }}"
-
-    - name: "Keycloak login | Set KEYCLOAK_HOST_NODE fact"
-      ansible.builtin.set_fact:
-        KEYCLOAK_HOST_NODE: "{{ kc_swarm_node_query.stdout | trim }}"
-
-- name: "Keycloak login | Manager-side path (compose)"
-  when:
-    - DEPLOYMENT_MODE == 'compose'
     - KEYCLOAK_HOST_NODE is not defined or KEYCLOAK_HOST_NODE is none
   block:
     - name: "Keycloak login | Wait for keycloak container to be running"
@@ -48,37 +14,17 @@
       until: >
         kc_running_compose.rc == 0 and (kc_running_compose.stdout | trim) == 'true'
       delegate_to: "{{ inventory_hostname }}"
+      when: DEPLOYMENT_MODE == 'compose'
 
-    - name: "Keycloak login | Set KEYCLOAK_HOST_NODE fact"
-      ansible.builtin.set_fact:
-        KEYCLOAK_HOST_NODE: "{{ inventory_hostname }}"
-
-- name: "Keycloak login | Resolve local container ID on hosting node (swarm only)"
-  when:
-    - DEPLOYMENT_MODE == 'swarm'
-    - KEYCLOAK_LOCAL_CID is not defined or KEYCLOAK_LOCAL_CID is none
-  block:
-    - name: "Keycloak login | Resolve local container ID on hosting node"
-      ansible.builtin.shell: |
-        container ps \
-          --filter "label=com.docker.swarm.service.name={{ lookup('container_service', application_id, entity_name) }}" \
-          --filter status=running \
-          --filter health=healthy \
-          --format '{{ "{{.ID}}" }}' | head -1
-      register: kc_local_cid_query
-      changed_when: false
-      delegate_to: "{{ KEYCLOAK_HOST_NODE }}"
-
-    - name: "Keycloak login | Set KEYCLOAK_LOCAL_CID fact"
-      ansible.builtin.set_fact:
-        KEYCLOAK_LOCAL_CID: "{{ kc_local_cid_query.stdout | trim }}"
-
-- name: "Keycloak login | Resolve local container ID on hosting node (compose only)"
-  ansible.builtin.set_fact:
-    KEYCLOAK_LOCAL_CID: "{{ lookup('container_address', application_id, entity_name) }}"
-  when:
-    - DEPLOYMENT_MODE == 'compose'
-    - KEYCLOAK_LOCAL_CID is not defined or KEYCLOAK_LOCAL_CID is none
+    - name: "Keycloak login | Resolve hosting node + container id"
+      ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml'] | path_join }}"
+      vars:
+        resolve_service_key: "{{ entity_name }}"
+        resolve_output_prefix: KEYCLOAK
+        resolve_compose_cid: "{{ lookup('container_address', application_id, entity_name) }}"
+        resolve_converge_retries: 60
+        resolve_converge_delay: 5
+        resolve_cid_filters: "--filter health=healthy"
 
 - name: "Keycloak login | Wait for keycloak container to be healthy"
   ansible.builtin.shell: >
