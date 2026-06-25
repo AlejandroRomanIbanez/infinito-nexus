@@ -23,9 +23,9 @@
 - name: "TYPESENSE | Wait until the engine answers /health (inside container)"
   ansible.builtin.shell: >
     {{ TYPESENSE_EXEC_SHELL }}
-    'curl -fsS http://127.0.0.1:8108/health'
+    'exec 3<>/dev/tcp/127.0.0.1/8108; printf "GET /health HTTP/1.0\r\n\r\n" >&3; grep -q "200 OK" <&3'
   register: ts_health
   retries: 30
   delay: 5
-  until: ts_health.rc == 0 and (ts_health.stdout is search('"ok"\\s*:\\s*true'))
+  until: ts_health.rc == 0
   changed_when: false

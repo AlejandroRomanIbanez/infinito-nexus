@@ -26,14 +26,13 @@
     - name: "TYPESENSE | Probe /health with admin key (inside container)"
       ansible.builtin.shell: >
         {{ TYPESENSE_EXEC_SHELL }}
-        'curl -fsS -H "X-TYPESENSE-API-KEY: {{ TYPESENSE_API_KEY }}"
-        http://127.0.0.1:8108/health'
+        'exec 3<>/dev/tcp/127.0.0.1/8108; printf "GET /health HTTP/1.0\r\nX-TYPESENSE-API-KEY: {{ TYPESENSE_API_KEY }}\r\n\r\n" >&3; grep -q "200 OK" <&3'
       register: ts_admin_ready
       no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
       changed_when: false
       retries: 30
       delay: 5
-      until: ts_admin_ready.rc == 0 and (ts_admin_ready.stdout is search('"ok"\\s*:\\s*true'))
+      until: ts_admin_ready.rc == 0
 
   rescue:
     - name: "TYPESENSE | container logs (last 200 lines)"
