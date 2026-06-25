@@ -38,6 +38,7 @@ MATRIX_ELEMENT_PORT: "{{ lookup('config', 'web-app-matrix', 'services.element.po
 MATRIX_ELEMENT_CONFIG_PATH_HOST: "{{ [ lookup('container', application_id, 'directories.config'), 'element-config.json' ] | path_join }}"
 
 MATRIX_MDAD_DIR: "{{ lookup('container', application_id, 'directories.instance') }}mdad"
+MATRIX_MDAD_RUNNER_BUILD_DIR: "{{ [ lookup('container', application_id, 'directories.instance'), 'runner' ] | path_join }}"
 MATRIX_MDAD_PLAYBOOK_TAGS: "{{ lookup('config', application_id, 'services.matrix.playbook_tags') }}"
 MATRIX_MDAD_MIGRATION_VALIDATED_VERSION: "{{ lookup('config', application_id, 'services.matrix.upstream.migration_validated_version') }}"
 MATRIX_MDAD_RUNNER_IMAGE: "{{ lookup('config', application_id, 'services.matrix.runner.image') }}"

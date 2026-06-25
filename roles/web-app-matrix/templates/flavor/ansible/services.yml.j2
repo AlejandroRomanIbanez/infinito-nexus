@@ -1,7 +1,7 @@
   {{ MATRIX_MDAD_SERVICE }}:
     {{ lookup('compose_only', 'container_name', MATRIX_MDAD_CONTAINER) }}
     build:
-      context: {{ application_id | abs_role_path_by_application_id }}/files/flavor/ansible/runner
+      context: {{ MATRIX_MDAD_RUNNER_BUILD_DIR }}
       args:
         MATRIX_MDAD_RUNNER_BASE_IMAGE: {{ MATRIX_MDAD_RUNNER_BASE_IMAGE }}
         MATRIX_MDAD_RUNNER_BASE_VERSION: {{ MATRIX_MDAD_RUNNER_BASE_VERSION }}
