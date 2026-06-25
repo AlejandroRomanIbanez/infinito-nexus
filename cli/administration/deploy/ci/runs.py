@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import re
 import subprocess
+import sys
 
 PASS = "✅"  # noqa: S105  emoji glyph, not a credential
 FAIL = "❌"
@@ -151,7 +152,13 @@ def _gh(args: list[str], repo: str | None = None) -> str:
     cmd = ["gh", *args]
     if repo:
         cmd += ["--repo", repo]
-    return subprocess.run(cmd, check=True, capture_output=True, text=True).stdout
+    proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
+    if proc.returncode != 0:
+        sys.stderr.write(
+            proc.stderr or f"gh exited {proc.returncode}: {' '.join(cmd)}\n"
+        )
+        raise SystemExit(proc.returncode)
+    return proc.stdout
 
 
 def current_branch() -> str:
