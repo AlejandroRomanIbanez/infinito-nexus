@@ -3,8 +3,7 @@
   {{ LIBRETRANSLATE_SERVICE }}:
     {{ lookup('container_image', application_id, 'libretranslate') }}
     volumes: []
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.libretranslate.ports.local.http') }}:{{ container_port }}"
+    {{ lookup('container_ports', ['libretranslate', 'http', DOCKER_BIND_HOST]) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_networks') | indent(4) }}

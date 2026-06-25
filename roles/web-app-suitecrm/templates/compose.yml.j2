@@ -17,9 +17,8 @@
     stop_grace_period: 30s
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.suitecrm.ports.local.http') }}:{{ lookup('config', application_id, 'services.suitecrm.ports.internal.http') }}"
-{{ lookup('container_depends_on', application_id) }}
+    {{ lookup('container_ports', ['suitecrm', 'http', DOCKER_BIND_HOST]) | indent(4) }}
+    {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 {% set _extra_mounts = [] %}
 {% if SUITECRM_LDAP_ENABLED | bool %}

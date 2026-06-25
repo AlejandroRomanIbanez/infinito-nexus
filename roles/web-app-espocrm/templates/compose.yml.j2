@@ -17,9 +17,8 @@
     stop_grace_period: 30s
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.espocrm.ports.local.http') }}:{{ lookup('config', application_id, 'services.espocrm.ports.internal.http') }}"
-{{ lookup('container_depends_on', application_id) }}
+    {{ lookup('container_ports', ['espocrm', 'http', DOCKER_BIND_HOST]) | indent(4) }}
+    {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
 
@@ -35,9 +34,9 @@
     entrypoint: docker-daemon.sh
     {{ lookup('container_networks') | indent(4) }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
-{{ lookup('container_depends_on', application_id, extra={
+    {{ lookup('container_depends_on', application_id, extra={
   ESPOCRM_SERVICE: {'condition': 'service_healthy'},
-}) }}
+}) | indent(4) }}
     healthcheck:
       test: ["CMD-SHELL", "test -f /var/www/html/bootstrap.php && php -r \"require '/var/www/html/bootstrap.php'; echo 'OK';\""]
       interval: 30s
@@ -62,11 +61,10 @@
     entrypoint: docker-websocket.sh
     {{ lookup('container_networks') | indent(4) }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.espocrm.ports.local.websocket') }}:{{ lookup('config', application_id, 'services.espocrm.ports.internal.websocket') }}"
-{{ lookup('container_depends_on', application_id, extra={
+    {{ lookup('container_ports', ['espocrm', 'websocket', DOCKER_BIND_HOST]) | indent(4) }}
+    {{ lookup('container_depends_on', application_id, extra={
   ESPOCRM_SERVICE: {'condition': 'service_healthy'},
-}) }}
+}) | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}
 {{ lookup('compose_networks') }}

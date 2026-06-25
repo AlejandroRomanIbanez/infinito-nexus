@@ -97,7 +97,7 @@ class LookupModule(LookupBase):
         if not entries:
             return [""]
 
-        indent = int(kwargs.get("indent", 4))
+        indent = int(kwargs.get("indent", 0))
         raw_mode = vars_.get("DEPLOYMENT_MODE", "compose")
         if templar is not None:
             with contextlib.suppress(Exception):

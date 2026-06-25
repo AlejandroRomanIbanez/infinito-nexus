@@ -6,10 +6,9 @@
     hostname: {{ KEYCLOAK_CONTAINER_HOSTNAME }}
     command: start{% if KEYCLOAK_DEBUG_ENABLED %} --verbose{% endif %}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    ports:
-      - "{{ KEYCLOAK_SERVER_HOST }}:8080"
+    {{ lookup('container_ports', ['keycloak', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     {{ lookup('container_volumes', application_id, 'keycloak') | indent(4) }}
-{{ lookup('container_depends_on', application_id) }}
+    {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 {% set container_port = 9000 %}
 {% set container_healthcheck = 'health/live' %}

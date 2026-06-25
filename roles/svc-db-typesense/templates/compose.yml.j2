@@ -11,8 +11,7 @@
 
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 {% if TYPESENSE_EXPOSE_LOCAL %}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ TYPESENSE_PORT }}:8108"
+    {{ lookup('container_ports', ['typesense', 'typesense', DOCKER_BIND_HOST]) | indent(4) }}
 {% endif %}
     {{ lookup('container_volumes', application_id, 'typesense') | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}

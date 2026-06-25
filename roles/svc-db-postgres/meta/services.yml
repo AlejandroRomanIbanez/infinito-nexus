@@ -17,4 +17,6 @@ postgres:
   ports:
     local:
       postgres: 5432
+    internal:
+      postgres: 5432
   lifecycle: beta

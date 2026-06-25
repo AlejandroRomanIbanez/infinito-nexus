@@ -10,8 +10,7 @@
 
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 {% if MEMCACHED_EXPOSE_LOCAL %}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ MEMCACHED_PORT }}:11211"
+    {{ lookup('container_ports', ['memcached', 'memcached', DOCKER_BIND_HOST]) | indent(4) }}
 {% endif %}
     {{ lookup('container_networks') | indent(4) }}
     healthcheck:

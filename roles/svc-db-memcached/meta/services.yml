@@ -17,4 +17,6 @@ memcached:
   ports:
     local:
       memcached: 11211
+    internal:
+      memcached: 11211
   lifecycle: beta

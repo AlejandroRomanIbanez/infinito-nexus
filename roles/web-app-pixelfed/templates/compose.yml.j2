@@ -8,9 +8,8 @@
     # ready for the Ansible bootstrap before Pixelfed's own first-start logic.
     entrypoint: "{{ PIXELFED_ENTRYPOINT_DOCKER }}"
     {{ lookup('container_volumes', application_id, 'pixelfed') | indent(4) }}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.pixelfed.ports.local.http') }}:{{ lookup('config', application_id, 'services.pixelfed.ports.internal.http') }}"
-{{ lookup('container_depends_on', application_id) }}
+    {{ lookup('container_ports', ['pixelfed', 'http', DOCKER_BIND_HOST]) | indent(4) }}
+    {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
   worker:
     {{ lookup('compose_only', 'container_name', PIXELFED_WORKER_CONTAINER) }}
@@ -28,9 +27,9 @@
       interval: 60s
       timeout: 5s
       retries: 1
-{{ lookup('container_depends_on', application_id, extra={
+    {{ lookup('container_depends_on', application_id, extra={
   'pixelfed': {'condition': 'service_started'},
-}) }}
+}) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}

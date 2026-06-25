@@ -8,8 +8,7 @@
       - /bin/sh
     command: ["-c", "opencloud init || true; opencloud server"]
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ OPENCLOUD_HTTP_PORT }}:9200"
+    {{ lookup('container_ports', ['opencloud', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     {{ lookup('container_volumes', application_id, 'opencloud') | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 

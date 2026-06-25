@@ -19,4 +19,6 @@ docker:
   ports:
     local:
       registry: 5000
+    internal:
+      registry: 5000
   lifecycle: alpha

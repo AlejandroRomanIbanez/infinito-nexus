@@ -17,4 +17,6 @@ mariadb:
   ports:
     local:
       mariadb: 3306
+    internal:
+      mariadb: 3306
   lifecycle: beta

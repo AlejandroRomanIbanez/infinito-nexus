@@ -30,8 +30,25 @@ mailu:
   ports:
     local:
       http: 8007
+    public:
+      smtp: 25
+      smtps: 465
+      submission: 587
+      pop3: 110
+      pop3s: 995
+      imap: 143
+      imaps: 993
+      sieve: 4190
     internal:
       http: 80
+      smtp: 25
+      smtps: 465
+      submission: 587
+      pop3: 110
+      pop3s: 995
+      imap: 143
+      imaps: 993
+      sieve: 4190
   proxy:
     service_key: front
   run_after:

@@ -17,4 +17,6 @@ qdrant:
   ports:
     local:
       qdrant: 6333
+    internal:
+      qdrant: 6333
   lifecycle: beta

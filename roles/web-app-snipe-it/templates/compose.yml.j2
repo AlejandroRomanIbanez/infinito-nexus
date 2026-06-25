@@ -6,9 +6,8 @@
     {{ lookup('compose_only', 'container_name', SNIPE_IT_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_volumes', application_id, SNIPE_IT_SERVICE) | indent(4) }}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.snipe-it.ports.local.http') }}:{{ container_port }}"
-{{ lookup('container_depends_on', application_id) }}
+    {{ lookup('container_ports', ['snipe-it', 'http', DOCKER_BIND_HOST]) | indent(4) }}
+    {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
     healthcheck:
       test:

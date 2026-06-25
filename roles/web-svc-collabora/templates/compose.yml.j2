@@ -13,8 +13,7 @@
       - SETUID
       - SETGID
       - FOWNER
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.collabora.ports.local.http') }}:{{ container_port }}"
+    {{ lookup('container_ports', ['collabora', 'http', DOCKER_BIND_HOST]) | indent(4) }}
 {% set container_healthcheck = COLLABORA_DISCOVERY_PATH %}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
     {{ lookup('container_networks') | indent(4) }}

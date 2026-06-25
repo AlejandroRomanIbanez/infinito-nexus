@@ -26,6 +26,8 @@ openldap:
     update: true
     reserved: false
   ports:
+    internal:
+      ldap: 389
     local:
       ldap: 389
     public:

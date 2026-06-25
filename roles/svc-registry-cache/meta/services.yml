@@ -19,6 +19,8 @@ cache:
   ports:
     local:
       registry: 5001
+    internal:
+      registry: 5000
   proxy:
     remote_url: "https://registry-1.docker.io" # nocheck: url
   lifecycle: alpha

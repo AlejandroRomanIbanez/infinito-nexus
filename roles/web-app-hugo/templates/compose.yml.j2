@@ -12,8 +12,7 @@
         HUGO_ENVIRONMENT: "{{ HUGO_ENVIRONMENT }}"
         HUGO_MINIFY: "{{ HUGO_MINIFY | string | lower }}"
     {{ lookup('container_image', application_id, 'hugo', custom=True) }}
-    ports:
-      - {{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.hugo.ports.local.http') }}:{{ container_port }}
+    {{ lookup('container_ports', ['hugo', 'http', DOCKER_BIND_HOST]) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 {% include 'roles/sys-svc-container/templates/healthcheck/wget.yml.j2' %}
 

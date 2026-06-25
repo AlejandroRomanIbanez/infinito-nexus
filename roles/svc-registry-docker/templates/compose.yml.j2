@@ -3,14 +3,14 @@
     image: "{{ REGISTRY_IMAGE }}:{{ REGISTRY_VERSION }}"  # nocheck: container-image-lookup
     {{ lookup('compose_only', 'container_name', REGISTRY_CONTAINER) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    ports:
 {% if DEPLOYMENT_MODE == 'swarm' %}
+    ports:
       - target: {{ REGISTRY_CONTAINER_PORT }}
         published: {{ REGISTRY_PORT }}
         protocol: tcp
         mode: host
 {% else %}
-      - "{{ REGISTRY_PORT }}:{{ REGISTRY_CONTAINER_PORT }}"
+    {{ lookup('container_ports', ['docker', 'registry']) | indent(4) }}
 {% endif %}
     {{ lookup('container_volumes', application_id, entity_name) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}

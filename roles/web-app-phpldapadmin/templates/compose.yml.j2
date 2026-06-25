@@ -3,8 +3,7 @@
   phpldapadmin:
     {{ lookup('compose_only', 'container_name', application_id) }}
     {{ lookup('container_image', application_id, 'phpldapadmin') }}
-    ports:
-      - {{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.phpldapadmin.ports.local.http') }}:8080
+    {{ lookup('container_ports', ['phpldapadmin', 'http', DOCKER_BIND_HOST]) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 
     {{ lookup('container_networks') | indent(4) }}

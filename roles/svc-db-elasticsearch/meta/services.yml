@@ -17,4 +17,6 @@ elasticsearch:
   ports:
     local:
       elasticsearch: 9200
+    internal:
+      elasticsearch: 9200
   lifecycle: beta

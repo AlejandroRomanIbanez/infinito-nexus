@@ -17,4 +17,6 @@ rabbitmq:
   ports:
     local:
       rabbitmq: 5672
+    internal:
+      rabbitmq: 5672
   lifecycle: beta

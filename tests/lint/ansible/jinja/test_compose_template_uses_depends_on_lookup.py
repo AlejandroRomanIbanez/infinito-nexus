@@ -118,6 +118,53 @@ class TestComposeTemplateUsesDependsOnLookup(unittest.TestCase):
                 f"Offending lines:\n{formatted}"
             )
 
+    def test_container_depends_on_calls_use_indent_filter(self) -> None:
+        findings: list[tuple[str, int, str]] = []
+        for path_str, content in iter_project_files_with_content(
+            extensions=(".j2",),
+            exclude_tests=True,
+        ):
+            rel = Path(path_str).relative_to(PROJECT_ROOT).as_posix()
+            lines = content.splitlines()
+            idx, total = 0, len(lines)
+            while idx < total:
+                opener = lines[idx]
+                if "lookup('container_depends_on'" not in opener:
+                    idx += 1
+                    continue
+                start = idx
+                call = opener
+                while "}}" not in call and idx + 1 < total:
+                    idx += 1
+                    call += "\n" + lines[idx]
+                at_col0 = opener.startswith("{{")
+                missing_filter = "| indent(" not in call
+                if at_col0 or missing_filter:
+                    reasons = []
+                    if at_col0:
+                        reasons.append(
+                            "starts at column 0 (indent to the service body)"
+                        )
+                    if missing_filter:
+                        reasons.append("missing | indent(4)")
+                    findings.append((rel, start + 1, "; ".join(reasons)))
+                idx += 1
+
+        if findings:
+            formatted = "\n".join(
+                f"- {p}:{n}: {s}"
+                for p, n, s in sorted(set(findings), key=lambda i: (i[0], i[1]))
+            )
+            self.fail(
+                "The `container_depends_on` lookup emits its block at column 0 "
+                "(like `container_networks`), so every call must sit at the "
+                "service-body indent and pipe through `| indent(4)`:\n\n"
+                "    {{ lookup('container_depends_on', application_id) | indent(4) }}\n\n"
+                "A call at column 0, or without the filter, renders the "
+                "`depends_on:` block at the wrong indentation.\n\n"
+                f"Offending calls:\n{formatted}"
+            )
+
 
 if __name__ == "__main__":  # pragma: no cover
     unittest.main()

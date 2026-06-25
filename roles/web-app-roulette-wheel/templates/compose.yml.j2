@@ -7,8 +7,7 @@
         ROULETTE_VERSION:       "{{ ROULETTE_VERSION }}"
         ROULETTE_WHEEL_APP_REL: "{{ ROULETTE_WHEEL_APP_REL }}"
     {{ lookup('container_image', application_id, 'roulette-wheel', custom=True) }}
-    ports:
-      - {{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.roulette-wheel.ports.local.http') }}:8080
+    {{ lookup('container_ports', ['roulette-wheel', 'http', DOCKER_BIND_HOST]) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 
 {{ lookup('compose_volumes', application_id) }}

@@ -12,8 +12,7 @@
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 
 {% if OPENLDAP_NETWORK_EXPOSE_LOCAL | bool %}
-    ports:
-      - {{ DOCKER_BIND_HOST }}:{{lookup('config', 'svc-db-openldap', 'services.openldap.ports.local.ldap')}}:{{ OPENLDAP_DOCKER_PORT_OPEN }}
+    {{ lookup('container_ports', ['openldap', 'ldap', DOCKER_BIND_HOST]) | indent(4) }}
 {% endif %}
 
     {{ lookup('container_volumes', application_id, OPENLDAP_SERVICE) | indent(4) }}

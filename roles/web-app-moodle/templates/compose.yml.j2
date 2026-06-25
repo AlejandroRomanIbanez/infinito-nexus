@@ -1,7 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
   moodle:
-{% set container_port = MOODLE_FPM_PORT %}
     {{ lookup('compose_only', 'container_name', MOODLE_CONTAINER) }}
     {{ lookup('compose_only', 'pull_policy', 'never') }}
     build:
@@ -33,7 +32,7 @@
       timeout: 20s
       retries: 5
       start_period: 60s
-{{ lookup('container_depends_on', application_id) }}
+    {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
 {% set service_name = 'nginx' %}

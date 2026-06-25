@@ -32,8 +32,7 @@ x-environment: &shopware
         SHOPWARE_PHP_IMAGE: "{{ SHOPWARE_PHP_IMAGE }}"
         SHOPWARE_PHP_VERSION: "{{ SHOPWARE_PHP_VERSION }}"
     {{ lookup('compose_only', 'container_name', SHOPWARE_WEB_CONTAINER) }}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.shopware.ports.local.http') }}:{{ container_port }}"
+    {{ lookup('container_ports', ['shopware', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     {{ lookup('depends_on', {'init': 'service_completed_successfully'}) }}
     healthcheck:
       test: ["CMD-SHELL", "wget -q --spider http://127.0.0.1:{{ container_port }}/robots.txt || wget -q --spider http://127.0.0.1:{{ container_port }}/ || exit 1"]

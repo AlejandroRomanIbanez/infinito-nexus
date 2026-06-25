@@ -8,11 +8,10 @@
     {{ lookup('compose_only', 'container_name', MEDIAWIKI_CONTAINER) }}
     {{ lookup('container_image', application_id, 'mediawiki', custom=True) }}
     {{ lookup('container_volumes', application_id, entity_name) | indent(4) }}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.mediawiki.ports.local.http') }}:{{ container_port }}"
+    {{ lookup('container_ports', ['mediawiki', 'http', DOCKER_BIND_HOST]) | indent(4) }}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
     {{ lookup('container_networks') | indent(4) }}
-{{ lookup('container_depends_on', application_id) }}
+    {{ lookup('container_depends_on', application_id) | indent(4) }}
 
 {{ lookup('compose_volumes', application_id,
     deployment_mode=DEPLOYMENT_MODE,

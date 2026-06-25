@@ -10,8 +10,7 @@
 
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 {% if ELASTICSEARCH_EXPOSE_LOCAL %}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ ELASTICSEARCH_PORT }}:{{ ELASTICSEARCH_INTERNAL_PORT }}"
+    {{ lookup('container_ports', ['elasticsearch', 'elasticsearch', DOCKER_BIND_HOST]) | indent(4) }}
 {% endif %}
     {{ lookup('container_volumes', application_id, 'elasticsearch') | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}

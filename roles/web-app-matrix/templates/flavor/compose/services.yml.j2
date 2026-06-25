@@ -23,7 +23,7 @@
 {% for item in MATRIX_BRIDGES %}{% set _ = deps.__setitem__('mautrix-' ~ item.bridge_name, 'service_healthy') %}{% endfor %}
     {{ lookup('depends_on', deps) }}
 {% endif %}
-{{ lookup('container_depends_on', application_id) }}
+    {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 {% set service_name = 'element' %}
   {{ service_name }}:

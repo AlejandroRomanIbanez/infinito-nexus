@@ -17,4 +17,6 @@ typesense:
   ports:
     local:
       typesense: 8108
+    internal:
+      typesense: 8108
   lifecycle: beta

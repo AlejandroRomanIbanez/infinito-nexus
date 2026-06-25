@@ -77,6 +77,8 @@ controller:
   ports:
     local:
       http: 8072
+    internal:
+      http: 11311
 livekit:
   name: opentalk-livekit
   image: livekit/livekit-server

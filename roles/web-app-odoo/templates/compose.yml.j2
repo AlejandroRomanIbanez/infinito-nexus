@@ -15,9 +15,9 @@
 {% set container_port = 8069 %}
 {% set container_healthcheck = 'web/health' %}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.odoo.ports.local.http') }}:{{ container_port }}"
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.odoo.ports.local.websocket') }}:{{ container_websocket_port }}"
+    {{ lookup('container_ports',
+              ['odoo', 'http', DOCKER_BIND_HOST],
+              ['odoo', 'websocket', DOCKER_BIND_HOST]) | indent(4) }}
     environment:
       - HOST={{ ODOO_DB_HOST }}
       - USER={{ ODOO_DB_USER }}
@@ -31,7 +31,7 @@
       - ODOO_OIDC_JWKS_URI={{ ODOO_OIDC_JWKS_URI }}
       - ODOO_OIDC_UID_FIELD={{ ODOO_OIDC_UID_FIELD }}
 {% endif %}
-{{ lookup('container_depends_on', application_id) }}
+    {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
     {{ lookup('container_volumes', application_id, service_name,
         extra_volumes=[ODOO_ADDONS_HOST ~ ':/mnt/custom-addons:ro']) | indent(4) }}

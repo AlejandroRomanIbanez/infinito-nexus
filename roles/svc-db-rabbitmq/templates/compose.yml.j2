@@ -7,8 +7,7 @@
 
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 {% if RABBITMQ_EXPOSE_LOCAL %}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ RABBITMQ_PORT }}:{{ RABBITMQ_INTERNAL_PORT }}"
+    {{ lookup('container_ports', ['rabbitmq', 'rabbitmq', DOCKER_BIND_HOST]) | indent(4) }}
 {% endif %}
     {{ lookup('container_volumes', application_id, 'rabbitmq') | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}

@@ -54,8 +54,11 @@ peertube:
   ports:
     local:
       http: 8011
+    public:
+      rtmp: 1935
     internal:
       http: 9000
+      rtmp: 1935
   run_after:
     - web-app-keycloak
   lifecycle: beta

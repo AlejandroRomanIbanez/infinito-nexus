@@ -25,7 +25,7 @@
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('depends_on', {JITSI_PROSODY_CONTAINER: 'service_started'}) }}
     ports:
-      - "{{ JITSI_JVB_MEDIA_PORT }}:{{ JITSI_JVB_MEDIA_PORT }}/udp"
+      - "{{ JITSI_JVB_MEDIA_PORT }}:{{ JITSI_JVB_MEDIA_PORT }}/udp"  # nocheck: compose-ports-must-use-container-ports
     {{ lookup('container_volumes', application_id, JITSI_JVB_CONTAINER) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
@@ -34,8 +34,7 @@
     {{ lookup('compose_only', 'container_name', JITSI_WEB_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('depends_on', {JITSI_PROSODY_CONTAINER: 'service_started'}) }}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ JITSI_WEB_HTTP_PORT }}:80"
+    {{ lookup('container_ports', ['jitsi', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     {{ lookup('container_volumes', application_id, JITSI_WEB_CONTAINER) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 

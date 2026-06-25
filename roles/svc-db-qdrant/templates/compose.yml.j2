@@ -6,8 +6,7 @@
 
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 {% if QDRANT_EXPOSE_LOCAL %}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ QDRANT_PORT }}:6333"
+    {{ lookup('container_ports', ['qdrant', 'qdrant', DOCKER_BIND_HOST]) | indent(4) }}
 {% endif %}
     {{ lookup('container_volumes', application_id, 'qdrant') | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}

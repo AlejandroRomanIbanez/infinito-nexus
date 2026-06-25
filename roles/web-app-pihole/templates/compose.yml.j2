@@ -14,8 +14,7 @@
       # rebinding protection); setting webserver.domain whitelists our domain.
       FTLCONF_webserver_domain:     "{{ domain }}"
       PIHOLE_DNS_:                  "{{ PIHOLE_UPSTREAM_DNS }}"
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.pihole.ports.local.http') }}:{{ lookup('config', application_id, 'services.pihole.ports.internal.http') }}/tcp"
+    {{ lookup('container_ports', ['pihole', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     cap_add:
       - NET_ADMIN
     {{ lookup('container_volumes', application_id, 'pihole') | indent(4) }}

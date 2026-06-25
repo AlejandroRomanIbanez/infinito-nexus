@@ -46,9 +46,9 @@
       UPSTREAM_REAL_IP_RECURSIVE: "on"
       PROXY_READ_TIMEOUT: "120"
       CLIENT_MAX_BODY_SIZE: "50m"
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.erpnext.ports.local.http') }}:{{ ERPNEXT_FRONTEND_PORT }}"
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.erpnext.ports.local.websocket') }}:{{ ERPNEXT_WEBSOCKET_PORT }}"
+    {{ lookup('container_ports',
+              ['erpnext', 'http', DOCKER_BIND_HOST],
+              ['erpnext', 'websocket', DOCKER_BIND_HOST]) | indent(4) }}
     {{ lookup('container_volumes', application_id, ERPNEXT_FRONTEND_CONTAINER) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
@@ -92,7 +92,7 @@
         bench set-config -gp socketio_port {{ ERPNEXT_WEBSOCKET_PORT }};
         bench set-config -g host_name "{{ lookup('tls', application_id, 'url.base') | regex_replace('/+$', '') }}";
     {{ lookup('container_volumes', application_id, ERPNEXT_CONFIGURATOR_CONTAINER) | indent(4) }}
-{{ lookup('container_depends_on', application_id) }}
+    {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}

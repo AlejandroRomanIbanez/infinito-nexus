@@ -109,13 +109,13 @@ class TestContainerDependsOnLookup(unittest.TestCase):
             {"depends_on": {"resolver": {"condition": "service_started"}}},
         )
 
-    def test_indent_default_four_spaces(self):
+    def test_indent_default_is_column_zero(self):
         out = _run("app", _apps(redis=True))[0]
-        self.assertTrue(out.startswith("    depends_on:"))
-
-    def test_indent_zero(self):
-        out = _run("app", _apps(redis=True), indent=0)[0]
         self.assertTrue(out.startswith("depends_on:"))
+
+    def test_indent_explicit_four_spaces(self):
+        out = _run("app", _apps(redis=True), indent=4)[0]
+        self.assertTrue(out.startswith("    depends_on:"))
 
     def test_swarm_mode_emits_list_form_without_conditions(self):
         out = _run(
