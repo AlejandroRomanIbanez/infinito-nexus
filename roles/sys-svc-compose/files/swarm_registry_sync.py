@@ -39,7 +39,7 @@ def sync(*, compose_file: Path, prefix: str) -> int:
     # (already-prefixed) image without its own build:, and must not try to pull
     # that local-only ref from the registry.
     locally_built = {
-        svc["image"]
+        svc["image"].removeprefix(prefix)
         for svc in services.values()
         if isinstance(svc, dict)
         and "build" in svc
