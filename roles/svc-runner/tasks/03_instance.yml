@@ -10,6 +10,7 @@
   ansible.builtin.stat:
     path: "{{ RUNNER_INSTALL_DIR }}/{{ runner_instance }}/run.sh"
   register: _runner_binary_stat
+  when: RUNNER_PROVIDER != 'gitea'
 
 - name: Extract GitHub Actions runner archive for instance {{ runner_instance }}
   unarchive:
@@ -18,7 +19,19 @@
     remote_src: true
     owner: "{{ RUNNER_USER }}"
     group: "{{ RUNNER_USER }}"
-  when: not _runner_binary_stat.stat.exists
+  when:
+    - RUNNER_PROVIDER != 'gitea'
+    - not _runner_binary_stat.stat.exists
+
+- name: Install act_runner binary for instance {{ runner_instance }} (Gitea)
+  ansible.builtin.copy:
+    src: "{{ RUNNER_INSTALL_DIR }}/act_runner"
+    dest: "{{ RUNNER_INSTALL_DIR }}/{{ runner_instance }}/act_runner"
+    remote_src: true
+    owner: "{{ RUNNER_USER }}"
+    group: "{{ RUNNER_USER }}"
+    mode: '0755'
+  when: RUNNER_PROVIDER == 'gitea'
 
 - name: Remove existing runner configuration for instance {{ runner_instance }}
   ansible.builtin.find:

@@ -1,0 +1,61 @@
+---
+# Gitea provider — resolve the instance URL and obtain an act_runner registration token.
+#
+# Headline path: co-located. Mint the token straight from the in-stack web-app-gitea,
+# so the whole CI loop runs with NO external dependency. A manually supplied token
+# (RUNNER_API_TOKEN / GH_TOKEN env) takes precedence and also covers a remote Gitea.
+#
+# NOTE: the co-located auto-mint exec is wired but not yet exercised against a live
+# Gitea (deferred e2e). The manual token path is the reliable fallback; validate the
+# container name + CLI invocation before relying on auto-mint in production.
+
+- name: Fetch latest act_runner version tag
+  uri_retry:
+    url: https://gitea.com/api/v1/repos/gitea/act_runner/releases?limit=1
+    return_content: true
+  register: _act_runner_release
+  delegate_to: localhost
+  changed_when: false
+
+- name: Set resolved act_runner version
+  ansible.builtin.set_fact:
+    act_runner_resolved_version: "{{ _act_runner_release.json[0].tag_name | regex_replace('^v', '') }}"
+
+- name: Download Gitea act_runner binary
+  get_url_retry:
+    url: "https://dl.gitea.com/act_runner/{{ act_runner_resolved_version }}/act_runner-{{ act_runner_resolved_version }}-linux-amd64"
+    dest: "{{ RUNNER_INSTALL_DIR }}/act_runner"
+    owner: "{{ RUNNER_USER }}"
+    group: "{{ RUNNER_USER }}"
+    mode: '0755'
+
+- name: Resolve effective Gitea instance URL
+  ansible.builtin.set_fact:
+    _runner_gitea_instance: >-
+      {{ RUNNER_GITEA_INSTANCE
+         if (RUNNER_GITEA_INSTANCE | length > 0)
+         else (lookup('tls', 'web-app-gitea', 'url.base') | regex_replace('/$', '')) }}
+
+- name: Use a supplied runner token if present (manual / remote Gitea)
+  ansible.builtin.set_fact:
+    _runner_gitea_token: "{{ RUNNER_API_TOKEN }}"
+  when: RUNNER_API_TOKEN | length > 0
+
+- name: Mint a runner registration token from the co-located web-app-gitea
+  ansible.builtin.command:
+    cmd: "container exec --user git {{ RUNNER_GITEA_CONTAINER }} gitea actions generate-runner-token"
+  register: _gitea_token_result
+  changed_when: false
+  when: RUNNER_API_TOKEN | length == 0
+
+- name: Set the minted Gitea runner token
+  ansible.builtin.set_fact:
+    _runner_gitea_token: "{{ _gitea_token_result.stdout | trim }}"
+  when: RUNNER_API_TOKEN | length == 0
+
+- name: Fail clearly if no Gitea runner token could be obtained
+  ansible.builtin.fail:
+    msg: >-
+      No Gitea runner token available. Either deploy web-app-gitea co-located so it can be
+      minted automatically, or supply one via RUNNER_API_TOKEN (gitea UI/CLI: actions generate-runner-token).
+  when: (_runner_gitea_token | default('') | length) == 0

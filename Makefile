@@ -469,6 +469,13 @@ runner-ci-enable:
 		$${OWNER:+--repo "$${OWNER}/$${REPO:-infinito-nexus}"}
 	@echo "Self-hosted runners enabled (count=$${COUNT}, multiplier=$${MULTIPLIER:-30}). CI will split deploy jobs proportionally across GitHub-hosted and self-hosted runners."
 
+.PHONY: runner-deploy-app
+# Deploy any app inside the runner's sealed sandbox locally (no GitHub, no registration).
+# Usage: make runner-deploy-app APP=web-app-matomo [DISABLE=oidc]
+runner-deploy-app:
+	@: "$${APP:?APP must be set (e.g. make runner-deploy-app APP=web-app-matomo)}"
+	@RUNNER_TEST_APP="$${APP}" RUNNER_TEST_DISABLE="$${DISABLE:-}" $(MAKE) compose-deploy apps=svc-runner
+
 .PHONY: security-apparmor-restore
 # Restore AppArmor profiles.
 security-apparmor-restore:

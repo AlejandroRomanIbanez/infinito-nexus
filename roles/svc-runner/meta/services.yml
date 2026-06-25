@@ -1,8 +1,15 @@
 ---
 svc-runner:
   lifecycle: beta
+  # Where runners register: 'github' (default, unchanged) or 'gitea' (co-located, no external dep).
+  provider: github
   github_owner: infinito-nexus
   github_repo: core
+  # Gitea provider: instance URL the runners register against. Empty → resolve from
+  # the co-located web-app-gitea domain (the point of running it in the stack).
+  gitea_instance: ""
+  # Container name of the co-located Gitea used to auto-mint a runner token.
+  gitea_container: gitea
   docker_base: /mnt/docker
   base_image: ubuntu:22.04
   docker_gid_fallback: 999

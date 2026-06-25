@@ -111,6 +111,15 @@ def build_parser() -> argparse.ArgumentParser:
             "Override when deploying for a different repository."
         ),
     )
+    parser.add_argument(
+        "--provider",
+        choices=["github", "gitea"],
+        default=None,
+        help=(
+            "CI provider the runner registers with (default: role default 'github'). "
+            "Use 'gitea' to register against a co-located Gitea instance."
+        ),
+    )
 
     return parser
 
@@ -144,6 +153,7 @@ def _run_deploy(
     runner_count: int,
     owner: str | None,
     repo: str | None,
+    provider: str | None,
 ) -> int:
     inventory_content = _build_inventory(hostname, port)
     playbook_content = _build_playbook(roles)
@@ -181,6 +191,8 @@ def _run_deploy(
             cmd += ["-e", f"RUNNER_GITHUB_OWNER={owner}"]
         if repo is not None:
             cmd += ["-e", f"RUNNER_GITHUB_REPO={repo}"]
+        if provider is not None:
+            cmd += ["-e", f"RUNNER_PROVIDER={provider}"]
 
         # Token via env (avoid leaking into process list).
         extra_env = dict(os.environ)
@@ -237,4 +249,5 @@ def main(argv: list[str] | None = None) -> int:
         runner_count=args.runner_count,
         owner=args.owner,
         repo=args.repo,
+        provider=args.provider,
     )

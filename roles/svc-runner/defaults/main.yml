@@ -5,3 +5,7 @@ RUNNER_LABELS: "self-hosted,linux,{{ RUNNER_DISTRIBUTION }}"
 RUNNER_COUNT: "{{ [ansible_processor_vcpus | int // RUNNER_CPUS | int, 1] | max }}"
 INFINITO_IMAGE_TAG: "{{ lookup('env', 'INFINITO_IMAGE_TAG') | default('latest', true) }}"  # nocheck
 INFINITO_GHCR_MIRROR_PREFIX: "{{ lookup('env', 'INFINITO_GHCR_MIRROR_PREFIX') | default('', true) }}"  # nocheck
+# Local sealed-sandbox test target. Defaults reproduce the dashboard self-test;
+# override (e.g. via `make runner-deploy-app APP=…`) to deploy any app in the runner.
+RUNNER_TEST_APP: "{{ lookup('env', 'RUNNER_TEST_APP') | default('web-app-dashboard', true) }}"  # nocheck
+RUNNER_TEST_DISABLE: "{{ lookup('env', 'RUNNER_TEST_DISABLE') | default('', true) }}"  # nocheck

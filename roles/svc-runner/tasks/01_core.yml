@@ -60,10 +60,12 @@
   register: _runner_latest_release
   delegate_to: localhost
   changed_when: false
+  when: RUNNER_PROVIDER != 'gitea'
 
 - name: Set resolved runner version
   set_fact:
     runner_resolved_version: "{{ _runner_latest_release.json.tag_name | regex_replace('^v', '') }}"
+  when: RUNNER_PROVIDER != 'gitea'
 
 - name: Download GitHub Actions runner binary
   get_url_retry:
@@ -72,6 +74,12 @@
     owner: "{{ RUNNER_USER }}"
     group: "{{ RUNNER_USER }}"
     mode: '0644'
+  when: RUNNER_PROVIDER != 'gitea'
+
+# --- Gitea provider: install act_runner + resolve instance/token (one guarded include) ---
+- name: Set up the Gitea provider (act_runner binary, instance, registration token)
+  include_tasks: providers/gitea.yml
+  when: RUNNER_PROVIDER == 'gitea'
 
 - name: Find existing runner instance directories
   find:

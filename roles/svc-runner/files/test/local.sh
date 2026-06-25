@@ -32,10 +32,17 @@ if [[ "${ASYNC_ENABLED:-false}" == "true" ]]; then
     exit 0
 fi
 
-# Build the infinito image locally and deploy web-app-dashboard in a sealed
-# throwaway dockerd (host stack untouched). No GitHub/GHCR.
+# Build the infinito image locally and deploy the selected app (default
+# web-app-dashboard) in a sealed throwaway dockerd (host stack untouched). No GitHub/GHCR.
 _iso_src="${RUNNER_INSTALL_DIR}/1/nested-src"
-echo "DinD mode: running full local deploy test inside ${RUNNER_PROJECT_PREFIX}-1..."
+# Which app to deploy in the sandbox; defaults reproduce the dashboard self-test.
+_app="${RUNNER_TEST_APP:-web-app-dashboard}"
+if [[ "${_app}" == "web-app-dashboard" && -z "${RUNNER_TEST_DISABLE:-}" ]]; then
+    _disable="matomo,sso,asset,simpleicons,logout"
+else
+    _disable="${RUNNER_TEST_DISABLE:-}"
+fi
+echo "DinD mode: running full local deploy test (${_app}) inside ${RUNNER_PROJECT_PREFIX}-1..."
 # container cp the repo into runner-1 (no compose mount — keeps test wiring here),
 # then isolate a per-instance copy (drop .env/Corefile so inner coredns serves the right IP).
 container exec --user root "${RUNNER_PROJECT_PREFIX}-1" mkdir -p /opt/src/infinito
@@ -72,8 +79,8 @@ if ! container exec "${RUNNER_PROJECT_PREFIX}-1" bash -c '
     # never swaps in a GHCR image.
     DOCKER_HOST= docker save "$img" | docker load
     COMPOSE_PROJECT_NAME=infinito INFINITO_RUNNER_PREFIX=infinito \
-    RUNTIME=github CI=true apps=web-app-dashboard \
-    disable=matomo,sso,asset,simpleicons,logout \
+    RUNTIME=github CI=true apps="'"${_app}"'" \
+    disable="'"${_disable}"'" \
     INFINITO_DEPLOY_TYPE=server INFINITO_DISTROS=debian \
     INFINITO_IMAGE="$img" INFINITO_BUILD=0 INFINITO_PULL_POLICY=never \
     GITHUB_REPOSITORY_OWNER= GITHUB_REPOSITORY= \
