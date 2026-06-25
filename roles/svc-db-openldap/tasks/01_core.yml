@@ -38,6 +38,8 @@
     container exec {{ OPENLDAP_CONTAINER_ADDRESS }}
     ldapwhoami -x -H ldap://127.0.0.1:389 -D "{{ OPENLDAP_BIND_DN }}" -w "{{ OPENLDAP_BIND_PW }}"
   register: openldap_bind_check
+  delegate_to: "{{ STACK_HOST }}"
+  run_once: true
   changed_when: false
   failed_when: false
 
@@ -55,6 +57,8 @@
     container exec {{ OPENLDAP_CONTAINER_ADDRESS }}
     sh -lc 'grep -m1 "^dn: " /etc/ldap/slapd.d/cn=config/cn=module{0}.ldif | sed "s/^dn: //"'
   register: openldap_module_dn_raw
+  delegate_to: "{{ STACK_HOST }}"
+  run_once: true
   changed_when: false
   failed_when: openldap_module_dn_raw.rc != 0 or (openldap_module_dn_raw.stdout | trim) == ""
 
@@ -71,6 +75,8 @@
     container exec {{ OPENLDAP_CONTAINER_ADDRESS }}
     ldapsearch -Q -Y EXTERNAL -H {{ OPENLDAP_CONFIG_URI }} -LLL -b cn=config "(olcDatabase=*)" dn
   register: ldap_databases
+  delegate_to: "{{ STACK_HOST }}"
+  run_once: true
   changed_when: false
 
 - name: Set OPENLDAP_DATA_BACKEND_DN (mdb preferred, hdb fallback)
