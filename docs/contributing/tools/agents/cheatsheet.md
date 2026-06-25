@@ -48,7 +48,7 @@ SPOT: [Role Loop](../../../agents/action/iteration/role.md)
 ## Cross-Mode Roundtrip 🔄
 
 ```
-Follow the instructions from AGENTS.md, roundtrip-validate <roles> (or omit them to sweep every application, most-complex first) across all deploy modes, compose then swarm, by following the procedure in docs/agents/action/iteration/roundtrip.md. Drive it with `make roundtrip apps="<roles>"`, or `make roundtrip` with no apps to iterate every application ranked by complexity. Begin by clarifying every open requirement through active listening, then act autonomously through to completion with as few follow-up questions as possible. When a step fails, read its log under `${TMPDIR:-/tmp}/roundtrip-<app>-<mode>.log`, drop into the matching focused loop (docs/agents/action/iteration/role.md for the compose step, docs/agents/action/iteration/workflow.md for the swarm step), confirm the fix on live state in-container before any redeploy, apply the real fix in the repository, then re-run the roundtrip. You MUST NOT use any commit command, push command, or any command that would require an `ask`-mode approval. You MUST NOT stop the iteration early under any circumstance. Premature termination is explicitly forbidden. The iteration is finished only when every role is green in compose AND swarm.
+Follow the instructions from AGENTS.md, roundtrip-validate across all deploy modes, compose then swarm, by following the procedure in docs/agents/action/iteration/roundtrip.md. Drive it with `make roundtrip` with no apps to iterate every application ranked by complexity. Act autonomously through to completion with no follow-up questions. When a step fails, read its log under `${TMPDIR:-/tmp}/roundtrip-<app>-<mode>.log`, drop into the matching focused loop (docs/agents/action/iteration/role.md for the compose step, docs/agents/action/iteration/workflow.md for the swarm step), confirm the fix on live state in-container before any redeploy, apply the real fix in the repository, then re-run the roundtrip. You MUST NOT use any commit command, push command, or any command that would require an `ask`-mode approval. You MUST NOT stop the iteration early under any circumstance. Premature termination is explicitly forbidden. The iteration is finished only when every role is green in compose AND swarm.
 ```
 
 SPOT: [Roundtrip Loop](../../../agents/action/iteration/roundtrip.md)
@@ -67,7 +67,7 @@ SPOT: [testing.md](../../../agents/action/testing.md)
 Follow the instructions from AGENTS.md, write or update the Playwright test for role <role> by following the procedure in docs/agents/action/iteration/playwright.md. Begin by clarifying every open requirement through active listening, then act autonomously through to completion with as few follow-up questions as possible. Ask upfront whether to scope changes to the Playwright files only or also to any other files that cause the tests to fail.
 ```
 
-SPOT: [playwright.md](../../actions/testing/playwright.md)
+SPOT: [playwright.md](../../../agents/action/iteration/playwright.md)
 
 ## Refactor and Optimize ♻️
 
@@ -128,7 +128,7 @@ SPOT: [push-trigger-pull.md](../../../agents/action/push-trigger-pull.md)
 ## Requirement Creation ✍️
 
 ```
-Follow the instructions from AGENTS.md, create a new requirement for <topic> by following the procedure in docs/contributing/requirements.md. Begin by clarifying every open requirement through active listening, then act autonomously through to completion with as few follow-up questions as possible. Before every redeploy you MUST run `make compose-exec` and `make compose-inner-run` against the live stack and fully fix and inspect every failure in the container. A new deploy iteration MUST NOT start until every error is resolved and the fix has been empirically verified in-container. You MUST NOT use any commit command, push command, or any command that would require an `ask`-mode approval. You MUST NOT stop the iteration early under any circumstance. Premature termination is explicitly forbidden. The iteration is finished only when every role is green end-to-end.
+Follow the instructions from AGENTS.md, create a new requirement for <topic> by following the procedure in docs/contributing/requirements.md. Begin by clarifying every open requirement through active listening, then act autonomously through to completion with as few follow-up questions as possible. Before every redeploy you MUST run `make compose-exec` and `make compose-inner-run` against the live stack and fully fix and inspect every failure in the container. A new deploy iteration MUST NOT start until every error is resolved and the fix has been empirically verified in-container. You MUST NOT use any commit command, push command, or any command that would require an `ask`-mode approval. You MUST NOT stop the iteration early under any circumstance. Premature termination is explicitly forbidden. The iteration is finished only when every role is green end-to-end. You MUST inspect every 15minutes that the container is still running and not hanging.
 ```
 
 SPOT: [requirements.md](../../requirements.md)
