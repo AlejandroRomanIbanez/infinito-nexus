@@ -27,7 +27,9 @@ class TestTriggerMain(unittest.TestCase):
             mock.patch.object(
                 runs,
                 "dispatch_workflow",
-                side_effect=lambda wf, ref, wl, repo=None: calls.append((wf, ref, wl, repo)),
+                side_effect=lambda wf, ref, wl, repo=None: calls.append(
+                    (wf, ref, wl, repo)
+                ),
             ),
             redirect_stdout(buf),
         ):
@@ -51,17 +53,25 @@ class TestTriggerMain(unittest.TestCase):
         self.assertEqual(calls[0][2], "web-app-x web-app-y")
 
     def test_failed_swarm_scope(self) -> None:
-        rc, calls = self._run(["--failed", "swarm"], run={"_jobs": _JOBS})
+        _rc, calls = self._run(["--failed", "swarm"], run={"_jobs": _JOBS})
         self.assertEqual(calls[0][2], "web-app-x")  # only x swarm failed
 
     def test_failed_compose_scope(self) -> None:
-        rc, calls = self._run(["--failed", "compose"], run={"_jobs": _JOBS})
+        _rc, calls = self._run(["--failed", "compose"], run={"_jobs": _JOBS})
         self.assertEqual(calls[0][2], "web-app-y")  # only y compose failed
 
     def test_failed_nothing_does_not_dispatch(self) -> None:
         green = [
-            {"name": "🐳 Compose web-app-x", "status": "completed", "conclusion": "success"},
-            {"name": "🐝 Swarm web-app-x", "status": "completed", "conclusion": "success"},
+            {
+                "name": "🐳 Compose web-app-x",
+                "status": "completed",
+                "conclusion": "success",
+            },
+            {
+                "name": "🐝 Swarm web-app-x",
+                "status": "completed",
+                "conclusion": "success",
+            },
         ]
         rc, calls = self._run(["--failed"], run={"_jobs": green})
         self.assertEqual(rc, 0)

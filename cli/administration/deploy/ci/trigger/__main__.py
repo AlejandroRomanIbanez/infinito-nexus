@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Trigger the manual CI run (entry-manual.yml) for the current branch."""
 
 from __future__ import annotations

@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Per-role compose ("docker") and swarm deploy status of a CI run."""
 
 from __future__ import annotations

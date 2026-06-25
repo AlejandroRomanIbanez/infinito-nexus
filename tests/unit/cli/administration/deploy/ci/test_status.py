@@ -9,12 +9,27 @@ from cli.administration.deploy.ci import runs
 from cli.administration.deploy.ci.status import __main__ as status
 
 _JOBS = [
-    {"name": "🐳 Compose web-app-x", "status": "completed", "conclusion": "success", "url": "https://gh/cx"},
-    {"name": "🐝 Swarm web-app-x", "status": "completed", "conclusion": "failure", "url": "https://gh/sx"},
-    {"name": "🐝 Swarm web-app-y", "status": "completed", "conclusion": "success", "url": "https://gh/sy"},
+    {
+        "name": "🐳 Compose web-app-x",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://gh/cx",
+    },
+    {
+        "name": "🐝 Swarm web-app-x",
+        "status": "completed",
+        "conclusion": "failure",
+        "url": "https://gh/sx",
+    },
+    {
+        "name": "🐝 Swarm web-app-y",
+        "status": "completed",
+        "conclusion": "success",
+        "url": "https://gh/sy",
+    },
 ]
 
-_URL = "https://github.com/o/r/actions/runs/123"
+_URL = "https://github.com/o/r/actions/runs/123"  # nocheck: url
 
 
 class TestBuildRows(unittest.TestCase):
@@ -36,14 +51,18 @@ class TestBuildRows(unittest.TestCase):
 
 class TestRender(unittest.TestCase):
     def test_table_has_run_header_after_total(self) -> None:
-        rows = status._build_rows(runs.parse_role_statuses(_JOBS), runs.parse_role_urls(_JOBS))
+        rows = status._build_rows(
+            runs.parse_role_statuses(_JOBS), runs.parse_role_urls(_JOBS)
+        )
         out = status._render_table(rows)
         header = out.splitlines()[0]
         self.assertRegex(header, r"docker\s+swarm\s+total\s+run")
         self.assertIn("https://gh/sx", out)
 
     def test_string_format_fields(self) -> None:
-        rows = status._build_rows(runs.parse_role_statuses(_JOBS), runs.parse_role_urls(_JOBS))
+        rows = status._build_rows(
+            runs.parse_role_statuses(_JOBS), runs.parse_role_urls(_JOBS)
+        )
         out = status._render_string(rows)
         line = next(line for line in out.splitlines() if line.startswith("web-app-y"))
         self.assertEqual(
@@ -54,7 +73,10 @@ class TestRender(unittest.TestCase):
 class TestMain(unittest.TestCase):
     def _run(self, argv: list[str]) -> str:
         buf = io.StringIO()
-        with mock.patch.object(runs, "fetch_jobs", return_value=_JOBS), redirect_stdout(buf):
+        with (
+            mock.patch.object(runs, "fetch_jobs", return_value=_JOBS),
+            redirect_stdout(buf),
+        ):
             rc = status.main([*argv, "--url", _URL])
         self.assertEqual(rc, 0)
         return buf.getvalue()

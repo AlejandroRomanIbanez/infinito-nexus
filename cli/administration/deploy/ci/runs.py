@@ -12,7 +12,7 @@ import json
 import re
 import subprocess
 
-PASS = "✅"
+PASS = "✅"  # noqa: S105  emoji glyph, not a credential
 FAIL = "❌"
 ABORT = "🚫"
 RUNNING = "⏳"

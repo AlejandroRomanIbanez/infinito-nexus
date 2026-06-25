@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import unittest
+from typing import ClassVar
 
 from cli.administration.deploy.ci import runs
 
@@ -37,9 +38,24 @@ class TestParseRoleStatuses(unittest.TestCase):
 class TestParseRoleUrls(unittest.TestCase):
     def test_maps_job_urls_per_mode(self) -> None:
         jobs = [
-            {"name": "🐳 Compose web-app-x", "url": "https://gh/c", "status": "completed", "conclusion": "success"},
-            {"name": "🐝 Swarm web-app-x", "url": "https://gh/s", "status": "completed", "conclusion": "failure"},
-            {"name": "🐝 Swarm web-app-y", "url": None, "status": "completed", "conclusion": "success"},
+            {
+                "name": "🐳 Compose web-app-x",
+                "url": "https://gh/c",
+                "status": "completed",
+                "conclusion": "success",
+            },
+            {
+                "name": "🐝 Swarm web-app-x",
+                "url": "https://gh/s",
+                "status": "completed",
+                "conclusion": "failure",
+            },
+            {
+                "name": "🐝 Swarm web-app-y",
+                "url": None,
+                "status": "completed",
+                "conclusion": "success",
+            },
         ]
         self.assertEqual(
             runs.parse_role_urls(jobs),
@@ -85,7 +101,7 @@ class TestCellSymbols(unittest.TestCase):
 
 
 class TestFailedRoles(unittest.TestCase):
-    _STATUSES = {
+    _STATUSES: ClassVar[dict[str, dict[str, str]]] = {
         "web-app-b": {"docker": "success", "swarm": "success"},
         "web-app-a": {"docker": "success", "swarm": "failure"},
         "web-app-c": {"docker": "cancelled", "swarm": "success"},
@@ -112,13 +128,13 @@ class TestFailedRoles(unittest.TestCase):
 class TestRunIdFromUrl(unittest.TestCase):
     def test_extracts_id(self) -> None:
         self.assertEqual(
-            runs.run_id_from_url("https://github.com/o/r/actions/runs/28140817070"),
+            runs.run_id_from_url("https://example.com/o/r/actions/runs/28140817070"),
             "28140817070",
         )
 
     def test_raises_without_id(self) -> None:
         with self.assertRaises(ValueError):
-            runs.run_id_from_url("https://github.com/o/r/actions")
+            runs.run_id_from_url("https://example.com/o/r/actions")
 
 
 class TestSlugFromUrl(unittest.TestCase):
