@@ -36,7 +36,7 @@ email_domains           =   "{{ DOMAIN_PRIMARY }}"
 {% endif %}
 
 session_store_type       = "redis"
-redis_connection_url     = "redis://redis:6379"
+redis_connection_url     = "{{ lookup('engine', 'redis', sso_proxy_application_id, 'url') }}"
 
 # Identity headers — make oauth2-proxy export the authenticated
 # user's identity in the auth_request response so the gated upstream
