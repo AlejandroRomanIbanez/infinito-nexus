@@ -1,4 +1,5 @@
 import unittest
+from typing import ClassVar
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError
@@ -92,6 +93,25 @@ class TestContainerPortsLookup(unittest.TestCase):
             self.assertRaises(AnsibleError),
         ):
             LookupModule().run([["gitea", "http"]], variables={})
+
+    def test_application_id_unrendered_var_is_templated(self):
+        class _Templar:
+            available_variables: ClassVar[dict] = {}
+
+            def template(self, value):
+                return "web-app-gitea" if value == "{{ app }}" else value
+
+        lookup = LookupModule()
+        lookup._templar = _Templar()
+        with patch(
+            "plugins.lookup.container_ports.get_merged_applications",
+            return_value=_apps(),
+        ):
+            out = lookup.run(
+                [["gitea", "http", "10.0.0.1"]],
+                variables={"application_id": "{{ app }}"},
+            )
+        self.assertEqual(out, ['ports:\n  - "10.0.0.1:8002:3000"'])
 
 
 if __name__ == "__main__":
