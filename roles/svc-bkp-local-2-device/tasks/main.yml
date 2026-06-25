@@ -27,3 +27,5 @@
 
 - include_role:
     name: sys-service
+  vars:
+    system_service_suppress_flush: true # plug-triggered via the .mount unit; no USB device at deploy time, so never ExecStart the oneshot during the flush
