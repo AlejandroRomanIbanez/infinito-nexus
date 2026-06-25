@@ -87,6 +87,61 @@ class TestParseRoleTimes(unittest.TestCase):
         self.assertAlmostEqual(dict(rows)["web-app-keycloak"], 42.50)
 
 
+SEGMENTED_LOG = """\
+=== matrix-deploy: round 1/2 inv=/x-0 variants={'web-app-keycloak': 0} apps=['web-app-keycloak'] PASS 1 (sync) ===
+web-app-keycloak ------------------------------------------------------- 40.00s
+total ------------------------------------------------------------------ 40.00s
+=== matrix-deploy: round 1/2 inv=/x-0 variants={'web-app-keycloak': 0} apps=['web-app-keycloak'] PASS 2 (async) ===
+web-app-keycloak -------------------------------------------------------- 5.00s
+=== matrix-deploy: round 2/2 inv=/x-1 variants={'web-app-keycloak': 1} apps=['web-app-keycloak'] PASS 1 (sync) ===
+web-app-keycloak ------------------------------------------------------- 12.00s
+sys-svc-mail ----------------------------------------------------------- 30.00s
+"""
+
+
+class TestParseSegments(unittest.TestCase):
+    def _write(self, content: str) -> Path:
+        name = _write_tempfile(content, ".log")
+        self.addCleanup(os.unlink, name)
+        return Path(name)
+
+    def test_one_segment_per_round_and_pass(self):
+        segments = role_summary.parse_segments(self._write(SEGMENTED_LOG))
+        labels = [label for label, _ in segments]
+        self.assertEqual(
+            labels,
+            [
+                "Round 1/2 · PASS 1 (sync)",
+                "Round 1/2 · PASS 2 (async)",
+                "Round 2/2 · PASS 1 (sync)",
+            ],
+        )
+
+    def test_per_segment_times_do_not_bleed_across_rounds(self):
+        segments = dict(role_summary.parse_segments(self._write(SEGMENTED_LOG)))
+        self.assertEqual(dict(segments["Round 1/2 · PASS 1 (sync)"]), {"web-app-keycloak": 40.0})
+        self.assertEqual(
+            dict(segments["Round 2/2 · PASS 1 (sync)"]),
+            {"sys-svc-mail": 30.0, "web-app-keycloak": 12.0},
+        )
+
+    def test_no_markers_returns_empty(self):
+        self.assertEqual(role_summary.parse_segments(self._write(SAMPLE_LOG)), [])
+
+    def test_main_emits_per_variant_tables(self):
+        log_name = _write_tempfile(SEGMENTED_LOG, ".log")
+        self.addCleanup(os.unlink, log_name)
+        sum_name = _write_tempfile("", ".md")
+        self.addCleanup(os.unlink, sum_name)
+        with patch.dict(os.environ, {"GITHUB_STEP_SUMMARY": sum_name}):
+            rc = role_summary.main(["role_summary.py", log_name])
+        self.assertEqual(rc, 0)
+        content = read_text(sum_name)
+        self.assertIn("## ⏱️ Role runtimes per variant (matrix round)", content)
+        self.assertIn("### Round 1/2 · PASS 1 (sync)", content)
+        self.assertIn("### Round 2/2 · PASS 1 (sync)", content)
+
+
 class TestFormatTable(unittest.TestCase):
     def test_renders_markdown_table(self):
         rows = [("alpha", 10.5), ("beta", 7.25)]
