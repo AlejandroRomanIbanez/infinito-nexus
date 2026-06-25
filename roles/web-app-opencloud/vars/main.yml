@@ -3,7 +3,6 @@ application_id: "web-app-opencloud"
 entity_name: "{{ application_id | get_entity_name }}"
 
 OPENCLOUD_CONTAINER: "{{ lookup('config', application_id, 'services.opencloud.name') }}"
-OPENCLOUD_HTTP_PORT: "{{ lookup('config', application_id, 'services.opencloud.ports.local.http') }}"
 
 OPENCLOUD_URL: "{{ lookup('tls', application_id, 'url.base') }}"
 OPENCLOUD_DOMAIN: "{{ lookup('domain', application_id) }}"

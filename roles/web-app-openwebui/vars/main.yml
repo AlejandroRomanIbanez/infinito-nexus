@@ -5,7 +5,6 @@ OPENWEBUI_URL: "{{ lookup('tls', application_id, 'url.base') }}"
 OPENWEBUI_CONTAINER: "{{ lookup('config', application_id, 'services.openwebui.name') }}"
 OPENWEBUI_OFFLINE_MODE: "{{ lookup('config', application_id, 'services.openwebui.offline_mode') }}"
 OPENWEBUI_HF_HUB_OFFLINE: "{{ lookup('config', application_id, 'services.openwebui.hf_hub_offline') }}"
-OPENWEBUI_PORT_PUBLIC: "{{ lookup('config', application_id, 'services.openwebui.ports.local.http') }}"
 OPENWEBUI_LDAP_ENABLED: "{{ lookup('config', application_id, 'services.ldap.enabled') }}"
 
 OPENWEBUI_OIDC_ENABLED: "{{ lookup('config', application_id, 'services.sso.enabled') }}"

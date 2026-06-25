@@ -133,3 +133,36 @@ PORT_BANDS: # nocheck: unused-var  # consumed by the port-allocation plugin outs
     relay:
       start: 20000
       end: 65535
+    smtp:
+      start: 25
+      end: 25
+    smtps:
+      start: 465
+      end: 465
+    submission:
+      start: 587
+      end: 587
+    pop3:
+      start: 110
+      end: 110
+    pop3s:
+      start: 995
+      end: 995
+    imap:
+      start: 143
+      end: 143
+    imaps:
+      start: 993
+      end: 993
+    sieve:
+      start: 4190
+      end: 4190
+    rtmp:
+      start: 1935
+      end: 1935
+    c2s:
+      start: 5222
+      end: 5222
+    s2s:
+      start: 5269
+      end: 5269

@@ -11,7 +11,6 @@ RABBITMQ_PASSWORD: "{{ lookup('config', application_id, 'credentials.RABBITMQ_PA
 RABBITMQ_PORT: "{{ database_port | default(lookup('config', application_id, 'services.rabbitmq.ports.local.rabbitmq')) }}"
 RABBITMQ_EXPOSE_LOCAL: true
 RABBITMQ_LOCAL_HOST: "127.0.0.1"
-RABBITMQ_INTERNAL_PORT: 5672
 RABBITMQ_RETRIES: 30
 RABBITMQ_DELAY: 5
 

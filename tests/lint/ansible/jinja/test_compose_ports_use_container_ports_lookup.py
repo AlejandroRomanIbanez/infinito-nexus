@@ -28,10 +28,10 @@ import re
 import unittest
 from pathlib import Path
 
-import yaml
-
 from utils.annotations.suppress import is_suppressed_at
-from utils.cache.files import iter_project_files_with_content
+from utils.cache.files import iter_project_files_with_content, read_text
+from utils.cache.yaml import load_yaml_any
+from utils.roles.mapping import ROLE_FILE_META_SERVICES, ROLE_FILE_TEMPL_COMPOSE
 
 from . import PROJECT_ROOT
 
@@ -129,11 +129,11 @@ class TestComposePortsUseContainerPortsLookup(unittest.TestCase):
     def test_container_ports_pairs_declare_internal(self) -> None:
         findings: list[str] = []
         for role_dir in sorted((PROJECT_ROOT / "roles").iterdir()):
-            compose = role_dir / "templates" / "compose.yml.j2"
-            services = role_dir / "meta" / "services.yml"
+            compose = role_dir / ROLE_FILE_TEMPL_COMPOSE
+            services = role_dir / ROLE_FILE_META_SERVICES
             if not compose.is_file() or not services.is_file():
                 continue
-            text = compose.read_text()
+            text = read_text(str(compose))
             if "container_ports" not in text:
                 continue
             pairs: set[tuple[str, str]] = set()
@@ -142,7 +142,7 @@ class TestComposePortsUseContainerPortsLookup(unittest.TestCase):
                     pairs.update(_PAIR.findall(line))
             if not pairs:
                 continue
-            data = yaml.safe_load(services.read_text()) or {}
+            data = load_yaml_any(str(services), default_if_missing={}) or {}
             for service, protocol in sorted(pairs):
                 cfg = data.get(service) if isinstance(data, dict) else None
                 internal = (
