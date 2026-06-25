@@ -68,6 +68,8 @@
       - -e
       - "NC_APP_ID=integration_zammad"
       - -e
+      - "NC_ENC_MODE=sensitive"
+      - -e
       - "NC_ENC_B64={{ {'client_id': nextcloud_zammad_client_id, 'client_secret': nextcloud_zammad_client_secret} | to_json | b64encode }}"
       - "{{ NEXTCLOUD_CONTAINER }}"
       - php
