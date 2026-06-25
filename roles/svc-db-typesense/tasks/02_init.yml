@@ -56,14 +56,15 @@
           Last 200 container log lines were printed above.
 
 - name: "Create scoped API key for {{ typesense_consumer_username }} (collections '{{ typesense_consumer_prefix }}_*')"
-  ansible.builtin.shell: >
-    {{ TYPESENSE_EXEC_SHELL }}
-    'curl -sS -o /dev/null -w "%{http_code}"
-    -X POST http://127.0.0.1:8108/keys
-    -H "X-TYPESENSE-API-KEY: {{ TYPESENSE_API_KEY }}"
-    -H "Content-Type: application/json"
-    -d {{ {"value": typesense_consumer_key, "description": "scoped key for " ~ database_consumer_id, "actions": ["*"], "collections": [typesense_consumer_prefix ~
-    "_*"]} | to_json | quote }}'
+  ansible.builtin.shell:
+    cmd: >
+      {{ TYPESENSE_EXEC_SHELL_STDIN }}
+      'B=$(cat); exec 3<>/dev/tcp/127.0.0.1/8108;
+      printf "POST /keys HTTP/1.0\r\nX-TYPESENSE-API-KEY: {{ TYPESENSE_API_KEY }}\r\nContent-Type: application/json\r\nContent-Length: {{ TYPESENSE_KEY_BODY | length }}\r\n\r\n%s" "$B" >&3;
+      head -n1 <&3 | cut -d" " -f2'
+    stdin: "{{ TYPESENSE_KEY_BODY }}"
+  vars:
+    TYPESENSE_KEY_BODY: "{{ {'value': typesense_consumer_key, 'description': 'scoped key for ' ~ database_consumer_id, 'actions': ['*'], 'collections': [typesense_consumer_prefix ~ '_*']} | to_json }}"
   register: ts_key_create
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   changed_when: ts_key_create.stdout is search('^20[01]$')
