@@ -36,6 +36,8 @@
           -uroot -p"$MARIADB_ROOT_PASSWORD"'
         stdin: "{{ lookup('file', role_path ~ '/files/sql/health_probe.sql') }}"
       register: mariadb_login_desired
+      delegate_to: "{{ STACK_HOST }}"
+      run_once: true
       no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
       changed_when: false
       failed_when: false
@@ -58,6 +60,8 @@
       -uroot -p"$MARIADB_ROOT_PASSWORD"'
     stdin: "{{ lookup('file', role_path ~ '/files/sql/health_probe.sql') }}"
   register: mariadb_cli
+  delegate_to: "{{ STACK_HOST }}"
+  run_once: true
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   changed_when: false
   retries: 30
