@@ -71,7 +71,6 @@ def add_simpleicon_source(
     simpleicons_value,
     web_protocol="https",
     public_url_base=None,
-    probe_public=False,
 ):
     """
     For each card in portfolio_cards, check if an icon exists in the simpleicons server.
@@ -84,10 +83,6 @@ def add_simpleicon_source(
     :param simpleicons_value: Fully rendered URL/domain used for the HEAD reachability check
     :param web_protocol: Protocol to use (https or http) when resolving a bare domain
     :param public_url_base: Optional separate public base URL written into icon.source
-    :param probe_public: Probe `public_url_base` instead of the sync URL. The sync
-        URL is published on the swarm node, not on the Ansible controller that
-        runs this filter, so per-card probes from the controller never reach it;
-        the public URL goes through the front proxy the controller can resolve.
     :return: New list of cards with icon.source set when the icon is reachable
     """
     probe_base = resolve_simpleicons_base(simpleicons_value, web_protocol)
@@ -96,8 +91,6 @@ def add_simpleicon_source(
         if public_url_base
         else probe_base
     )
-    if probe_public and public_url_base:
-        probe_base = rewrite_base
 
     enhanced = []
     for card in cards:

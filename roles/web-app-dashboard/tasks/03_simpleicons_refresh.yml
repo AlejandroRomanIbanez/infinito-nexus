@@ -11,8 +11,7 @@
 
 - name: Reload docker cards once Simple Icons is reachable
   set_fact:
-    portfolio_cards: "{{ portfolio_cards | add_simpleicon_source(DASHBOARD_SIMPLEICONS_SYNC_URL_BASE, public_url_base=DASHBOARD_SIMPLEICONS_URL_BASE, probe_public=(DEPLOYMENT_MODE
-      == 'swarm')) }}"
+    portfolio_cards: "{{ portfolio_cards | add_simpleicon_source(DASHBOARD_SIMPLEICONS_SYNC_URL_BASE, public_url_base=DASHBOARD_SIMPLEICONS_URL_BASE) }}"
   changed_when: false
 
 - name: Regroup docker cards after Simple Icons refresh

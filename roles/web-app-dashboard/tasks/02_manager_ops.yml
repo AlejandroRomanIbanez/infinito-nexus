@@ -16,8 +16,7 @@
 
 - name: "Load Dashboard Brand logos"
   set_fact:
-    portfolio_cards: "{{ portfolio_cards | add_simpleicon_source(DASHBOARD_SIMPLEICONS_SYNC_URL_BASE, public_url_base=DASHBOARD_SIMPLEICONS_URL_BASE, probe_public=(DEPLOYMENT_MODE
-      == 'swarm')) }}"
+    portfolio_cards: "{{ portfolio_cards | add_simpleicon_source(DASHBOARD_SIMPLEICONS_SYNC_URL_BASE, public_url_base=DASHBOARD_SIMPLEICONS_URL_BASE) }}"
   when: DASHBOARD_SIMPLEICONS_ENABLED | bool
   changed_when: false
 
