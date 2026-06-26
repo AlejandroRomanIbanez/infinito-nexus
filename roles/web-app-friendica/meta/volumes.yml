@@ -14,7 +14,7 @@ data:
 ldapauth_config:
   type: config
   source: "{{ [lookup('container', 'web-app-friendica', 'directories.volumes'), 'ldapauth.config.php'] | path_join }}"
-  mode: "0440"
+  mode: "0444"
   mounts:
     - service: friendica
       target: /var/www/html/config/ldapauth.config.php
