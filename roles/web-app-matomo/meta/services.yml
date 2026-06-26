@@ -26,7 +26,7 @@ matomo:
   backup:
     no_stop_required: true
   cpus: 1.0
-  mem_reservation: 0.5g
+  mem_reservation: 512m
   mem_limit: 1g
   pids_limit: 512
   site_name: Matomo on {{ DOMAIN_PRIMARY }}
@@ -45,7 +45,7 @@ bootstrap:
     - bootstrap
   timeout: 30
   cpus: 1.0
-  mem_reservation: 0.5g
+  mem_reservation: 256m
   mem_limit: 1g
   pids_limit: 512
   min_storage: 1GB

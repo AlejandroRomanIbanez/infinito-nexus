@@ -38,9 +38,9 @@ simpleicons:
   local_version: latest
   min_storage: 1GB
   cpus: 0.5
-  mem_reservation: 126m
-  mem_limit: 265m
-  pids_limit: 126
+  mem_reservation: 128m
+  mem_limit: 256m
+  pids_limit: 128
   ports:
     local:
       http: 8044

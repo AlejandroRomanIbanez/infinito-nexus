@@ -37,7 +37,7 @@ mailu:
     - web-app-matomo
   lifecycle: beta
   cpus: "1.0"
-  mem_reservation: 1g
+  mem_reservation: 512m
   mem_limit: 2g
   pids_limit: 1024
 # nocheck: shared
@@ -66,7 +66,7 @@ admin:
   enabled: true
   shared: false
   cpus: "0.3"
-  mem_reservation: 512m
+  mem_reservation: 256m
   mem_limit: 1g
   pids_limit: 512
 # nocheck: dynamic-flag
@@ -75,7 +75,7 @@ imap:
   enabled: true
   shared: false
   cpus: "0.5"
-  mem_reservation: 1g
+  mem_reservation: 512m
   mem_limit: 1.5g
   pids_limit: 512
 # nocheck: dynamic-flag
@@ -84,7 +84,7 @@ smtp:
   enabled: true
   shared: false
   cpus: "0.5"
-  mem_reservation: 1g
+  mem_reservation: 512m
   mem_limit: 1.5g
   pids_limit: 512
 # nocheck: dynamic-flag
@@ -93,7 +93,7 @@ antispam:
   enabled: true
   shared: false
   cpus: "0.6"
-  mem_reservation: 1g
+  mem_reservation: 512m
   mem_limit: 1.5g
   pids_limit: 512
 # nocheck: dynamic-flag
@@ -140,7 +140,7 @@ webmail:
   enabled: true
   shared: false
   cpus: "0.3"
-  mem_reservation: 512m
+  mem_reservation: 256m
   mem_limit: 1g
   pids_limit: 512
 # nocheck: dynamic-flag
@@ -158,7 +158,7 @@ front:
   enabled: true
   shared: false
   cpus: "0.3"
-  mem_reservation: 512m
+  mem_reservation: 256m
   mem_limit: 1g
   pids_limit: 512
 # nocheck: playwright-service-flag — verified by web-svc-css provider spec

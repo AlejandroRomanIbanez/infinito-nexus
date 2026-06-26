@@ -48,8 +48,8 @@ prometheus:
   version: v3.12.0
   name: prometheus
   cpus: "0.5"
-  mem_reservation: 256m
-  mem_limit: 512m
+  mem_reservation: 512m
+  mem_limit: 2g
   pids_limit: 256
   alerting:
     telegram:
