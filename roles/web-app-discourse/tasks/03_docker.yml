@@ -12,8 +12,12 @@
     webserver_vhost_flavour: "basic"
     application_id: "web-app-discourse"
 
-- name: "Create the discourse role network so the launcher can attach --network={{ DISCOURSE_NETWORK }}"
-  include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/network/create.yml'] | path_join }}"
+- name: "Create the discourse network so the launcher can attach --network={{ DISCOURSE_NETWORK }}"
+  include_tasks:
+    file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/network/create.yml'] | path_join }}"
+    apply:
+      delegate_to: "{{ STACK_HOST }}"
+      run_once: true
   vars:
     network_role_id: "{{ application_id }}"
 
