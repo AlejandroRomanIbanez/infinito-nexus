@@ -201,6 +201,7 @@
       "WebFetch(domain:s.espocrm.com)",
       "WebFetch(domain:s.veen.world)",
       "WebFetch(domain:scalar.vector.im)",
+      "WebFetch(domain:sdk.collaboraonline.com)",
       "WebFetch(domain:security.debian.org)",
       "WebFetch(domain:security.ubuntu.com)",
       "WebFetch(domain:security.ubuntu.com)",
