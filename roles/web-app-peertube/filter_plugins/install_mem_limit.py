@@ -21,12 +21,7 @@
 
 from ansible.errors import AnsibleFilterError
 
-try:
-    from plugins.filter.node_autosize import _to_bytes
-except Exception as e:
-    raise AnsibleFilterError(
-        f"Failed to import _to_bytes from plugins.filter.node_autosize: {e}"
-    ) from e
+from utils.sizes import to_bytes
 
 
 def install_mem_limit(mem_limit, install_heap_mb, overhead: int = 4) -> int:
@@ -41,7 +36,7 @@ def install_mem_limit(mem_limit, install_heap_mb, overhead: int = 4) -> int:
         overhead:         multiplier applied to install_heap_mb to cover
                           native RSS + spawned workers (default 4).
     """
-    base_bytes = _to_bytes(mem_limit)
+    base_bytes = to_bytes(mem_limit)
     if base_bytes is None:
         raise AnsibleFilterError(
             f"install_mem_limit: mem_limit is empty/None: {mem_limit!r}"

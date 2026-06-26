@@ -1,28 +1,26 @@
 import unittest
 from unittest.mock import patch
 
-# Module under test
-import plugins.filter.node_autosize as na
+import plugins.lookup.node_max_old_space_size as na
 
 try:
-    from ansible.errors import AnsibleFilterError
+    from ansible.errors import AnsibleError
 except Exception:
-    AnsibleFilterError = Exception
+    AnsibleError = Exception
 
 
-class TestNodeAutosizeFilter(unittest.TestCase):
-    """Unit tests for the node_autosize filter plugin."""
+class TestNodeMaxOldSpaceSize(unittest.TestCase):
+    """Unit tests for the node_max_old_space_size lookup plugin's core sizing."""
 
     def setUp(self):
-        # Default parameters used by all tests
-        # Per the materialised payload exposes services under
-        # the bare `services` key (no `compose.services` envelope).
+        # The materialised payload exposes services under the bare `services`
+        # key (no `compose.services` envelope).
         self.applications = {"web-app-nextcloud": {"services": {"whiteboard": {}}}}
         self.application_id = "web-app-nextcloud"
         self.service_name = "whiteboard"
 
-        # Patch get (imported from utils.roles.applications.config) inside the filter plugin
-        self.patcher = patch("plugins.filter.node_autosize.get")
+        # Patch get (imported from utils.roles.applications.config) in the plugin.
+        self.patcher = patch("plugins.lookup.node_max_old_space_size.get")
         self.mock_get = self.patcher.start()
 
     def tearDown(self):
@@ -45,12 +43,9 @@ class TestNodeAutosizeFilter(unittest.TestCase):
 
         self.mock_get.side_effect = _fake_get
 
-    # --- Tests for node_max_old_space_size (MB) ---
-
     def test_512m_below_minimum_raises(self):
-        # mem_limit=512 MB < min_mb=768 -> must raise
         self._set_mem_limit("512m")
-        with self.assertRaises(AnsibleFilterError):
+        with self.assertRaises(AnsibleError):
             na.node_max_old_space_size(
                 self.applications, self.application_id, self.service_name
             )
@@ -77,24 +72,22 @@ class TestNodeAutosizeFilter(unittest.TestCase):
         self.assertEqual(mb, 3072)  # 35% of 16g = 5600, hardcap=3072
 
     def test_numeric_bytes_input(self):
-        # 2 GiB in bytes (IEC): 2 * 1024 ** 3 = 2147483648
-        self._set_mem_limit(2147483648)
+        self._set_mem_limit(2147483648)  # 2 GiB
         mb = na.node_max_old_space_size(
             self.applications, self.application_id, self.service_name
         )
-        # 2 GiB ≈ 2147 MB; 35% => ~751, min 768 => 768
-        self.assertEqual(mb, 768)
+        self.assertEqual(mb, 768)  # ~2147 MB; 35% => ~751, min 768 => 768
 
     def test_invalid_unit_raises_error(self):
-        self._set_mem_limit("12x")  # invalid unit
-        with self.assertRaises(AnsibleFilterError):
+        self._set_mem_limit("12x")
+        with self.assertRaises(AnsibleError):
             na.node_max_old_space_size(
                 self.applications, self.application_id, self.service_name
             )
 
     def test_missing_mem_limit_raises_error(self):
         self._set_mem_limit(None)
-        with self.assertRaises(AnsibleFilterError):
+        with self.assertRaises(AnsibleError):
             na.node_max_old_space_size(
                 self.applications, self.application_id, self.service_name
             )
