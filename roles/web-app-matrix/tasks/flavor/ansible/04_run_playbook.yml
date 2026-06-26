@@ -5,6 +5,14 @@
   vars:
     compose_handlers_flush: false
 
+- name: "ansible-flavor: ensure matrix-mdad runner build dir on STACK_HOST"
+  ansible.builtin.file:
+    path: "{{ MATRIX_MDAD_RUNNER_BUILD_DIR }}"
+    state: directory
+    mode: "0755"
+  delegate_to: "{{ STACK_HOST }}"
+  run_once: true
+
 - name: "ansible-flavor: stage matrix-mdad runner build context on STACK_HOST"
   stack_host_copy:
     src: "{{ item.src }}"
