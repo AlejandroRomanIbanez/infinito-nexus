@@ -23,13 +23,8 @@
 - name: "Include shared NFS export preparation"
   ansible.builtin.include_tasks: 03_prepare.yml
 
-- name: "Dispatch to the kernel NFS backend flavor"
-  ansible.builtin.include_tasks: flavor/kernel/main.yml
-  when: SVC_STORAGE_NFS_SERVER_FLAVOR == 'kernel'
-
-- name: "Dispatch to the ganesha NFS backend flavor"
-  ansible.builtin.include_tasks: flavor/ganesha/main.yml
-  when: SVC_STORAGE_NFS_SERVER_FLAVOR == 'ganesha'
+- name: "Dispatch NFS backend flavor"
+  ansible.builtin.include_tasks: "flavor/{{  SVC_STORAGE_NFS_SERVER_FLAVOR }}/main.yml"
 
 - name: "Include controller-side mount step"
   ansible.builtin.include_tasks:

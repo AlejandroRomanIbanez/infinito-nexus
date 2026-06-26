@@ -14,7 +14,7 @@
 
 - name: "Install NFS client packages"
   ansible.builtin.package:
-    name: "{{ SVC_STORAGE_NFS_CLIENT_PACKAGES[ansible_os_family] }}"
+    name: "{{ SVC_STORAGE_NFS_CLIENT_PACKAGES[ansible_facts.os_family] }}"
     state: present
 
 - name: "Ensure probe mount point exists"
@@ -41,7 +41,7 @@
     dest: "{{ SVC_STORAGE_NFS_CLIENT_PROBE_DIR }}/.svc-storage-nfs-client-probe"
     content: |
       probed-by={{ inventory_hostname }}
-      probed-at={{ ansible_date_time.iso8601 }}
+      probed-at={{ ansible_facts.date_time.iso8601 }}
     mode: "0644"
 
 - name: "Unmount probe mount"
