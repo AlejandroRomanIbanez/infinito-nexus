@@ -79,7 +79,7 @@
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
-    query_file: "{{ role_path }}/files/sql/upsert-oidc-plugin.sql"
+    query: "{{ lookup('file', role_path ~ '/files/sql/upsert-oidc-plugin.sql') }}" # nocheck: database-query-raw  controller-read so the SQL travels to the remote swarm host that lacks the repo files
     named_args:
       settings: "{{ oidc_settings | to_json }}"
   register: _peertube_oidc_update

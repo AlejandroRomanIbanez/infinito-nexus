@@ -31,7 +31,7 @@
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
-    query_file: "{{ role_path }}/files/sql/check-application-table.sql"
+    query: "{{ lookup('file', role_path ~ '/files/sql/check-application-table.sql') }}" # nocheck: database-query-raw  controller-read so the SQL travels to the remote swarm host that lacks the repo files
     expect_rows: true
   register: _peertube_app_table_check
   retries: 60
@@ -46,7 +46,7 @@
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
-    query_file: "{{ role_path }}/files/sql/backfill-application-defaults.sql"
+    query: "{{ lookup('file', role_path ~ '/files/sql/backfill-application-defaults.sql') }}" # nocheck: database-query-raw  controller-read so the SQL travels to the remote swarm host that lacks the repo files
   register: _peertube_app_defaults
   notify: compose up
 
