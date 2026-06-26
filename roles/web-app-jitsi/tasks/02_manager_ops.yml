@@ -1,5 +1,5 @@
 ---
-- name: "ensure prosody plugin + config override dirs exist (templates need them before containers come up)"
+- name: "ensure jitsi bind-mount source dirs exist (swarm rejects a replica if a bind source is missing)"
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -8,6 +8,10 @@
     - "{{ JITSI_PROSODY_PLUGINS_HOST_PATH }}"
     - "{{ JITSI_PROSODY_CONFIG_HOST_PATH }}"
     - "{{ JITSI_PROSODY_CONFIG_HOST_PATH }}/conf.d"
+    - "{{ [lookup('container', 'web-app-jitsi', 'directories.volumes'), 'jicofo'] | path_join }}"
+    - "{{ [lookup('container', 'web-app-jitsi', 'directories.volumes'), 'jvb'] | path_join }}"
+    - "{{ [lookup('container', 'web-app-jitsi', 'directories.volumes'), 'config'] | path_join }}"
+    - "{{ [lookup('container', 'web-app-jitsi', 'directories.volumes'), 'transcripts'] | path_join }}"
 
 - name: "stage prosody LDAP authentication override (mod_auth_ldap2)"
   stack_host_template:
