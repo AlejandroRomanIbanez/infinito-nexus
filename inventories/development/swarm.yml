@@ -16,8 +16,7 @@ storage:
   backend: nfs
   nfs:
     export_base: /srv/nfs
-    # NFSv4 pseudo-root does not negotiate against the act kernel.
-    version: 3
+    version: 4
 
 SVC_STORAGE_NFS_SERVER_EXPORT_OPTIONS: >-
   rw,sync,no_subtree_check,no_root_squash,no_all_squash

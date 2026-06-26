@@ -43,7 +43,7 @@
     path: "{{ DIR_VAR_LIB }}"
     src: "{{ storage.nfs.server }}:{{ STORAGE_NFS_STATE_PATH }}"
     fstype: "{{ 'nfs4' if (storage.nfs.version | int) >= 4 else 'nfs' }}"
-    opts: "vers={{ storage.nfs.version }},rw,{{ 'soft,timeo=50,retrans=3' if RUNTIME in ['dev', 'act'] else 'hard,timeo=600' }},nolock"
+    opts: "{{ STORAGE_NFS_MOUNT_OPTS }}"
     state: ephemeral
   register: _ctrl_nfs_mount
   retries: 12

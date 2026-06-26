@@ -71,7 +71,7 @@ def main() -> int:
                 "export_base": parse_static_env(PROJECT_ROOT / "default.env")[
                     "INFINITO_SWARM_NFS_EXPORT_BASE"
                 ],
-                "version": 3,
+                "version": 4,
             },
         },
         "swarm": {
