@@ -77,14 +77,15 @@ def parse_args() -> argparse.Namespace:
         nargs="+",
         metavar="[asc|desc] FIELD",
         help="Order rows by FIELD. FIELD is one of service, role, depth, bond, "
-        "mem_reservation, mem_limit, pids_limit, cpus. Direction defaults to asc.",
+        "mem_reservation, mem_limit, min_storage, pids_limit, cpus. Direction "
+        "defaults to asc.",
     )
     parser.add_argument(
         "--filter",
         metavar="EXPR",
         help="Filter rows, e.g. 'bond<=0.5 & cpus>=1 & mem_limit>=512m'. Fields: "
-        "bond, depth, mem_reservation, mem_limit, pids_limit, cpus. Operators: "
-        "<= >= < > == != ; combine with '&'.",
+        "bond, depth, mem_reservation, mem_limit, min_storage, pids_limit, cpus. "
+        "Operators: <= >= < > == != ; combine with '&'.",
     )
     parser.add_argument(
         "--depth",
@@ -160,6 +161,7 @@ def _summary_row(key_field: str, key_value: Any, agg: dict[str, Any]) -> dict[st
         "bond_float": None,
         "mem_reservation_bytes": agg.get("mem_reservation_bytes"),
         "mem_limit_bytes": agg.get("mem_limit_bytes"),
+        "min_storage_bytes": agg.get("min_storage_bytes"),
         "pids_limit_int": agg.get("pids_limit_int"),
         "cpus_float": agg.get("cpus_float"),
     }
@@ -195,6 +197,9 @@ def _role_resource_row(
             ),
             "mem_limit_bytes": _max_over_none(
                 a["mem_limit_bytes"] for a in per_variant
+            ),
+            "min_storage_bytes": _max_over_none(
+                a.get("min_storage_bytes") for a in per_variant
             ),
             "pids_limit_int": _max_over_none(a["pids_limit_int"] for a in per_variant),
             "cpus_float": _max_over_none(a["cpus_float"] for a in per_variant),

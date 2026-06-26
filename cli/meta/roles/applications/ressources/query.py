@@ -24,6 +24,7 @@ _FIELD_ACCESSORS: dict[str, Callable[[dict[str, Any]], Any]] = {
     "bond": lambda r: r.get("bond_float"),
     "mem_reservation": lambda r: r.get("mem_reservation_bytes"),
     "mem_limit": lambda r: r.get("mem_limit_bytes"),
+    "min_storage": lambda r: r.get("min_storage_bytes"),
     "pids_limit": lambda r: r.get("pids_limit_int"),
     "cpus": lambda r: r.get("cpus_float"),
 }
@@ -42,7 +43,7 @@ _FILTER_RE = re.compile(r"^\s*([a-z_]+)\s*(<=|>=|!=|==|=|<|>)\s*(.+?)\s*$")
 
 
 def _parse_filter_value(field: str, raw: str) -> Any:
-    if field in ("mem_reservation", "mem_limit"):
+    if field in ("mem_reservation", "mem_limit", "min_storage"):
         value = _parse_mem_bytes(raw)
     elif field in ("pids_limit", "depth"):
         value = _parse_int(raw)

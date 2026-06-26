@@ -116,8 +116,10 @@ def _row_for_service(
         "pids_limit_raw": service_conf.get("pids_limit"),
         "cpus_raw": service_conf.get("cpus"),
         "bond_raw": service_conf.get("bond"),
+        "min_storage_raw": service_conf.get("min_storage"),
         "mem_reservation_bytes": _parse_mem_bytes(service_conf.get("mem_reservation")),
         "mem_limit_bytes": _parse_mem_bytes(service_conf.get("mem_limit")),
+        "min_storage_bytes": _parse_mem_bytes(service_conf.get("min_storage")),
         "pids_limit_int": _parse_int(service_conf.get("pids_limit")),
         "cpus_float": _parse_cpus(service_conf.get("cpus")),
         "bond_float": _DEFAULT_BOND if bond is None else bond,
@@ -211,6 +213,7 @@ def collect_role_resources(
 SUMMABLE_FIELDS: dict[str, str] = {
     "mem_reservation": "mem_reservation_bytes",
     "mem_limit": "mem_limit_bytes",
+    "min_storage": "min_storage_bytes",
     "pids_limit": "pids_limit_int",
     "cpus": "cpus_float",
     "bond": "bond_float",
@@ -237,9 +240,10 @@ def aggregate(
 
     total_mem_res = 0
     total_mem_lim = 0
+    total_min_storage = 0
     total_pids = 0
     max_cpus = 0.0
-    any_mem_res = any_mem_lim = any_pids = any_cpus = False
+    any_mem_res = any_mem_lim = any_min_storage = any_pids = any_cpus = False
 
     for row in rows:
         if row["mem_reservation_bytes"] is not None:
@@ -248,6 +252,9 @@ def aggregate(
         if row["mem_limit_bytes"] is not None:
             total_mem_lim += row["mem_limit_bytes"]
             any_mem_lim = True
+        if row.get("min_storage_bytes") is not None:
+            total_min_storage += row["min_storage_bytes"]
+            any_min_storage = True
         if row["pids_limit_int"] is not None:
             total_pids += row["pids_limit_int"]
             any_pids = True
@@ -258,6 +265,7 @@ def aggregate(
     return {
         "mem_reservation_bytes": total_mem_res if any_mem_res else None,
         "mem_limit_bytes": total_mem_lim if any_mem_lim else None,
+        "min_storage_bytes": total_min_storage if any_min_storage else None,
         "pids_limit_int": total_pids if any_pids else None,
         "cpus_float": max_cpus if any_cpus else None,
         "bond_float": None,

@@ -44,6 +44,7 @@ def render_text(
         "depth",
         "mem_reservation",
         "mem_limit",
+        "min_storage",
         "pids_limit",
         "cpus",
         "bond",
@@ -58,6 +59,7 @@ def render_text(
             _fmt_int(row.get("depth")),
             _fmt_mem(row["mem_reservation_bytes"]),
             _fmt_mem(row["mem_limit_bytes"]),
+            _fmt_mem(row.get("min_storage_bytes")),
             _fmt_int(row["pids_limit_int"]),
             _fmt_float(row["cpus_float"]),
             _fmt_float(row.get("bond_float")),
@@ -71,6 +73,7 @@ def render_text(
         "",
         _fmt_mem(totals["mem_reservation_bytes"]),
         _fmt_mem(totals["mem_limit_bytes"]),
+        _fmt_mem(totals.get("min_storage_bytes")),
         _fmt_int(totals["pids_limit_int"]),
         _fmt_float(totals["cpus_float"]),
         _fmt_float(totals.get("bond_float")),
@@ -124,6 +127,11 @@ def render_json(
                 "bytes": row["mem_limit_bytes"],
                 "human": _fmt_mem(row["mem_limit_bytes"]),
             },
+            "min_storage": {
+                "raw": row.get("min_storage_raw"),
+                "bytes": row.get("min_storage_bytes"),
+                "human": _fmt_mem(row.get("min_storage_bytes")),
+            },
             "pids_limit": {
                 "raw": row["pids_limit_raw"],
                 "value": row["pids_limit_int"],
@@ -150,12 +158,17 @@ def render_json(
                 "bytes": totals["mem_limit_bytes"],
                 "human": _fmt_mem(totals["mem_limit_bytes"]),
             },
+            "min_storage": {
+                "bytes": totals.get("min_storage_bytes"),
+                "human": _fmt_mem(totals.get("min_storage_bytes")),
+            },
             "pids_limit": {"value": totals["pids_limit_int"]},
             "cpus": {"value": totals["cpus_float"]},
             "bond": {"value": totals.get("bond_float")},
             "aggregation": {
                 "mem_reservation": "sum",
                 "mem_limit": "sum",
+                "min_storage": "sum",
                 "pids_limit": "sum (max-provisioned; per-container cap, not shared load)",
                 "cpus": "max",
             },
@@ -172,13 +185,21 @@ def render_summary_text(
     warnings: list[str],
     presorted: bool = False,
 ) -> str:
-    headers = [key_field, "mem_reservation", "mem_limit", "pids_limit", "cpus"]
+    headers = [
+        key_field,
+        "mem_reservation",
+        "mem_limit",
+        "min_storage",
+        "pids_limit",
+        "cpus",
+    ]
     ordered = rows if presorted else sorted(rows, key=lambda r: str(r[key_field]))
     table_rows: list[tuple[str, ...]] = [
         (
             str(row[key_field]),
             _fmt_mem(row["mem_reservation_bytes"]),
             _fmt_mem(row["mem_limit_bytes"]),
+            _fmt_mem(row.get("min_storage_bytes")),
             _fmt_int(row["pids_limit_int"]),
             _fmt_float(row["cpus_float"]),
         )
@@ -228,6 +249,10 @@ def render_summary_json(
                 "mem_limit": {
                     "bytes": row["mem_limit_bytes"],
                     "human": _fmt_mem(row["mem_limit_bytes"]),
+                },
+                "min_storage": {
+                    "bytes": row.get("min_storage_bytes"),
+                    "human": _fmt_mem(row.get("min_storage_bytes")),
                 },
                 "pids_limit": {"value": row["pids_limit_int"]},
                 "cpus": {"value": row["cpus_float"]},
