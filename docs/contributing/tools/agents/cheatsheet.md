@@ -80,10 +80,10 @@ SPOT: [refactor.md](../../../agents/action/refactor.md)
 ## Pipeline Debugging 🛠️
 
 ```
-Follow the instructions from AGENTS.md, triage the failing CI run at <github-actions-run-url> by following the procedure in docs/agents/action/debug/pipeline.md. Begin by clarifying every open requirement through active listening, then act autonomously through to completion with as few follow-up questions as possible.
+Follow the instructions from AGENTS.md, triage the failing CI run at <github-actions-run-url> by following the procedure in docs/agents/action/debug/ci.md. Begin by clarifying every open requirement through active listening, then act autonomously through to completion with as few follow-up questions as possible.
 ```
 
-SPOT: [pipeline.md](../../../agents/action/debug/pipeline.md)
+SPOT: [ci.md](../../../agents/action/debug/ci.md)
 
 ## Local Deploy Debugging 🧰
 

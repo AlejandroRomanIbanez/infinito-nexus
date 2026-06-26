@@ -1,4 +1,4 @@
-# Pipeline Debugging
+# CI Debugging
 
 Use this page for the fully automated triage of a GitHub Actions / CI run failure where the agent fetches all logs and artefacts itself via `gh`. For local deploy failures, see [local.md](local.md). If the operator has manually placed log files in the repository workdir, see [log.md](log.md) instead.
 
@@ -9,9 +9,9 @@ Use this page for the fully automated triage of a GitHub Actions / CI run failur
 1. You MUST identify the failing parent run from the GitHub Actions URL the operator provided. Extract `<run-id>` from the last numeric path segment of `.../actions/runs/<run-id>`.
    - You MUST enumerate every failed job under the parent run, including matrix jobs and reusable-workflow jobs, via `gh run view <run-id> --json jobs --jq '.jobs[] | select(.conclusion=="failure")'`.
    - You MUST also enumerate any failed sibling runs dispatched from the same commit via `gh run list --commit "$(gh run view <run-id> --json headSha --jq .headSha)" --json databaseId,name,conclusion --jq '.[] | select(.conclusion=="failure")'`, then repeat the job enumeration for each.
-   - For each failed run you MUST download the logs of every failed job via `gh run view <child-run-id> --log-failed > /tmp/<child-run-id>-job-logs.txt`, and the uploaded artefacts via `gh run download <child-run-id> --dir /tmp/<child-run-id>-artefacts`.
+   - For each failed run you MUST download every failed job's logs and artefacts via `python -m cli.meta.ci.logs.download <child-run-url> -f`, which writes the per-job logs, the artefacts, and a `jobs.json` / `summary.tsv` manifest under `/tmp/logs/<child-run-id>/`. See [the logs CLI](../../../../cli/meta/ci/logs/README.md).
    - The broader CI debugging workflow is documented in [ci.md](../../../contributing/actions/debugging/ci.md). You MUST NOT proceed with partial coverage.
-2. You MUST inspect each downloaded log directly and categorize what each failure is about (failing run, failing job, role, step, error class). If the error class is a Playwright failure, you MUST follow [Playwright Failures](#playwright-failures) for the asset analysis before continuing.
+2. You MUST cluster the downloaded logs by their shared failing task via `python -m cli.meta.ci.logs.analyze /tmp/logs/<child-run-id>`, then for each cluster you MUST perform static analysis of the repository code, the job logs, the downloaded artefacts, and any relevant external code until you are at least 99% certain of the root cause before you change anything. If the error class is a Playwright failure, you MUST follow [Playwright Failures](#playwright-failures) for the asset analysis before continuing.
 3. You MUST determine whether each failure is specific to the current branch or also reproduces elsewhere:
    - You MUST determine the comparison branch automatically when possible (the PR base branch from `gh pr view --json baseRefName`, or the configured upstream from `git rev-parse --abbrev-ref @{u}`). If neither is available, you MUST ask the operator which branch to compare against before proceeding.
    - You MUST `git fetch` the resolved comparison branch and inspect its recent commits and CI history.
@@ -40,7 +40,7 @@ Use this page for the fully automated triage of a GitHub Actions / CI run failur
 
 ## Playwright Failures
 
-This section describes how to analyze Playwright failures within a CI triage. Playwright assets are downloaded as part of Step 1's `gh run download` invocation and live under `/tmp/<child-run-id>-artefacts/`.
+This section describes how to analyze Playwright failures within a CI triage. Playwright assets are downloaded as part of Step 1's download invocation and live under `/tmp/logs/<child-run-id>/artifacts/`.
 
 - You MUST output the storage path of the Playwright assets for the affected `<child-run-id>`.
-- You MUST analyze the Playwright assets together with the matching `/tmp/<child-run-id>-job-logs.txt`.
+- You MUST analyze the Playwright assets together with the matching job logs under `/tmp/logs/<child-run-id>/logs/`.
