@@ -449,6 +449,7 @@ def render_override(
     ca_host: str,
     wrapper_host: str,
     trust_name: str,
+    wrap: bool = True,
 ) -> dict[str, Any]:
     """
     Generate a compose override that injects CA trust into every service by:
@@ -457,6 +458,13 @@ def render_override(
             - override entrypoint to wrapper script
             - set command to the effective original exec-form (entrypoint+cmd)
         This avoids breaking distroless images that do not provide /bin/sh.
+
+    Args:
+      wrap: when False, emit ONLY volumes + environment and never the
+        entrypoint/command wrapper. `docker stack deploy` does not un-escape
+        the `$$` that the wrapper's command argv carries, so the wrapper is
+        swarm-incompatible; swarm callers pass wrap=False and rely on the
+        SSL_CERT_FILE/CURL_CA_BUNDLE/NODE_EXTRA_CA_CERTS env + the CA mount.
 
     IMPORTANT:
       Docker Compose interpolates $VARS in YAML strings on the host.
@@ -473,6 +481,25 @@ def render_override(
     for name, svc in services.items():
         if not isinstance(svc, dict):
             die(f"Service '{name}' must be a mapping in compose config")
+
+        override_svc: dict[str, Any] = {
+            "volumes": [
+                f"{ca_host}:{ca_container}:ro",
+                f"{wrapper_host}:{wrapper_container}:ro",
+            ],
+            "environment": {
+                "CA_TRUST_CERT": ca_container,
+                "CA_TRUST_NAME": trust_name,
+                "SSL_CERT_FILE": ca_container,
+                "REQUESTS_CA_BUNDLE": ca_container,
+                "CURL_CA_BUNDLE": ca_container,
+                "NODE_EXTRA_CA_CERTS": ca_container,
+            },
+        }
+
+        if not wrap:
+            out_services[name] = override_svc
+            continue
 
         svc_ep = normalize_entrypoint(svc.get("entrypoint"))
         svc_cmd = normalize_cmd(svc.get("command"))
@@ -518,22 +545,6 @@ def render_override(
             die(
                 f"Service '{name}' resolved to empty effective command (image='{img_name or image}')"
             )
-
-        # Always inject env vars + mounts.
-        override_svc: dict[str, Any] = {
-            "volumes": [
-                f"{ca_host}:{ca_container}:ro",
-                f"{wrapper_host}:{wrapper_container}:ro",
-            ],
-            "environment": {
-                "CA_TRUST_CERT": ca_container,
-                "CA_TRUST_NAME": trust_name,
-                "SSL_CERT_FILE": ca_container,
-                "REQUESTS_CA_BUNDLE": ca_container,
-                "CURL_CA_BUNDLE": ca_container,
-                "NODE_EXTRA_CA_CERTS": ca_container,
-            },
-        }
 
         # Only override entrypoint/command when /bin/sh exists (otherwise distroless breaks).
         has_sh = False
@@ -581,6 +592,15 @@ def main() -> int:
         "--trust-name",
         required=True,
         help="Trust anchor name for CA installation inside containers (CA_TRUST_NAME)",
+    )
+    ap.add_argument(
+        "--no-wrapper",
+        action="store_true",
+        help=(
+            "Emit only volumes + environment, never the entrypoint/command "
+            "wrapper. Use for `docker stack deploy`, which does not un-escape "
+            "the wrapper command's $$ and would run the literal $$VAR."
+        ),
     )
     args = ap.parse_args()
 
@@ -663,6 +683,7 @@ def main() -> int:
             ca_host=ca_host,
             wrapper_host=wrapper_host,
             trust_name=trust_name,
+            wrap=not args.no_wrapper,
         )
     else:
         override_doc = {"services": {}}

@@ -773,6 +773,42 @@ class TestComposeCaInject(unittest.TestCase):
             ["sh", "-lc", 'exec "$$CHESS_ENTRYPOINT_INT"'],
         )
 
+    def test_render_override_no_wrapper_emits_env_and_mounts_only(self):
+        """
+        render_override(wrap=False): swarm path must emit only volumes + environment,
+        never entrypoint/command (docker stack deploy does not un-escape $$), and must
+        not probe/inspect/pull the image (images need not exist at generation time).
+        """
+        services = {"svc": {"image": "img:1"}}
+        service_to_cmd = {"svc": ["docker", "compose", "-p", "p", "-f", "compose.yml"]}
+
+        with (
+            patch.object(self.m, "ensure_image_available") as p_ensure,
+            patch.object(self.m, "docker_image_inspect") as p_inspect,
+            patch.object(self.m, "docker_image_has_bin_sh") as p_has_sh,
+        ):
+            doc = self.m.render_override(
+                services,
+                service_to_cmd,
+                cwd=Path("/tmp"),
+                env={},
+                ca_host="/host/ca.crt",
+                wrapper_host="/host/with-ca-trust.sh",
+                trust_name="infinito.local",
+                wrap=False,
+            )
+
+        out = doc["services"]["svc"]
+        self.assertIn("volumes", out)
+        self.assertEqual(
+            out["environment"].get("SSL_CERT_FILE"), "/tmp/infinito/ca/root-ca.crt"
+        )
+        self.assertNotIn("entrypoint", out)
+        self.assertNotIn("command", out)
+        p_ensure.assert_not_called()
+        p_inspect.assert_not_called()
+        p_has_sh.assert_not_called()
+
     def test_render_override_does_not_escape_when_not_wrapping(self):
         """
         render_override(): when /bin/sh does NOT exist (distroless-like),

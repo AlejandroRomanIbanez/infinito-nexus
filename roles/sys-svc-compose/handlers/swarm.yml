@@ -32,10 +32,31 @@
   run_once: true
   delegate_to: "{{ STACK_HOST }}"
 
+- name: "swarm: generate CA trust override (no wrapper; env + CA mount only)"
+  ansible.builtin.shell: |
+    set -euo pipefail
+    {{ lookup('compose_ca_inject_cmd', application_id, wrapper=False) }}
+  args:
+    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
+    executable: /bin/bash
+  register: swarm_compose_ca_override
+  retries: 7
+  delay: 20
+  until: swarm_compose_ca_override is succeeded
+  listen:
+    - compose up
+    - swarm deploy
+  when:
+    - lookup('domains') | has_domain(application_id)
+    - lookup('tls', application_id, 'enabled') | bool
+    - lookup('tls', application_id, 'mode') == 'self_signed'
+  run_once: true
+  delegate_to: "{{ STACK_HOST }}"
+
 - name: "swarm: validate stack file via docker stack config"
   ansible.builtin.shell: |
     set -euo pipefail
-    docker stack config --compose-file compose.yml > /dev/null
+    docker stack config {{ lookup('compose_file_args', application_id, flag='--compose-file') }} > /dev/null
   args:
     chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
     executable: /bin/bash
@@ -53,7 +74,7 @@
   ansible.builtin.shell: |
     set -euo pipefail
     docker stack deploy \
-      --compose-file compose.yml \
+      {{ lookup('compose_file_args', application_id, flag='--compose-file') }} \
       --resolve-image never \
       --prune \
       --with-registry-auth \
