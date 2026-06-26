@@ -1,6 +1,18 @@
 ---
 - include_tasks: utils/once/flag.yml
 
+- when: DEPLOYMENT_MODE == 'swarm'
+  block:
+    - name: "Stat the docker socket so the swarm openresty worker can be group-added to it"
+      ansible.builtin.stat:
+        path: /var/run/docker.sock
+      register: _openresty_docker_sock
+
+    - name: "Set OPENRESTY_DOCKER_SOCK_GID from the live socket gid"
+      ansible.builtin.set_fact:
+        OPENRESTY_DOCKER_SOCK_GID: "{{ _openresty_docker_sock.stat.gid }}"
+      when: _openresty_docker_sock.stat.exists | default(false)
+
 - name: "Ensure all openresty bind-mount source dirs exist (must precede swarm stack-deploy)"
   ansible.builtin.file:
     path: "{{ item }}"
