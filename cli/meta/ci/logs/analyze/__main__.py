@@ -38,10 +38,8 @@ def _extract(path: Path) -> tuple[str, str]:
     The real fatal is the last ``fatal:`` / ``FAILED!`` line before the play
     recap; the task is the nearest ``TASK [...]`` above it.
     """
-    lines = [
-        _ANSI.sub("", line).rstrip()
-        for line in path.read_text(errors="replace").splitlines()
-    ]
+    raw = path.read_text(errors="replace")  # nocheck: cache-read
+    lines = [_ANSI.sub("", line).rstrip() for line in raw.splitlines()]
     fatal_idx = None
     for i, line in enumerate(lines):
         if any(token in line for token in _FATAL_TOKENS):

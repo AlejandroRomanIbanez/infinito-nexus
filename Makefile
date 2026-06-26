@@ -170,11 +170,6 @@ clean:
 clean-cache:
 	@bash scripts/system/cache/clean.sh
 
-.PHONY: clean-stale-nfs
-# Recover stale in-namespace NFS mounts from wedged act-swarm nfs-server containers.
-# Usage: make clean-stale-nfs [cid=<container-id-or-name>] [mount=/mnt/gtest]
-clean-stale-nfs: act-swarm-clean-stale-nfs
-
 .PHONY: clean-container-owned
 # Remove container-owned generated artefacts (build/, tasks/groups/*.yml).
 # Note: these files are created inside the compose container with the in-container UID (typically `nobody`); the host cannot rm them directly.
@@ -187,6 +182,11 @@ clean-container-owned:
 # Note: catches orphans left after moving or deleting source files.
 clean-pycache-dirs:
 	@"$${PYTHON}" -m utils.cleanup.pycache_only_dirs
+
+.PHONY: clean-stale-nfs
+# Recover stale in-namespace NFS mounts from wedged act-swarm nfs-server containers.
+# Usage: make clean-stale-nfs [cid=<container-id-or-name>] [mount=/mnt/gtest]
+clean-stale-nfs: act-swarm-clean-stale-nfs
 
 .PHONY: clean-sudo
 # Remove ignored files from the working tree with sudo.

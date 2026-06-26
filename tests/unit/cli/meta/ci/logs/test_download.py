@@ -69,8 +69,10 @@ class TestWriteManifest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             dest = Path(tmp)
             fetch.write_manifest(jobs, dest)
-            self.assertEqual(json.loads((dest / "jobs.json").read_text()), jobs)
-            summary = (dest / "summary.tsv").read_text().splitlines()
+            jobs_json = (dest / "jobs.json").read_text()  # nocheck: cache-read
+            self.assertEqual(json.loads(jobs_json), jobs)
+            summary_text = (dest / "summary.tsv").read_text()  # nocheck: cache-read
+            summary = summary_text.splitlines()
             self.assertEqual(summary[0], "id\tconclusion\tstatus\tname")
             self.assertEqual(summary[1], "1\tfailure\tcompleted\tA")
             self.assertEqual(summary[2], "2\t\tin_progress\tB")
