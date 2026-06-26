@@ -4,4 +4,3 @@
 
 - name: "Apply Keycloak object updates on the live Keycloak host"
   include_tasks: 02b_updates.yml
-  delegate_to: "{{ KEYCLOAK_HOST_NODE }}"
