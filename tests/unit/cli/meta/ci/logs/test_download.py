@@ -14,7 +14,7 @@ from cli.meta.ci.logs.download.__main__ import (
     main,
 )
 
-_RUN_URL = "https://github.com/o/r/actions/runs/123"
+_RUN_URL = "https://github.com/o/r/actions/runs/123"  # nocheck: url
 
 
 class TestResolveRun(unittest.TestCase):
