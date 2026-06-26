@@ -1,8 +1,9 @@
-# Role Loop
+# Compose Loop
 
-Use this page for iterating on a local app deploy during role-level debugging or development.
+Use this page for iterating on a local compose app deploy during role-level debugging or development.
 For spec-level inner-loop iteration, see [Playwright Spec Loop](playwright.md).
-For workflow-level iteration with Act, see [Workflow Loop](workflow.md).
+For the swarm deploy of the same role, see [Swarm Loop](swarm.md).
+For iterating on GitHub Actions workflows with Act, see [Workflow Loop](workflow.md).
 
 ## Rules
 
@@ -33,7 +34,7 @@ For workflow-level iteration with Act, see [Workflow Loop](workflow.md).
 
 For the matrix-variant mechanism (folder layout, round semantics, `--variant` / `--full-cycle` flags) see [variants.md](../../../contributing/design/variants.md). The agent-side iteration rules below assume that mechanism as background.
 
-- Before you start a Role Loop on a matrix-variant role, you MUST decide if the iteration targets the FULL matrix (validates every variant) or ONE specific variant (focused debug). State the choice explicitly before the first deploy.
+- Before you start a Compose Loop on a matrix-variant role, you MUST decide if the iteration targets the FULL matrix (validates every variant) or ONE specific variant (focused debug). State the choice explicitly before the first deploy.
 - For focused debug on variant `<idx>`, you MUST pin `variant=<idx>` on every command in the iteration. Mixing pinned and unpinned commands silently retargets a different folder.
 - Default focused-debug recipe: `make compose-deploy mode=reinstall apps=<role> full_cycle=true variant=<idx>` once for the variant baseline, then `make compose-deploy mode=update apps=<role> variant=<idx>` for the edit-fix-redeploy loop.
 - First contact with a previously-untouched `variant=<idx>` MUST be `make compose-deploy mode=reinstall apps=<roles> variant=<idx>`, never a reuse target. Reuse re-pins the live stack onto stale volumes, DB rows and network aliases from the previously-pinned variant, producing split-brain app state.

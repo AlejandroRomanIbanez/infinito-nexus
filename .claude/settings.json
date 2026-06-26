@@ -193,6 +193,7 @@
       "WebFetch(domain:repo.magento.com)",
       "WebFetch(domain:repo.packagist.org)",
       "WebFetch(domain:repo1.maven.org)",
+      "WebFetch(domain:repology.org)",
       "WebFetch(domain:revealjs.com)",
       "WebFetch(domain:robot-ws.your-server.de)",
       "WebFetch(domain:robot.hetzner.com)",

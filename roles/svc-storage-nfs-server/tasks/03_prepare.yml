@@ -15,6 +15,14 @@
     group: root
     mode: "0755"
 
+- name: "Assert the state subdir is strictly nested under the export base"
+  ansible.builtin.assert:
+    that:
+      - STORAGE_NFS_STATE_PATH != storage.nfs.export_base
+    fail_msg: >-
+      STORAGE_NFS_STATE_PATH must be a strict subdir of storage.nfs.export_base;
+      equal paths collide on the two distinct exports (root_squash vs no_root_squash).
+
 - name: "Gather facts on swarm members so their IPs become available"
   ansible.builtin.setup:
     gather_subset: network
@@ -41,15 +49,3 @@
     fail_msg: |
       Could not resolve any swarm-member IPs from inventory. Make sure
       facts have been gathered for every host in `svc-swarm-node`.
-
-- name: "Render /etc/exports"
-  ansible.builtin.template: # nocheck: stack-host-template (per-host NFS server /etc/exports (NFS host is its own group, not the stack host))
-    src: exports.j2
-    dest: /etc/exports
-    owner: root
-    group: root
-    mode: "0644"
-  notify: "Reload NFS exports"
-
-- name: "Flush handlers (exports reload before next step)"
-  ansible.builtin.meta: flush_handlers
