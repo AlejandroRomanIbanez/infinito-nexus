@@ -277,6 +277,7 @@
           )
         + ['--env-file', _playwright_stage_dir ~ '/.env']
         + ['-e', 'INFINITO_PLAYWRIGHT_KEEP=' ~ TEST_E2E_PLAYWRIGHT_KEEP]
+        + ['-e', 'INFINITO_PLAYWRIGHT_GLOBAL_TIMEOUT_MS=' ~ TEST_E2E_PLAYWRIGHT_GLOBAL_TIMEOUT_MS]
         + ['-v', _playwright_stage_dir ~ ':/e2e']
         + ['-v', _playwright_stage_dir ~ '/volume:/volume']
         + ['-v', _playwright_reports_dir ~ ':/reports']

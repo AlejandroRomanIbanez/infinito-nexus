@@ -4,9 +4,12 @@ const baseURL = process.env.APP_BASE_URL || "http://127.0.0.1";
 
 const keepAll = (process.env.INFINITO_PLAYWRIGHT_KEEP || "").toLowerCase() === "true";
 
+const globalTimeout = parseInt(process.env.INFINITO_PLAYWRIGHT_GLOBAL_TIMEOUT_MS || "0", 10);
+
 module.exports = defineConfig({
   testDir: "./tests",
   timeout: 300_000,
+  ...(globalTimeout > 0 ? { globalTimeout } : {}),
   retries: 2,
   workers: 1,
   outputDir: "/reports/test-results",
