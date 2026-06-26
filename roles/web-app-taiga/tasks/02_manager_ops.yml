@@ -47,8 +47,8 @@
     dest: "{{ TAIGA_COMPOSE_INIT_PATH }}"
   notify: compose up
 
-- name: "Include Taiga administrator routines"
-  include_tasks: 01_administrator.yml
-
 - name: "Flush Taiga handlers"
   meta: flush_handlers
+
+- name: "Include Taiga administrator routines"
+  include_tasks: 01_administrator.yml
