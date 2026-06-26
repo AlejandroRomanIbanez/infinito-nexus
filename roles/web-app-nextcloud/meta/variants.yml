@@ -116,6 +116,88 @@
     talk:
       enabled: false
       shared: false
+    talk_recording:
+      enabled: false
+    onlyoffice:
+      enabled: false
+      shared: false
+    collabora:
+      enabled: false
+      shared: false
+    bigbluebutton:
+      enabled: false
+      shared: false
+    xwiki:
+      enabled: false
+      shared: false
+    seaweedfs:
+      enabled: false
+      shared: false
+    css:
+      enabled: false
+      shared: false
+    prometheus:
+      enabled: false
+      shared: false
+    openproject:
+      enabled: false
+      shared: false
+    gitlab:
+      enabled: false
+      shared: false
+    discourse:
+      enabled: false
+      shared: false
+    mattermost:
+      enabled: false
+      shared: false
+    matrix:
+      enabled: false
+      shared: false
+    zammad:
+      enabled: false
+      shared: false
+    openwebui:
+      enabled: false
+      shared: false
+    flowise:
+      enabled: false
+      shared: false
+    mastodon:
+      enabled: false
+      shared: false
+    peertube:
+      enabled: false
+      shared: false
+- services:
+    sso:
+      enabled: true
+      shared: true
+    coturn:
+      enabled: false
+      shared: false
+    logout:
+      enabled: false
+      shared: false
+    ldap:
+      enabled: false
+      shared: false
+    dashboard:
+      enabled: false
+      shared: false
+    matomo:
+      enabled: false
+      shared: false
+    email:
+      enabled: false
+      shared: false
+    mariadb:
+      shared: false
+    talk:
+      enabled: false
+      shared: false
+    talk_recording:
+      enabled: false
     onlyoffice:
       enabled: false
       shared: false
@@ -169,8 +251,8 @@
       shared: false
 - services:
     sso:
-      enabled: false
-      shared: false
+      enabled: true
+      shared: true
     coturn:
       enabled: false
       shared: false
@@ -194,6 +276,8 @@
     talk:
       enabled: false
       shared: false
+    talk_recording:
+      enabled: false
     onlyoffice:
       enabled: false
       shared: false
@@ -247,8 +331,8 @@
       shared: false
 - services:
     sso:
-      enabled: false
-      shared: false
+      enabled: true
+      shared: true
     coturn:
       enabled: false
       shared: false
@@ -272,6 +356,8 @@
     talk:
       enabled: false
       shared: false
+    talk_recording:
+      enabled: false
     onlyoffice:
       enabled: false
       shared: false
@@ -297,8 +383,8 @@
       enabled: false
       shared: false
     gitlab:
-      enabled: true
-      shared: true
+      enabled: false
+      shared: false
     discourse:
       enabled: true
       shared: true
@@ -325,8 +411,8 @@
       shared: false
 - services:
     sso:
-      enabled: false
-      shared: false
+      enabled: true
+      shared: true
     coturn:
       enabled: false
       shared: false
@@ -350,6 +436,8 @@
     talk:
       enabled: false
       shared: false
+    talk_recording:
+      enabled: false
     onlyoffice:
       enabled: false
       shared: false
@@ -401,3 +489,83 @@
     peertube:
       enabled: true
       shared: true
+- services:
+    sso:
+      enabled: true
+      shared: true
+    coturn:
+      enabled: false
+      shared: false
+    logout:
+      enabled: false
+      shared: false
+    ldap:
+      enabled: false
+      shared: false
+    dashboard:
+      enabled: false
+      shared: false
+    matomo:
+      enabled: false
+      shared: false
+    email:
+      enabled: false
+      shared: false
+    mariadb:
+      shared: false
+    talk:
+      enabled: false
+      shared: false
+    talk_recording:
+      enabled: false
+    onlyoffice:
+      enabled: false
+      shared: false
+    collabora:
+      enabled: false
+      shared: false
+    bigbluebutton:
+      enabled: false
+      shared: false
+    xwiki:
+      enabled: false
+      shared: false
+    seaweedfs:
+      enabled: false
+      shared: false
+    css:
+      enabled: false
+      shared: false
+    prometheus:
+      enabled: false
+      shared: false
+    openproject:
+      enabled: false
+      shared: false
+    gitlab:
+      enabled: true
+      shared: true
+    discourse:
+      enabled: false
+      shared: false
+    mattermost:
+      enabled: false
+      shared: false
+    matrix:
+      enabled: false
+      shared: false
+    zammad:
+      enabled: false
+      shared: false
+    openwebui:
+      enabled: false
+      shared: false
+    flowise:
+      enabled: false
+      shared: false
+    mastodon:
+      enabled: false
+      shared: false
+    peertube:
+      enabled: false
+      shared: false
