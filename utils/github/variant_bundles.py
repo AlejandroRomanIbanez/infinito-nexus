@@ -5,7 +5,7 @@ iterate is split into bundles of consecutive variant indices, one runner per
 bundle — e.g. a 5-variant role becomes ``0,1,2`` and ``3,4``. A new bundle opens
 as soon as the current one would exceed ``INFINITO_VARIANT_BUNDLE_SIZE`` variants
 (default 3) OR ``INFINITO_VARIANT_BUNDLE_MAX_STORAGE`` cumulative ``min_storage``
-(default 400GB), so storage-heavy variants are not stacked onto one runner that
+(default 350GB), so storage-heavy variants are not stacked onto one runner that
 would then run too long. Roles that fit one runner stay a single entry but still
 carry their full ``0,…,N-1`` variant CSV, so every job name shows the variants it
 covers.
@@ -45,7 +45,7 @@ if TYPE_CHECKING:
     from typing import Any
 
 DEFAULT_BUNDLE_SIZE = 3
-DEFAULT_MAX_STORAGE = "400GB"
+DEFAULT_MAX_STORAGE = "350GB"
 ROLES_DIR = PROJECT_ROOT / "roles"
 
 
@@ -78,7 +78,7 @@ def resolve_max_storage(raw: str | None = None) -> int | None:
         return int(parse_size(value))
     except Exception:
         raise ValueError(
-            "INFINITO_VARIANT_BUNDLE_MAX_STORAGE must be a size like '400GB', "
+            f"INFINITO_VARIANT_BUNDLE_MAX_STORAGE must be a size like {DEFAULT_MAX_STORAGE!r}, "
             f"got {value!r}"
         ) from None
 
