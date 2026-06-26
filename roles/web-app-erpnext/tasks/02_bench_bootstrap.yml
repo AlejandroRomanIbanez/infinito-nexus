@@ -19,6 +19,8 @@
           {{ ERPNEXT_BACKEND_CONTAINER_ADDRESS }} bash -c '
             bench new-site \
               --no-mariadb-socket \
+              --db-host="{{ ERPNEXT_DB_HOST }}" \
+              --db-port="{{ ERPNEXT_DB_PORT }}" \
               --mariadb-user-host-login-scope=% \
               --db-root-username="$DB_ROOT_USER" \
               --db-root-password="$DB_ROOT_PASSWORD" \
