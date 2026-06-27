@@ -1,0 +1,12 @@
+---
+enabled: "{{ lookup('config', 'web-app-nextcloud', 'services.mastodon.enabled') | bool }}"
+required: true
+mechanism: plugin
+source: upstream
+bridges:
+  - mastodon
+config:
+  plugin_configuration:
+    - appid: "integration_mastodon"
+      configkey: "oauth_instance_url"
+      configvalue: "{{ lookup('tls', 'web-app-mastodon', 'url.base') }}"

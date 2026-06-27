@@ -1,5 +1,6 @@
 ---
 postgres:
+  bond: 1
   enabled: true
   shared: true
   image: postgis/postgis
@@ -9,7 +10,7 @@ postgres:
   backup:
     database_routine: true
   cpus: "2.0"
-  mem_reservation: 4g
+  mem_reservation: 3g
   mem_limit: 6g
   pids_limit: 1024
   ports:

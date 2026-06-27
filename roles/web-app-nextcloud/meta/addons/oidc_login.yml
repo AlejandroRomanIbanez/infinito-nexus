@@ -1,0 +1,10 @@
+---
+enabled: "{{ lookup('sso_oidc_plugin') == 'oidc_login' }}"
+required: true
+mechanism: plugin
+source: upstream
+config:
+  mandatory: true
+  incompatible_plugins:
+    - user_oidc
+    - sociallogin

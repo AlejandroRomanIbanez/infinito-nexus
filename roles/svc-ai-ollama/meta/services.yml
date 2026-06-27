@@ -1,5 +1,6 @@
 ---
 ollama:
+  bond: 1
   enabled: true
   shared: true
   backup:

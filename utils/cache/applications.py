@@ -38,15 +38,14 @@ _VARIANTS_CACHE: dict[str, dict[str, list[Any]]] = {}
 _VARIANT_OVERRIDES_ONLY_CACHE: dict[str, dict[str, list[dict[str, Any]]]] = {}
 _MERGED_APPLICATIONS_CACHE: dict[tuple, dict[str, Any]] = {}
 
-# Every role's metadata lives under these `meta/<topic>.yml` files.
-# The file root IS the value of `applications.<app>.<topic>` — there
-# is NO wrapping key matching the filename.
+# The file root IS the value of `applications.<app>.<topic>`; there is NO
+# wrapping key matching the filename.
 _META_TOPICS: tuple[str, ...] = ("server", "rbac", "services", "volumes")
 
-# `meta/info.yml` is descriptive role-level metadata. Loaded into
-# `applications.<role>.info` like the other meta files, but does NOT mark a
-# role as an application by itself — a metadata-only `info.yml` next to a
-# bare `meta/main.yml` is just documentation, not config.
+_META_ADDONS_DIR: str = "addons"
+
+# A metadata-only `info.yml` next to a bare `meta/main.yml` does NOT mark a
+# role as an application by itself; it is just documentation, not config.
 _META_INFO_TOPIC: str = "info"
 
 
@@ -55,9 +54,9 @@ def _extract_default_credentials(creds_node: Any) -> dict[str, Any]:
     leaves that carry a literal `default:` Jinja string.
 
     The shape mirrors the schema tree: nested keys stay nested. The
-    literal string is preserved verbatim — no rendering, no validation.
-    Leaves WITHOUT `default:` are intentionally absent so the inventory's
-    apply_schema-generated values win the merge.
+    literal string is preserved verbatim, with no rendering and no
+    validation. Leaves WITHOUT `default:` are intentionally absent so the
+    inventory's apply_schema-generated values win the merge.
     """
     if not isinstance(creds_node, Mapping):
         return {}
@@ -87,13 +86,61 @@ def _extract_default_credentials(creds_node: Any) -> dict[str, Any]:
     return out
 
 
+def _normalize_addons(addons: Any) -> Any:
+    """Normalise the `meta/addons/` map's enable state at load time.
+
+    The enable contract (the unified addon contract's enable Decisions) is
+    materialised here so every consumer reads one already-resolved view instead of
+    re-deriving it: `required: true` defaults to enabled, an optional addon
+    defaults to disabled, and an explicitly declared `enabled` value (literal
+    or Jinja) is preserved verbatim. `required` itself is defaulted to
+    `false` so downstream reads stay uniform.
+
+    A new dict is returned per entry; the YAML cache's payload is never
+    mutated. Malformed (non-mapping) payloads pass through untouched so the
+    schema lint reports the offence with a precise message.
+    """
+    if not isinstance(addons, Mapping):
+        return addons
+
+    out: dict[str, Any] = {}
+    for addon_id, spec in addons.items():
+        if not isinstance(spec, Mapping):
+            out[addon_id] = spec
+            continue
+        normalised = dict(spec)
+        required = bool(normalised.get("required", False))
+        normalised["required"] = required
+        if "enabled" not in normalised:
+            normalised["enabled"] = required
+        out[addon_id] = normalised
+    return out
+
+
+def _load_addons_dir(meta_dir: Path) -> dict[str, Any]:
+    """Assemble the `addons` map from `meta/addons/<addon_id>.yml` files.
+
+    Each file's root IS the addon spec; the filename stem is the addon id.
+    The enable state is normalised (see `_normalize_addons`). A missing or
+    empty `meta/addons/` directory yields ``{}``.
+    """
+    addons_dir = meta_dir / _META_ADDONS_DIR
+    if not addons_dir.is_dir():
+        return {}
+    raw: dict[str, Any] = {}
+    for path in sorted(addons_dir.glob("*.yml")):
+        spec = _load_yaml_cached(path, default_if_missing={})
+        if spec:
+            raw[path.stem] = spec
+    return _normalize_addons(raw)
+
+
 def _has_application_metadata(role_dir: Path) -> bool:
     """Detect whether a role behaves as an application.
 
     A role is an "application" iff at least one of its `meta/<topic>.yml`
     files exists (plus `meta/schema.yml` and `meta/users.yml` for the
-    schema-only / users-only special cases). Replaces the legacy
-    `roles/<role>/meta/services.yml`-presence test.
+    schema-only / users-only special cases).
     """
     meta_dir = role_dir / "meta"
     if not meta_dir.is_dir():
@@ -103,7 +150,10 @@ def _has_application_metadata(role_dir: Path) -> bool:
             return True
     if (meta_dir / "schema.yml").is_file():
         return True
-    return bool((meta_dir / "users.yml").is_file())
+    if (meta_dir / "users.yml").is_file():
+        return True
+    addons_dir = meta_dir / _META_ADDONS_DIR
+    return addons_dir.is_dir() and any(addons_dir.glob("*.yml"))
 
 
 def _build_role_base_config(
@@ -117,6 +167,8 @@ def _build_role_base_config(
     `meta/rbac.yml`     → `rbac`
     `meta/services.yml` → `services`
     `meta/volumes.yml`  → `volumes`
+    `meta/addons/*.yml` → `addons`   (one file per addon id; enable state
+                         normalised by `_normalize_addons`).
     `meta/info.yml`     → `info`     (descriptive role-level metadata)
     `meta/schema.yml`   → `credentials` (only the literal `default:` values;
                          non-default credentials are filled by the
@@ -126,14 +178,8 @@ def _build_role_base_config(
                          user-domain cache stays the source of truth).
     Empty role collapses to ``{}`` (no overrides applied).
     """
-    # Pure-Python GID resolver — does NOT pull ansible. The previous
-    # `ApplicationGidLookup().run([...])` call dragged
-    # `ansible.plugins.lookup.LookupBase` into this code path and broke
-    # `cli.administration.deploy.development init` on the GitHub Actions runner host
-    # (CI run 24935979190) where the runner Python ships without
-    # ansible. The split lives in plugins/lookup/application_gid.py:
-    # `compute_application_gid` is the pure helper, `LookupModule` is
-    # the ansible-facing wrapper.
+    # Pure-Python GID resolver; importing the ansible-facing LookupModule
+    # here would break the ansible-free runner-host CLI path.
     from plugins.lookup.application_gid import compute_application_gid
 
     application_id = role_dir.name
@@ -144,6 +190,10 @@ def _build_role_base_config(
         topic_data = _load_yaml_cached(meta_dir / f"{topic}.yml", default_if_missing={})
         if topic_data:
             config_data[topic] = topic_data
+
+    addons_data = _load_addons_dir(meta_dir)
+    if addons_data:
+        config_data["addons"] = addons_data
 
     info_data = _load_yaml_cached(
         meta_dir / f"{_META_INFO_TOPIC}.yml", default_if_missing={}
@@ -247,7 +297,7 @@ def _build_variants(roles_dir: Path) -> dict[str, list[Any]]:
 
 
 def _build_application_defaults(roles_dir: Path) -> dict[str, Any]:
-    """Return ``{application_id: base_config}`` — each role's variant-free
+    """Return ``{application_id: base_config}``, each role's variant-free
     ``meta/<topic>.yml`` payload only. Variants stay accessible via
     :func:`get_variants`. Using variant 0 here would leak its service
     flags into variant-N consumers' runtime view via deep-merge."""
@@ -298,7 +348,7 @@ def _build_variant_overrides_only(
 def get_variant_overrides_only(
     *, roles_dir: str | os.PathLike[str] | None = None
 ) -> dict[str, list[dict[str, Any]]]:
-    """Return ``{application_id: [override_0, ...]}`` — the raw
+    """Return ``{application_id: [override_0, ...]}``, the raw
     `meta/variants.yml` entries per role WITHOUT deep-merging
     `meta/services.yml`.
 
@@ -323,12 +373,8 @@ def get_merged_applications(
     roles_dir: str | os.PathLike[str] | None = None,
     templar: Any = None,
 ) -> dict[str, Any]:
-    # Late import: `get_merged_users` lives in the sibling `users` module
-    # and pulls user-domain machinery (token store, alias materialization,
-    # etc.) that this module's other entry points don't need. Importing
-    # at function scope keeps `import utils.cache.applications` cheap so
-    # the runner-host CLI path can use `get_variants` without paying for
-    # the user-domain transitive imports.
+    # Late import keeps `import utils.cache.applications` free of the
+    # user-domain machinery the runner-host CLI path never needs.
     from .users import get_merged_users
 
     variables = variables or {}

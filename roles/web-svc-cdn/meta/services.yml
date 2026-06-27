@@ -5,15 +5,18 @@ dashboard:
   enabled: false
 # nocheck: playwright-service-flag — self-provider
 cdn:
+  bond: 1
   enabled: true
   shared: true
   cpus: "0.2"
   mem_reservation: 128m
   mem_limit: 256m
   pids_limit: 128
+  min_storage: "1GB"
   lifecycle: beta
 # nocheck: playwright-service-flag — CDN serves static assets, no HTML pages with tracking snippet
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 # nocheck: playwright-service-flag — canonical:cdn alias of self-provider
@@ -24,5 +27,6 @@ javascript:
   canonical: cdn
 # nocheck: playwright-service-flag — /metrics endpoint covered by web-app-prometheus's own spec
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

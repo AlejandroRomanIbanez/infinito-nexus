@@ -1,6 +1,7 @@
 ---
 # nocheck: seaweedfs-required — object storage not implemented for this role
 sso:
+  bond: 1
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
   flavor: oidc
@@ -8,16 +9,20 @@ sso:
     email_by_username: true
     enable_user_creation: true
 logout:
+  bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
   shared: "{{ 'web-svc-logout' in group_names }}"
 dashboard:
+  bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
   shared: "{{ 'web-app-dashboard' in group_names }}"
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 # nocheck: playwright-service-flag — self-provider
 mailu:
+  bond: 1
   enabled: true
   shared: true
   provides: email
@@ -32,7 +37,7 @@ mailu:
     - web-app-matomo
   lifecycle: beta
   cpus: "1.0"
-  mem_reservation: 1g
+  mem_reservation: 512m
   mem_limit: 2g
   pids_limit: 1024
 # nocheck: shared
@@ -48,6 +53,7 @@ redis:
   pids_limit: 256
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 mariadb:
+  bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
   cpus: "0.8"
@@ -60,7 +66,7 @@ admin:
   enabled: true
   shared: false
   cpus: "0.3"
-  mem_reservation: 512m
+  mem_reservation: 256m
   mem_limit: 1g
   pids_limit: 512
 # nocheck: dynamic-flag
@@ -69,7 +75,7 @@ imap:
   enabled: true
   shared: false
   cpus: "0.5"
-  mem_reservation: 1g
+  mem_reservation: 512m
   mem_limit: 1.5g
   pids_limit: 512
 # nocheck: dynamic-flag
@@ -78,7 +84,7 @@ smtp:
   enabled: true
   shared: false
   cpus: "0.5"
-  mem_reservation: 1g
+  mem_reservation: 512m
   mem_limit: 1.5g
   pids_limit: 512
 # nocheck: dynamic-flag
@@ -87,7 +93,7 @@ antispam:
   enabled: true
   shared: false
   cpus: "0.6"
-  mem_reservation: 1g
+  mem_reservation: 512m
   mem_limit: 1.5g
   pids_limit: 512
 # nocheck: dynamic-flag
@@ -134,7 +140,7 @@ webmail:
   enabled: true
   shared: false
   cpus: "0.3"
-  mem_reservation: 512m
+  mem_reservation: 256m
   mem_limit: 1g
   pids_limit: 512
 # nocheck: dynamic-flag
@@ -152,13 +158,15 @@ front:
   enabled: true
   shared: false
   cpus: "0.3"
-  mem_reservation: 512m
+  mem_reservation: 256m
   mem_limit: 1g
   pids_limit: 512
 # nocheck: playwright-service-flag — verified by web-svc-css provider spec
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

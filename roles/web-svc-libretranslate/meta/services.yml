@@ -1,6 +1,7 @@
 ---
 # nocheck: playwright-service-flag — self-provider
 libretranslate:
+  bond: 1
   enabled: true
   shared: true
   image: libretranslate/libretranslate
@@ -16,6 +17,7 @@ libretranslate:
   mem_limit: 256m
   pids_limit: 256
 sso:
+  bond: 1
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
   flavor: oauth2
@@ -39,6 +41,7 @@ logout:
   enabled: false
   shared: false
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 # nocheck: dynamic-flag
@@ -49,6 +52,7 @@ redis:
   enabled: false
 # nocheck: playwright-service-flag — css consumer, no Playwright surface (provider: web-svc-css)
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 # nocheck: dynamic-flag
@@ -61,5 +65,6 @@ javascript:
   enabled: false
   shared: true
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

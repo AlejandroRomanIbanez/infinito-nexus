@@ -1,10 +1,12 @@
 ---
 # nocheck: seaweedfs-required — object storage not implemented for this role
 sso:
+  bond: 1
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
   flavor: oidc
 logout:
+  bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
   shared: "{{ 'web-svc-logout' in group_names }}"
 # nocheck: dynamic-flag
@@ -13,23 +15,33 @@ ldap:
   shared: false
   trylocal: true
 dashboard:
+  bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
   shared: "{{ 'web-app-dashboard' in group_names }}"
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 email:
+  bond: 1
   enabled: "{{ 'web-app-mailu' in group_names }}"
   shared: "{{ 'web-app-mailu' in group_names }}"
 # nocheck: dynamic-flag
+# nocheck: playwright-service-flag — Redis cache, no Playwright surface
 redis:
   enabled: false
   backup:
     disabled: true
+# nocheck: playwright-service-flag — DB engine, no Playwright surface (role-local integration tests)
 postgres:
+  bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
+# nocheck: playwright-service-flag: shared provider entity; the app itself is covered by this role's own Playwright spec
 xwiki:
+  bond: 1
+  enabled: true
+  shared: true
   image: xwiki
   version: lts-postgres-tomcat
   name: xwiki
@@ -40,23 +52,6 @@ xwiki:
   mem_reservation: 1g
   mem_limit: 2g
   pids_limit: 1024
-  plugins:
-    oidc:
-      enabled: true
-      shared: true
-      items:
-        - id: org.xwiki.contrib.oidc:oidc-authenticator
-          version: 2.19.6
-    ldap:
-      enabled: false
-      items:
-        - id: org.xwiki.contrib.ldap:ldap-authenticator
-          version: 9.15.7
-    matomo:
-      enabled: false
-      items:
-        - id: org.xwiki.contrib:matomo
-          version: "1.0"
   ports:
     local:
       http: 8054
@@ -65,9 +60,12 @@ xwiki:
     - web-app-keycloak
     - web-app-mailu
   lifecycle: beta
+# nocheck: playwright-service-flag — CSS consumer, no Playwright surface (provider: web-svc-css)
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

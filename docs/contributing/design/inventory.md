@@ -64,7 +64,7 @@ The matrix-variant planner (see [variants.md](variants.md)) calls the expansion 
 
 ## Worked example: WordPress and Discourse 🧪
 
-The wp-discourse plugin install in [roles/web-app-wordpress/tasks/plugins/wp-discourse.yml](../../../roles/web-app-wordpress/tasks/plugins/wp-discourse.yml) does `container exec discourse rake api_key:create_master[...]` during the WordPress play. The Discourse container therefore has to exist by the time WordPress runs.
+The wp-discourse plugin install in [roles/web-app-wordpress/tasks/addons/wp-discourse.yml](../../../roles/web-app-wordpress/tasks/addons/wp-discourse.yml) does `container exec discourse rake api_key:create_master[...]` during the WordPress play. The Discourse container therefore has to exist by the time WordPress runs.
 
 The wiring that makes this work is purely in the `services` declaration, not in `run_after`:
 

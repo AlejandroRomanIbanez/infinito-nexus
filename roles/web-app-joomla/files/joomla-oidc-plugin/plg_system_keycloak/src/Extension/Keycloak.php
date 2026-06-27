@@ -174,10 +174,38 @@ class Keycloak extends CMSPlugin
         $client->addScope(['openid', 'profile', 'email', 'groups']);
         $client->setVerifyHost(true);
         $client->setVerifyPeer(true);
-        if (file_exists('/etc/ssl/certs/ca-certificates.crt')) {
-            $client->setCertPath('/etc/ssl/certs/ca-certificates.crt');
+        $caPath = $this->resolveCaBundlePath();
+        if ($caPath !== '') {
+            $client->setCertPath($caPath);
         }
         return $client;
+    }
+
+    /**
+     * Resolve the CA bundle for the server-side OIDC discovery cURL.
+     *
+     * The sys-svc-compose-ca override reliably bind-mounts the Infinito
+     * root CA and exports CURL_CA_BUNDLE/CA_TRUST_CERT/SSL_CERT_FILE to
+     * point at it, even when the CA-trust entrypoint wrapper was not
+     * applied (e.g. locally-built image absent at inject time). Prefer
+     * those over the system bundle, which only carries the Infinito CA
+     * once update-ca-certificates has run inside the container.
+     */
+    private function resolveCaBundlePath(): string
+    {
+        $candidates = [
+            getenv('CURL_CA_BUNDLE') ?: '',
+            getenv('CA_TRUST_CERT') ?: '',
+            getenv('SSL_CERT_FILE') ?: '',
+            '/etc/ssl/certs/ca-certificates.crt',
+        ];
+        foreach ($candidates as $candidate) {
+            $candidate = (string) $candidate;
+            if ($candidate !== '' && is_file($candidate)) {
+                return $candidate;
+            }
+        }
+        return '';
     }
 
     private function handleCallback(): void
