@@ -71,7 +71,18 @@
       enabled: false
       shared: false
 
-- services:
+- addons:
+    mautrix-whatsapp:
+      enabled: true
+    mautrix-telegram:
+      enabled: true
+    mautrix-signal:
+      enabled: true
+    mautrix-slack:
+      enabled: true
+    mautrix-meta:
+      enabled: true
+  services:
     matrix:
       flavor: compose
     seaweedfs:

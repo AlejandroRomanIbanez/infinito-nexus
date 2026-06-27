@@ -22,7 +22,7 @@ BUILDKIT_ENABLED: "{{ lookup('env', 'INFINITO_BUILDKIT_ENABLED') | bool }}"
 INFINITO_IMAGE_TAG: "{{ lookup('env', 'INFINITO_IMAGE_TAG') | default('latest', true) }}"
 INFINITO_GHCR_MIRROR_PREFIX: "{{ lookup('env', 'INFINITO_GHCR_MIRROR_PREFIX') | default('', true) }}"
 CA_CONTAINER_ENABLED: "{{ lookup('env', 'INFINITO_CONTAINER_CA_ENABLED') | bool }}"
-TEST_E2E_PLAYWRIGHT_KEEP: "{{ lookup('env', 'INFINITO_PLAYWRIGHT_KEEP') | bool }}"
+test_e2e_playwright_keep: "{{ lookup('env', 'INFINITO_PLAYWRIGHT_KEEP') | bool }}"
 networks:
   internet:
     ip4: "{{ lookup('env', 'INFINITO_IP4') }}"

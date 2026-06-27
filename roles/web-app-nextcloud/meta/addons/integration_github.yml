@@ -1,0 +1,13 @@
+---
+enabled: "{{ (lookup('api', 'github.client_id') | length > 0) and (lookup('api', 'github.client_secret') | length > 0) }}"
+required: true
+mechanism: plugin
+source: upstream
+config:
+  plugin_configuration:
+    - appid: "integration_github"
+      configkey: "client_id"
+      configvalue: "{{ lookup('api', 'github.client_id') }}"
+    - appid: "integration_github"
+      configkey: "client_secret"
+      configvalue: "{{ lookup('api', 'github.client_secret') }}"

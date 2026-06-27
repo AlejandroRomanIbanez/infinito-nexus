@@ -2,18 +2,14 @@
 - name: flush handlers to ensure that friendica is up before friendica addon configuration
   meta: flush_handlers
 
-- name: Build friendica_addons based on features
+- name: Build friendica_addons from meta/addons/ declarations
   set_fact:
     friendica_addons: >-
       {{
         friendica_addons | default([])
         + [{
             'name': item.key,
-            'enabled': (
-              FRIENDICA_LDAP_ENABLED
-                if item.key == 'ldapauth'
-              else (item.value.enabled if item.value is mapping and 'enabled' in item.value else False)
-            )
+            'enabled': (item.value.enabled | bool)
           }]
       }}
   loop: "{{ FRIENDICA_ADDONS | dict2items }}"
@@ -117,3 +113,10 @@
     stdin: "{{ lookup('file', role_path + '/files/php/verify_addon_hooks.php') }}"
   changed_when: false
   when: FRIENDICA_LDAP_ENABLED | bool
+
+- name: "Run per-addon integration hooks for enabled addons"
+  include_tasks: "addons/{{ item.name }}.yml"
+  loop: "{{ friendica_addons | selectattr('enabled') | list }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when: (role_path ~ '/tasks/addons/' ~ item.name ~ '.yml') is exists

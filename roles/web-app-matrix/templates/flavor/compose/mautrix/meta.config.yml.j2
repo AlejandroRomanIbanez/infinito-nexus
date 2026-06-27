@@ -1,0 +1,233 @@
+
+network:
+    mode:
+    allow_messenger_com_on_fb: false
+    allowed_modes: []
+
+{% raw %}
+    displayname_template: '{{or .DisplayName .Username "Unknown user"}}'
+{% endraw %}
+
+    proxy:
+    get_proxy_from:
+    proxy_media: false
+    proxy_e2ee: false
+    proxy_messenger_lite: true
+    proxy_other: true
+    min_full_reconnect_interval_seconds: 3600
+    force_refresh_interval_seconds: 72000
+    cache_connection_state: false
+    disable_xma_backfill: true
+    disable_xma_always: false
+    send_presence_on_typing: false
+    receive_instagram_typing_indicators: true
+    disable_view_once: false
+    marketplace_space: true
+    log_redacted_bloks_payloads: false
+
+    thread_backfill:
+        batch_count: -1
+        batch_delay: 2s
+
+bridge:
+    command_prefix: "!meta"
+    personal_filtering_spaces: false
+    private_chat_portal_meta: true
+    async_events: false
+    split_portals: false
+    resend_bridge_info: false
+    no_bridge_info_state_key: false
+    bridge_status_notices: errors
+    unknown_error_auto_reconnect: null
+    unknown_error_max_auto_reconnects: 10
+
+    bridge_matrix_leave: true
+    bridge_notices: true
+    tag_only_on_create: true
+    only_bridge_tags: [m.favourite, m.lowpriority]
+    mute_only_on_create: true
+    deduplicate_matrix_messages: false
+    cross_room_replies: false
+    revert_failed_state_changes: false
+    kick_matrix_users: true
+    enable_send_state_requests: false
+
+    cleanup_on_logout:
+        enabled: false
+        manual:
+            private: nothing
+            relayed: nothing
+            shared_no_users: nothing
+            shared_has_users: nothing
+        bad_credentials:
+            private: nothing
+            relayed: nothing
+            shared_no_users: nothing
+            shared_has_users: nothing
+
+    relay:
+        enabled: false
+        admin_only: true
+        prefer_default: true
+        allow_bridge: true
+        default_relays: []
+        message_formats:
+{% raw %}
+            m.text: "<b>{{ .Sender.DisambiguatedName }}</b>: {{ .Message }}"
+            m.notice: "<b>{{ .Sender.DisambiguatedName }}</b>: {{ .Message }}"
+            m.emote: "* <b>{{ .Sender.DisambiguatedName }}</b> {{ .Message }}"
+            m.file: "<b>{{ .Sender.DisambiguatedName }}</b> sent a file{{ if .Caption }}: {{ .Caption }}{{ end }}"
+            m.image: "<b>{{ .Sender.DisambiguatedName }}</b> sent an image{{ if .Caption }}: {{ .Caption }}{{ end }}"
+            m.audio: "<b>{{ .Sender.DisambiguatedName }}</b> sent an audio file{{ if .Caption }}: {{ .Caption }}{{ end }}"
+            m.video: "<b>{{ .Sender.DisambiguatedName }}</b> sent a video{{ if .Caption }}: {{ .Caption }}{{ end }}"
+            m.location: "<b>{{ .Sender.DisambiguatedName }}</b> sent a location{{ if .Caption }}: {{ .Caption }}{{ end }}"
+{% endraw %}
+
+    portal_create_filter:
+        mode: deny
+        list: []
+        always_deny_from_login: []
+
+    permissions:
+        "*": relay
+        "{{ MATRIX_SERVER_NAME }}": user
+        "@{{ MATRIX_ADMINISTRATOR_USERNAME }}:{{ MATRIX_SERVER_NAME }}": admin
+
+database:
+    type: postgres
+    uri: postgres://mautrix_meta_bridge:{{ lookup('config', application_id, 'credentials.mautrix_meta_bridge_database_password') | regex_replace('/', '%2F') | regex_replace('@', '%40') | regex_replace(':', '%3A') }}@{{ MATRIX_POSTGRES_HOST }}/mautrix_meta_bridge?sslmode=disable
+    max_open_conns: 20
+    max_idle_conns: 2
+    max_conn_idle_time: null
+    max_conn_lifetime: null
+
+homeserver:
+    address: http://synapse:{{ MATRIX_SYNAPSE_CONTAINER_PORT }}
+    domain: {{ MATRIX_SERVER_NAME }}
+
+    software: standard
+    status_endpoint:
+    message_send_checkpoint_endpoint:
+    async_media: false
+
+    websocket: false
+    ping_interval_seconds: 0
+    retry_limit: 4
+
+appservice:
+    address: http://mautrix-meta:29319
+
+    hostname: 0.0.0.0
+    port: 29319
+
+    id: meta
+    bot:
+        username: metabot
+        displayname: Meta bridge bot
+        avatar: mxc://maunium.net/DxpVrwwzPUwaUSazpsjXgcKB
+
+    ephemeral_events: true
+    async_transactions: false
+
+    as_token: "This value is generated when generating the registration"
+    hs_token: "This value is generated when generating the registration"
+
+{% raw %}
+    username_template: meta_{{.}}
+{% endraw %}
+
+matrix:
+    message_status_events: false
+    delivery_receipts: false
+    message_error_notices: true
+    sync_direct_chat_list: false
+    federate_rooms: true
+    upload_file_threshold: 5242880
+    ghost_extra_profile_info: false
+
+analytics:
+    token: null
+    url: null
+    user_id: null
+
+provisioning:
+    shared_secret: generate
+    allow_matrix_auth: true
+    debug_endpoints: false
+    enable_session_transfers: false
+
+public_media:
+    enabled: false
+    signing_key: generate
+    expiry: 0
+    hash_length: 32
+    path_prefix: /_mautrix/publicmedia
+    use_database: false
+
+direct_media:
+    enabled: false
+    server_name: meta-media.example.com
+    well_known_response:
+    media_id_prefix:
+    allow_proxy: true
+    server_key: generate
+
+backfill:
+    enabled: true
+    max_initial_messages: 50
+    max_catchup_messages: 500
+    unread_hours_threshold: 720
+    threads:
+        max_initial_messages: 50
+    queue:
+        enabled: false
+        manual: false
+        batch_size: 100
+        batch_delay: 20
+        max_batches: -1
+        max_batches_override: {}
+
+double_puppet:
+    servers:
+        {{ MATRIX_SERVER_NAME }}: {{ MATRIX_SYNAPSE_URL }}
+    allow_discovery: false
+    secrets:
+        {{ MATRIX_SERVER_NAME }}: {{ MATRIX_REGISTRATION_SHARED_SECRET }}
+
+encryption:
+    allow: false
+    default: false
+    require: false
+    appservice: false
+    msc4190: false
+    msc4392: false
+    self_sign: false
+    allow_key_sharing: false
+    plaintext_mentions: false
+    pickle_key: generate
+    delete_keys:
+        delete_outbound_on_ack: false
+        dont_store_outbound: false
+        ratchet_on_decrypt: false
+        delete_fully_used_on_decrypt: false
+        delete_prev_on_new_session: false
+        delete_on_device_delete: false
+        periodically_delete_expired: false
+        delete_outdated_inbound: false
+    verification_levels:
+        receive: unverified
+        send: unverified
+        share: cross-signed-tofu
+    rotation:
+        enable_custom: false
+        milliseconds: 604800000
+        messages: 100
+        disable_device_change_key_rotation: false
+
+env_config_prefix: null
+
+logging:
+    min_level: debug
+    writers:
+        - type: stdout
+          format: pretty-colored

@@ -11,8 +11,10 @@ legal:
   pids_limit: 64
 # nocheck: dynamic-flag
 html:
+  bond: 1
   enabled: true
   shared: true
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

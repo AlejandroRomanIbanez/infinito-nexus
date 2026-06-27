@@ -84,7 +84,7 @@ jobs:
         run: bash scripts/github/split_runner_apps.sh
 
   workstation:
-    name: 🖥️ Deploy ${{ matrix.apps }}
+    name: 🖥️ Deploy ${{ matrix.apps }}${{ matrix.variant && format(' [{0}]', matrix.variant) || '' }}
     if: needs.discover.outputs.apps_github != '' && needs.discover.outputs.apps_github != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 360
@@ -93,7 +93,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        apps: ${{ fromJson(needs.discover.outputs.apps_github) }}
+        include: ${{ fromJson(needs.discover.outputs.apps_github) }}
 
     steps:
       # Reclaim runner space before Docker pulls start. Deploy jobs otherwise
@@ -133,6 +133,7 @@ jobs:
         shell: bash
         env:
           apps: ${{ matrix.apps }}
+          variant: ${{ matrix.variant }}
           ANSIBLE_LOG_PATH: /tmp/ansible-${{ matrix.apps }}.log
         run: ./scripts/tests/deploy/ci/all.sh
 
@@ -147,7 +148,7 @@ jobs:
         run: ./scripts/github/runner/dump_state.sh "post-deploy failure (${{ matrix.apps }})"
 
   workstation-self-hosted:
-    name: 🖥️ Deploy ${{ matrix.apps }} (self-hosted)
+    name: 🖥️ Deploy ${{ matrix.apps }}${{ matrix.variant && format(' [{0}]', matrix.variant) || '' }} (self-hosted)
     if: needs.discover.outputs.apps_self_hosted != '' && needs.discover.outputs.apps_self_hosted != '[]'
     runs-on: [self-hosted, linux]
     timeout-minutes: 360
@@ -156,7 +157,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        apps: ${{ fromJson(needs.discover.outputs.apps_self_hosted) }}
+        include: ${{ fromJson(needs.discover.outputs.apps_self_hosted) }}
 
     steps:
       - name: Fix workspace ownership
@@ -175,6 +176,7 @@ jobs:
         shell: bash
         env:
           apps: ${{ matrix.apps }}
+          variant: ${{ matrix.variant }}
           INFINITO_TIMEOUT_MULTIPLIER: ${{ vars.INFINITO_TIMEOUT_MULTIPLIER || '1' }}
         run: ./scripts/tests/deploy/ci/all.sh
 

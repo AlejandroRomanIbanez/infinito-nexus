@@ -56,11 +56,11 @@ type-scoping entries with the shape::
 
 Two complementary flags control the per-type policy:
 
-* ``mandatory`` (default ``False``) — the file (or dotted-path entry)
+* ``mandatory`` (default ``False``): the file (or dotted-path entry)
   MUST be present and non-empty for a role of this type. Implies
   ``allowed: True``; setting ``mandatory: True`` together with
   ``allowed: False`` is a schema error.
-* ``allowed`` (default ``True``) — the file (or dotted-path entry)
+* ``allowed`` (default ``True``): the file (or dotted-path entry)
   MAY be present for a role of this type. Set ``allowed: False`` to
   forbid the file/entry on roles of this type so the lint layer can
   surface the offence with a precise reason.
@@ -167,6 +167,12 @@ ROLE_FILE_META_VOLUMES = "meta/volumes.yml"
 ROLE_FILE_META_SCHEMA = "meta/schema.yml"
 ROLE_FILE_META_INFO = "meta/info.yml"
 ROLE_FILE_META_USERS = "meta/users.yml"
+
+# Addons are a directory topic: one `meta/addons/<addon_id>.yml` file per
+# addon, the file root being the addon spec. Consumers glob
+# ``<role>/meta/addons/*.yml``; the schema + bridge lints under
+# ``tests/lint/ansible/services/`` police the per-file contract.
+ROLE_DIR_META_ADDONS = "meta/addons"
 
 # Playwright spec: every role's E2E spec ships at this path. Companion
 # `.js` helpers MAY live alongside under the same directory; the runner

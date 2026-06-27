@@ -2,9 +2,11 @@
 # nocheck: seaweedfs-required — Discourse's aws-sdk-s3 defaults a custom endpoint to virtual-host addressing and exposes no force_path_style option, incompatible with SeaweedFS path-style without a global SeaweedFS virtual-host/wildcard-DNS change affecting all consumers; uploads stay on the local volume
 # nocheck: playwright-service-flag — static-asset provider, no Playwright surface
 asset:
+  bond: 1
   enabled: "{{ 'web-svc-asset' in group_names }}"
   shared: "{{ 'web-svc-asset' in group_names }}"
 sso:
+  bond: 1
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
   flavor: oidc
@@ -13,19 +15,24 @@ ldap:
   enabled: false
   shared: false
 logout:
+  bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
   shared: "{{ 'web-svc-logout' in group_names }}"
 dashboard:
+  bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
   shared: "{{ 'web-app-dashboard' in group_names }}"
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 email:
+  bond: 1
   enabled: "{{ 'web-app-mailu' in group_names }}"
   shared: "{{ 'web-app-mailu' in group_names }}"
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 postgres:
+  bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
   extensions:
@@ -37,8 +44,13 @@ redis:
   backup:
     disabled: true
   enabled: true
+  cpus: "0.5"
+  mem_reservation: 128m
+  mem_limit: 512m
+  pids_limit: 512
 # nocheck: playwright-service-flag — self-provider
 discourse:
+  bond: 1
   # `shared: true` is required so the service registry recognises this
   # role as the provider of the `discourse` service. Other roles
   # declare `services.discourse.enabled: ...` (e.g.
@@ -52,17 +64,6 @@ discourse:
   ref: main
   min_storage: 15GB
   repository: https://github.com/discourse/discourse_docker.git
-  plugins:
-    docker_manager:
-      enabled: true
-    discourse-activity-pub:
-      enabled: true
-    discourse-akismet:
-      enabled: true
-    discourse-ldap-auth:
-      enabled: "{{ lookup('config', 'web-app-discourse', 'services.ldap.enabled') | bool }}"
-      repository: https://github.com/jonmbake/discourse-ldap-auth.git
-      ref: master
   ports:
     local:
       http: 8020
@@ -75,8 +76,10 @@ discourse:
     | bool) }}"
 # nocheck: playwright-service-flag — css consumer, no Playwright surface (provider: web-svc-css)
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

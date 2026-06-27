@@ -26,7 +26,7 @@ from cli.administration.deploy.development.deploy import handler  # noqa: E402
 def _args(
     *,
     apps: list[str] | None = None,
-    variant: int | None = None,
+    variant: list[int] | None = None,
     full_cycle: bool = False,
 ) -> argparse.Namespace:
     # `distro` is intentionally absent: deploy.handler no longer consumes
@@ -367,7 +367,7 @@ class TestHandlerVariantPin(unittest.TestCase):
         ]
         run_deploy_mock.return_value = 0
 
-        rc = handler(_args(apps=["web-app-multi"], variant=1))
+        rc = handler(_args(apps=["web-app-multi"], variant=[1]))
 
         self.assertEqual(rc, 0)
         # Only the picked round runs; no cleanup because there is no
@@ -401,8 +401,8 @@ class TestHandlerVariantPin(unittest.TestCase):
             _entry(1, "/srv/inv-1", {"web-app-multi": 1}),
         ]
 
-        with self.assertRaisesRegex(SystemExit, "variant 7 out of range"):
-            handler(_args(apps=["web-app-multi"], variant=7))
+        with self.assertRaisesRegex(SystemExit, r"variants \[7\] out of range"):
+            handler(_args(apps=["web-app-multi"], variant=[7]))
         run_deploy_mock.assert_not_called()
 
 
@@ -518,7 +518,7 @@ class TestHandlerFullCycle(unittest.TestCase):
         ]
         run_deploy_mock.return_value = 0
 
-        rc = handler(_args(apps=["web-app-multi"], variant=1, full_cycle=True))
+        rc = handler(_args(apps=["web-app-multi"], variant=[1], full_cycle=True))
 
         self.assertEqual(rc, 0)
         self.assertEqual(run_deploy_mock.call_count, 2)

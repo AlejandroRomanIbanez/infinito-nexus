@@ -6,14 +6,17 @@ logout:
   shared: false
 # nocheck: dynamic-flag
 dashboard:
+  bond: 1
   enabled: true
   shared: true
 # nocheck: dynamic-flag
 matomo:
+  bond: 1
   enabled: true
   shared: true
 # nocheck: playwright-service-flag — css consumer, no Playwright surface (provider: web-svc-css)
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 # nocheck: dynamic-flag
@@ -29,12 +32,15 @@ sso:
   shared: false
 # nocheck: dynamic-flag
 prometheus:
+  bond: 1
   enabled: true
   shared: true
 mastodon:
+  bond: 1
   enabled: "{{ 'web-app-mastodon' in group_names }}"
   shared: "{{ 'web-app-mastodon' in group_names }}"
 friendica:
+  bond: 1
   enabled: "{{ 'web-app-friendica' in group_names }}"
   shared: "{{ 'web-app-friendica' in group_names }}"
 fediwall:
@@ -77,7 +83,7 @@ fediwall:
   ports:
     local:
       http: 8074
-  lifecycle: alpha
+  lifecycle: beta
   min_storage: 1GB
   cpus: "0.2"
   mem_reservation: 128m

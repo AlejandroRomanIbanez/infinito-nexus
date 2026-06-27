@@ -1,18 +1,23 @@
 ---
 sso:
+  bond: 1
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
   flavor: oidc
 logout:
+  bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
   shared: "{{ 'web-svc-logout' in group_names }}"
 dashboard:
+  bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
   shared: "{{ 'web-app-dashboard' in group_names }}"
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 email:
+  bond: 1
   enabled: "{{ 'web-app-mailu' in group_names }}"
   shared: "{{ 'web-app-mailu' in group_names }}"
 # nocheck: shared
@@ -28,6 +33,7 @@ redis:
   pids_limit: 512
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 postgres:
+  bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 # nocheck: playwright-service-flag — object store, no Playwright surface
@@ -36,10 +42,15 @@ minio:
   shared: false # nocheck: dynamic-flag
   public: true
 seaweedfs:
+  bond: 1
   enabled: "{{ 'web-app-seaweedfs' in group_names }}"
   shared: "{{ 'web-app-seaweedfs' in group_names }}"
   public: true
+# nocheck: playwright-service-flag: shared provider entity; the app itself is covered by this role's own Playwright spec
 peertube:
+  bond: 1
+  enabled: true
+  shared: true
   name: peertube
   version: v8.2.1
   image: chocobozzz/peertube
@@ -58,8 +69,10 @@ peertube:
   lifecycle: beta
 # nocheck: playwright-service-flag — verified by web-svc-css provider spec
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

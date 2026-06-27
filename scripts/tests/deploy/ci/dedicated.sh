@@ -11,7 +11,8 @@ set -euo pipefail
 #
 # Optional env:
 #   PYTHON="python3"
-#   variant="<idx>"  pin to one matrix round (skips the rest)
+#   variant="<csv>"  pin to one or more matrix rounds, e.g. "2" or "0,1,2"
+#                    (the runner-split bundle from CI discovery); empty = all
 
 : "${INFINITO_DISTRO:?INFINITO_DISTRO must be set (e.g. arch)}"
 : "${INFINITO_INVENTORY_DIR:?INFINITO_INVENTORY_DIR must be set}"

@@ -1,0 +1,16 @@
+---
+enabled: "{{ lookup('config', 'web-app-nextcloud', 'services.suitecrm.enabled') | bool }}"
+# Optional: upstream julien-nc/integration_suitecrm requires Nextcloud server major <= 24, so on
+# the deployed (newer) major the plugin installer hits the incompatible path and never enables.
+# Marked not-required so the addon gate skips its spec cleanly instead of asserting a surface that
+# can never render. Flip back to true once a compatible app version ships.
+required: false
+mechanism: plugin
+source: upstream
+bridges:
+  - suitecrm
+config:
+  plugin_configuration:
+    - appid: "integration_suitecrm"
+      configkey: "url"
+      configvalue: "{{ lookup('tls', 'web-app-suitecrm', 'url.base') }}"

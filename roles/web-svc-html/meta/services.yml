@@ -1,14 +1,22 @@
 ---
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
 html:
   shared: true
   enabled: false
   lifecycle: beta
+  min_storage: "1GB"
+  cpus: "0.5"
+  mem_reservation: 64m
+  mem_limit: 256m
+  pids_limit: 512

@@ -1,0 +1,12 @@
+---
+enabled: "{{ lookup('config', 'web-app-nextcloud', 'services.gitlab.enabled') | bool }}"
+required: true
+mechanism: plugin
+source: upstream
+bridges:
+  - gitlab
+config:
+  plugin_configuration:
+    - appid: "integration_gitlab"
+      configkey: "oauth_instance_url"
+      configvalue: "{{ lookup('tls', 'web-app-gitlab', 'url.base') }}"

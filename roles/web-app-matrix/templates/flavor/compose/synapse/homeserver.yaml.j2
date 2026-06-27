@@ -1,6 +1,6 @@
 server_name: "{{ MATRIX_SERVER_NAME }}"
 pid_file: /data/homeserver.pid
-max_upload_size: {{ webserver_client_max_body_size }}
+max_upload_size: {{ webserver_client_max_body_size | default(lookup('config', application_id, 'server.client_max_body_size', '100m')) }}
 listeners:
   - port: {{ MATRIX_SYNAPSE_CONTAINER_PORT }}
     tls: false
@@ -71,9 +71,9 @@ oidc_providers:
     backchannel_logout_enabled: true
 {% endif %}
 
-{% if MATRIX_BRIDGES | bool %}
+{% if MATRIX_BRIDGES | length > 0 %}
 app_service_config_files:
 {% for item in MATRIX_BRIDGES %}
-  - {{ MATRIX_REGISTRATION_FILE_FOLDER }}{{ item.bridge_name }}.registration.yaml
+  - {{ MATRIX_REGISTRATION_FILE_FOLDER }}mautrix-{{ item.bridge_name }}/registration.yaml
 {% endfor %}
 {% endif %}

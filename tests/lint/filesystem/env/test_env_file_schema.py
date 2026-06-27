@@ -2,8 +2,10 @@
 
 Scope: every committed ``*.env`` and ``*.env.j2`` file, plus the
 generated repo-root ``.env`` if present. ``.env.j2`` files are treated
-as Jinja templates -- ``{% ... %}`` blocks and ``{# ... #}`` comments
-are recognised but not validated as env-file syntax.
+as Jinja templates -- ``{% ... %}`` blocks, ``{# ... #}`` comments,
+and whole-line ``{{ ... }}`` expressions (which render dynamic
+``KEY=value`` content, e.g. ``lookup('addon_env_flags', ...)``) are
+recognised but not validated as env-file syntax.
 
 Rules (apply to every line that resolves to a KEY/value pair):
 
@@ -62,6 +64,7 @@ _KEY_RE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 _ENTRY_RE = re.compile(r"^(?P<key>[A-Za-z_][A-Za-z0-9_]*)=(?P<value>.*)$")
 _JINJA_STMT_RE = re.compile(r"^\s*\{%.*%\}\s*$")
 _JINJA_COMMENT_RE = re.compile(r"^\s*\{#.*#\}\s*$")
+_JINJA_EXPR_RE = re.compile(r"^\s*\{\{.*\}\}\s*$")
 _NOCHECK_RE = re.compile(r"^#\s*nocheck\b")
 _MAX_COMMENT_LEN = 140
 
@@ -128,7 +131,11 @@ def validate_env_file(path: Path, *, strict: bool) -> list[Violation]:
 
         # Jinja constructs in templates: reset pending and skip the line.
         if is_jinja:
-            if _JINJA_STMT_RE.match(raw) or _JINJA_COMMENT_RE.match(raw):
+            if (
+                _JINJA_STMT_RE.match(raw)
+                or _JINJA_COMMENT_RE.match(raw)
+                or _JINJA_EXPR_RE.match(raw)
+            ):
                 pending = []
                 continue
             # Multi-line Jinja comment opener.
@@ -177,6 +184,12 @@ def validate_env_file(path: Path, *, strict: bool) -> list[Violation]:
         match = _ENTRY_RE.match(raw)
 
         if match is None:
+            if is_jinja and ("{{" in key_part or "{%" in key_part):
+                # Dynamic templated key (e.g. a {% for %}-generated KEY in a
+                # .j2 template); the rendered keys are validated at deploy
+                # time, not by this static scan.
+                pending = []
+                continue
             if key_part != key_part.rstrip() or value_part != value_part.lstrip():
                 violations.append(
                     Violation(

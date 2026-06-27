@@ -148,13 +148,12 @@
     dest: "{{ _playwright_stage_dir }}/playwright.config.js"
     mode: "0644"
 
-- name: Copy role Playwright files (spec + companion modules) into staging tests directory
+- name: Copy role Playwright tree (spec + companions + addons/ + fixtures/) into staging tests directory
   ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: "{{ _playwright_stage_tests_dir }}/{{ item | basename }}"
+    src: "{{ _playwright_files_dir }}/"
+    dest: "{{ _playwright_stage_tests_dir }}/"
     mode: "0644"
-  with_fileglob:
-    - "{{ _playwright_files_dir }}/*.js"
+    directory_mode: "0755"
 
 - name: Create staging fixtures directory
   ansible.builtin.file:
@@ -176,6 +175,12 @@
   ansible.builtin.copy:
     src: "{{ playbook_dir }}/roles/test-e2e-playwright/files/service-gating.js"
     dest: "{{ _playwright_stage_tests_dir }}/service-gating.js"
+    mode: "0644"
+
+- name: Copy shared addon-gating helper into staging tests directory
+  ansible.builtin.copy:
+    src: "{{ playbook_dir }}/roles/test-e2e-playwright/files/addon-gating.js"
+    dest: "{{ _playwright_stage_tests_dir }}/addon-gating.js"
     mode: "0644"
 
 # Stage the shared persona-flow helpers.
@@ -244,10 +249,10 @@
     validate_certs: false
     follow_redirects: none
   register: _wait_result
-  retries: "{{ TEST_E2E_PLAYWRIGHT_WAIT_RETRIES }}"
-  delay: "{{ TEST_E2E_PLAYWRIGHT_WAIT_DELAY }}"
+  retries: "{{ test_e2e_playwright_wait_retries }}"
+  delay: "{{ test_e2e_playwright_wait_delay }}"
   until: _wait_result.status is defined and _wait_result.status | int < 500
-  when: TEST_E2E_PLAYWRIGHT_WAIT_ENABLED | bool
+  when: test_e2e_playwright_wait_enabled | bool
 
 - name: Ensure reports dir exists
   ansible.builtin.file:
@@ -272,7 +277,13 @@
       - --env-file
       - "{{ _playwright_stage_dir }}/.env"
       - -e
-      - "INFINITO_PLAYWRIGHT_KEEP={{ TEST_E2E_PLAYWRIGHT_KEEP }}"
+      - "INFINITO_PLAYWRIGHT_KEEP={{ test_e2e_playwright_keep }}"
+      - -e
+      - "PLAYWRIGHT_WORKERS={{ test_e2e_playwright_workers }}"
+      - -e
+      - "PLAYWRIGHT_FULLY_PARALLEL={{ TEST_E2E_PLAYWRIGHT_FULLY_PARALLEL }}"
+      - -e
+      - "PLAYWRIGHT_TEST_TIMEOUT={{ test_e2e_playwright_test_timeout }}"
       - -v
       - "{{ _playwright_stage_dir }}:/e2e"
       - -v
@@ -287,7 +298,7 @@
       - /bin/bash
       - -lc
       - "{{ TEST_E2E_PLAYWRIGHT_COMMAND }}"
-  timeout: "{{ TEST_E2E_PLAYWRIGHT_RUN_TIMEOUT | int }}"
+  timeout: "{{ test_e2e_playwright_run_timeout | int }}"
   environment: >-
     {{
       {
