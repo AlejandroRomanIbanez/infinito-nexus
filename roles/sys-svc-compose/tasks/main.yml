@@ -26,17 +26,8 @@
   include_tasks: "02_stack_host_prep.yml"
   when: IS_STACK_HOST | bool
 
-- name: "Prepare NFS subdirs for '{{ application_id }}' (wipe stale in dev/act, then pre-create; swarm + NFS only)"
-  include_tasks:
-    file: "utils/nfs_prep.yml"
-    apply:
-      delegate_to: "{{ (groups['svc-storage-nfs-server'] | default([]))[0] | default(inventory_hostname) }}"
-      run_once: true
-  when:
-    - DEPLOYMENT_MODE == 'swarm'
-    - (storage.backend | default('local')) == 'nfs'
-    - (groups['svc-storage-nfs-server'] | default([])) | length > 0
-    - application_id not in lookup('roles_with_default_placement', 'manager')
+- name: "Pre-create NFS subdirs declared by '{{ application_id }}' (swarm + NFS backend only)"
+  include_tasks: "utils/nfs_prep.yml"
 
 - name: "Ensure that {{ lookup('container', application_id, 'directories.instance') }} is up"
   include_tasks: "utils/up.yml"

@@ -1,9 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-mkdir -p "${RUNNER_TEMP}/nfs-export"
+# Trip-wire: this host-bind export outlives a local roundtrip run; without wiping
+# it, a prior cluster's volume state (e.g. a stale matomo config.ini.php against a
+# fresh DB) bleeds into the next run. Every workflow run starts from an empty export.
 bash "$(dirname "$0")/unmount_nfs_mounts.sh" "${NFS_SERVER}" >/dev/null 2>&1 || true
 docker rm -f "${NFS_SERVER}" >/dev/null 2>&1 || true
+sudo rm -rf "${RUNNER_TEMP}/nfs-export" 2>/dev/null || rm -rf "${RUNNER_TEMP}/nfs-export"
+mkdir -p "${RUNNER_TEMP}/nfs-export"
 docker run -d --name "${NFS_SERVER}" \
 	--label "${INFINITO_SWARM_TEST_LABEL}" \
 	--network "${SWARM_LAB_NETWORK}" \
