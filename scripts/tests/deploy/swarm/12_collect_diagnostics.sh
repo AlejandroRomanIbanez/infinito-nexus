@@ -65,6 +65,24 @@ fi
 sep "nfs-server logs"
 docker logs --tail 200 "${NFS_SERVER}"
 
+sep "nfs-server: /etc/exports + exportfs -v + export tree + ganesha conf"
+docker exec "${NFS_SERVER}" cat /etc/exports
+docker exec "${NFS_SERVER}" exportfs -v
+docker exec "${NFS_SERVER}" cat /etc/ganesha/ganesha.conf
+docker exec "${NFS_SERVER}" ls -la "${NFS_EXPORT_BASE:-/srv/nfs}"
+docker exec "${NFS_SERVER}" ls -la "${NFS_EXPORT_BASE:-/srv/nfs}/infinito-state"
+docker exec "${NFS_SERVER}" systemctl --no-pager --full status nfs-server nfs-ganesha 2>&1 | head -60
+
+sep "controller (this runner): NFS reachability of nfs-server"
+_nfs_ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' "${NFS_SERVER}")"
+echo "nfs-server container IP(s): ${_nfs_ip}"
+ip -4 addr show | grep -E "192\.168\.244\." || echo "(controller has no 192.168.244.0/24 address)"
+mount | grep -i nfs || echo "(no nfs mounts on controller)"
+for _ip in ${_nfs_ip}; do
+	echo "--- showmount -e ${_ip} ---"
+	showmount -e "${_ip}" 2>&1 || echo "(showmount -e ${_ip} failed; NFSv4-only servers do not answer MOUNT)"
+done
+
 for node in "${MGR}" "${WRK1}" "${WRK2}"; do
 	echo "=== ${node} volumes ==="
 	docker exec "${node}" docker volume ls
