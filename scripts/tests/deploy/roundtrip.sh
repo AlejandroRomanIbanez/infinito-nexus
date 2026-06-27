@@ -48,6 +48,12 @@ for app in "${_apps[@]}"; do
 		swarm)
 			ACT_PLATFORM_IMAGE=local/act-runner-fixed:latest \
 				make -C "$_repo_root" act-swarm-zombie app="$app" 2>&1 | tee "$log"
+			# act exits 0 even when the matrix yields no legs and the swarm deploy job
+			# never ran (only the discover/Lure job), so its clean exit is no proof.
+			grep -q "Matrix-deploy ${app} across variant rounds" "$log" || {
+				echo "roundtrip: ${app} [swarm] FAILED: swarm deploy job did not run (empty matrix); see ${log}" >&2
+				exit 1
+			}
 			# A failure above exits via set -e and leaves the cluster up for inspection;
 			# only a passing run reaches here, so release it unless keep=true.
 			[ "${keep:-false}" = true ] || make -C "$_repo_root" act-swarm-down name="$app"

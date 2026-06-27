@@ -94,7 +94,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        apps: ${{ fromJson(needs.discover.outputs.apps) }}
+        include: ${{ fromJson(needs.discover.outputs.apps) }}
 
     env:
       APP_ID: ${{ matrix.apps }}
