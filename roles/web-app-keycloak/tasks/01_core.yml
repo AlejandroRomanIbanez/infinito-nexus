@@ -13,6 +13,7 @@
     name: sys-stk-full
   vars:
     compose_handlers_flush: true
+    webserver_extra_configuration: "{{ lookup('template', 'nginx/helper_iframes.conf.j2') }}"
 
 - name: "Keycloak manager-side operations (file deploys + container exec)"
   include_tasks: 02_manager_ops.yml

@@ -1,26 +1,33 @@
 ---
 # nocheck: seaweedfs-required — object storage not implemented for this role
 sso:
+  bond: 1
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
   flavor: oidc
 ldap:
+  bond: 1
   enabled: "{{ 'svc-db-openldap' in group_names }}"
   shared: "{{ 'svc-db-openldap' in group_names }}"
 logout:
+  bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
   shared: "{{ 'web-svc-logout' in group_names }}"
 dashboard:
+  bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
   shared: "{{ 'web-app-dashboard' in group_names }}"
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 email:
+  bond: 1
   enabled: "{{ 'web-app-mailu' in group_names }}"
   shared: "{{ 'web-app-mailu' in group_names }}"
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 postgres:
+  bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 odoo:
@@ -36,16 +43,6 @@ odoo:
     no_stop_required: true
   email:
     from_name: ERP ({{ DOMAIN_PRIMARY }})
-  modules:
-    core:
-      - crm
-      - contacts
-      - sale_management
-      - account
-      - website
-      - project
-      - stock
-    optional: []
   ports:
     local:
       websocket: 4003
@@ -62,6 +59,7 @@ odoo:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 redis:
+  bond: 1
   enabled: true
   shared: "{{ 'svc-db-redis' in group_names }}"
   cpus: "0.5"
@@ -70,6 +68,7 @@ redis:
   pids_limit: 256
 # nocheck: playwright-service-flag — verified by web-svc-css provider spec
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 # nocheck: dynamic-flag
@@ -78,5 +77,6 @@ javascript:
   enabled: false
   shared: true
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

@@ -4,6 +4,7 @@ unbound:
   default_placement: manager
   enabled: true
   shared: true
+  bond: 1
   image: ghcr.io/mailu/unbound
   name: unbound
   version: "2024.06"

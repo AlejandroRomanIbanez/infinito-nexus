@@ -30,6 +30,7 @@ recaptcha:
   enabled: false
 # nocheck: playwright-service-flag — self-provider
 simpleicons:
+  bond: 1
   enabled: true
   shared: true
   image: node
@@ -38,9 +39,9 @@ simpleicons:
   local_version: latest
   min_storage: 1GB
   cpus: 0.5
-  mem_reservation: 126m
-  mem_limit: 265m
-  pids_limit: 126
+  mem_reservation: 128m
+  mem_limit: 256m
+  pids_limit: 128
   ports:
     local:
       http: 8044
@@ -50,5 +51,6 @@ simpleicons:
     service_key: simpleicons
   lifecycle: beta
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

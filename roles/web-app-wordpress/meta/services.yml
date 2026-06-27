@@ -1,23 +1,29 @@
 ---
-# nocheck: seaweedfs-required — object storage not implemented for this role
+# nocheck: seaweedfs-required, object storage not implemented for this role
 sso:
+  bond: 1
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
   flavor: oidc
 logout:
+  bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
   shared: "{{ 'web-svc-logout' in group_names }}"
 dashboard:
+  bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
   shared: "{{ 'web-app-dashboard' in group_names }}"
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
-# nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
+# nocheck: playwright-service-flag, DB engine, covered by role-local integration tests
 mariadb:
+  bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
 discourse:
+  bond: 1
   enabled: "{{ 'web-app-discourse' in group_names }}"
   shared: "{{ 'web-app-discourse' in group_names }}"
 wordpress:
@@ -35,13 +41,6 @@ wordpress:
   max_upload_size: 256M
   multisite:
     enabled: false
-  plugins:
-    wp-discourse:
-      enabled: "{{ lookup('config', 'web-app-wordpress', 'services.discourse.enabled') | bool }}"
-    daggerhart-openid-connect-generic:
-      enabled: "{{ lookup('config', 'web-app-wordpress', 'services.sso.enabled') | bool }}"
-    activitypub:
-      enabled: true
   ports:
     local:
       http: 8003
@@ -50,10 +49,12 @@ wordpress:
   run_after:
     - web-app-keycloak
   lifecycle: beta
-# nocheck: playwright-service-flag — verified by web-svc-css provider spec
+# nocheck: playwright-service-flag, verified by web-svc-css provider spec
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

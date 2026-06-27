@@ -1,4 +1,6 @@
 ---
+- include_tasks: utils/once/flag.yml
+
 - name: Validate XWiki variables
   include_tasks: 02_validation.yml
 

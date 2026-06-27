@@ -4,6 +4,7 @@ typesense:
   default_placement: manager
   enabled: true
   shared: true
+  bond: 1
   image: typesense/typesense
   name: typesense
   version: 0.25.2

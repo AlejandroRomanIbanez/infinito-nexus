@@ -12,6 +12,7 @@ All role-owned metadata lives under `roles/<role>/meta/<topic>.yml`.
 | `meta/server.yml`        | CSP, `domains`, `status_codes`, plus per-role `networks.local.{subnet,dns_resolver}`. File root IS `applications.<app>.server`.                   |
 | `meta/rbac.yml`          | RBAC declarations. File root IS `applications.<app>.rbac`.                                                                                         |
 | `meta/volumes.yml`       | Compose volumes. File root IS the volumes map keyed by volume name. No `compose:` and no `volumes:` wrapper.                                      |
+| `meta/addons/<id>.yml`   | Optional. One file per addon (file root IS the addon spec; filename stem = addon id). See [Unified Addons](#unified-addons-metaaddons-) below. |
 | `meta/users.yml`         | Role-local user definitions. File root IS the users map (no `users:` wrapper).                                                                     |
 | `meta/schema.yml`        | Credential schema definitions and runtime credential values.                                                                                       |
 | `meta/info.yml`          | Optional. Descriptive role-level metadata (`logo`, `homepage`, `video`, `display`). File root IS `applications.<app>.info` (no `info:` wrapper). |
@@ -47,14 +48,17 @@ The paths are:
 
 All non-compose top-level keys (everything except `compose:`, `server:`, `rbac:`, and `credentials:`) MUST be inlined into `meta/services.yml` under `<primary_entity>.<key>`, where `<primary_entity>` is the value returned by `get_entity_name(role_name)`.
 
-Inlined keys observed today (non-exhaustive): `plugins`, `plugins_enabled`, `email`, `ldap`, `accounts`, `scopes`, `alerting`, `addons`, `languages`, `company`, `default_quota`, `legacy_login_mask`, `site_name`, `token`, `modules`, `network`, `performance`, `preload_models`, `provision`, `features`.
+Inlined keys observed today (non-exhaustive): `plugins`, `plugins_enabled`, `email`, `ldap`, `accounts`, `scopes`, `alerting`, `languages`, `company`, `default_quota`, `legacy_login_mask`, `site_name`, `token`, `modules`, `network`, `performance`, `preload_models`, `provision`, `features`.
+
+`addons` is **not inlined** under the primary entity: role-level extensions are a first-class, per-file topic under `meta/addons/` (see [Unified Addons](#unified-addons-metaaddons-)).
+The same applies to a role that spells the concept `plugins`/`extensions`/`modules`/`mu_plugins`: those declarations live under `meta/addons/`.
 
 `compose.volumes:` is **not** inlined into services.
-It moves to its own `meta/volumes.yml` (volumes are role-wide, not per-service).
+It lives in its own `meta/volumes.yml` (volumes are role-wide, not per-service).
 
 ### Worked Example: `web-app-matomo`
 
-`get_entity_name('web-app-matomo') == 'matomo'`, so every former top-level `config/main.yml` key (`site_name`, `performance`, …) is inlined under `matomo.<key>`:
+`get_entity_name('web-app-matomo') == 'matomo'`, so every non-compose top-level key (`site_name`, `performance`, …) is inlined under `matomo.<key>`:
 
 ```yaml
 # roles/web-app-matomo/meta/services.yml  (file root IS the services map)
@@ -210,7 +214,7 @@ view:
 
 ### Port Bands 📊
 
-The per-category port ranges that the suggester proposes from and that the lint check enforces live as a single `PORT_BANDS` map in [group_vars/all/08_networks.yml](../../../../../group_vars/all/08_networks.yml).
+The per-category port ranges that the suggester proposes from and that the lint check enforces live as a single `PORT_BANDS` map in [08_networks.yml](../../../../../group_vars/all/08_networks.yml).
 Suggesters and lint pick up new entries automatically, with no second registration step.
 See `cli contributing network ports suggest` in [port.md](../../../tools/network/port.md).
 
@@ -301,6 +305,89 @@ applications.<role>.info.{logo,homepage,video,display}
 ```
 
 The dashboard's `web-app-dashboard/lookup_plugins/docker_cards.py` reads `logo.class` and `display` from this location, while `description` and `galaxy_tags` continue to come from `galaxy_info` (Galaxy-spec fields).
+
+## Unified Addons: `meta/addons/` 🧩
+
+Role-level extensions, whatever a given app calls them natively (`addon`, `plugin`, `mu_plugin`, `extension`, `module`, or a network/appservice `bridge`), are declared through one unified contract under `meta/addons/` (requirement 026).
+The per-app spelling under the primary service entity (`addons` / `plugins` / `modules` / `mu_plugins`) maps onto this single contract.
+
+Each addon lives in its own file `meta/addons/<addon_id>.yml`: **the file root IS the addon spec, there is NO wrapping `<addon_id>:` key, and the filename stem supplies the addon id.**
+All files in the directory are collected into `applications.<role_id>.addons`, keyed by `<addon_id>`.
+The materialised path is `applications.<role_id>.addons.<addon_id>`, read via `lookup('config', application_id, 'addons.<addon_id>')`.
+
+```yaml
+# roles/web-app-friendica/meta/addons/ldapauth.yml  (file root IS the addon spec)
+enabled: "{{ lookup('config', application_id, 'services.ldap.enabled') | bool }}"
+required: false             # true for core components that must always install
+mechanism: addon            # addon | plugin | mu_plugin | extension | module | bridge
+source: upstream            # upstream | bundled | vendored | built
+bridges:                    # optional; in-repo service keys declared in meta/services.yml
+  - ldap
+version: ""                 # optional upstream pin; "" tracks the app default
+group: optional             # optional grouping label (e.g. odoo core/optional)
+update:
+  monitored: true           # optional; external tests check latest versions
+  catalog: friendica-addons # optional; supported upstream catalog adapter
+  upstream_id: ldapauth     # optional; defaults to the addon id
+config: {}                  # optional, opaque, role-interpreted runtime payload
+```
+
+### Fields
+
+| Field | Required | Type | Default | Notes |
+|-------|----------|------|---------|-------|
+| `mechanism` | yes | enum | — | `addon` / `plugin` / `mu_plugin` / `extension` / `module` / `bridge`. Selects the install path. `bridge` denotes a network/appservice bridge addon (distinct from the `bridges:` field). |
+| `source` | yes | enum | — | `upstream` / `bundled` / `vendored` / `built`. |
+| `enabled` | no | bool \| Jinja | `false` (or `true` when `required: true`) | Normalised by the loader. When the addon bridges exactly one service, reference that service's `enabled` flag instead of re-deriving group membership. |
+| `required` | no | bool | `false` | `true` = baseline install contract: always installed, MAY omit `enabled`, MUST NOT set `enabled: false`. Also gates install-failure: a failed `required: true` addon hard-fails the play; a failed `required: false` addon warns, is skipped, and the play continues. |
+| `bridges` | no | list | — | Non-empty list of in-repo service keys; each MUST resolve to a service block in the same role's `meta/services.yml`. Omit when there is no cross-role dependency. |
+| `version` | no | string | `""` | A pin MUST be a quoted string, never an unquoted number. `""` tracks the app default. |
+| `group` | no | string | — | Free grouping label (e.g. Odoo `core`/`optional`). MUST NOT affect enablement. |
+| `update` | no | map | — | `monitored` (bool, default `false`), `catalog` (a supported adapter), `upstream_id` (defaults to the addon id). |
+| `config` | no | map | — | Opaque, role-interpreted runtime payload. Lint does not constrain its inner shape beyond requiring a mapping. Secrets inside `config` MUST resolve through `lookup('config', application_id, 'credentials.<name>')` and MUST NOT be inlined literally. |
+
+Any credential an addon needs is declared in `meta/schema.yml` `credentials:`
+and read via `lookup('config', application_id, 'credentials.<name>')`. There
+is no new secret store.
+
+### Bridges: in-repo dependency vs network bridge
+
+Two distinct meanings of "bridge" MUST NOT be conflated:
+
+- the **`bridges:` field** names an in-repo cross-role service dependency
+  (e.g. an addon that talks to `svc-db-openldap` via the role's `ldap`
+  service block). Each listed key MUST be a service block in the same role's
+  `meta/services.yml`; lint fails otherwise.
+- **`mechanism: bridge`** marks an addon that *is* a network/appservice
+  bridge to an external system (e.g. a Matrix `mautrix` bridge to WhatsApp).
+
+A single addon MAY be both: a `mechanism: bridge` addon MAY also declare a
+`bridges:` dependency on an in-repo service it relies on.
+
+Front-door auth gates (e.g. an oauth2-proxy `sso` service in front of the
+vhost) are NOT addon bridges unless the addon itself talks to that service;
+they stay in `meta/services.yml` and MUST NOT appear under `bridges:`.
+
+### Loader, lint, and the materialised path
+
+- The application loader (`utils/cache/applications.py`) reads every
+  `meta/addons/<id>.yml` like the other file-rooted meta topics and
+  **normalises the enable state**:
+  `required: true` defaults to enabled, an optional addon defaults to
+  disabled, and an explicit `enabled` value is preserved verbatim. No new
+  repo-wide dictionary is introduced.
+- Schema validation lives in
+  [`tests/lint/ansible/services/test_addons_schema.py`](../../../../../tests/lint/ansible/services/test_addons_schema.py)
+  and bridge resolution / parity in
+  [`test_addons_bridges.py`](../../../../../tests/lint/ansible/services/test_addons_bridges.py).
+  Suppress with `# nocheck: addon-schema` / `# nocheck: addon-bridge` (comment
+  block above the addon key) or `# nocheck: addon-secret` (on a `config` leaf).
+- Optional (`required: false`) addons express their enabled/disabled split as
+  a [`meta/variants.yml`](#) axis so the CI matrix exercises both states.
+
+> The Ansible-level `plugins/` directory (filters, lookups, modules) is a
+> different concept from the application-level `addons` topic. See the
+> [plugins README](../../../../../plugins/README.md) for the distinction.
 
 ## Related Pages 📚
 

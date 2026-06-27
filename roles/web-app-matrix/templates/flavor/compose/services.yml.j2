@@ -9,7 +9,7 @@
       driver: journald
 {% set _synapse_extra_mounts = [] %}
 {% for item in MATRIX_BRIDGES %}
-{%   set _ = _synapse_extra_mounts.append(lookup('container', application_id, 'directories.instance') ~ 'mautrix/' ~ item.bridge_name ~ '/registration.yaml:' ~ MATRIX_REGISTRATION_FILE_FOLDER ~ item.bridge_name ~ '.registration.yaml:ro') %}
+{%   set _ = _synapse_extra_mounts.append(lookup('container', application_id, 'directories.instance') ~ 'mautrix/' ~ item.bridge_name ~ ':' ~ MATRIX_REGISTRATION_FILE_FOLDER ~ 'mautrix-' ~ item.bridge_name ~ ':ro') %}
 {% endfor %}
     {{ lookup('container_volumes', application_id, service_name, extra_volumes=_synapse_extra_mounts) | indent(4) }}
     environment:
@@ -18,12 +18,11 @@
     ports:
       - "{{ DOCKER_BIND_HOST }}:{{lookup('config', 'web-app-matrix', 'services.synapse.ports.local.http')}}:{{ container_port }}"
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
-{% if MATRIX_BRIDGES | length > 0 %}
-{% set deps = {} %}
-{% for item in MATRIX_BRIDGES %}{% set _ = deps.__setitem__('mautrix-' ~ item.bridge_name, 'service_healthy') %}{% endfor %}
-    {{ lookup('depends_on', deps) }}
-{% endif %}
-    {{ lookup('container_depends_on', application_id) | indent(4) }}
+{% set _synapse_bridge_deps = {} %}
+{% for item in MATRIX_BRIDGES %}
+{%   set _ = _synapse_bridge_deps.__setitem__('mautrix-' ~ item.bridge_name, {'condition': 'service_healthy'}) %}
+{% endfor %}
+    {{ lookup('container_depends_on', application_id, extra=_synapse_bridge_deps) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 {% set service_name = 'element' %}
   {{ service_name }}:
@@ -49,9 +48,10 @@
       - ./mautrix/{{ item.bridge_name }}:/data
     healthcheck:
       test: ["CMD-SHELL", "test -f {{ MATRIX_REGISTRATION_FILE_FOLDER }}registration.yaml || exit 1"]
-      interval: 1m
+      interval: 15s
       timeout: 10s
-      retries: 3
+      retries: 5
+      start_period: 5m
     {{ lookup('container_networks') | indent(4) }}
 {% endfor %}
 {% if lookup('config', application_id, 'services.matrix.plugins.chatgpt') | bool %}

@@ -4,6 +4,7 @@ rabbitmq:
   default_placement: manager
   enabled: true
   shared: true
+  bond: 1
   image: rabbitmq
   name: rabbitmq
   version: "3.13-management-alpine"

@@ -6,6 +6,7 @@ logout:
   enabled: false
   shared: false
 ldap:
+  bond: 1
   enabled: "{{ 'svc-db-openldap' in group_names }}"
   shared: "{{ 'svc-db-openldap' in group_names }}"
   sync:
@@ -13,16 +14,20 @@ ldap:
       changes: 900
       full: 86400
 dashboard:
+  bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
   shared: "{{ 'web-app-dashboard' in group_names }}"
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 email:
+  bond: 1
   enabled: "{{ 'web-app-mailu' in group_names }}"
   shared: "{{ 'web-app-mailu' in group_names }}"
 # nocheck: playwright-service-flag — self-provider
 keycloak:
+  bond: 1
   enabled: true
   shared: true
   provides: sso
@@ -79,10 +84,12 @@ sso_proxy:
   pids_limit: 256
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 postgres:
+  bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 # nocheck: playwright-service-flag — css consumer, no Playwright surface (provider: web-svc-css)
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 # nocheck: dynamic-flag
@@ -90,5 +97,6 @@ css:
 recaptcha:
   enabled: "{{ RECAPTCHA_ENABLED | bool }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

@@ -95,11 +95,11 @@
       enabled: false
       shared: false
     postgres:
-      shared: false
+      shared: true
     redis:
-      shared: false
+      shared: true
     typesense:
-      shared: false
+      shared: true
     prometheus:
       enabled: false
       shared: false

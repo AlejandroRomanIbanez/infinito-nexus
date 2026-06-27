@@ -2,6 +2,7 @@
 nfs-server:
   enabled: "{{ 'svc-storage-nfs-server' in group_names }}"
   shared: "{{ 'svc-storage-nfs-server' in group_names }}"
+  bond: 1
 nfs-client:
   name: nfs-client
   lifecycle: beta

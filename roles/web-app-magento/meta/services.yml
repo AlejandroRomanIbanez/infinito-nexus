@@ -1,11 +1,13 @@
 ---
 # nocheck: seaweedfs-playwright — Magento remote storage is wired into bin/magento setup:install at first boot; the role ships no templates/playwright.env.j2 (not Playwright-enabled) so the gated upload scenario cannot run here
 logout:
+  bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
   shared: "{{ 'web-svc-logout' in group_names }}"
 # nocheck: dynamic-flag
 # nocheck: oidc
 sso:
+  bond: 1
   enabled: "{{ 'web-app-keycloak' in group_names }}"
   shared: "{{ 'web-app-keycloak' in group_names }}"
   flavor: oauth2
@@ -14,12 +16,15 @@ sso:
       host: nginx
       port: "8080"
 dashboard:
+  bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
   shared: "{{ 'web-app-dashboard' in group_names }}"
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 email:
+  bond: 1
   enabled: "{{ 'web-app-mailu' in group_names }}"
   shared: "{{ 'web-app-mailu' in group_names }}"
 php:
@@ -52,10 +57,15 @@ mariadb:
 # nocheck: shared
 # nocheck: dynamic-flag
 redis:
+  bond: 1
   backup:
     disabled: true
   enabled: true
   shared: "{{ 'svc-db-redis' in group_names }}"
+  cpus: "0.5"
+  mem_reservation: 128m
+  mem_limit: 512m
+  pids_limit: 512
 # nocheck: shared
 # nocheck: dynamic-flag
 search:
@@ -69,13 +79,16 @@ search:
   mem_limit: 2g
   pids_limit: 1024
 seaweedfs:
+  bond: 1
   enabled: "{{ 'web-app-seaweedfs' in group_names }}"
   shared: "{{ 'web-app-seaweedfs' in group_names }}"
   public: true
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
 magento:

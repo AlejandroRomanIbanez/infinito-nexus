@@ -4,6 +4,7 @@ qdrant:
   default_placement: manager
   enabled: true
   shared: true
+  bond: 1
   image: qdrant/qdrant
   name: qdrant
   version: v1.12.4

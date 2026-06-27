@@ -79,7 +79,7 @@ jobs:
         run: ./scripts/github/resolve/output_apps.sh
 
   compose:
-    name: 🐳 Compose ${{ matrix.apps }}
+    name: 🐳 Compose ${{ matrix.apps }}${{ matrix.variant && format(' [{0}]', matrix.variant) || '' }}
     if: needs.discover.outputs.apps != '' && needs.discover.outputs.apps != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 360
@@ -88,7 +88,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        apps: ${{ fromJson(needs.discover.outputs.apps) }}
+        include: ${{ fromJson(needs.discover.outputs.apps) }}
 
     steps:
       - name: 🧹 Free disk space
@@ -122,6 +122,7 @@ jobs:
         shell: bash
         env:
           apps: ${{ matrix.apps }}
+          variant: ${{ matrix.variant }}
           ANSIBLE_LOG_PATH: /tmp/ansible-${{ matrix.apps }}.log
         run: ./scripts/tests/deploy/ci/all.sh 2>&1 | tee "/tmp/ansible-${{ matrix.apps }}.log"
 
@@ -162,7 +163,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: playwright-compose-${{ matrix.apps }}
+          name: playwright-compose-${{ matrix.apps }}${{ matrix.variant_slug && format('-{0}', matrix.variant_slug) || '' }}
           path: /tmp/playwright-artifacts/
           if-no-files-found: ignore
 

@@ -3,6 +3,7 @@
 node:
   enabled: "{{ 'svc-swarm-node' in group_names }}"
   shared: "{{ 'svc-swarm-node' in group_names }}"
+  bond: 1
 manager:
   name: swarm-manager
   lifecycle: beta

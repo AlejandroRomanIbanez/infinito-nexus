@@ -20,6 +20,7 @@ from pathlib import Path
 from utils.cache import _reset_cache_for_tests
 from utils.cache import applications as cache_apps
 from utils.roles.mapping import (
+    ROLE_DIR_META_ADDONS,
     ROLE_FILE_META_SERVICES,
     ROLE_FILE_META_USERS,
     ROLE_FILE_META_VARIANTS,
@@ -175,7 +176,7 @@ class TestGetVariantOverridesOnly(unittest.TestCase):
                 """,
             )
             overrides = cache_apps.get_variant_overrides_only(roles_dir=roles)
-            # Variant 0 stays empty (no override) — the role's
+            # Variant 0 stays empty (no override): the role's
             # `meta/services.yml` baseline (image=foo) is NOT mixed in.
             self.assertEqual(overrides["web-app-foo"][0], {})
             # Variant 1 carries only the override fields.
@@ -205,6 +206,105 @@ class TestBuildRoleBaseConfig(unittest.TestCase):
                 cache_apps._build_role_base_config(role, role.parent),
                 {},
             )
+
+
+class TestAddonsNormalization(unittest.TestCase):
+    """Each `meta/addons/<id>.yml` file (root = the addon spec) is loaded into
+    `applications.<role>.addons.<id>` with its enable state normalised: the
+    loader is the single place that resolves `required`/`enabled` defaults so
+    every consumer reads one already-resolved view.
+    """
+
+    def setUp(self) -> None:
+        _reset_cache_for_tests()
+
+    def _addon_file(self, roles: Path, addon_id: str, spec_yaml: str) -> None:
+        _write(
+            roles / "web-app-foo" / ROLE_DIR_META_ADDONS / f"{addon_id}.yml",
+            spec_yaml,
+        )
+
+    def _defaults_with_addon(self, tmp: Path, addon_id: str, spec_yaml: str) -> dict:
+        roles = _seed_minimal_roles(tmp)
+        self._addon_file(roles, addon_id, spec_yaml)
+        defaults = cache_apps.get_application_defaults(roles_dir=roles)
+        return defaults["web-app-foo"]["addons"]
+
+    def test_required_true_defaults_enabled_true(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            addons = self._defaults_with_addon(
+                Path(tmp),
+                "core_module",
+                """
+                mechanism: module
+                source: upstream
+                required: true
+                """,
+            )
+            self.assertTrue(addons["core_module"]["enabled"])
+            self.assertTrue(addons["core_module"]["required"])
+
+    def test_optional_addon_defaults_enabled_false(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            addons = self._defaults_with_addon(
+                Path(tmp),
+                "opt",
+                """
+                mechanism: plugin
+                source: upstream
+                """,
+            )
+            self.assertIs(addons["opt"]["enabled"], False)
+            self.assertIs(addons["opt"]["required"], False)
+
+    def test_explicit_enabled_jinja_is_preserved(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            expr = (
+                "{{ lookup('config', application_id, 'services.ldap.enabled') | bool }}"
+            )
+            addons = self._defaults_with_addon(
+                Path(tmp),
+                "ldapauth",
+                f"""
+                mechanism: addon
+                source: upstream
+                enabled: "{expr}"
+                bridges:
+                  - ldap
+                """,
+            )
+            self.assertEqual(addons["ldapauth"]["enabled"], expr)
+
+    def test_explicit_enabled_false_on_optional_is_preserved(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            addons = self._defaults_with_addon(
+                Path(tmp),
+                "bridge_net",
+                """
+                mechanism: bridge
+                source: upstream
+                required: false
+                enabled: false
+                """,
+            )
+            self.assertIs(addons["bridge_net"]["enabled"], False)
+
+    def test_normalization_does_not_corrupt_yaml_cache(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            roles = _seed_minimal_roles(Path(tmp))
+            self._addon_file(
+                roles,
+                "opt",
+                """
+                mechanism: plugin
+                source: upstream
+                """,
+            )
+            first = cache_apps.get_application_defaults(roles_dir=roles)
+            first["web-app-foo"]["addons"]["opt"]["enabled"] = "mutated"
+            _reset_cache_for_tests()
+            second = cache_apps.get_application_defaults(roles_dir=roles)
+            self.assertIs(second["web-app-foo"]["addons"]["opt"]["enabled"], False)
 
 
 class TestGetMergedApplicationsRespectsOverrides(unittest.TestCase):

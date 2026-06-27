@@ -6,6 +6,7 @@
     name: sys-stk-full
   vars:
     compose_handlers_flush: false
+    webserver_extra_configuration: "client_max_body_size 512M;"
 
 - name: "Pixelfed manager-side operations (file deploys + container exec)"
   include_tasks: 02_manager_ops.yml

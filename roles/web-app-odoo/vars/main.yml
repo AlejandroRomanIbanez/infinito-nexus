@@ -2,9 +2,6 @@
 application_id: "web-app-odoo"
 entity_name: "{{ application_id | get_entity_name }}"
 
-webserver_client_max_body_size: "100m"
-webserver_vhost_flavour: "ws_generic"
-webserver_websocket_location: "/websocket"
 websocket_port: "{{ lookup('config', application_id, 'services.odoo.ports.local.websocket') }}"
 
 container_port: 8069
@@ -31,8 +28,9 @@ ODOO_ADMINISTRATOR_EMAIL: "{{ lookup('users', 'administrator').email }}"
 
 ODOO_MASTER_PASSWORD: "{{ lookup('config', application_id, 'credentials.master_password') }}"
 
-ODOO_MODULES_CORE: "{{ lookup('config', application_id, 'services.odoo.modules.core') }}"
-ODOO_MODULES_OPTIONAL: "{{ lookup('config', application_id, 'services.odoo.modules.optional') }}"
+ODOO_MODULES_CORE: "{{ lookup('config', application_id, 'addons') | dict2items | selectattr('value.group','equalto','core') | map(attribute='key') | list }}"
+ODOO_MODULES_OPTIONAL: "{{ lookup('config', application_id, 'addons') | dict2items | selectattr('value.group','equalto','optional') | map(attribute='key') | list
+  }}"
 
 ODOO_DB_HOST: "{{ lookup('database', application_id, 'host') }}"
 ODOO_DB_NAME: "{{ lookup('database', application_id, 'name') }}"

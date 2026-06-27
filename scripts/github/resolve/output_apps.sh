@@ -5,9 +5,18 @@
 #   INFINITO_WHITELIST — optional space-separated allowlist
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+cd "${REPO_ROOT}"
+
+# shellcheck source=scripts/meta/env/python.sh
+source "${REPO_ROOT}/scripts/meta/env/python.sh"
+
 apps="$(./scripts/meta/resolve/apps.sh)"
 [[ -n "$apps" ]] || apps='[]'
 
-echo "apps=$apps" >>"$GITHUB_OUTPUT"
-echo "apps_json=$apps" >>"$GITHUB_OUTPUT"
-echo "apps_json=$apps"
+matrix="$(printf '%s' "$apps" | "${PYTHON}" -m utils.github.variant_bundles)"
+[[ -n "$matrix" ]] || matrix='[]'
+
+echo "apps=$matrix" >>"$GITHUB_OUTPUT"
+echo "apps=$matrix"

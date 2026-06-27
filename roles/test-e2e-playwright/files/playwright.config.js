@@ -8,10 +8,12 @@ const globalTimeout = parseInt(process.env.INFINITO_PLAYWRIGHT_GLOBAL_TIMEOUT_MS
 
 module.exports = defineConfig({
   testDir: "./tests",
-  timeout: 300_000,
+  testMatch: "**/*.@(spec|test).js",
+  timeout: Number(process.env.PLAYWRIGHT_TEST_TIMEOUT) || 300_000,
   ...(globalTimeout > 0 ? { globalTimeout } : {}),
   retries: 2,
-  workers: 1,
+  workers: Number(process.env.PLAYWRIGHT_WORKERS) || 1,
+  fullyParallel: (process.env.PLAYWRIGHT_FULLY_PARALLEL || "").toLowerCase() === "true",
   outputDir: "/reports/test-results",
   reporter: [
     ["list"],

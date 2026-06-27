@@ -1,20 +1,28 @@
 ---
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 # nocheck: shared
 # nocheck: dynamic-flag
 redis:
+  bond: 1
   backup:
     disabled: true
   enabled: true
   shared: "{{ 'svc-db-redis' in group_names }}"
+  cpus: "0.5"
+  mem_reservation: 128m
+  mem_limit: 512m
+  pids_limit: 512
 postgres:
+  bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 onlyoffice:
   # nocheck: default-placement-manager  embedded postgres/redis/rabbitmq engine state; node-local in swarm
   default_placement: manager
+  bond: 1
   enabled: true
   shared: true
   image: onlyoffice/documentserver
@@ -24,7 +32,7 @@ onlyoffice:
   cpus: 2
   mem_reservation: 1g
   mem_limit: 4g
-  pids_limit: 8192
+  pids_limit: 4096
   backup:
     no_stop_required: true
   ports:
@@ -36,8 +44,10 @@ onlyoffice:
     service_key: onlyoffice
   lifecycle: beta
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

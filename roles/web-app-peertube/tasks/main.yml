@@ -1,20 +1,6 @@
 ---
-- name: "include 01_create-domains.yml for peertube"
-  include_tasks: 01_create-domains.yml
-  loop: "{{ lookup('domains', application_id) }}"
-  loop_control:
-    loop_var: domain
+- name: "Execute Role (once)"
+  include_tasks: 01_core.yml
+  when: run_once_web_app_peertube is not defined
   vars:
-    # Websockt and http listen to the same port
-    http_port: "{{ lookup('config', application_id, 'services.peertube.ports.local.http') }}"
-    websocket_port: "{{ lookup('config', application_id, 'services.peertube.ports.local.http') }}"
-
-- name: "load docker and db for {{ application_id }}"
-  include_role:
-    name: sys-stk-backend
-  vars:
-    compose_handlers_flush: true
-
-- name: "Execute stack host routines"
-  include_tasks: 02_stack_host.yml
-  when: IS_STACK_HOST | bool
+    application_id: "web-app-peertube"

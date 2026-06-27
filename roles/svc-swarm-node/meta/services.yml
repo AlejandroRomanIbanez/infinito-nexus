@@ -3,6 +3,7 @@
 node:
   name: swarm
   lifecycle: beta
+  bond: 1
   enabled: true
   shared: true
   min_storage: "100MB"

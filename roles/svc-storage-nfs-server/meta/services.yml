@@ -8,6 +8,7 @@ nfs-server:
     - swarm
   enabled: true
   shared: true
+  bond: 1
   min_storage: "100MB"
   cpus: "0.2"
   mem_reservation: "64m"

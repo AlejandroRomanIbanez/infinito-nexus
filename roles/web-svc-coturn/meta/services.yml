@@ -1,8 +1,10 @@
 ---
 matomo:
+  bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 coturn:
+  bond: 1
   enabled: true
   shared: true
   image: coturn/coturn
@@ -30,6 +32,10 @@ coturn:
 gateway:
   image: nginx
   version: alpine
+  cpus: "0.3"
+  mem_reservation: 256m
+  mem_limit: 512m
+  pids_limit: 256
 # nocheck: dynamic-flag
 redis:
   backup:
@@ -37,8 +43,10 @@ redis:
   enabled: false
   shared: "{{ 'svc-db-redis' in group_names }}"
 css:
+  bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

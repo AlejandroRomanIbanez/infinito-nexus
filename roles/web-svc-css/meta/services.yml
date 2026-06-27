@@ -1,12 +1,19 @@
 ---
 # nocheck: playwright-service-flag — self-provider
 css:
+  bond: 1
   enabled: true
   shared: true
+  cpus: "0.2"
+  mem_reservation: 128m
+  mem_limit: 256m
+  pids_limit: 128
+  min_storage: "1GB"
   lifecycle: beta
 # nocheck: playwright-service-flag — provider role; no consumer surface to gate
 # nocheck: dynamic-flag
 cdn:
+  bond: 1
   enabled: true
   shared: true
 # nocheck: playwright-service-flag — provider role; no consumer surface to gate
@@ -15,5 +22,6 @@ matomo:
   enabled: false
   shared: false
 prometheus:
+  bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"

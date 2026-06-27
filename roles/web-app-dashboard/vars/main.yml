@@ -3,8 +3,6 @@ application_id: "web-app-dashboard"
 DASHBOARD_APPLICATION_ID: "web-app-dashboard"
 http_port: "{{ lookup('config', DASHBOARD_APPLICATION_ID, 'services.dashboard.ports.local.http') }}"
 
-webserver_extra_configuration: "{{ lookup('template', 'nginx/sso.html.conf.j2') }}"
-
 DASHBOARD_SIMPLEICONS_ENABLED: "{{ lookup('config', DASHBOARD_APPLICATION_ID, 'services.simpleicons.enabled') }}"
 # Browser-facing absolute base URL of the public Simple Icons service.
 # Cards reference SVGs directly under this URL (icon.source = "<base>/<slug>.svg").

@@ -8,6 +8,9 @@
     - mailu_user_existing_token is not none
     - mailu_user_existing_token.id is defined
   register: mailu_token_delete
+  until: mailu_token_delete.rc == 0
+  retries: 30
+  delay: 2
   changed_when: mailu_token_delete.rc == 0
 
 - name: "Create API token for '{{ mailu_user_key }};{{ mailu_user_name }}' if no local token defined"
@@ -23,6 +26,9 @@
     "ip": mailu_token_ip
     } | to_json) | quote }}
   register: mailu_token_creation_request
+  until: mailu_token_creation_request.rc == 0
+  retries: 30
+  delay: 2
   failed_when: mailu_token_creation_request.rc != 0
   changed_when: mailu_token_creation_request.rc == 0
 
