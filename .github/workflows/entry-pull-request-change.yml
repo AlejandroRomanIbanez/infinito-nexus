@@ -130,7 +130,7 @@ jobs:
       distros: "arch debian ubuntu fedora centos"
       whitelist: ${{ needs.detect-affected-roles.outputs.whitelist }}
       roles_only: ${{ needs.detect-affected-roles.outputs.roles_only }}
-      trusted_pr: ${{ contains(github.event.pull_request.labels.*.name, 'trusted-pr') }}
+      trusted_pr: ${{ contains(github.event.pull_request.labels.*.name, '🛡️ Trusted') }}
 
   prepare-fork-merge-ref:
     needs:
@@ -141,7 +141,7 @@ jobs:
     outputs:
       checkout_ref: ${{ steps.out.outputs.checkout_ref }}
       image_tag: ${{ steps.out.outputs.image_tag }}
-      trusted: ${{ contains(github.event.pull_request.labels.*.name, 'trusted-pr') }}
+      trusted: ${{ contains(github.event.pull_request.labels.*.name, '🛡️ Trusted') }}
     steps:
       - name: Checkout
         uses: actions/checkout@v7
