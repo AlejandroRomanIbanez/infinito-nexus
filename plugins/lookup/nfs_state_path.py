@@ -9,6 +9,6 @@ class LookupModule(LookupBase):
     """Cluster-shared NFS state dir: {{ lookup('nfs_state_path') }}."""
 
     def run(self, terms, variables=None, **kwargs):
-        export_base = self._templar.template("{{ storage.nfs.export_base }}")
-        subdir = self._templar.template("{{ STORAGE_NFS_STATE_SUBDIR }}")
-        return [state_path(export_base, subdir)]
+        variables = variables or getattr(self._templar, "available_variables", {}) or {}
+        nfs = variables.get("storage", {}).get("nfs", {})
+        return [state_path(nfs.get("export_base"), variables.get("STORAGE_NFS_STATE_SUBDIR"))]

@@ -9,6 +9,6 @@ class LookupModule(LookupBase):
     """NFS mount options: {{ lookup('nfs_mount_opts') }}."""
 
     def run(self, terms, variables=None, **kwargs):
-        version = self._templar.template("{{ storage.nfs.version | default(4) }}")
-        runtime = self._templar.template("{{ RUNTIME | default('host') }}")
-        return [mount_opts(version, runtime)]
+        variables = variables or getattr(self._templar, "available_variables", {}) or {}
+        nfs = variables.get("storage", {}).get("nfs", {})
+        return [mount_opts(nfs.get("version", 4), variables.get("RUNTIME", "host"))]

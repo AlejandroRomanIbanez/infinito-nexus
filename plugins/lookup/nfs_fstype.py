@@ -9,5 +9,6 @@ class LookupModule(LookupBase):
     """NFS mount fstype (nfs4/nfs): {{ lookup('nfs_fstype') }}."""
 
     def run(self, terms, variables=None, **kwargs):
-        version = self._templar.template("{{ storage.nfs.version | default(4) }}")
+        variables = variables or getattr(self._templar, "available_variables", {}) or {}
+        version = variables.get("storage", {}).get("nfs", {}).get("version", 4)
         return [fstype(version)]
