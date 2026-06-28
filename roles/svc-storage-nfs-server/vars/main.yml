@@ -39,13 +39,7 @@ SVC_STORAGE_NFS_SERVER_SERVICE:
     Ubuntu: nfs-ganesha
     Fedora: nfs-ganesha
 
-SVC_STORAGE_NFS_SERVER_EXPORT_OPTIONS: >-
-  rw,sync,no_subtree_check,root_squash,no_all_squash,crossmnt
-
 SVC_STORAGE_NFS_SERVER_STATE_EXPORT_OPTIONS: >-
   rw,sync,no_subtree_check,no_root_squash,no_all_squash
-SVC_STORAGE_NFS_SERVER_CONTROLLER_TRAVERSAL_OPTIONS: >-
-  ro,sync,no_subtree_check,root_squash,crossmnt
 SVC_STORAGE_NFS_SERVER_STATE_ALLOWED_CIDRS:
   - "*"
-SVC_STORAGE_NFS_SERVER_CONTROLLER_CIDRS: []

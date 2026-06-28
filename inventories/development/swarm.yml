@@ -18,11 +18,8 @@ storage:
     export_base: /srv/nfs
     version: 4
 
-SVC_STORAGE_NFS_SERVER_EXPORT_OPTIONS: >-
-  rw,sync,no_subtree_check,no_root_squash,no_all_squash
-
-SVC_STORAGE_NFS_SERVER_CONTROLLER_CIDRS:
-  - "192.168.244.0/24" # nocheck: hardcoded-subnet (act swarm-lab subnet; the controller traverses the base from its gateway IP on it)
+SVC_STORAGE_NFS_SERVER_STATE_ALLOWED_CIDRS:
+  - "192.168.244.0/24" # nocheck: hardcoded-subnet (act swarm-lab subnet; nodes + controller mount the fsid=0 state export from it)
 
 swarm:
   network:

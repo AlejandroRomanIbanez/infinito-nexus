@@ -1,6 +1,4 @@
 # Managed by Ansible role svc-storage-nfs-server (flavor: ganesha / FSAL_VFS).
-# NFSv4-only userspace export set; Pseudo == Path so clients mount the real
-# paths unchanged (mirrors the kernel /etc/exports without an fsid=0 pseudo-root).
 NFS_CORE_PARAM {
     Protocols = 4;
     NLM_Param = false;

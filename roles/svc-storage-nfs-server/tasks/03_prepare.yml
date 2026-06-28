@@ -23,7 +23,7 @@
       STORAGE_NFS_STATE_PATH must be a strict subdir of storage.nfs.export_base;
       equal paths collide on the two distinct exports (root_squash vs no_root_squash).
 
-- name: "Bind-mount the state subdir onto itself (kernel nfsd needs a real mount boundary to cross into the fsid=2 export)"
+- name: "Bind-mount the state subdir onto itself (gives the fsid=0 export root a stable mount boundary under overlayfs DinD)"
   ansible.posix.mount:
     path: "{{ STORAGE_NFS_STATE_PATH }}"
     src: "{{ STORAGE_NFS_STATE_PATH }}"
