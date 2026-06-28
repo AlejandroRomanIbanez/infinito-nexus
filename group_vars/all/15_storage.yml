@@ -5,6 +5,7 @@ SIZE_PERCENT_CLEANUP_DISC_SPACE: 85 # Threshold for triggering cleanup actions
 STORAGE_NFS_STATE_SUBDIR: infinito-state
 STORAGE_NFS_STATE_PATH: "{{ [ storage.nfs.export_base, STORAGE_NFS_STATE_SUBDIR ] | path_join }}"
 STORAGE_NFS_MOUNT_OPTS: "vers={{ storage.nfs.version }},rw,{{ 'soft,timeo=50,retrans=3' if RUNTIME in ['dev', 'act'] else 'hard,timeo=600' }},nolock"
+STORAGE_NFS_FSTYPE: "{{ 'nfs4' if (storage.nfs.version | int) >= 4 else 'nfs' }}"
 
 storage:
   backend: local
