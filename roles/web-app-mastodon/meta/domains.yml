@@ -1,4 +1,4 @@
 ---
 canonical:
-- microblog.{{ DOMAIN_PRIMARY }}
+  - microblog.{{ DOMAIN_PRIMARY }}
 aliases: []

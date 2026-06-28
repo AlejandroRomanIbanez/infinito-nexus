@@ -1,4 +1,4 @@
 ---
 canonical:
-- jenkins.{{ DOMAIN_PRIMARY }}
+  - jenkins.{{ DOMAIN_PRIMARY }}
 aliases: []

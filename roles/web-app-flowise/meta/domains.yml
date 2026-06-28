@@ -1,4 +1,4 @@
 ---
 canonical:
-- flow.ai.{{ DOMAIN_PRIMARY }}
+  - flow.ai.{{ DOMAIN_PRIMARY }}
 aliases: []

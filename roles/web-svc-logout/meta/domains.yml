@@ -1,4 +1,4 @@
 ---
 canonical:
-- logout.{{ DOMAIN_PRIMARY }}
+  - logout.{{ DOMAIN_PRIMARY }}
 aliases: []

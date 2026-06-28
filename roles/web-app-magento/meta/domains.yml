@@ -1,4 +1,4 @@
 ---
 canonical:
-- magento.shop.{{ DOMAIN_PRIMARY }}
+  - magento.shop.{{ DOMAIN_PRIMARY }}
 aliases: []

@@ -1,4 +1,4 @@
 ---
 canonical:
-- blog.{{ DOMAIN_PRIMARY }}
+  - blog.{{ DOMAIN_PRIMARY }}
 aliases: []

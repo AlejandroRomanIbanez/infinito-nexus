@@ -11,13 +11,13 @@ flags:
     unsafe-inline: true
 whitelist:
   connect-src:
-  - "{{ lookup('domain', 'web-app-odoo') }}"
-  - "wss://{{ lookup('domain', 'web-app-odoo') }}"
+    - "{{ lookup('domain', 'web-app-odoo') }}"
+    - "wss://{{ lookup('domain', 'web-app-odoo') }}"
   frame-ancestors:
-  - "{{ DOMAIN_PRIMARY }}"
-  - "*.{{ DOMAIN_PRIMARY }}"
+    - "{{ DOMAIN_PRIMARY }}"
+    - "*.{{ DOMAIN_PRIMARY }}"
   font-src:
-  - "data:"
-  - https://fonts.gstatic.com     # nocheck: url
+    - "data:"
+    - https://fonts.gstatic.com # nocheck: url
   style-src-elem:
-  - https://fonts.googleapis.com     # nocheck: url
+    - https://fonts.googleapis.com # nocheck: url

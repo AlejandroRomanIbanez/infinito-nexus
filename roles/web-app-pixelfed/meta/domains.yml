@@ -1,4 +1,4 @@
 ---
 canonical:
-- picture.{{ DOMAIN_PRIMARY }}
+  - picture.{{ DOMAIN_PRIMARY }}
 aliases: []

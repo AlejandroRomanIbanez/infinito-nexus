@@ -1,4 +1,4 @@
 ---
 canonical:
-- collabora.{{ DOMAIN_PRIMARY }}
+  - collabora.{{ DOMAIN_PRIMARY }}
 aliases: []
