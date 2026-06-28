@@ -8,9 +8,9 @@ import contextlib
 from typing import Any
 
 from ansible.errors import AnsibleError
+from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
-from utils.cache.applications import get_merged_applications
 from utils.roles.applications.config import get
 from utils.roles.entity_name import get_entity_name
 
@@ -53,11 +53,9 @@ class LookupModule(LookupBase):
                 raw_mode = templar.template(raw_mode)
         deployment_mode = str(raw_mode).strip()
 
-        applications = get_merged_applications(
-            variables=vars_,
-            roles_dir=kwargs.get("roles_dir"),
-            templar=templar,
-        )
+        applications = lookup_loader.get(
+            "applications", loader=self._loader, templar=getattr(self, "_templar", None)
+        ).run([], variables=vars_)[0]
 
         port = _as_str(
             get(

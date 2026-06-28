@@ -1,7 +1,7 @@
 """Unit tests for plugins/lookup/compose_networks.py.
 
 Mocks the Ansible-side machinery (loader, lookup_loader, templar,
-get_merged_applications, build_service_registry_from_applications) and
+build_service_registry_from_applications) and
 asserts that the plugin glue resolves variables and chains the underlying
 ``render_compose_networks`` function correctly.
 
@@ -55,10 +55,6 @@ class TestComposeNetworksLookup(unittest.TestCase):
 
         with (
             mock.patch(
-                "plugins.lookup.compose_networks.get_merged_applications",
-                return_value={},
-            ),
-            mock.patch(
                 "plugins.lookup.compose_networks.build_service_registry_from_applications",
                 return_value={},
             ),
@@ -87,10 +83,6 @@ class TestComposeNetworksLookup(unittest.TestCase):
         lm = _make_lookup(vars_)
 
         with (
-            mock.patch(
-                "plugins.lookup.compose_networks.get_merged_applications",
-                return_value={},
-            ),
             mock.patch(
                 "plugins.lookup.compose_networks.build_service_registry_from_applications",
                 return_value={},
@@ -137,10 +129,6 @@ class TestComposeNetworksLookup(unittest.TestCase):
 
         with (
             mock.patch(
-                "plugins.lookup.compose_networks.get_merged_applications",
-                return_value={},
-            ),
-            mock.patch(
                 "plugins.lookup.compose_networks.build_service_registry_from_applications",
                 return_value={},
             ),
@@ -150,11 +138,15 @@ class TestComposeNetworksLookup(unittest.TestCase):
                 side_effect=_exercise,
             ),
         ):
-            loader_mock.get.side_effect = lambda name, **_: (
-                mock.MagicMock(run=_config_run)
-                if name == "config"
-                else mock.MagicMock(run=_database_run)
-            )
+
+            def _get(name, **_):
+                if name == "config":
+                    return mock.MagicMock(run=_config_run)
+                if name == "applications":
+                    return mock.MagicMock(run=lambda *_a, **_k: [{}])
+                return mock.MagicMock(run=_database_run)
+
+            loader_mock.get.side_effect = _get
             lm.run([], variables=vars_)
 
         self.assertEqual(len(config_calls), 1)

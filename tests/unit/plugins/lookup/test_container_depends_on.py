@@ -2,12 +2,22 @@ from __future__ import annotations
 
 import unittest
 from typing import Any, ClassVar
+from unittest import mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError
 
 from plugins.lookup.container_depends_on import LookupModule
 from utils.cache.yaml import load_yaml_str
+
+
+def _applications_loader(applications):
+    def _get(name, *_a, **_k):
+        if name == "applications":
+            return mock.MagicMock(run=lambda *_ra, **_rk: [applications])
+        return mock.MagicMock(run=lambda *_ra, **_rk: [None])
+
+    return _get
 
 
 def _apps(*, db_enabled=False, db_shared=False, redis=False, oauth2=False):
@@ -24,11 +34,11 @@ def _apps(*, db_enabled=False, db_shared=False, redis=False, oauth2=False):
 
 
 def _run(app_id, applications, *, variables=None, **kwargs):
-    with patch(
-        "plugins.lookup.container_depends_on.get_merged_applications",
-        return_value=applications,
-    ):
-        return LookupModule().run([app_id], variables=variables or {}, **kwargs)
+    lookup = LookupModule()
+    lookup._loader = mock.MagicMock()
+    with patch("plugins.lookup.container_depends_on.lookup_loader") as loader_mock:
+        loader_mock.get.side_effect = _applications_loader(applications)
+        return lookup.run([app_id], variables=variables or {}, **kwargs)
 
 
 def _parse(rendered: str) -> dict[str, Any]:
@@ -153,10 +163,11 @@ class TestContainerDependsOnLookup(unittest.TestCase):
 
         lookup = LookupModule()
         lookup._templar = _StubTemplar()
-        with patch(
-            "plugins.lookup.container_depends_on.get_merged_applications",
-            return_value=_apps(db_enabled=True, redis=True),
-        ):
+        lookup._loader = mock.MagicMock()
+        with patch("plugins.lookup.container_depends_on.lookup_loader") as loader_mock:
+            loader_mock.get.side_effect = _applications_loader(
+                _apps(db_enabled=True, redis=True)
+            )
             out = lookup.run(["app"], variables={"DEPLOYMENT_MODE": jinja_expr})[0]
         parsed = _parse(out)
         self.assertEqual(sorted(parsed["depends_on"]), ["database", "redis"])

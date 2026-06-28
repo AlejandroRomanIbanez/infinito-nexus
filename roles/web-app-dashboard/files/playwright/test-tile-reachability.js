@@ -96,7 +96,7 @@ async function assertTileNavigatesTopLevel(page, context, target) {
     `iframe:false target ${target.id} must not send a framing-blocking X-Frame-Options (got "${xFrameOptions}"); fix the header or use iframe:true`
   ).toBe("");
   const cspHeader = framingProbe.headers()["content-security-policy"] || "";
-  const frameAncestors = (cspHeader.match(/frame-ancestors([^;]*)/i) || [, ""])[1].trim();
+  const frameAncestors = (cspHeader.match(/frame-ancestors([^;]*)/i) || ["", ""])[1].trim();
   if (frameAncestors) {
     expect(
       frameAncestors,

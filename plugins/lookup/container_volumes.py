@@ -8,12 +8,12 @@ from __future__ import annotations
 from typing import Any
 
 from ansible.errors import AnsibleError
+from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
 from plugins.filter.container_volumes import (
     container_volumes as _render_container_volumes,
 )
-from utils.cache.applications import get_merged_applications
 from utils.templating.ansible import _trust_as_template
 
 
@@ -41,11 +41,9 @@ class LookupModule(LookupBase):
         vars_ = variables or getattr(self._templar, "available_variables", {}) or {}
         templar = getattr(self, "_templar", None)
 
-        applications = get_merged_applications(
-            variables=vars_,
-            roles_dir=kwargs.get("roles_dir"),
-            templar=templar,
-        )
+        applications = lookup_loader.get(
+            "applications", loader=self._loader, templar=getattr(self, "_templar", None)
+        ).run([], variables=vars_)[0]
 
         render_jinja = None
         if templar is not None:

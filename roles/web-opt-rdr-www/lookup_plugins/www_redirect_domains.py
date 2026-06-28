@@ -6,7 +6,6 @@ from typing import Any
 from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
-from utils.cache.applications import get_merged_applications
 from utils.roles.applications.config import get
 
 
@@ -79,11 +78,11 @@ class LookupModule(LookupBase):
     ) -> list[list[dict[str, str]]]:
         vars_ = variables or getattr(self._templar, "available_variables", {}) or {}
 
-        applications = get_merged_applications(
-            variables=vars_,
-            roles_dir=kwargs.get("roles_dir"),
+        applications = lookup_loader.get(
+            "applications",
+            loader=self._loader,
             templar=getattr(self, "_templar", None),
-        )
+        ).run([], variables=vars_)[0]
 
         if not isinstance(applications, Mapping):
             return [[]]

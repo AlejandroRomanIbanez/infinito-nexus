@@ -6,8 +6,6 @@ from ansible.errors import AnsibleError
 from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
-from utils.cache.applications import get_merged_applications
-from utils.cache.domains import get_merged_domains
 from utils.cache.files import read_text
 from utils.cache.yaml import load_yaml_any
 from utils.roles.applications.config import get
@@ -49,11 +47,9 @@ class LookupModule(LookupBase):
         # The raw `applications` variable may be an unrendered placeholder
         # inside nested template lookups, which silently makes
         # get(..., strict=False, default=False) return False.
-        applications = get_merged_applications(
-            variables=variables,
-            roles_dir=roles_dir,
-            templar=getattr(self, "_templar", None),
-        )
+        applications = lookup_loader.get(
+            "applications", loader=self._loader, templar=getattr(self, "_templar", None)
+        ).run([], variables=variables, roles_dir=roles_dir)[0]
 
         # Search for all roles starting with "web-app-"
         pattern = str(Path(roles_dir) / "web-app-*")
@@ -146,11 +142,9 @@ class LookupModule(LookupBase):
             icon_class = logo.get("class", "fa-solid fa-cube")
 
             # Retrieve domains via cached merger; applications already merged above.
-            domains = get_merged_domains(
-                variables=variables,
-                roles_dir=roles_dir,
-                templar=getattr(self, "_templar", None),
-            )
+            domains = lookup_loader.get(
+                "domains", loader=self._loader, templar=getattr(self, "_templar", None)
+            ).run([], variables=variables, roles_dir=roles_dir)[0]
             domain_url = domains.get(application_id, "")
 
             if isinstance(domain_url, list):

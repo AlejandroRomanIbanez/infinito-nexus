@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 import unittest
+from unittest import mock
 from unittest.mock import patch
 
 from . import PROJECT_ROOT
@@ -34,9 +35,11 @@ class CspSkipDomainsLookupTests(unittest.TestCase):
     def _run(self, applications, **kwargs):
         lm = self.module.LookupModule()
         lm._templar = _DummyTemplar()
-        with patch.object(
-            self.module, "get_merged_applications", return_value=applications
-        ):
+        lm._loader = mock.MagicMock()
+        with patch.object(self.module, "lookup_loader") as loader_mock:
+            loader_mock.get.return_value = mock.MagicMock(
+                run=lambda *_a, **_k: [applications]
+            )
             return lm.run(terms=[], variables={}, **kwargs)[0]
 
     def test_empty_applications_returns_empty_list(self):

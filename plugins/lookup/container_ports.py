@@ -31,10 +31,10 @@ import contextlib
 from typing import Any
 
 from ansible.errors import AnsibleError
+from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 from ansible.template import trust_as_template
 
-from utils.cache.applications import get_merged_applications
 from utils.roles.applications.config import get
 
 
@@ -91,11 +91,9 @@ class LookupModule(LookupBase):
                 "application_id= explicitly"
             )
 
-        applications = get_merged_applications(
-            variables=variables,
-            roles_dir=kwargs.get("roles_dir"),
-            templar=templar,
-        )
+        applications = lookup_loader.get(
+            "applications", loader=self._loader, templar=getattr(self, "_templar", None)
+        ).run([], variables=variables)[0]
 
         def _port(service: str, scope: str, protocol: str, *, required: bool) -> str:
             value = _as_str(

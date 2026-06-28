@@ -6,12 +6,12 @@ from collections.abc import Mapping
 from typing import Any
 
 from ansible.errors import AnsibleError
+from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
 from plugins.filter.docker_service_enabled import (
     FilterModule as _DockerServiceEnabledFilter,
 )
-from utils.cache.applications import get_merged_applications
 from utils.cache.yaml import dump_yaml_str
 from utils.roles.applications.services.database import (
     get_database_service_config,
@@ -58,11 +58,9 @@ class LookupModule(LookupBase):
         vars_ = variables or getattr(self._templar, "available_variables", {}) or {}
         templar = getattr(self, "_templar", None)
 
-        applications = get_merged_applications(
-            variables=vars_,
-            roles_dir=kwargs.get("roles_dir"),
-            templar=templar,
-        )
+        applications = lookup_loader.get(
+            "applications", loader=self._loader, templar=templar
+        ).run([], variables=vars_)[0]
 
         if application_id not in applications:
             raise AnsibleError(

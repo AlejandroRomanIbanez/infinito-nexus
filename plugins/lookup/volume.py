@@ -30,6 +30,7 @@ from typing import Any
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 
+# nocheck: lookup-cache-import
 from utils.cache.applications import get_application_defaults, get_canonical_volumes
 
 

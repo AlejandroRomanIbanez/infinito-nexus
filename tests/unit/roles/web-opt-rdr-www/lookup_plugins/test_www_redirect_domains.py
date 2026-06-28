@@ -39,16 +39,20 @@ class WwwRedirectDomainsLookupTests(unittest.TestCase):
     def _run(self, applications, variables=None, role_canonical=None, **kwargs):
         lm = self.module.LookupModule()
         lm._templar = _DummyTemplar(variables or {})
+        lm._loader = MagicMock()
+
+        applications_plugin = MagicMock()
+        applications_plugin.run.return_value = [applications]
 
         domain_plugin = MagicMock()
         domain_plugin.run.return_value = [role_canonical or ""]
 
-        with (
-            patch.object(
-                self.module, "get_merged_applications", return_value=applications
-            ),
-            patch.object(self.module.lookup_loader, "get", return_value=domain_plugin),
-        ):
+        def _get(name, **_):
+            if name == "applications":
+                return applications_plugin
+            return domain_plugin
+
+        with patch.object(self.module.lookup_loader, "get", side_effect=_get):
             return lm.run(terms=[], variables=variables or {}, **kwargs)[0]
 
     def test_empty_applications_returns_empty_list(self):

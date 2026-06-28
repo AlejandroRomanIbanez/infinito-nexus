@@ -3,9 +3,9 @@ from __future__ import annotations
 from typing import Any
 
 from ansible.errors import AnsibleError
+from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
-from utils.cache.domains import get_merged_domains
 from utils.domains.primary_domain import get_domain
 
 
@@ -34,11 +34,9 @@ class LookupModule(LookupBase):
 
         variables = variables or getattr(self._templar, "available_variables", {}) or {}
 
-        domains = get_merged_domains(
-            variables=variables,
-            roles_dir=kwargs.get("roles_dir"),
-            templar=getattr(self, "_templar", None),
-        )
+        domains = lookup_loader.get(
+            "domains", loader=self._loader, templar=getattr(self, "_templar", None)
+        ).run([], variables=variables)[0]
 
         try:
             domain = get_domain(domains, application_id.strip())

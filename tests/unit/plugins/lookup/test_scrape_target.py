@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import unittest
 from typing import Any
-from unittest.mock import patch
+from unittest.mock import MagicMock, patch
 
 from ansible.errors import AnsibleError
 
@@ -48,10 +48,10 @@ def _apps() -> dict[str, Any]:
 def _run(terms, *, variables, apps=None, **kwargs):
     lm = LookupModule()
     lm._templar = _Templar(variables)
-    with patch(
-        "plugins.lookup.scrape_target.get_merged_applications",
-        return_value=apps if apps is not None else _apps(),
-    ):
+    lm._loader = MagicMock()
+    resolved = apps if apps is not None else _apps()
+    with patch("plugins.lookup.scrape_target.lookup_loader") as loader_mock:
+        loader_mock.get.return_value = MagicMock(run=lambda *_a, **_k: [resolved])
         return lm.run(terms, variables=variables, **kwargs)
 
 

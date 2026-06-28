@@ -18,7 +18,6 @@ from ansible.errors import AnsibleError
 from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
-from utils.cache.applications import get_merged_applications
 from utils.networks.render import render_compose_networks
 from utils.roles.applications.services.registry import (
     build_service_registry_from_applications,
@@ -63,11 +62,9 @@ class LookupModule(LookupBase):
         if isinstance(net_cfg, dict) and "encryption" in net_cfg:
             swarm_encrypted = bool(net_cfg.get("encryption"))
 
-        applications = get_merged_applications(
-            variables=vars_,
-            roles_dir=kwargs.get("roles_dir"),
-            templar=templar,
-        )
+        applications = lookup_loader.get(
+            "applications", loader=self._loader, templar=getattr(self, "_templar", None)
+        ).run([], variables=vars_)[0]
         registry = build_service_registry_from_applications(applications)
 
         config_lookup = lookup_loader.get(

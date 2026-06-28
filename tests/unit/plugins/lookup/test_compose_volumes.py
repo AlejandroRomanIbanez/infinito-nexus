@@ -51,27 +51,22 @@ class TestComposeVolumesLookup(unittest.TestCase):
         lm._loader = None
         return lm
 
-    def _patched(self, applications=None, render_fn=None):
-        applications = applications if applications is not None else {"web-app-x": {}}
-        render_fn = render_fn or (
-            lambda apps, app_id, **kw: (
-                f"called({app_id}, mode={kw.get('deployment_mode')})"
-            )
-        )
-        return (
-            mock.patch.object(
-                self.module, "get_merged_applications", return_value=applications
-            ),
-            mock.patch.object(
-                self.module, "_render_compose_volumes", side_effect=render_fn
-            ),
-        )
-
     def test_single_term_renders(self):
         vars_ = {"DEPLOYMENT_MODE": "compose", "DIR_VAR_LIB": _DIR_VAR_LIB}
         lm = self._make(vars_)
-        patches = self._patched()
-        with patches[0], patches[1]:
+        with (
+            mock.patch.object(self.module, "lookup_loader") as loader_mock,
+            mock.patch.object(
+                self.module,
+                "_render_compose_volumes",
+                side_effect=lambda apps, app_id, **kw: (
+                    f"called({app_id}, mode={kw.get('deployment_mode')})"
+                ),
+            ),
+        ):
+            loader_mock.get.return_value = mock.MagicMock(
+                run=lambda *_a, **_k: [{"web-app-x": {}}]
+            )
             result = lm.run(["web-app-x"], variables=vars_)
         self.assertEqual(result, ["called(web-app-x, mode=compose)"])
 
@@ -85,13 +80,14 @@ class TestComposeVolumesLookup(unittest.TestCase):
             return ""
 
         with (
-            mock.patch.object(
-                self.module, "get_merged_applications", return_value={"web-app-x": {}}
-            ),
+            mock.patch.object(self.module, "lookup_loader") as loader_mock,
             mock.patch.object(
                 self.module, "_render_compose_volumes", side_effect=_render
             ),
         ):
+            loader_mock.get.return_value = mock.MagicMock(
+                run=lambda *_a, **_k: [{"web-app-x": {}}]
+            )
             lm.run(["web-app-x"], variables=vars_)
         self.assertEqual(captured.get("deployment_mode"), "swarm")
 
@@ -109,13 +105,14 @@ class TestComposeVolumesLookup(unittest.TestCase):
             return ""
 
         with (
-            mock.patch.object(
-                self.module, "get_merged_applications", return_value={"web-app-x": {}}
-            ),
+            mock.patch.object(self.module, "lookup_loader") as loader_mock,
             mock.patch.object(
                 self.module, "_render_compose_volumes", side_effect=_render
             ),
         ):
+            loader_mock.get.return_value = mock.MagicMock(
+                run=lambda *_a, **_k: [{"web-app-x": {}}]
+            )
             lm.run(["web-app-x"], variables=vars_)
         self.assertEqual(captured.get("storage"), vars_["storage"])
 
@@ -129,13 +126,14 @@ class TestComposeVolumesLookup(unittest.TestCase):
             return ""
 
         with (
-            mock.patch.object(
-                self.module, "get_merged_applications", return_value={"web-app-x": {}}
-            ),
+            mock.patch.object(self.module, "lookup_loader") as loader_mock,
             mock.patch.object(
                 self.module, "_render_compose_volumes", side_effect=_render
             ),
         ):
+            loader_mock.get.return_value = mock.MagicMock(
+                run=lambda *_a, **_k: [{"web-app-x": {}}]
+            )
             lm.run(
                 ["web-app-x"],
                 variables=vars_,
@@ -156,13 +154,14 @@ class TestComposeVolumesLookup(unittest.TestCase):
 
         extra = {"data": {"name": "my-data"}}
         with (
-            mock.patch.object(
-                self.module, "get_merged_applications", return_value={"web-app-x": {}}
-            ),
+            mock.patch.object(self.module, "lookup_loader") as loader_mock,
             mock.patch.object(
                 self.module, "_render_compose_volumes", side_effect=_render
             ),
         ):
+            loader_mock.get.return_value = mock.MagicMock(
+                run=lambda *_a, **_k: [{"web-app-x": {}}]
+            )
             lm.run(["web-app-x"], variables=vars_, extra_volumes=extra)
         self.assertEqual(captured.get("extra_volumes"), extra)
 
@@ -176,13 +175,14 @@ class TestComposeVolumesLookup(unittest.TestCase):
             return ""
 
         with (
-            mock.patch.object(
-                self.module, "get_merged_applications", return_value={"web-app-x": {}}
-            ),
+            mock.patch.object(self.module, "lookup_loader") as loader_mock,
             mock.patch.object(
                 self.module, "_render_compose_volumes", side_effect=_render
             ),
         ):
+            loader_mock.get.return_value = mock.MagicMock(
+                run=lambda *_a, **_k: [{"web-app-x": {}}]
+            )
             lm.run(["web-app-x"], variables=vars_)
         self.assertEqual(captured.get("deployment_mode"), "compose")
 

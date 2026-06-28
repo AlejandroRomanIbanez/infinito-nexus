@@ -7,6 +7,7 @@ tests stay hermetic — no filesystem access into ``roles/``.
 
 import importlib.util
 import unittest
+from unittest import mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError
@@ -39,11 +40,12 @@ class RolesWithServiceLookupTests(unittest.TestCase):
     def _make_lookup(self, available_vars: dict | None = None):
         lm = self.mod.LookupModule()
         lm._templar = _DummyTemplar(available_vars or {})
+        lm._loader = mock.MagicMock()
         return lm
 
     def _run(self, terms, applications: dict, vars_: dict | None = None):
-        """Run the lookup with `get_merged_applications` and the `tls`
-        sub-lookup patched to stay hermetic. The stubbed tls resolves
+        """Run the lookup with the ``applications`` and ``tls`` sub-lookups
+        patched to stay hermetic. The stubbed tls resolves
         ``[role_id, "url.base"]`` to a deterministic URL so the lookup
         can finish building each result entry without the real domain
         machinery."""
@@ -53,12 +55,14 @@ class RolesWithServiceLookupTests(unittest.TestCase):
             def run(self, terms_, variables=None, **kwargs):
                 return [f"https://{terms_[0]}.example.com"]
 
-        with (
-            patch.object(
-                self.mod, "get_merged_applications", return_value=applications
-            ),
-            patch.object(self.mod.lookup_loader, "get", return_value=_StubTls()),
-        ):
+        class _StubApplications:
+            def run(self, terms_, variables=None, **kwargs):
+                return [applications]
+
+        def _dispatch(name, **_kwargs):
+            return _StubApplications() if name == "applications" else _StubTls()
+
+        with patch.object(self.mod.lookup_loader, "get", side_effect=_dispatch):
             return lookup.run(terms, variables=vars_ or {})
 
     def test_zero_terms_raises(self):

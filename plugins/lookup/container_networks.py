@@ -19,7 +19,6 @@ from ansible.errors import AnsibleError
 from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
-from utils.cache.applications import get_merged_applications
 from utils.networks.render import render_container_networks
 from utils.roles.applications.services.registry import (
     build_service_registry_from_applications,
@@ -59,11 +58,9 @@ class LookupModule(LookupBase):
         )
         provider_self_alias = bool(kwargs.get("provider_self_alias", True))
 
-        applications = get_merged_applications(
-            variables=vars_,
-            roles_dir=kwargs.get("roles_dir"),
-            templar=templar,
-        )
+        applications = lookup_loader.get(
+            "applications", loader=self._loader, templar=getattr(self, "_templar", None)
+        ).run([], variables=vars_)[0]
         registry = build_service_registry_from_applications(applications)
 
         config_lookup = lookup_loader.get(

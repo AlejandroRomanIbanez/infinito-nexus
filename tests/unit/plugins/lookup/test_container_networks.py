@@ -51,10 +51,6 @@ class TestContainerNetworksLookup(unittest.TestCase):
 
         with (
             mock.patch(
-                "plugins.lookup.container_networks.get_merged_applications",
-                return_value={},
-            ),
-            mock.patch(
                 "plugins.lookup.container_networks.build_service_registry_from_applications",
                 return_value={},
             ),
@@ -66,7 +62,7 @@ class TestContainerNetworksLookup(unittest.TestCase):
                 return_value="RENDERED",
             ) as render_mock,
         ):
-            loader_mock.get.return_value = mock.MagicMock(run=lambda *_a, **_k: [""])
+            loader_mock.get.return_value = mock.MagicMock(run=lambda *_a, **_k: [{}])
 
             result = lm.run([], variables=vars_)
 
@@ -81,10 +77,6 @@ class TestContainerNetworksLookup(unittest.TestCase):
 
         with (
             mock.patch(
-                "plugins.lookup.container_networks.get_merged_applications",
-                return_value={},
-            ),
-            mock.patch(
                 "plugins.lookup.container_networks.build_service_registry_from_applications",
                 return_value={},
             ),
@@ -96,7 +88,7 @@ class TestContainerNetworksLookup(unittest.TestCase):
                 return_value="RENDERED",
             ) as render_mock,
         ):
-            loader_mock.get.return_value = mock.MagicMock(run=lambda *_a, **_k: [""])
+            loader_mock.get.return_value = mock.MagicMock(run=lambda *_a, **_k: [{}])
             lm.run([], variables=vars_)
 
         self.assertEqual(render_mock.call_args.kwargs["deployment_mode"], "compose")
@@ -131,10 +123,6 @@ class TestContainerNetworksLookup(unittest.TestCase):
 
         with (
             mock.patch(
-                "plugins.lookup.container_networks.get_merged_applications",
-                return_value={},
-            ),
-            mock.patch(
                 "plugins.lookup.container_networks.build_service_registry_from_applications",
                 return_value={},
             ),
@@ -146,11 +134,15 @@ class TestContainerNetworksLookup(unittest.TestCase):
                 side_effect=_exercise,
             ),
         ):
-            loader_mock.get.side_effect = lambda name, **_: (
-                mock.MagicMock(run=_config_run)
-                if name == "config"
-                else mock.MagicMock(run=_database_run)
-            )
+
+            def _get(name, **_):
+                if name == "applications":
+                    return mock.MagicMock(run=lambda *_a, **_k: [{}])
+                if name == "config":
+                    return mock.MagicMock(run=_config_run)
+                return mock.MagicMock(run=_database_run)
+
+            loader_mock.get.side_effect = _get
             lm.run([], variables=vars_)
 
         self.assertEqual(len(config_calls), 1)

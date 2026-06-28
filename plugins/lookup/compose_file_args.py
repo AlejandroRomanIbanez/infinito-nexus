@@ -30,7 +30,6 @@ from ansible.errors import AnsibleError
 from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
-from utils.cache.domains import get_merged_domains
 from utils.docker.paths_utils import get_docker_paths
 from utils.templating.jinja import render_strict
 
@@ -188,11 +187,9 @@ class LookupModule(LookupBase):
 
         # 2) CA override: only when include_ca=True and domain exists AND TLS is enabled AND self_signed.
         if include_ca:
-            domains = get_merged_domains(
-                variables=variables,
-                roles_dir=kwargs.get("roles_dir"),
-                templar=templar,
-            )
+            domains = lookup_loader.get(
+                "domains", loader=self._loader, templar=templar
+            ).run([], variables=variables)[0]
             if _has_domain(domains, application_id):
                 tlsr = lookup_loader.get("tls", self._loader, self._templar)
                 tls = tlsr.run([application_id], variables=variables)[0]

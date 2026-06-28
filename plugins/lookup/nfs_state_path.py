@@ -11,4 +11,8 @@ class LookupModule(LookupBase):
     def run(self, terms, variables=None, **kwargs):
         variables = variables or getattr(self._templar, "available_variables", {}) or {}
         nfs = variables.get("storage", {}).get("nfs", {})
-        return [state_path(nfs.get("export_base"), variables.get("STORAGE_NFS_STATE_SUBDIR"))]
+        return [
+            state_path(
+                nfs.get("export_base"), variables.get("STORAGE_NFS_STATE_SUBDIR")
+            )
+        ]

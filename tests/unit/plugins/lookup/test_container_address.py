@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import unittest
 from typing import Any
+from unittest import mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError
@@ -36,13 +37,11 @@ def _run(
     applications: dict[str, Any] | None = None,
 ) -> list[str]:
     apps = applications if applications is not None else _apps()
-    with patch(
-        "plugins.lookup.container_address.get_merged_applications",
-        return_value=apps,
-    ):
-        return LookupModule().run(
-            [application_id, service_key], variables=variables or {}
-        )
+    with patch("plugins.lookup.container_address.lookup_loader") as loader_mock:
+        loader_mock.get.return_value = mock.MagicMock(run=lambda *_a, **_k: [apps])
+        lm = LookupModule()
+        lm._loader = mock.MagicMock()
+        return lm.run([application_id, service_key], variables=variables or {})
 
 
 class TestContainerExecAddrLookup(unittest.TestCase):

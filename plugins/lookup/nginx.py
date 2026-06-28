@@ -15,7 +15,8 @@ from ansible.errors import AnsibleError
 from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
-from utils.cache.applications import get_canonical_volumes, get_merged_applications
+# nocheck: lookup-cache-import
+from utils.cache.applications import get_canonical_volumes
 from utils.roles.applications.config import get
 from utils.tls_common import as_str, want_get
 
@@ -89,11 +90,9 @@ class LookupModule(LookupBase):
 
         domain = as_str(terms[1]).strip() if len(terms) == 2 else ""
 
-        applications = get_merged_applications(
-            variables=variables,
-            roles_dir=kwargs.get("roles_dir"),
-            templar=getattr(self, "_templar", None),
-        )
+        applications = lookup_loader.get(
+            "applications", loader=self._loader, templar=getattr(self, "_templar", None)
+        ).run([], variables=variables)[0]
 
         proxy_app_id = as_str(kwargs.get("proxy_app_id", "svc-prx-openresty")).strip()
         if not proxy_app_id:

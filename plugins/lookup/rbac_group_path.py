@@ -34,9 +34,8 @@ Contract:
 """
 
 from ansible.errors import AnsibleError
+from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
-
-from utils.cache.applications import get_merged_applications
 
 try:
     from ansible.utils.display import Display
@@ -64,8 +63,10 @@ def _get_rbac_group_name(variables):
     return name.strip("/")
 
 
-def _get_application(variables, application_id, templar=None):
-    apps = get_merged_applications(variables=variables, templar=templar)
+def _get_application(variables, application_id, loader=None, templar=None):
+    apps = lookup_loader.get("applications", loader=loader, templar=templar).run(
+        [], variables=variables
+    )[0]
     if not isinstance(apps, dict):
         raise AnsibleError(
             "rbac_group_path: 'applications' could not be merged. "
@@ -168,6 +169,7 @@ class LookupModule(LookupBase):
         app_cfg = _get_application(
             variables,
             application_id,
+            loader=getattr(self, "_loader", None),
             templar=getattr(self, "_templar", None),
         )
         scope, axis = _resolve_role_scope(app_cfg, application_id, role)

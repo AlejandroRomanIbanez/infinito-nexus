@@ -6,7 +6,6 @@ STORAGE_NFS_STATE_SUBDIR: infinito-state
 STORAGE_NFS_STATE_PATH: "{{ lookup('nfs_state_path') }}"
 STORAGE_NFS_MOUNT_OPTS: "{{ lookup('nfs_mount_opts') }}"
 STORAGE_NFS_FSTYPE: "{{ lookup('nfs_fstype') }}"
-STORAGE_NFS_FLAVOR: "{{ lookup('nfs_flavor') }}"
 STORAGE_NFS_CLIENT_SRC: "{{ lookup('nfs_client_src') }}"
 
 storage:

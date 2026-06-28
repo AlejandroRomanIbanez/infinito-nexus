@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unittest
 from typing import Any
+from unittest import mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError
@@ -34,9 +35,9 @@ def _apps() -> dict[str, Any]:
 def _run(terms, *, variables, **kwargs):
     lm = LookupModule()
     lm._templar = _Templar(variables)
-    with patch(
-        "plugins.lookup.proxy_pass.get_merged_applications", return_value=_apps()
-    ):
+    lm._loader = mock.MagicMock()
+    with patch("plugins.lookup.proxy_pass.lookup_loader") as loader_mock:
+        loader_mock.get.return_value = mock.MagicMock(run=lambda *_a, **_k: [_apps()])
         return lm.run(terms, variables=variables, **kwargs)
 
 
@@ -83,15 +84,16 @@ class TestProxyPassLookup(unittest.TestCase):
     def test_resolution_error_becomes_ansible_error(self):
         lm = LookupModule()
         lm._templar = _Templar({"DEPLOYMENT_MODE": "swarm"})
+        lm._loader = mock.MagicMock()
         with (
-            patch(
-                "plugins.lookup.proxy_pass.get_merged_applications",
-                return_value={
-                    "web-app-x": {"services": {"x": {"ports": {"local": {}}}}}
-                },
-            ),
+            patch("plugins.lookup.proxy_pass.lookup_loader") as loader_mock,
             self.assertRaises(AnsibleError),
         ):
+            loader_mock.get.return_value = mock.MagicMock(
+                run=lambda *_a, **_k: [
+                    {"web-app-x": {"services": {"x": {"ports": {"local": {}}}}}}
+                ]
+            )
             lm.run(
                 ["web-app-x", "application", "http"],
                 variables={"DEPLOYMENT_MODE": "swarm"},

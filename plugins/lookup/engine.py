@@ -18,9 +18,9 @@ from __future__ import annotations
 from typing import Any
 
 from ansible.errors import AnsibleError
+from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
-from utils.cache.applications import get_merged_applications
 from utils.roles.applications.config import get
 from utils.roles.applications.services.engines import (
     ENGINES,
@@ -69,11 +69,9 @@ class LookupModule(LookupBase):
             raise AnsibleError("engine: consumer_id must not be empty")
 
         vars_ = variables or self._templar.available_variables
-        applications = get_merged_applications(
-            variables=vars_,
-            roles_dir=kwargs.get("roles_dir"),
-            templar=getattr(self, "_templar", None),
-        )
+        applications = lookup_loader.get(
+            "applications", loader=self._loader, templar=getattr(self, "_templar", None)
+        ).run([], variables=vars_)[0]
 
         descriptor = ENGINES[engine]
         svc_id = descriptor["svc"]

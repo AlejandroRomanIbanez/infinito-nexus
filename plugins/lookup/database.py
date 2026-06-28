@@ -5,9 +5,9 @@ import shlex
 from typing import Any
 
 from ansible.errors import AnsibleError
+from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
-from utils.cache.applications import get_merged_applications
 from utils.roles.applications.config import get
 from utils.roles.applications.services.database import (
     get_database_service_config,
@@ -63,11 +63,9 @@ class LookupModule(LookupBase):
             want = "all"
 
         vars_ = variables or self._templar.available_variables
-        applications = get_merged_applications(
-            variables=vars_,
-            roles_dir=kwargs.get("roles_dir"),
-            templar=getattr(self, "_templar", None),
-        )
+        applications = lookup_loader.get(
+            "applications", loader=self._loader, templar=getattr(self, "_templar", None)
+        ).run([], variables=vars_)[0]
         path_instances = self._require_var(vars_, "DIR_COMPOSITIONS")
         if (
             isinstance(path_instances, str)

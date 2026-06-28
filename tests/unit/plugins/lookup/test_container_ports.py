@@ -1,5 +1,6 @@
 import unittest
 from typing import ClassVar
+from unittest import mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError
@@ -24,11 +25,12 @@ def _apps():
 
 
 def _run(terms, *, app_id="web-app-gitea", **kwargs):
-    with patch(
-        "plugins.lookup.container_ports.get_merged_applications",
-        return_value=_apps(),
-    ):
-        return LookupModule().run(terms, variables={"application_id": app_id}, **kwargs)
+    lm = LookupModule()
+    lm._loader = mock.MagicMock()
+    apps = _apps()
+    with patch("plugins.lookup.container_ports.lookup_loader") as loader_mock:
+        loader_mock.get.return_value = mock.MagicMock(run=lambda *_a, **_k: [apps])
+        return lm.run(terms, variables={"application_id": app_id}, **kwargs)
 
 
 class TestContainerPortsLookup(unittest.TestCase):
@@ -85,14 +87,16 @@ class TestContainerPortsLookup(unittest.TestCase):
             _run([["gitea", "nope", "127.0.0.1"]])
 
     def test_missing_application_id_raises(self):
+        lm = LookupModule()
+        lm._loader = mock.MagicMock()
         with (
-            patch(
-                "plugins.lookup.container_ports.get_merged_applications",
-                return_value=_apps(),
-            ),
+            patch("plugins.lookup.container_ports.lookup_loader") as loader_mock,
             self.assertRaises(AnsibleError),
         ):
-            LookupModule().run([["gitea", "http"]], variables={})
+            loader_mock.get.return_value = mock.MagicMock(
+                run=lambda *_a, **_k: [_apps()]
+            )
+            lm.run([["gitea", "http"]], variables={})
 
     def test_application_id_unrendered_var_is_templated(self):
         class _Templar:
@@ -103,10 +107,11 @@ class TestContainerPortsLookup(unittest.TestCase):
 
         lookup = LookupModule()
         lookup._templar = _Templar()
-        with patch(
-            "plugins.lookup.container_ports.get_merged_applications",
-            return_value=_apps(),
-        ):
+        lookup._loader = mock.MagicMock()
+        with patch("plugins.lookup.container_ports.lookup_loader") as loader_mock:
+            loader_mock.get.return_value = mock.MagicMock(
+                run=lambda *_a, **_k: [_apps()]
+            )
             out = lookup.run(
                 [["gitea", "http", "10.0.0.1"]],
                 variables={"application_id": "{{ app }}"},
