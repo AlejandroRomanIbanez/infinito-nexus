@@ -1,4 +1,4 @@
 ---
 canonical:
-- littlejs.game.{{ DOMAIN_PRIMARY }}
+  - littlejs.game.{{ DOMAIN_PRIMARY }}
 aliases: []
