@@ -1,4 +1,4 @@
 ---
 canonical:
-- event.{{ DOMAIN_PRIMARY }}
+  - event.{{ DOMAIN_PRIMARY }}
 aliases: []

@@ -1,18 +1,18 @@
 ---
 whitelist:
   script-src-elem:
-  - https://cdnjs.cloudflare.com
-  - https://cdn.jsdelivr.net
+    - https://cdnjs.cloudflare.com
+    - https://cdn.jsdelivr.net
   style-src-elem:
-  - https://cdn.jsdelivr.net
-  - https://cdnjs.cloudflare.com
+    - https://cdn.jsdelivr.net
+    - https://cdnjs.cloudflare.com
   font-src:
-  - https://cdnjs.cloudflare.com
-  - "data:"
+    - https://cdnjs.cloudflare.com
+    - "data:"
   connect-src:
-  - https://cdn.jsdelivr.net
+    - https://cdn.jsdelivr.net
   frame-src:
-  - "{{ lookup('tls', 'web-app-littlejs', 'url.base') }}"
+    - "{{ lookup('tls', 'web-app-littlejs', 'url.base') }}"
 flags:
   style-src-attr:
     unsafe-inline: true

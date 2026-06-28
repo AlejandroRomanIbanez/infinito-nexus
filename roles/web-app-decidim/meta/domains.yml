@@ -1,4 +1,4 @@
 ---
 aliases: []
 canonical:
-- decidim.{{ DOMAIN_PRIMARY }}
+  - decidim.{{ DOMAIN_PRIMARY }}

@@ -1,4 +1,4 @@
 ---
 canonical:
-- open.talk.{{ DOMAIN_PRIMARY }}
+  - open.talk.{{ DOMAIN_PRIMARY }}
 aliases: []

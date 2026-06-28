@@ -7,10 +7,10 @@ flags:
     unsafe-eval: true
 whitelist:
   connect-src:
-  - "{{ lookup('domain', 'web-app-espocrm') }}"
-  - "data:"
+    - "{{ lookup('domain', 'web-app-espocrm') }}"
+    - "data:"
   frame-src:
-  - https://s.espocrm.com/
+    - https://s.espocrm.com/
   frame-ancestors:
-  - "{{ DOMAIN_PRIMARY }}"
-  - "*.{{ DOMAIN_PRIMARY }}"
+    - "{{ DOMAIN_PRIMARY }}"
+    - "*.{{ DOMAIN_PRIMARY }}"
