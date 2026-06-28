@@ -17,6 +17,6 @@ An `act-swarm-zombie` run rebuilds a full DinD cluster over tens of minutes, so 
 
 ## NFS server flavor
 
-The swarm-test nfs-server serves shared storage from userspace `nfs-ganesha` (the `ganesha` flavor of `svc-storage-nfs-server`, selected when `RUNTIME in ['dev', 'act']`), because the kernel `nfsd` is not network-namespaced and a privileged DinD node driving it would wedge `exportfs` into a D-state.
+The swarm-test nfs-server serves shared storage from userspace `nfs-ganesha` (the `ganesha` flavor of `svc-storage-nfs-server`, selected when `RUNTIME in ['dev', 'act', 'github']`, i.e. every DinD swarm test: local act and real GitHub Actions), because the kernel `nfsd` is not network-namespaced and a privileged DinD node driving it would wedge `exportfs` into a D-state. This is a harness limitation, not a production preference: a GitHub-Actions-driven deploy to a REAL host must set `RUNTIME=host` so production keeps the kernel flavor.
 If a swarm step hangs at `Reload NFS exports` from a stuck kernel-NFS mount, you MUST recover with `make act-swarm-clean` on the host; see the NFS gotcha in [Roundtrip Loop](roundtrip.md).
 You MUST NOT fall back to a compose-only sweep while swarm is blocked.

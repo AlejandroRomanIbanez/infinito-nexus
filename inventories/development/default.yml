@@ -62,3 +62,9 @@ users:
 SIZE_PERCENT_CLEANUP_DISC_SPACE: 99 # Set high because in DiD Ci Environment in github workflow it can be verry high e.g. ~92%
 
 WORKSTATION_USER: biber
+
+applications:
+  svc-storage-nfs-server:
+    services:
+      nfs-server:
+        flavor: "{{ 'ganesha' if RUNTIME in ['dev', 'act', 'github'] else 'kernel' }}"

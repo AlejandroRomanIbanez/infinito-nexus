@@ -1,7 +1,7 @@
 ---
 nfs-server:
   name: nfs-server
-  flavor: "{{ 'ganesha' if RUNTIME in ['dev', 'act'] else 'kernel' }}"
+  flavor: kernel
   lifecycle: beta
   skip:
     - compose
