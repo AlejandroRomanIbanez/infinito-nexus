@@ -180,13 +180,28 @@ class LookupModule(LookupBase):
                         f"Error building URL via tls for '{application_id}': {e}"
                     ) from e
 
-            iframe = get(
+            dashboard_cfg = get(
                 applications,
                 application_id,
-                "services.dashboard.enabled",
+                "services.dashboard",
                 strict=False,
-                default=False,
+                default={},
             )
+            # A card is shown when services.dashboard.enabled, but whether it
+            # embeds in an iframe is a separate capability: some SPAs (e.g.
+            # Keycloak's admin console) force a top-window redirect that breaks
+            # out of the embed. services.dashboard.iframe gates embedding and
+            # defaults to enabled for back-compat with existing cards.
+            if isinstance(dashboard_cfg, dict) and "iframe" in dashboard_cfg:
+                iframe = dashboard_cfg["iframe"]
+            else:
+                iframe = get(
+                    applications,
+                    application_id,
+                    "services.dashboard.enabled",
+                    strict=False,
+                    default=False,
+                )
 
             # Build card dictionary
             card = {

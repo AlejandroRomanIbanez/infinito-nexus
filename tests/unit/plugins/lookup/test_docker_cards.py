@@ -240,6 +240,27 @@ logo:
         self.assertEqual(card["url"], "https://myportfolio.com")
         self.assertTrue(card["iframe"])
 
+    def test_iframe_flag_defaults_to_enabled(self):
+        lookup_module = LookupModule()
+        fake_variables = self._base_fake_variables()
+
+        result = self._run_lookup(lookup_module, fake_variables)
+
+        self.assertTrue(result[0][0]["iframe"])
+
+    def test_iframe_flag_false_decouples_from_enabled(self):
+        lookup_module = LookupModule()
+        fake_variables = self._base_fake_variables()
+        fake_variables["applications"]["portfolio"]["services"]["dashboard"][
+            "iframe"
+        ] = False
+
+        result = self._run_lookup(lookup_module, fake_variables)
+
+        cards = result[0]
+        self.assertEqual(len(cards), 1)
+        self.assertFalse(cards[0]["iframe"])
+
     def test_lookup_url_uses_https_when_tls_enabled_true(self):
         lookup_module = LookupModule()
         fake_variables = self._base_fake_variables()

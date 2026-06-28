@@ -1,8 +1,22 @@
 """Enumerate consumer roles for a given service.
 
-Returns ``[{id, canonical_domain, canonical_url}, …]`` for every role
-whose merged applications config declares
-``services.<service>.{enabled, shared}`` as truthy.
+Returns ``[{id, canonical_domain, canonical_url, iframe}, …]`` for every
+role whose merged applications config declares
+``services.<service>.{enabled, shared}`` as truthy. ``iframe`` reflects
+``services.<service>.iframe`` (defaulting to ``enabled``) so consumers
+can tell embeddable cards from those that must open in a new tab.
+
+A role keeps declaring the service for inventory completeness but can
+opt out of this consumer-target list by setting
+``services.<service>.scrape: false`` or ``services.<service>.track: false``.
+``scrape: false`` is used by 301-redirect-only vhosts that declare
+``services.prometheus`` (so the role-wiring contract stays satisfied) yet
+never serve a request through lua-resty-prometheus, so they emit no
+``app="<role>"`` label and have no scrape target. ``track: false`` is the
+symmetric matomo opt-out: static-file (autoindex) and 301-redirect vhosts
+that declare ``services.matomo`` keep the role-wiring intact but carry no
+user-facing HTML page worth a ``_paq`` tracker, so they are dropped from
+``MATOMO_TARGET_ROLES_JSON`` and the matomo tracker e2e contract.
 """
 
 from __future__ import annotations
@@ -83,6 +97,10 @@ class LookupModule(LookupBase):
                 continue
             if not bool(block.get("shared")):
                 continue
+            if block.get("scrape") is False:
+                continue
+            if block.get("track") is False:
+                continue
             if deployed is not None and str(role_id) not in deployed:
                 continue
             if get_entity_name(str(role_id)) == service_name:
@@ -92,11 +110,20 @@ class LookupModule(LookupBase):
                 continue
             resolved = tls_lookup.run([str(role_id), "url.base"], variables=variables)
             canonical_url = str(resolved[0]).rstrip("/")
+            # iframe is a per-card embedding capability distinct from "enabled":
+            # SPAs that force a top-window redirect (e.g. Keycloak admin console)
+            # set it false so the tile opens in a new tab. Defaults to enabled.
+            iframe = (
+                bool(block["iframe"])
+                if "iframe" in block
+                else bool(block.get("enabled"))
+            )
             results.append(
                 {
                     "id": str(role_id),
                     "canonical_domain": canonical,
                     "canonical_url": canonical_url,
+                    "iframe": iframe,
                 }
             )
 

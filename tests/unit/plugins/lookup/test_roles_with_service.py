@@ -91,10 +91,37 @@ class RolesWithServiceLookupTests(unittest.TestCase):
                         "id": "web-app-foo",
                         "canonical_domain": "foo.example.com",
                         "canonical_url": "https://web-app-foo.example.com",
+                        "iframe": True,
                     }
                 ]
             ],
         )
+
+    def test_iframe_defaults_to_enabled_when_unset(self):
+        applications = {
+            "web-app-foo": {
+                "services": {"dashboard": {"enabled": True, "shared": True}},
+                "server": {"domains": {"canonical": ["foo.example.com"]}},
+            },
+        }
+        result = self._run(["dashboard"], applications)[0]
+        self.assertTrue(result[0]["iframe"])
+
+    def test_iframe_false_is_preserved(self):
+        applications = {
+            "web-app-foo": {
+                "services": {
+                    "dashboard": {
+                        "enabled": True,
+                        "shared": True,
+                        "iframe": False,
+                    },
+                },
+                "server": {"domains": {"canonical": ["foo.example.com"]}},
+            },
+        }
+        result = self._run(["dashboard"], applications)[0]
+        self.assertFalse(result[0]["iframe"])
 
     def test_falsy_enabled_excludes_role(self):
         applications = {
@@ -117,6 +144,82 @@ class RolesWithServiceLookupTests(unittest.TestCase):
             },
         }
         self.assertEqual(self._run(["dashboard"], applications), [[]])
+
+    def test_scrape_false_excludes_role_but_keeps_other_consumers(self):
+        applications = {
+            "web-svc-asset": {
+                "services": {
+                    "prometheus": {
+                        "enabled": True,
+                        "shared": True,
+                        "scrape": False,
+                    },
+                },
+                "server": {"domains": {"canonical": ["asset.example.com"]}},
+            },
+            "web-app-foo": {
+                "services": {
+                    "prometheus": {"enabled": True, "shared": True},
+                },
+                "server": {"domains": {"canonical": ["foo.example.com"]}},
+            },
+        }
+        result = self._run(["prometheus"], applications)[0]
+        self.assertEqual([r["id"] for r in result], ["web-app-foo"])
+
+    def test_scrape_true_keeps_role(self):
+        applications = {
+            "web-app-foo": {
+                "services": {
+                    "prometheus": {
+                        "enabled": True,
+                        "shared": True,
+                        "scrape": True,
+                    },
+                },
+                "server": {"domains": {"canonical": ["foo.example.com"]}},
+            },
+        }
+        result = self._run(["prometheus"], applications)[0]
+        self.assertEqual([r["id"] for r in result], ["web-app-foo"])
+
+    def test_track_false_excludes_role_but_keeps_other_consumers(self):
+        applications = {
+            "web-svc-cdn": {
+                "services": {
+                    "matomo": {
+                        "enabled": True,
+                        "shared": True,
+                        "track": False,
+                    },
+                },
+                "server": {"domains": {"canonical": ["cdn.example.com"]}},
+            },
+            "web-app-foo": {
+                "services": {
+                    "matomo": {"enabled": True, "shared": True},
+                },
+                "server": {"domains": {"canonical": ["foo.example.com"]}},
+            },
+        }
+        result = self._run(["matomo"], applications)[0]
+        self.assertEqual([r["id"] for r in result], ["web-app-foo"])
+
+    def test_track_true_keeps_role(self):
+        applications = {
+            "web-app-foo": {
+                "services": {
+                    "matomo": {
+                        "enabled": True,
+                        "shared": True,
+                        "track": True,
+                    },
+                },
+                "server": {"domains": {"canonical": ["foo.example.com"]}},
+            },
+        }
+        result = self._run(["matomo"], applications)[0]
+        self.assertEqual([r["id"] for r in result], ["web-app-foo"])
 
     def test_missing_service_block_excludes_role(self):
         applications = {
@@ -156,6 +259,7 @@ class RolesWithServiceLookupTests(unittest.TestCase):
                         "id": "web-app-foo",
                         "canonical_domain": "foo.example.com",
                         "canonical_url": "https://web-app-foo.example.com",
+                        "iframe": True,
                     }
                 ]
             ],
