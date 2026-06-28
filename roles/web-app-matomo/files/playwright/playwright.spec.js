@@ -38,6 +38,7 @@ const adminPassword = decodeDotenvQuotedValue(process.env.ADMIN_PASSWORD);
 const biberUsername = decodeDotenvQuotedValue(process.env.BIBER_USERNAME);
 const biberPassword = decodeDotenvQuotedValue(process.env.BIBER_PASSWORD);
 const canonicalDomain = decodeDotenvQuotedValue(process.env.CANONICAL_DOMAIN);
+const matomoApiToken = decodeDotenvQuotedValue(process.env.MATOMO_API_TOKEN);
 
 test.beforeEach(async ({ page }) => {
   await page.setViewportSize({ width: 1440, height: 1100 });
@@ -306,8 +307,17 @@ test("matomo SitesManager registers a tracker site for every consumer role", asy
   const cookies = await page.context().cookies();
   await request.storageState();
 
-  const apiUrl = `${appBaseUrl}/index.php?module=API&method=SitesManager.getAllSites&format=JSON`;
-  const apiResp = await page.request.get(apiUrl, { ignoreHTTPSErrors: true });
+  // token_auth: session cookie alone yields 401; POST keeps the token out of the URL
+  const apiBase = `${appBaseUrl}/index.php`;
+  const apiResp = await page.request.post(apiBase, {
+    form: {
+      module: "API",
+      method: "SitesManager.getAllSites",
+      format: "JSON",
+      token_auth: matomoApiToken,
+    },
+    ignoreHTTPSErrors: true,
+  });
   expect(
     apiResp.status(),
     `Matomo SitesManager.getAllSites MUST respond < 400 (got ${apiResp.status()})`
@@ -332,7 +342,7 @@ test("matomo SitesManager registers a tracker site for every consumer role", asy
       return candidates.some((c) => c.includes(needle));
     });
     if (!matchingSite) {
-      failures.push(`${target.id}: no Matomo site has main_url / alias_urls covering "${target.canonical_domain}"`);
+      failures.push(`${target.id}: no Matomo site has main_url / alias_urls covering base domain "${needle}" (from canonical "${target.canonical_domain}")`);
     }
   }
 
