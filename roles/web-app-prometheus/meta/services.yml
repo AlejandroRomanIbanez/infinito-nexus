@@ -75,6 +75,9 @@ alertmanager:
   mem_limit: 128m
   pids_limit: 64
   min_storage: 1GB
+  ports:
+    internal:
+      http: 9093
 blackbox-exporter:
   image: prom/blackbox-exporter
   version: v0.28.0
@@ -84,6 +87,9 @@ blackbox-exporter:
   mem_limit: 64m
   pids_limit: 64
   min_storage: 1GB
+  ports:
+    internal:
+      http: 9115
 cadvisor:
   image: gcr.io/cadvisor/cadvisor
   version: v0.52.1
@@ -93,6 +99,9 @@ cadvisor:
   mem_limit: 256m
   pids_limit: 64
   min_storage: 1GB
+  ports:
+    internal:
+      http: 8080
 node-exporter:
   image: prom/node-exporter
   version: v1.11.1
@@ -102,3 +111,6 @@ node-exporter:
   mem_limit: 128m
   pids_limit: 64
   min_storage: 1GB
+  ports:
+    internal:
+      http: 9100
