@@ -9,6 +9,6 @@
   vars:
     handler_role_name: "sys-svc-compose"
 
-- name: "Provision dedicated Redis ACL user"
+- name: "🔧 Provision dedicated Redis ACL user"
   include_tasks: 02_init.yml
   when: database_init | bool

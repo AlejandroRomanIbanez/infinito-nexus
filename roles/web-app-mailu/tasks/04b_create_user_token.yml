@@ -1,5 +1,5 @@
 ---
-- name: "Delete existing API token for '{{ mailu_user_key }};{{ mailu_user_name }}' if local token missing but remote exists"
+- name: "🧹 Delete API token '{{ mailu_user_key }};{{ mailu_user_name }}' if local missing"
   ansible.builtin.shell: >-
     container exec -i {{ MAILU_ADMIN_CONTAINER_ADDRESS }}
     curl -s -X DELETE {{ MAILU_API_SERVICE_BASE_URL }}/token/{{ mailu_user_existing_token.id }}
@@ -13,7 +13,7 @@
   delay: 2
   changed_when: mailu_token_delete.rc == 0
 
-- name: "Create API token for '{{ mailu_user_key }};{{ mailu_user_name }}' if no local token defined"
+- name: "📝 Create API token '{{ mailu_user_key }};{{ mailu_user_name }}' if none local"
   ansible.builtin.shell: >-
     container exec -i {{ MAILU_ADMIN_CONTAINER_ADDRESS }}
     curl -sS -f -o /tmp/mailu-token-{{ mailu_user_key | quote }}.json
@@ -32,7 +32,7 @@
   failed_when: mailu_token_creation_request.rc != 0
   changed_when: mailu_token_creation_request.rc == 0
 
-- name: "Read created API token response for '{{ mailu_user_key }};{{ mailu_user_name }}'"
+- name: "📖 Read created API token response '{{ mailu_user_key }};{{ mailu_user_name }}'"
   ansible.builtin.shell: >-
     container exec -i {{ MAILU_ADMIN_CONTAINER_ADDRESS }}
     cat /tmp/mailu-token-{{ mailu_user_key | quote }}.json
@@ -40,7 +40,7 @@
   changed_when: false
   failed_when: mailu_token_creation_response.stdout | trim == ""
 
-- name: "Extract created API token for '{{ mailu_user_key }};{{ mailu_user_name }}'"
+- name: "📤 Extract created API token for '{{ mailu_user_key }};{{ mailu_user_name }}'"
   ansible.builtin.set_fact:
     mailu_created_token: >-
       {{
@@ -51,7 +51,7 @@
       }}
   failed_when: mailu_created_token | trim == ""
 
-- name: "Persist + inject Mailu API token via sys-token-store"
+- name: "💾 Persist + inject Mailu API token via sys-token-store"
   ansible.builtin.include_role:
     name: sys-token-store
     tasks_from: write.yml

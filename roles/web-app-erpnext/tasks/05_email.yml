@@ -1,5 +1,5 @@
 ---
-- name: "apply outbound Email Account (Mailu SMTP; inbound IMAP deferred)"
+- name: "📌 apply outbound Email Account (Mailu SMTP; inbound IMAP deferred)"
   ansible.builtin.shell: |
     set -euo pipefail
     container exec -i \

@@ -1,6 +1,6 @@
 ---
 # nocheck: run-once
-- name: "For '{{ application_id }}': freeze full-stack context"
+- name: "🧊 For '{{ application_id }}': freeze full-stack context"
   ansible.builtin.set_fact:
     sys_stk_full_application_id: "{{ application_id }}"
     sys_stk_full_domain: "{{ lookup('domain', application_id) }}"
@@ -15,7 +15,7 @@
       }}
   changed_when: false
 
-- name: "For '{{ application_id }}': include role sys-stk-front-proxy (delegated to openresty host, run-once)"
+- name: "📂 '{{ application_id }}': include role sys-stk-front-proxy"
   include_role:
     name: sys-stk-front-proxy
     apply:
@@ -27,7 +27,7 @@
     http_port: "{{ sys_stk_full_http_port }}"
   when: (groups['svc-prx-openresty'] | default([])) | length > 0
 
-- name: "For '{{ application_id }}': load docker and db"
+- name: "🧩 For '{{ application_id }}': load docker and db"
   include_role:
     name: sys-stk-backend
   vars:

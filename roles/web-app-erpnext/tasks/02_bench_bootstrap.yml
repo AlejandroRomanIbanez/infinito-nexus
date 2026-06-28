@@ -1,5 +1,5 @@
 ---
-- name: "probe site_config.json for '{{ ERPNEXT_SITE_NAME }}'"
+- name: "🔍 probe site_config.json for '{{ ERPNEXT_SITE_NAME }}'"
   ansible.builtin.shell: |
     set -eo pipefail
     container exec {{ ERPNEXT_BACKEND_CONTAINER_ADDRESS }} \
@@ -8,10 +8,10 @@
   changed_when: false
   failed_when: false
 
-- name: "Bootstrap ERPNext site when missing (create + restart + wait for backend)"
+- name: "🥾 Bootstrap ERPNext site when missing (create + restart + wait for backend)"
   when: erpnext_site_probe.rc != 0
   block:
-    - name: "bench new-site --install-app erpnext '{{ ERPNEXT_SITE_NAME }}'"
+    - name: "📦 bench new-site --install-app erpnext '{{ ERPNEXT_SITE_NAME }}'"
       ansible.builtin.shell: |
         set -euo pipefail
         container exec -i \
@@ -39,7 +39,7 @@
 
     # Long-lived Frappe containers cache the app set at startup; without a restart they
     # 500 on /login after install-app erpnext.
-    - name: "restart Frappe containers to pick up newly-installed app"
+    - name: "🔄 restart Frappe containers to pick up newly-installed app"
       ansible.builtin.shell: |
         set -euo pipefail
         container restart \
@@ -51,7 +51,7 @@
           {{ ERPNEXT_QUEUE_LONG_CONTAINER }}
       changed_when: false
 
-    - name: "wait for {{ ERPNEXT_BACKEND_CONTAINER }} gunicorn TCP port after restart"
+    - name: "⏳ wait for {{ ERPNEXT_BACKEND_CONTAINER }} gunicorn TCP port after restart"
       ansible.builtin.shell: |
         set -eo pipefail
         container exec {{ ERPNEXT_BACKEND_CONTAINER_ADDRESS }} \
@@ -62,7 +62,7 @@
       delay: 5
       until: erpnext_backend_ready_post_restart.rc == 0
 
-- name: "ensure encryption_key on site '{{ ERPNEXT_SITE_NAME }}'"
+- name: "✅ ensure encryption_key on site '{{ ERPNEXT_SITE_NAME }}'"
   ansible.builtin.shell: |
     set -euo pipefail
     container exec {{ ERPNEXT_BACKEND_CONTAINER_ADDRESS }} bash -c '
@@ -71,7 +71,7 @@
     '
   changed_when: false
 
-- name: "apply API-bot user + bypass setup wizard"
+- name: "📌 apply API-bot user + bypass setup wizard"
   ansible.builtin.shell: |
     set -euo pipefail
     container exec -i \

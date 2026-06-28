@@ -1,5 +1,5 @@
 ---
-- name: "Update Client settings"
+- name: "🔄 Update Client settings"
   vars:
     kc_object_kind: "client"
     kc_lookup_value: "{{ KEYCLOAK_CLIENT_ID }}"

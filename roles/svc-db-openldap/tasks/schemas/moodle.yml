@@ -3,7 +3,7 @@
 # no equivalent in core inetOrgPerson: phonetic given/family name
 # and IANA timezone name.
 
-- name: Ensure custom LDAP schema snippet via ldapsm (moodle)
+- name: ✅ Ensure custom LDAP schema snippet via ldapsm (moodle)
   vars:
     schema_name: "moodle"
     attribute_defs:
@@ -32,6 +32,6 @@
   changed_when: "'Created schema entry' in ldapsm_moodle_result.stdout"
   check_mode: false
 
-- name: Show ldapsm output (moodle)
+- name: 👁️ Show ldapsm output (moodle)
   debug:
     var: ldapsm_moodle_result.stdout_lines

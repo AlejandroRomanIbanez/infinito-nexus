@@ -49,7 +49,7 @@ jobs:
       - name: 📦 Install jq
         run: ./scripts/install/apt.sh jq
 
-      - name: Compute matrix JSON
+      - name: 🧮 Compute matrix JSON
         id: out
         run: scripts/github/runner/images_build_outputs.sh "${{ inputs.distros }}" "${{ inputs.image_tag }}"
 
@@ -64,13 +64,13 @@ jobs:
         distro: ${{ fromJson(needs.prepare.outputs.matrix) }}
 
     steps:
-      - name: Checkout trusted workflow repo (helpers)
+      - name: ⬇️ Checkout trusted workflow repo (helpers)
         uses: actions/checkout@v7
         with:
           ref: ${{ github.sha }}
           persist-credentials: false
 
-      - name: Checkout source to build
+      - name: ⬇️ Checkout source to build
         uses: actions/checkout@v7
         with:
           repository: ${{ inputs.source_repository || github.repository }}
@@ -78,21 +78,21 @@ jobs:
           path: _src
           persist-credentials: false
 
-      - name: Disk pressure (start)
+      - name: 💽 Disk pressure (start)
         shell: bash
         run: bash scripts/github/runner/disk_pressure_report.sh START
 
-      - name: Set up Docker Buildx
+      - name: 🔧 Set up Docker Buildx
         uses: docker/setup-buildx-action@4d04d5d9486b7bd6fa91e7baf45bbb4f8b9deedd # v4.0.0
 
-      - name: Login to GHCR
+      - name: 🔑 Login to GHCR
         uses: docker/login-action@4907a6ddec9925e35a0a9e82d7399ccc52663121 # v4.1.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Disk pressure (pre-build)
+      - name: 💽 Disk pressure (pre-build)
         shell: bash
         run: bash scripts/github/runner/disk_pressure_report.sh PRE-BUILD
 
@@ -103,7 +103,7 @@ jobs:
           set -euo pipefail
           echo "owner=$(scripts/meta/resolve/repository/owner.sh)" >> "$GITHUB_OUTPUT"
 
-      - name: Build & push (retry 7x, 20s)
+      - name: 🔨 Build & push (retry 7x, 20s)
         if: ${{ !(github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository) }}
         shell: bash
         env:
@@ -117,12 +117,12 @@ jobs:
           RETRY_DELAY_SECONDS: "20"
         run: ./scripts/image/push.sh
 
-      - name: Disk pressure (post-build)
+      - name: 💽 Disk pressure (post-build)
         if: always()
         shell: bash
         run: bash scripts/github/runner/disk_pressure_report.sh POST-BUILD
 
-      - name: Cleanup (always)
+      - name: 🧹 Cleanup (always)
         if: always()
         shell: bash
         run: bash scripts/github/runner/cleanup_docker.sh

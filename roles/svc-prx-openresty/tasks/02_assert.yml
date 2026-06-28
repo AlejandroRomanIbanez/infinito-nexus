@@ -1,6 +1,6 @@
 ---
 - block:
-    - name: Wait until OpenResty container is running
+    - name: ⏳ Wait until OpenResty container is running
       command: >
         container inspect -f '{{ "{{.State.Running}}" }}' {{ OPENRESTY_CONTAINER }}
       register: openresty_running
@@ -9,12 +9,12 @@
       retries: 24
       delay: 5
 
-    - name: Validate OpenResty configuration (Post-Flight-Check)
+    - name: ✅ Validate OpenResty configuration (Post-Flight-Check)
       shell: >
         container exec {{ OPENRESTY_CONTAINER_ADDRESS }} openresty -t -q
       register: openresty_test_post
       changed_when: false
       failed_when: openresty_test_post.rc != 0
   rescue:
-    - name: "Load OpenResty assert rescue debug routines"
+    - name: "📂 Load OpenResty assert rescue debug routines"
       include_tasks: 02a_assert_rescue_debug.yml

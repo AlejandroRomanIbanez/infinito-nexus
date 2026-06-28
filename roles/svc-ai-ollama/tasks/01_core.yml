@@ -1,12 +1,12 @@
 ---
 - include_tasks: utils/once/flag.yml
 
-- name: "Setup container network for {{ application_id }}"
+- name: "🔧 Setup container network for {{ application_id }}"
   include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/network/routine.yml' ] | path_join }}"
   vars:
     compose_handlers_flush: true
 
-- name: Pre-pull Ollama models
+- name: ⬇️ Pre-pull Ollama models
   vars:
     _cmd: "container exec -i {{ OLLAMA_CONTAINER_ADDRESS }} ollama pull {{ model }}"
   shell: "{{ _cmd }}"

@@ -1,5 +1,5 @@
 ---
-- name: add config.toml
+- name: ➕ add config.toml
   stack_host_template:
     src: "config.toml.j2"
     dest: "{{ LISTMONK_CONFIG_HOST }}"
@@ -7,10 +7,10 @@
 
 - meta: flush_handlers
 
-- name: Include database setup routine for Listmonk
+- name: 📂 Include database setup routine for Listmonk
   include_tasks: "01_database.yml"
 
-- name: Build OIDC settings JSON
+- name: 🔨 Build OIDC settings JSON
   set_fact:
     oidc_settings_json: >-
       {{ {
@@ -20,7 +20,7 @@
          "client_secret": OIDC.CLIENT.SECRET
       } | to_json }}
 
-- name: Update administrator email and password login in Listmonk (as superuser)
+- name: 🔄 Update administrator email and password login in Listmonk (as superuser)
   shell: |
     {{ LISTMONK_EXEC_DATABASE }} -v ON_ERROR_STOP=1 << 'EOSQL'
     UPDATE users
@@ -31,7 +31,7 @@
   args:
     executable: /bin/bash
 
-- name: Apply all Listmonk settings
+- name: 📌 Apply all Listmonk settings
   shell: |
     {{ LISTMONK_EXEC_DATABASE }} -v ON_ERROR_STOP=1 << 'EOSQL'
     UPDATE settings

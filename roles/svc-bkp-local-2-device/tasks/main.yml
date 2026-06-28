@@ -1,6 +1,6 @@
 ---
 - block:
-    - name: Include dependencies
+    - name: 📂 Include dependencies
       include_role:
         name: "{{ item }}"
       loop:
@@ -10,7 +10,7 @@
     - include_tasks: utils/once/flag.yml
   when: run_once_svc_bkp_local_2_device is not defined
 
-- name: Fail if any backup_to_usb variable is empty
+- name: 🛑 Fail if any backup_to_usb variable is empty
   assert:
     that:
       - BACKUP_TO_USB_MOUNT != ""

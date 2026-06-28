@@ -1,5 +1,5 @@
 ---
-- name: "For '{{ application_id }}': load docker, db and proxy"
+- name: "🧩 For '{{ application_id }}': load docker, db and proxy"
   include_role:
     name: sys-stk-full
   vars:
@@ -8,10 +8,10 @@
     webserver_client_max_body_size: "100m"
     compose_handlers_flush: true
 
-- name: "Bootstrap the Penpot administrator's local account"
+- name: "🥾 Bootstrap the Penpot administrator's local account"
   when: IS_STACK_HOST | bool
   block:
-    - name: "Bootstrap the Penpot administrator's local account (idempotent)"
+    - name: "🥾 Bootstrap the Penpot administrator's local account (idempotent)"
       when: PENPOT_NATIVE_LOGIN_ENABLED | bool
       ansible.builtin.shell: >
         container exec -i {{ PENPOT_BACKEND_CONTAINER_ADDRESS | quote }}
@@ -31,7 +31,7 @@
         - "'already exists' not in (penpot_admin_create.stdout | default('') ~ penpot_admin_create.stderr | default(''))"
       no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-    - name: "Set the Penpot administrator's local password when the profile already exists"
+    - name: "🔧 Set the Penpot administrator's local password when the profile already exists"
       ansible.builtin.shell: >
         container exec -i {{ PENPOT_BACKEND_CONTAINER_ADDRESS | quote }}
         python3 manage.py update-profile

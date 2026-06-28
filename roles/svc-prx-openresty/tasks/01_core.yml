@@ -3,17 +3,17 @@
 
 - when: DEPLOYMENT_MODE == 'swarm'
   block:
-    - name: "Stat the docker socket so the swarm openresty worker can be group-added to it"
+    - name: "🔎 Stat the docker socket so the swarm openresty worker can be group-added to it"
       ansible.builtin.stat:
         path: /var/run/docker.sock
       register: _openresty_docker_sock
 
-    - name: "Set OPENRESTY_DOCKER_SOCK_GID from the live socket gid"
+    - name: "🔧 Set OPENRESTY_DOCKER_SOCK_GID from the live socket gid"
       ansible.builtin.set_fact:
         OPENRESTY_DOCKER_SOCK_GID: "{{ _openresty_docker_sock.stat.gid }}"
       when: _openresty_docker_sock.stat.exists | default(false)
 
-- name: "Ensure all openresty bind-mount source dirs exist (must precede swarm stack-deploy)"
+- name: "✅ Ensure openresty bind-mount source dirs exist before swarm stack-deploy"
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -27,7 +27,7 @@
     - "{{ LETSENCRYPT_BASE_PATH }}"
     - "{{ TLS_SELFSIGNED_BASE_PATH }}"
 
-- name: Ensure base nginx.conf exists (bootstrap)
+- name: ✅ Ensure base nginx.conf exists (bootstrap)
   ansible.builtin.copy:
     dest: "{{ lookup('nginx','files.configuration') }}"
     force: false
@@ -36,12 +36,12 @@
       events {}
       http { server { listen 8080; return 200; } }
 
-- name: "Setup container network for {{ application_id }}"
+- name: "🔧 Setup container network for {{ application_id }}"
   include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/network/routine.yml' ] | path_join }}"
   vars:
     compose_handlers_flush: true
 
-- name: "swarm: add openresty to the docker.sock supplementary group (compose group_add is rejected by docker stack deploy)"
+- name: "🔧 Add openresty to docker.sock group for swarm (stack deploy rejects group_add)"
   ansible.builtin.command: >-
     container service update --detach=false
     --group-add {{ OPENRESTY_DOCKER_SOCK_GID | quote }}
@@ -52,7 +52,7 @@
     - DEPLOYMENT_MODE == 'swarm'
     - OPENRESTY_DOCKER_SOCK_GID is defined
 
-- name: "Verify that '{{ role_name }}' works"
+- name: "✅ Verify that '{{ role_name }}' works"
   include_tasks: 02_assert.yml
   when: MODE_ASSERT_LOCAL | bool
 

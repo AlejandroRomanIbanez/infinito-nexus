@@ -5,7 +5,7 @@
 # or app-driven in the normal full-stack setup. Use Keycloak's configured admin
 # credential so the seeded realm user and the login tests share the same secret.
 
-- name: "Ensure administrator exists in realm '{{ KEYCLOAK_REALM }}' when LDAP is disabled"
+- name: "✅ Ensure administrator exists in realm '{{ KEYCLOAK_REALM }}'"
   ansible.builtin.script: ensure_realm_user.sh
   environment:
     KEYCLOAK_EXEC_CONTAINER: "{{ KEYCLOAK_EXEC_CONTAINER }}"

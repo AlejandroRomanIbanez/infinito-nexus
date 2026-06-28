@@ -1,11 +1,11 @@
 ---
 # Install Odoo modules
 
-- name: "Build list of modules to install"
+- name: "🔨 Build list of modules to install"
   set_fact:
     odoo_modules_to_install: "{{ (ODOO_MODULES_CORE + ODOO_MODULES_OPTIONAL) | join(',') }}"
 
-- name: "Install core modules"
+- name: "📦 Install core modules"
   shell: >
     container exec {{ ODOO_CONTAINER_ADDRESS }}
     odoo -i {{ odoo_modules_to_install }}
@@ -21,7 +21,7 @@
   failed_when: false
   when: odoo_modules_to_install | length > 0
 
-- name: "Update installed modules"
+- name: "🔄 Update installed modules"
   shell: >
     container exec {{ ODOO_CONTAINER_ADDRESS }}
     odoo -u all
@@ -36,10 +36,10 @@
   changed_when: "'loading' in module_update.stdout"
   failed_when: false
 
-- name: "Install OIDC-related modules (auth_oauth + auth_signup + auth_oauth_https)"
+- name: "📦 Install OIDC-related modules (auth_oauth + auth_signup + auth_oauth_https)"
   when: ODOO_OIDC_ENABLED | bool
   block:
-    - name: "Install auth_oauth module for OIDC support"
+    - name: "📦 Install auth_oauth module for OIDC support"
       shell: >
         container exec {{ ODOO_CONTAINER_ADDRESS }}
         odoo -i auth_oauth
@@ -54,7 +54,7 @@
       changed_when: "'loading' in auth_oauth_install.stdout"
       failed_when: false
 
-    - name: "Install auth_signup module for OAuth user auto-creation"
+    - name: "📦 Install auth_signup module for OAuth user auto-creation"
       shell: >
         container exec {{ ODOO_CONTAINER_ADDRESS }}
         odoo -i auth_signup
@@ -69,7 +69,7 @@
       changed_when: "'loading' in auth_signup_install.stdout"
       failed_when: false
 
-    - name: "Install auth_oauth_https module for HTTPS redirect URI fix"
+    - name: "📦 Install auth_oauth_https module for HTTPS redirect URI fix"
       shell: >
         container exec {{ ODOO_CONTAINER_ADDRESS }}
         odoo -i auth_oauth_https
@@ -84,7 +84,7 @@
       changed_when: "'loading' in auth_oauth_https_install.stdout"
       failed_when: false
 
-- name: "Install auth_ldap module for LDAP support"
+- name: "📦 Install auth_ldap module for LDAP support"
   shell: >
     container exec {{ ODOO_CONTAINER_ADDRESS }}
     odoo -i auth_ldap

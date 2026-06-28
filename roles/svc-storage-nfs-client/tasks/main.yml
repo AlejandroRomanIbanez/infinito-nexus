@@ -1,5 +1,5 @@
 ---
-- name: "Assert NFS server + export base are configured"
+- name: "✅ Assert NFS server + export base are configured"
   ansible.builtin.assert:
     that:
       - storage.nfs.server is defined
@@ -12,12 +12,12 @@
       group_vars/all/15_storage.yml). Reachable NFS server IP/hostname
       and the matching export base path are mandatory.
 
-- name: "Install NFS client packages"
+- name: "📦 Install NFS client packages"
   ansible.builtin.package:
     name: "{{ SVC_STORAGE_NFS_CLIENT_PACKAGES[ansible_facts.os_family] }}"
     state: present
 
-- name: "Ensure probe mount point exists"
+- name: "✅ Ensure probe mount point exists"
   ansible.builtin.file:
     path: "{{ SVC_STORAGE_NFS_CLIENT_PROBE_DIR }}"
     state: directory
@@ -25,7 +25,7 @@
     group: root
     mode: "0700"
 
-- name: "Probe-mount the NFS export"
+- name: "🔍 Probe-mount the NFS export"
   ansible.posix.mount:
     path: "{{ SVC_STORAGE_NFS_CLIENT_PROBE_DIR }}"
     src: "{{ STORAGE_NFS_CLIENT_SRC }}"
@@ -36,7 +36,7 @@
   failed_when:
     - svc_storage_nfs_client_probe is failed
 
-- name: "Probe-write a marker to confirm the mount is RW"
+- name: "🔍 Probe-write a marker to confirm the mount is RW"
   ansible.builtin.copy:
     dest: "{{ SVC_STORAGE_NFS_CLIENT_PROBE_DIR }}/.svc-storage-nfs-client-probe"
     content: |
@@ -44,12 +44,12 @@
       probed-at={{ ansible_facts.date_time.iso8601 }}
     mode: "0644"
 
-- name: "Unmount probe mount"
+- name: "🔗 Unmount probe mount"
   ansible.posix.mount:
     path: "{{ SVC_STORAGE_NFS_CLIENT_PROBE_DIR }}"
     state: unmounted
 
-- name: "Detect {{ DIR_VAR_LIB }} pre-mount state"
+- name: "🔍 Detect {{ DIR_VAR_LIB }} pre-mount state"
   ansible.builtin.script:
     cmd: "{{ role_path }}/files/premount_state.sh"
     executable: /bin/bash
@@ -58,7 +58,7 @@
   register: _svc_storage_nfs_client_premount_state
   changed_when: false
 
-- name: "Assert no pre-existing local data at {{ DIR_VAR_LIB }} (mount-over would hide it)"
+- name: "✅ Assert no pre-existing local data at {{ DIR_VAR_LIB }} (mount would hide it)"
   ansible.builtin.assert:
     that:
       - (_svc_storage_nfs_client_premount_state.stdout | trim) in ["mounted", "empty"]
@@ -67,7 +67,7 @@
       would silently hide it. Migrate or remove the local tree manually,
       then re-run the deploy.
 
-- name: "Ensure infinito state mount point exists"
+- name: "✅ Ensure infinito state mount point exists"
   ansible.builtin.file:
     path: "{{ DIR_VAR_LIB }}"
     state: directory
@@ -75,7 +75,7 @@
     group: root
     mode: "0755"
 
-- name: "Persistently mount cluster-shared infinito state from NFS"
+- name: "🔗 Persistently mount cluster-shared infinito state from NFS"
   ansible.posix.mount:
     path: "{{ DIR_VAR_LIB }}"
     src: "{{ STORAGE_NFS_CLIENT_SRC }}"

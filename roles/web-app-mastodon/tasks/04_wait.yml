@@ -1,5 +1,5 @@
 ---
-- name: Check health status of '{{ item }}' container
+- name: 🔎 Check health status of '{{ item }}' container
   ansible.builtin.shell: >
     container inspect --format '{{ "{{.State.Health.Status}}" }}'
     {{ lookup('container_address', application_id, item) }}

@@ -1,19 +1,19 @@
 ---
 - include_tasks: utils/once/flag.yml
 
-- name: "load docker and proxy for '{{ application_id }}'"
+- name: "🧩 load docker and proxy for '{{ application_id }}'"
   include_role:
     name: sys-stk-backend
   vars:
     compose_handlers_flush: false
 
-- name: "Deploy prometheus nginx http-block config to {{ lookup('nginx','directories.configuration.global') }}prometheus.conf"
+- name: "🚀 Deploy prometheus nginx http-block config"
   stack_host_template:
     src: "roles/web-app-prometheus/templates/nginx/prometheus.conf.j2"
     dest: "{{ [ lookup('nginx','directories.configuration.global'), 'prometheus.conf' ] | path_join }}"
   notify: restart openresty
 
-- name: "Render Prometheus config files (local + swarm peers)"
+- name: "📄 Render Prometheus config files (local + swarm peers)"
   ansible.builtin.include_tasks:
     file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
   vars:
@@ -31,16 +31,16 @@
         dest: "{{ ALERT_RULES_CONFIG_HOST }}"
         mode: "0644"
 
-- name: "Pre-create native-metrics docker networks (idempotent)"
+- name: "📁 Pre-create native-metrics docker networks (idempotent)"
   include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/network/create.yml' ] | path_join }}"
   vars:
     network_role_id: "{{ item }}"
   loop: "{{ lookup('native_metrics_apps') }}"
 
-- name: "flush handlers for '{{ application_id }}'"
+- name: "🚿 flush handlers for '{{ application_id }}'"
   meta: flush_handlers
 
-- name: "Include role sys-stk-front-proxy for '{{ application_id }}'"
+- name: "📂 Include role sys-stk-front-proxy for '{{ application_id }}'"
   include_role:
     name: sys-stk-front-proxy
   vars:

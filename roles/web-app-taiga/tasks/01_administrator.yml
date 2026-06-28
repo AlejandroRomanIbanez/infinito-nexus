@@ -1,5 +1,5 @@
 ---
-- name: "Run Taiga migrations (required before admin creation)"
+- name: "▶️ Run Taiga migrations (required before admin creation)"
   ansible.builtin.shell: >
     container exec -i
     {{ TAIGA_MANAGER_CONTAINER_ADDRESS }}
@@ -7,7 +7,7 @@
   register: taiga_migrate
   changed_when: taiga_migrate.rc == 0
 
-- name: "Create Taiga admin user (idempotent)"
+- name: "📁 Create Taiga admin user (idempotent)"
   ansible.builtin.shell: >
     container exec -i
     -e DJANGO_SUPERUSER_PASSWORD={{ TAIGA_SUPERUSER_PASSWORD | quote }}
@@ -24,7 +24,7 @@
     ('integrityerror' not in (taiga_create_admin.stdout + taiga_create_admin.stderr) | lower)
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: "Upsert Taiga admin via manage.py shell"
+- name: "📝 Upsert Taiga admin via manage.py shell"
   ansible.builtin.shell: >
     container exec -i
     -e DJANGO_SUPERUSER_PASSWORD={{ TAIGA_SUPERUSER_PASSWORD | quote }}

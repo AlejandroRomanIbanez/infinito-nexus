@@ -9,6 +9,6 @@
   vars:
     handler_role_name: "sys-svc-compose"
 
-- name: "Initialize dedicated index namespace"
+- name: "🎬 Initialize dedicated index namespace"
   include_tasks: 02_init.yml
   when: database_init | bool

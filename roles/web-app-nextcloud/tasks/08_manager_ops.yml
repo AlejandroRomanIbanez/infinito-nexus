@@ -1,11 +1,11 @@
 ---
-- name: Setup config.php
+- name: 🔧 Setup config.php
   include_tasks: 02_config.yml
 
-- name: Flush all handlers immediately so that occ can be used
+- name: 🚿 Flush all handlers immediately so that occ can be used
   meta: flush_handlers
 
-- name: Wait until Redis is ready (PONG)
+- name: ⏳ Wait until Redis is ready (PONG)
   shell: "container exec {{ NEXTCLOUD_REDIS_CONTAINER_ADDRESS }} redis-cli ping"
   register: redis_ping
   retries: 60
@@ -14,10 +14,10 @@
   changed_when: false
   when: lookup('engine', 'redis', application_id, 'local')
 
-- name: Update\Upgrade Nextcloud
+- name: 🔄 Update\Upgrade Nextcloud
   include_tasks: 03_upgrade.yml
 
-- name: Load system configuration steps
+- name: 📂 Load system configuration steps
   include_tasks: "{{ nextcloud_step }}"
   loop:
     - 04_admin.yml
@@ -25,7 +25,7 @@
   loop_control:
     loop_var: nextcloud_step
 
-- name: Setup Nextcloud Plugins
+- name: 🔧 Setup Nextcloud Plugins
   include_tasks: 06_plugin.yml
   loop: "{{ NEXTCLOUD_PLUGIN_ITEMS }}"
   loop_control:
@@ -35,5 +35,5 @@
     plugin_value: "{{ plugin_item.value }}"
   when: NEXTCLOUD_PLUGINS_ENABLED | bool
 
-- name: Reconcile administrator identities after plugin setup
+- name: 🔧 Reconcile administrator identities after plugin setup
   include_tasks: 07_admin_identities.yml

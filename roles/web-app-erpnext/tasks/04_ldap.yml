@@ -1,5 +1,5 @@
 ---
-- name: "apply LDAP Settings doctype"
+- name: "📌 apply LDAP Settings doctype"
   ansible.builtin.shell: |
     set -euo pipefail
     container exec -i \

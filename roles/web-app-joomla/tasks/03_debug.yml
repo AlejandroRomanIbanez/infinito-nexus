@@ -1,5 +1,5 @@
 ---
-- name: "Toggle Joomla debug flags safely (configuration.php)"
+- name: "🐛 Toggle Joomla debug flags safely (configuration.php)"
   shell: >
     container exec -i
     -e J_CONFIG_FILE={{ JOOMLA_CONFIG_FILE | quote }}

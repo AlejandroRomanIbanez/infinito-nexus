@@ -1,5 +1,5 @@
 ---
-- name: "Check if Keycloak OAuth provider exists"
+- name: "🔎 Check if Keycloak OAuth provider exists"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -7,7 +7,7 @@
     expect_rows: true
   register: oauth_check
 
-- name: "Update existing Keycloak OAuth provider"
+- name: "🔄 Update existing Keycloak OAuth provider"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -18,7 +18,7 @@
       client_id: "{{ ODOO_OIDC_CLIENT_ID }}"
   when: oauth_check.rows | length > 0
 
-- name: "Create new Keycloak OAuth provider"
+- name: "📁 Create new Keycloak OAuth provider"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -29,7 +29,7 @@
       client_id: "{{ ODOO_OIDC_CLIENT_ID }}"
   when: oauth_check.rows | length == 0
 
-- name: "Enable OAuth authentication in system parameters"
+- name: "🟢 Enable OAuth authentication in system parameters"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -38,7 +38,7 @@
       key: "auth_oauth.oauth_providers"
       value: "True"
 
-- name: "Enable OAuth signup (allow user creation on first OAuth login)"
+- name: "🟢 Enable OAuth signup (allow user creation on first OAuth login)"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -47,7 +47,7 @@
       key: "auth_signup.invitation_scope"
       value: "b2c"
 
-- name: "Allow uninvited OAuth signup on website"
+- name: "🔑 Allow uninvited OAuth signup on website"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -56,7 +56,7 @@
 # Create an internal user template for OAuth signup. New users
 # inherit this user's groups via base.template_portal_user_id /
 # auth_signup.template_user_id.
-- name: "Check if OAuth template user exists"
+- name: "🔎 Check if OAuth template user exists"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -64,7 +64,7 @@
     expect_rows: true
   register: oauth_template_check
 
-- name: "Create OAuth template partner"
+- name: "📁 Create OAuth template partner"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -73,7 +73,7 @@
   register: oauth_template_partner
   when: oauth_template_check.rows | length == 0
 
-- name: "Create OAuth template user"
+- name: "📁 Create OAuth template user"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -86,19 +86,19 @@
     - oauth_template_partner.rows is defined
     - oauth_template_partner.rows | length > 0
 
-- name: "Ensure OAuth template user is active"
+- name: "✅ Ensure OAuth template user is active"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
     query_file: "{{ role_path }}/files/sql/oidc/update-activate-oauth-template.sql"
 
-- name: "Grant Internal User group to OAuth template"
+- name: "🔐 Grant Internal User group to OAuth template"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
     query_file: "{{ role_path }}/files/sql/oidc/grant-internal-user-to-oauth-template.sql"
 
-- name: "Grant company access to OAuth template"
+- name: "🔐 Grant company access to OAuth template"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -109,7 +109,7 @@
 #   _create_user_from_template() during signup.
 # - auth_signup.template_user_id is what the Odoo UI settings page
 #   displays; we set both for consistency.
-- name: "Set OAuth template user for signup (base.template_portal_user_id)"
+- name: "🔧 Set OAuth template user for signup (base.template_portal_user_id)"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -117,7 +117,7 @@
     named_args:
       key: "base.template_portal_user_id"
 
-- name: "Set OAuth template user for signup (auth_signup.template_user_id)"
+- name: "🔧 Set OAuth template user for signup (auth_signup.template_user_id)"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -125,7 +125,7 @@
     named_args:
       key: "auth_signup.template_user_id"
 
-- name: "Use Authorization header for OAuth token validation"
+- name: "🔑 Use Authorization header for OAuth token validation"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -134,7 +134,7 @@
       key: "auth_oauth.authorization_header"
       value: "True"
 
-- name: "Set web.base.url for HTTPS redirects"
+- name: "🔧 Set web.base.url for HTTPS redirects"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -143,7 +143,7 @@
       key: "web.base.url"
       value: "{{ ODOO_URL }}"
 
-- name: "Freeze web.base.url to prevent automatic detection"
+- name: "🧊 Freeze web.base.url to prevent automatic detection"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -155,14 +155,14 @@
 # Repair fallback for users created before
 # base.template_portal_user_id was set correctly. New OAuth signups
 # inherit the group from the template, but legacy users do not.
-- name: "Grant Internal User group to OAuth-created users"
+- name: "🔐 Grant Internal User group to OAuth-created users"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
     query_file: "{{ role_path }}/files/sql/oidc/grant-internal-user-to-oauth-users-repair.sql"
 
 # Link existing Odoo users to Keycloak for SSO.
-- name: "Get Keycloak OAuth provider id in Odoo"
+- name: "⬇️ Get Keycloak OAuth provider id in Odoo"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -170,7 +170,7 @@
     expect_rows: true
   register: keycloak_provider
 
-- name: "Query Keycloak DB for administrator username"
+- name: "🔍 Query Keycloak DB for administrator username"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', 'web-app-keycloak') }}"
@@ -182,7 +182,7 @@
   register: keycloak_users
   when: keycloak_provider.rows | length > 0
 
-- name: "Link administrator user to Keycloak in Odoo"
+- name: "🔗 Link administrator user to Keycloak in Odoo"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -198,14 +198,14 @@
 # Auto-created OAuth users get portal access by default. Promote
 # them to internal-user + default-company so they can reach the
 # main Odoo interface.
-- name: "Grant internal user access to OAuth-created users"
+- name: "🔐 Grant internal user access to OAuth-created users"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
     query_file: "{{ role_path }}/files/sql/oidc/grant-internal-user-to-oauth-signup-users.sql"
   when: keycloak_provider.rows | length > 0
 
-- name: "Grant company access to OAuth-created users"
+- name: "🔐 Grant company access to OAuth-created users"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"

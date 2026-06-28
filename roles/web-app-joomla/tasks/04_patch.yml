@@ -1,5 +1,5 @@
 ---
-- name: "Ensure configuration.php DB settings match inventory"
+- name: "✅ Ensure configuration.php DB settings match inventory"
   shell: >
     container exec -i
     -e J_CONFIG_FILE={{ JOOMLA_CONFIG_FILE | quote }}

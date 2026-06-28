@@ -1,5 +1,5 @@
 ---
-- name: "MEDIAWIKI | Ensure required host directories exist"
+- name: "✅ MEDIAWIKI | Ensure required host directories exist"
   ansible.builtin.file:
     path: "{{ item }}"
     state: directory
@@ -8,7 +8,7 @@
     - "{{ MEDIAWIKI_LOCAL_MOUNT_DIR }}"
     - "{{ MEDIAWIKI_CONFIG_DIR }}"
 
-- name: "MEDIAWIKI | Render host-side PHP config files"
+- name: "📄 MEDIAWIKI | Render host-side PHP config files"
   ansible.builtin.include_tasks:
     file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
   vars:

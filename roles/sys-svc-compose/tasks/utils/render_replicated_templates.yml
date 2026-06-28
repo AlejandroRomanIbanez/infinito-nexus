@@ -1,5 +1,5 @@
 ---
-- name: "Expand fileglob-driven entries for '{{ application_id }}'"
+- name: "📤 Expand fileglob-driven entries for '{{ application_id }}'"
   ansible.builtin.set_fact:
     _role_templates_expanded: >-
       {%- set out = [] -%}
@@ -24,7 +24,7 @@
       {%- endfor -%}
       {{ out }}
 
-- name: "Render and replicate templates for '{{ application_id }}'"
+- name: "📄 Render and replicate templates for '{{ application_id }}'"
   ansible.builtin.include_tasks: "_render_one_template.yml"
   loop: "{{ _role_templates_expanded }}"
   loop_control:

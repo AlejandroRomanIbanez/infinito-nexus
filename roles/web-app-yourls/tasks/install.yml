@@ -1,8 +1,8 @@
 ---
-- name: "Provision YOURLS on the stack host"
+- name: "🔧 Provision YOURLS on the stack host"
   when: IS_STACK_HOST | bool
   block:
-    - name: "Wait until YOURLS is reachable inside {{ YOURLS_CONTAINER }}"
+    - name: "⏳ Wait until YOURLS is reachable inside {{ YOURLS_CONTAINER }}"
       ansible.builtin.shell:
         cmd: >-
           container exec {{ YOURLS_CONTAINER_ADDRESS }}
@@ -13,7 +13,7 @@
       until: yourls_install_probe.rc == 0
       changed_when: false
 
-    - name: "Create the YOURLS database schema via the installer (idempotent)"
+    - name: "📁 Create the YOURLS database schema via the installer (idempotent)"
       ansible.builtin.shell:
         cmd: >-
           container exec {{ YOURLS_CONTAINER_ADDRESS }}

@@ -5,7 +5,7 @@
 # dials at startup (MAILU_SWARM_DB_HOST, MAILU_SWARM_REDIS_HOST). These facts
 # pin those names to the central services' overlay VIPs via admin `extra_hosts`,
 # resolved here at deploy time into literal IPs (extra_hosts rejects names).
-- name: "Resolve central mariadb/redis VIPs for admin extra_hosts (swarm)"
+- name: "🔍 Resolve central mariadb/redis VIPs for admin extra_hosts (swarm)"
   ansible.builtin.command:
     argv:
       - "{{ BIN_CONTAINER }}"
@@ -24,7 +24,7 @@
   loop_control:
     loop_var: peer
 
-- name: "Resolve central overlay network ids (swarm)"
+- name: "🔍 Resolve central overlay network ids (swarm)"
   ansible.builtin.command:
     argv:
       - "{{ BIN_CONTAINER }}"
@@ -43,7 +43,7 @@
   loop_control:
     loop_var: peer
 
-- name: "Pin central mariadb/redis VIPs as admin extra_hosts facts (swarm)"
+- name: "🧰 Pin central mariadb/redis VIPs as admin extra_hosts facts (swarm)"
   ansible.builtin.set_fact:
     MAILU_SWARM_DB_ADDR: >-
       {{ mailu_swarm_vip_raw.results[0].stdout | split('#') | map('trim') | select

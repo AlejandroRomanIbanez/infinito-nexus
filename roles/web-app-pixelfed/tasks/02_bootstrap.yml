@@ -5,7 +5,7 @@
 # Keep this wait at the top of the bootstrap flow. The later artisan commands
 # assume the repo-managed entrypoint has already brought Apache up.
 
-- name: "Wait until the Pixelfed application container finished its entrypoint bootstrap"
+- name: "⏳ Wait until Pixelfed application container finished entrypoint bootstrap"
   ansible.builtin.command:
     argv:
       - container
@@ -21,7 +21,7 @@
   until: pixelfed_entrypoint_bootstrap.rc == 0
   delegate_to: "{{ PIXELFED_HOST_NODE }}"
 
-- name: "Check whether the Pixelfed bootstrap marker exists"
+- name: "🔎 Check whether the Pixelfed bootstrap marker exists"
   ansible.builtin.command:
     argv:
       - container
@@ -35,7 +35,7 @@
   failed_when: false
   delegate_to: "{{ PIXELFED_HOST_NODE }}"
 
-- name: "Check whether the Pixelfed users table exists"
+- name: "🔎 Check whether the Pixelfed users table exists"
   database_query:
     config: "{{ lookup('database', application_id) }}"
     query_file: "{{ role_path }}/files/sql/select-users-table.sql"
@@ -50,7 +50,7 @@
   until: pixelfed_bootstrap_users_table is success
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: "Count existing Pixelfed users when the users table already exists"
+- name: "👥 Count existing Pixelfed users when the users table already exists"
   database_query:
     config: "{{ lookup('database', application_id) }}"
     query_file: "{{ role_path }}/files/sql/count-users.sql"
@@ -64,7 +64,7 @@
   until: pixelfed_bootstrap_user_count is success
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: "Choose Pixelfed migration strategy"
+- name: "🚚 Choose Pixelfed migration strategy"
   ansible.builtin.set_fact:
     # Preserve the "no marker + no users" reset path. It is the safety net for
     # broken first boots where Pixelfed partially initialized and would
@@ -87,7 +87,7 @@
         )
       }}
 
-- name: "Run Pixelfed migrations"
+- name: "▶️ Run Pixelfed migrations"
   ansible.builtin.command:
     argv: "{{ pixelfed_migrate_argv }}"
   register: pixelfed_migrate
@@ -97,7 +97,7 @@
   until: pixelfed_migrate.rc == 0
   delegate_to: "{{ PIXELFED_HOST_NODE }}"
 
-- name: "Ensure Pixelfed Passport keys exist"
+- name: "✅ Ensure Pixelfed Passport keys exist"
   ansible.builtin.command:
     argv:
       - container
@@ -118,7 +118,7 @@
   until: pixelfed_passport_keys.rc == 0
   delegate_to: "{{ PIXELFED_HOST_NODE }}"
 
-- name: "Ensure the Pixelfed public storage symlink exists"
+- name: "✅ Ensure the Pixelfed public storage symlink exists"
   ansible.builtin.command:
     argv:
       - container
@@ -139,7 +139,7 @@
   until: pixelfed_storage_link.rc == 0
   delegate_to: "{{ PIXELFED_HOST_NODE }}"
 
-- name: "Initialize the Pixelfed instance actor"
+- name: "🎬 Initialize the Pixelfed instance actor"
   ansible.builtin.command:
     argv:
       - container
@@ -159,7 +159,7 @@
 
 # The worker uses this marker to skip its own init path. Do not move this above
 # the actor/storage setup or the worker can start against an incomplete app.
-- name: "Mark Pixelfed bootstrap as complete for the worker container"
+- name: "🏷️ Mark Pixelfed bootstrap as complete for the worker container"
   ansible.builtin.command:
     argv:
       - container

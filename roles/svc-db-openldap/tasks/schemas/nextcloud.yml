@@ -1,5 +1,5 @@
 ---
-- name: Ensure custom LDAP schema snippet via ldapsm
+- name: ✅ Ensure custom LDAP schema snippet via ldapsm
   vars:
     schema_name: "nextcloud"
     attribute_defs:
@@ -24,6 +24,6 @@
   changed_when: "'Created schema entry' in ldapsm_result.stdout"
   check_mode: false
 
-- name: Show ldapsm output
+- name: 👁️ Show ldapsm output
   debug:
     var: ldapsm_result.stdout_lines

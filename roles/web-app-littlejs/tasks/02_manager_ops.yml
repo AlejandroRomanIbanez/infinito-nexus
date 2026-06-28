@@ -1,9 +1,9 @@
 ---
-- name: "Load LittleJS example metadata"
+- name: "📄 Load LittleJS example metadata"
   include_vars:
     file: "examples.yml"
 
-- name: "Render LittleJS index.html"
+- name: "📄 Render LittleJS index.html"
   stack_host_template:
     src: "html/index.html.j2"
     dest: "{{ LITTLEJS_INDEX_HOST_ABS }}"
@@ -12,7 +12,7 @@
     - compose build
     - compose up
 
-- name: "Render LittleJS run.html for shorts"
+- name: "📄 Render LittleJS run.html for shorts"
   stack_host_template:
     src: "html/run.html.j2"
     dest: "{{ LITTLEJS_RUN_HOST_ABS }}"
@@ -21,7 +21,7 @@
     - compose build
     - compose up
 
-- name: "flush compose for '{{ application_id }}'"
+- name: "🚿 flush compose for '{{ application_id }}'"
   meta: flush_handlers
 
 - include_tasks: utils/once/flag.yml

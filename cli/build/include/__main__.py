@@ -185,13 +185,13 @@ def gen_condi_role_incl(roles_dir, prefixes=None):
 
         app_id = role['application_id']
         entries.append(
-            f"- name: setup {app_id}\n"
+            f"- name: 🔧 setup {app_id}\n"
             f"  when: ('{app_id}' | application_allowed(group_names, lookup('deployment').whitelist))\n"
             f"  include_role:\n"
             f"    name: {role_name}\n"
         )
         entries.append(
-            f"- name: flush handlers after {app_id}\n"
+            f"- name: 🚿 flush handlers after {app_id}\n"
             f"  meta: flush_handlers\n"
         )
 

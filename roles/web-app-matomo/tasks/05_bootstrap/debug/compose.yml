@@ -1,6 +1,6 @@
 ---
 # IMPORTANT: Avoid shell-inlining stdout/stderr because it can contain quotes and break bash parsing.
-- name: "DEBUG | bootstrap result (sanitized/minimal when masked)"
+- name: "🐛 DEBUG | bootstrap result (sanitized/minimal when masked)"
   ansible.builtin.debug:
     msg:
       - "=== compose bootstrap FAILED ==="
@@ -9,7 +9,7 @@
       - "stdout_len={{ (matomo_bootstrap_run.stdout | default('') | string) | length }}"
       - "stderr_len={{ (matomo_bootstrap_run.stderr | default('') | string) | length }}"
 
-- name: "DEBUG | bootstrap result (full when not masked)"
+- name: "🐛 DEBUG | bootstrap result (full when not masked)"
   ansible.builtin.debug:
     msg:
       - "=== compose bootstrap FAILED ==="
@@ -20,7 +20,7 @@
       - "--- stderr ---"
       - "{{ matomo_bootstrap_run.stderr | default('') }}"
 
-- name: "DEBUG | compose ps -a"
+- name: "🐛 DEBUG | compose ps -a"
   ansible.builtin.command:
     argv:
       - "{{ BIN_COMPOSE }}"
@@ -35,7 +35,7 @@
   changed_when: false
   failed_when: false
 
-- name: "DEBUG | compose ps output (full when not masked)"
+- name: "🐛 DEBUG | compose ps output (full when not masked)"
   ansible.builtin.debug:
     msg:
       - "--- compose ps -a stdout ---"
@@ -43,7 +43,7 @@
       - "--- compose ps -a stderr ---"
       - "{{ matomo_bootstrap_ps.stderr | default('') }}"
 
-- name: "DEBUG | compose logs matomo (tail)"
+- name: "🐛 DEBUG | compose logs matomo (tail)"
   ansible.builtin.command:
     argv:
       - "{{ BIN_COMPOSE }}"
@@ -62,7 +62,7 @@
   changed_when: false
   failed_when: false
 
-- name: "DEBUG | compose logs matomo output (full when not masked)"
+- name: "🐛 DEBUG | compose logs matomo output (full when not masked)"
   ansible.builtin.debug:
     msg:
       - "--- compose logs {{ MATOMO_SERVICE }} stdout ---"
@@ -70,7 +70,7 @@
       - "--- compose logs {{ MATOMO_SERVICE }} stderr ---"
       - "{{ matomo_bootstrap_matomo_logs.stderr | default('') }}"
 
-- name: "DEBUG | compose logs bootstrap service (tail)"
+- name: "🐛 DEBUG | compose logs bootstrap service (tail)"
   ansible.builtin.command:
     argv:
       - "{{ BIN_COMPOSE }}"
@@ -89,7 +89,7 @@
   changed_when: false
   failed_when: false
 
-- name: "DEBUG | compose logs bootstrap output (full when not masked)"
+- name: "🐛 DEBUG | compose logs bootstrap output (full when not masked)"
   ansible.builtin.debug:
     msg:
       - "--- compose logs {{ MATOMO_BOOTSTRAP_SERVICE }} stdout ---"
@@ -97,7 +97,7 @@
       - "--- compose logs {{ MATOMO_BOOTSTRAP_SERVICE }} stderr ---"
       - "{{ matomo_bootstrap_service_logs.stderr | default('') }}"
 
-- name: "DEBUG | matomo container health (inspect json)"
+- name: "🐛 DEBUG | matomo container health (inspect json)"
   ansible.builtin.command:
     argv:
       - container
@@ -109,14 +109,14 @@
   changed_when: false
   failed_when: false
 
-- name: "DEBUG | matomo container health output"
+- name: "🐛 DEBUG | matomo container health output"
   ansible.builtin.debug:
     msg:
       - "--- matomo .State.Health (json) ---"
       - "{{ matomo_container_health.stdout | default('') }}"
       - "{{ matomo_container_health.stderr | default('') }}"
 
-- name: "DEBUG | matomo tmp permissions + write test (www-data)"
+- name: "🐛 DEBUG | matomo tmp permissions + write test (www-data)"
   ansible.builtin.command:
     argv:
       - container
@@ -139,14 +139,14 @@
   changed_when: false
   failed_when: false
 
-- name: "DEBUG | matomo tmp permissions + write test output"
+- name: "🐛 DEBUG | matomo tmp permissions + write test output"
   ansible.builtin.debug:
     msg:
       - "--- filesystem + write-test diagnostics ---"
       - "{{ matomo_fs_permissions_check.stdout | default('') }}"
       - "{{ matomo_fs_permissions_check.stderr | default('') }}"
 
-- name: "DEBUG | bootstrap artifact paths from logs"
+- name: "🐛 DEBUG | bootstrap artifact paths from logs"
   ansible.builtin.debug:
     msg:
       - "--- bootstrap installer artifacts (paths from logs) ---"
@@ -164,7 +164,7 @@
           | list
         }}
 
-- name: "DEBUG | show compose file"
+- name: "🐛 DEBUG | show compose file"
   ansible.builtin.command:
     argv:
       - bash
@@ -172,7 +172,7 @@
       - "sed -n '1,240p' {{ lookup('container', application_id, 'files.compose') }} || true"
   changed_when: false
 
-- name: "DEBUG | show env files (only when not masked)"
+- name: "🐛 DEBUG | show env files (only when not masked)"
   ansible.builtin.command:
     argv:
       - bash
@@ -186,7 +186,7 @@
         cat "{{ lookup('container', application_id, 'files.env') }}" || true
   changed_when: false
 
-- name: "DEBUG | compose config (effective)"
+- name: "🐛 DEBUG | compose config (effective)"
   ansible.builtin.command:
     argv:
       - "{{ BIN_COMPOSE }}"
@@ -203,13 +203,13 @@
   changed_when: false
   failed_when: false
 
-- name: "DEBUG | effective config output"
+- name: "🐛 DEBUG | effective config output"
   ansible.builtin.debug:
     msg:
       - "{{ matomo_bootstrap_config.stdout | default('') }}"
       - "{{ matomo_bootstrap_config.stderr | default('') }}"
   when: not (MASK_CREDENTIALS_IN_LOGS | bool)
 
-- name: "FAIL | abort after debug dump"
+- name: "🛑 FAIL | abort after debug dump"
   ansible.builtin.fail:
     msg: "Matomo bootstrap failed – see debug output above"

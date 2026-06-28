@@ -1,10 +1,10 @@
 ---
 # Routines to create the administrator account
-- name: Remove line containing "- administrator" from config/settings.yml to allow creating administrator account
+- name: 🧹 Remove "- administrator" from config/settings.yml to enable admin creation
   shell:
     cmd: "container exec -u root {{ MASTODON_CONTAINER_ADDRESS }} sed -i '/- administrator/d' config/settings.yml"
   when: lookup('users', 'administrator').username == "administrator"
-- name: Create admin account via tootctl
+- name: 📁 Create admin account via tootctl
   shell:
     cmd: >
       container exec -u root {{ MASTODON_CONTAINER_ADDRESS }} bash -c
@@ -18,7 +18,7 @@
     and
     ("taken" not in tootctl_create.stderr | lower)
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-- name: Approve the administrator account in Mastodon
+- name: 👍 Approve the administrator account in Mastodon
   shell:
     cmd: >
       container exec -u root {{ MASTODON_CONTAINER_ADDRESS }} bash -c "bin/tootctl accounts modify {{ lookup('users', 'administrator').username }} --approve"

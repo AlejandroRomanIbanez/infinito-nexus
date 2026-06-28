@@ -1,7 +1,7 @@
 ---
-- name: "Wait until Mailu redis backend responds to PING"
+- name: "⏳ Wait until Mailu redis backend responds to PING"
   block:
-    - name: "Probe Mailu redis"
+    - name: "🔍 Probe Mailu redis"
       ansible.builtin.shell: >
         container exec -i {{ MAILU_REDIS_CONTAINER_ADDRESS }} redis-cli ping
       register: mailu_redis_check
@@ -14,13 +14,13 @@
 
   rescue:
     - block:
-        - name: "Collect Mailu redis container logs after readiness timeout"
+        - name: "📊 Collect Mailu redis container logs after readiness timeout"
           ansible.builtin.shell: >
             container logs --tail=300 {{ MAILU_REDIS_CONTAINER_ADDRESS }}
           register: mailu_redis_logs
           changed_when: false
       always:
-        - name: "Fail: Mailu redis not ready"
+        - name: "🛑 Fail: Mailu redis not ready"
           ansible.builtin.fail:
             msg: |
               Mailu redis did not respond to PING in time.
@@ -32,9 +32,9 @@
               {{ mailu_redis_logs.stdout | default('No logs available') }}
   when: lookup('engine', 'redis', application_id, 'local')
 
-- name: "Wait until Mailu admin HTTP API listens on :8080"
+- name: "⏳ Wait until Mailu admin HTTP API listens on :8080"
   block:
-    - name: "Probe Mailu admin HTTP API"
+    - name: "🔍 Probe Mailu admin HTTP API"
       ansible.builtin.shell: >
         container exec -i {{ MAILU_ADMIN_CONTAINER_ADDRESS }}
         curl -sS -o /dev/null -w "%{http_code}" http://localhost:8080/sso/login
@@ -48,13 +48,13 @@
 
   rescue:
     - block:
-        - name: "Collect Mailu admin container logs after HTTP API readiness timeout"
+        - name: "📊 Collect Mailu admin container logs after HTTP API readiness timeout"
           ansible.builtin.shell: >
             container logs --tail=300 {{ MAILU_ADMIN_CONTAINER_ADDRESS }}
           register: mailu_admin_http_logs
           changed_when: false
       always:
-        - name: "Fail: Mailu admin HTTP API not ready"
+        - name: "🛑 Fail: Mailu admin HTTP API not ready"
           ansible.builtin.fail:
             msg: |
               Mailu admin HTTP API did not respond on :8080 in time.

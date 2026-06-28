@@ -1,5 +1,5 @@
 ---
-- name: "Create / promote MediaWiki admin user (one-shot)"
+- name: "📁 Create / promote MediaWiki admin user (one-shot)"
   ansible.builtin.command: >-
     container run --rm
     --network {{ MEDIAWIKI_NETWORK_DATABASE }}

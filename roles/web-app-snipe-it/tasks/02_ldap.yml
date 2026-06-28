@@ -1,6 +1,6 @@
 # @See https://raw.githubusercontent.com/snipe/snipe-it/master/app/Models/Setting.php
 ---
-- name: "snipe-it: wait until settings table is seeded"
+- name: "⏳ snipe-it: wait until settings table is seeded"
   ansible.builtin.shell:
     cmd: "container exec -i {{ SNIPE_IT_CONTAINER_ADDRESS | quote }} php"
     stdin: "{{ lookup('file', 'wait_settings.php') }}"
@@ -11,7 +11,7 @@
   changed_when: false
   failed_when: snipe_settings_ready.rc != 0
 
-- name: "snipe-it: apply LDAP configuration via Setting model"
+- name: "📌 snipe-it: apply LDAP configuration via Setting model"
   ansible.builtin.shell:
     cmd: >-
       container exec -i
@@ -33,7 +33,7 @@
   changed_when: true
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: "snipe-it: clear Laravel caches"
+- name: "🧹 snipe-it: clear Laravel caches"
   ansible.builtin.shell:
     cmd: "container exec -i {{ SNIPE_IT_CONTAINER_ADDRESS | quote }} php artisan optimize:clear"
   changed_when: true

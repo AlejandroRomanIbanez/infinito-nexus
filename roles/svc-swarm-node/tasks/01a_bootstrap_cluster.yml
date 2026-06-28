@@ -1,11 +1,11 @@
 ---
-- name: "Ensure dockerd is installed before swarm bootstrap"
+- name: "✅ Ensure dockerd is installed before swarm bootstrap"
   ansible.builtin.include_role:
     name: sys-svc-container
     public: false
   when: run_once_sys_svc_container is not defined
 
-- name: "Assert at least one host is in svc-swarm-manager"
+- name: "✅ Assert at least one host is in svc-swarm-manager"
   ansible.builtin.assert:
     that:
       - (groups['svc-swarm-manager'] | default([]) | length) >= 1
@@ -18,7 +18,7 @@
       Found: {{ groups['svc-swarm-manager'] | default([]) | length }} members.
   run_once: true
 
-- name: "Assert every svc-swarm-manager member is also in svc-swarm-node"
+- name: "✅ Assert every svc-swarm-manager member is also in svc-swarm-node"
   ansible.builtin.assert:
     that:
       - item in (groups['svc-swarm-node'] | default([]))
@@ -28,22 +28,22 @@
   loop: "{{ groups['svc-swarm-manager'] | default([]) }}"
   run_once: true
 
-- name: "Bootstrap manager: init swarm + publish join tokens (first manager only)"
+- name: "🥾 Bootstrap manager: init swarm + publish join tokens (first manager only)"
   ansible.builtin.include_tasks: 02_manager.yml
   when: inventory_hostname == (groups['svc-swarm-manager'] | first)
 
-- name: "Additional managers: join cluster with manager token"
+- name: "🕸️ Additional managers: join cluster with manager token"
   ansible.builtin.include_tasks: 02_manager_join.yml
   when:
     - "'svc-swarm-manager' in group_names"
     - inventory_hostname != (groups['svc-swarm-manager'] | first)
 
-- name: "Worker: include worker-join tasks"
+- name: "📂 Worker: include worker-join tasks"
   ansible.builtin.include_tasks: 03_worker.yml
   when:
     - "'svc-swarm-node' in group_names"
     - "'svc-swarm-manager' not in group_names"
 
-- name: "Apply node labels (bootstrap manager dispatches to all nodes)"
+- name: "📌 Apply node labels (bootstrap manager dispatches to all nodes)"
   ansible.builtin.include_tasks: 04_labels.yml
   when: inventory_hostname == (groups['svc-swarm-manager'] | first)

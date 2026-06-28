@@ -1,6 +1,6 @@
 ---
 # Robot flavor (Robot Webservice API)
-- name: Assert Robot credentials present
+- name: ✅ Assert Robot credentials present
   ansible.builtin.assert:
     that:
       - (HETZNER_ROBOT_USER | default('') | length) > 0
@@ -8,7 +8,7 @@
     fail_msg: "Robot credentials required: HETZNER_ROBOT_USER / HETZNER_ROBOT_PASSWORD."
   when: MODE_ASSERT | bool
 
-- name: Validate records (robot)
+- name: ✅ Validate records (robot)
   ansible.builtin.assert:
     that:
       - rdns_records | length > 0
@@ -17,7 +17,7 @@
     fail_msg: "Each record must have ip_address and dns_ptr for Robot rDNS."
   when: MODE_ASSERT | bool
 
-- name: Apply rDNS via Hetzner Robot API
+- name: 📌 Apply rDNS via Hetzner Robot API
   vars:
     hetzner_robot_base_url: "{{ HETZNER_ROBOT_BASE_URL }}"
     ip_path: "{{ item.ip_address | urlencode }}"

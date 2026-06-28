@@ -1,12 +1,12 @@
 ---
-- name: "Decidim | Resolve hosting node + container ID ({{ DEPLOYMENT_MODE }})"
+- name: "🔍 Decidim | Resolve hosting node + container ID ({{ DEPLOYMENT_MODE }})"
   ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml'] | path_join }}"
   vars:
     resolve_service_key: decidim
     resolve_output_prefix: DECIDIM
     resolve_compose_cid: "{{ DECIDIM_CONTAINER }}"
 
-- name: "Decidim | Wait for web container to be healthy"
+- name: "⏳ Decidim | Wait for web container to be healthy"
   ansible.builtin.shell: >
     container inspect --format '{{ "{{.State.Health.Status}}" }}'
     {{ DECIDIM_LOCAL_CID | quote }}
@@ -17,7 +17,7 @@
   until: (decidim_health.stdout | trim) == 'healthy'
   delegate_to: "{{ DECIDIM_HOST_NODE }}"
 
-- name: "Decidim | Run database migrations"
+- name: "▶️ Decidim | Run database migrations"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  DECIDIM_LOCAL_CID resolved at delegate_to runtime
     container exec -e RAILS_ENV={{ ENVIRONMENT | quote }}
     {{ DECIDIM_LOCAL_CID | quote }}
@@ -26,7 +26,7 @@
   changed_when: decidim_migrate_result.stdout_lines | default([]) | length > 0
   delegate_to: "{{ DECIDIM_HOST_NODE }}"
 
-- name: "Decidim | Seed database on first deploy"
+- name: "🌱 Decidim | Seed database on first deploy"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  DECIDIM_LOCAL_CID resolved at delegate_to runtime
     container exec -e RAILS_ENV={{ ENVIRONMENT | quote }}
     {{ DECIDIM_LOCAL_CID | quote }}
@@ -36,7 +36,7 @@
   failed_when: false
   delegate_to: "{{ DECIDIM_HOST_NODE }}"
 
-- name: "Decidim | Set organization host"
+- name: "🔧 Decidim | Set organization host"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  DECIDIM_LOCAL_CID resolved at delegate_to runtime
     container exec -i -e RAILS_ENV={{ ENVIRONMENT | quote }}
     -e DECIDIM_ORG_HOST={{ domain | quote }}
@@ -48,7 +48,7 @@
   changed_when: "'Organization host set to' in decidim_org_result.stdout"
   delegate_to: "{{ DECIDIM_HOST_NODE }}"
 
-- name: "Decidim | Ensure administrator user exists with correct credentials"
+- name: "✅ Decidim | Ensure administrator user exists with correct credentials"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  DECIDIM_LOCAL_CID resolved at delegate_to runtime
     container exec -i -e RAILS_ENV={{ ENVIRONMENT | quote }}
     -e DECIDIM_ADMIN_EMAIL={{ lookup('users', 'administrator').email | quote }}
@@ -62,7 +62,7 @@
   changed_when: "'Admin user ready' in decidim_admin_result.stdout"
   delegate_to: "{{ DECIDIM_HOST_NODE }}"
 
-- name: "Decidim | Configure OIDC omniauth settings in organization"
+- name: "🔧 Decidim | Configure OIDC omniauth settings in organization"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  DECIDIM_LOCAL_CID resolved at delegate_to runtime
     container exec -i -e RAILS_ENV={{ ENVIRONMENT | quote }}
     {{ DECIDIM_LOCAL_CID | quote }}

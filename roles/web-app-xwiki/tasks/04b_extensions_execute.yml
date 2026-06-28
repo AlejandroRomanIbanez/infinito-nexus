@@ -1,5 +1,5 @@
 ---
-- name: "XWIKI | Execute installer page"
+- name: "▶️ XWIKI | Execute installer page"
   uri_retry:
     url: "{{ XWIKI_DOCKER_REACH_URL }}/bin/view/XWiki/InstallExtensions?xpage=plain"
     method: GET
@@ -17,7 +17,7 @@
     - (_exec_page.content | default('')) is not search('WARN::')
   changed_when: false
 
-- name: "XWIKI | Assert installer output has no errors"
+- name: "✅ XWIKI | Assert installer output has no errors"
   assert:
     that:
       - (_exec_page.content | default('')) is not search('ERROR::')

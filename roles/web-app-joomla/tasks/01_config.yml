@@ -1,5 +1,5 @@
 ---
-- name: "Render php-upload.ini for Joomla"
+- name: "📄 Render php-upload.ini for Joomla"
   stack_host_template:
     src: php-upload.ini.j2
     dest: "{{ JOOMLA_UPLOAD_CONFIG }}"

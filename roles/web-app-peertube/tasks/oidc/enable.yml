@@ -1,16 +1,16 @@
 ---
-- name: "Load OIDC Settings for Peertube"
+- name: "⚙️ Load OIDC Settings for Peertube"
   include_vars: vars/oidc-settings.yml
   changed_when: false
 
-- name: Check if OIDC plugin is already installed
+- name: 🔎 Check if OIDC plugin is already installed
   shell: >
     container exec {{ PEERTUBE_CONTAINER_ADDRESS }} test -d /data/plugins/data/peertube-plugin-auth-openid-connect
   register: peertube_oidc_plugin_check
   failed_when: false
   changed_when: false
 
-- name: "Install auth-openid-connect plugin for Peertube (with temp mem_limit bump + diagnostics on failure)"
+- name: "📦 Install auth-openid-connect plugin for Peertube (mem_limit bump + diagnostics)"
   when: peertube_oidc_plugin_check.rc != 0
   block:
     # Raise the container cgroup ceiling for the duration of the install.
@@ -21,7 +21,7 @@
     # as "Container is restarting" on subsequent exec attempts.
     # --memory-swap -1 allows unlimited swap for the install window (host
     # has a 16G swapfile from issue #162).
-    - name: "PEERTUBE | Raise mem_limit for plugin install"
+    - name: "📦 PEERTUBE | Raise mem_limit for plugin install"
       ansible.builtin.command: >-
         container update
         --memory {{ PEERTUBE_OIDC_PLUGIN_INSTALL_MEM_LIMIT }}
@@ -29,7 +29,7 @@
         {{ PEERTUBE_CONTAINER }}
       changed_when: true
 
-    - name: "Install auth-openid-connect plugin for Peertube"
+    - name: "📦 Install auth-openid-connect plugin for Peertube"
       # V8 heap is still capped tight — the cgroup bump above covers native
       # memory and spawned workers, while --max-old-space-size keeps the
       # install's V8 old-generation predictable.
@@ -51,7 +51,7 @@
     # bumped limits in place so diagnostics reflect real install-time
     # state; the next `compose up` recreates the container and reinstates
     # docker's default memory-swap behavior from compose.yml.
-    - name: "PEERTUBE | Restore compose-defined mem_limit"
+    - name: "♻️ PEERTUBE | Restore compose-defined mem_limit"
       ansible.builtin.command: >-
         container update
         --memory {{ PEERTUBE_MEM_LIMIT }}
@@ -60,7 +60,7 @@
       changed_when: true
 
   rescue:
-    - name: "PEERTUBE | Dump diagnostics after install failure"
+    - name: "💾 PEERTUBE | Dump diagnostics after install failure"
       ansible.builtin.script: "{{ role_path }}/files/diagnostics.sh {{ PEERTUBE_CONTAINER }}"
       environment:
         PEERTUBE_OIDC_PLUGIN_INSTALL_MAX_OLD_SPACE_MB: "{{ PEERTUBE_OIDC_PLUGIN_INSTALL_MAX_OLD_SPACE_MB }}"
@@ -68,14 +68,14 @@
       changed_when: false
       failed_when: false
 
-    - name: "PEERTUBE | Fail explicitly after diagnostics"
+    - name: "🛑 PEERTUBE | Fail explicitly after diagnostics"
       ansible.builtin.fail:
         msg: >-
           Installing peertube-plugin-auth-openid-connect failed.
           See PEERTUBE DIAGNOSTICS block above for state, OOMKilled, exit
           code, logs, stats, host memory, and dmesg OOM-killer evidence.
 
-- name: "Update the settings column of the auth-openid-connect plugin"
+- name: "🔄 Update the settings column of the auth-openid-connect plugin"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -88,7 +88,7 @@
   until: _peertube_oidc_update is succeeded
   notify: compose up
 
-- name: "Ensure plugin is enabled in PeerTube (CLI)"
+- name: "✅ Ensure plugin is enabled in PeerTube (CLI)"
   shell: >
     container exec {{ PEERTUBE_CONTAINER_ADDRESS }} npm run plugin:enable -- --npm-name {{ PEERTUBE_OIDC_PLUGIN }}
   register: _peertube_enable

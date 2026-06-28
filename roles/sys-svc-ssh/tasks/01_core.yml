@@ -1,5 +1,5 @@
 ---
-- name: Install OpenSSH client
+- name: 📦 Install OpenSSH client
   package:
     name: >-
       {{

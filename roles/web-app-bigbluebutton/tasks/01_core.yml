@@ -1,7 +1,7 @@
 ---
 - include_tasks: utils/once/flag.yml
 
-- name: "load docker, proxy for '{{ application_id }}'"
+- name: "🧩 load docker, proxy for '{{ application_id }}'"
   include_role:
     name: sys-stk-full
   vars:
@@ -20,7 +20,7 @@
            }
          ) | trim }}
 
-- name: "Include Seed routines for '{{ application_id }}' database backup"
+- name: "📂 Include Seed routines for '{{ application_id }}' database backup"
   include_tasks: "{{ [ playbook_dir, 'roles/svc-bkp-container-2-local/tasks/04_seed-database-to-backup.yml' ] | path_join }}"
   vars:
     database_consumer_id: "{{ application_id }}"
@@ -35,14 +35,14 @@
     - "'svc-bkp-container-2-local' in group_names"
     - IS_STACK_HOST | bool
 
-- name: configure websocket_upgrade.conf
+- name: 🔧 configure websocket_upgrade.conf
   copy:
     src: "websocket_upgrade.conf"
     dest: "{{ [ lookup('nginx','directories.configuration.maps'), 'websocket_upgrade.conf' ] | path_join }}"
   when: IS_STACK_HOST | bool
   notify: restart openresty
 
-- name: "BBB manager-side operations (compose render + container exec)"
+- name: "👔 BBB manager-side operations (compose render + container exec)"
   include_tasks: 01a_manager_ops.yml
   when: IS_STACK_HOST | bool
 

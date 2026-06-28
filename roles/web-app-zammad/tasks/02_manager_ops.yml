@@ -1,5 +1,5 @@
 ---
-- name: "Stage Zammad host-side init files (local + swarm peers)"
+- name: "🎬 Stage Zammad host-side init files (local + swarm peers)"
   ansible.builtin.include_tasks:
     file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
   vars:
@@ -18,7 +18,7 @@
         mode: "0644"
         when: "{{ ZAMMAD_OIDC_ENABLED }}"
 
-- name: "grant CREATEDB to the Zammad PostgreSQL role (Zammad's init runs rake db:create even when the DB exists)"
+- name: "🔐 grant CREATEDB to Zammad PostgreSQL role (init runs rake db:create)"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: >-
@@ -31,10 +31,10 @@
     query: "{{ lookup('template', role_path ~ '/templates/sql/grant_createdb.sql.j2') }}"
   when: lookup('config', application_id, 'services.postgres.shared') | bool
 
-- name: "flush handlers so the Zammad init container starts with auto_wizard.json bind-mounted"
+- name: "🔄 flush handlers so Zammad init starts with auto_wizard.json bind-mounted"
   meta: flush_handlers
 
-- name: "wait for the Zammad Rails server to answer"
+- name: "⏳ wait for the Zammad Rails server to answer"
   ansible.builtin.shell: |
     set -eo pipefail
     container exec {{ ZAMMAD_RAILS_CONTAINER_ADDRESS }} \
@@ -45,7 +45,7 @@
   delay: 5
   until: zammad_rails_ready.rc == 0
 
-- name: "process auto_wizard.json if Zammad's setup wizard hasn't completed yet (idempotent)"
+- name: "▶️ process auto_wizard.json if Zammad setup wizard incomplete (idempotent)"
   ansible.builtin.shell: |
     set -euo pipefail
     container exec -i {{ ZAMMAD_RAILS_CONTAINER_ADDRESS }} bundle exec rails r '
@@ -57,7 +57,7 @@
   register: zammad_auto_wizard_setup
   changed_when: false
 
-- name: "ensure API-bot user in Zammad (Basic-auth REST API; runs in EVERY variant including no-auth)"
+- name: "✅ ensure API-bot user in Zammad (Basic-auth REST API; all variants, no-auth too)"
   ansible.builtin.shell: |
     set -euo pipefail
     container exec -i \
@@ -73,7 +73,7 @@
   register: zammad_api_bot_apply
   changed_when: false
 
-- name: "apply OIDC settings in Zammad (post-bootstrap; idempotent)"
+- name: "📌 apply OIDC settings in Zammad (post-bootstrap; idempotent)"
   ansible.builtin.shell: |
     set -euo pipefail
     container exec -i \
@@ -92,7 +92,7 @@
   changed_when: false
   when: ZAMMAD_OIDC_ENABLED
 
-- name: "configure Zammad's LdapSource against svc-db-openldap (post-bootstrap; idempotent)"
+- name: "🔧 configure Zammad LdapSource vs svc-db-openldap (post-bootstrap; idempotent)"
   ansible.builtin.shell: |
     set -euo pipefail
     container exec -i \
@@ -112,7 +112,7 @@
   changed_when: false
   when: ZAMMAD_LDAP_ENABLED
 
-- name: "configure Zammad's Email channel (inbound IMAP + outbound SMTP) against Mailu"
+- name: "🔧 configure Zammad's Email channel (inbound IMAP + outbound SMTP) against Mailu"
   ansible.builtin.shell: |
     set -euo pipefail
     container exec -i \

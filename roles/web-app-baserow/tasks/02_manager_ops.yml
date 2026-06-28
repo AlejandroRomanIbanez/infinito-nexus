@@ -1,5 +1,5 @@
 ---
-- name: "Run Baserow Django migrations before bootstrapping users"
+- name: "▶️ Run Baserow Django migrations before bootstrapping users"
   ansible.builtin.shell:
     cmd: >-
       container exec -i
@@ -19,7 +19,7 @@
   delay: 5
   until: baserow_migrate_result.rc == 0
 
-- name: "Restart Baserow application after applying migrations (compose mode)"
+- name: "🔄 Restart Baserow application after applying migrations (compose mode)"
   ansible.builtin.command: "container restart {{ BASEROW_APP_CONTAINER_ADDRESS | quote }}"
   register: baserow_restart_after_migrate
   changed_when: baserow_restart_after_migrate.rc == 0
@@ -27,7 +27,7 @@
     - baserow_migrate_result.changed
     - DEPLOYMENT_MODE == 'compose'
 
-- name: "Restart Baserow application after applying migrations (swarm mode)"
+- name: "🔄 Restart Baserow application after applying migrations (swarm mode)"
   ansible.builtin.command: "container service update --force {{ lookup('container_service', application_id, BASEROW_SERVICE_NAME) }}"
   register: baserow_swarm_restart
   changed_when: baserow_swarm_restart.rc == 0
@@ -36,7 +36,7 @@
     - baserow_migrate_result.changed
     - DEPLOYMENT_MODE == 'swarm'
 
-- name: "Bootstrap Baserow Django superuser '{{ BASEROW_BOOTSTRAP_ADMIN_USERNAME }}' (idempotent)"
+- name: "🎬 Bootstrap Baserow superuser '{{ BASEROW_BOOTSTRAP_ADMIN_USERNAME }}'"
   ansible.builtin.shell:
     cmd: >-
       container exec -i

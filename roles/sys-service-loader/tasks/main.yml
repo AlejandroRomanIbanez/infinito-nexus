@@ -15,7 +15,7 @@
 #      Tasks listed there run with `service_loader_preloading: false`,
 #      so they see the fully preloaded service graph.
 
-- name: "Discover ordered shared services"
+- name: "🔍 Discover ordered shared services"
   ansible.builtin.set_fact:
     _ordered_services: >-
       {{
@@ -26,7 +26,7 @@
         ) | first
       }}
 
-- name: "Load shared service"
+- name: "🔌 Load shared service"
   include_tasks: load_service.yml
   vars:
     service_key: "{{ service_item.id }}"
@@ -42,7 +42,7 @@
     loop_var: service_item
     label: "{{ service_item.id }}"
 
-- name: "Run service-loader post-load roles"
+- name: "▶️ Run service-loader post-load roles"
   ansible.builtin.include_role:
     name: "{{ post_run_role }}"
   loop: "{{ service_loader_post_run | unique }}"

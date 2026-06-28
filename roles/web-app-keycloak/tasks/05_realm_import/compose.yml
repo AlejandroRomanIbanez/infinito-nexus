@@ -1,6 +1,6 @@
 ---
 # include-gated: when: DEPLOYMENT_MODE == "compose"
-- name: "Keycloak realm-import | Stop running keycloak (compose)"
+- name: "⏹️ Keycloak realm-import | Stop running keycloak (compose)"
   ansible.builtin.shell: |
     set -euo pipefail
     compose stop keycloak
@@ -9,7 +9,7 @@
     executable: /bin/bash
   changed_when: true
 
-- name: "Keycloak realm-import | Import realm into the database (compose)"
+- name: "📂 Keycloak realm-import | Import realm into the database (compose)"
   ansible.builtin.shell: |
     set -euo pipefail
     compose run --rm --no-deps \
@@ -20,7 +20,7 @@
     executable: /bin/bash
   changed_when: true
 
-- name: "Keycloak realm-import | Restart keycloak after import (compose)"
+- name: "🔄 Keycloak realm-import | Restart keycloak after import (compose)"
   ansible.builtin.shell: |
     set -euo pipefail
     compose up -d --force-recreate keycloak

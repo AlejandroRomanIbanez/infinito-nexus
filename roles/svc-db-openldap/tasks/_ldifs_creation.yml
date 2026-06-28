@@ -1,5 +1,5 @@
 ---
-- name: "Render LDIF files at {{ OPENLDAP_LDIF_PATH_HOST }}{{ folder }} (local + swarm peers)"
+- name: "📄 Render LDIF files at {{ OPENLDAP_LDIF_PATH_HOST }}{{ folder }} (peers)"
   ansible.builtin.include_tasks:
     file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
   vars:

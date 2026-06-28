@@ -1,14 +1,14 @@
 ---
-- name: "Akaunting | Check if first run (marker exists?)"
+- name: "🔎 Akaunting | Check if first run (marker exists?)"
   ansible.builtin.stat:
     path: "{{ AKAUNTING_SETUP_MARKER }}"
   register: akaunting_marker_stat
 
-- name: "Akaunting | Decide if setup should be enabled"
+- name: "🤔 Akaunting | Decide if setup should be enabled"
   ansible.builtin.set_fact:
     akaunting_setup_enabled: "{{ not akaunting_marker_stat.stat.exists }}"
 
-- name: "For '{{ application_id }}': load docker, db and proxy"
+- name: "🧩 For '{{ application_id }}': load docker, db and proxy"
   include_role:
     name: sys-stk-full
   vars:
@@ -17,7 +17,7 @@
     compose_repository_ref: "{{ AKAUNTING_REF }}"
     compose_handlers_flush: true
 
-- name: "Akaunting | Create first-run marker to disable future setup"
+- name: "📁 Akaunting | Create first-run marker to disable future setup"
   ansible.builtin.file:
     path: "{{ AKAUNTING_SETUP_MARKER }}"
     state: touch

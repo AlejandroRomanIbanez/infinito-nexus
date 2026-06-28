@@ -1,10 +1,10 @@
 ---
-- name: Setup the full docker stack
+- name: 🔧 Setup the full docker stack
   include_tasks: 01_fullstack.yml
   vars:
     domain: "{{ NEXTCLOUD_DOMAIN }}"
     http_port: "{{ NEXTCLOUD_PORT }}"
 
-- name: "Nextcloud stack-host post-deploy (config, occ, plugins, admin)"
+- name: "🖥️ Nextcloud stack-host post-deploy (config, occ, plugins, admin)"
   include_tasks: 08_manager_ops.yml
   when: IS_STACK_HOST | bool

@@ -1,5 +1,5 @@
 ---
-- name: "Ensure base directory (single-writer via STACK_HOST)"
+- name: "✅ Ensure base directory (single-writer via STACK_HOST)"
   ansible.builtin.file:
     path: "{{ DIR_SECRETS }}"
     state: directory
@@ -10,7 +10,7 @@
   run_once: true
   become: true
 
-- name: "Ensure store file exists (single-writer via STACK_HOST)"
+- name: "✅ Ensure store file exists (single-writer via STACK_HOST)"
   ansible.builtin.file:
     path: "{{ FILE_TOKENS }}"
     state: touch
@@ -21,7 +21,7 @@
   run_once: true
   become: true
 
-- name: "Load existing store"
+- name: "🧩 Load existing store"
   ansible.builtin.import_tasks: 02_load.yml
 
 - include_tasks: utils/once/flag.yml

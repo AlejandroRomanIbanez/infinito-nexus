@@ -1,10 +1,10 @@
 ---
-- name: Install ACL utilities
+- name: 📦 Install ACL utilities
   ansible.builtin.package:
     name: acl
     state: present
 
-- name: Ensure backups root exists and owned by backup
+- name: ✅ Ensure backups root exists and owned by backup
   file:
     path: "{{ DIR_BACKUPS }}"
     state: directory
@@ -12,7 +12,7 @@
     group: backup
     mode: "0700"
 
-- name: Grant ACL rwx on backups root to backup user
+- name: 🔐 Grant ACL rwx on backups root to backup user
   ansible.posix.acl:
     path: "{{ DIR_BACKUPS }}"
     entity: backup
@@ -20,7 +20,7 @@
     permissions: rwx
     state: present
 
-- name: Set default ACL (inherit) for backup user under backups root
+- name: 🔧 Set default ACL (inherit) for backup user under backups root
   ansible.posix.acl:
     path: "{{ DIR_BACKUPS }}"
     entity: backup
@@ -29,7 +29,7 @@
     default: true
     state: present
 
-- name: Default ACL for backup user (inherit)
+- name: 🔐 Default ACL for backup user (inherit)
   ansible.posix.acl:
     path: "{{ DIR_BACKUPS }}"
     etype: user
@@ -38,7 +38,7 @@
     default: true
     state: present
 
-- name: Default ACL for group -> none
+- name: 🔐 Default ACL for group -> none
   ansible.posix.acl:
     path: "{{ DIR_BACKUPS }}"
     etype: group
@@ -46,7 +46,7 @@
     default: true
     state: present
 
-- name: Default ACL for other -> none
+- name: 🔐 Default ACL for other -> none
   ansible.posix.acl:
     path: "{{ DIR_BACKUPS }}"
     etype: other
@@ -54,12 +54,12 @@
     default: true
     state: present
 
-- name: Fix ownership level 0..2 directories to backup:backup
+- name: 📁 Fix ownership level 0..2 directories to backup:backup
   ansible.builtin.shell: >
     find "{{ DIR_BACKUPS }}" -mindepth 0 -maxdepth 2 -xdev -type d -exec chown backup:backup {} +
   changed_when: false
 
-- name: Fix perms level 0..2 directories to 0700
+- name: 📁 Fix perms level 0..2 directories to 0700
   ansible.builtin.shell: >
     find "{{ DIR_BACKUPS }}" -mindepth 0 -maxdepth 2 -xdev -type d -exec chmod 700 {} +
   changed_when: false

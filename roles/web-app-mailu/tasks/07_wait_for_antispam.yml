@@ -1,7 +1,7 @@
 ---
-- name: "Wait until Mailu antispam container is up"
+- name: "⏳ Wait until Mailu antispam container is up"
   block:
-    - name: "Probe Mailu antispam"
+    - name: "🔍 Probe Mailu antispam"
       ansible.builtin.shell: >
         container exec -i {{ MAILU_ANTISPAM_CONTAINER_ADDRESS }} true
       register: mailu_antispam_check
@@ -12,13 +12,13 @@
 
   rescue:
     - block:
-        - name: "Collect Mailu antispam container logs after readiness timeout"
+        - name: "📊 Collect Mailu antispam container logs after readiness timeout"
           ansible.builtin.shell: >
             container logs --tail=300 {{ MAILU_ANTISPAM_CONTAINER_ADDRESS }}
           register: mailu_antispam_logs
           changed_when: false
       always:
-        - name: "Fail: Mailu antispam not ready"
+        - name: "🛑 Fail: Mailu antispam not ready"
           ansible.builtin.fail:
             msg: |
               Mailu antispam container did not become ready in time.

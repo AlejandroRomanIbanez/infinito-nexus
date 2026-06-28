@@ -1,11 +1,11 @@
 ---
 # include-gated: when: DEPLOYMENT_MODE == "compose"
-- name: compose pull
+- name: 🐳 compose pull
   command:
     cmd: "compose pull"
     chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
 
-- name: compose up
+- name: 🐳 compose up
   command:
     cmd: "compose up -d --remove-orphans"
     chdir: "{{ lookup('container', application_id, 'directories.instance') }}"

@@ -1,5 +1,5 @@
 ---
-- name: "Check if Snipe-IT admin user already exists (by username)"
+- name: "🔎 Check if Snipe-IT admin user already exists (by username)"
   ansible.builtin.shell: |
     container exec -i \
       -e APP_KEY="{{ SNIPE_IT_APP_KEY }}" \
@@ -17,7 +17,7 @@
   changed_when: false
   failed_when: false
 
-- name: "Create Snipe-IT administrator account"
+- name: "📁 Create Snipe-IT administrator account"
   ansible.builtin.shell: >
     container exec -i
     -e APP_KEY="{{ SNIPE_IT_APP_KEY }}"

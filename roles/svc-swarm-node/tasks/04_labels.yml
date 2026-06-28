@@ -1,5 +1,5 @@
 ---
-- name: "Push node labels for every swarm member"
+- name: "⬆️ Push node labels for every swarm member"
   ansible.builtin.command: >-
     docker node update
     {% for k, v in hostvars[item].swarm_node_labels.items() %}

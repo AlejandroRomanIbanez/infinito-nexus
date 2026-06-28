@@ -1,10 +1,10 @@
 ---
 # which is necessary for building
-- name: install which
+- name: 📦 install which
   package:
     name: which
     state: present
-- name: "load docker, db and proxy for {{ application_id }}"
+- name: "🧩 load docker, db and proxy for {{ application_id }}"
   include_role:
     name: sys-stk-full
   vars:
@@ -12,7 +12,7 @@
     webserver_vhost_flavour: "basic"
     application_id: "web-app-discourse"
 
-- name: "Create the discourse network so the launcher can attach --network={{ DISCOURSE_NETWORK }}"
+- name: "📁 Create discourse network {{ DISCOURSE_NETWORK }} for launcher to attach"
   include_tasks:
     file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/network/create.yml'] | path_join }}"
     apply:
@@ -21,6 +21,6 @@
   vars:
     network_role_id: "{{ application_id }}"
 
-- name: "Run the standalone Discourse launcher container"
+- name: "▶️ Run the standalone Discourse launcher container"
   include_tasks: 04_launcher.yml
   when: IS_STACK_HOST | bool

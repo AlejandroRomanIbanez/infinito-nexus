@@ -1,5 +1,5 @@
 ---
-- name: Ensure Docker apt key and sources are consistent
+- name: ✅ Ensure Docker apt key and sources are consistent
   ansible.builtin.script:
     cmd: >-
       {{ role_path }}/files/apt_repo.sh
@@ -10,7 +10,7 @@
   register: sys_svc_container_docker_repo_setup
   changed_when: "'changed=1' in sys_svc_container_docker_repo_setup.stdout"
 
-- name: Configure Docker apt repository
+- name: 🔧 Configure Docker apt repository
   ansible.builtin.apt_repository:
     repo: >-
       deb [arch={{ SYS_SVC_CONTAINER_DPKG_ARCH_BY_ANSIBLE_ARCH.get(ansible_facts['architecture'], ansible_facts['architecture']) }}

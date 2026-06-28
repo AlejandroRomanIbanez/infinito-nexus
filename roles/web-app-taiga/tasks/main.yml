@@ -1,5 +1,5 @@
 ---
-- name: "load docker, db and proxy for {{ application_id }}"
+- name: "🧩 load docker, db and proxy for {{ application_id }}"
   include_role:
     name: sys-stk-full
   vars:
@@ -8,6 +8,6 @@
     compose_repository_ref: "{{ TAIGA_REF }}"
     compose_repository_pull: true
 
-- name: "Taiga manager-side operations (file deploys + container exec)"
+- name: "👔 Taiga manager-side operations (file deploys + container exec)"
   include_tasks: 02_manager_ops.yml
   when: IS_STACK_HOST | bool

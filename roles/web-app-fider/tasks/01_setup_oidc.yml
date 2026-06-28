@@ -1,12 +1,12 @@
 ---
-- name: "Resolve {{ application_id }} hosting node + container id"
+- name: "🔍 Resolve {{ application_id }} hosting node + container id"
   ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml'] | path_join }}"
   vars:
     resolve_service_key: fider
     resolve_output_prefix: FIDER
     resolve_compose_cid: "{{ FIDER_CONTAINER }}"
 
-- name: "Wait for {{ application_id }} HTTP endpoint (compose host-port)"
+- name: "⏳ Wait for {{ application_id }} HTTP endpoint (compose host-port)"
   wait_for:
     host: "{{ DOCKER_REACH_HOST }}"
     port: "{{ lookup('config', application_id, 'services.fider.ports.local.http') }}"
@@ -14,7 +14,7 @@
     timeout: 300
   when: DEPLOYMENT_MODE == 'compose'
 
-- name: "Wait for {{ application_id }} HTTP endpoint (swarm in-container)"
+- name: "⏳ Wait for {{ application_id }} HTTP endpoint (swarm in-container)"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
     container exec {{ FIDER_LOCAL_CID | quote }}
     wget -qO- http://127.0.0.1:{{ FIDER_CONTAINER_PORT }}/_health
@@ -26,7 +26,7 @@
   delegate_to: "{{ FIDER_HOST_NODE }}"
   when: DEPLOYMENT_MODE == 'swarm'
 
-- name: "Fider | Check if tenant is already initialized"
+- name: "🔎 Fider | Check if tenant is already initialized"
   database_query:
     config: "{{ lookup('database', application_id) }}"
     query_file: "{{ role_path }}/files/sql/count-tenants.sql"
@@ -35,7 +35,7 @@
   register: fider_tenant_count
   changed_when: false
 
-- name: "Fider | Bootstrap initial tenant via API (compose host-port)"
+- name: "🥾 Fider | Bootstrap initial tenant via API (compose host-port)"
   uri_retry:
     url: "http://{{ DOCKER_REACH_HOST }}:{{ lookup('config', application_id, 'services.fider.ports.local.http') }}/_api/tenants"
     method: POST
@@ -46,7 +46,7 @@
     - DEPLOYMENT_MODE == 'compose'
     - (fider_tenant_count.rows[0][0] | int) == 0
 
-- name: "Fider | Bootstrap initial tenant via API (swarm in-container)"
+- name: "🥾 Fider | Bootstrap initial tenant via API (swarm in-container)"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
     container exec {{ FIDER_LOCAL_CID | quote }}
     wget -qO- --header='Content-Type: application/json'
@@ -59,7 +59,7 @@
     - DEPLOYMENT_MODE == 'swarm'
     - (fider_tenant_count.rows[0][0] | int) == 0
 
-- name: "Fider | Create admin user (bypass email verification)"
+- name: "📁 Fider | Create admin user (bypass email verification)"
   database_query:
     config: "{{ lookup('database', application_id) }}"
     query_file: "{{ role_path }}/files/sql/create-admin-user.sql"
@@ -69,14 +69,14 @@
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   changed_when: true
 
-- name: "Fider | Activate tenant (set status=1 to bypass email confirmation)"
+- name: "🟢 Fider | Activate tenant (set status=1 to bypass email confirmation)"
   database_query:
     config: "{{ lookup('database', application_id) }}"
     query_file: "{{ role_path }}/files/sql/activate-tenants.sql"
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   changed_when: true
 
-- name: "Fider | Configure Keycloak as OIDC provider in database"
+- name: "🔧 Fider | Configure Keycloak as OIDC provider in database"
   database_query:
     config: "{{ lookup('database', application_id) }}"
     query_file: "{{ role_path }}/files/sql/configure-oidc-provider.sql"

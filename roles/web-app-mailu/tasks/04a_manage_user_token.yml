@@ -1,5 +1,5 @@
 ---
-- name: "Fetch existing API tokens via curl inside admin container"
+- name: "⬇️ Fetch existing API tokens via curl inside admin container"
   ansible.builtin.shell: >-
     container exec -i {{ MAILU_ADMIN_CONTAINER_ADDRESS }}
     curl -sS --fail -X GET {{ MAILU_API_SERVICE_BASE_URL }}/token
@@ -11,7 +11,7 @@
   delay: 2
   until: mailu_tokens_cli.rc == 0 and mailu_tokens_cli.stdout | trim | length > 0
 
-- name: "Extract existing token info for '{{ mailu_user_key }};{{ mailu_user_name }}'"
+- name: "📤 Extract existing token info for '{{ mailu_user_key }};{{ mailu_user_name }}'"
   set_fact:
     mailu_user_existing_token: >-
       {{ (
@@ -21,7 +21,7 @@
            | list
          ).0 | default(None) }}
 
-- name: "Start Mailu token procedures if token missing locally or absent in Mailu"
+- name: "▶️ Start Mailu token procedures if token missing locally or absent in Mailu"
   when: >-
     (
       (

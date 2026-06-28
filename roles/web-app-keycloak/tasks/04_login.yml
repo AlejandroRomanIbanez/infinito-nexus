@@ -1,5 +1,5 @@
 ---
-- name: "Keycloak login | Wait for keycloak container to be running"
+- name: "⏳ Keycloak login | Wait for keycloak container to be running"
   ansible.builtin.shell: >
     container inspect -f '{{ "{{" }}.State.Running{{ "}}" }}'
     {{ lookup('container_address', application_id, entity_name) }}
@@ -12,7 +12,7 @@
   delegate_to: "{{ inventory_hostname }}"
   when: DEPLOYMENT_MODE == 'compose'
 
-- name: "Keycloak login | Resolve hosting node + container id"
+- name: "🔍 Keycloak login | Resolve hosting node + container id"
   ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml'] | path_join }}"
   vars:
     resolve_service_key: "{{ entity_name }}"
@@ -22,7 +22,7 @@
     resolve_converge_delay: 5
     resolve_cid_filters: "--filter health=healthy"
 
-- name: "Keycloak login | Wait for keycloak container to be healthy"
+- name: "⏳ Keycloak login | Wait for keycloak container to be healthy"
   ansible.builtin.shell: >
     container inspect --format '{{ "{{" }}.State.Health.Status{{ "}}" }}'
     {{ KEYCLOAK_LOCAL_CID | quote }}
@@ -33,7 +33,7 @@
   changed_when: false
   delegate_to: "{{ KEYCLOAK_HOST_NODE }}"
 
-- name: Try login with permanent admin (uses container ENV)
+- name: 🔑 Try login with permanent admin (uses container ENV)
   ansible.builtin.shell: | # nocheck: container-exec-resolver  KEYCLOAK_LOCAL_CID resolved at delegate_to runtime; container_address would return a manager-only subshell
     container exec -i {{ KEYCLOAK_LOCAL_CID | quote }} sh -lc '
       {{ KEYCLOAK_KCADM }} config credentials \
@@ -47,7 +47,7 @@
   failed_when: false
   delegate_to: "{{ KEYCLOAK_HOST_NODE }}"
 
-- name: Ensure permanent Keycloak admin exists (bootstrap path when permanent login fails)
+- name: ✅ Ensure permanent Keycloak admin exists (bootstrap when login fails)
   ansible.builtin.include_tasks:
     file: 04_login_bootstrap_admin.yml
     apply:

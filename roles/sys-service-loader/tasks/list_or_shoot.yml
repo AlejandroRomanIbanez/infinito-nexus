@@ -20,13 +20,13 @@
 #   the standalone fallback when the service-loader is bypassed (tests,
 #   ad-hoc playbooks).
 
-- name: "List post-load roles for service-loader flush"
+- name: "📋 List post-load roles for service-loader flush"
   ansible.builtin.set_fact:
     service_loader_post_run: "{{ (service_loader_post_run | default([])) + list_or_shoot_roles }}"
   changed_when: false
   when: (service_loader_preloading | default(false) | bool)
 
-- name: "Shoot post-load roles directly (no preload context active)"
+- name: "🎯 Shoot post-load roles directly (no preload context active)"
   ansible.builtin.include_role:
     name: "{{ list_or_shoot_role }}"
   loop: "{{ list_or_shoot_roles }}"

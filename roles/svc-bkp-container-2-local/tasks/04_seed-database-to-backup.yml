@@ -1,7 +1,7 @@
 ---
 - include_tasks: 02_install.yml
 
-- name: "Ensure /etc/baudolo exists"
+- name: "✅ Ensure /etc/baudolo exists"
   ansible.builtin.file:
     path: "{{ DIR_SECRETS }}"
     state: directory
@@ -9,7 +9,7 @@
     group: root
     mode: "0755"
 
-- name: "BKP | Debug seed context (sanitized)"
+- name: "🐛 BKP | Debug seed context (sanitized)"
   ansible.builtin.debug:
     msg: |
       database_consumer_id: "{{ database_consumer_id | default('undefined') }}"
@@ -22,7 +22,7 @@
   when: MODE_DEBUG | bool
   changed_when: false
 
-- name: "BKP | Assert required database variables are explicitly passed"
+- name: "✅ BKP | Assert required database variables are explicitly passed"
   ansible.builtin.assert:
     that:
       - database_instance is defined
@@ -55,7 +55,7 @@
       Note: database_name may be an empty string to represent "all databases".
   changed_when: false
 
-- name: Seed database definition via baudolo-seed (system binary)
+- name: 🌱 Seed database definition via baudolo-seed (system binary)
   ansible.builtin.command:
     argv:
       - "{{ lookup('command_path', 'baudolo-seed') | string }}"

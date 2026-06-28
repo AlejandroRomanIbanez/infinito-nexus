@@ -1,5 +1,5 @@
 ---
-- name: "CA | ensure base directory exists"
+- name: "✅ CA | ensure base directory exists"
   become: true
   ansible.builtin.file:
     path: "{{ CA_ROOT.base_dir }}"
@@ -8,17 +8,17 @@
     owner: root
     group: root
 
-- name: "CA | ensure openssl is installed"
+- name: "✅ CA | ensure openssl is installed"
   include_role:
     name: sys-openssl
   when: run_once_sys_openssl is not defined
 
-- name: "CA | check openssl availability"
+- name: "🔎 CA | check openssl availability"
   ansible.builtin.command: "openssl version"
   register: _openssl_version
   changed_when: false
 
-- name: "CA | mint the shared Root CA once on the stack host (workers fetch it below)"
+- name: "🏛️ CA | mint the shared Root CA once on the stack host (workers fetch it below)"
   ansible.builtin.include_tasks:
     file: 02_mint.yml
     apply:
@@ -26,17 +26,17 @@
       run_once: true
       delegate_to: "{{ STACK_HOST }}"
 
-- name: "CA | (swarm worker) fetch + install the shared Root CA cert from the stack host"
+- name: "⬇️ CA | (swarm worker) fetch + install shared Root CA cert from stack host"
   become: true
   when: not (IS_STACK_HOST | bool)
   block:
-    - name: "CA | (swarm worker) read the shared Root CA cert from the stack host"
+    - name: "🐝 CA | (swarm worker) read the shared Root CA cert from the stack host"
       ansible.builtin.slurp:
         src: "{{ CA_ROOT.cert_host }}"
       register: _ca_cert_from_stack_host
       delegate_to: "{{ STACK_HOST }}"
 
-    - name: "CA | (swarm worker) write the shared Root CA cert locally (cert only, never the key)"
+    - name: "📄 CA | (swarm worker) write shared Root CA cert locally (cert only, no key)"
       ansible.builtin.copy:
         dest: "{{ CA_ROOT.cert_host }}"
         content: "{{ _ca_cert_from_stack_host.content | b64decode }}"
@@ -44,7 +44,7 @@
         group: root
         mode: "0644"
 
-- name: "CA | enforce permissions (certificate)"
+- name: "🔐 CA | enforce permissions (certificate)"
   become: true
   ansible.builtin.file:
     path: "{{ CA_ROOT.cert_host }}"
@@ -52,13 +52,13 @@
     group: root
     mode: "0644"
 
-- name: "CA | sanity check: verify certificate is CA:TRUE"
+- name: "✅ CA | sanity check: verify certificate is CA:TRUE"
   become: true
   ansible.builtin.command: "openssl x509 -in {{ CA_ROOT.cert_host }} -noout -text"
   register: _ca_cert_text
   changed_when: false
 
-- name: "CA | assert certificate contains CA:TRUE"
+- name: "✅ CA | assert certificate contains CA:TRUE"
   ansible.builtin.assert:
     that:
       - (_ca_cert_text.stdout | default('')) is search('CA:TRUE')
@@ -66,7 +66,7 @@
       Generated certificate does not appear to be a CA certificate (CA:TRUE missing).
       Please inspect {{ CA_ROOT.cert_host }}.
 
-- name: "CA | install trust helper script (SPOT) on host"
+- name: "📦 CA | install trust helper script (SPOT) on host"
   become: true
   ansible.builtin.copy:
     src: "with-ca-trust.sh"
@@ -75,7 +75,7 @@
     group: root
     mode: "0755"
 
-- name: "CA | Install Root CA into host trust store"
+- name: "📦 CA | Install Root CA into host trust store"
   become: true
   ansible.builtin.command:
     argv:
@@ -87,7 +87,7 @@
     CA_TRUST_NAME: "{{ DOMAIN_PRIMARY | lower }}"
   changed_when: true
 
-- name: "TLS | (self_signed) ensure CA trust env vars in {{ FILE_ENVIRONMENT }}"
+- name: "✅ TLS | (self_signed) ensure CA trust env vars in {{ FILE_ENVIRONMENT }}"
   become: true
   ansible.builtin.lineinfile:
     path: "{{ FILE_ENVIRONMENT }}"

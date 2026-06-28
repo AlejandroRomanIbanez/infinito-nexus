@@ -1,5 +1,5 @@
 ---
-- name: "Check if any container is running in {{ lookup('container', application_id, 'directories.instance') }}"
+- name: "🔍 Check running containers for '{{ application_id }}'"
   command: >-
     compose ps -q --filter status=running
   args:
@@ -23,18 +23,18 @@
     - DEPLOYMENT_MODE == 'compose'
   notify: compose up
 
-- name: "Notify swarm deploy (under DEPLOYMENT_MODE == swarm)"
+- name: "🔔 Notify swarm deploy (under DEPLOYMENT_MODE == swarm)"
   ansible.builtin.debug:
     msg: "Triggering swarm stack deploy for {{ application_id }}"
   changed_when: true
   when: DEPLOYMENT_MODE == 'swarm'
   notify: swarm deploy
 
-- name: "Flush Docker Compose Up Handlers for {{ lookup('container', application_id, 'directories.instance') }}"
+- name: "🔄 Flush compose up handlers for '{{ application_id }}'"
   meta: flush_handlers
   when: compose_handlers_flush | bool
 
-- name: "Post-deploy steps for '{{ application_id }}'"
+- name: "🚀 Post-deploy steps for '{{ application_id }}'"
   ansible.builtin.include_tasks:
     file: post_deploy.yml
     apply:

@@ -1,6 +1,6 @@
 ---
 # Replace INFX_OIDC_PLUGIN with the actual plugin name (Composer or local)
-- name: "Install OIDC plugin & activate"
+- name: "📦 Install OIDC plugin & activate"
   shell: |
     container exec -i --user {{ SHOPWARE_USER }} {{ SHOPWARE_WEB_CONTAINER_ADDRESS }} sh -lc '
       set -e
@@ -10,7 +10,7 @@
       php bin/console cache:clear
     '
 
-- name: "Configure OIDC via system:config"
+- name: "🔧 Configure OIDC via system:config"
   shell: |
     container exec -i --user {{ SHOPWARE_USER }} {{ SHOPWARE_WEB_CONTAINER_ADDRESS }} sh -lc '
       set -e

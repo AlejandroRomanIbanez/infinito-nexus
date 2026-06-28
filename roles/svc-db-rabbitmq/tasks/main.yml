@@ -9,6 +9,6 @@
   vars:
     handler_role_name: "sys-svc-compose"
 
-- name: "Initialize dedicated vhost"
+- name: "🎬 Initialize dedicated vhost"
   include_tasks: 02_init.yml
   when: database_init | bool

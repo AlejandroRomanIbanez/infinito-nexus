@@ -1,5 +1,5 @@
 ---
-- name: "Render OpenTalk controller config '{{ application_id }}'"
+- name: "📄 Render OpenTalk controller config '{{ application_id }}'"
   stack_host_template:
     src: controller.toml.j2
     dest: "{{ [lookup('container', application_id, 'directories.volumes'), 'controller.toml'] | path_join }}"
@@ -7,7 +7,7 @@
   notify:
     - compose up
 
-- name: "Render LiveKit config '{{ application_id }}'"
+- name: "📄 Render LiveKit config '{{ application_id }}'"
   stack_host_template:
     src: livekit.yaml.j2
     dest: "{{ [lookup('container', application_id, 'directories.volumes'), 'livekit.yaml'] | path_join }}"
@@ -15,7 +15,7 @@
   notify:
     - compose up
 
-- name: "Render OpenTalk recorder config '{{ application_id }}'"
+- name: "📄 Render OpenTalk recorder config '{{ application_id }}'"
   stack_host_template:
     src: recorder.toml.j2
     dest: "{{ [lookup('container', application_id, 'directories.volumes'), 'recorder.toml'] | path_join }}"
@@ -23,14 +23,14 @@
   notify:
     - compose up
 
-- name: "Flush handlers for '{{ application_id }}' so compose up sees rendered configs"
+- name: "🚿 Flush handlers for '{{ application_id }}' so compose up sees rendered configs"
   meta: flush_handlers
 
 # The shared `infinito.nexus` realm client is public, so it cannot
 # introspect access tokens. Provision a dedicated confidential client
 # (`opentalk-controller`) with a service account that can call the
 # Keycloak admin API and the OIDC introspection endpoint.
-- name: "Authenticate kcadm against the master realm (for OpenTalk client provisioning)"
+- name: "✅ Authenticate kcadm against master realm for OpenTalk provisioning"
   ansible.builtin.shell: |-
     {{ KEYCLOAK_EXEC_CONTAINER }} sh -lc '
       set -e
@@ -47,7 +47,7 @@
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: "Upsert dedicated confidential Keycloak client for the OpenTalk controller"
+- name: "📝 Upsert dedicated confidential Keycloak client for the OpenTalk controller"
   keycloak_kcadm_update:
     object_kind: "client"
     lookup_value: "{{ OPENTALK_CTRL_OIDC_CLIENT_ID }}"
@@ -78,7 +78,7 @@
     assert_mode: "{{ MODE_ASSERT | bool }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: "Upsert dedicated confidential Keycloak client for the OpenTalk recorder"
+- name: "📝 Upsert dedicated confidential Keycloak client for the OpenTalk recorder"
   keycloak_kcadm_update:
     object_kind: "client"
     lookup_value: "{{ OPENTALK_RECORDER_OIDC_CLIENT_ID }}"
@@ -109,7 +109,7 @@
     assert_mode: "{{ MODE_ASSERT | bool }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: "Grant the OpenTalk controller's service account the realm-management `view-users` role"
+- name: "🔐 Grant OpenTalk controller service account `view-users` role"
   ansible.builtin.shell: |-
     {{ KCEXEC }} sh -lc '
       set -e
@@ -128,13 +128,13 @@
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: "Restart the OpenTalk controller so it picks up the refreshed introspection client"
+- name: "🔄 Restart OpenTalk controller to pick up refreshed introspection client"
   ansible.builtin.command: "container restart {{ OPENTALK_CTRL_CONTAINER }}"
   changed_when: true
 
 # The shared (shared:true) path provisions the bucket on the central provider
 # via sys-svc-objstore; only the embedded instance needs its bucket created here.
-- name: "Wait until the embedded object store answers"
+- name: "⏳ Wait until the embedded object store answers"
   ansible.builtin.shell: >
     container exec {{ OPENTALK_OBJSTORE_CONTAINER_ADDRESS }}
     wget -q -O - http://127.0.0.1:{{ lookup('objstore', application_id, 'port') }}/status
@@ -147,7 +147,7 @@
   changed_when: false
   when: lookup('objstore', application_id, 'local') | bool
 
-- name: "List embedded object-store buckets"
+- name: "📋 List embedded object-store buckets"
   ansible.builtin.shell: |
     set -euo pipefail
     echo 's3.bucket.list' | container exec -i {{ OPENTALK_OBJSTORE_CONTAINER_ADDRESS }} weed shell -master=localhost:9333
@@ -157,7 +157,7 @@
   changed_when: false
   when: lookup('objstore', application_id, 'local') | bool
 
-- name: "Ensure the OpenTalk bucket exists (embedded)"
+- name: "✅ Ensure the OpenTalk bucket exists (embedded)"
   ansible.builtin.shell: |
     set -euo pipefail
     echo 's3.bucket.create -name {{ lookup('objstore', application_id, 'bucket') }}' | container exec -i {{ OPENTALK_OBJSTORE_CONTAINER_ADDRESS }} weed shell -master=localhost:9333

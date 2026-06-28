@@ -1,11 +1,11 @@
 ---
-- name: "Assert correct context"
+- name: "✅ Assert correct context"
   ansible.builtin.assert:
     that:
       - application_id == 'svc-db-elasticsearch'
       - database_consumer_id != 'svc-db-elasticsearch'
 
-- name: "Resolve consumer index namespace + credentials"
+- name: "🔍 Resolve consumer index namespace + credentials"
   ansible.builtin.set_fact:
     elasticsearch_consumer_entity: "{{ database_consumer_id | get_entity_name }}"
     elasticsearch_consumer_username: "{{ lookup('engine', 'elasticsearch', database_consumer_id, 'username') }}"
@@ -13,9 +13,9 @@
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: Wait until elasticsearch security API works
+- name: ⏳ Wait until elasticsearch security API works
   block:
-    - name: "ELASTICSEARCH | Wait for security API"
+    - name: "⏳ ELASTICSEARCH | Wait for security API"
       ansible.builtin.shell: >
         {{ ELASTICSEARCH_EXEC_SHELL }}
         'curl -fsS -u "elastic:$ELASTIC_PW"
@@ -28,13 +28,13 @@
       no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
   rescue:
-    - name: "ELASTICSEARCH | container logs (last 200 lines)"
+    - name: "📦 ELASTICSEARCH | container logs (last 200 lines)"
       ansible.builtin.command: "container logs --tail 200 {{ ELASTICSEARCH_CONTAINER }}"
       register: dbg_es_logs
       changed_when: false
       failed_when: false
 
-    - name: "ELASTICSEARCH | Failure report"
+    - name: "📊 ELASTICSEARCH | Failure report"
       ansible.builtin.debug:
         msg:
           elasticsearch_container: "{{ ELASTICSEARCH_CONTAINER }}"
@@ -42,13 +42,13 @@
           elasticsearch_port: "{{ ELASTICSEARCH_PORT }}"
           last_logs: "{{ dbg_es_logs.stdout | default('') }}"
 
-    - name: "ELASTICSEARCH | Fail explicitly after logs"
+    - name: "🛑 ELASTICSEARCH | Fail explicitly after logs"
       ansible.builtin.fail:
         msg: >-
           Elasticsearch did not become ready for security API requests.
           Last 200 container log lines were printed above.
 
-- name: "Create role scoped to '{{ elasticsearch_consumer_entity }}-*' indices"
+- name: "📁 Create role scoped to '{{ elasticsearch_consumer_entity }}-*' indices"
   ansible.builtin.shell: >
     {{ ELASTICSEARCH_EXEC_SHELL }}
     'curl -fsS -u "elastic:$ELASTIC_PW"
@@ -70,7 +70,7 @@
   changed_when: es_role_result.stdout is search('\"created\"\\s*:\\s*true')
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: "Build elasticsearch user payload for {{ elasticsearch_consumer_username }}"
+- name: "🔨 Build elasticsearch user payload for {{ elasticsearch_consumer_username }}"
   ansible.builtin.set_fact:
     es_user_payload:
       password: "{{ elasticsearch_consumer_password }}"
@@ -79,7 +79,7 @@
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: "Create user '{{ elasticsearch_consumer_username }}' bound to its index role"
+- name: "📁 Create user '{{ elasticsearch_consumer_username }}' bound to its index role"
   ansible.builtin.shell: >
     {{ ELASTICSEARCH_EXEC_SHELL }}
     'curl -fsS -u "elastic:$ELASTIC_PW"
@@ -93,7 +93,7 @@
   changed_when: es_user_result.stdout is search('\"created\"\\s*:\\s*true')
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: "Ensure consumer index namespace exists: {{ elasticsearch_consumer_entity }}"
+- name: "✅ Ensure consumer index namespace exists: {{ elasticsearch_consumer_entity }}"
   ansible.builtin.shell: >
     {{ ELASTICSEARCH_EXEC_SHELL }}
     'curl -sS -o /dev/null -w "%{http_code}" -u "elastic:$ELASTIC_PW"

@@ -2,26 +2,26 @@
 # Configure Moodle's auth_oidc plugin (variant 0 only). Variant 1
 # disables the OIDC shared service so this file is not included.
 
-- name: "Check OIDC plugin presence"
+- name: "🔎 Check OIDC plugin presence"
   shell: >
     container exec --user root {{ MOODLE_CONTAINER_ADDRESS }} test -d {{ MOODLE_OIDC_PLUGIN_DIR }}
   register: oidc_plugin_check
   changed_when: false
   failed_when: false
 
-- name: "Fail if OIDC plugin is missing"
+- name: "🛑 Fail if OIDC plugin is missing"
   fail:
     msg: "auth_oidc plugin not found at {{ MOODLE_OIDC_PLUGIN_DIR }} — image build is incomplete"
   when: oidc_plugin_check.rc != 0
 
-- name: "Run Moodle DB upgrade for OIDC plugin"
+- name: "▶️ Run Moodle DB upgrade for OIDC plugin"
   shell: >
     container exec --user {{ MOODLE_RUNTIME_USER }} {{ MOODLE_CONTAINER_ADDRESS }}
     php {{ MOODLE_CLI_DIR }}/upgrade.php --non-interactive
   changed_when: false
   failed_when: false
 
-- name: "Set Moodle OIDC configuration via CLI"
+- name: "🔧 Set Moodle OIDC configuration via CLI"
   loop:
     - { name: "idptype", value: 3 }
     - { name: "clientauthmethod", value: 1 }
@@ -102,7 +102,7 @@
     --name={{ item.name }} --set="{{ item.value }}"
   changed_when: false
 
-- name: "Set auth = 'oidc' for all users except guest"
+- name: "🔧 Set auth = 'oidc' for all users except guest"
   shell: >
     container exec {{ MOODLE_DB_CONTAINER_ADDRESS }}
     mariadb -u {{ lookup('database', application_id, 'username') }}

@@ -8,7 +8,7 @@
 # Param: wait_run_host       - host that runs the manager-only query (default: inventory_hostname)
 - when: DEPLOYMENT_MODE == 'swarm'
   block:
-    - name: "swarm | wait for '{{ wait_service_key }}' task to converge"
+    - name: "⏳ swarm | wait for '{{ wait_service_key }}' task to converge"
       ansible.builtin.shell: |
         container service ps {{ lookup('container_service', application_id, wait_service_key) | quote }} \
           --filter desired-state=running \
@@ -22,7 +22,7 @@
       delegate_to: "{{ wait_run_host | default(inventory_hostname) }}"
 
   rescue:
-    - name: "swarm | dump '{{ wait_service_key }}' service ps + logs on converge failure"
+    - name: "💾 swarm | dump '{{ wait_service_key }}' service ps + logs on converge failure"
       ansible.builtin.shell: |
         echo "===== container service ps {{ wait_service_key }} ====="
         container service ps --no-trunc {{ lookup('container_service', application_id, wait_service_key) | quote }} 2>&1 || true
@@ -34,12 +34,12 @@
       delegate_to: "{{ wait_run_host | default(inventory_hostname) }}"
       no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-    - name: "swarm | show '{{ wait_service_key }}' converge diagnostics"
+    - name: "👁️ swarm | show '{{ wait_service_key }}' converge diagnostics"
       ansible.builtin.debug:
         msg: "{{ (_swarm_converge_dump.stdout | default('')).split('\n') }}"
       when: not (MASK_CREDENTIALS_IN_LOGS | bool)
 
-    - name: "swarm | abort with '{{ wait_service_key }}' converge root cause"
+    - name: "🛑 swarm | abort with '{{ wait_service_key }}' converge root cause"
       ansible.builtin.fail:
         msg: >-
           swarm service '{{ wait_service_key }}' did not converge after

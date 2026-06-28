@@ -1,5 +1,5 @@
 ---
-- name: "Deploy {{ SHOPWARE_INIT_HOST }}"
+- name: "🚀 Deploy {{ SHOPWARE_INIT_HOST }}"
   copy:
     src: init.sh
     dest: "{{ SHOPWARE_INIT_HOST }}"
@@ -8,7 +8,7 @@
     - compose up
     - compose build
 
-- name: "Render framework.yaml (trusted proxies/headers/hosts)"
+- name: "📄 Render framework.yaml (trusted proxies/headers/hosts)"
   copy:
     src: "framework.yaml"
     dest: "{{ SHOPWARE_FRAMEWORK_HOST }}"
@@ -16,7 +16,7 @@
   notify:
     - compose up
 
-- name: "Render shopware.yaml (SeaweedFS S3 filesystem)"
+- name: "📄 Render shopware.yaml (SeaweedFS S3 filesystem)"
   stack_host_template:
     src: "shopware.yaml.j2"
     dest: "{{ SHOPWARE_FILESYSTEM_HOST }}"
@@ -26,17 +26,17 @@
     - compose up
     - compose build
 
-- name: "Flush compose handlers"
+- name: "🚿 Flush compose handlers"
   meta: flush_handlers
 
-- name: Wait for Shopware HTTP endpoint
+- name: ⏳ Wait for Shopware HTTP endpoint
   wait_for:
     host: "{{ DOCKER_REACH_HOST }}"
     port: "{{ lookup('config', application_id, 'services.shopware.ports.local.http') }}"
     delay: 5
     timeout: 300
 
-- name: "Ensure admin user exists with correct password"
+- name: "✅ Ensure admin user exists with correct password"
   ansible.builtin.include_tasks:
     file: 01_admin.yml
     apply:

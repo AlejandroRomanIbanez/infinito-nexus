@@ -1,15 +1,15 @@
 ---
-- name: Wait for Gitea HTTP endpoint
+- name: ⏳ Wait for Gitea HTTP endpoint
   wait_for:
     host: "{{ DOCKER_REACH_HOST }}"
     port: "{{ lookup('config', application_id, 'services.gitea.ports.local.http') }}"
     delay: 5
     timeout: 300
 
-- name: Patch Gitea database settings in app.ini
+- name: 🩹 Patch Gitea database settings in app.ini
   include_tasks: 02_database.yml
 
-- name: "Wait for Gitea app.ini to be present after redeploy"
+- name: "⏳ Wait for Gitea app.ini to be present after redeploy"
   shell: |
     container exec -i --user {{ GITEA_USER }} {{ GITEA_CONTAINER_ADDRESS }} \
       test -f {{ GITEA_CONFIG }}
@@ -19,14 +19,14 @@
   delay: 2
   until: gitea_config_ready.rc == 0
 
-- name: "Run DB migrations inside Gitea container"
+- name: "▶️ Run DB migrations inside Gitea container"
   shell: |
     container exec -i --user {{ GITEA_USER }} {{ GITEA_CONTAINER_ADDRESS }} \
       /app/gitea/gitea migrate -c {{ GITEA_CONFIG }}
   register: migrate
   changed_when: "'migrations completed' in migrate.stdout"
 
-- name: "Create initial admin user"
+- name: "📁 Create initial admin user"
   shell: |
     container exec -i --user {{ GITEA_USER }} {{ GITEA_CONTAINER_ADDRESS }} \
       /app/gitea/gitea admin user create \
@@ -39,7 +39,7 @@
   changed_when: "'has been successfully created' in create_admin.stdout"
   failed_when: create_admin.rc != 0 and 'user already exists' not in create_admin.stderr
 
-- name: "Wait until Gitea setup and migrations are ready"
+- name: "⏳ Wait until Gitea setup and migrations are ready"
   uri_retry:
     url: "http://{{ DOCKER_REACH_HOST }}:{{ lookup('config', application_id, 'services.gitea.ports.local.http') }}/api/v1/version"
     method: GET
@@ -51,13 +51,13 @@
   delay: 5
   when: (GITEA_OIDC_ENABLED | bool) or (GITEA_LDAP_ENABLED | bool)
 
-- name: Execute Setup Routines
+- name: ▶️ Execute Setup Routines
   include_tasks: 03_setup.yml
 
-- name: Execute Cleanup Routines
+- name: ▶️ Execute Cleanup Routines
   include_tasks: 04_cleanup.yml
   when: MODE_CLEANUP | bool
-- name: Include DNS role to register Gitea domain(s)
+- name: 📂 Include DNS role to register Gitea domain(s)
   include_role:
     name: sys-dns-cloudflare-records
   vars:

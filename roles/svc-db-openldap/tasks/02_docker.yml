@@ -1,5 +1,5 @@
 ---
-- name: "include sys-svc-compose role"
+- name: "📂 include sys-svc-compose role"
   include_role:
     name: sys-svc-compose
   vars:
@@ -7,12 +7,12 @@
     compose_repository_pull: false
     application_id: "svc-db-openldap"
 
-- name: Create container network
+- name: 📁 Create container network
   include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/network/create.yml' ] | path_join }}"
   vars:
     network_role_id: "{{ application_id }}"
 
-- name: Copy OpenLDAP image files to instance dir
+- name: 📋 Copy OpenLDAP image files to instance dir
   stack_host_copy:
     src: "{{ item.src }}"
     dest: "{{ [ lookup('container', application_id, 'directories.instance'), item.dest ] | path_join }}"
@@ -23,10 +23,10 @@
   loop_control:
     label: "{{ item.dest }}"
 
-- name: "Flush compose handlers"
+- name: "🚿 Flush compose handlers"
   meta: flush_handlers
 
-- name: "Wait for openldap stack to converge (swarm only)"
+- name: "⏳ Wait for openldap stack to converge (swarm only)"
   ansible.builtin.include_tasks:
     file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/post_deploy.yml'] | path_join }}"
     apply:

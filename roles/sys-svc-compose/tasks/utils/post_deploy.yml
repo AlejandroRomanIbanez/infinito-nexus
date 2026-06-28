@@ -1,5 +1,5 @@
 ---
-- name: "Wait until database container for '{{ application_id }}' is healthy"
+- name: "⏳ Wait until database container for '{{ application_id }}' is healthy"
   ansible.builtin.command: >-
     container inspect
     --format={% raw %}{{.State.Health.Status}}{% endraw %}
@@ -13,7 +13,7 @@
     - DEPLOYMENT_MODE == 'compose'
     - lookup('database', application_id, 'enabled') | bool
 
-- name: "Wait until all swarm tasks for '{{ application_id | get_entity_name }}' converge to running"
+- name: "⏳ Wait until swarm tasks of '{{ application_id | get_entity_name }}' are running"
   ansible.builtin.script: "{{ [playbook_dir, 'roles/sys-svc-compose/files/swarm_stack_ready.sh'] | path_join }}"
   environment:
     STACK: "{{ application_id | get_entity_name }}"

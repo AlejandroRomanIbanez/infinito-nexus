@@ -1,7 +1,7 @@
 ---
-- name: "Wait until Mailu database schema is initialized (domain table exists)"
+- name: "⏳ Wait until Mailu database schema is initialized (domain table exists)"
   block:
-    - name: "Check for Mailu DB domain table"
+    - name: "🔎 Check for Mailu DB domain table"
       ansible.builtin.shell: >
         container exec
         -e MARIADB_PWD={{ lookup('database', application_id, 'password') | quote }}
@@ -17,13 +17,13 @@
 
   rescue:
     - block:
-        - name: "Collect Mailu admin container logs (last 300 lines)"
+        - name: "📊 Collect Mailu admin container logs (last 300 lines)"
           ansible.builtin.shell: >
             container logs --tail=300 {{ MAILU_ADMIN_CONTAINER_ADDRESS }}
           register: mailu_admin_logs
           changed_when: false
       always:
-        - name: "Fail: Mailu database schema not initialized"
+        - name: "🛑 Fail: Mailu database schema not initialized"
           ansible.builtin.fail:
             msg: |
               Mailu database schema was not initialized in time.
@@ -38,9 +38,9 @@
               --- Mailu admin container logs (last 300 lines) ---
               {{ mailu_admin_logs.stdout | default('No logs available') }}
 
-- name: "Wait until Mailu admin Flask app is ready"
+- name: "⏳ Wait until Mailu admin Flask app is ready"
   block:
-    - name: "Check Mailu admin Flask routes command"
+    - name: "🔎 Check Mailu admin Flask routes command"
       ansible.builtin.shell: >
         container exec -i {{ MAILU_ADMIN_CONTAINER_ADDRESS }} flask routes
       register: mailu_admin_cli_check
@@ -51,13 +51,13 @@
 
   rescue:
     - block:
-        - name: "Collect Mailu admin container logs after Flask readiness timeout"
+        - name: "📊 Collect Mailu admin container logs after Flask readiness timeout"
           ansible.builtin.shell: >
             container logs --tail=300 {{ MAILU_ADMIN_CONTAINER_ADDRESS }}
           register: mailu_admin_cli_logs
           changed_when: false
       always:
-        - name: "Fail: Mailu admin Flask app not ready"
+        - name: "🛑 Fail: Mailu admin Flask app not ready"
           ansible.builtin.fail:
             msg: |
               Mailu admin Flask app was not ready in time.

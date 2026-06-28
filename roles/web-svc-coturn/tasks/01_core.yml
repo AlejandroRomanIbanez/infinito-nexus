@@ -1,7 +1,7 @@
 ---
 - include_tasks: utils/once/flag.yml
 
-- name: "Load 'sys-stk-full' for '{{ application_id }}'"
+- name: "🧩 Load 'sys-stk-full' for '{{ application_id }}'"
   include_role:
     name: sys-stk-full
   vars:

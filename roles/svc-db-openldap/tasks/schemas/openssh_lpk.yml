@@ -1,5 +1,5 @@
 ---
-- name: Ensure OpenSSH-LPK schema via ldapsm
+- name: ✅ Ensure OpenSSH-LPK schema via ldapsm
   vars:
     schema_name: "openssh-lpk"
     attribute_defs:
@@ -30,6 +30,6 @@
   changed_when: "'Created schema entry' in opensshlpk_ldapsm.stdout"
   check_mode: false
 
-- name: Show ldapsm output for openssh-lpk
+- name: 👁️ Show ldapsm output for openssh-lpk
   debug:
     var: opensshlpk_ldapsm.stdout_lines

@@ -5,7 +5,7 @@
 # on `simplexml_load_file(): failed to load /var/www/html/plugins/actionlog/joomla/joomla.xml`
 # if it runs before the plugin tarball has finished extracting. Waiting for that
 # specific manifest is the cheapest end-of-extract marker.
-- name: "Wait for Joomla files to exist"
+- name: "⏳ Wait for Joomla files to exist"
   shell: >
     container exec {{ JOOMLA_CONTAINER_ADDRESS }} test -f /var/www/html/plugins/actionlog/joomla/joomla.xml
   register: joomla_files
@@ -15,7 +15,7 @@
   until: joomla_files.rc == 0
 
 # (Optional) specifically wait for the CLI installer script
-- name: "Check for CLI installer"
+- name: "🔎 Check for CLI installer"
   shell: >
     container exec {{ JOOMLA_CONTAINER_ADDRESS }} test -f {{ JOOMLA_INSTALLER_CLI_FILE }}
   register: has_installer
@@ -23,7 +23,7 @@
   failed_when: false
 
 # Only if not already installed (no configuration.php)
-- name: "Check if Joomla is already installed"
+- name: "🔎 Check if Joomla is already installed"
   shell: >
     container exec {{ JOOMLA_CONTAINER_ADDRESS }} test -f {{ JOOMLA_CONFIG_FILE }}
   register: joomla_installed
@@ -46,7 +46,7 @@
 #
 # Scoped by the same `joomla_installed.rc != 0` guard as before so a
 # genuine existing install is never touched.
-- name: "Joomla CLI install (rm stub + install in one retry loop for image-init race)"
+- name: "📦 Joomla CLI install (rm stub + install in one retry loop for image-init race)"
   ansible.builtin.command:
     # NOTE: argv[0] must be `bash`, not `sh`. On Debian/Ubuntu CI runners
     # `/bin/sh` is dash, which does not support `set -o pipefail` and aborts
@@ -132,7 +132,7 @@
 
 # Joomla 5.x CLI installer intermittently fails to remove the installation folder
 # (non-fatal — install itself completed). Force-remove as root to finish cleanup.
-- name: "Force-remove installation folder (root)"
+- name: "💪 Force-remove installation folder (root)"
   shell: >
     container exec {{ JOOMLA_CONTAINER_ADDRESS }} rm -rf /var/www/html/installation
   changed_when: false

@@ -27,7 +27,7 @@
 # in non-shared mode). Running inside the container side-steps the
 # controller-side TCP reachability gap that affects non-shared deploys.
 
-- name: "PEERTUBE | Wait for peertube to create the `application` table"
+- name: "⏳ PEERTUBE | Wait for peertube to create the `application` table"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -42,7 +42,7 @@
     and (_peertube_app_table_check.rows[0][0] | default('')) == 'application'
   changed_when: false
 
-- name: "PEERTUBE | Back-fill column defaults so the bootstrap INSERT does not violate NOT NULL"
+- name: "🔧 PEERTUBE | Back-fill column defaults so bootstrap INSERT keeps NOT NULL"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
     config: "{{ lookup('database', application_id) }}"
@@ -50,7 +50,7 @@
   register: _peertube_app_defaults
   notify: compose up
 
-- name: "PEERTUBE | Wait for peertube container to become healthy after schema back-fill"
+- name: "⏳ PEERTUBE | Wait for peertube container healthy after schema back-fill"
   ansible.builtin.command:
     argv:
       - container

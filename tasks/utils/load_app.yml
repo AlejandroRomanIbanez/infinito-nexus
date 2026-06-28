@@ -1,12 +1,12 @@
 ---
-- name: "DEBUG | Loading parameters"
+- name: "🐛 DEBUG | Loading parameters"
   ansible.builtin.debug:
     msg:
       application_id: "{{ application_id | default('undefined') }}"
       load_app_id: "{{ load_app_id }}"
   when: MODE_DEBUG | bool
 
-- name: "Loading {{ load_app_id }}'"
+- name: "📥 Loading {{ load_app_id }}'"
   include_role:
     name: "{{ load_app_id }}"
     public: false

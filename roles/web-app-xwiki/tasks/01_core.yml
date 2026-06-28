@@ -1,24 +1,24 @@
 ---
 - include_tasks: utils/once/flag.yml
 
-- name: Validate XWiki variables
+- name: ✅ Validate XWiki variables
   include_tasks: 02_validation.yml
 
 - block:
-    - name: "load docker, db and proxy for {{ application_id }}"
+    - name: "🧩 load docker, db and proxy for {{ application_id }}"
       include_role:
         name: sys-stk-full
       vars:
         compose_handlers_flush: false
 
-    - name: Deploy Bootstrap Config
+    - name: 🚀 Deploy Bootstrap Config
       include_tasks: _flush_config.yml
       when: IS_STACK_HOST | bool
   vars:
     xwiki_oidc_enabled_switch: false
     xwiki_ldap_enabled_switch: false
 
-- name: "XWiki manager-side operations (file deploys + container exec)"
+- name: "👔 XWiki manager-side operations (file deploys + container exec)"
   include_tasks: 02_manager_ops.yml
   when: IS_STACK_HOST | bool
 

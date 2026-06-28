@@ -1,5 +1,5 @@
 ---
-- name: Login with bootstrap admin (uses container ENV)
+- name: 🔑 Login with bootstrap admin (uses container ENV)
   ansible.builtin.shell: | # nocheck: container-exec-resolver  KEYCLOAK_LOCAL_CID resolved at delegate_to runtime
     container exec -i {{ KEYCLOAK_LOCAL_CID | quote }} sh -lc '
       {{ KEYCLOAK_KCADM }} config credentials \
@@ -14,7 +14,7 @@
   delay: 5
   until: kc_login_bootstrap.rc == 0
 
-- name: Ensure permanent admin user exists (create if missing)
+- name: ✅ Ensure permanent admin user exists (create if missing)
   ansible.builtin.shell: | # nocheck: container-exec-resolver  KEYCLOAK_LOCAL_CID resolved at delegate_to runtime
     container exec -i {{ KEYCLOAK_LOCAL_CID | quote }} sh -lc '
       {{ KEYCLOAK_KCADM }} create users -r master \
@@ -30,7 +30,7 @@
     )
   changed_when: kc_create_perm_admin.rc == 0
 
-- name: Set permanent admin password (by username, no ID needed)
+- name: 🔧 Set permanent admin password (by username, no ID needed)
   ansible.builtin.shell: | # nocheck: container-exec-resolver  KEYCLOAK_LOCAL_CID resolved at delegate_to runtime
     container exec -i {{ KEYCLOAK_LOCAL_CID | quote }} sh -lc '
       {{ KEYCLOAK_KCADM }} set-password -r master \
@@ -39,7 +39,7 @@
     '
   changed_when: true
 
-- name: Grant global admin via master realm role 'admin'
+- name: 🔐 Grant global admin via master realm role 'admin'
   ansible.builtin.shell: | # nocheck: container-exec-resolver  KEYCLOAK_LOCAL_CID resolved at delegate_to runtime
     container exec -i {{ KEYCLOAK_LOCAL_CID | quote }} sh -lc '
       {{ KEYCLOAK_KCADM }} add-roles -r master \
@@ -51,7 +51,7 @@
     kc_grant_master_admin.stdout | length > 0)
   failed_when: false
 
-- name: Verify login with permanent admin (after creation)
+- name: ✅ Verify login with permanent admin (after creation)
   ansible.builtin.shell: | # nocheck: container-exec-resolver  KEYCLOAK_LOCAL_CID resolved at delegate_to runtime
     container exec -i {{ KEYCLOAK_LOCAL_CID | quote }} sh -lc '
       {{ KEYCLOAK_KCADM }} config credentials \

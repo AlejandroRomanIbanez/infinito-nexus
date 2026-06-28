@@ -1,5 +1,5 @@
 ---
-- name: Install '{{ SYS_CTL_CLN_ANON_VOLUMES_COMMAND }}'
+- name: 📦 Install '{{ SYS_CTL_CLN_ANON_VOLUMES_COMMAND }}'
   include_role:
     name: sys-pip-install
   vars:

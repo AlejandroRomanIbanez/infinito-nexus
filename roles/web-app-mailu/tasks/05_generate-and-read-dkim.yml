@@ -1,5 +1,5 @@
 ---
-- name: Check if DKIM private key file exists in the antispam container
+- name: 🔎 Check if DKIM private key file exists in the antispam container
   ansible.builtin.shell: >
     container exec -i {{ MAILU_ANTISPAM_CONTAINER_ADDRESS }}
     test -f {{ MAILU_DKIM_KEY_PATH }}
@@ -12,7 +12,7 @@
   args:
     chdir: "{{ MAILU_INSTANCE_DIR }}"
 
-- name: Generate DKIM key
+- name: ⚙️ Generate DKIM key
   ansible.builtin.shell: >
     container exec -i {{ MAILU_ANTISPAM_CONTAINER_ADDRESS }}
     rspamadm dkim_keygen -s dkim -d {{ MAILU_DOMAIN }} -k {{ MAILU_DKIM_KEY_PATH }}
@@ -25,7 +25,7 @@
     chdir: "{{ MAILU_INSTANCE_DIR }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: Fetch DKIM private key from antispam container
+- name: ⬇️ Fetch DKIM private key from antispam container
   ansible.builtin.shell: >
     container exec -i {{ MAILU_ANTISPAM_CONTAINER_ADDRESS }}
     cat {{ MAILU_DKIM_KEY_PATH }}
@@ -34,12 +34,12 @@
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: Ensure openssl is installed on host
+- name: ✅ Ensure openssl is installed on host
   include_role:
     name: sys-openssl
   when: run_once_sys_openssl is not defined
 
-- name: Generate DKIM public key on the host
+- name: ⚙️ Generate DKIM public key on the host
   command: openssl rsa -pubout
   args:
     stdin: "{{ dkim_priv_content.stdout }}"
@@ -47,7 +47,7 @@
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: Normalize and build Mailu DKIM TXT record
+- name: 📐 Normalize and build Mailu DKIM TXT record
   set_fact:
     mailu_dkim_public_key: >-
       v=DKIM1; k=rsa; p={{
@@ -58,7 +58,7 @@
       }}
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: Debug Mailu DKIM public key
+- name: 🐛 Debug Mailu DKIM public key
   debug:
     msg: "Mailu DKIM public key: {{ mailu_dkim_public_key }}"
   when: MODE_DEBUG | bool

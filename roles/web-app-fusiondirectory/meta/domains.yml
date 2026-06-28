@@ -1,4 +1,4 @@
 ---
 canonical:
-- fd.{{ DOMAIN_PRIMARY }}
+  - fd.{{ DOMAIN_PRIMARY }}
 aliases: []

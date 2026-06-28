@@ -9,6 +9,6 @@
   vars:
     handler_role_name: "sys-svc-compose"
 
-- name: "Verify per-consumer namespace (key-prefix isolation)"
+- name: "✅ Verify per-consumer namespace (key-prefix isolation)"
   include_tasks: 02_init.yml
   when: database_init | bool

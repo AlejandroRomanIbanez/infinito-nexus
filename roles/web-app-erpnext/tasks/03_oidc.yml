@@ -1,5 +1,5 @@
 ---
-- name: "apply Social Login Key for Keycloak"
+- name: "📌 apply Social Login Key for Keycloak"
   ansible.builtin.shell: |
     set -euo pipefail
     container exec -i \
@@ -20,7 +20,7 @@
   changed_when: "'OIDC_SLK_CHANGED' in erpnext_oidc_apply.stdout"
   timeout: 60
 
-- name: "restart the Frappe backend when the Social Login Key changed so --preload workers re-render the SSO button"
+- name: "🔄 Restart Frappe backend on Social Login Key change to re-render SSO button"
   ansible.builtin.shell: |
     set -euo pipefail
     container restart {{ ERPNEXT_BACKEND_CONTAINER }}
@@ -28,7 +28,7 @@
   when: "'OIDC_SLK_CHANGED' in erpnext_oidc_apply.stdout"
   timeout: 120
 
-- name: "wait for {{ ERPNEXT_BACKEND_CONTAINER }} gunicorn TCP port after OIDC restart"
+- name: "⏳ wait for {{ ERPNEXT_BACKEND_CONTAINER }} gunicorn TCP port after OIDC restart"
   ansible.builtin.shell: |
     set -eo pipefail
     container exec {{ ERPNEXT_BACKEND_CONTAINER_ADDRESS }} \

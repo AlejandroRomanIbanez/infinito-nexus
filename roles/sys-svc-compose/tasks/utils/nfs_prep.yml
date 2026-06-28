@@ -1,5 +1,5 @@
 ---
-- name: "Pre-create NFS subdir for '{{ application_id }}' volume '{{ item.key }}' on the NFS server"
+- name: "📁 Pre-create NFS subdir for '{{ application_id }}' volume '{{ item.key }}'"
   ansible.builtin.file:
     path: "{{ STORAGE_NFS_STATE_PATH }}/{{ item.value.name | default(item.key) }}"
     state: directory

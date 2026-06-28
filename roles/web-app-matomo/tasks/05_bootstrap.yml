@@ -1,18 +1,18 @@
 ---
 - block:
-    - name: "Matomo bootstrap | Run bootstrap ({{ DEPLOYMENT_MODE }})"
+    - name: "▶️ Matomo bootstrap | Run bootstrap ({{ DEPLOYMENT_MODE }})"
       ansible.builtin.include_tasks: "05_bootstrap/flavors/{{ DEPLOYMENT_MODE }}.yml"
 
   rescue:
-    - name: "Matomo bootstrap | Select effective bootstrap result for diagnostics"
+    - name: "🎯 Matomo bootstrap | Select effective bootstrap result for diagnostics"
       ansible.builtin.set_fact:
         matomo_bootstrap_run: "{{ matomo_bootstrap_compose if DEPLOYMENT_MODE == 'compose' else matomo_bootstrap_swarm }}"
 
-    - name: "Matomo bootstrap | Dump bootstrap diagnostics ({{ DEPLOYMENT_MODE }})"
+    - name: "💾 Matomo bootstrap | Dump bootstrap diagnostics ({{ DEPLOYMENT_MODE }})"
       ansible.builtin.include_tasks: "05_bootstrap/debug/{{ DEPLOYMENT_MODE }}.yml"
       when: MODE_DEBUG | bool
 
-    - name: "Matomo bootstrap | Abort with bootstrap root cause"
+    - name: "🛑 Matomo bootstrap | Abort with bootstrap root cause"
       ansible.builtin.fail:
         msg: >-
           Matomo bootstrap run failed after {{ matomo_bootstrap_run.attempts | default(MATOMO_BOOTSTRAP_RETRIES) }} attempt(s)
@@ -22,7 +22,7 @@
           stdout={{ (matomo_bootstrap_run.stdout | default('') | trim) if not (MASK_CREDENTIALS_IN_LOGS | bool) else ('<masked,len=' ~ ((matomo_bootstrap_run.stdout
           | default('') | string | length) | string) ~ '>') }}
 
-- name: "Matomo bootstrap | Set effective token (prefer existing, else parse bootstrap stdout)"
+- name: "🔧 Matomo bootstrap | Set effective token (existing, else parse bootstrap stdout)"
   ansible.builtin.set_fact:
     matomo_token_value: >-
       {{
@@ -36,7 +36,7 @@
         )
       }}
 
-- name: "Matomo bootstrap | Assert we have a token now"
+- name: "✅ Matomo bootstrap | Assert we have a token now"
   ansible.builtin.assert:
     that:
       - matomo_token_value is defined
@@ -47,7 +47,7 @@
       stdout={{ (matomo_bootstrap_compose.stdout if DEPLOYMENT_MODE == 'compose' else matomo_bootstrap_swarm.stdout) | default('') | trim }}
   when: MODE_ASSERT_LOCAL | bool
 
-- name: "Matomo | Persist + inject token via sys-token-store (store + runtime users)"
+- name: "💾 Matomo | Persist + inject token via sys-token-store (store + runtime users)"
   ansible.builtin.include_role:
     name: sys-token-store
     tasks_from: write.yml
@@ -61,7 +61,7 @@
     - matomo_token_value | length > 0
 
 # web-svc-* only: re-running sys-front-inj-all for web-app consumers crashes on their unloaded role vars
-- name: "Matomo | Re-render injection for early-rendered web-svc consumers"
+- name: "📄 Matomo | Re-render injection for early-rendered web-svc consumers"
   ansible.builtin.include_role:
     name: sys-front-inj-all
   vars:

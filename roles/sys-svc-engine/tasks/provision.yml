@@ -1,9 +1,9 @@
 ---
-- name: "Provision '{{ _engine_consumer_id }}' on engine provider '{{ _engine_provider_role }}'"
+- name: "🔧 Provision '{{ _engine_consumer_id }}' on '{{ _engine_provider_role }}'"
   vars:
     _engine_provider_role: "svc-db-{{ _engine_type }}"
   block:
-    - name: "Load engine provider '{{ _engine_provider_role }}' (lazy)"
+    - name: "🧩 Load engine provider '{{ _engine_provider_role }}' (lazy)"
       ansible.builtin.include_role:
         name: "{{ _engine_provider_role }}"
       vars:
@@ -15,7 +15,7 @@
           default='__missing__'
         ) == '__missing__'
 
-    - name: "Initialize '{{ _engine_consumer_id }}' on provider '{{ _engine_provider_role }}'"
+    - name: "🎬 Initialize '{{ _engine_consumer_id }}' on '{{ _engine_provider_role }}'"
       ansible.builtin.include_role:
         name: "{{ _engine_provider_role }}"
       vars:

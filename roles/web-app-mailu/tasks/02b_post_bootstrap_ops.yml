@@ -1,8 +1,8 @@
 ---
-- name: Wait for Mailu Redis
+- name: ⏳ Wait for Mailu Redis
   include_tasks: 03_wait_for_redis.yml
 
-- name: "Create Mailu accounts"
+- name: "📁 Create Mailu accounts"
   include_tasks: 04_manage_user.yml
   vars:
     mailu_action: >-
@@ -23,16 +23,16 @@
     loop_var: user_item
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: "Include Cert deploy service for '{{ role_name }}'"
+- name: "📂 Include Cert deploy service for '{{ role_name }}'"
   include_role:
     name: sys-ctl-mtn-cert-deploy
   when: lookup('tls', application_id, 'enabled') | bool
 
-- name: Wait for Mailu antispam
+- name: ⏳ Wait for Mailu antispam
   include_tasks: 07_wait_for_antispam.yml
 
-- name: Generate DKIM public key
+- name: ⚙️ Generate DKIM public key
   include_tasks: 05_generate-and-read-dkim.yml
 
-- name: Set Mailu DNS records
+- name: 🔧 Set Mailu DNS records
   include_tasks: 06_dns-records.yml

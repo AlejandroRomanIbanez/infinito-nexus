@@ -1,5 +1,5 @@
 ---
-- name: "Matomo | Set trusted hosts (domain + service + container reach host)"
+- name: "🔧 Matomo | Set trusted hosts (domain + service + container reach host)"
   vars:
     # Exception: pin application_id and inline the domain literal; nested include_role
     # chains (sys-stk-front-base -> web-opt-rdr-domains / svc-prx-openresty) pollute

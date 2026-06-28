@@ -1,5 +1,5 @@
 ---
-- name: Wait until application container is up
+- name: ⏳ Wait until application container is up
   ansible.builtin.shell: >-
     container ps
     --filter label=com.docker.swarm.service.name={{ lookup('container_service', application_id, SNIPE_IT_SERVICE) }}
@@ -10,7 +10,7 @@
   until: snipeit_app_id.stdout | length > 0
   changed_when: false
 
-- name: "Wait until the Snipe-IT Service is available"
+- name: "⏳ Wait until the Snipe-IT Service is available"
   uri_retry:
     url: "{{ SNIPE_IT_URL }}"
     method: GET
@@ -21,7 +21,7 @@
   delay: 5
   until: snipeit_admin_check.status == 200
 
-- name: Run Snipe-IT migrations (idempotent)
+- name: ▶️ Run Snipe-IT migrations (idempotent)
   ansible.builtin.shell: >-
     container exec -i
     -e APP_KEY="{{ SNIPE_IT_APP_KEY }}"
@@ -34,7 +34,7 @@
     or ('Migrated:' in snipeit_migrate.stdout)
   failed_when: snipeit_migrate.rc != 0
 
-- name: Seed Snipe-IT database (optional, safe to rerun if seeder is idempotent)
+- name: 🌱 Seed Snipe-IT database (optional, safe to rerun if seeder is idempotent)
   ansible.builtin.shell: >-
     container exec -i
     -e APP_KEY="{{ SNIPE_IT_APP_KEY }}"

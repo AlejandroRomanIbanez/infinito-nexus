@@ -3,7 +3,7 @@
 # It waits for the web container to be running, ensures migrations are applied,
 # then sets all configured settings via rails runner fed from STDIN (robust quoting).
 
-- name: Wait until OpenProject web container is running
+- name: ⏳ Wait until OpenProject web container is running
   shell: >
     container inspect -f '{{"{{"}}.State.Status{{"}}"}}' {{ OPENPROJECT_WEB_CONTAINER }}
   register: openproject_web_state
@@ -12,7 +12,7 @@
   until: openproject_web_state.stdout.strip() == "running"
   changed_when: false
 
-- name: Run database migrations
+- name: ▶️ Run database migrations
   shell: >
     container exec -i {{ OPENPROJECT_WEB_CONTAINER_ADDRESS | quote }} bash -lc
     "cd /app && bin/rails db:migrate RAILS_ENV=production"
@@ -21,7 +21,7 @@
   delay: 10
   until: openproject_migrate.rc == 0
 
-- name: Wait until OpenProject web container is running (after migrations)
+- name: ⏳ Wait until OpenProject web container is running (after migrations)
   shell: >
     container inspect -f '{{"{{"}}.State.Status{{"}}"}}' {{ OPENPROJECT_WEB_CONTAINER }}
   register: openproject_web_state_after_migrate
@@ -30,7 +30,7 @@
   until: openproject_web_state_after_migrate.stdout.strip() == "running"
   changed_when: false
 
-- name: Set settings in OpenProject (rails runner via STDIN from an external script)
+- name: 🔧 Set settings in OpenProject (rails runner via STDIN from an external script)
   ansible.builtin.command:
     argv:
       - container

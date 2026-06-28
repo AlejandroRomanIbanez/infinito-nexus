@@ -11,7 +11,7 @@
 # Param: resolve_converge_delay   - swarm converge delay seconds (default 2)
 # Param: resolve_cid_filters      - extra `container ps` filters for the cid lookup (default '')
 # Param: resolve_run_host         - host that runs the manager-only queries (default: inventory_hostname)
-- name: "resolve_host_cid | wait for '{{ resolve_service_key }}' to converge"
+- name: "⏳ resolve_host_cid | wait for '{{ resolve_service_key }}' to converge"
   ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/wait_converged.yml'] | path_join }}"
   vars:
     wait_service_key: "{{ resolve_service_key }}"
@@ -19,7 +19,7 @@
     wait_delay: "{{ resolve_converge_delay | default(2) }}"
     wait_run_host: "{{ resolve_run_host | default(inventory_hostname) }}"
 
-- name: "resolve_host_cid | resolve hosting node for '{{ resolve_service_key }}'"
+- name: "🔍 resolve_host_cid | resolve hosting node for '{{ resolve_service_key }}'"
   ansible.builtin.shell: |
     container service ps {{ lookup('container_service', application_id, resolve_service_key) | quote }} \
       --filter desired-state=running \
@@ -29,11 +29,11 @@
   delegate_to: "{{ resolve_run_host | default(inventory_hostname) }}"
   when: DEPLOYMENT_MODE == 'swarm'
 
-- name: "resolve_host_cid | set {{ resolve_output_prefix }}_HOST_NODE"
+- name: "🔧 resolve_host_cid | set {{ resolve_output_prefix }}_HOST_NODE"
   ansible.builtin.set_fact:
     "{{ resolve_output_prefix }}_HOST_NODE": "{{ (_resolve_node.stdout | trim) if DEPLOYMENT_MODE == 'swarm' else inventory_hostname }}"
 
-- name: "resolve_host_cid | resolve local container id for '{{ resolve_service_key }}'"
+- name: "🔍 resolve_host_cid | resolve local container id for '{{ resolve_service_key }}'"
   ansible.builtin.shell: |
     {% if DEPLOYMENT_MODE == 'swarm' %}
     container ps \
@@ -47,6 +47,6 @@
   changed_when: false
   delegate_to: "{{ lookup('vars', resolve_output_prefix ~ '_HOST_NODE') }}"
 
-- name: "resolve_host_cid | set {{ resolve_output_prefix }}_LOCAL_CID"
+- name: "🔧 resolve_host_cid | set {{ resolve_output_prefix }}_LOCAL_CID"
   ansible.builtin.set_fact:
     "{{ resolve_output_prefix }}_LOCAL_CID": "{{ _resolve_cid.stdout | trim }}"

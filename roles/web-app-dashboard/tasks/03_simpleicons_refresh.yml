@@ -1,5 +1,5 @@
 ---
-- name: Wait for a known Simple Icons asset before rebuilding dashboard cards
+- name: ⏳ Wait for a known Simple Icons asset before rebuilding dashboard cards
   uri_retry:
     url: "{{ DASHBOARD_SIMPLEICONS_SYNC_URL_BASE }}keycloak.svg"
     status_code: 200
@@ -9,7 +9,7 @@
   delay: 5
   until: simpleicons_http.status == 200
 
-- name: Probe Simple Icons reachability per card slug (on the stack host)
+- name: 🔍 Probe Simple Icons reachability per card slug (on the stack host)
   uri_retry:
     url: "{{ DASHBOARD_SIMPLEICONS_SYNC_URL_BASE }}{{ item }}.svg"
     method: HEAD
@@ -23,7 +23,7 @@
   run_once: true
   changed_when: false
 
-- name: Reload docker cards once Simple Icons is reachable
+- name: 🔄 Reload docker cards once Simple Icons is reachable
   set_fact:
     portfolio_cards: >-
       {{ portfolio_cards | add_simpleicon_source(
@@ -34,11 +34,11 @@
            DASHBOARD_SIMPLEICONS_URL_BASE) }}
   changed_when: false
 
-- name: Regroup docker cards after Simple Icons refresh
+- name: 🐳 Regroup docker cards after Simple Icons refresh
   set_fact:
     portfolio_menu_data: "{{ lookup('docker_cards_grouped', portfolio_cards, portfolio_menu_categories) }}"
 
-- name: "Refresh Dashboard config.yaml after Simple Icons is reachable (local + swarm peers)"
+- name: "🔄 Refresh Dashboard config.yaml once Simple Icons is reachable (local + swarm)"
   ansible.builtin.include_tasks:
     file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
   vars:
@@ -46,5 +46,5 @@
       - src: "{{ DASHBOARD_CONFIG_INV_PATH if config_file.stat.exists else DASHBOARD_CONFIG_YML_SRC_FILE }}"
         dest: "{{ DASHBOARD_CONFIG_YML_DEST }}"
 
-- name: Flush compose handlers after Simple Icons refresh
+- name: 🚿 Flush compose handlers after Simple Icons refresh
   meta: flush_handlers

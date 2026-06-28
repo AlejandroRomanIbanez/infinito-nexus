@@ -1,5 +1,5 @@
 ---
-- name: "Matomo bootstrap | Compose: Run one-shot bootstrap via compose profile"
+- name: "🐳 Matomo bootstrap | Compose: Run one-shot bootstrap via compose profile"
   ansible.builtin.command:
     argv:
       - "{{ BIN_COMPOSE }}"
