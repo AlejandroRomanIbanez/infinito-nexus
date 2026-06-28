@@ -1,10 +1,6 @@
 ---
 application_id: "svc-storage-nfs-server"
 
-# `ganesha` packages are only listed where nfs-ganesha ships in the official
-# repos (Debian/Ubuntu/Fedora); the act swarm-test nfs node is ubuntu. Other
-# os families have no ganesha row because they never select the ganesha flavor
-# (RUNTIME in dev,act,github -> ganesha; the wedge-prone DinD test runs on ubuntu).
 SVC_STORAGE_NFS_SERVER_PACKAGES:
   kernel:
     Debian:
@@ -43,14 +39,13 @@ SVC_STORAGE_NFS_SERVER_SERVICE:
     Ubuntu: nfs-ganesha
     Fedora: nfs-ganesha
 
-# No `fsid=0`: clients would otherwise have to mount `<server>:/` (pseudo-root).
 SVC_STORAGE_NFS_SERVER_EXPORT_OPTIONS: >-
-  rw,sync,no_subtree_check,root_squash,no_all_squash
+  rw,sync,no_subtree_check,root_squash,no_all_squash,crossmnt
 
 SVC_STORAGE_NFS_SERVER_STATE_EXPORT_OPTIONS: >-
   rw,sync,no_subtree_check,no_root_squash,no_all_squash
 SVC_STORAGE_NFS_SERVER_CONTROLLER_TRAVERSAL_OPTIONS: >-
-  ro,sync,no_subtree_check,root_squash
+  ro,sync,no_subtree_check,root_squash,crossmnt
 SVC_STORAGE_NFS_SERVER_STATE_ALLOWED_CIDRS:
   - "*"
 SVC_STORAGE_NFS_SERVER_CONTROLLER_CIDRS: []
