@@ -56,13 +56,28 @@ fi
 
 if command -v container >/dev/null 2>&1; then
     if [ "$swarm_state" = "active" ] && [ "$is_manager" = "true" ]; then
-        swarm_problems="$(container service ls --format '{{.Name}} {{.Replicas}}' 2>/dev/null \
+        swarm_candidates="$(container service ls --format '{{.Name}} {{.Replicas}}' 2>/dev/null \
             | awk '{
                 split($2, a, "/");
                 if (a[1] != a[2]) {
                     print $1 " " $2;
                 }
             }')"
+        # Caveat: a completed run-once job sits at 0/N (all tasks Complete) and is healthy,
+        # not non-converged; a crashed/converging service keeps a Failed/Running task and stays flagged.
+        swarm_problems=""
+        while read -r service_name replicas; do
+            [ -z "$service_name" ] && continue
+            task_states="$(container service ps "$service_name" --format '{{.CurrentState}}' 2>/dev/null)"
+            if printf '%s\n' "$task_states" | grep -q '^Complete' \
+                && ! printf '%s\n' "$task_states" | grep -qE '^(Running|Ready|Starting|Preparing|Pending|Assigned|Accepted|New|Failed|Rejected|Orphaned)'; then
+                continue
+            fi
+            swarm_problems="${swarm_problems:+$swarm_problems
+}$service_name $replicas"
+        done <<EOF
+$swarm_candidates
+EOF
         if [ -n "$swarm_problems" ]; then
             echo "❌ Swarm services not fully converged:"
             echo "$swarm_problems"
