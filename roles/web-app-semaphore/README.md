@@ -18,7 +18,7 @@ The role deploys the single official `semaphoreui/semaphore` container (with its
 
 ## Authentication & admin model
 
-Semaphore's auth has hard constraints (verified against the upstream `v2.18.13` source):
+Semaphore's auth has hard constraints (verified against the upstream `v2.18.12` source):
 
 - The login **form** authenticates against the local user DB when LDAP is off, but switches to **LDAP-only** when `ldap_enable=true` — there is no local-password fallback.
 - The **OIDC** callback matches users **by email**, *rejects* a match that is a local (non-external) account ("conflicts with local user"), and creates new OIDC users as **non-admin, external**. It never assigns admin from a claim (upstream has no claim→role mapping yet).
@@ -45,7 +45,7 @@ The role works with these constraints rather than against them:
 
 ## Image & bump policy
 
-Pinned to a concrete stable `2.x` tag in [`meta/services.yml`](./meta/services.yml) (`semaphoreui/semaphore:v2.18.13`); never `:latest`. Bump by editing that tag after reviewing the upstream [releases](https://github.com/semaphoreui/semaphore/releases).
+Pinned to a concrete stable `2.x` tag in [`meta/services.yml`](./meta/services.yml) (`semaphoreui/semaphore:v2.18.12`); never `:latest`. Bump by editing that tag after reviewing the upstream [releases](https://github.com/semaphoreui/semaphore/releases).
 
 ## Further Resources
 
