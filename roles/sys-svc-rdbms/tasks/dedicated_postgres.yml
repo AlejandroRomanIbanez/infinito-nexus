@@ -21,7 +21,7 @@
         mode: "0755"
     - name: "📄 For '{{ application_id }}/{{ _database_consumer_id }}': Render libs Dockerfile"
       stack_host_template:
-        src: "{{ playbook_dir }}/roles/svc-db-postgres/templates/Dockerfile.j2"
+        src: "{{ lookup('path_absolute', 'roles/svc-db-postgres/templates/Dockerfile.j2') }}"
         dest: "{{ _database_build_dir }}Dockerfile"
         mode: "0644"
       vars:

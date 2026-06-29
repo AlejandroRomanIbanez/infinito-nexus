@@ -7,7 +7,7 @@
 
 - name: 📄 Render shared package.json from central template
   ansible.builtin.template: # nocheck: stack-host-template (per-host playwright stage dir, runs on every test host)
-    src: "{{ playbook_dir }}/roles/test-e2e-playwright/templates/package.json.j2"
+    src: "{{ lookup('path_absolute', 'roles/test-e2e-playwright/templates/package.json.j2') }}"
     dest: "{{ TEST_E2E_PLAYWRIGHT_SHARED_DIR }}/package.json"
     mode: "0644"
 

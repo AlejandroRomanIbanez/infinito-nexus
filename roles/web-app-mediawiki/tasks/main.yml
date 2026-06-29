@@ -9,7 +9,7 @@
   include_tasks: 01_configuration.yml
 
 - name: "🐳 Finalize compose deploy for '{{ application_id }}'"
-  include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/finalize.yml'] | path_join }}"
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/finalize.yml') }}"
 
 - name: "📂 Load extensions procedures for '{{ application_id }}'"
   include_tasks: "02_extensions.yml"

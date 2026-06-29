@@ -9,7 +9,7 @@ A comment is VALID only when it is one of:
 * a **marked exception** -- a mid-code comment that flags a real trip-wire
   (warning, pitfall, deliberate non-idiomatic choice, upstream bug, security /
   performance gotcha) whose text starts with one of the exception markers
-  (`Warning`, `Exception`, `Caution`, `Workaround`, `Security`, ...).
+  (`Warning`, `Exception`, `Workaround`, `Security`, ...).
 
 Mid-code comments are ONLY allowed as exceptions. Plain narration, banners,
 restating the next line, or neutral `Note:`-style info carry no warning and so
@@ -51,9 +51,7 @@ _MARKERS = (
     "warning",
     "warn",
     "attention",
-    "caution",
     "danger",
-    "important",
     "exception",
     "bug",
     "security",
@@ -63,7 +61,6 @@ _MARKERS = (
     "deprecated",
     "workaround",
     "upstream",
-    "pitfall",
     "invariant",
     "trap",
     "caveat",
@@ -326,7 +323,7 @@ class TestCommentsValid(unittest.TestCase):
                 f"{len(offenders)} invalid comment(s). A comment is allowed only as a "
                 "file header, a doc comment directly above a class/function/rule, a "
                 "tool directive (noqa/nocheck/...), or a mid-code EXCEPTION that flags "
-                "a real trip-wire (starts with Warning/Exception/Caution/"
+                "a real trip-wire (starts with Warning/Exception/"
                 "Workaround/Security/...). Everything else is narration: DELETE it "
                 "(move real explanation into the file header or a doc comment):\n"
                 + shown

@@ -6,7 +6,7 @@
   when: run_once_sys_svc_container is not defined
 
 - name: "📁 2) Create the network"
-  include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/network/create.yml' ] | path_join }}"
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/network/create.yml') }}"
   vars:
     network_role_id: "{{ application_id }}"
 

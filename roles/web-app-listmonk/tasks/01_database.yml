@@ -28,7 +28,7 @@
   when: not listmonk_db_reachable
 
 - name: ⏳ Wait for Listmonk task to converge before container exec
-  ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/wait_converged.yml'] | path_join }}"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/wait_converged.yml') }}"
   vars:
     wait_service_key: "{{ LISTMONK_SERVICE }}"
     wait_retries: 600

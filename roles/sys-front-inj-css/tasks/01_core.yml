@@ -14,7 +14,7 @@
         (
           lookup(
             'local_mtime_qs',
-            [playbook_dir, 'roles', 'sys-front-inj-css', 'templates', 'css', 'default.css.j2'] | path_join
+            lookup('path_absolute', 'roles', 'sys-front-inj-css', 'templates', 'css', 'default.css.j2')
           )
           | regex_replace('^.*=', '')
           | int

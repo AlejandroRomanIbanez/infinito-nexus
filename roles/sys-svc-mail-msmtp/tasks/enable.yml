@@ -29,7 +29,7 @@
     state: present
 
 - name: "🔴 Disable SMTP to avoid port conflicts"
-  include_tasks: "{{ [playbook_dir, 'roles/sys-svc-mail-smtp/tasks/disable.yml' ] | path_join }}"
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-mail-smtp/tasks/disable.yml') }}"
 
 - when: lookup('email').external | bool
   block:

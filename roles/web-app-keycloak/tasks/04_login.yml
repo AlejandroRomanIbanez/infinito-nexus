@@ -13,7 +13,7 @@
   when: DEPLOYMENT_MODE == 'compose'
 
 - name: "🔍 Keycloak login | Resolve hosting node + container id"
-  ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml'] | path_join }}"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
   vars:
     resolve_service_key: "{{ entity_name }}"
     resolve_output_prefix: KEYCLOAK

@@ -5,7 +5,6 @@
   vars:
     compose_handlers_flush: false
     application_id: web-app-nextcloud
-    # Necessary to save talk recordings
     webserver_client_max_body_size: 10G
 
 - when: NEXTCLOUD_WHITEBOARD_ENABLED | bool
@@ -34,7 +33,7 @@
 
 - name: "📄 Render Nextcloud config at {{ NEXTCLOUD_HOST_CONF_ADD_PATH }} (local + peers)"
   ansible.builtin.include_tasks:
-    file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
+    file: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml') }}"
   vars:
     role_templates:
       - src_glob: "config/*.j2"
@@ -54,7 +53,7 @@
 
 - name: "📄 Render Nextcloud internal nginx config (local + swarm peers)"
   ansible.builtin.include_tasks:
-    file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
+    file: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml') }}"
   vars:
     role_templates:
       - src: "docker.conf.j2"

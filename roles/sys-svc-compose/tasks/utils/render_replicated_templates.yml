@@ -5,7 +5,7 @@
       {%- set out = [] -%}
       {%- for entry in role_templates -%}
         {%- if entry.src_glob is defined -%}
-          {%- set role_dir = playbook_dir ~ '/roles/' ~ application_id -%}
+          {%- set role_dir = lookup('path_absolute', 'roles', application_id) -%}
           {%- for path in lookup('fileglob', role_dir ~ '/templates/' ~ entry.src_glob, wantlist=True) | sort -%}
             {%- set base = path | basename | regex_replace('\.j2$', '') -%}
             {%- set _ = out.append({

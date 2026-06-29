@@ -29,7 +29,7 @@
 
 - name: "📄 SSO-proxy | render upstream-config for '{{ sso_proxy_application_id }}'"
   stack_host_template:
-    src: "{{ playbook_dir }}/roles/web-app-keycloak/templates/sso_proxy/oauth2-proxy-keycloak.cfg.j2"
+    src: "{{ lookup('path_absolute', 'roles/web-app-keycloak/templates/sso_proxy/oauth2-proxy-keycloak.cfg.j2') }}"
     dest: >-
       {{ (sso_proxy_application_id | get_docker_paths(DIR_COMPOSITIONS)).directories.volumes
          }}{{ lookup('config', 'web-app-keycloak', 'services.sso_proxy.configuration_file') }}

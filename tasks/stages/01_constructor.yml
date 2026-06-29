@@ -46,7 +46,7 @@
             | canonical_domains_map(
                 DOMAIN_PRIMARY,
                 recursive=True,
-                roles_base_dir=([ playbook_dir, 'roles' ] | path_join),
+                roles_base_dir=(lookup('path_absolute', 'roles')),
                 seed=(CURRENT_PLAY_APPLICATIONS | dict2items | map(attribute='key') | list)
               )
           }}
@@ -117,7 +117,6 @@
     label: "{{ role_id }}"
   when:
     - (groups['svc-swarm-manager'] | default([]) | length) > 0
-    # Only fill an inventory-present group that has no host yet; an absent group means no app consumes this central engine, so it must not be deployed.
     - role_id in groups
     - (groups[role_id] | default([]) | length) == 0
   run_once: true

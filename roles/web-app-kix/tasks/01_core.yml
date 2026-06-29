@@ -9,7 +9,7 @@
 
 - name: "📄 Render KIX host-side config files (local + swarm peers)"
   ansible.builtin.include_tasks:
-    file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
+    file: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml') }}"
   vars:
     role_templates:
       - src: "zzz_auth_ldap.xml.j2"

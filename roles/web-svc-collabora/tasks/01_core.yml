@@ -15,7 +15,7 @@
   when: IS_STACK_HOST | bool
   block:
     - name: "⏳ Collabora resolve | Wait for collabora task to converge"
-      ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/wait_converged.yml'] | path_join }}"
+      ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/wait_converged.yml') }}"
       vars:
         wait_service_key: "{{ entity_name }}"
         wait_retries: 600

@@ -40,7 +40,7 @@
 
 - name: "🔄 Refresh Dashboard config.yaml once Simple Icons is reachable (local + swarm)"
   ansible.builtin.include_tasks:
-    file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
+    file: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml') }}"
   vars:
     role_templates:
       - src: "{{ DASHBOARD_CONFIG_INV_PATH if config_file.stat.exists else DASHBOARD_CONFIG_YML_SRC_FILE }}"

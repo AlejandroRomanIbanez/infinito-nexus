@@ -1,7 +1,7 @@
 ---
 # nocheck: run-once
 - name: "🔴 Disable self-signed environment"
-  include_tasks: "{{ [playbook_dir, 'roles/sys-ca-selfsigned/tasks/disable_env.yml' ] | path_join }}"
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-ca-selfsigned/tasks/disable_env.yml') }}"
 
 - name: "🔍 TLS | (letsencrypt) resolve via tls (strict)"
   ansible.builtin.set_fact:

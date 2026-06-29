@@ -6,7 +6,7 @@
     compose_handlers_flush: false
     webserver_extra_configuration: >-
       {% if not LISTMONK_PUBLIC_API_ENABLED | bool %}
-      {{ lookup('file', '{{ playbook_dir }}/roles/web-app-listmonk/files/deactivate-public-api.conf') }}
+      {{ lookup('file', lookup('path_absolute', 'roles/web-app-listmonk/files/deactivate-public-api.conf')) }}
       {% else %}
       ""
       {% endif %}

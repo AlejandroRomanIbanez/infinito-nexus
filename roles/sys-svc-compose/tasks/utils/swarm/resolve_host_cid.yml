@@ -12,7 +12,7 @@
 # Param: resolve_cid_filters      - extra `container ps` filters for the cid lookup (default '')
 # Param: resolve_run_host         - host that runs the manager-only queries (default: inventory_hostname)
 - name: "⏳ resolve_host_cid | wait for '{{ resolve_service_key }}' to converge"
-  ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/wait_converged.yml'] | path_join }}"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/wait_converged.yml') }}"
   vars:
     wait_service_key: "{{ resolve_service_key }}"
     wait_retries: "{{ resolve_converge_retries | default(600) }}"

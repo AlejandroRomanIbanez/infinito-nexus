@@ -9,7 +9,7 @@
     compose_repository_pull: false
 
 - name: "📁 Create shared object-store network for '{{ application_id }}'"
-  include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/network/create.yml'] | path_join }}"
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/network/create.yml') }}"
   vars:
     network_role_id: "{{ application_id }}"
 

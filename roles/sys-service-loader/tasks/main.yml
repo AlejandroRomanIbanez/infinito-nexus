@@ -22,7 +22,7 @@
         query(
           'service_registry',
           'ordered',
-          roles_dir=([ playbook_dir, 'roles' ] | path_join)
+          roles_dir=(lookup('path_absolute', 'roles'))
         ) | first
       }}
 

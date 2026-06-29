@@ -12,7 +12,7 @@
   when: DEPLOYMENT_MODE == 'compose'
 
 - name: "🔍 Resolve {{ application_id }} hosting node + container id"
-  ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml'] | path_join }}"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
   vars:
     resolve_service_key: "{{ MATOMO_SERVICE }}"
     resolve_output_prefix: MATOMO

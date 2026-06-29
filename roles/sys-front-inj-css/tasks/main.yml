@@ -4,7 +4,7 @@
 
 - name: "🔍 Resolve optional app style.css source for '{{ application_id }}'"
   vars:
-    app_role_dir: "{{ playbook_dir }}/roles/{{ application_id }}"
+    app_role_dir: "{{ lookup('path_absolute', 'roles', application_id) }}"
     _app_style_src: >-
       {{ lookup('first_found', {
            'files': ['templates/style.css.j2','files/style.css'],

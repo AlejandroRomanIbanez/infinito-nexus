@@ -3,7 +3,7 @@
 
 - name: "📄 Render Nextcloud include.php (local + swarm peers)"
   ansible.builtin.include_tasks:
-    file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
+    file: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml') }}"
   vars:
     role_templates:
       - src: "include.php.j2"

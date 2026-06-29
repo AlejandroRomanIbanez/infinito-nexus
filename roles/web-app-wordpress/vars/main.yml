@@ -13,11 +13,10 @@ WORDPRESS_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ entity_n
 WORDPRESS_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, entity_name) }}"
 WORDPRESS_DISCOURSE_CONTAINER_ADDRESS: "{{ lookup('container_address', 'web-app-discourse', 'discourse') }}"
 WORDPRESS_DOMAINS: "{{ lookup('config', application_id, 'domains.canonical') }}"
-# Excludes the mu_plugin, which 05_mu_plugins.yml installs separately.
 WORDPRESS_PLUGINS: "{{ lookup('config', application_id, 'addons') | dict2items | selectattr('value.mechanism', 'equalto', 'plugin') | list }}"
 WORDPRESS_USER: "www-data"
 
-WORDPRESS_MSMTP_SRC: "{{ [ playbook_dir, 'roles/sys-svc-mail-msmtp/templates/msmtprc.conf.j2' ] | path_join }}"
+WORDPRESS_MSMTP_SRC: "{{ lookup('path_absolute', 'roles/sys-svc-mail-msmtp/templates/msmtprc.conf.j2') }}"
 WORDPRESS_MSMTP_ABS: "{{ [ lookup('container', application_id, 'directories.config'), 'msmtprc.conf'] | path_join }}"
 
 WORDPRESS_CONFIG_FILE: "wp-config.php"

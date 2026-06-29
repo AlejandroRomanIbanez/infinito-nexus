@@ -56,7 +56,7 @@
       set_fact:
         sso_proxy_application_id: "{{ application_id }}"
     - name: "📄 render web-app-keycloak SSO-proxy sidecar config"
-      include_tasks: "{{ playbook_dir }}/roles/web-app-keycloak/tasks/sso_proxy.yml"
+      include_tasks: "{{ lookup('path_absolute', 'roles/web-app-keycloak/tasks/sso_proxy.yml') }}"
   when: lookup('sso', application_id, 'is_proxy_gated') | bool
 
 - name: "🚿 flush compose and SSO proxy"

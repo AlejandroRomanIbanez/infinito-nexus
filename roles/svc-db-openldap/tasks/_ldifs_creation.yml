@@ -1,7 +1,7 @@
 ---
 - name: "📄 Render LDIF files at {{ OPENLDAP_LDIF_PATH_HOST }}{{ folder }} (peers)"
   ansible.builtin.include_tasks:
-    file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
+    file: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml') }}"
   vars:
     role_templates:
       - src_glob: "ldif/{{ folder }}/*.j2"

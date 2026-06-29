@@ -2,10 +2,9 @@
 - include_tasks: utils/once/flag.yml
 
 - name: "🔧 Setup container network for {{ application_id }}"
-  include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/network/routine.yml' ] | path_join }}"
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/network/routine.yml') }}"
   vars:
     compose_handlers_flush: true
-    # Explicit overwritting to be sure that there isn't a scope leak by another variable
     application_id: "svc-db-rabbitmq"
     database_consumer_id: "svc-db-rabbitmq"
 

@@ -15,7 +15,7 @@
 
 - name: "📄 Render Prometheus config files (local + swarm peers)"
   ansible.builtin.include_tasks:
-    file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml'] | path_join }}"
+    file: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml') }}"
   vars:
     role_templates:
       - src: "configuration/prometheus.yml.j2"
@@ -32,7 +32,7 @@
         mode: "0644"
 
 - name: "📁 Pre-create native-metrics docker networks (idempotent)"
-  include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/network/create.yml' ] | path_join }}"
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/network/create.yml') }}"
   vars:
     network_role_id: "{{ item }}"
   loop: "{{ lookup('native_metrics_apps') }}"

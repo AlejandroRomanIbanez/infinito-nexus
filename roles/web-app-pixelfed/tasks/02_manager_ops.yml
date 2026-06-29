@@ -16,13 +16,11 @@
     group: "{{ PIXELFED_APP_USER }}"
     mode: "0660"
 
-# Flush here on purpose: the application container must start with the
-# repo-managed entrypoint before 02_bootstrap.yml runs any artisan bootstrap.
 - name: "▶️ Start Pixelfed containers with the repo-managed entrypoint"
   ansible.builtin.meta: flush_handlers
 
 - name: "🔍 Pixelfed | Resolve hosting node + local container id"
-  ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml'] | path_join }}"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
   vars:
     resolve_service_key: pixelfed
     resolve_output_prefix: PIXELFED

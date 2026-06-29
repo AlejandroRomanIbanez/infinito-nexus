@@ -8,7 +8,7 @@
     application_id: "svc-db-openldap"
 
 - name: 📁 Create container network
-  include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/network/create.yml' ] | path_join }}"
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/network/create.yml') }}"
   vars:
     network_role_id: "{{ application_id }}"
 
@@ -28,7 +28,7 @@
 
 - name: "⏳ Wait for openldap stack to converge (swarm only)"
   ansible.builtin.include_tasks:
-    file: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/post_deploy.yml'] | path_join }}"
+    file: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/post_deploy.yml') }}"
     apply:
       delegate_to: "{{ STACK_HOST }}"
       run_once: true
