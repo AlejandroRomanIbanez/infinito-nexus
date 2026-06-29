@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from . import PROJECT_ROOT
-from .common import resolve_distro
+from .env import resolve_distro
 
 if TYPE_CHECKING:
     import argparse
