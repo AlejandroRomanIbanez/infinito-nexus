@@ -1,25 +1,32 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Collect each running infinito_nexus_* container's /root/inventories into one
-# zip for the debug artifact. Hard fail when nothing is captured: a missing
-# inventory hides a real deploy/path bug rather than being ignored at upload.
-
 : "${APP_ID:?APP_ID is required (matrix.apps)}"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../.." && pwd)"
+cd "${REPO_ROOT}"
+# shellcheck source=scripts/meta/env/load.sh
+source scripts/meta/env/load.sh
+: "${INFINITO_INVENTORY_DIR:?INFINITO_INVENTORY_DIR must be resolved by scripts/meta/env/load.sh}"
 
 out="/tmp/inventory-compose-${APP_ID}.zip"
 stage="/tmp/inventory-compose-${APP_ID}"
-rm -rf "${stage}"
+sudo rm -rf "${stage}" 2>/dev/null || rm -rf "${stage}" 2>/dev/null || true
 mkdir -p "${stage}"
 
-mapfile -t containers < <(docker ps --format '{{.Names}}' | grep '^infinito_nexus_' || true)
-for c in "${containers[@]}"; do
-	docker cp "${c}:/root/inventories" "${stage}/${c}-inventories" 2>/dev/null || true
+shopt -s nullglob
+found=0
+for d in "${INFINITO_INVENTORY_DIR}" "${INFINITO_INVENTORY_DIR}"-*; do
+	[[ -d "${d}" ]] || continue
+	sudo cp -a "${d}" "${stage}/$(basename "${d}")" 2>/dev/null || cp -a "${d}" "${stage}/$(basename "${d}")"
+	found=1
 done
 
-if [[ -d "${stage}" && -n "$(ls -A "${stage}" 2>/dev/null)" ]]; then
-	(cd /tmp && zip -r "${out}" "inventory-compose-${APP_ID}")
-else
-	echo "::error::No inventories captured from compose containers (no /root/inventories in any infinito_nexus_* container)." >&2
+if [[ "${found}" -eq 0 ]]; then
+	echo "::error::No inventory found under ${INFINITO_INVENTORY_DIR}* on the runner." >&2
 	exit 1
 fi
+
+sudo chown -R "$(id -u):$(id -g)" "${stage}" 2>/dev/null || true
+(cd /tmp && zip -r "${out}" "inventory-compose-${APP_ID}")
