@@ -183,13 +183,6 @@
     dest: "{{ _playwright_stage_tests_dir }}/addon-gating.js"
     mode: "0644"
 
-# Workaround: Stage the shared persona-flow helpers.
-# The personas/ tree ships every persona flow runner at the top level
-# (biber.js, admin.js, guest.js, index.js) and every helper under
-# personas/utils/. We use ansible.builtin.copy with `directory_mode`
-# semantics by listing the tree explicitly via fileglob; the recursive
-# variant is achieved by chaining one task per depth level so we keep
-# Ansible-idempotent file copies (no `synchronize`/rsync dependency).
 - name: 📁 Create staging personas directory
   ansible.builtin.file:
     path: "{{ _playwright_stage_tests_dir }}/personas"

@@ -17,7 +17,6 @@ if [[ ! -f "${log}" ]]; then
 	exit 2
 fi
 
-# Caveat: grep -F because MARKER is literal (the brackets are not a regex class).
 if matches="$(grep -nF "${MARKER}" "${log}")"; then
 	echo "::error::Deploy output contains Ansible deprecation warnings (${MARKER}):" >&2
 	printf '%s\n' "${matches}" >&2

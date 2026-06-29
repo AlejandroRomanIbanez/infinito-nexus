@@ -32,8 +32,6 @@ for app_id in "${app_list[@]}"; do
 	echo "=== purge_stacks: removing stack '${entity}' (app ${app_id}) ==="
 	docker exec "${MGR}" docker stack rm "${entity}" >/dev/null 2>&1 || true
 
-	# Caveat: stack rm is async; wait until tasks are gone before clearing the NFS
-	# volume, else the next deploy races a still-mounted writer.
 	for _ in $(seq 1 60); do
 		remaining="$(docker exec "${MGR}" docker stack ps "${entity}" \
 			--format '{{.Name}}' 2>/dev/null | grep -c . || true)"
@@ -44,8 +42,6 @@ for app_id in "${app_list[@]}"; do
 	for vol in "${ctx[@]:1}"; do
 		[ -n "${vol}" ] || continue
 		echo "=== purge_stacks: clearing NFS volume '${vol}' (${DIR_VAR_LIB}/${vol}) ==="
-		# Caveat: tolerate an NFS teardown race: a worker still releasing the bind
-		# mount leaves .nfsXXXX silly-rename files (ENOTEMPTY); warn, do not abort.
 		docker exec "${MGR}" sh -c \
 			"rm -rf '${DIR_VAR_LIB}/${vol}'/* '${DIR_VAR_LIB}/${vol}'/.[!.]* 2>/dev/null; mkdir -p '${DIR_VAR_LIB}/${vol}'" ||
 			echo "warn: clear of NFS volume '${vol}' hit a teardown race, continuing"

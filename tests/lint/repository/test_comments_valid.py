@@ -9,7 +9,7 @@ A comment is VALID only when it is one of:
 * a **marked exception** -- a mid-code comment that flags a real trip-wire
   (warning, pitfall, deliberate non-idiomatic choice, upstream bug, security /
   performance gotcha) whose text starts with one of the exception markers
-  (`Warning`, `Exception`, `Workaround`, `Security`, ...).
+  (`Warning`, `Exception`, `Security`, ...).
 
 Mid-code comments are ONLY allowed as exceptions. Plain narration, banners,
 restating the next line, or neutral `Note:`-style info carry no warning and so
@@ -59,11 +59,9 @@ _MARKERS = (
     "safety",
     "compat",
     "deprecated",
-    "workaround",
     "upstream",
     "invariant",
     "trap",
-    "caveat",
     "limitation",
 )
 _MARKER_RE = re.compile(rf"^[\s*/#>-]*(?:{'|'.join(_MARKERS)})\b", re.IGNORECASE)
@@ -277,9 +275,12 @@ _EXTS = (".py", ".sh", ".yml", ".yaml", ".rb", ".php", ".css")
 
 
 def _git_lines(args: list[str]) -> list[str]:
-    # Caveat: safe.directory='*' is needed because the make-test container mounts the
-    # repo as a different uid, so bare git aborts with dubious-ownership and the linter
-    # would silently scan zero files.
+    """Run a git command and return its stdout lines.
+
+    safe.directory='*' is required because the make-test container mounts the
+    repo as a different uid; bare git would abort with dubious-ownership and the
+    linter would silently scan zero files.
+    """
     try:
         result = subprocess.run(
             ["git", "-c", "safe.directory=*", *args],
@@ -324,7 +325,7 @@ class TestCommentsValid(unittest.TestCase):
                 "file header, a doc comment directly above a class/function/rule, a "
                 "tool directive (noqa/nocheck/...), or a mid-code EXCEPTION that flags "
                 "a real trip-wire (starts with Warning/Exception/"
-                "Workaround/Security/...). Everything else is narration: DELETE it "
+                "Security/...). Everything else is narration: DELETE it "
                 "(move real explanation into the file header or a doc comment):\n"
                 + shown
             )

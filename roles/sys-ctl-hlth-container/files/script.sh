@@ -63,8 +63,6 @@ if command -v container >/dev/null 2>&1; then
                     print $1 " " $2;
                 }
             }')"
-        # Caveat: a completed run-once job sits at 0/N (all tasks Complete) and is healthy,
-        # not non-converged; a crashed/converging service keeps a Failed/Running task and stays flagged.
         swarm_problems=""
         while read -r service_name replicas; do
             [ -z "$service_name" ] && continue
