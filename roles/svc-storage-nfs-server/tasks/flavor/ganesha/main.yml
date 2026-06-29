@@ -1,11 +1,11 @@
 ---
 - name: "📦 Install userspace nfs-ganesha packages"
   ansible.builtin.package:
-    name: "{{ SVC_STORAGE_NFS_SERVER_PACKAGES['ganesha'][ansible_os_family] }}"
+    name: "{{ SVC_STORAGE_NFS_SERVER_PACKAGES['ganesha'][ansible_facts['os_family']] }}"
     state: present
 
-# Debian/Ubuntu ship a broken nfs-ganesha-config.service that wedges the unit
-# start; mask it so the main nfs-ganesha service comes up.
+# Upstream: Debian/Ubuntu ship a broken nfs-ganesha-config.service that wedges
+# the unit start; mask it so the main nfs-ganesha service comes up.
 - name: "🔧 Mask the broken nfs-ganesha-config helper unit"
   ansible.builtin.systemd:
     name: nfs-ganesha-config.service
@@ -30,7 +30,7 @@
 
 - name: "🟢 Enable and start nfs-ganesha"
   ansible.builtin.systemd:
-    name: "{{ SVC_STORAGE_NFS_SERVER_SERVICE['ganesha'][ansible_os_family] }}"
+    name: "{{ SVC_STORAGE_NFS_SERVER_SERVICE['ganesha'][ansible_facts['os_family']] }}"
     enabled: true
     state: started
 

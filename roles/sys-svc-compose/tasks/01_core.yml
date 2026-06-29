@@ -25,7 +25,7 @@
 
 - name: "✅ Ensure compose wrapper system deps (PyYAML)"
   ansible.builtin.package:
-    name: "{{ sys_svc_compose_pyyaml_package[ansible_os_family] }}"
+    name: "{{ sys_svc_compose_pyyaml_package[ansible_facts['os_family']] }}"
     state: present
 
 - name: 📦 Install compose wrapper

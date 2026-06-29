@@ -38,7 +38,7 @@
   delegate_to: "{{ item }}"
   delegate_facts: true
   loop: "{{ groups['svc-swarm-node'] | default([]) }}"
-  when: hostvars[item].ansible_default_ipv4 is not defined
+  when: hostvars[item].ansible_facts.default_ipv4 is not defined
 
 - name: "🧮 Compute swarm-member IPs allowed to mount"
   ansible.builtin.set_fact:
@@ -46,7 +46,7 @@
       {{
         groups['svc-swarm-node']
         | default([])
-        | map('extract', hostvars, ['ansible_default_ipv4', 'address'])
+        | map('extract', hostvars, ['ansible_facts', 'default_ipv4', 'address'])
         | select('defined')
         | list
       }}

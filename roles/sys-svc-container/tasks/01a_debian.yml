@@ -10,13 +10,23 @@
   register: sys_svc_container_docker_repo_setup
   changed_when: "'changed=1' in sys_svc_container_docker_repo_setup.stdout"
 
+# Workaround: deb822_repository would write docker.sources, which apt_repo.sh's
+# sanitize_sources deletes every run (it keeps the canonical .list); write the
+# .list directly instead of the deprecated apt_repository module.
 - name: 🔧 Configure Docker apt repository
-  ansible.builtin.apt_repository:
-    repo: >-
+  ansible.builtin.copy:
+    dest: /etc/apt/sources.list.d/docker.list
+    content: >-
       deb [arch={{ SYS_SVC_CONTAINER_DPKG_ARCH_BY_ANSIBLE_ARCH.get(ansible_facts['architecture'], ansible_facts['architecture']) }}
       signed-by=/etc/apt/keyrings/docker.asc]
       https://download.docker.com/linux/{{ SYS_SVC_CONTAINER_DOCKER_REPO_DISTRO_BY_DISTRIBUTION[ansible_facts['distribution']] }}
       {{ ansible_facts['distribution_release'] }} stable
-    filename: docker
-    state: present
+    owner: root
+    group: root
+    mode: "0644"
+  register: sys_svc_container_docker_repo_file
+
+- name: 🔄 Update apt cache after Docker repo change
+  ansible.builtin.apt:
     update_cache: true
+  when: sys_svc_container_docker_repo_file is changed

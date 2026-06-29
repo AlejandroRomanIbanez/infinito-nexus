@@ -69,7 +69,7 @@
   until: mariadb_cli.rc == 0
 
 - name: "⏳ Wait until MariaDB accepts root credentials (via mysql_db)"
-  community.mysql.mysql_db:
+  ansible.mysql.mysql_db:
     name: "{{ MARIADB_HEALTHCHECK_DB }}"
     state: present
     login_user: root

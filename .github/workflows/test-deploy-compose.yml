@@ -126,6 +126,11 @@ jobs:
           ANSIBLE_LOG_PATH: /tmp/ansible-${{ matrix.apps }}.log
         run: ./scripts/tests/deploy/ci/all.sh 2>&1 | tee "/tmp/ansible-${{ matrix.apps }}.log"
 
+      - name: 🚫 Fail on deprecation warnings
+        if: always()
+        shell: bash
+        run: ./scripts/tests/deploy/ci/assert_no_deprecation_warnings.sh "/tmp/ansible-${{ matrix.apps }}.log"
+
       - name: 📊 Role runtimes
         if: always()
         shell: bash
