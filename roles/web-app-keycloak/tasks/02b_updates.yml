@@ -3,8 +3,20 @@
   vars:
     kc_update_max_attempts: 5
   block:
-    - name: "📂 Load all Keycloak object-update routines for '{{ application_id }}'"
-      include_tasks: 02b_update_routines.yml
+    - name: "🔍 Keycloak updates | Resolve live hosting node (swarm may reschedule)"
+      ansible.builtin.include_tasks: "{{ [playbook_dir, 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml'] | path_join }}"
+      vars:
+        resolve_service_key: "{{ entity_name }}"
+        resolve_output_prefix: KEYCLOAK
+        resolve_compose_cid: "{{ lookup('container_address', application_id, entity_name) }}"
+        resolve_run_host: "{{ STACK_HOST if DEPLOYMENT_MODE == 'swarm' else inventory_hostname }}"
+      when: DEPLOYMENT_MODE == 'swarm'
+
+    - name: "📂 Run Keycloak object-update routines on the freshly resolved node"
+      ansible.builtin.include_tasks:
+        file: 02b_update_routines.yml
+        apply:
+          delegate_to: "{{ KEYCLOAK_HOST_NODE }}"
   rescue:
     - name: "🐳 Keycloak updates | Re-raise failure unchanged in compose (no swarm recovery)"
       ansible.builtin.fail:
