@@ -4,6 +4,6 @@ flags:
     unsafe-inline: true
 whitelist:
   frame-src:
-  - "*"
+    - "*"
   worker-src:
-  - "blob:"
+    - "blob:"

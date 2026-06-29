@@ -1,4 +1,4 @@
 ---
 canonical:
-- file.{{ DOMAIN_PRIMARY }}
+  - file.{{ DOMAIN_PRIMARY }}
 aliases: []

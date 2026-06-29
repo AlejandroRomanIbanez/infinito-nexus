@@ -1,4 +1,4 @@
 ---
 canonical:
-- video.{{ DOMAIN_PRIMARY }}
+  - video.{{ DOMAIN_PRIMARY }}
 aliases: []

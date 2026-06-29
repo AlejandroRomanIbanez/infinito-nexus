@@ -1,4 +1,4 @@
 ---
 canonical:
-- pihole.{{ DOMAIN_PRIMARY }}
+  - pihole.{{ DOMAIN_PRIMARY }}
 aliases: []

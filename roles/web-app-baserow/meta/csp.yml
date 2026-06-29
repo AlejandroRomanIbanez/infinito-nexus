@@ -1,9 +1,9 @@
 ---
 whitelist:
   worker-src:
-  - "blob:"
+    - "blob:"
   connect-src:
-  - https://sentry.com/
+    - https://sentry.com/
 flags:
   script-src-elem:
     unsafe-inline: true

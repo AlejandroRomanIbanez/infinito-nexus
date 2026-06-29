@@ -1,4 +1,4 @@
 ---
 canonical:
-- kix.{{ DOMAIN_PRIMARY }}
+  - kix.{{ DOMAIN_PRIMARY }}
 aliases: []

@@ -1,4 +1,4 @@
 ---
 status_codes:
   default:
-  - 200
+    - 200

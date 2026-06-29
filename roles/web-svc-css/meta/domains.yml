@@ -1,4 +1,4 @@
 ---
 canonical:
-- css.{{ DOMAIN_PRIMARY }}
+  - css.{{ DOMAIN_PRIMARY }}
 aliases: []

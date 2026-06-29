@@ -1,4 +1,4 @@
 ---
 canonical:
-- bridgyfed.{{ DOMAIN_PRIMARY }}
+  - bridgyfed.{{ DOMAIN_PRIMARY }}
 aliases: []

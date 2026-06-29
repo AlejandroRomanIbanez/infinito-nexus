@@ -8,6 +8,6 @@ flags:
     unsafe-inline: true
 whitelist:
   frame-src:
-  - "*"
+    - "*"
   frame-ancestors:
-  - "{{ lookup('tls', 'web-app-keycloak', 'protocols.web') }}://*.{{ DOMAIN_PRIMARY }}"
+    - "{{ lookup('tls', 'web-app-keycloak', 'protocols.web') }}://*.{{ DOMAIN_PRIMARY }}"

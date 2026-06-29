@@ -1,4 +1,4 @@
 ---
 canonical:
-- pgadmin.{{ DOMAIN_PRIMARY }}
+  - pgadmin.{{ DOMAIN_PRIMARY }}
 aliases: []

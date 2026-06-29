@@ -12,6 +12,6 @@ flags:
     unsafe-inline: true
 whitelist:
   script-src-elem:
-  - https://www.googletagmanager.com     # nocheck: url — script CDN, bare domain returns 404 by design
+    - https://www.googletagmanager.com # nocheck: url — script CDN, bare domain returns 404 by design
   script-src:
-  - https://www.googletagmanager.com     # nocheck: url
+    - https://www.googletagmanager.com # nocheck: url

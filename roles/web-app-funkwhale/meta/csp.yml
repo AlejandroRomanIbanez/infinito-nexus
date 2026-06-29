@@ -4,4 +4,4 @@ flags:
     unsafe-inline: true
 whitelist:
   font-src:
-  - "data:"
+    - "data:"

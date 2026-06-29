@@ -1,4 +1,4 @@
 ---
 canonical:
-- next.cloud.{{ DOMAIN_PRIMARY }}
+  - next.cloud.{{ DOMAIN_PRIMARY }}
 aliases: []

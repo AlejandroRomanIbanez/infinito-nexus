@@ -2,13 +2,13 @@
 whitelist:
   connect-src: "{{ lookup('fediwall_active', 'url_bases') }}"
   img-src:
-  - "http:"
-  - "https:"
-  - "data:"
+    - "http:"
+    - "https:"
+    - "data:"
   media-src:
-  - "http:"
-  - "https:"
-  - "data:"
+    - "http:"
+    - "https:"
+    - "data:"
 flags:
   style-src-attr:
     unsafe-inline: true

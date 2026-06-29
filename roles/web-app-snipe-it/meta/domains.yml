@@ -1,4 +1,4 @@
 ---
 canonical:
-- inventory.{{ DOMAIN_PRIMARY }}
+  - inventory.{{ DOMAIN_PRIMARY }}
 aliases: []

@@ -1,4 +1,4 @@
 ---
 canonical:
-- jira.{{ DOMAIN_PRIMARY }}
+  - jira.{{ DOMAIN_PRIMARY }}
 aliases: []

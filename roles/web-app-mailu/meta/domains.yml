@@ -1,4 +1,4 @@
 ---
 canonical:
-- mail.{{ DOMAIN_PRIMARY }}
+  - mail.{{ DOMAIN_PRIMARY }}
 aliases: []

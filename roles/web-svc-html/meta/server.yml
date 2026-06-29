@@ -1,5 +1,5 @@
 ---
 status_codes:
   default:
-  - 403
-  - 200
+    - 403
+    - 200

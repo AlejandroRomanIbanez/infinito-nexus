@@ -4,20 +4,20 @@ flags:
     unsafe-inline: true
 whitelist:
   connect-src:
-  - "{{ lookup('config', 'web-app-bluesky', 'domains.canonical.api') }}"
-  - https://plc.directory
-  - https://bsky.social
-  - https://api.bsky.app
-  - https://public.api.bsky.app
-  - https://events.bsky.app
-  - https://*.workers.bsky.app     # nocheck: url
-  - https://statsigapi.net     # nocheck: url
-  - https://ip.bsky.app     # nocheck: url
-  - https://video.bsky.app
-  - https://bsky.app
-  - wss://bsky.network
-  - wss://*.bsky.app
+    - "{{ lookup('config', 'web-app-bluesky', 'domains.canonical.api') }}"
+    - https://plc.directory
+    - https://bsky.social
+    - https://api.bsky.app
+    - https://public.api.bsky.app
+    - https://events.bsky.app
+    - https://*.workers.bsky.app # nocheck: url
+    - https://statsigapi.net # nocheck: url
+    - https://ip.bsky.app # nocheck: url
+    - https://video.bsky.app
+    - https://bsky.app
+    - wss://bsky.network
+    - wss://*.bsky.app
   media-src:
-  - "blob:"
+    - "blob:"
   worker-src:
-  - "blob:"
+    - "blob:"

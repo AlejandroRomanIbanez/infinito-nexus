@@ -1,4 +1,4 @@
 ---
 canonical:
-- s.{{ DOMAIN_PRIMARY }}
+  - s.{{ DOMAIN_PRIMARY }}
 aliases: []

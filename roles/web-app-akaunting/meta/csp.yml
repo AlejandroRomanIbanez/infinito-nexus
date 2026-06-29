@@ -9,6 +9,6 @@ flags:
     unsafe-inline: true
 whitelist:
   font-src:
-  - "data:"
+    - "data:"
   connect-src:
-  - https://akaunting.com
+    - https://akaunting.com

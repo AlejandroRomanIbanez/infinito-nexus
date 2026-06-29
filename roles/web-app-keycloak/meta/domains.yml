@@ -1,4 +1,4 @@
 ---
 canonical:
-- auth.{{ DOMAIN_PRIMARY }}
+  - auth.{{ DOMAIN_PRIMARY }}
 aliases: []

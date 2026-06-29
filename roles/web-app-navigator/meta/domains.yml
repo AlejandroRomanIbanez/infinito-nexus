@@ -1,4 +1,4 @@
 ---
 canonical:
-- slides.{{ DOMAIN_PRIMARY }}
+  - slides.{{ DOMAIN_PRIMARY }}
 aliases: []

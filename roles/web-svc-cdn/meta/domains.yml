@@ -1,4 +1,4 @@
 ---
 canonical:
-- cdn.{{ DOMAIN_PRIMARY }}
+  - cdn.{{ DOMAIN_PRIMARY }}
 aliases: []

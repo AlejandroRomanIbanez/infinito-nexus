@@ -1,4 +1,4 @@
 ---
 canonical:
-- book.{{ DOMAIN_PRIMARY }}
+  - book.{{ DOMAIN_PRIMARY }}
 aliases: []

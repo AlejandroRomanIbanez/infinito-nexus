@@ -9,7 +9,7 @@ flags:
     unsafe-inline: true
 whitelist:
   connect-src:
-  - "*"
+    - "*"
   script-src-elem:
-  - "{{ lookup('config', 'web-app-matrix', 'domains.canonical.element') }}"
-  - https://cdn.jsdelivr.net
+    - "{{ lookup('config', 'web-app-matrix', 'domains.canonical.element') }}"
+    - https://cdn.jsdelivr.net

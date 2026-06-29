@@ -1,4 +1,4 @@
 ---
 canonical:
-- dashboard.{{ DOMAIN_PRIMARY }}
+  - dashboard.{{ DOMAIN_PRIMARY }}
 aliases: []

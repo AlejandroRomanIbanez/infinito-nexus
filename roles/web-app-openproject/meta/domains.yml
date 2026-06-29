@@ -1,4 +1,4 @@
 ---
 canonical:
-- open.project.{{ DOMAIN_PRIMARY }}
+  - open.project.{{ DOMAIN_PRIMARY }}
 aliases: []

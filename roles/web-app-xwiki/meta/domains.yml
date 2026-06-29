@@ -1,4 +1,4 @@
 ---
 canonical:
-- x.wiki.{{ DOMAIN_PRIMARY }}
+  - x.wiki.{{ DOMAIN_PRIMARY }}
 aliases: []

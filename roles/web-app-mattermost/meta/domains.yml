@@ -1,4 +1,4 @@
 ---
 aliases: []
 canonical:
-- mattermost.{{ DOMAIN_PRIMARY }}
+  - mattermost.{{ DOMAIN_PRIMARY }}

@@ -10,7 +10,7 @@ flags:
     unsafe-eval: true
 whitelist:
   font-src:
-  - "data:"
-  - "blob:"
+    - "data:"
+    - "blob:"
   script-src-elem:
-  - https://cdn.jsdelivr.net
+    - https://cdn.jsdelivr.net

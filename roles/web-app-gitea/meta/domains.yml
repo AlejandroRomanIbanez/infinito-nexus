@@ -1,4 +1,4 @@
 ---
 aliases: []
 canonical:
-- tea.git.{{ DOMAIN_PRIMARY }}
+  - tea.git.{{ DOMAIN_PRIMARY }}

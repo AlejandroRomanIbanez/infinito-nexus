@@ -1,4 +1,4 @@
 ---
 canonical:
-- mig.{{ DOMAIN_PRIMARY }}
+  - mig.{{ DOMAIN_PRIMARY }}
 aliases: []

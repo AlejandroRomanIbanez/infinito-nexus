@@ -1,4 +1,4 @@
 ---
 aliases: []
 canonical:
-- fider.{{ DOMAIN_PRIMARY }}
+  - fider.{{ DOMAIN_PRIMARY }}

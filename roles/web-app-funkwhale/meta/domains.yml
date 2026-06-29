@@ -1,4 +1,4 @@
 ---
 canonical:
-- audio.{{ DOMAIN_PRIMARY }}
+  - audio.{{ DOMAIN_PRIMARY }}
 aliases: []

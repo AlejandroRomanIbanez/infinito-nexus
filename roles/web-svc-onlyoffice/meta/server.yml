@@ -1,5 +1,5 @@
 ---
 status_codes:
   default:
-  - 308
-  - 302
+    - 308
+    - 302

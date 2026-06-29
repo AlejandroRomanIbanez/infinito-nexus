@@ -1,4 +1,4 @@
 ---
 canonical:
-- newsletter.{{ DOMAIN_PRIMARY }}
+  - newsletter.{{ DOMAIN_PRIMARY }}
 aliases: []

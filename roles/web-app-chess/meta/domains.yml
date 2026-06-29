@@ -1,4 +1,4 @@
 ---
 canonical:
-- chess.game.{{ DOMAIN_PRIMARY }}
+  - chess.game.{{ DOMAIN_PRIMARY }}
 aliases: []

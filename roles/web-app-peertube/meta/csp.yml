@@ -8,8 +8,8 @@ flags:
     unsafe-inline: true
 whitelist:
   frame-ancestors:
-  - "*"
+    - "*"
   media-src:
-  - "blob:"
+    - "blob:"
   font-src:
-  - "data:"
+    - "data:"

@@ -1,4 +1,4 @@
 ---
 aliases: []
 canonical:
-- phpmyadmin.{{ DOMAIN_PRIMARY }}
+  - phpmyadmin.{{ DOMAIN_PRIMARY }}

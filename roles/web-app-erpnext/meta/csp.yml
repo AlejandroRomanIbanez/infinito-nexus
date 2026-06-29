@@ -1,8 +1,8 @@
 ---
 whitelist:
   connect-src:
-  - "{{ lookup('domain', 'web-app-erpnext') }}"
-  - "wss://{{ lookup('domain', 'web-app-erpnext') }}"
+    - "{{ lookup('domain', 'web-app-erpnext') }}"
+    - "wss://{{ lookup('domain', 'web-app-erpnext') }}"
 flags:
   script-src:
     unsafe-eval: true

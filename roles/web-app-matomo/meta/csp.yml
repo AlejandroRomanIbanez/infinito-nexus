@@ -1,9 +1,9 @@
 ---
 whitelist:
   script-src-elem:
-  - https://cdn.matomo.cloud     # nocheck: url
+    - https://cdn.matomo.cloud # nocheck: url
   style-src-elem:
-  - https://fonts.googleapis.com     # nocheck: url
+    - https://fonts.googleapis.com # nocheck: url
 flags:
   script-src-attr:
     unsafe-eval: true

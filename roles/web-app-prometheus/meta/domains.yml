@@ -1,4 +1,4 @@
 ---
 aliases: []
 canonical:
-- prometheus.{{ DOMAIN_PRIMARY }}
+  - prometheus.{{ DOMAIN_PRIMARY }}

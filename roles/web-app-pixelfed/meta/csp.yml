@@ -10,4 +10,4 @@ flags:
     unsafe-inline: true
 whitelist:
   frame-ancestors:
-  - "*"
+    - "*"

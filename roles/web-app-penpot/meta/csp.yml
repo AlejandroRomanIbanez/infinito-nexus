@@ -1,12 +1,12 @@
 ---
 whitelist:
   worker-src:
-  - "blob:"
+    - "blob:"
   img-src:
-  - "data:"
-  - "blob:"
+    - "data:"
+    - "blob:"
   font-src:
-  - "data:"
+    - "data:"
 flags:
   script-src-elem:
     unsafe-inline: true
