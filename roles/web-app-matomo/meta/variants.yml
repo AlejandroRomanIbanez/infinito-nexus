@@ -22,6 +22,9 @@
     prometheus:
       enabled: true
       shared: true
+    matomo:
+      tracking:
+        scope: root
 - services:
     css:
       enabled: false

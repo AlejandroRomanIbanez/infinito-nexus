@@ -3,10 +3,11 @@ const { test, expect } = require("@playwright/test");
 const {
   appBaseUrl,
   matomoApiToken,
+  matomoTrackingScope,
   matomoCanonicalDomain,
   matomoTargetRoles,
   hostOf,
-  baseDomainOf,
+  siteNeedleFor,
   setupMatomoPage,
   loginAsAdmin,
 } = require("./_shared");
@@ -47,7 +48,7 @@ test("matomo SitesManager registers a tracker site for every consumer role", asy
 
   const failures = [];
   for (const target of matomoTargetRoles) {
-    const needle = baseDomainOf(target.canonical_domain);
+    const needle = siteNeedleFor(target.canonical_domain);
     if (!needle) {
       failures.push(`${target.id}: empty canonical_domain in MATOMO_TARGET_ROLES_JSON`);
       continue;
@@ -60,7 +61,7 @@ test("matomo SitesManager registers a tracker site for every consumer role", asy
       return candidates.some((c) => hostOf(c) === needle);
     });
     if (!matchingSite) {
-      failures.push(`${target.id}: no Matomo site main_url / alias_urls host equals base domain "${needle}" (canonical "${target.canonical_domain}")`);
+      failures.push(`${target.id}: no Matomo site main_url / alias_urls host equals tracking site domain "${needle}" (scope "${matomoTrackingScope}", canonical "${target.canonical_domain}")`);
     }
   }
 
