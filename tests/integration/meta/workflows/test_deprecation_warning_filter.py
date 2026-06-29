@@ -7,7 +7,14 @@ from pathlib import Path
 
 from . import PROJECT_ROOT
 
-SCRIPT = PROJECT_ROOT / "scripts" / "tests" / "deploy" / "ci" / "assert_no_deprecation_warnings.sh"
+SCRIPT = (
+    PROJECT_ROOT
+    / "scripts"
+    / "tests"
+    / "deploy"
+    / "ci"
+    / "assert_no_deprecation_warnings.sh"
+)
 
 _CLEAN_LOG = """\
 PLAY [deploy] ******************************************************************

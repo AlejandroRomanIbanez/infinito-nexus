@@ -126,7 +126,9 @@ class TestNoDeprecatedAnsiblePatterns(unittest.TestCase):
                 offenders[Path(abs_path)] = issues
 
         if offenders:
-            lines = [f"{sum(len(v) for v in offenders.values())} deprecated Ansible pattern(s):"]
+            lines = [
+                f"{sum(len(v) for v in offenders.values())} deprecated Ansible pattern(s):"
+            ]
             for path, issues in sorted(offenders.items()):
                 lines.append(f"  - {path.relative_to(PROJECT_ROOT)}:")
                 lines.extend(f"      * {i}" for i in issues)
