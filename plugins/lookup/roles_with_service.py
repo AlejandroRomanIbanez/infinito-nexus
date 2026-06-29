@@ -68,9 +68,12 @@ class LookupModule(LookupBase):
             "applications", loader=self._loader, templar=getattr(self, "_templar", None)
         ).run([], variables=vars_)[0]
 
+        scope = str(kwargs.get("scope", "host")).strip().lower()
         gn = vars_.get("group_names")
         deployed = (
-            {str(g) for g in gn} if isinstance(gn, (list, tuple, set)) and gn else None
+            {str(g) for g in gn}
+            if scope != "all" and isinstance(gn, (list, tuple, set)) and gn
+            else None
         )
 
         tls_lookup = lookup_loader.get(
@@ -104,9 +107,6 @@ class LookupModule(LookupBase):
                 continue
             resolved = tls_lookup.run([str(role_id), "url.base"], variables=variables)
             canonical_url = str(resolved[0]).rstrip("/")
-            # iframe is a per-card embedding capability distinct from "enabled":
-            # SPAs that force a top-window redirect (e.g. Keycloak admin console)
-            # set it false so the tile opens in a new tab. Defaults to enabled.
             iframe = (
                 bool(block["iframe"])
                 if "iframe" in block

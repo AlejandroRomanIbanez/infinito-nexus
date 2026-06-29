@@ -43,7 +43,7 @@ class RolesWithServiceLookupTests(unittest.TestCase):
         lm._loader = mock.MagicMock()
         return lm
 
-    def _run(self, terms, applications: dict, vars_: dict | None = None):
+    def _run(self, terms, applications: dict, vars_: dict | None = None, **kwargs):
         """Run the lookup with the ``applications`` and ``tls`` sub-lookups
         patched to stay hermetic. The stubbed tls resolves
         ``[role_id, "url.base"]`` to a deterministic URL so the lookup
@@ -63,7 +63,7 @@ class RolesWithServiceLookupTests(unittest.TestCase):
             return _StubApplications() if name == "applications" else _StubTls()
 
         with patch.object(self.mod.lookup_loader, "get", side_effect=_dispatch):
-            return lookup.run(terms, variables=vars_ or {})
+            return lookup.run(terms, variables=vars_ or {}, **kwargs)
 
     def test_zero_terms_raises(self):
         with self.assertRaises(AnsibleError):
@@ -336,7 +336,6 @@ class RolesWithServiceLookupTests(unittest.TestCase):
                 "domains": {"canonical": ["", "foo.example.com"]},
             },
         }
-        # First entry is empty string -> falsy -> skipped per the helper.
         self.assertEqual(self._run(["dashboard"], applications), [[]])
 
     def test_unrendered_jinja_strings_are_treated_as_truthy(self):
@@ -388,6 +387,26 @@ class RolesWithServiceLookupTests(unittest.TestCase):
             ["logout"], applications, vars_={"group_names": ["web-app-foo"]}
         )[0]
         self.assertEqual([r["id"] for r in result], ["web-app-foo"])
+
+    def test_scope_all_ignores_group_names(self):
+        applications = {
+            "web-svc-logout": {
+                "services": {"matomo": {"enabled": True, "shared": True}},
+                "domains": {"canonical": ["logout.example.com"]},
+            },
+        }
+        gn = {"group_names": ["web-app-matomo"]}
+        self.assertEqual(
+            [r["id"] for r in self._run(["matomo"], applications, vars_=gn)[0]],
+            [],
+            "default host scope drops a consumer absent from this host's group_names",
+        )
+        all_scoped = self._run(["matomo"], applications, vars_=gn, scope="all")[0]
+        self.assertEqual(
+            [r["id"] for r in all_scoped],
+            ["web-svc-logout"],
+            "scope='all' returns deployment-scoped consumers regardless of group_names",
+        )
 
     def test_self_provider_is_excluded(self):
         applications = {

@@ -2,7 +2,7 @@
 - name: "🔎 Check if site {{ domain }} is already registered at Matomo"
   uri_retry:
     url: "{{ matomo_index_php_url }}?module=API&method=SitesManager.getSitesIdFromSiteUrl&url={{ lookup('tls', application_id, 'protocols.web') }}://{{ base_domain
-      }}&format=json&token_auth={{ lookup('users', 'administrator').tokens['web-app-matomo'] }}"
+      }}&format=json&token_auth={{ matomo_effective_token }}"
     method: GET
     return_content: true
     status_code: 200

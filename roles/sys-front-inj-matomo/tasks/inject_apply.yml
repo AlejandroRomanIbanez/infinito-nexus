@@ -14,7 +14,7 @@
     url: "{{ matomo_index_php_url }}"
     method: POST
     body: "module=API&method=SitesManager.addSite&siteName={{ base_domain }}&urls={{ lookup('tls', application_id, 'protocols.web') }}://{{ base_domain }}&format=json&token_auth={{
-      lookup('users', 'administrator').tokens['web-app-matomo'] }}"
+      matomo_effective_token }}"
     body_format: form-urlencoded
     status_code: 200
     return_content: true
