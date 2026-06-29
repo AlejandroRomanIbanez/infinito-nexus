@@ -1,6 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# Collect each running infinito_nexus_* container's /root/inventories into one
+# zip for the debug artifact. Hard fail when nothing is captured: a missing
+# inventory hides a real deploy/path bug rather than being ignored at upload.
+
 : "${APP_ID:?APP_ID is required (matrix.apps)}"
 
 out="/tmp/inventory-compose-${APP_ID}.zip"
@@ -16,5 +20,6 @@ done
 if [[ -d "${stage}" && -n "$(ls -A "${stage}" 2>/dev/null)" ]]; then
 	(cd /tmp && zip -r "${out}" "inventory-compose-${APP_ID}")
 else
-	echo "No inventories captured from compose containers"
+	echo "::error::No inventories captured from compose containers (no /root/inventories in any infinito_nexus_* container)." >&2
+	exit 1
 fi
