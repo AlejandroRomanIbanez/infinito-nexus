@@ -48,6 +48,9 @@
   changed_when: semaphore_oidc_admin.rc == 0
   failed_when: >-
     semaphore_oidc_admin.rc != 0
+    and 'duplicate key' not in (semaphore_oidc_admin.stderr | default('') | lower)
     and 'exist' not in (semaphore_oidc_admin.stderr | default('') | lower)
     and 'exist' not in (semaphore_oidc_admin.stdout | default('') | lower)
-  when: SEMAPHORE_OIDC_ENABLED | bool
+  when:
+    - SEMAPHORE_OIDC_ENABLED | bool
+    - SEMAPHORE_OIDC_ADMIN_LOGIN not in (semaphore_user_list.stdout_lines | default([]))
