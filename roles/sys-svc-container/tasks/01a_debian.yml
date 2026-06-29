@@ -10,9 +10,6 @@
   register: sys_svc_container_docker_repo_setup
   changed_when: "'changed=1' in sys_svc_container_docker_repo_setup.stdout"
 
-# Workaround: deb822_repository would write docker.sources, which apt_repo.sh's
-# sanitize_sources deletes every run (it keeps the canonical .list); write the
-# .list directly instead of the deprecated apt_repository module.
 - name: 🔧 Configure Docker apt repository
   ansible.builtin.copy:
     dest: /etc/apt/sources.list.d/docker.list
