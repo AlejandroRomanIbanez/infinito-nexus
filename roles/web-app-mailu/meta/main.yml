@@ -1,8 +1,8 @@
 ---
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: Revolutionize your email communications with Mailu, a secure and flexible mail server solution that integrates comprehensive features for
-    managing digital correspondence reliably.
+  description: "DEPRECATED — superseded by web-app-stalwart. Mailu, a secure and flexible mail server solution that integrates comprehensive features for
+    managing digital correspondence reliably. Retained for rollback only; not deployed by default."
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

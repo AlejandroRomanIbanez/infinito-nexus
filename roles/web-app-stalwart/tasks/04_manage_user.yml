@@ -1,0 +1,28 @@
+---
+# Create the account (password = a Password credential keyed by index "0").
+# Idempotent: re-runs return HTTP 200 with notCreated.
+- name: "Create Stalwart account '{{ stalwart_user_name }}@{{ STALWART_DOMAIN }}'"
+  include_tasks: jmap_call.yml
+  vars:
+    stalwart_jmap_body: >-
+      {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
+          'methodCalls': [['x:Account/set', {'create': {'a': {
+            '@type': 'User',
+            'name': stalwart_user_name,
+            'domainId': stalwart_domain_id,
+            'description': (lookup('users', stalwart_user_key).email | default(stalwart_user_name)),
+            'credentials': {'0': {'@type': 'Password', 'secret': stalwart_user_password}}
+          }}}, 'c0']]} | to_json }}
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+# The mail-bot SMTP token is the account password.
+- name: "Persist Stalwart submission credential for mail-bot '{{ stalwart_user_name }}'"
+  ansible.builtin.include_role:
+    name: sys-token-store
+    tasks_from: write.yml
+  vars:
+    sys_token_store_user_key: "{{ stalwart_user_key }}"
+    sys_token_store_app: "{{ application_id }}"
+    sys_token_store_token: "{{ stalwart_user_password }}"
+  when: "'mail-bot' in stalwart_user_roles"
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"

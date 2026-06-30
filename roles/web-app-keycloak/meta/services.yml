@@ -23,8 +23,8 @@ matomo:
   shared: "{{ 'web-app-matomo' in group_names }}"
 email:
   bond: 1
-  enabled: "{{ 'web-app-mailu' in group_names }}"
-  shared: "{{ 'web-app-mailu' in group_names }}"
+  enabled: "{{ 'web-app-stalwart' in group_names }}"
+  shared: "{{ 'web-app-stalwart' in group_names }}"
 # nocheck: playwright-service-flag — self-provider
 keycloak:
   bond: 1
@@ -57,7 +57,7 @@ keycloak:
       http: 8032
   run_after:
     - web-app-matomo
-    - web-app-mailu
+    - web-app-stalwart
   lifecycle: beta
 # Per-consumer SSO-proxy sidecar. Rendered via tasks/sso_proxy.yml
 # whenever a consumer role's `services.sso.flavor == 'oauth2'`.

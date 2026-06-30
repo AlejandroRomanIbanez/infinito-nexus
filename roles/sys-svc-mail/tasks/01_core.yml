@@ -6,17 +6,30 @@
     name: "sys-hostname"
   when: not (run_once_sys_hostname | default(false) | bool)
 
-- name: "Assert Mailu was preloaded before configuring external mail"
+- name: "Assert Stalwart was preloaded before configuring external mail"
   ansible.builtin.assert:
     that:
-      - run_once_web_app_mailu is defined
-      - (lookup('users', 'no-reply').tokens | default({})).get('web-app-mailu', '') | length > 0
+      - run_once_web_app_stalwart is defined
     fail_msg: >-
-      Mailu must be preloaded by sys-service-loader before sys-svc-mail runs.
-      Missing run_once_web_app_mailu or missing users['no-reply'].tokens['web-app-mailu']
-      indicates that a service was loaded outside the constructor service-loader path.
+      Stalwart must be preloaded by sys-service-loader before sys-svc-mail runs.
+      Missing run_once_web_app_stalwart indicates that a service was loaded
+      outside the constructor service-loader path.
   when:
-    - "'web-app-mailu' in group_names"
+    - "'web-app-stalwart' in group_names"
+
+# The no-reply submission token is created during Stalwart provisioning. On
+# local/CI deploys the mail domain uses a reserved TLD (.example) which Stalwart
+# rejects, so provisioning is skipped and the token is absent — warn instead of
+# failing the whole deploy.
+- name: "Warn if the Stalwart no-reply submission token is missing"
+  ansible.builtin.debug:
+    msg: >-
+      users['no-reply'].tokens['web-app-stalwart'] is empty — outbound mail via
+      Stalwart will not authenticate until the no-reply account is provisioned
+      (expected on local/CI reserved-TLD domains).
+  when:
+    - "'web-app-stalwart' in group_names"
+    - (lookup('users', 'no-reply').tokens | default({})).get('web-app-stalwart', '') | length == 0
 
 - name: Setup emails via localhost
   include_role:

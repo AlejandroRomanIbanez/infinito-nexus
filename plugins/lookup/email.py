@@ -113,7 +113,7 @@ class LookupModule(LookupBase):
             return "30"
         if short_key == "external":
             group_names = variables.get("group_names") or []
-            return bool("web-app-mailu" in group_names)
+            return bool("web-app-stalwart" in group_names)
         if short_key == "environment":
             external = _as_bool(resolved.get("external"))
             tls_enabled = _as_bool(variables.get("TLS_ENABLED"))
@@ -136,7 +136,7 @@ class LookupModule(LookupBase):
             env = resolved.get("environment")
             if env in ("external_container", "localhost", "localhost_container"):
                 return "localhost"
-            return self._lookup_mailu_domain(variables)
+            return self._lookup_mail_provider_domain(variables)
         if short_key == "auth":
             env = resolved.get("environment")
             if env in ("external_container", "localhost"):
@@ -163,15 +163,15 @@ class LookupModule(LookupBase):
             if isinstance(no_reply, dict):
                 tokens = no_reply.get("tokens") or {}
                 if isinstance(tokens, dict):
-                    return tokens.get("web-app-mailu", "") or ""
+                    return tokens.get("web-app-stalwart", "") or ""
             return ""
         raise AnsibleError(f"email: unknown key {short_key!r}")
 
-    def _lookup_mailu_domain(self, variables: dict[str, Any]) -> Any:
+    def _lookup_mail_provider_domain(self, variables: dict[str, Any]) -> Any:
         domain_lookup = DomainLookup()
         domain_lookup._templar = getattr(self, "_templar", None)
         try:
-            return domain_lookup.run(["web-app-mailu"], variables=variables)[0]
+            return domain_lookup.run(["web-app-stalwart"], variables=variables)[0]
         except Exception:
             return "localhost"
 

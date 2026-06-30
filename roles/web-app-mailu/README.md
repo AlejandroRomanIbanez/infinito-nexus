@@ -1,5 +1,10 @@
 # Mailu
 
+> **⚠️ DEPRECATED.** This role is superseded by [`web-app-stalwart`](../web-app-stalwart/),
+> which is now the platform's email provider. `web-app-mailu` is retained for
+> rollback only and is **not deployed by default**. New deployments and the mail
+> abstraction (`plugins/lookup/email.py`, `sys-svc-mail`) target Stalwart.
+
 ## Description
 
 Revolutionize your email communications with Mailu, a secure and flexible mail server solution that integrates comprehensive features like robust SMTP/IMAP support, advanced spam filtering, DKIM signing, and seamless webmail access. With its modern design and performance-oriented architecture, Mailu empowers you to manage digital correspondence with efficiency and reliability.

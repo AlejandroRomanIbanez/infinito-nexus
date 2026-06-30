@@ -25,7 +25,8 @@ mailu:
   bond: 1
   enabled: true
   shared: true
-  provides: email
+  # DEPRECATED — the `email` provider slot now belongs to web-app-stalwart.
+  # Mailu no longer claims `provides: email`; retained for rollback only.
   version: "2024.06"
   name: mailu
   min_storage: 20GB
@@ -35,7 +36,8 @@ mailu:
       http: 8007
   run_after:
     - web-app-matomo
-  lifecycle: beta
+  # DEPRECATED — superseded by web-app-stalwart; retained for rollback only.
+  lifecycle: unsupported
   cpus: "1.0"
   mem_reservation: 512m
   mem_limit: 2g

@@ -3,9 +3,10 @@ status_codes:
   default:
     - 301
     - 200
+# DEPRECATED — web-app-stalwart owns `mail.`; Mailu keeps a legacy domain for rollback.
 domains:
   canonical:
-    - mail.{{ DOMAIN_PRIMARY }}
+    - legacy-mail.{{ DOMAIN_PRIMARY }}
   aliases: []
 csp:
   flags:

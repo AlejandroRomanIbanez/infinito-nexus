@@ -1,0 +1,33 @@
+---
+galaxy_info:
+  author: Alejandro Roman
+  description: Run a secure, all-in-one mail and collaboration server with Stalwart — SMTP, IMAP, JMAP, POP3, ManageSieve, CalDAV and CardDAV with built-in
+    spam filtering, delivered from a single hardened service.
+  license: Infinito.Nexus Community License (Non-Commercial)
+  company: |
+    Kevin Veen-Birkenbach
+    https://www.veen.world
+  galaxy_tags:
+    - stalwart
+    - docker
+    - email
+    - mail server
+    - self-hosted
+  issue_tracker_url: https://s.infinito.nexus/issues
+  min_ansible_version: "2.9"
+  platforms:
+    - name: ArchLinux
+      versions:
+        - all
+    - name: Debian
+      versions:
+        - all
+    - name: EL
+      versions:
+        - all
+    - name: Fedora
+      versions:
+        - all
+    - name: Ubuntu
+      versions:
+        - all

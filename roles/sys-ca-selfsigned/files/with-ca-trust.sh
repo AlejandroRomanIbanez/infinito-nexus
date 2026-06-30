@@ -37,11 +37,26 @@ log "Sanitized trust name: $name"
 
 installed=0
 
-# Always provide env-based trust hints as a fallback (works for many TLS stacks)
-export SSL_CERT_FILE="$CA_TRUST_CERT"
-export REQUESTS_CA_BUNDLE="$CA_TRUST_CERT"
-export CURL_CA_BUNDLE="$CA_TRUST_CERT"
-# Optional (harmless if unused; helps Node-based tools if any)
+# Env-based trust fallback. Build a COMBINED bundle (system CAs + our CA) so the
+# env vars don't break public-HTTPS validation; fall back to our CA only if no
+# system bundle is found.
+ca_bundle="$CA_TRUST_CERT"
+combined="/tmp/with-ca-trust-combined.crt"
+for sys_bundle in \
+  /etc/ssl/certs/ca-certificates.crt \
+  /etc/pki/tls/certs/ca-bundle.crt \
+  /etc/ssl/cert.pem; do
+  if [ -r "$sys_bundle" ] && cat "$sys_bundle" "$CA_TRUST_CERT" > "$combined" 2>/dev/null; then
+    ca_bundle="$combined"
+    log "Combined system CA bundle ($sys_bundle) with ${name} -> $combined"
+    break
+  fi
+done
+
+export SSL_CERT_FILE="$ca_bundle"
+export REQUESTS_CA_BUNDLE="$ca_bundle"
+export CURL_CA_BUNDLE="$ca_bundle"
+# Node already ships public roots; it only needs our CA appended.
 export NODE_EXTRA_CA_CERTS="$CA_TRUST_CERT"
 
 install_anchor() {

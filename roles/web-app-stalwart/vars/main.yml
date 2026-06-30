@@ -1,0 +1,49 @@
+---
+# General
+application_id: "web-app-stalwart"
+http_port: "{{ lookup('config', application_id, 'services.stalwart.ports.local.http') }}"
+
+# Database
+database_password: "{{ lookup('config', application_id, 'credentials.database_password') }}"
+
+# Host directories
+STALWART_INSTANCE_DIR: "{{ lookup('container', application_id, 'directories.instance') }}"
+STALWART_VOLUMES_DIR: "{{ lookup('container', application_id, 'directories.volumes') }}"
+STALWART_CONFIG_DIR: "{{ [ STALWART_VOLUMES_DIR, 'etc' ] | path_join }}"
+# JSON bootstrap (data store); everything else lives in the database.
+STALWART_CONFIG_FILE: "{{ [ STALWART_CONFIG_DIR, 'config.json' ] | path_join }}"
+
+# Management endpoints on the internal HTTP listener (bypass the public proxy).
+STALWART_API_BASE_URL: "http://localhost:8080/api"
+STALWART_JMAP_URL: "http://localhost:8080/jmap/"
+
+# Domains
+STALWART_DOMAIN: "{{ lookup('config', application_id, 'services.stalwart.domain') }}"
+STALWART_DOMAIN_DNS_ZONE: "{{ STALWART_DOMAIN | to_zone }}"
+STALWART_EMAIL: "{{ lookup('email', application_id) }}"
+STALWART_HOSTNAME: "{{ STALWART_EMAIL.host }}"
+STALWART_HOSTNAME_DNS_ZONE: "{{ STALWART_HOSTNAME | to_zone }}"
+
+# Docker
+STALWART_VERSION: "{{ lookup('config', application_id, 'services.stalwart.version') }}"
+STALWART_IMAGE: "{{ lookup('config', application_id, 'services.stalwart.image') }}"
+STALWART_CONTAINER: "{{ lookup('config', application_id, 'services.stalwart.name') }}"
+STALWART_ANTIVIRUS_IMAGE: "{{ lookup('config', application_id, 'services.antivirus.image') }}"
+STALWART_ANTIVIRUS_VERSION: "{{ lookup('config', application_id, 'services.antivirus.version') }}"
+STALWART_WEBMAIL_IMAGE: "{{ lookup('config', application_id, 'services.webmail.image') }}"
+STALWART_WEBMAIL_VERSION: "{{ lookup('config', application_id, 'services.webmail.version') }}"
+
+# Volumes
+STALWART_DATA_VOLUME: "stalwart_data"
+STALWART_CLAMAV_VOLUME: "stalwart_clamav_data"
+STALWART_WEBMAIL_VOLUME: "stalwart_webmail_data"
+
+# Network
+STALWART_IP4_PUBLIC: "{{ DOCKER_PUBLIC_BIND_HOST }}"
+
+# Credentials
+STALWART_ADMIN_USER: "admin"
+STALWART_ADMIN_PASSWORD: "{{ lookup('config', application_id, 'credentials.admin_password') }}"
+
+# DMARC report address (DKIM selector + key are read at runtime in 05_read_dkim.yml).
+STALWART_DMARC_RUF: "{{ lookup('config', application_id, 'users.administrator.email') }}"
