@@ -7,7 +7,16 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)/scripts/meta/e
 # act's embedded resolver intermittently returns EAI_AGAIN.
 swarm_node_dns=(--dns 1.1.1.1 --dns 8.8.8.8) # nocheck: hardcoded-dns-resolver
 
-# /tmp:exec: Docker's default tmpfs is noexec; dpkg-buildpackage execve()s debian/rules.
+pull_attempts=3
+for attempt in $(seq 1 "${pull_attempts}"); do
+	docker pull jrei/systemd-ubuntu:24.04 && break
+	if [ "${attempt}" -eq "${pull_attempts}" ]; then
+		echo "FAILURE: docker pull jrei/systemd-ubuntu:24.04 failed after ${pull_attempts} attempts" >&2
+		exit 1
+	fi
+	sleep $((attempt * 5))
+done
+
 for node in "${MGR}" "${WRK1}" "${WRK2}"; do
 	docker run -d --name "${node}" \
 		--label "${INFINITO_SWARM_TEST_LABEL}" \
@@ -51,7 +60,6 @@ for node in "${MGR}" "${WRK1}" "${WRK2}"; do
 done
 
 HOSTS_EXTRA="$(python3 -m utils.tests.swarm.write_hosts_entries)"
-# Workers excluded: a "127.0.0.1 <domain>" entry would shadow the dnsmasq -> MGR_IP below.
 for node in "${MGR}" "${NFS_SERVER}"; do
 	docker exec -i "${node}" sh -c 'cat >> /etc/hosts' <<<"${HOSTS_EXTRA}"
 done
@@ -62,7 +70,6 @@ docker exec "${MGR}" systemctl mask systemd-resolved 2>/dev/null || true
 docker exec "${MGR}" sh -c 'echo "nameserver 1.1.1.1" > /etc/resolv.conf' # nocheck: hardcoded-dns-resolver
 docker exec "${MGR}" apt-get update -qq
 docker exec "${MGR}" apt-get install -y -qq dnsmasq
-# bind-dynamic: pick up docker0 when the Ansible-installed dockerd creates it later.
 dnsmasq_conf="bind-dynamic
 no-resolv
 server=/${MGR}/${WRK1}/${WRK2}/${NFS_SERVER}/127.0.0.11 # nocheck: hardcoded-dns-resolver
@@ -81,7 +88,6 @@ docker exec "${MGR}" sh -c "
 	exit 1
 "
 
-# openresty is mode:host + manager-pinned, so workers resolve the domain to the manager IP (not their dead 127.0.0.1).
 MGR_IP=$(docker inspect "${MGR}" \
 	--format "{{(index .NetworkSettings.Networks \"${SWARM_LAB_NETWORK}\").IPAddress}}")
 : "${MGR_IP:?Failed to capture ${MGR} IP on ${SWARM_LAB_NETWORK}}"
@@ -110,10 +116,6 @@ for node in "${WRK1}" "${WRK2}"; do
 	"
 done
 
-# Daemon DNS for containers spawned by the inner daemon; outer --dns is
-# clobbered by systemd-resolved inside DinD.
-# bip pins mgr-01's docker0 to the known IP so DinD-spawned containers
-# reach dnsmasq via the inner bridge gateway 172.17.0.1.
 # nocheck: hardcoded-dns-resolver
 mgr_daemon_dns_json='{"dns": ["1.1.1.1", "8.8.8.8"], "bip": "172.17.0.1/16"}'
 docker exec "${MGR}" mkdir -p /etc/docker

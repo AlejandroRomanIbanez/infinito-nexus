@@ -10,10 +10,24 @@ source "${_REPO_ROOT}/scripts/meta/env/load.sh"
 ENTITY="$(PYTHONPATH="${_REPO_ROOT}" "${PYTHON}" -c "from utils.roles.entity_name import get_entity_name; print(get_entity_name('${APP_ID}'))")"
 
 STACK_NAME="${ENTITY}"
-SERVICE_NAME="${STACK_NAME}_${ENTITY}"
 CUSTOM_IMAGE_REPO="${ENTITY}_custom"
 
 ROLE_DIR="${_REPO_ROOT}/roles/${APP_ID}"
+
+PRIMARY_SERVICE_KEY="$(PYTHONPATH="${_REPO_ROOT}" "${PYTHON}" -c "
+import os, yaml
+key = '${ENTITY}'
+svc = os.path.join('${ROLE_DIR}', 'meta', 'services.yml')
+if os.path.exists(svc):
+    data = yaml.safe_load(open(svc)) or {}
+    entity = data.get('${ENTITY}') if isinstance(data, dict) else None
+    if isinstance(entity, dict):
+        k = (entity.get('proxy') or {}).get('service_key')
+        if isinstance(k, str) and k:
+            key = k
+print(key)
+")"
+SERVICE_NAME="${STACK_NAME}_${PRIMARY_SERVICE_KEY}"
 
 DB_DEP=none
 if [ -f "${ROLE_DIR}/meta/services.yml" ]; then
@@ -85,7 +99,7 @@ fi
 
 PRIMARY_NFS_VOLUME="$(printf '%s\n' "${NFS_VOLUMES}" | head -n1)"
 
-export APP_ID ENTITY STACK_NAME SERVICE_NAME CUSTOM_IMAGE_REPO DB_DEP NFS_VOLUMES PRIMARY_NFS_VOLUME DEFAULT_PLACEMENT_MANAGER HAS_SWARM_SERVICE PROBE_PORT
+export APP_ID ENTITY STACK_NAME SERVICE_NAME PRIMARY_SERVICE_KEY CUSTOM_IMAGE_REPO DB_DEP NFS_VOLUMES PRIMARY_NFS_VOLUME DEFAULT_PLACEMENT_MANAGER HAS_SWARM_SERVICE PROBE_PORT
 
 # Exits the calling chaos step (09/10/11) with success when the role is
 # manager-pinned (no worker task exists to drain).

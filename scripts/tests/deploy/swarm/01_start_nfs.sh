@@ -7,6 +7,17 @@ set -euo pipefail
 bash "$(dirname "$0")/unmount_nfs_mounts.sh" "${NFS_SERVER}" >/dev/null 2>&1 || true
 docker rm -f "${NFS_SERVER}" >/dev/null 2>&1 || true
 mkdir -p "${RUNNER_TEMP}/nfs-export"
+
+pull_attempts=3
+for attempt in $(seq 1 "${pull_attempts}"); do
+	docker pull jrei/systemd-ubuntu:24.04 && break
+	if [ "${attempt}" -eq "${pull_attempts}" ]; then
+		echo "FAILURE: docker pull jrei/systemd-ubuntu:24.04 failed after ${pull_attempts} attempts" >&2
+		exit 1
+	fi
+	sleep $((attempt * 5))
+done
+
 docker run -d --name "${NFS_SERVER}" \
 	--label "${INFINITO_SWARM_TEST_LABEL}" \
 	--network "${SWARM_LAB_NETWORK}" \

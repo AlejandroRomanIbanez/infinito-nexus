@@ -70,12 +70,12 @@ docker exec "${NFS_SERVER}" cat /etc/exports
 docker exec "${NFS_SERVER}" exportfs -v
 docker exec "${NFS_SERVER}" cat /etc/ganesha/ganesha.conf
 docker exec "${NFS_SERVER}" ls -la "${NFS_EXPORT_BASE:-/srv/nfs}"
-docker exec "${NFS_SERVER}" ls -la "${NFS_EXPORT_BASE:-/srv/nfs}/infinito-state"
+docker exec "${NFS_SERVER}" ls -la "${NFS_STATE_PATH:-/srv/nfs/infinito-state}"
 docker exec "${NFS_SERVER}" systemctl --no-pager --full status nfs-server nfs-ganesha 2>&1 | head -60
 
 sep "nfs-server: kernel nfsd mount boundary + v4 pseudo-root (pins whether the self-bind + cross took)"
 docker exec "${NFS_SERVER}" findmnt -R "${NFS_EXPORT_BASE:-/srv/nfs}" 2>&1
-docker exec "${NFS_SERVER}" mountpoint "${NFS_EXPORT_BASE:-/srv/nfs}/infinito-state" 2>&1
+docker exec "${NFS_SERVER}" mountpoint "${NFS_STATE_PATH:-/srv/nfs/infinito-state}" 2>&1
 docker exec "${NFS_SERVER}" cat /proc/fs/nfsd/exports 2>&1
 docker exec "${NFS_SERVER}" cat /proc/fs/nfsd/versions 2>&1
 docker exec "${NFS_SERVER}" sh -c "journalctl -u nfs-server -u nfs-ganesha --no-pager 2>&1 | tail -50"
