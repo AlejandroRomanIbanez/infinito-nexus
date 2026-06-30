@@ -30,7 +30,7 @@
       --constraint node.role==manager \
       --env-file {{ lookup('container', application_id, 'files.env') | quote }} \
       --network {{ application_id | get_entity_name | quote }} \
-      --network {{ lookup('database', application_id, 'id') | get_entity_name | quote }} \
+      {{ KEYCLOAK_DB_NETWORK_ARG }} \
       --mount type=bind,source={{ KEYCLOAK_REALM_IMPORT_DIR_HOST | quote }},target={{ KEYCLOAK_REALM_IMPORT_DIR_DOCKER | quote }},readonly \
       --entrypoint /opt/keycloak/bin/kc.sh \
       {{ KEYCLOAK_IMAGE }}:{{ KEYCLOAK_VERSION }} \
@@ -61,8 +61,7 @@
 
 - name: "📏 Keycloak realm-import | Scale keycloak back to nominal replicas"
   ansible.builtin.shell: >
-    container service update --detach --replicas
-    {{ groups[application_id] | default([inventory_hostname]) | length }}
+    container service update --detach --replicas {{ KEYCLOAK_REPLICAS }}
     {{ lookup('container_service', application_id, entity_name) | quote }}
   changed_when: true
   delegate_to: "{{ STACK_HOST }}"
@@ -71,7 +70,7 @@
   ansible.builtin.shell: |
     set -euo pipefail
     SVC={{ lookup('container_service', application_id, entity_name) | quote }}
-    WANT={{ groups[application_id] | default([inventory_hostname]) | length }}/{{ groups[application_id] | default([inventory_hostname]) | length }}
+    WANT={{ KEYCLOAK_REPLICAS_WANT }}
     got="$(container service ls --filter name="$SVC" --format '{{ "{{.Replicas}}" }}' | head -1)"
     test "$got" = "$WANT"
   register: kc_replicas_converged
@@ -85,7 +84,7 @@
   ansible.builtin.script: "{{ role_path }}/files/wait_replicas_stable.sh"
   environment:
     SVC: "{{ lookup('container_service', application_id, entity_name) }}"
-    WANT: "{{ groups[application_id] | default([inventory_hostname]) | length }}/{{ groups[application_id] | default([inventory_hostname]) | length }}"
+    WANT: "{{ KEYCLOAK_REPLICAS_WANT }}"
   register: kc_replicas_stable
   changed_when: false
   retries: 10

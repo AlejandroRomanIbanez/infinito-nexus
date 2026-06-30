@@ -84,6 +84,9 @@ KEYCLOAK_CID_RESOLVE_CMD: >-
   --format '{{ "{{.ID}}" }}' | head -1
 KEYCLOAK_IMAGE: "{{ lookup('config', application_id, 'services.keycloak.image') }}"
 KEYCLOAK_VERSION: "{{ lookup('config', application_id, 'services.keycloak.version') }}"
+KEYCLOAK_REPLICAS: "{{ groups[application_id] | length }}"
+KEYCLOAK_REPLICAS_WANT: "{{ KEYCLOAK_REPLICAS }}/{{ KEYCLOAK_REPLICAS }}"
+KEYCLOAK_DB_NETWORK_ARG: "{% if lookup('database', application_id, 'shared') | bool %}--network {{ lookup('database', application_id, 'network') | quote }}{% endif %}"
 
 KEYCLOAK_REDIRECT_FEATURES: ["services.sso.enabled", "services.sso.enabled"]
 KEYCLOAK_FRONTCHANNEL_LOGOUT_URL: "{{ lookup('tls', 'web-svc-logout', 'url.base') }}"
