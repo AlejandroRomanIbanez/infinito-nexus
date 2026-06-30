@@ -7,9 +7,6 @@ source "${_REPO_ROOT}/scripts/meta/env/load.sh"
 
 : "${APP_ID:?APP_ID required}"
 
-# Resolve the entity exactly as the deploy does (longest category-path strip via
-# roles/categories.yml) so SERVICE_NAME matches the stack the deploy creates; a
-# hand-rolled prefix strip diverges for svc-dns-/svc-registry-/... roles.
 ENTITY="$(PYTHONPATH="${_REPO_ROOT}" "${PYTHON}" -c "from utils.roles.entity_name import get_entity_name; print(get_entity_name('${APP_ID}'))")"
 
 STACK_NAME="${ENTITY}"
@@ -27,17 +24,12 @@ if [ -f "${ROLE_DIR}/meta/services.yml" ]; then
 	fi
 fi
 
-# Manager-pinned roles get no worker replica, so the drain-a-worker reschedule
-# chaos (09-11) cannot apply to them.
 DEFAULT_PLACEMENT_MANAGER=false
 if [ -f "${ROLE_DIR}/meta/services.yml" ] &&
 	grep -qE "default_placement:[[:space:]]*manager\b" "${ROLE_DIR}/meta/services.yml"; then
 	DEFAULT_PLACEMENT_MANAGER=true
 fi
 
-# Node-level roles (drivers, swap, wireguard, nfs-client) and roles declaring
-# skip: [swarm] create no `<stack>_<entity>` service, so the converge/reachable/
-# chaos gates (07-11) have nothing to poll and must short-circuit.
 HAS_SWARM_SERVICE="$(PYTHONPATH="${_REPO_ROOT}" "${PYTHON}" -c "
 import os, yaml
 try:
@@ -55,8 +47,6 @@ has_tpl = any(os.path.exists(os.path.join('${ROLE_DIR}', 'templates', t)) for t 
 print('false' if (swarm_skipped or not (has_image or has_tpl)) else 'true')
 ")"
 
-# In-container HTTP probe port for the chaos reachability checks (09/11): most
-# apps listen on :80, but some (ollama:11434) declare ports.internal.http.
 PROBE_PORT="$(PYTHONPATH="${_REPO_ROOT}" "${PYTHON}" -c "
 import os, yaml
 port = 80
@@ -85,7 +75,7 @@ elif isinstance(data, dict):
 else:
     entries = []
 for v in entries:
-    if v.get('nfs') is None:
+    if v.get('type') != 'volume':
         continue
     docker_name = v.get('docker_name') or v.get('name')
     if isinstance(docker_name, str):
