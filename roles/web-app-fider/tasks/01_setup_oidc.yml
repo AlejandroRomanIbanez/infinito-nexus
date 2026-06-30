@@ -16,8 +16,7 @@
 
 - name: "⏳ Wait for {{ application_id }} HTTP endpoint (swarm in-container)"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
-    container exec {{ FIDER_LOCAL_CID | quote }}
-    wget -qO- http://127.0.0.1:{{ FIDER_CONTAINER_PORT }}/_health
+    container exec {{ FIDER_LOCAL_CID | quote }} ./fider ping
   register: fider_http_ready
   changed_when: false
   retries: 60
@@ -46,12 +45,13 @@
     - DEPLOYMENT_MODE == 'compose'
     - (fider_tenant_count.rows[0][0] | int) == 0
 
-- name: "🥾 Fider | Bootstrap initial tenant via API (swarm in-container)"
-  ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
-    container exec {{ FIDER_LOCAL_CID | quote }}
-    wget -qO- --header='Content-Type: application/json'
-    --post-data={{ FIDER_TENANT_BOOTSTRAP_BODY | to_json | quote }}
-    http://127.0.0.1:{{ FIDER_CONTAINER_PORT }}/_api/tenants
+- name: "🥾 Fider | Bootstrap initial tenant via API (swarm, routing-mesh port)"
+  ansible.builtin.uri:
+    url: "http://127.0.0.1:{{ lookup('config', application_id, 'services.fider.ports.local.http') }}/_api/tenants"
+    method: POST
+    body_format: json
+    body: "{{ FIDER_TENANT_BOOTSTRAP_BODY }}"
+    status_code: [200, 201]
   register: fider_tenant_bootstrap
   changed_when: true
   delegate_to: "{{ FIDER_HOST_NODE }}"
