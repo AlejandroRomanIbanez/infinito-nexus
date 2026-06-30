@@ -24,14 +24,10 @@ fi
 modes="${modes:-compose swarm}"
 _log_dir="${TMPDIR:-/tmp}"
 
-# `complexity --format string` emits one role per line; normalise newlines to
-# spaces so the no-apps default iterates every role, not just the first line.
 read -ra _apps <<<"${apps//$'\n'/ }"
 read -ra _modes <<<"$modes"
 
 for app in "${_apps[@]}"; do
-	# A role's meta/services.yml `skip` list opts it out of given deploy modes
-	# (same SPOT the CI discovery honours via apps.sh); honour it here too.
 	app_skip="$("${PYTHON}" -c "import sys; sys.path.insert(0, '${_repo_root}'); from utils.roles.meta_lookup import get_role_skip; print(' '.join(get_role_skip('${app}')))")"
 	for mode in "${_modes[@]}"; do
 		if [[ " ${app_skip} " == *" ${mode} "* ]]; then
@@ -48,14 +44,10 @@ for app in "${_apps[@]}"; do
 		swarm)
 			ACT_PLATFORM_IMAGE=local/act-runner-fixed:latest \
 				make -C "$_repo_root" act-swarm-zombie app="$app" 2>&1 | tee "$log"
-			# act exits 0 even when the matrix yields no legs and the swarm deploy job
-			# never ran (only the discover/Lure job), so its clean exit is no proof.
-			grep -q "Matrix-deploy ${app} across variant rounds" "$log" || {
+			grep -q "Matrix-deploy ${app}: provision/deploy/e2e/verify per round" "$log" || {
 				echo "roundtrip: ${app} [swarm] FAILED: swarm deploy job did not run (empty matrix); see ${log}" >&2
 				exit 1
 			}
-			# A failure above exits via set -e and leaves the cluster up for inspection;
-			# only a passing run reaches here, so release it unless keep=true.
 			[ "${keep:-false}" = true ] || make -C "$_repo_root" act-swarm-down name="$app"
 			;;
 		*)
