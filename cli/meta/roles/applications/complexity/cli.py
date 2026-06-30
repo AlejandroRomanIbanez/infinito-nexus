@@ -4,18 +4,108 @@ from __future__ import annotations
 
 import argparse
 import sys
+from typing import Any
 
 from utils import PROJECT_ROOT
 
-from .model import ComplexityRow, compute_complexity_rows
-from .render import render_json, render_string, render_table
+from .filter import FilterError, compile_predicate
+from .model import (
+    ComplexityRow,
+    compute_complexity_rows,
+    compute_variant_complexity_rows,
+)
+from .render import render_json, render_string, render_table, render_yaml
 
 _SORT_KEYS = {
-    "embeds": lambda r: (r.embeds, r.name),
-    "consumers": lambda r: (r.consumers, r.name),
-    "total": lambda r: (r.total, r.name),
-    "name": lambda r: (r.name,),
+    "embeds": lambda r: r.embeds,
+    "consumers": lambda r: r.consumers,
+    "weight": lambda r: r.weight,
+    "name": lambda r: r.name,
+    "random": lambda r: r.random,
+    "variant": lambda r: r.variant if r.variant is not None else -1,
+    "variants": lambda r: r.variants,
+    "bundles": lambda r: r.bundles,
+    "id": lambda r: r.id,
+    "covered_by": lambda r: r.covered_by,
+    "jobs": lambda r: r.jobs,
+    "lifecycle": lambda r: r.lifecycle,
+    "compose": lambda r: int(r.compose),
+    "swarm": lambda r: int(r.swarm),
 }
+
+
+def _row_fields(r: ComplexityRow) -> dict[str, Any]:
+    """The ``--filter`` view of a row: scalar fields keyed by name. ``row`` and
+    ``jobs`` are excluded (not assigned until after filtering)."""
+    return {
+        "name": r.name,
+        "lifecycle": r.lifecycle,
+        "base": r.base,
+        "embeds": r.embeds,
+        "embeds_direct": r.embeds_direct,
+        "consumers": r.consumers,
+        "consumers_direct": r.consumers_direct,
+        "weight": r.weight,
+        "variants": r.variants,
+        "bundles": r.bundles,
+        "id": r.id,
+        "covered_by": r.covered_by,
+        "variant": r.variant if r.variant is not None else -1,
+        "siblings": len(r.siblings),
+        "random": r.random,
+        "compose": r.compose,
+        "swarm": r.swarm,
+    }
+
+
+FILTER_FIELDS = frozenset(
+    _row_fields(ComplexityRow("", 0, [], 0, [], 0, [], 0, [], 0, "", []))
+)
+
+_DIRECTIONS = {"asc": False, "desc": True}
+
+DEFAULT_SORT = "asc embeds"
+
+
+def parse_sort_spec(spec: str) -> list[tuple[str, bool]]:
+    """Parse a ``--sort`` value into an ordered ``[(column, reverse), ...]``.
+
+    Args:
+        spec: Comma-separated clauses, each a column optionally prefixed or
+            suffixed with a direction, e.g. ``"desc embeds, asc total"``.
+            Direction defaults to ``asc``.
+
+    Returns:
+        Clauses in significance order (first = primary sort key). ``reverse``
+        is True for ``desc``.
+
+    Raises:
+        ValueError: An unknown token, or a clause naming no column.
+    """
+    out: list[tuple[str, bool]] = []
+    for clause in spec.split(","):
+        tokens = clause.split()
+        if not tokens:
+            continue
+        reverse = False
+        column: str | None = None
+        for token in tokens:
+            low = token.lower()
+            if low in _DIRECTIONS:
+                reverse = _DIRECTIONS[low]
+            elif low in _SORT_KEYS:
+                column = low
+            else:
+                raise ValueError(
+                    f"invalid --sort token {token!r}; expected a direction "
+                    f"(asc/desc) or a column ({', '.join(_SORT_KEYS)})"
+                )
+        if column is None:
+            raise ValueError(f"--sort clause {clause!r} names no column")
+        out.append((column, reverse))
+    if not out:
+        raise ValueError("--sort requires at least one column")
+    return out
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -29,31 +119,54 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--sort",
-        choices=tuple(_SORT_KEYS),
-        default="embeds",
+        default=DEFAULT_SORT,
+        metavar="SPEC",
         help=(
-            "Sort column. 'embeds' (default) is the count of service "
-            "deps the role embeds; 'consumers' is the count of roles "
-            "that embed this one; 'total' is the sum of direct + "
-            "transitive in both directions; 'name' sorts alphabetically."
+            "Sort order: comma-separated columns, each optionally prefixed "
+            "with a direction, applied in order so later columns break ties "
+            "of earlier ones. e.g. 'desc embeds, asc weight' sorts by embeds "
+            "descending, then by weight ascending within equal embeds. "
+            "Direction defaults to 'asc'. Columns: 'embeds' (service deps the "
+            "role embeds), 'consumers' (roles that embed this one), "
+            "'weight' (sum of direct + transitive in both directions), "
+            "'name' (alphabetical), 'random' (the per-row nonce), 'variant' / "
+            "'variants' (the variant index / the role's variant count), "
+            "'bundles' (the role's compose bundle/job count), 'id', "
+            "'covered_by' and 'jobs' (assigned after the coverage pass, so "
+            "sorting by them reorders within the ties of the more significant "
+            f"keys). Default: {DEFAULT_SORT!r}."
         ),
     )
     p.add_argument(
-        "--order",
-        choices=("asc", "desc"),
-        default="asc",
-        help="Sort direction. 'asc' (default) puts the lowest values first.",
+        "--variant",
+        action="store_true",
+        help=(
+            "List each role's meta/variants.yml variants individually "
+            "instead of the whole role: one row per variant, its 'embeds' "
+            "recomputed from that variant's enabled+shared service flags. "
+            "The 'variant' column shows the variant index. Roles keep their "
+            "role-level consumer counts."
+        ),
     )
     p.add_argument(
         "--filter",
         default=None,
-        metavar="SUBSTRING",
+        metavar="EXPR",
         help=(
-            "Show only roles whose name contains SUBSTRING (case-"
-            "insensitive). The complexity scores are computed against "
-            "the full role tree first; only the rendered rows are "
-            "filtered, so a role's transitive consumer / embed counts "
-            "still reflect the whole codebase."
+            "Boolean filter expression over row fields. Operators: '%%' "
+            "(contains / set membership), '==' '!=' '<' '>' '<=' '>=', "
+            "combined with 'and' 'or' 'xor' 'not' and parentheses; set "
+            "literals like {alpha,beta} are allowed. Fields: name, "
+            "lifecycle, base, embeds, embeds_direct, consumers, "
+            "consumers_direct, weight, variants, bundles, id, covered_by, "
+            "variant, siblings, random, compose, swarm. compose/swarm are "
+            "booleans (compare with ==true / ==false). String compares are "
+            "case-"
+            "insensitive. A bare word (no operator) means 'name %% word'. "
+            "e.g. 'lifecycle == beta and weight > 50', "
+            '"lifecycle %% {alpha,pre} or name %% ldap". Scores are '
+            "computed against the full role tree first; only the rendered "
+            "rows are filtered."
         ),
     )
     p.add_argument(
@@ -77,14 +190,14 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--format",
-        choices=("cli", "json", "string"),
+        choices=("cli", "json", "yaml", "string"),
         default="cli",
         help=(
             "Output format. 'cli' (default) shows counts only (name, "
             "embeds, consumers, base, siblings) for a compact terminal "
-            "view. 'json' emits the full payload including the resolved "
-            "service, consumer and sibling role lists. 'string' prints "
-            "only the role names, one per line (feed into `make "
+            "view. 'json' / 'yaml' emit the full payload including the "
+            "resolved service, consumer and sibling role lists. 'string' "
+            "prints only the role names, one per line (feed into `make "
             "roundtrip apps=...`)."
         ),
     )
@@ -100,6 +213,55 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     return p
+
+
+def _apply_sort(rows: list[ComplexityRow], sort_spec: list[tuple[str, bool]]) -> None:
+    """Stable multi-key sort in place: ``name`` as the deterministic least-
+    significant fallback, then each spec clause from least to most significant.
+    Run once before ``_mark_covered`` (where the ``id``/``covered_by`` keys are
+    still unset and sort as a no-op) and once after (where they order rows by
+    the just-computed coverage)."""
+    rows.sort(key=_SORT_KEYS["name"])
+    for column, reverse in reversed(sort_spec):
+        rows.sort(key=_SORT_KEYS[column], reverse=reverse)
+
+
+def _mark_covered(rows: list[ComplexityRow]) -> list[ComplexityRow]:
+    """Assign each sorted row its numeric ``id`` (its position in sort order)
+    and its ``covered_by`` via a greedy set-cover: the first row is green, and
+    every later row's ``covered_by`` is the (1-based) ``id`` of the first
+    already-green predecessor OF A DIFFERENT ROLE that actually embeds this row
+    (its role name is in the predecessor's transitive ``services``); a row with
+    no such predecessor becomes green itself, leaving ``covered_by`` at the
+    sentinel ``0`` (no real ``id`` is 0). Because ``services`` is the
+    transitive closure, embedding the row pulls its whole subtree, so the
+    coverer's deploy genuinely brings this row up. Two variants of the same
+    role never cover each other (a role never embeds itself).
+
+    Coverage is variant-aware: when a service.yml declares another service
+    enabled+shared it always pulls that provider's variant 0, so only a row's
+    variant-0 (or whole-role) form can be covered. A variant > 0 row is never
+    covered and is always green; it may still cover other roles' rows."""
+    green: list[tuple[int, str, set[str]]] = []
+    out: list[ComplexityRow] = []
+    for index, row in enumerate(rows, start=1):
+        coverable = row.variant in (None, 0)
+        coverer = (
+            next(
+                (
+                    gid
+                    for gid, gname, gset in green
+                    if gname != row.name and row.name in gset
+                ),
+                None,
+            )
+            if coverable
+            else None
+        )
+        if coverer is None:
+            green.append((index, row.name, set(row.services)))
+        out.append(row._replace(id=index, covered_by=coverer or 0))
+    return out
 
 
 def _unique_by_base(rows: list[ComplexityRow]) -> list[ComplexityRow]:
@@ -120,28 +282,50 @@ def main(argv: list[str] | None = None) -> int:
     if args.level is not None and args.level < 1:
         p.error("--level/-L must be >= 1")
 
+    try:
+        sort_spec = parse_sort_spec(args.sort)
+    except ValueError as exc:
+        p.error(str(exc))
+
     roles_dir = PROJECT_ROOT / "roles"
     if not roles_dir.is_dir():
         print(f"Error: roles directory not found: {roles_dir}", file=sys.stderr)
         return 1
 
-    rows = compute_complexity_rows(
+    compute = (
+        compute_variant_complexity_rows if args.variant else compute_complexity_rows
+    )
+    rows = compute(
         roles_dir,
         include_group_names=not args.no_group_names,
         max_level=args.level,
     )
 
-    rows.sort(key=_SORT_KEYS[args.sort], reverse=args.order == "desc")
+    _apply_sort(rows, sort_spec)
+    rows = _mark_covered(rows)
+    _apply_sort(rows, sort_spec)
 
     if args.filter:
-        needle = args.filter.lower()
-        rows = [r for r in rows if needle in r.name.lower()]
+        try:
+            predicate = compile_predicate(args.filter, FILTER_FIELDS)
+        except FilterError as exc:
+            p.error(f"--filter: {exc}")
+        rows = [r for r in rows if predicate(_row_fields(r))]
 
     if args.unique:
         rows = _unique_by_base(rows)
 
+    numbered: list[ComplexityRow] = []
+    running = 0
+    for line, r in enumerate(rows, start=1):
+        running += r.bundles
+        numbered.append(r._replace(row=line, jobs=running))
+    rows = numbered
+
     if args.format == "json":
         rendered = render_json(rows)
+    elif args.format == "yaml":
+        rendered = render_yaml(rows)
     elif args.format == "string":
         rendered = render_string(rows)
     else:

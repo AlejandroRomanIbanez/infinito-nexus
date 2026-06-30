@@ -75,6 +75,21 @@ def _direct_service_dep_roles(
     return deduped
 
 
+def build_service_registry(roles_dir: Path) -> dict[str, dict[str, Any]]:
+    return build_service_registry_from_roles_dir(roles_dir)
+
+
+def direct_dep_roles(
+    services_map: dict[str, Any],
+    registry: dict[str, dict[str, Any]],
+    *,
+    truth: TruthFn,
+) -> list[str]:
+    """Provider roles a services map directly embeds (enabled AND shared
+    truthy under ``truth``), deduped in first-seen order."""
+    return _direct_service_dep_roles(services_map, registry, truth=truth)
+
+
 def build_graphs(
     roles_dir: Path,
     *,

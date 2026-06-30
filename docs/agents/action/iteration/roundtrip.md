@@ -11,7 +11,7 @@ For debugging the compose deploy of one role, see [Compose Loop](compose.md); fo
 ## Rules
 
 - Invoke with `make roundtrip apps="<app> [app...]"`. Each app is taken through the mode sequence in order, and the run stops at the first failure (fail-fast).
-- With no `apps=`, the loop defaults to **every application, most-complex first** (the `complexity` CLI: `infinito meta roles applications complexity --sort total --order desc --format string`). That is a large run (one compose plus one swarm deploy per app), so narrow it with `apps=` while iterating.
+- With no `apps=`, the loop defaults to **every application, most-complex first** (the `complexity` CLI: `infinito meta roles applications complexity --sort "desc weight" --format string`). That is a large run (one compose plus one swarm deploy per app), so narrow it with `apps=` while iterating.
 - The mode sequence defaults to `compose swarm` and is overridable with `modes="compose swarm"`. The order is always compose first, so the cheaper mode fails fast before the expensive swarm rebuild. Append `k8s` here once that mode exists.
 - Per step the output is streamed to `${TMPDIR:-/tmp}/roundtrip-<app>-<mode>.log`. Tell the operator the exact `tail -f` path for the running step.
 - The compose step runs `compose-deploy mode=reinstall apps=<app> full_cycle=true variant=0`; the swarm step runs `swarm-zombie app=<app>`, so the cluster is named `<app>-swarm-mgr-01` etc. via the mandatory `SWARM_NAME` (the app id is the default cluster id). Each validated swarm cluster is released afterwards unless you pass `keep=true`.

@@ -14,7 +14,7 @@ _repo_root="$(cd "$(dirname "$0")/../../.." && pwd)"
 
 if [ -z "${apps:-}" ]; then
 	apps="$("${PYTHON}" -m cli.meta.roles.applications.complexity \
-		--sort total --order desc --unique --format string)"
+		--sort "desc weight" --unique --format string)"
 fi
 [ -n "${apps// /}" ] || {
 	echo "roundtrip: no roles to run" >&2

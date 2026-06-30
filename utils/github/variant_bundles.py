@@ -50,7 +50,7 @@ from utils.roles.applications.services.resources import (
     collect_role_resources,
 )
 from utils.roles.applications.services.variant_status import (
-    variant_disables_all_services,
+    deployable_variant_indices,
 )
 
 if TYPE_CHECKING:
@@ -228,6 +228,35 @@ def app_variant_storages(
     return result
 
 
+def compose_bundle_counts(
+    apps: Iterable[str],
+    variants_per_app: Mapping[str, Sequence[Any]],
+    *,
+    roles_dir: Path = ROLES_DIR,
+) -> dict[str, int]:
+    """Per app, the number of compose CI bundles (jobs) its variants pack into.
+
+    Uses the same bundle-size + cumulative-``min_storage`` packing as the
+    compose deploy matrix (``expand_apps`` / ``bundle_indices``), so the
+    ``complexity`` report and the matrix never diverge on the job count.
+    """
+    apps = list(apps)
+    storages = app_variant_storages(apps, variants_per_app, roles_dir)
+    bundle_size = resolve_bundle_size()
+    max_storage = resolve_max_storage()
+    return {
+        app: len(
+            bundle_indices(
+                variant_count(variants_per_app, app),
+                bundle_size,
+                storages.get(app),
+                max_storage,
+            )
+        )
+        for app in apps
+    }
+
+
 def _swarm_mode() -> bool:
     return (os.environ.get("INFINITO_DEPLOY_MODE") or "").strip().lower() == "swarm"
 
@@ -236,14 +265,10 @@ def _deployable_indices(
     apps: Iterable[str],
     overrides_per_app: Mapping[str, Sequence[Any]],
 ) -> dict[str, list[int]]:
-    """Per app, the variant indices the swarm matrix may deploy: every index
-    except those whose ``meta/variants.yml`` override disables all services."""
+    """Per app, the variant indices the swarm matrix may deploy, via the shared
+    ``deployable_variant_indices`` SPOT (drops all-off variants)."""
     return {
-        app: [
-            index
-            for index, override in enumerate(overrides_per_app.get(app) or [])
-            if not variant_disables_all_services(override)
-        ]
+        app: deployable_variant_indices(list(overrides_per_app.get(app) or []))
         for app in apps
     }
 

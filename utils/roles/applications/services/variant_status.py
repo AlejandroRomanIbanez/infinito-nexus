@@ -35,3 +35,27 @@ def variant_disables_all_services(override: dict[str, Any]) -> bool:
         if not disabled:
             return False
     return True
+
+
+def deployable_variant_indices(overrides: list[Any] | None) -> list[int]:
+    """The variant indices the CI matrix actually deploys for one role.
+
+    Every variant except those whose ``meta/variants.yml`` override disables
+    all services (all-off variants add no coverage, since the all-enabled
+    variant already exercises the role). This is the single source of truth
+    for the per-role job/bundle split: the swarm deploy matrix and the
+    ``complexity`` report both count jobs through it.
+
+    Args:
+        overrides: The role's raw ``meta/variants.yml`` override list (from
+            ``utils.cache.applications.get_variant_overrides_only``), one
+            entry per variant.
+
+    Returns:
+        The 0-based indices of deployable variants, in order.
+    """
+    return [
+        index
+        for index, override in enumerate(overrides or [])
+        if not variant_disables_all_services(override)
+    ]
