@@ -19,6 +19,17 @@
     group: root
     mode: "0755"
 
+- name: "🔧 Pin NFSv4 idmap Domain (else www-data renders as nobody)"
+  ansible.builtin.lineinfile:
+    path: /etc/idmapd.conf
+    regexp: "^#?\\s*Domain\\s*="
+    line: "Domain = localdomain"
+    insertafter: "^\\[General\\]"
+    create: true
+    owner: root
+    group: root
+    mode: "0644"
+
 - name: "📄 Render /etc/ganesha/ganesha.conf"
   ansible.builtin.template: # nocheck: stack-host-template (per-host NFS server config (NFS host is its own group, not the stack host))
     src: ganesha.conf.j2

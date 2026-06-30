@@ -17,6 +17,25 @@
     name: "{{ SVC_STORAGE_NFS_CLIENT_PACKAGES[ansible_facts.os_family] }}"
     state: present
 
+- name: "🔧 Match NFSv4 idmap to the ganesha test server"
+  when: RUNTIME in ['dev', 'act']
+  block:
+    - name: "🔧 Set idmapd.conf Domain = localdomain"
+      ansible.builtin.lineinfile:
+        path: /etc/idmapd.conf
+        regexp: "^#?\\s*Domain\\s*="
+        line: "Domain = localdomain"
+        insertafter: "^\\[General\\]"
+        create: true
+        owner: root
+        group: root
+        mode: "0644"
+
+    - name: "🧹 Drop stale NFSv4 idmap cache entries"
+      ansible.builtin.command: nfsidmap -c
+      changed_when: false
+      failed_when: false
+
 - name: "✅ Ensure probe mount point exists"
   ansible.builtin.file:
     path: "{{ SVC_STORAGE_NFS_CLIENT_PROBE_DIR }}"
