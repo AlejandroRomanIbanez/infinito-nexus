@@ -20,8 +20,9 @@
   shell: >
     container exec -i --user {{ FRIENDICA_USER }}
     --workdir {{ FRIENDICA_APPLICATION_DIR }}
-    {{ FRIENDICA_CONTAINER_ADDRESS }}
+    {{ FRIENDICA_LOCAL_CID | quote }}
     {{ FRIENDICA_APPLICATION_DIR }}/bin/console list
+  delegate_to: "{{ FRIENDICA_HOST_NODE }}"
   register: friendica_console_ready
   changed_when: false
   failed_when: false
@@ -33,8 +34,9 @@
   shell: >
     container exec -i --user {{ FRIENDICA_USER }}
     --workdir {{ FRIENDICA_APPLICATION_DIR }}
-    {{ FRIENDICA_CONTAINER_ADDRESS }}
+    {{ FRIENDICA_LOCAL_CID | quote }}
     {{ FRIENDICA_APPLICATION_DIR }}/bin/console addon list all
+  delegate_to: "{{ FRIENDICA_HOST_NODE }}"
   register: friendica_db_ready
   changed_when: false
   failed_when: false
@@ -49,31 +51,32 @@
   shell: >
     container exec -i --user {{ FRIENDICA_USER }}
     --workdir {{ FRIENDICA_APPLICATION_DIR }}
-    {{ FRIENDICA_CONTAINER_ADDRESS }}
+    {{ FRIENDICA_LOCAL_CID | quote }}
     {{ FRIENDICA_APPLICATION_DIR }}/bin/console dbstructure update
+  delegate_to: "{{ FRIENDICA_HOST_NODE }}"
   register: friendica_dbstructure_update
   changed_when: "'No tables need to be changed' not in friendica_dbstructure_update.stdout"
 
 - name: "🩹 Patch upstream friendica-addons/ldapauth autocreate return shape"
-  script: >-
-    shell/patch_ldapauth_autocreate.sh
-    "container exec -i --user root {{ FRIENDICA_CONTAINER_ADDRESS }}"
+  script: >- # nocheck: container-exec-resolver  FRIENDICA_LOCAL_CID resolved at delegate_to runtime
+    shell/patch_ldapauth_autocreate.sh "container exec -i --user root {{ FRIENDICA_LOCAL_CID | quote }}"
     "{{ FRIENDICA_APPLICATION_DIR }}/addon/ldapauth/ldapauth.php"
   args:
     executable: /bin/bash
+  delegate_to: "{{ FRIENDICA_HOST_NODE }}"
   register: friendica_ldapauth_patch
   changed_when: "'PATCHED' in friendica_ldapauth_patch.stdout"
   when: FRIENDICA_LDAP_ENABLED | bool
 
 - name: ✅ Ensure Friendica addons are in sync
-  script: >-
-    shell/sync_addon.sh
-    "container exec -i --user {{ FRIENDICA_USER }} --workdir {{ FRIENDICA_APPLICATION_DIR }} {{ FRIENDICA_CONTAINER_ADDRESS }} {{ FRIENDICA_APPLICATION_DIR
+  script: >- # nocheck: container-exec-resolver  FRIENDICA_LOCAL_CID resolved at delegate_to runtime
+    shell/sync_addon.sh "container exec -i --user {{ FRIENDICA_USER }} --workdir {{ FRIENDICA_APPLICATION_DIR }} {{ FRIENDICA_LOCAL_CID | quote }} {{ FRIENDICA_APPLICATION_DIR
     }}/bin/console"
     "{{ item.name }}"
     "{{ 'true' if item.enabled else 'false' }}"
   args:
     executable: /bin/bash
+  delegate_to: "{{ FRIENDICA_HOST_NODE }}"
   register: friendica_addon_sync
   changed_when: friendica_addon_sync.rc == 0
   retries: 20
@@ -84,10 +87,11 @@
     label: "{{ item.name }}"
 
 - name: ⏳ Wait until Friendica `hook` table is provisioned
-  ansible.builtin.shell: >-
-    container exec -i --user {{ FRIENDICA_USER }} --workdir {{ FRIENDICA_APPLICATION_DIR }} {{ FRIENDICA_CONTAINER_ADDRESS }} php --
+  ansible.builtin.shell: >- # nocheck: container-exec-resolver  FRIENDICA_LOCAL_CID resolved at delegate_to runtime
+    container exec -i --user {{ FRIENDICA_USER }} --workdir {{ FRIENDICA_APPLICATION_DIR }} {{ FRIENDICA_LOCAL_CID | quote }} php --
   args:
     stdin: "{{ lookup('file', role_path + '/files/php/probe_hook_table.php') }}"
+  delegate_to: "{{ FRIENDICA_HOST_NODE }}"
   register: friendica_hook_table_ready
   changed_when: false
   failed_when: false
@@ -96,12 +100,12 @@
   until: friendica_hook_table_ready.rc == 0
   when: FRIENDICA_LDAP_ENABLED | bool
 
-# First-install `addon enable ldapauth` empirically lands `enabled=1` without persisting Hook::register() rows; this task verifies and recycles to recover.
 - name: ✅ Verify ldapauth hooks are registered (re-cycle if missing)
-  ansible.builtin.shell: >-
-    container exec -i --user {{ FRIENDICA_USER }} --workdir {{ FRIENDICA_APPLICATION_DIR }} {{ FRIENDICA_CONTAINER_ADDRESS }} php -- ldapauth 2
+  ansible.builtin.shell: >- # nocheck: container-exec-resolver  FRIENDICA_LOCAL_CID resolved at delegate_to runtime
+    container exec -i --user {{ FRIENDICA_USER }} --workdir {{ FRIENDICA_APPLICATION_DIR }} {{ FRIENDICA_LOCAL_CID | quote }} php -- ldapauth 2
   args:
     stdin: "{{ lookup('file', role_path + '/files/php/verify_addon_hooks.php') }}"
+  delegate_to: "{{ FRIENDICA_HOST_NODE }}"
   changed_when: false
   when: FRIENDICA_LDAP_ENABLED | bool
 

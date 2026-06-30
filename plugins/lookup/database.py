@@ -46,7 +46,6 @@ class LookupModule(LookupBase):
         if len(terms) not in (1, 2):
             raise AnsibleError("database: requires database_consumer_id [, want_path]")
 
-        # STRICT: do not support legacy want= kwarg at all
         if "want" in kwargs and str(kwargs.get("want") or "").strip():
             raise AnsibleError(
                 "database: kwarg 'want=' is not supported; use positional want_path "
@@ -57,7 +56,6 @@ class LookupModule(LookupBase):
         if not consumer_id:
             raise AnsibleError("database: database_consumer_id must not be empty")
 
-        # STRICT positional want-path (optional)
         want = str(terms[1]).strip() if len(terms) == 2 else ""
         if not want:
             want = "all"
@@ -85,8 +83,6 @@ class LookupModule(LookupBase):
         enabled = bool(database_service.get("enabled", False))
         shared = bool(database_service.get("shared", False))
 
-        # If no direct database service is configured: keep behavior similar to the
-        # historical empty-value lookup payload.
         if not dbtype:
             resolved = {
                 "id": "",
@@ -97,6 +93,7 @@ class LookupModule(LookupBase):
                 "name": consumer_entity,
                 "instance": "",
                 "address": "",
+                "service_name": "",
                 "host": "",
                 "container": "",
                 "network": "",
@@ -115,7 +112,6 @@ class LookupModule(LookupBase):
             }
             return [resolved if want == "all" else resolved.get(want, "")]
 
-        # Central/shared DB if shared==True
         central_enabled = shared
         db_id = f"svc-db-{dbtype}"
 
@@ -179,7 +175,6 @@ class LookupModule(LookupBase):
             skip_missing_app=True,
         )
 
-        # env path without compose dict
         env_dir = f"{path_instances}{get_entity_name(consumer_id)}/.env/"
         env = f"{env_dir}{dbtype}.env"
         initdb_dir = f"{path_instances}{get_entity_name(consumer_id)}/.initdb.d/"
@@ -199,6 +194,14 @@ class LookupModule(LookupBase):
                 raw_mode = templar.template(raw_mode)
         deployment_mode = str(raw_mode).strip()
 
+        db_stack = dbtype if central_enabled else consumer_entity
+        db_service_key = dbtype if central_enabled else "database"
+        service_name = (
+            f"{db_stack}_{db_service_key}"
+            if deployment_mode == "swarm"
+            else db_service_key
+        )
+
         if deployment_mode == "swarm":
             bin_resolver = vars_.get("BIN_RESOLVE_CONTAINER_ID")
             if templar is not None and bin_resolver is not None:
@@ -209,9 +212,7 @@ class LookupModule(LookupBase):
                 if bin_resolver
                 else "/usr/bin/resolve-container-id"
             )
-            stack_name = dbtype if central_enabled else consumer_entity
-            service_key = dbtype if central_enabled else "database"
-            address = _swarm_address(bin_resolver, stack_name, service_key)
+            address = _swarm_address(bin_resolver, db_stack, db_service_key)
         else:
             address = container
 
@@ -224,6 +225,7 @@ class LookupModule(LookupBase):
             "name": name,
             "instance": instance,
             "address": address,
+            "service_name": service_name,
             "host": host,
             "container": container,
             "network": network,
