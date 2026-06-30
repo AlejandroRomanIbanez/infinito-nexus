@@ -46,7 +46,7 @@
     - (fider_tenant_count.rows[0][0] | int) == 0
 
 - name: "🥾 Fider | Bootstrap initial tenant via API (swarm, routing-mesh port)"
-  ansible.builtin.uri:
+  uri_retry:
     url: "http://127.0.0.1:{{ lookup('config', application_id, 'services.fider.ports.local.http') }}/_api/tenants"
     method: POST
     body_format: json

@@ -57,7 +57,6 @@ TAIGA_CONTAINER: "{{ entity_name }}"
 
 TAIGA_MANAGER_SERVICE: "manager"
 TAIGA_MANAGER_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ TAIGA_MANAGER_SERVICE ~ '.name') }}"
-TAIGA_MANAGER_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, TAIGA_MANAGER_SERVICE) }}"
 TAIGA_ASYNC_SERVICE: "async"
 TAIGA_ASYNC_RABBITMQ_SERVICE: "async-rabbitmq"
 TAIGA_EVENTS_RABBITMQ_SERVICE: "events-rabbitmq"
