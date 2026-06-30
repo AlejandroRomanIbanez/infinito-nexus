@@ -46,7 +46,7 @@
     --skip-columns=guid --all-tables-with-prefix --precise
     --path={{ WORDPRESS_DOCKER_HTML_PATH }}
   register: wp_sr_domain
-  changed_when: "{{ ('Success: Made 0 replacements.' not in wp_sr_domain.stdout) | bool }}"
+  changed_when: "('Success: Made 0 replacements.' not in wp_sr_domain.stdout) | bool"
 
 - name: 📐 Normalize scheme to https if needed (http → https)
   vars:
@@ -59,7 +59,7 @@
     --skip-columns=guid --all-tables-with-prefix --precise
     --path={{ WORDPRESS_DOCKER_HTML_PATH }}
   register: wp_sr_scheme
-  changed_when: "{{ ('Success: Made 0 replacements.' not in wp_sr_scheme.stdout) | bool }}"
+  changed_when: "('Success: Made 0 replacements.' not in wp_sr_scheme.stdout) | bool"
   when: lookup('tls', application_id, 'enabled') | bool
 
 - name: 🚿 Flush caches and rewrite rules

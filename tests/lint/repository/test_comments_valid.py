@@ -7,9 +7,8 @@ A comment is VALID only when it is one of:
 * a **tool directive** (`noqa`, `nocheck`, `type: ignore`, `shellcheck`,
   `rubocop:`, `stylelint-disable`, `pragma`, language annotations, ...),
 * a **marked exception** -- a mid-code comment that flags a real trip-wire
-  (warning, pitfall, deliberate non-idiomatic choice, upstream bug, security /
-  performance gotcha) whose text starts with one of the exception markers
-  (`Exception`, `Security`, ...).
+  (warning, pitfall, deliberate non-idiomatic choice) whose text starts with
+  one of the exception markers (`Exception`, `Invariant`, ...).
 
 Mid-code comments are ONLY allowed as exceptions. Plain narration, banners,
 restating the next line, or neutral `Note:`-style info carry no warning and so
@@ -62,13 +61,9 @@ _MARKERS = (
     "attention",
     "danger",
     "exception",
-    "bug",
-    "security",
     "sec",
     "safety",
-    "compat",
     "deprecated",
-    "upstream",
     "invariant",
     "limitation",
 )
@@ -379,7 +374,7 @@ class TestCommentsValid(unittest.TestCase):
                 "file header, a doc comment directly above a class/function/rule, a "
                 "tool directive (noqa/nocheck/...), or a mid-code EXCEPTION that flags "
                 "a real trip-wire (starts with Exception/"
-                "Security/...). Everything else is narration: DELETE it "
+                "Invariant/...). Everything else is narration: DELETE it "
                 "(move real explanation into the file header or a doc comment):\n"
                 + shown
             )

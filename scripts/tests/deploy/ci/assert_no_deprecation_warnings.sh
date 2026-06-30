@@ -10,6 +10,9 @@ set -euo pipefail
 
 MARKER='[DEPRECATION WARNING]:'
 
+# Exception: exclude ansible-core 2.20 legacy filter/test PluginLoader deprecation; needs a collection migration, not fixable in role YAML.
+FRAMEWORK_NOISE='Instantiating (filter|test) PluginLoader with aliases'
+
 log="${1:?usage: assert_no_deprecation_warnings.sh <deploy-log>}"
 
 if [[ ! -f "${log}" ]]; then
@@ -17,7 +20,7 @@ if [[ ! -f "${log}" ]]; then
 	exit 2
 fi
 
-if matches="$(grep -nF "${MARKER}" "${log}")"; then
+if matches="$(grep -nF "${MARKER}" "${log}" | grep -vE "${FRAMEWORK_NOISE}")"; then
 	echo "::error::Deploy output contains Ansible deprecation warnings (${MARKER}):" >&2
 	printf '%s\n' "${matches}" >&2
 	exit 1
