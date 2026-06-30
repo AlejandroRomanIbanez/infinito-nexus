@@ -23,31 +23,25 @@
       - "data:/var/lib/stalwart"
       # 0.16 JSON bootstrap (data store); the rest of the config lives in the DB.
       - "{{ STALWART_CONFIG_FILE }}:/etc/stalwart/config.json:ro"
-{{ lookup('container_depends_on', application_id, extra={
-  'antivirus': {'condition': 'service_started'},
-}) }}
+      # Platform TLS cert for the mail listeners (referenced via x:Certificate).
+      - "{{ STALWART_CERT_DIR }}:/etc/stalwart/certs:ro"
+{{ lookup('container_depends_on', application_id) }}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
-  antivirus:
-{% set service_name = 'antivirus' %}
-    container_name: {{ STALWART_CONTAINER }}_antivirus
-    image: {{ STALWART_ANTIVIRUS_IMAGE }}:{{ STALWART_ANTIVIRUS_VERSION }}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    volumes:
-      - "clamav_db:/var/lib/clamav"
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
-
-  # Browser webmail pointed at Stalwart. @todo Wire vhost/path route for access.
+  # Browser webmail pointed at Stalwart (reverse-proxied at webmail.<domain>).
   webmail:
 {% set service_name = 'webmail' %}
     container_name: {{ STALWART_CONTAINER }}_webmail
     image: {{ STALWART_WEBMAIL_IMAGE }}:{{ STALWART_WEBMAIL_VERSION }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    ports:
+      - "{{ DOCKER_BIND_HOST }}:{{ STALWART_WEBMAIL_HTTP_PORT }}:80"
     environment:
       ROUNDCUBEMAIL_DEFAULT_HOST: "ssl://stalwart"
       ROUNDCUBEMAIL_DEFAULT_PORT: "993"
-      ROUNDCUBEMAIL_SMTP_SERVER: "tls://stalwart"
-      ROUNDCUBEMAIL_SMTP_PORT: "587"
+      # Stalwart's default submission listener is 465 (implicit TLS); it does not bind 587.
+      ROUNDCUBEMAIL_SMTP_SERVER: "ssl://stalwart"
+      ROUNDCUBEMAIL_SMTP_PORT: "465"
       ROUNDCUBEMAIL_DB_TYPE: "sqlite"
     volumes:
       - "webmail_data:/var/www/html"
@@ -57,6 +51,6 @@
 
 {{ lookup('applications') | compose_volumes(
     application_id,
-    extra_volumes={'data': {'name': STALWART_DATA_VOLUME}, 'clamav_db': {'name': STALWART_CLAMAV_VOLUME}, 'webmail_data': {'name': STALWART_WEBMAIL_VOLUME}}
+    extra_volumes={'data': {'name': STALWART_DATA_VOLUME}, 'webmail_data': {'name': STALWART_WEBMAIL_VOLUME}}
 ) }}
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}

@@ -11,6 +11,9 @@ from plugins.lookup.users import LookupModule as UsersLookup
 
 SYSTEM_EMAIL_PREFIX = "SYSTEM_EMAIL_"
 
+# Default mail provider role; overridable per inventory via the MAIL_PROVIDER var.
+DEFAULT_MAIL_PROVIDER = "web-app-stalwart"
+
 # Declared in resolution order so each computed default sees already-resolved
 # predecessors (for example ``port`` depends on ``tls``).
 RESOLUTION_ORDER = (
@@ -113,7 +116,7 @@ class LookupModule(LookupBase):
             return "30"
         if short_key == "external":
             group_names = variables.get("group_names") or []
-            return bool("web-app-stalwart" in group_names)
+            return bool(self._mail_provider(variables) in group_names)
         if short_key == "environment":
             external = _as_bool(resolved.get("external"))
             tls_enabled = _as_bool(variables.get("TLS_ENABLED"))
@@ -163,15 +166,21 @@ class LookupModule(LookupBase):
             if isinstance(no_reply, dict):
                 tokens = no_reply.get("tokens") or {}
                 if isinstance(tokens, dict):
-                    return tokens.get("web-app-stalwart", "") or ""
+                    return tokens.get(self._mail_provider(variables), "") or ""
             return ""
         raise AnsibleError(f"email: unknown key {short_key!r}")
+
+    def _mail_provider(self, variables: dict[str, Any]) -> str:
+        value = variables.get("MAIL_PROVIDER")
+        return str(value).strip() if value else DEFAULT_MAIL_PROVIDER
 
     def _lookup_mail_provider_domain(self, variables: dict[str, Any]) -> Any:
         domain_lookup = DomainLookup()
         domain_lookup._templar = getattr(self, "_templar", None)
         try:
-            return domain_lookup.run(["web-app-stalwart"], variables=variables)[0]
+            return domain_lookup.run(
+                [self._mail_provider(variables)], variables=variables
+            )[0]
         except Exception:
             return "localhost"
 

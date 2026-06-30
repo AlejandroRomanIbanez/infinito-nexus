@@ -1,9 +1,9 @@
 # Mailu
 
-> **⚠️ DEPRECATED.** This role is superseded by [`web-app-stalwart`](../web-app-stalwart/),
-> which is now the platform's email provider. `web-app-mailu` is retained for
-> rollback only and is **not deployed by default**. New deployments and the mail
-> abstraction (`plugins/lookup/email.py`, `sys-svc-mail`) target Stalwart.
+> **ℹ️ Alternative provider.** The default email provider is
+> [`web-app-stalwart`](../web-app-stalwart/). Mailu remains a fully supported
+> option: set `MAIL_PROVIDER: web-app-mailu` (and deploy this role) to route the
+> mail abstraction (`plugins/lookup/email.py`, `sys-svc-mail`) to Mailu instead.
 
 ## Description
 

@@ -61,6 +61,14 @@
     dest: "/root/.msmtprc"
     mode: 600
 
+# Only verify outbound mail when it can actually send: either a local relay
+# (non-external) or an external provider that provisioned a no-reply account.
+# On a reserved/documentation domain (e.g. .example) Stalwart rejects the domain,
+# so no token exists and the live send check would fail for an expected reason.
 - include_role:
     name: sys-ctl-hlth-msmtp
-  when: run_once_sys_ctl_hlth_msmtp is not defined
+  when:
+    - run_once_sys_ctl_hlth_msmtp is not defined
+    - >-
+      not (lookup('email').external | bool)
+      or (lookup('users', 'no-reply').tokens | default({})).get(MAIL_PROVIDER, '') | length > 0

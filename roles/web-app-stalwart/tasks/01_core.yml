@@ -29,6 +29,14 @@
 - name: "Flush Docker Compose handlers"
   meta: flush_handlers
 
+- name: "Proxy the Roundcube webmail at {{ STALWART_WEBMAIL_DOMAIN }}"
+  include_role:
+    name: sys-stk-front-proxy
+  vars:
+    domain: "{{ STALWART_WEBMAIL_DOMAIN }}"
+    http_port: "{{ STALWART_WEBMAIL_HTTP_PORT }}"
+    webserver_vhost_flavour: "basic"
+
 - name: Wait for Stalwart database and management API
   include_tasks: 02_wait_for_api.yml
 

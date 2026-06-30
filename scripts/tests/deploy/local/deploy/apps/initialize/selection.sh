@@ -101,9 +101,13 @@ echo ">>> Ensuring development stack is up (when-down)"
 "${PYTHON}" -m cli.administration.deploy.development up \
 	--when-down
 
-echo ">>> Running entry.sh bootstrap inside container"
-"${PYTHON}" -m cli.administration.deploy.development exec \
-	-- bash "${INFINITO_SRC_DIR}/scripts/tests/deploy/local/utils/entry-bootstrap.sh"
+if [[ "${INFINITO_SKIP_COMPILE:-false}" == "true" ]]; then
+	echo ">>> Skipping entry.sh bootstrap recompile (INFINITO_SKIP_COMPILE=true)"
+else
+	echo ">>> Running entry.sh bootstrap inside container"
+	"${PYTHON}" -m cli.administration.deploy.development exec \
+		-- bash "${INFINITO_SRC_DIR}/scripts/tests/deploy/local/utils/entry-bootstrap.sh"
+fi
 
 echo ">>> Creating inventory for app '${apps}'"
 # RUNTIME MUST be `dev` here: the host process running this script lives

@@ -41,6 +41,10 @@
     loop_var: user_item
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
+- name: "Configure Stalwart mail-listener TLS (platform cert)"
+  include_tasks: 07_tls.yml
+  when: lookup('tls', application_id, 'enabled') | bool
+
 - name: "Read Stalwart-managed DKIM public key"
   include_tasks: 05_read_dkim.yml
 

@@ -1,16 +1,18 @@
 ---
-# Provision the mail domain + accounts (JMAP). Reserved TLDs (.example/.test/
-# .invalid/.localhost) are rejected by Stalwart, so skip them on local/CI.
-- name: "Determine whether the mail domain uses a reserved TLD"
+# Provision the mail domain + accounts (JMAP). Stalwart rejects domains whose TLD
+# is neither a real public suffix nor one of its reserved TLDs (test/local/
+# internal/...). The platform's local/CI domain uses `.example`, which Stalwart
+# rejects, so skip those. `.test`/real domains are provisioned normally.
+- name: "Determine whether the mail domain is rejected by Stalwart"
   ansible.builtin.set_fact:
-    stalwart_domain_reserved: "{{ STALWART_DOMAIN.split('.')[-1] in ['example', 'test', 'invalid', 'localhost'] }}"
+    stalwart_domain_reserved: "{{ STALWART_DOMAIN.split('.')[-1] in ['example', 'invalid'] }}"
 
-- name: "Warn: skipping Stalwart provisioning for reserved-TLD domain"
+- name: "Warn: skipping Stalwart provisioning for an unsupported domain"
   ansible.builtin.debug:
     msg: >-
-      Domain '{{ STALWART_DOMAIN }}' uses a reserved TLD which Stalwart rejects.
-      Skipping domain/account provisioning (expected on local/CI). Deploy with a
-      real domain to provision mail accounts.
+      Domain '{{ STALWART_DOMAIN }}' uses a TLD Stalwart rejects (.example/.invalid).
+      Skipping provisioning. Deploy with a real domain (or a `.test` domain for a
+      local end-to-end mail test) to provision accounts.
   when: stalwart_domain_reserved | bool
 
 - name: "Provision Stalwart domain + accounts"

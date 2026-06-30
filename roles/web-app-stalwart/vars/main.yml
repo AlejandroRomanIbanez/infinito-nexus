@@ -10,6 +10,7 @@ database_password: "{{ lookup('config', application_id, 'credentials.database_pa
 STALWART_INSTANCE_DIR: "{{ lookup('container', application_id, 'directories.instance') }}"
 STALWART_VOLUMES_DIR: "{{ lookup('container', application_id, 'directories.volumes') }}"
 STALWART_CONFIG_DIR: "{{ [ STALWART_VOLUMES_DIR, 'etc' ] | path_join }}"
+STALWART_CERT_DIR: "{{ [ STALWART_VOLUMES_DIR, 'certs' ] | path_join }}"
 # JSON bootstrap (data store); everything else lives in the database.
 STALWART_CONFIG_FILE: "{{ [ STALWART_CONFIG_DIR, 'config.json' ] | path_join }}"
 
@@ -28,14 +29,13 @@ STALWART_HOSTNAME_DNS_ZONE: "{{ STALWART_HOSTNAME | to_zone }}"
 STALWART_VERSION: "{{ lookup('config', application_id, 'services.stalwart.version') }}"
 STALWART_IMAGE: "{{ lookup('config', application_id, 'services.stalwart.image') }}"
 STALWART_CONTAINER: "{{ lookup('config', application_id, 'services.stalwart.name') }}"
-STALWART_ANTIVIRUS_IMAGE: "{{ lookup('config', application_id, 'services.antivirus.image') }}"
-STALWART_ANTIVIRUS_VERSION: "{{ lookup('config', application_id, 'services.antivirus.version') }}"
 STALWART_WEBMAIL_IMAGE: "{{ lookup('config', application_id, 'services.webmail.image') }}"
 STALWART_WEBMAIL_VERSION: "{{ lookup('config', application_id, 'services.webmail.version') }}"
+STALWART_WEBMAIL_DOMAIN: "webmail.{{ DOMAIN_PRIMARY }}"
+STALWART_WEBMAIL_HTTP_PORT: "{{ lookup('config', application_id, 'services.webmail.ports.local.http') }}"
 
 # Volumes
 STALWART_DATA_VOLUME: "stalwart_data"
-STALWART_CLAMAV_VOLUME: "stalwart_clamav_data"
 STALWART_WEBMAIL_VOLUME: "stalwart_webmail_data"
 
 # Network

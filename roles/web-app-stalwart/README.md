@@ -20,21 +20,21 @@ into one binary. This role runs:
 
 | Container | Purpose |
 |-----------|---------|
-| `stalwart` | SMTP/IMAP/JMAP/POP3/Sieve/DAV + spam filter + WebAdmin/REST API |
-| `antivirus` (ClamAV) | Attachment scanning, wired into Stalwart's spam pipeline |
+| `stalwart` | SMTP/IMAP/JMAP/POP3/Sieve/DAV + built-in spam filter + WebAdmin/REST API |
 | `webmail` (Roundcube) | Browser webmail (parity with Mailu) |
 | `postgres` *(shared)* | Account / mail / metadata store |
 | `redis` *(shared)* | In-memory / rate-limit store |
 
-Dynamic state (domains, accounts, DKIM keys) is administered at runtime through
-the management REST API; `config.toml` only bootstraps stores, listeners, TLS,
-OIDC and the break-glass admin.
+Dynamic state (domains, accounts, passwords, DKIM, certificates) is administered
+at runtime via the JMAP management API; `config.json` only bootstraps the data
+store. (Stalwart's spam filter is built in, so no separate ClamAV container is
+needed.)
 
 ## Features
 
 - All-in-one mail server (SMTP/IMAP/JMAP/POP3/ManageSieve)
 - CalDAV / CardDAV / WebDAV collaboration
-- Built-in spam filtering + ClamAV antivirus
+- Built-in spam filtering
 - DKIM signing with automatic key management; SPF / DMARC published in DNS
 - OpenID Connect SSO via Keycloak
 - Roundcube webmail

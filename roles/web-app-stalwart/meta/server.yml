@@ -6,6 +6,7 @@ status_codes:
 domains:
   canonical:
     - mail.{{ DOMAIN_PRIMARY }}
+    - webmail.{{ DOMAIN_PRIMARY }}
   aliases: []
 csp:
   flags:

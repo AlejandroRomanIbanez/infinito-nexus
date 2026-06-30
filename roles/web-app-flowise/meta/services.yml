@@ -95,8 +95,8 @@ javascript:
   shared: true
 email:
   bond: 1
-  enabled: "{{ 'web-app-stalwart' in group_names }}"
-  shared: "{{ 'web-app-stalwart' in group_names }}"
+  enabled: "{{ MAIL_PROVIDER in group_names }}"
+  shared: "{{ MAIL_PROVIDER in group_names }}"
 prometheus:
   bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"

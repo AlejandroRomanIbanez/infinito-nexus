@@ -55,6 +55,8 @@ DNS_PROVIDER: "localhost" # The DNS Provider\Registrar for the domain -> Legit v
 
 HOSTING_PROVIDER: "localhost" # Provider which hosts the server -> hetzner
 
+MAIL_PROVIDER: "web-app-stalwart" # Active mail provider role. Set to web-app-mailu to use Mailu instead of Stalwart.
+
 ## Docker
 DOCKER_IN_CONTAINER: "{{ (ansible_facts['env']['container'] | default('')) != '' }}"
 DOCKER_RESTART_POLICY: "unless-stopped" # Default restart parameter for docker containers
