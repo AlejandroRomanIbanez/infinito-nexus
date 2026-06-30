@@ -19,4 +19,4 @@ For the swarm deploy loop, see [Swarm Loop](swarm.md).
 
 `make act-*` aborts with `failed to copy content to container: mkdirat var/run...` because the stock runner image's `/var/run` symlink trips Docker 28/29's stricter `docker cp`.
 
-Fix: run `make act-runner-image` once, then prefix any act target with `ACT_PLATFORM_IMAGE=local/act-runner-fixed:latest` (e.g. `ACT_PLATFORM_IMAGE=local/act-runner-fixed:latest make act-swarm-zombie app=<app>`).
+Fix: run `make act-runner-image` once, then prefix any act target with `ACT_PLATFORM_IMAGE=local/act-runner-fixed:latest` (e.g. `ACT_PLATFORM_IMAGE=local/act-runner-fixed:latest make swarm-zombie app=<app>`).

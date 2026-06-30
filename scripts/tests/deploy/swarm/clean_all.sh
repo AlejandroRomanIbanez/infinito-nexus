@@ -36,14 +36,14 @@ _select_names() {
 	docker ps -a --format '{{.Names}}' --filter "name=${_act_name}" 2>/dev/null
 }
 
-echo ">>> act-swarm-clean: leftover containers"
+echo ">>> swarm-clean: leftover containers"
 _ctrs="$(_select_ids | sort -u)"
 if [ -n "${_ctrs}" ]; then
 	# shellcheck disable=SC2086  # intentional word-split of the id list
 	docker rm -f ${_ctrs} 2>&1 | sed 's/^/    /' || true
 fi
 
-echo ">>> act-swarm-clean: leftover networks"
+echo ">>> swarm-clean: leftover networks"
 _nets="$(docker network ls --format '{{.Name}}' | grep -E "${INFINITO_SWARM_LAB_NET_NAME}" || true)"
 if [ -n "${_nets}" ]; then
 	# shellcheck disable=SC2086  # intentional word-split of the network list
@@ -53,11 +53,11 @@ docker network prune -f >/dev/null 2>&1 || true
 
 _left="$(_select_names | sort -u)"
 if [ -z "${_left}" ]; then
-	echo ">>> act-swarm-clean: done, no remnants"
+	echo ">>> swarm-clean: done, no remnants"
 	exit 0
 fi
 
-echo ">>> act-swarm-clean: D-state remnants survived docker rm -f:"
+echo ">>> swarm-clean: D-state remnants survived docker rm -f:"
 echo "    ${_left//$'\n'/$'\n'    }"
 if sudo -n true 2>/dev/null; then
 	echo ">>> clearing wedged kernel NFS on host (sudo)"

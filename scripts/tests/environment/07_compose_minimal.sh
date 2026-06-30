@@ -11,8 +11,8 @@ source "${SCRIPT_DIR}/utils/cache.sh"
 echo "Snapshotting cache counters before the deploy."
 CACHE_BEFORE="$(cache_snapshot)"
 
-echo "Deploying dashboard with matomo disabled to verify the disable= make arg suppresses the shared service in the inventory."
-make compose-deploy mode=reinstall apps="${DASHBOARD_APP}" disable="matomo"
+echo "Deploying dashboard with all variable (group-conditional) services disabled to speed up the deploy and verify disable= suppresses them from the inventory."
+make compose-deploy mode=reinstall apps="${DASHBOARD_APP}" disable="sso,asset,simpleicons,logout,matomo,css,prometheus"
 inspect
 
 echo "Actively probing both caches to confirm pull-through works end-to-end."
@@ -32,5 +32,5 @@ echo "Verifying the dashboard is reachable (matomo was disabled, not the dashboa
 assert_http_status 200 "${DASHBOARD_URL}"
 
 echo "Verifying matomo is not reachable because it was excluded from the inventory."
-# Expect 000 because curl aborts in TLS before HTTP when the excluded hostname is missing from the certificate SANs.
+# Exception: Expect 000 because curl aborts in TLS before HTTP when the excluded hostname is missing from the certificate SANs.
 assert_http_status 000 "${MATOMO_URL}"

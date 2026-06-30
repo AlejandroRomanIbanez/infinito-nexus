@@ -4,8 +4,8 @@ This page defines the inner loop for iterating on a role-local `files/playwright
 
 ## Definitions
 
-- **Inner loop**: the edit-rerun cycle on `roles/<role>/files/playwright/playwright.spec.js` driven by `make compose-playwright role=<role>`, without a redeploy. On the act-swarm test cluster the equivalent is `make act-swarm-playwright role=<role>`, which first copies the working-tree's modified files into the node's frozen bootstrap copy (swarm nodes are not bind-mounted like compose).
-  - If any `make act-swarm-*` target aborts at **Set up job** with `mkdirat var/run...` on a recent Docker engine, point act at a fixed runner image per [Workflow Loop](workflow.md#act-fails-at-set-up-job-on-recent-docker).
+- **Inner loop**: the edit-rerun cycle on `roles/<role>/files/playwright/playwright.spec.js` driven by `make compose-playwright role=<role>`, without a redeploy. On the act-swarm test cluster the equivalent is `make swarm-playwright role=<role>`, which first copies the working-tree's modified files into the node's frozen bootstrap copy (swarm nodes are not bind-mounted like compose).
+  - If any `make swarm-*` target aborts at **Set up job** with `mkdirat var/run...` on a recent Docker engine, point act at a fixed runner image per [Workflow Loop](workflow.md#act-fails-at-set-up-job-on-recent-docker).
 - **Staging dir**: `TEST_E2E_PLAYWRIGHT_STAGE_BASE_DIR/<role>` (default `/tmp/test-e2e-playwright/<role>`). Contains the rendered `.env` and the Playwright project from the last deploy.
 - **Baseline deploy**: a successful `make compose-deploy mode=reinstall apps=<role> full_cycle=true` run as defined in [Compose Loop](compose.md).
 - **Pass**: `make compose-playwright role=<role>` exits `0` AND every MUST in [Contributing `playwright.spec.js`](../../../contributing/artefact/files/role/playwright.specs.js.md) holds for the resulting run.
@@ -53,7 +53,7 @@ To validate a hypothesis without redeploying — e.g. rerun the Playwright image
 
 You MUST NOT report the task complete until all of the following hold:
 
-1. `make compose-playwright role=<role>` (or `make act-swarm-playwright role=<role>` against the swarm cluster) exited `0` on its last invocation, run WITHOUT any `pw="--grep …"` narrowing, so the entire spec (every test and every persona) ran and ALL passed. Redeploying while only a grepped subset is green and other tests are red or unrun is FORBIDDEN: the full suite MUST be green in the container first.
+1. `make compose-playwright role=<role>` (or `make swarm-playwright role=<role>` against the swarm cluster) exited `0` on its last invocation, run WITHOUT any `pw="--grep …"` narrowing, so the entire spec (every test and every persona) ran and ALL passed. Redeploying while only a grepped subset is green and other tests are red or unrun is FORBIDDEN: the full suite MUST be green in the container first.
 2. Every MUST in [Contributing `playwright.spec.js`](../../../contributing/artefact/files/role/playwright.specs.js.md) holds, including the live-application assertion and the logged-out final state.
 3. A final `make compose-deploy mode=reinstall apps=<role> full_cycle=true` run has completed with the spec passing against the freshly provisioned stack. Inner-loop passes alone do NOT satisfy this gate.
 

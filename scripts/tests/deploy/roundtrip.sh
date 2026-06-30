@@ -43,12 +43,12 @@ for app in "${_apps[@]}"; do
 			;;
 		swarm)
 			ACT_PLATFORM_IMAGE=local/act-runner-fixed:latest \
-				make -C "$_repo_root" act-swarm-zombie app="$app" 2>&1 | tee "$log"
+				make -C "$_repo_root" swarm-zombie app="$app" 2>&1 | tee "$log"
 			grep -q "Matrix-deploy ${app}: provision/deploy/e2e/verify per round" "$log" || {
 				echo "roundtrip: ${app} [swarm] FAILED: swarm deploy job did not run (empty matrix); see ${log}" >&2
 				exit 1
 			}
-			[ "${keep:-false}" = true ] || make -C "$_repo_root" act-swarm-down name="$app"
+			[ "${keep:-false}" = true ] || make -C "$_repo_root" swarm-down name="$app"
 			;;
 		*)
 			echo "roundtrip: unknown mode '${mode}' (expected: compose | swarm)" >&2

@@ -3,8 +3,8 @@ set +e
 
 if [ "${INFINITO_KEEP_SWARM_NODES}" = "true" ]; then
 	echo "INFINITO_KEEP_SWARM_NODES=true -> preserving swarm cluster for post-mortem inspection."
-	echo "Inspect: make act-swarm-exec node=swarm-mgr-01 cmd='docker service ls'"
-	echo "Release: make act-swarm-down"
+	echo "Inspect: make swarm-exec node=swarm-mgr-01 cmd='docker service ls'"
+	echo "Release: make swarm-down"
 	exit 0
 fi
 
