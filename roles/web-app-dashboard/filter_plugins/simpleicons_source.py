@@ -1,12 +1,19 @@
 import re
+import unicodedata
 
 from ansible.errors import AnsibleFilterError
 
 
 def slugify(name):
-    """Convert a display name to a simple-icons slug format."""
-    # Replace spaces and uppercase letters
-    return re.sub(r"\s+", "", name.strip().lower())
+    """Convert a display name to a simple-icons slug format.
+
+    Simple Icons slugs are ASCII-only; a title carrying a non-ASCII character
+    (e.g. U+2011 NON-BREAKING HYPHEN) otherwise produces a non-ASCII slug that
+    crashes the uri probe when it ASCII-encodes the request URL.
+    """
+    folded = unicodedata.normalize("NFKD", name.strip().lower())
+    ascii_only = folded.encode("ascii", "ignore").decode("ascii")
+    return re.sub(r"\s+", "", ascii_only)
 
 
 def normalize_domain(value):
