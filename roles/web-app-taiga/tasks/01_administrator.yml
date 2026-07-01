@@ -10,7 +10,7 @@
   ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
     container exec -i
     {{ TAIGA_MANAGER_LOCAL_CID | quote }}
-    migrate --noinput
+    python manage.py migrate --noinput
   register: taiga_migrate
   changed_when: taiga_migrate.rc == 0
   delegate_to: "{{ TAIGA_MANAGER_HOST_NODE }}"
@@ -20,7 +20,7 @@
     container exec -i
     -e DJANGO_SUPERUSER_PASSWORD={{ TAIGA_SUPERUSER_PASSWORD | quote }}
     {{ TAIGA_MANAGER_LOCAL_CID | quote }}
-    createsuperuser --noinput
+    python manage.py createsuperuser --noinput
     --username {{ TAIGA_SUPERUSER_NAME }}
     --email {{ TAIGA_SUPERUSER_EMAIL }}
   register: taiga_create_admin
@@ -38,7 +38,7 @@
     container exec -i
     -e DJANGO_SUPERUSER_PASSWORD={{ TAIGA_SUPERUSER_PASSWORD | quote }}
     {{ TAIGA_MANAGER_LOCAL_CID | quote }}
-    shell -c
+    python manage.py shell -c
     "from django.contrib.auth import get_user_model; import os; U=get_user_model(); u,created=U.objects.get_or_create(username='{{ TAIGA_SUPERUSER_NAME }}'); changed=bool(created);
     old=(u.email,u.is_staff,u.is_superuser,u.is_active); u.email='{{ TAIGA_SUPERUSER_EMAIL }}'; u.is_staff=True; u.is_superuser=True; u.is_active=True; changed =
     changed or old!=(u.email,u.is_staff,u.is_superuser,u.is_active); pwd=os.environ.get('DJANGO_SUPERUSER_PASSWORD'); assert pwd, 'Missing DJANGO_SUPERUSER_PASSWORD';

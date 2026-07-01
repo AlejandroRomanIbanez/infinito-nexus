@@ -38,7 +38,6 @@
   stack_host_template:
     src: "settings/conf.json.j2"
     dest: "{{ TAIGA_FRONTEND_CONF_PATH }}"
-  when: TAIGA_PLUGINS_ENABLED | bool
   notify: compose up
 
 - name: "📁 create {{ TAIGA_COMPOSE_INIT_PATH }}"
