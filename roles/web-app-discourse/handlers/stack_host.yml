@@ -10,7 +10,8 @@
   command: "container network connect {{ DISCOURSE_NETWORK }} {{ DISCOURSE_DATABASE_CONTAINER }}"
   failed_when: >
     result.rc != 0 and
-    'already exists in network' not in result.stderr
+    'already exists in network' not in result.stderr and
+    'already attached to network' not in result.stderr
   register: result
   when:
     - DISCOURSE_DATABASE_IS_SHARED | bool
@@ -40,5 +41,6 @@
   changed_when: discourse_overlay_connect.rc == 0
   failed_when: >
     discourse_overlay_connect.rc != 0 and
-    'already exists in network' not in discourse_overlay_connect.stderr
+    'already exists in network' not in discourse_overlay_connect.stderr and
+    'already attached to network' not in discourse_overlay_connect.stderr
   when: SWARM_CLUSTER_AVAILABLE | bool
