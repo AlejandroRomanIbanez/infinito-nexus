@@ -22,6 +22,7 @@
           'methodCalls': [['x:MtaMilter/set', {'create': {'av': {
             'hostname': STALWART_CLAMAV_HOST,
             'port': STALWART_CLAMAV_MILTER_PORT,
-            'stages': {'data': true}
+            'stages': {'data': true},
+            'tempFailOnError': false
           }}}, 'c0']]} | to_json }}
   when: stalwart_av_milter_id | length == 0
