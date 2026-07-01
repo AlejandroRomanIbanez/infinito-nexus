@@ -41,7 +41,7 @@ mastodon:
   shared: true
   enabled: true
   image: ghcr.io/mastodon/mastodon
-  version: latest
+  version: v4.6.2
   min_storage: 15GB
   backup:
     no_stop_required: true
@@ -65,7 +65,7 @@ mastodon:
   lifecycle: beta
 streaming:
   image: ghcr.io/mastodon/mastodon-streaming
-  version: latest
+  version: v4.6.2
   name: mastodon-streaming
   cpus: "0.3"
   mem_reservation: 256m
