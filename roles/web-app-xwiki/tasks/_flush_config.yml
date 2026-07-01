@@ -16,7 +16,7 @@
     follow_redirects: none
   register: xwiki_rest_up
   changed_when: false
-  retries: 60
+  retries: 120
   delay: 5
   until:
     - xwiki_rest_up is succeeded
