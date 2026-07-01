@@ -29,8 +29,8 @@
       ansible.builtin.shell: |
         echo "===== container service ps {{ wait_service_key }} ====="
         container service ps --no-trunc {{ _wait_service_name | quote }} 2>&1 || true
-        echo "===== container service logs (tail 50) ====="
-        container service logs --no-task-ids --tail 50 {{ _wait_service_name | quote }} 2>&1 || true
+        echo "===== container service logs (full) ====="
+        container service logs --no-task-ids {{ _wait_service_name | quote }} 2>&1 || true
       register: _swarm_converge_dump
       changed_when: false
       failed_when: false

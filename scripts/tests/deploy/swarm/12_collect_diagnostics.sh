@@ -32,8 +32,8 @@ sep "per-service docker service ps (--no-trunc) for every existing service"
 for svc in $(docker exec "${MGR}" docker service ls --format '{{.Name}}'); do
 	echo "--- ${svc} ---"
 	docker exec "${MGR}" docker service ps --no-trunc "${svc}"
-	echo "--- ${svc} logs (tail 50) ---"
-	docker exec "${MGR}" docker service logs --tail 50 "${svc}" 2>&1 | head -100
+	echo "--- ${svc} logs (full) ---"
+	docker exec "${MGR}" docker service logs "${svc}" 2>&1
 done
 
 sep "docker images per node (filter custom + db + ${ENTITY})"
