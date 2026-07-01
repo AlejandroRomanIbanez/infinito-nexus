@@ -14,9 +14,9 @@ logs:
       target: /app/log
 
 allowed_hosts:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-decidim', 'directories.instance'), 'allowed_hosts.rb'] | path_join }}"
-  read_only: true
+  mode: "0444"
   mounts:
     - service: decidim
       target: /code/config/initializers/allowed_hosts.rb

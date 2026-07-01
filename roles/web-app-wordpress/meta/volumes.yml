@@ -6,9 +6,9 @@ data:
     - service: wordpress
       target: "/var/www/html"
 msmtprc:
-  type: bind
+  type: config
   source: "{{ [ lookup('container', 'web-app-wordpress', 'directories.config'), 'msmtprc.conf'] | path_join }}"
-  read_only: true
+  mode: "0444"
   mounts:
     - service: wordpress
       target: /etc/msmtprc

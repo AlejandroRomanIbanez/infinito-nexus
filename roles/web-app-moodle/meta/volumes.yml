@@ -26,12 +26,11 @@ nginx_conf:
     - service: nginx
       target: /etc/nginx/conf.d/default.conf
 msmtprc:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-moodle', 'directories.config'), 'msmtprc.conf'] | path_join }}"
+  mode: "0444"
   mounts:
     - service: moodle
       target: /etc/msmtprc
-      read_only: true
     - service: cron
       target: /etc/msmtprc
-      read_only: true
