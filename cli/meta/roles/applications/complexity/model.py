@@ -186,8 +186,7 @@ def compute_complexity_rows(
     ]
     if deploy_mode == "swarm":
         bundles = {
-            name: len(deployable_variant_indices(overrides.get(name)))
-            for name in names
+            name: len(deployable_variant_indices(overrides.get(name))) for name in names
         }
     else:
         bundles = compose_bundle_counts(names, variants, roles_dir=roles_dir)

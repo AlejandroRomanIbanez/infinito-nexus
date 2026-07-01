@@ -31,9 +31,7 @@ def _make_action(task):
 
 class TestDatabaseQueryAction(unittest.TestCase):
     def setUp(self):
-        patcher = patch(
-            "plugins.action.database_query.ActionBase.run", return_value={}
-        )
+        patcher = patch("plugins.action.database_query.ActionBase.run", return_value={})
         patcher.start()
         self.addCleanup(patcher.stop)
 

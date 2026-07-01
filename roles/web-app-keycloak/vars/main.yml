@@ -17,13 +17,6 @@ KEYCLOAK_RBAC_GROUP_NAME: "{{ RBAC.GROUP.NAME }}"
 KEYCLOAK_RBAC_ALL_APP_IDS: "{{ lookup('deployment').groups | rbac_app_ids }}"
 KEYCLOAK_RBAC_RUN_APP_IDS: "{{ lookup('deployment').running | rbac_app_ids }}"
 
-# RBAC | Per-application group-ldap-mapper payload.
-# Single SPOT for the per-app mapper definition: takes the canonical
-# 'ldap-roles' mapper from the realm-import dictionary
-# (templates/import/components/org.keycloak.storage.UserStorageProvider.json.j2)
-# and overrides only the fields that genuinely vary per application.
-# Lazy-evaluated, so the consuming task MUST set `kc_app_id`,
-# `kc_app_group_id`, and have `ldap_cmp_id` resolved before rendering.
 KEYCLOAK_PER_APP_LDAP_ROLES_MAPPER: >-
   {{
     ((KEYCLOAK_DICTIONARY_REALM.components['org.keycloak.storage.UserStorageProvider']
@@ -86,11 +79,11 @@ KEYCLOAK_IMAGE: "{{ lookup('config', application_id, 'services.keycloak.image') 
 KEYCLOAK_VERSION: "{{ lookup('config', application_id, 'services.keycloak.version') }}"
 KEYCLOAK_REPLICAS: "{{ groups[application_id] | length }}"
 KEYCLOAK_REPLICAS_WANT: "{{ KEYCLOAK_REPLICAS }}/{{ KEYCLOAK_REPLICAS }}"
-KEYCLOAK_DB_NETWORK_ARG: "{% if lookup('database', application_id, 'shared') | bool %}--network {{ lookup('database', application_id, 'network') | quote }}{% endif %}"
+KEYCLOAK_DB_NETWORK_ARG: "{% if lookup('database', application_id, 'shared') | bool %}--network {{ lookup('database', application_id, 'network') | quote }}{% endif
+  %}"
 
 KEYCLOAK_REDIRECT_FEATURES: ["services.sso.enabled", "services.sso.enabled"]
 KEYCLOAK_FRONTCHANNEL_LOGOUT_URL: "{{ lookup('tls', 'web-svc-logout', 'url.base') }}"
-# This will lead to issues later @todo; Optimize:
 KEYCLOAK_REDIRECT_URIS: "{{ lookup('domains') | redirect_uris(lookup('applications'), lookup('tls', application_id, 'protocols.web'), '/*', KEYCLOAK_REDIRECT_FEATURES)
   }}"
 KEYCLOAK_WEB_ORIGINS: >-
@@ -110,7 +103,6 @@ KEYCLOAK_LDAP_URL: "{{ LDAP.SERVER.URI }}"
 KEYCLOAK_LDAP_SYNC_CHANGES_PERIOD: "{{ lookup('config', application_id, 'services.ldap.sync.period.changes') }}"
 KEYCLOAK_LDAP_SYNC_FULL_PERIOD: "{{ lookup('config', application_id, 'services.ldap.sync.period.full') }}"
 
-# It's important to filter the posixAccount class out, because it is just used by ansible
 KEYCLOAK_LDAP_USER_OBJECT_CLASSES: >
   {{
     (
@@ -121,10 +113,6 @@ KEYCLOAK_LDAP_USER_OBJECT_CLASSES: >
 
 KEYCLOAK_USER_EMAILS_VERIFIED: "{{ lookup('config', application_id, 'services.keycloak.users.emails_verified') }}"
 
-# Moodle integration toggle. The realm import file, the per-app
-# OIDC client template, and the LDAP federation / declarative user
-# profile components all gate Moodle-specific configuration on this
-# single SPOT.
 KEYCLOAK_MOODLE_ENABLED: "{{ 'web-app-moodle' in group_names }}"
 
 KEYCLOAK_RECAPTCHA_ENABLED: "{{ lookup('config', application_id, 'services.recaptcha.enabled') }}"

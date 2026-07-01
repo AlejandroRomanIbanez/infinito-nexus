@@ -8,7 +8,7 @@ A comment is VALID only when it is one of:
   `rubocop:`, `stylelint-disable`, `pragma`, language annotations, ...),
 * a **marked exception** -- a mid-code comment that flags a real trip-wire
   (warning, pitfall, deliberate non-idiomatic choice) whose text starts with
-  one of the exception markers (`Exception`, `Invariant`, ...).
+  one of the exception markers (`Exception`, ...).
 
 Mid-code comments are ONLY allowed as exceptions. Plain narration, banners,
 restating the next line, or neutral `Note:`-style info carry no warning and so
@@ -64,7 +64,6 @@ _MARKERS = (
     "sec",
     "safety",
     "deprecated",
-    "invariant",
     "limitation",
 )
 _MARKER_RE = re.compile(rf"^[\s*/#>-]*(?:{'|'.join(_MARKERS)})\b", re.IGNORECASE)
@@ -373,8 +372,7 @@ class TestCommentsValid(unittest.TestCase):
                 f"{len(offenders)} invalid comment(s). A comment is allowed only as a "
                 "file header, a doc comment directly above a class/function/rule, a "
                 "tool directive (noqa/nocheck/...), or a mid-code EXCEPTION that flags "
-                "a real trip-wire (starts with Exception/"
-                "Invariant/...). Everything else is narration: DELETE it "
+                "a real trip-wire (starts with Exception/...). Everything else is narration: DELETE it "
                 "(move real explanation into the file header or a doc comment):\n"
                 + shown
             )

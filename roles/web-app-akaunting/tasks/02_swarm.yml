@@ -16,7 +16,7 @@
   delay: 5
   until: akaunting_swarm_drained.rc == 0
 
-- name: "▶️ Akaunting setup | Run one-shot install job (--no-start → akaunting.sh installs, then exits instead of serving)"
+- name: "▶️ Akaunting setup | Run one-shot install (--no-start: install then exit)"
   ansible.builtin.shell: |
     set -euo pipefail
     JOB={{ AKAUNTING_SETUP_JOB | quote }}
