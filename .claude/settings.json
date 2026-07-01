@@ -339,7 +339,11 @@
       "WebFetch(domain:zoom.us)",
       "WebSearch",
       "Workflow",
-      "Write"
+      "Write",
+      "WebFetch(domain:forum.keycloak.org)",
+      "WebFetch(domain:docs.redhat.com)",
+      "WebFetch(domain:git.coopcloud.tech)",
+      "WebFetch(domain:www.synacktiv.com)"
     ],
     "deny": [
       "Bash(for *)",
