@@ -581,7 +581,7 @@ swarm-zombie:
 	@bash scripts/tests/deploy/act/down_act_outer.sh
 	@ACT_RM=false \
 	 ACT_BIND=true \
-	 ACT_ENV='INFINITO_KEEP_SWARM_NODES=true;INFINITO_APP_DISCOVERY_RUNNER=host;disable=$(disable);SWARM_NAME=$(or $(name),$(app))' \
+	 ACT_ENV='INFINITO_KEEP_SWARM_NODES=true;INFINITO_APP_DISCOVERY_RUNNER=host;INFINITO_DEPLOY_MODE=swarm;disable=$(disable);SWARM_NAME=$(or $(name),$(app))' \
 	 ACT_WORKFLOW=.github/workflows/test-deploy-swarm.yml \
 	 ACT_JOB=swarm \
 	 ACT_MATRIX='apps:$(app)' \
