@@ -2,7 +2,7 @@
 # No `set -e`: a poll iteration that finds no token yet must not abort the loop.
 set -o pipefail
 
-container service update --force "${SERVICE_REF}" >/dev/null
+container service update --force --replicas 1 "${SERVICE_REF}" >/dev/null
 
 deadline=$(($(date +%s) + DEADLINE_S))
 while [ "$(date +%s)" -lt "${deadline}" ]; do
