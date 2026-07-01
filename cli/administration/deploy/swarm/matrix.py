@@ -43,10 +43,6 @@ def _provision(
     env = os.environ.copy()
     env["APP_ID"] = app_id
     env["INFINITO_INVENTORY_DIR"] = inv_dir
-    # `--app-variants` steers credential generation; `--vars` bakes the round's
-    # variant overlay (services/credentials) under `applications.<app>` into
-    # host_vars so `lookup('config', ...)` resolves the variant's values at
-    # deploy time. Both are needed to match the compose matrix exactly.
     env["INFINITO_APP_VARIANTS"] = json.dumps(round_variants, sort_keys=True)
     env["INFINITO_VARS_PAYLOAD"] = json.dumps(vars_payload, sort_keys=True)
     return _run(
@@ -67,6 +63,16 @@ def _extend_inventory(*, app_id: str, inv_dir: str) -> int:
     )
 
 
+def _force_shared_db(*, inv_dir: str) -> int:
+    env = os.environ.copy()
+    env["INV_DIR"] = inv_dir
+    return _run(
+        ["python3", "-m", "utils.tests.swarm.force_shared_db"],
+        env=env,
+        label="force shared DB (swarm: embedded DB is compose-only)",
+    )
+
+
 def _write_extras(*, extras_path: str) -> int:
     env = os.environ.copy()
     env["OUT_PATH"] = extras_path
@@ -82,10 +88,6 @@ def _deploy(
 ) -> int:
     env = os.environ.copy()
     env["APP_ID"] = app_id
-    # No --id: the swarm closure seeds from ALL inventory role groups so
-    # svc-swarm-node (the cluster bootstrap) deploys. Passing --id <app> seeds
-    # only the app + its deps, skips the bootstrap, and "docker stack deploy"
-    # then fails with "this node is not a swarm manager".
     cmd = [
         "python3",
         "-m",
@@ -172,10 +174,6 @@ def main(argv: list[str] | None = None) -> int:
     if not app_id:
         raise SystemExit("swarm-matrix: no application id (set $APP_ID or pass --id)")
 
-    # Late import: development.inventory pulls mirrors.py, which reads
-    # INFINITO_SRC_DIR at module load. The orchestrator step sources
-    # scripts/meta/env/load.sh first so it is set by call time; keeping the
-    # import lazy lets matrix.py be imported (tests, lint) without that env.
     from cli.administration.deploy.development.inventory import (
         _bake_overrides,
         _resolve_variant_payloads,
@@ -206,10 +204,6 @@ def main(argv: list[str] | None = None) -> int:
     ) in enumerate(plan):
         inv_root = inv_dir.rstrip("/")
 
-        # Purge the plan-constant union between rounds (never before round 0,
-        # never after the last round so the final state survives for chaos +
-        # inspection); a `shared:false` variant otherwise leaks its bundled
-        # provider into the next round.
         if plan_index > 0:
             rc = _purge(purge_set=round_purge_set)
             if rc != 0:
@@ -231,6 +225,8 @@ def main(argv: list[str] | None = None) -> int:
             round_variants=round_variants,
             vars_payload=vars_payload,
         )
+        if rc == 0:
+            rc = _force_shared_db(inv_dir=inv_root)
         if rc == 0:
             rc = _extend_inventory(app_id=app_id, inv_dir=inv_root)
         if rc == 0:
