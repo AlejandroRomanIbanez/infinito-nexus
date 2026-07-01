@@ -35,6 +35,7 @@
       - "NGINX_MAX_BODY_SIZE=100M"
     {{ lookup('container_volumes', application_id, 'front') | indent(4) }}
     {{ lookup('container_ports', ['funkwhale', 'http', DOCKER_BIND_HOST]) | indent(4) }}
+    {{ lookup('container_networks') | indent(4) }}
 
   typesense:
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
