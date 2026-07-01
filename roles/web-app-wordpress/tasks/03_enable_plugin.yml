@@ -13,5 +13,5 @@
 - name: "📦 Install and activate WordPress plugin via WP CLI"
   ansible.builtin.shell: >
     container exec -u {{ WORDPRESS_USER }} {{ WORDPRESS_CONTAINER_ADDRESS }}
-      wp plugin install {{ plugin_name }} --activate
-      --path={{ WORDPRESS_DOCKER_HTML_PATH }}
+    wp plugin install {{ plugin_name }} --activate
+    --path={{ WORDPRESS_DOCKER_HTML_PATH }}
