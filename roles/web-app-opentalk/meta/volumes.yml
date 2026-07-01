@@ -27,7 +27,7 @@ rabbit:
 controller_toml:
   type: config
   source: "{{ [lookup('container', 'web-app-opentalk', 'directories.volumes'), 'controller.toml'] | path_join }}"
-  mode: "0440"
+  mode: "0444"
   mounts:
     - service: controller
       target: /controller/controller.toml
@@ -35,7 +35,7 @@ controller_toml:
 livekit_yaml:
   type: config
   source: "{{ [lookup('container', 'web-app-opentalk', 'directories.volumes'), 'livekit.yaml'] | path_join }}"
-  mode: "0440"
+  mode: "0444"
   mounts:
     - service: livekit
       target: /etc/livekit/livekit.yaml
@@ -43,7 +43,7 @@ livekit_yaml:
 recorder_toml:
   type: config
   source: "{{ [lookup('container', 'web-app-opentalk', 'directories.volumes'), 'recorder.toml'] | path_join }}"
-  mode: "0440"
+  mode: "0444"
   mounts:
     - service: recorder
       target: /recorder/recorder.toml

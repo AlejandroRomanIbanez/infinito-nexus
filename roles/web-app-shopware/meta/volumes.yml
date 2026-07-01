@@ -84,7 +84,7 @@ thumbnail:
 init_script:
   type: config
   source: "{{ [lookup('container', 'web-app-shopware', 'directories.volumes'), 'init.sh'] | path_join }}"
-  mode: "0440"
+  mode: "0444"
   mounts:
     - service: init
       target: /usr/local/bin/init.sh
@@ -98,7 +98,7 @@ init_script:
 framework_yaml:
   type: config
   source: "{{ [lookup('container', 'web-app-shopware', 'directories.config'), 'framework.yaml'] | path_join }}"
-  mode: "0440"
+  mode: "0444"
   mounts:
     - service: init
       target: /var/www/html/config/packages/framework.yaml
