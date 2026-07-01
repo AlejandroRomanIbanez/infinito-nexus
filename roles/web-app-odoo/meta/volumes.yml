@@ -23,7 +23,7 @@ config:
 odoo_conf:
   type: config
   source: "{{ [lookup('container', 'web-app-odoo', 'directories.volumes'), 'odoo.conf'] | path_join }}"
-  mode: "0440"
+  mode: "0444"
   mounts:
     - service: odoo
       target: /etc/odoo/odoo.conf
