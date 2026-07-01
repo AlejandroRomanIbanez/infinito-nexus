@@ -15,7 +15,7 @@
       - src: "zzz_auth_ldap.xml.j2"
         dest: "{{ KIX_AUTH_LDAP_HOST_PATH }}"
         mode: "0644"
-        when: "{{ KIX_LDAP_ENABLED | bool }}"
+        condition: "{{ KIX_LDAP_ENABLED | bool }}"
       - src: "kix-proxy.default.conf.j2"
         dest: "{{ KIX_PROXY_NGINX_HOST_PATH }}"
         mode: "0644"

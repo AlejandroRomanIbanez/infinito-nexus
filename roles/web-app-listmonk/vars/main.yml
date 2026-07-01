@@ -33,7 +33,7 @@ LISTMONK_SETTINGS:
          "provider_url": OIDC.CLIENT.ISSUER_URL,
          "client_secret": OIDC.CLIENT.SECRET
       } | to_json }}
-    when: LISTMONK_OIDC_ENABLED | bool
+    condition: "{{ LISTMONK_OIDC_ENABLED | bool }}"
 
   - key: "security.enable_captcha"
     value: "true"
@@ -70,14 +70,14 @@ LISTMONK_SETTINGS:
           "tls_skip_verify": false
         }
       ] | to_json }}
-    when: LISTMONK_EMAIL.smtp | bool
+    condition: "{{ LISTMONK_EMAIL.smtp | bool }}"
 
   - key: "app.lang"
     value: '"{{ HOST_LL }}"'
 
   - key: "app.logo_url"
     value: '"{{ service_provider.platform.logo }}"'
-    when: service_provider.platform.logo | length > 0
+    condition: "{{ service_provider.platform.logo | length > 0 }}"
 
   - key: "app.site_name"
     value: '"{{ service_provider.company.titel }} Mailing list"'
@@ -109,7 +109,7 @@ LISTMONK_SETTINGS:
 
   - key: "app.favicon_url"
     value: '"{{ service_provider.platform.favicon }}"'
-    when: service_provider.platform.favicon | length > 0
+    condition: "{{ service_provider.platform.favicon | length > 0 }}"
 
   - key: "app.check_updates"
     value: "true"
@@ -119,32 +119,32 @@ LISTMONK_SETTINGS:
 
   - key: "upload.provider"
     value: '"s3"'
-    when: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
+    condition: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
 
   - key: "upload.s3.aws_access_key_id"
     value: "{{ lookup('objstore', application_id, 'access_key') | to_json }}"
-    when: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
+    condition: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
 
   - key: "upload.s3.aws_secret_access_key"
     value: "{{ lookup('objstore', application_id, 'secret_key') | to_json }}"
-    when: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
+    condition: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
 
   - key: "upload.s3.aws_default_region"
     value: "{{ lookup('objstore', application_id, 'region') | to_json }}"
-    when: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
+    condition: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
 
   - key: "upload.s3.bucket"
     value: "{{ lookup('objstore', application_id, 'bucket') | to_json }}"
-    when: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
+    condition: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
 
   - key: "upload.s3.url"
     value: "{{ lookup('objstore', application_id, 'url') | to_json }}"
-    when: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
+    condition: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
 
   - key: "upload.s3.public_url"
     value: "{{ lookup('objstore', application_id, 'public_url') | to_json }}"
-    when: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
+    condition: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
 
   - key: "upload.s3.bucket_type"
     value: '"public"'
-    when: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
+    condition: "{{ lookup('objstore', application_id, 'enabled') | bool }}"

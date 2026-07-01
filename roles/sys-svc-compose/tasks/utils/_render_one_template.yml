@@ -6,7 +6,7 @@
     mode: "0755"
   delegate_to: "{{ STACK_HOST }}"
   run_once: true
-  when: (_tpl.when | default(true)) | bool
+  when: (_tpl.condition | default(true)) | bool
 
 - name: "📄 Render '{{ _tpl.dest }}' (on manager when swarm)"
   ansible.builtin.template: # nocheck: stack-host-template (structurally STACK_HOST-delegated already (delegate_to + run_once), uses its own swarm-distribution dance)
@@ -17,7 +17,7 @@
     mode: "{{ _tpl.mode | default('0640') }}"
   delegate_to: "{{ STACK_HOST }}"
   run_once: true
-  when: (_tpl.when | default(true)) | bool
+  when: (_tpl.condition | default(true)) | bool
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   register: _role_templates_render
   notify: "{{ _tpl.notify | default(['compose up']) }}"
@@ -29,7 +29,7 @@
   run_once: true
   register: _role_templates_slurp
   when:
-    - (_tpl.when | default(true)) | bool
+    - (_tpl.condition | default(true)) | bool
     - DEPLOYMENT_MODE == 'swarm'
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
@@ -41,7 +41,7 @@
     group: "{{ _tpl.group | default('root') }}"
     mode: "{{ _tpl.mode | default('0640') }}"
   when:
-    - (_tpl.when | default(true)) | bool
+    - (_tpl.condition | default(true)) | bool
     - DEPLOYMENT_MODE == 'swarm'
     - not (IS_STACK_HOST | bool)
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"

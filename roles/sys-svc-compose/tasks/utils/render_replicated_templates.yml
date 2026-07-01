@@ -14,7 +14,7 @@
               'owner': entry.owner | default('root'),
               'group': entry.group | default('root'),
               'mode': entry.mode | default('0640'),
-              'when': entry.when | default(true),
+              'condition': entry.condition | default(true),
               'notify': entry.notify | default(['compose up']),
             }) -%}
           {%- endfor -%}

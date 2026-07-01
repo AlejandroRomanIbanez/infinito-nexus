@@ -16,7 +16,7 @@
       - src: "zz_oidc_group_role_mapping.rb.j2"
         dest: "{{ ZAMMAD_OIDC_GROUP_ROLE_MAP_HOST_PATH }}"
         mode: "0644"
-        when: "{{ ZAMMAD_OIDC_ENABLED }}"
+        condition: "{{ ZAMMAD_OIDC_ENABLED }}"
 
 - name: "🔐 grant CREATEDB to Zammad PostgreSQL role (init runs rake db:create)"
   database_query:

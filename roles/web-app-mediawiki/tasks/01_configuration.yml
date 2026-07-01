@@ -18,7 +18,7 @@
         owner: "root"
         group: "{{ MEDIAWIKI_USER_GID }}"
         mode: "0640"
-        when: "{{ MEDIAWIKI_OIDC_ENABLED | bool }}"
+        condition: "{{ MEDIAWIKI_OIDC_ENABLED | bool }}"
       - src: "debug.php.j2"
         dest: "{{ MEDIAWIKI_LOCAL_MOUNT_DIR }}/debug.php"
         owner: "root"
