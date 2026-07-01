@@ -75,12 +75,9 @@ LISTMONK_SETTINGS:
   - key: "app.lang"
     value: '"{{ HOST_LL }}"'
 
-#  - key: "messengers"
-#    value: '[]'
-
   - key: "app.logo_url"
     value: '"{{ service_provider.platform.logo }}"'
-    when: service_provider.platform.logo | bool
+    when: service_provider.platform.logo | length > 0
 
   - key: "app.site_name"
     value: '"{{ service_provider.company.titel }} Mailing list"'
@@ -107,123 +104,15 @@ LISTMONK_SETTINGS:
         }
       ] | to_json }}
 
-#
-#  - key: "upload.max_file_size"
-#    value: '5000'
-#
-#  - key: "upload.s3.aws_secret_access_key"
-#    value: '""'
-#
-#  - key: "app.batch_size"
-#    value: '1000'
-
   - key: "app.from_email"
     value: '"{{ service_provider.company.titel }} Newsletter <{{ lookup(''users'', LISTMONK_USER_SEND).email }}>"'
 
-#  - key: "bounce.actions"
-#    value: >-
-#      {"hard": {"count": 1, "action": "blocklist"}, "soft": {"count": 2, "action": "none"}, "complaint": {"count": 1, "action": "blocklist"}}
-#
-#  - key: "app.concurrency"
-#    value: '10'
-
   - key: "app.favicon_url"
     value: '"{{ service_provider.platform.favicon }}"'
-    when: service_provider.platform.favicon | bool
-
-#  - key: "bounce.postmark"
-#    value: '{"enabled": false, "password": "", "username": ""}'
-#
-#  - key: "upload.provider"
-#    value: '"filesystem"'
-
-#  - key: "app.message_rate"
-#    value: '10'
-#
-#  - key: "bounce.mailboxes"
-#    value: >-
-#      [{"host": "pop.yoursite.com", "port": 995, "type": "pop", "uuid": "471fd0e9-8c33-4e4a-9183-c4679699faca", "enabled": false, "password": "password", "username": "username", "return_path": "bounce@listmonk.yoursite.com", "tls_enabled": true, "auth_protocol": "userpass", "scan_interval": "15m", "tls_skip_verify": false}]
-
-#  - key: "upload.s3.url"
-#    value: '"https://ap-south-1.s3.amazonaws.com"'
-#
-#  - key: "upload.s3.bucket"
-#    value: '""'
-#
-#  - key: "upload.s3.expiry"
-#    value: '"167h"'
+    when: service_provider.platform.favicon | length > 0
 
   - key: "app.check_updates"
     value: "true"
-
-#  - key: "upload.extensions"
-#    value: '["jpg", "jpeg", "png", "gif", "svg", "*"]'
-#
-#  - key: "bounce.ses_enabled"
-#    value: 'false'
-#
-#  - key: "privacy.allow_wipe"
-#    value: 'true'
-#
-#  - key: "privacy.exportable"
-#    value: '["profile", "subscriptions", "campaign_views", "link_clicks"]'
-#
-#  - key: "app.max_send_errors"
-#    value: '1000'
-#
-#  - key: "bounce.forwardemail"
-#    value: '{"key": "", "enabled": false}'
-#
-#  - key: "bounce.sendgrid_key"
-#    value: '""'
-#
-#  - key: "privacy.allow_export"
-#    value: 'true'
-#
-#  - key: "upload.s3.public_url"
-#    value: '""'
-#
-#  - key: "upload.s3.bucket_path"
-#    value: '"/"'
-#
-#  - key: "upload.s3.bucket_type"
-#    value: '"public"'
-#
-#  - key: "app.cache_slow_queries"
-#    value: 'false'
-#
-#  - key: "bounce.sendgrid_enabled"
-#    value: 'false'
-#
-#  - key: "bounce.webhooks_enabled"
-#    value: 'false'
-#
-#  - key: "privacy.domain_blocklist"
-#    value: '[]'
-#
-#  - key: "privacy.allow_blocklist"
-#    value: 'true'
-#
-#  - key: "privacy.record_optin_ip"
-#    value: 'false'
-#
-#  - key: "app.enable_public_archive"
-#    value: 'true'
-#
-#  - key: "privacy.allow_preferences"
-#    value: 'true'
-#
-#  - key: "app.message_sliding_window"
-#    value: 'false'
-#  
-#  - key: "app.message_sliding_window_rate"
-#    value: '10000'
-#
-#  - key: "app.enable_public_subscription_page"
-#    value: 'true'
-#
-#  - key: "app.message_sliding_window_duration"
-#    value: '"1h"'
 
   - key: "app.enable_public_archive_rss_content"
     value: "true"
