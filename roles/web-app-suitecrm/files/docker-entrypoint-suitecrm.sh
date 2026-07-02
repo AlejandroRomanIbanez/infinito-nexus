@@ -20,9 +20,13 @@ fi
 # Permissions
 ############################################
 log "Adjusting file permissions..."
-chown -R "$WEB_USER:$WEB_GROUP" "$APP_DIR"
-find "$APP_DIR" -type d -exec chmod 755 {} \;
-find "$APP_DIR" -type f -exec chmod 644 {} \;
+# Exception: read-only docker-config mounts (e.g. ldap.yaml) are immutable by design,
+# so chown/chmod on them always fails; without || true, set -e aborts the whole boot.
+# This is the one place silence is correct: the writable app dirs below are still
+# chown'd strictly, so any real permission failure there is not swallowed.
+chown -R "$WEB_USER:$WEB_GROUP" "$APP_DIR" || true
+find "$APP_DIR" -type d -exec chmod 755 {} \; || true
+find "$APP_DIR" -type f -exec chmod 644 {} \; || true
 
 for d in cache public/upload public/legacy/upload public/legacy/cache; do
   if [ -d "${APP_DIR}/${d}" ]; then
