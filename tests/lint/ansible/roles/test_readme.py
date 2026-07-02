@@ -14,12 +14,13 @@ Enforced (hard fail) rules
 3. **Section order.** Required H2s MUST appear in the convention order
    Description → Overview → Features → … → Credits, and ``## Credits``
    MUST be the last H2 heading in the file.
-4. **Canonical Credits block.** The Credits paragraph MUST match the
-   project's fixed wording byte-for-byte (Kevin Veen-Birkenbach /
-   Consulting & Coaching Solutions / Infinito.Nexus Project / Community
-   License). The same exact-value is enforced for ``galaxy_info.company``
-   in :mod:`tests.lint.ansible.roles.meta.test_main_galaxy_schema` so
-   the role's metadata and its README stay in sync.
+4. **Credits block.** The Credits paragraph MUST carry the fixed
+   "Implemented by …" / "Part of … maintained by Kevin Veen-Birkenbach" /
+   license wording. The implementing author is NOT hard-coded: it is the
+   single point of truth ``galaxy_info.author`` read from the role's own
+   ``meta/main.yml``. The README author (bold, optionally wrapped in a
+   Markdown link) MUST equal that value byte-for-byte, so a role's
+   metadata and its README stay in sync.
 
 Soft / fuzzy rules from ``readme_md.md`` (sentence-case headings,
 "H1 must be the human-readable software name", "Description must link the
@@ -39,7 +40,11 @@ import re
 import unittest
 from typing import TYPE_CHECKING
 
+import yaml as _yaml
+
 from utils.cache.files import PROJECT_ROOT, read_text
+from utils.cache.yaml import load_yaml_any
+from utils.roles.mapping import ROLE_FILE_META_MAIN
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -54,12 +59,15 @@ _EMOJI_RE = re.compile(
 _REQUIRED_H2_ORDER: tuple[str, ...] = ("Description", "Overview", "Features")
 _CREDITS_HEADING: str = "Credits"
 
-_CANONICAL_CREDITS: str = (
-    "## Credits\n"
-    "\n"
-    "Developed and maintained by **Kevin Veen-Birkenbach**.\n"
-    "Learn more at [veen.world](https://www.veen.world).\n"
-    "Part of the [Infinito.Nexus Project](https://s.infinito.nexus/code).\n"
+_CREDITS_IMPL_RE = re.compile(
+    r"Implemented by \*\*"
+    r"(?:\[(?P<linked>[^\]]+)\]\([^)]+\)|(?P<plain>[^*\[\]]+))"
+    r"\*\*\."
+)
+
+_CREDITS_TAIL: str = (
+    "Part of the [Infinito.Nexus Project](https://s.infinito.nexus/code) "
+    "and maintained by [Kevin Veen-Birkenbach](https://www.veen.world).\n"
     "Licensed under the [Infinito.Nexus Community License (Non-Commercial)]"
     "(https://s.infinito.nexus/license).\n"
 )
@@ -83,6 +91,50 @@ def _parse_headings(text: str) -> list[tuple[int, int, str]]:
         if m:
             out.append((ln, len(m.group(1)), m.group(2).strip()))
     return out
+
+
+def _role_author(readme_path: Path) -> str | None:
+    """Return `galaxy_info.author` from the role's meta/main.yml, or None."""
+    meta_path = readme_path.parent / ROLE_FILE_META_MAIN
+    try:
+        parsed = load_yaml_any(str(meta_path), default_if_missing={})
+    except (OSError, _yaml.YAMLError):
+        return None
+    galaxy_info = parsed.get("galaxy_info") if isinstance(parsed, dict) else None
+    author = galaxy_info.get("author") if isinstance(galaxy_info, dict) else None
+    return author if isinstance(author, str) and author.strip() else None
+
+
+def _validate_credits(text: str, path: Path) -> list[str]:
+    """Return problems with the Credits block for one README."""
+    problems: list[str] = []
+    author = _role_author(path)
+    if author is None:
+        problems.append(
+            "cannot read galaxy_info.author from sibling meta/main.yml "
+            "(required to validate the Credits author)"
+        )
+
+    match = _CREDITS_IMPL_RE.search(text)
+    if match is None:
+        problems.append(
+            "Credits must contain 'Implemented by **<author>**.' "
+            "(the author name MAY be wrapped in a Markdown link)"
+        )
+    elif author is not None:
+        found = match.group("linked") or match.group("plain")
+        if found != author:
+            problems.append(
+                f"Credits author {found!r} does not match galaxy_info.author "
+                f"{author!r} in meta/main.yml (the author SPOT)"
+            )
+
+    if _CREDITS_TAIL not in text:
+        problems.append(
+            "Credits tail does not match the canonical wording "
+            "(see docs/contributing/artefact/files/role/readme_md.md)"
+        )
+    return problems
 
 
 def _validate_readme(path: Path) -> list[str]:
@@ -125,11 +177,7 @@ def _validate_readme(path: Path) -> list[str]:
             f"Credits MUST be the last H2 section"
         )
 
-    if _CANONICAL_CREDITS not in text:
-        problems.append(
-            "Credits block does not match the canonical wording "
-            "(see docs/contributing/artefact/files/role/readme_md.md)"
-        )
+    problems.extend(_validate_credits(text, path))
 
     return problems
 

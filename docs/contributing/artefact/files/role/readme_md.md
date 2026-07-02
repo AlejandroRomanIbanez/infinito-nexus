@@ -87,11 +87,12 @@ Always the last section. MUST follow this fixed format:
 ```markdown
 ## Credits
 
-Developed and maintained by **Kevin Veen-Birkenbach**.
-Learn more at [veen.world](https://www.veen.world).
-Part of the [Infinito.Nexus Project](https://s.infinito.nexus/code).
+Implemented by **[Author name](Author URL)**.
+Part of the [Infinito.Nexus Project](https://s.infinito.nexus/code) and maintained by [Kevin Veen-Birkenbach](https://www.veen.world).
 Licensed under the [Infinito.Nexus Community License (Non-Commercial)](https://s.infinito.nexus/license).
 ```
+
+`Author name` MUST equal `galaxy_info.author` in the role's `meta/main.yml` (the author single point of truth). It MAY be wrapped in a Markdown link as shown, or left as plain bold text (`Implemented by **Author name**.`) when no author URL applies.
 
 ## Formatting Rules 📏
 

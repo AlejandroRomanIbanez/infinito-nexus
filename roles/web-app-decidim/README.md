@@ -46,7 +46,6 @@ Key settings in `meta/services.yml` and `meta/server.yml`:
 
 ## Credits
 
-Developed and maintained by **Kevin Veen-Birkenbach**.
-Learn more at [veen.world](https://www.veen.world).
-Part of the [Infinito.Nexus Project](https://s.infinito.nexus/code).
+Implemented by **[Prageeth Panicker](https://github.com/pragepani)**.
+Part of the [Infinito.Nexus Project](https://s.infinito.nexus/code) and maintained by [Kevin Veen-Birkenbach](https://www.veen.world).
 Licensed under the [Infinito.Nexus Community License (Non-Commercial)](https://s.infinito.nexus/license).
