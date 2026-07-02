@@ -2,6 +2,8 @@
 application_id: "web-app-kix"
 entity_name: "{{ application_id | get_entity_name }}"
 
+swarm_stack_converge_retries: 600
+
 KIX_PROXY_CONTAINER: "kix-proxy"
 KIX_BACKEND_CONTAINER: "kix-backend"
 KIX_FRONTEND_CONTAINER: "kix-frontend"
