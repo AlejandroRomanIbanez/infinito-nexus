@@ -46,7 +46,7 @@ prometheus:
 redis:
   bond: 1
   enabled: true
-  shared: "{{ 'svc-db-redis' in group_names }}"
+  shared: false
 kix:
   # nocheck: default-placement-manager  embedded postgres engine state; node-local in swarm
   default_placement: manager
