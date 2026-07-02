@@ -26,10 +26,16 @@
 - name: "🚿 Flush handlers for '{{ application_id }}' so compose up sees rendered configs"
   meta: flush_handlers
 
-# The shared `infinito.nexus` realm client is public, so it cannot
-# introspect access tokens. Provision a dedicated confidential client
-# (`opentalk-controller`) with a service account that can call the
-# Keycloak admin API and the OIDC introspection endpoint.
+- name: "🔍 Resolve Keycloak hosting node + container id for OpenTalk provisioning"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
+  vars:
+    resolve_service_key: keycloak
+    resolve_service_name: "{{ lookup('container_service', 'web-app-keycloak', 'keycloak') }}"
+    resolve_output_prefix: OPENTALK_KEYCLOAK
+    resolve_compose_cid: "{{ OPENTALK_KEYCLOAK_CONTAINER_ADDRESS }}"
+    resolve_converge_retries: 60
+    resolve_converge_delay: 5
+
 - name: "✅ Authenticate kcadm against master realm for OpenTalk provisioning"
   ansible.builtin.shell: |-
     {{ KEYCLOAK_EXEC_CONTAINER }} sh -lc '
@@ -41,9 +47,10 @@
         --password "$KEYCLOAK_PERMANENT_ADMIN_PASSWORD"
     '
   vars:
-    KEYCLOAK_EXEC_CONTAINER: "container exec -i {{ OPENTALK_KEYCLOAK_CONTAINER_ADDRESS }}"
+    KEYCLOAK_EXEC_CONTAINER: "container exec -i {{ OPENTALK_KEYCLOAK_LOCAL_CID | quote }}" # nocheck: container-exec-resolver  OPENTALK_KEYCLOAK_LOCAL_CID resolved at delegate_to runtime
     KEYCLOAK_KCADM: "/opt/keycloak/bin/kcadm.sh"
     KEYCLOAK_SERVER_INTERNAL_URL: "http://127.0.0.1:8080"
+  delegate_to: "{{ OPENTALK_KEYCLOAK_HOST_NODE }}"
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
@@ -73,9 +80,10 @@
       publicClient: false
       serviceAccountsEnabled: true
       secret: "{{ OPENTALK_CTRL_OIDC_CLIENT_SECRET }}"
-    kcadm_exec: "container exec -i {{ OPENTALK_KEYCLOAK_CONTAINER_ADDRESS }} /opt/keycloak/bin/kcadm.sh"
+    kcadm_exec: "container exec -i {{ OPENTALK_KEYCLOAK_LOCAL_CID }} /opt/keycloak/bin/kcadm.sh" # nocheck: container-exec-resolver  OPENTALK_KEYCLOAK_LOCAL_CID resolved at delegate_to runtime
     realm: "{{ OIDC.CLIENT.REALM }}"
     assert_mode: "{{ MODE_ASSERT | bool }}"
+  delegate_to: "{{ OPENTALK_KEYCLOAK_HOST_NODE }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
 - name: "📝 Upsert dedicated confidential Keycloak client for the OpenTalk recorder"
@@ -104,9 +112,10 @@
       publicClient: false
       serviceAccountsEnabled: true
       secret: "{{ OPENTALK_RECORDER_OIDC_CLIENT_SECRET }}"
-    kcadm_exec: "container exec -i {{ OPENTALK_KEYCLOAK_CONTAINER_ADDRESS }} /opt/keycloak/bin/kcadm.sh"
+    kcadm_exec: "container exec -i {{ OPENTALK_KEYCLOAK_LOCAL_CID }} /opt/keycloak/bin/kcadm.sh" # nocheck: container-exec-resolver  OPENTALK_KEYCLOAK_LOCAL_CID resolved at delegate_to runtime
     realm: "{{ OIDC.CLIENT.REALM }}"
     assert_mode: "{{ MODE_ASSERT | bool }}"
+  delegate_to: "{{ OPENTALK_KEYCLOAK_HOST_NODE }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
 - name: "🔐 Grant OpenTalk controller service account `view-users` role"
@@ -123,17 +132,23 @@
       $KCADM add-roles -r $REALM --uusername service-account-$CLIENT_ID --cclientid realm-management --rolename view-users --rolename query-users || true
     '
   vars:
-    KCEXEC: "container exec -i {{ OPENTALK_KEYCLOAK_CONTAINER_ADDRESS }}"
+    KCEXEC: "container exec -i {{ OPENTALK_KEYCLOAK_LOCAL_CID | quote }}" # nocheck: container-exec-resolver  OPENTALK_KEYCLOAK_LOCAL_CID resolved at delegate_to runtime
     KEYCLOAK_KCADM: "/opt/keycloak/bin/kcadm.sh"
+  delegate_to: "{{ OPENTALK_KEYCLOAK_HOST_NODE }}"
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: "🔄 Restart OpenTalk controller to pick up refreshed introspection client"
+- name: "🔄 Restart OpenTalk controller for the refreshed client (compose)"
   ansible.builtin.command: "container restart {{ OPENTALK_CTRL_CONTAINER }}"
   changed_when: true
+  when: DEPLOYMENT_MODE == 'compose'
 
-# The shared (shared:true) path provisions the bucket on the central provider
-# via sys-svc-objstore; only the embedded instance needs its bucket created here.
+- name: "🔄 Restart OpenTalk controller for the refreshed client (swarm)"
+  ansible.builtin.command: "container service update --force {{ lookup('container_service', application_id, 'controller') }}"
+  changed_when: true
+  timeout: 600
+  when: DEPLOYMENT_MODE == 'swarm'
+
 - name: "⏳ Wait until the embedded object store answers"
   ansible.builtin.shell: >
     container exec {{ OPENTALK_OBJSTORE_CONTAINER_ADDRESS }}

@@ -96,9 +96,6 @@ livekit:
   mem_reservation: 512m
   mem_limit: 2g
   pids_limit: 1024
-  # LiveKit runs in host network mode for media UDP. Only the relay
-  # port range is exposed for firewall planning; the HTTP/TCP control
-  # ports (7880/7881) live on the host directly.
   ports:
     public:
       relay:
@@ -116,6 +113,7 @@ minio:
 # nocheck: playwright-service-flag — object store holds only recordings/whiteboard exports; no single-user UI write surface
 seaweedfs:
   bond: 1
+  name: opentalk-seaweedfs
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'web-app-seaweedfs' in group_names }}"
 rabbit:
