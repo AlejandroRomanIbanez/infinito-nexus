@@ -16,7 +16,7 @@ def find_roles(roles_dir, prefixes=None):
     """
     for entry in os.listdir(roles_dir):
         if prefixes:
-            if not any(entry.startswith(pref) for pref in prefixes):
+            if not any(entry.startswith(pref) or entry == pref.rstrip("-") for pref in prefixes):
                 continue
         path = os.path.join(roles_dir, entry)
         meta_file = os.path.join(path, ROLE_FILE_META_MAIN)
@@ -224,7 +224,7 @@ def main():
             try:
                 os.unlink(args.output)
             except OSError:
-                pass
+                pass  # best-effort: proceed to open(); a real failure surfaces there
         with open(args.output, 'w') as f:
             f.write(output)
         print(f"Playbook entries written to {args.output}")

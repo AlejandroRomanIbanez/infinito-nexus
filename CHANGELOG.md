@@ -1,5 +1,41 @@
 # Changelog
 
+## [11.4.0] - 2026-07-01
+
+* Self-hosted CI runners: new *svc-runner* role plus *cli/deploy/runner* command spin up N containerised GitHub Actions runners on any server, adding to the 20 GitHub-hosted ones. Each runner is isolated (own subnet, ports, inventory, Docker volume, DNS) and auto-re-registers. Runs on Debian, Ubuntu and Arch, supports Docker-in-Docker, and ships a full in-runner E2E deploy test. See the *svc-runner* README.
+
+* Fork PRs can now scope the CI matrix: a 🧩 *Subset* label reads a *roles:* block from the PR body and narrows the deploy whitelist. Gives forks the maintainer-only manual dispatch they could not trigger before. Without the label nothing changes. See [the fork-PR pipeline](docs/contributing/artefact/git/pipeline.md).
+
+* GitHub-hosted runner fixes: free disk before deploys and drop a dead 404 URL from the external tests.
+
+* *make local* reinstall now works correctly when all services are disabled.
+
+* Image and dependency version jumps (net since 11.3.0):
+  * *web-app-funkwhale*: 2.0.4 to 2.0.6
+  * *web-app-mobilizon*: 5.2.3 to 5.2.4
+  * *web-app-bluesky* (git ref): 1.125.0 to 1.126.0
+
+**Contributors**
+
+* [Alejandro Roman Ibanez](https://github.com/AlejandroRomanIbanez): self-hosted containerised CI runners
+* [Kevin Veen-Birkenbach](https://veen.world): Subset-label CI scoping, runner disk fixes, version maintenance
+
+## [11.3.0] - 2026-06-29
+
+* Security: resolved all 80 open CodeQL/code-scanning alerts and added recurrence guards. Broke an unsafe import cycle in *cli/administration/deploy/development* via a leaf *env.py*; hardened *web-app-bluesky* *server.js* (cookie prototype-pollution guard, log sanitisation, HTML-escaped exceptions, ReDoS-bounded handle regex) and *web-app-baserow* SSO open-redirect handling; required TLS ≥ 1.2 in network diagnose probes; validated *actionlint* tar members against path traversal; rewrote *decidim*/*apt-purge* regexes to avoid catastrophic backtracking; anchored six Playwright URL regexes and pinned *crs-k/stale-branches* to a SHA. Guards: an *import-linter* contract, a lint requiring justified bandit *noqa*, and ruff *BLE001* as a ratchet.
+
+* CI flakiness and fork-PR fixes: added *.first()* to the Odoo *sale_management* spec to end a strict-mode violation; made Nextcloud GitLab-OAuth Organization provisioning and the Jenkins/Moodle systemd steps defensive with *retries/until*; restored *secrets: inherit* on the fork image mirror so fork PRs authenticate to Docker Hub; and adjusted stale-branches for *crs-k/stale-branches@v9.0.1* (stale 350 / delete 360 days). See [the fork-PR pipeline](docs/contributing/artefact/git/pipeline.md) and [the workflow catalog](docs/contributing/tools/github/actions/workflows.md).
+
+* Routine maintenance: *.gitignore* now excludes local Claude agent artefacts (*launch.json*, *routines*, *workflows*), and dependabot bumps of *actions/stale* 9 → 10 and *eslint* 10.5.0 → 10.6.0.
+
+* Image and dependency version jumps (net since 11.2.0):
+  * *web-app-seaweedfs*: 4.36 to 4.37
+  * *pkgmgr* (package-manager git ref): v1.15.2 to v1.16.0
+
+**Contributors**
+
+* [Kevin Veen-Birkenbach](https://veen.world): code-scanning alert resolution and recurrence guards, CI/fork-PR fixes and version maintenance
+
 ## [11.2.0] - 2026-06-28
 
 * Per-role update PRs: the Docker-image-version and repository-ref updaters now open one pull request per affected role instead of a single combined PR, and they recompute the diff against the latest *main* at run time — the update jobs check out *main* rather than the triggering commit, so a queued or stale run no longer proposes already-merged changes or bundles unrelated roles. Each role gets its own branch (*update/<type>-<role>-<date>-<fingerprint>*) and a role-scoped duplicate check, while the *skills-lock.json* updater deliberately stays a single PR. See [the update workflow catalog](docs/contributing/tools/github/actions/workflows.md).
