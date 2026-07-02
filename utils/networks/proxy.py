@@ -60,7 +60,19 @@ def resolve_upstream(
                 f"resolve_upstream: no local port for {application_id!r} "
                 f"(services.{entity}.ports.local.{port_kind})"
             )
-        return f"127.0.0.1:{port}"
+        host = (
+            _as_str(
+                get(
+                    applications=applications,
+                    application_id=application_id,
+                    config_path=f"services.{entity}.upstream_host",
+                    strict=False,
+                    default="",
+                )
+            )
+            or "127.0.0.1"
+        )
+        return f"{host}:{port}"
 
     port = _as_str(internal_port) or _config_port("internal")
     if not port:

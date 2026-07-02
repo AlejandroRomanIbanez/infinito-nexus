@@ -37,6 +37,7 @@ bigbluebutton:
     max_age_days: 30
   min_storage: 50GB
   api_suffix: /bigbluebutton/
+  upstream_host: "10.7.7.1"
   ports:
     local:
       http: 48087

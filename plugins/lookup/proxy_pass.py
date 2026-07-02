@@ -47,6 +47,12 @@ class LookupModule(LookupBase):
                 raw_mode = templar.template(raw_mode)
         deployment_mode = str(raw_mode).strip()
 
+        mode_force = vars_.get("compose_mode_force", "")
+        if templar is not None:
+            with contextlib.suppress(Exception):
+                mode_force = templar.template(mode_force)
+        deployment_mode = _as_str(mode_force) or deployment_mode
+
         applications = lookup_loader.get(
             "applications", loader=self._loader, templar=getattr(self, "_templar", None)
         ).run([], variables=vars_)[0]
