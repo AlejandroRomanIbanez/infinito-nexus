@@ -66,12 +66,6 @@ element:
   mem_reservation: 128m
   mem_limit: 256m
   pids_limit: 256
-matrix-mdad:
-  name: matrix-mdad
-  cpus: "2.0"
-  mem_reservation: "1.5g"
-  mem_limit: "3g"
-  pids_limit: 4096
 matrix-chatgpt-bot:
   version: latest
   image: ghcr.io/matrixgpt/matrix-chatgpt-bot
@@ -106,6 +100,7 @@ matrix:
   bond: 1
   enabled: true
   shared: true
+  name: matrix
   # nocheck: default-placement-manager  inner docker-in-docker storage; node-local in swarm
   default_placement: manager
   flavor: ansible
