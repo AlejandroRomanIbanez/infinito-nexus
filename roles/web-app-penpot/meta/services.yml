@@ -51,7 +51,6 @@ seaweedfs:
   enabled: "{{ 'web-app-seaweedfs' in group_names }}"
   shared: "{{ 'web-app-seaweedfs' in group_names }}"
 penpot:
-  version: "2.5.4"
   min_storage: 10GB
   cpus: "0.5"
   mem_reservation: 512m
@@ -72,6 +71,7 @@ penpot:
   lifecycle: beta
 frontend:
   image: penpotapp/frontend
+  version: "2.16.2"
   name: penpot-frontend
   cpus: "0.5"
   mem_reservation: 256m
@@ -79,6 +79,7 @@ frontend:
   pids_limit: 256
 backend:
   image: penpotapp/backend
+  version: "2.16.2"
   name: penpot-backend
   cpus: "1.0"
   mem_reservation: 1g
@@ -86,6 +87,7 @@ backend:
   pids_limit: 512
 exporter:
   image: penpotapp/exporter
+  version: "2.16.2"
   name: penpot-exporter
   cpus: "0.5"
   mem_reservation: 512m
