@@ -6,9 +6,9 @@ pds_data:
       target: /opt/pds
 
 pdsadmin:
-  type: config
+  type: bind
   source: "{{ [lookup('container', 'web-app-bluesky', 'directories.volumes'), 'pdsadmin', 'pdsadmin'] | path_join }}"
-  mode: "0555"
   mounts:
     - service: pds
       target: /usr/local/bin/pdsadmin
+      read_only: true
