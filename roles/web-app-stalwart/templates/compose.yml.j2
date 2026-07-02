@@ -21,6 +21,9 @@
       STALWART_RECOVERY_ADMIN: "{{ STALWART_ADMIN_USER }}:{{ STALWART_ADMIN_PASSWORD }}"
     volumes:
       - "data:/var/lib/stalwart"
+      # Named volume for the image's VOLUME /etc/stalwart so Docker doesn't mint a
+      # fresh anonymous one each deploy (sys-ctl-hlth-volumes flags those).
+      - "config:/etc/stalwart"
       # 0.16 JSON bootstrap (data store); the rest of the config lives in the DB.
       - "{{ STALWART_CONFIG_FILE }}:/etc/stalwart/config.json:ro"
       # WebUI (WebAdmin) bundle staged by the controller (see 10_webadmin.yml).
@@ -73,7 +76,7 @@
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 {% endif %}
 
-{% set _extra_volumes = {'data': {'name': STALWART_DATA_VOLUME}, 'webmail_data': {'name': STALWART_WEBMAIL_VOLUME}} %}
+{% set _extra_volumes = {'data': {'name': STALWART_DATA_VOLUME}, 'config': {'name': STALWART_CONFIG_VOLUME}, 'webmail_data': {'name': STALWART_WEBMAIL_VOLUME}} %}
 {% if STALWART_ANTIVIRUS_ENABLED | bool %}
 {%   set _extra_volumes = _extra_volumes | combine({'clamav_data': {'name': STALWART_CLAMAV_VOLUME}}) %}
 {% endif %}

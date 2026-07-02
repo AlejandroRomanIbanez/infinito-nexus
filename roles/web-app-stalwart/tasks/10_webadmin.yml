@@ -1,8 +1,6 @@
 ---
-# The WebUI is a JMAP "Application" record whose bundle Stalwart fetches from
-# GitHub on first boot (404s when egress is blocked/MITM'd). The bundle is staged
-# locally in 01_core; here we point the record's resourceUrl at that file:// path
-# and trigger a re-unpack.
+# The WebUI bundle (a JMAP "Application" record) is staged locally in 01_core;
+# point the record's resourceUrl at that file:// path and re-unpack.
 
 - name: "List Stalwart Application records"
   include_tasks: jmap_call.yml

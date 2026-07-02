@@ -298,6 +298,14 @@ def _gather_one_image(image: str, *, cwd: Path, env: dict[str, str]) -> ImageMet
     rc, out, _err = run(
         ["docker", "image", "inspect", image], cwd=cwd, env=env, timeout=90
     )
+    if rc != 0 and rc != TIMEOUT_RC:
+        # This override is generated before the stack's `compose pull`, and
+        # `docker image inspect` does not pull. Pull an absent image so the
+        # /bin/sh probe (and thus the CA-trust wrapper) is not skipped.
+        run(["docker", "pull", image], cwd=cwd, env=env, timeout=600, capture=False)
+        rc, out, _err = run(
+            ["docker", "image", "inspect", image], cwd=cwd, env=env, timeout=90
+        )
     if rc != 0:
         return (False, [], [], None if rc == TIMEOUT_RC else False)
     try:

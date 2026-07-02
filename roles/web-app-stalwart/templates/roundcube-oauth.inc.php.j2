@@ -11,7 +11,9 @@ $_SERVER['HTTPS'] = 'on';
 
 $config['oauth_provider'] = 'generic';
 $config['oauth_provider_name'] = '{{ OIDC.BUTTON_TEXT }}';
-$config['oauth_client_id'] = '{{ OIDC.CLIENT.ID }}';
+// Minimal-scope client so the access token stays under Stalwart's 4096-byte
+// XOAUTH2 SASL line limit. See roles/web-app-keycloak clients/stalwart_webmail.json.j2.
+$config['oauth_client_id'] = 'stalwart-webmail';
 $config['oauth_auth_uri'] = '{{ OIDC.CLIENT.AUTHORIZE_URL }}';
 $config['oauth_token_uri'] = '{{ OIDC.CLIENT.TOKEN_URL }}';
 $config['oauth_identity_uri'] = '{{ OIDC.CLIENT.USER_INFO_URL }}';
@@ -31,3 +33,10 @@ $stalwart_tls_conn_options = ['ssl' => [
 ]];
 $config['imap_conn_options'] = $stalwart_tls_conn_options;
 $config['smtp_conn_options'] = $stalwart_tls_conn_options;
+
+// Authenticated XOAUTH2 submission over implicit TLS on :465 (this include loads
+// last, so it wins). smtp_user must be non-empty or Stalwart rejects with
+// "5.5.1 You must authenticate first"; the OAuth plugin swaps %p for a token.
+$config['smtp_host'] = 'ssl://stalwart:465';
+$config['smtp_user'] = '%u';
+$config['smtp_pass'] = '%p';

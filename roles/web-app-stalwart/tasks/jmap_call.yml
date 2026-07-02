@@ -21,6 +21,10 @@
     chdir: "{{ STALWART_INSTANCE_DIR }}"
   register: stalwart_jmap_raw
   changed_when: false
+  # Retry: the container may be mid-(re)start (e.g. force-recreate) during provisioning.
+  retries: 12
+  delay: 5
+  until: stalwart_jmap_raw.rc == 0
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
 - name: "Parse Stalwart JMAP response"

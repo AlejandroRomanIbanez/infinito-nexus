@@ -53,9 +53,8 @@ STALWART_WEBMAIL_HTTP_PORT: "{{ lookup('config', application_id, 'services.webma
 STALWART_WEBMAIL_CONFIG_DIR: "{{ [ STALWART_VOLUMES_DIR, 'webmail' ] | path_join }}"
 STALWART_WEBMAIL_OAUTH_CONFIG: "{{ [ STALWART_WEBMAIL_CONFIG_DIR, 'oauth.inc.php' ] | path_join }}"
 
-# WebUI (WebAdmin) bundle: Stalwart fetches it from GitHub on first boot; behind
-# restricted/MITM egress that fails (404 on /admin, /account), so the controller
-# stages it locally and 10_webadmin.yml points the Application record at the file.
+# WebUI (WebAdmin) bundle: Stalwart fetches it from GitHub on first boot, which fails
+# behind restricted egress, so the controller stages it locally (see 10_webadmin.yml).
 STALWART_WEBUI_RESOURCE_URL: "https://github.com/stalwartlabs/webui/releases/latest/download/webui.zip"
 STALWART_WEBUI_LOCAL_FILE: "{{ [ STALWART_CONFIG_DIR, 'webui.zip' ] | path_join }}"
 STALWART_WEBUI_CONTAINER_FILE: "/etc/stalwart/webui.zip"
@@ -63,6 +62,9 @@ STALWART_WEBUI_LOCAL_URL: "file://{{ STALWART_WEBUI_CONTAINER_FILE }}"
 
 # Volumes
 STALWART_DATA_VOLUME: "stalwart_data"
+# Named volume for the image's declared VOLUME /etc/stalwart (config bind mounts
+# overlay it) — prevents a per-deploy anonymous volume that sys-ctl-hlth-volumes flags.
+STALWART_CONFIG_VOLUME: "stalwart_config"
 STALWART_WEBMAIL_VOLUME: "stalwart_webmail_data"
 
 # Network

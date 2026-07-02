@@ -54,15 +54,24 @@ async function roundcubeLogout(page) {
   }
 }
 
-async function waitForEmailInInbox(page, subjectText, timeout = 60_000) {
+// Wait for a delivered mail in the recipient's mailbox — accept Inbox OR Junk (the
+// .test env has no mail-auth DNS, so Stalwart files authenticated mail under Junk).
+// Folders are switched by _mbox URL to avoid clicking a non-actionable folder link.
+async function waitForEmailInMailbox(page, webmailBaseUrl, subjectText, timeout = 90_000) {
   const deadline = Date.now() + timeout;
+  const mailboxes = ["INBOX", "Junk Mail"];
+  const rowFor = () =>
+    page.locator("#messagelist tbody tr, table.messagelist tbody tr").filter({ hasText: subjectText }).first();
   while (Date.now() < deadline) {
-    const row = page.locator("#messagelist tbody tr, table.messagelist tbody tr").filter({ hasText: subjectText });
-    if (await row.first().isVisible().catch(() => false)) return row.first();
-    await page.getByRole("link", { name: "Inbox" }).first().click().catch(() => {});
-    await page.waitForTimeout(3_000);
+    for (const mbox of mailboxes) {
+      await page
+        .goto(`${webmailBaseUrl}/?_task=mail&_mbox=${encodeURIComponent(mbox)}`, { waitUntil: "domcontentloaded" })
+        .catch(() => {});
+      await page.waitForTimeout(2_000);
+      if (await rowFor().isVisible().catch(() => false)) return rowFor();
+    }
   }
-  throw new Error(`Timed out waiting for email with subject "${subjectText}"`);
+  throw new Error(`Timed out waiting for email "${subjectText}" in ${mailboxes.join(" / ")}`);
 }
 
 test.beforeEach(() => {
@@ -151,13 +160,18 @@ test("stalwart: biber sends to administrator, administrator receives it", async 
     await biberPage.locator("#composebody, textarea[name='_message'], [contenteditable='true']").first()
       .fill("Hello Administrator, this is an automated Playwright test email.");
     await biberPage.locator(".formbuttons .send, button.send, a.send").first().click();
-    await expect.poll(() => biberPage.url(), { timeout: 30_000 }).not.toContain("_action=compose");
+    // Roundcube (Elastic, framed) sends via AJAX: it may stay on the compose URL and
+    // just show a toast. Surface an SMTP error immediately if one appears; otherwise
+    // the real proof of a successful send is receipt in the admin inbox below.
+    const sendError = biberPage.locator("#messagestack .error, .toast .error, .toast-error").first();
+    if (await sendError.isVisible({ timeout: 15_000 }).catch(() => false)) {
+      throw new Error(`Roundcube reported a send error: ${await sendError.textContent()}`);
+    }
     await roundcubeLogout(biberPage);
 
     const adminPage = await adminContext.newPage();
     await roundcubeSsoLogin(adminPage, adminUsername, adminPassword);
-    await adminPage.getByRole("link", { name: "Inbox" }).first().click().catch(() => {});
-    const emailRow = await waitForEmailInInbox(adminPage, testSubject, 60_000);
+    const emailRow = await waitForEmailInMailbox(adminPage, webmailBaseUrl, testSubject, 90_000);
     await expect(emailRow).toBeVisible();
     await emailRow.click();
     await expect(
