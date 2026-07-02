@@ -39,11 +39,28 @@
     mode: "0644"
   notify: "Restart NFS ganesha"
 
+- name: "📁 Ensure the nfs-ganesha systemd drop-in dir exists"
+  ansible.builtin.file:
+    path: "/etc/systemd/system/{{ SVC_STORAGE_NFS_SERVER_SERVICE['ganesha'][ansible_facts['os_family']] }}.service.d"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: "🧩 Install nfs-ganesha auto-restart drop-in"
+  ansible.builtin.copy:
+    src: nfs-ganesha-restart.conf
+    dest: "/etc/systemd/system/{{ SVC_STORAGE_NFS_SERVER_SERVICE['ganesha'][ansible_facts['os_family']] }}.service.d/restart.conf"
+    owner: root
+    group: root
+    mode: "0644"
+
 - name: "🟢 Enable and start nfs-ganesha"
   ansible.builtin.systemd:
     name: "{{ SVC_STORAGE_NFS_SERVER_SERVICE['ganesha'][ansible_facts['os_family']] }}"
     enabled: true
     state: started
+    daemon_reload: true
 
 - name: "🚿 Flush handlers (ganesha restart applies the rendered export set)"
   ansible.builtin.meta: flush_handlers
