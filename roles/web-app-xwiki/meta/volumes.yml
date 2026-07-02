@@ -12,4 +12,4 @@ properties:
   mode: "0440"
   mounts:
     - service: xwiki
-      target: /usr/local/tomcat/webapps/ROOT/WEB-INF/xwiki.properties
+      target: /etc/infinito/xwiki.properties
