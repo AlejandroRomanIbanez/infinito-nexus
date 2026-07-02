@@ -23,7 +23,6 @@ openldap:
     users: true
     groups: true
     update: true
-    reserved: false
   ports:
     local:
       ldap: 389

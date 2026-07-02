@@ -421,9 +421,9 @@ class TestGetUserDefaults(unittest.TestCase):
             (roles / "sys-ctl-alm-email").mkdir()
             users = get_user_defaults(roles_dir=roles)
             self.assertIn("postgres", users)
-            self.assertTrue(users["postgres"]["reserved"])
+            self.assertEqual(users["postgres"]["accounts"], [])
             self.assertIn("email", users)
-            self.assertTrue(users["email"]["reserved"])
+            self.assertEqual(users["email"]["accounts"], [])
 
     def test_cache_returns_deep_copy(self):
         with tempfile.TemporaryDirectory() as tmp:
