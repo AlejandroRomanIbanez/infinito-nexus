@@ -13,8 +13,8 @@
       CASC_JENKINS_CONFIG: /var/jenkins_home/casc.yaml
     {{ lookup('container_ports', ['jenkins', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     {{ lookup('container_volumes', application_id, 'jenkins') | indent(4) }}
+{% set container_healthcheck_start_period = '10m' %}
 {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
-      start_period: 10m
     {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}
