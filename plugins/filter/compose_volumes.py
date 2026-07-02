@@ -255,7 +255,8 @@ def compose_volumes(
         if vtype == "config":
             source = _maybe_render(entry.get("source", ""), render_jinja)
             configs[semantic_name] = {
-                "name": _config_secret_name(role_entity, semantic_name, source),
+                "name": _maybe_render(entry.get("name", ""), render_jinja)
+                or _config_secret_name(role_entity, semantic_name, source),
                 "file": source,
             }
             continue
@@ -263,7 +264,8 @@ def compose_volumes(
         if vtype == "secret":
             source = _maybe_render(entry.get("source", ""), render_jinja)
             secrets[semantic_name] = {
-                "name": _config_secret_name(role_entity, semantic_name, source),
+                "name": _maybe_render(entry.get("name", ""), render_jinja)
+                or _config_secret_name(role_entity, semantic_name, source),
                 "file": source,
             }
             continue
