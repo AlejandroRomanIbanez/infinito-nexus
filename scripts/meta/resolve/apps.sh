@@ -73,11 +73,17 @@ if [[ "$mode" == "compose" ]]; then
 	unique_args=(--unique)
 fi
 
+lifecycles_args=()
+if [[ -n "${INFINITO_LIFECYCLES:-}" && -n "${INFINITO_LIFECYCLES// /}" ]]; then
+	lifecycles_args=(--lifecycles "${INFINITO_LIFECYCLES}")
+fi
+
 apps_json="$(
 	run_meta_cli \
 		-m cli.meta.roles.applications.complexity \
 		--deploy-mode "$mode" \
 		"${unique_args[@]}" \
+		"${lifecycles_args[@]}" \
 		--filter "$filter" \
 		--sort "${INFINITO_DISCOVERY_SORT}" \
 		--max-jobs "${INFINITO_MAX_JOBS}" \

@@ -8,10 +8,20 @@ on:
         required: false
         type: string
         default: ""
+      lifecycles:
+        description: "Lifecycle envelope for discovery (comma/space-separated). Empty: default (alpha beta rc stable)."
+        required: false
+        type: string
+        default: ""
   workflow_dispatch:
     inputs:
       whitelist:
         description: "Optional space-separated whitelist of app ids"
+        required: false
+        type: string
+        default: ""
+      lifecycles:
+        description: "Lifecycle envelope for discovery (comma/space-separated). Empty: default (alpha beta rc stable)."
         required: false
         type: string
         default: ""
@@ -27,6 +37,7 @@ env:
   INFINITO_GHCR_MIRROR_PREFIX: mirror
   INFINITO_APP_DISCOVERY_RUNNER: host
   INFINITO_DEPLOY_MODE: swarm
+  INFINITO_LIFECYCLES: ${{ inputs.lifecycles }}
 
 jobs:
   discover:

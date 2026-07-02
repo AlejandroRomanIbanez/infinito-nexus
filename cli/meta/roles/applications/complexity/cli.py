@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import re
 import sys
 from typing import Any
 
@@ -10,6 +11,7 @@ from utils import PROJECT_ROOT
 
 from .filter import FilterError, compile_predicate
 from .model import (
+    TESTED_LIFECYCLES,
     ComplexityRow,
     compute_complexity_rows,
     compute_variant_complexity_rows,
@@ -65,6 +67,22 @@ FILTER_FIELDS = frozenset(
 _DIRECTIONS = {"asc": False, "desc": True}
 
 DEFAULT_SORT = "asc embeds"
+
+
+def parse_lifecycles(tokens: list[str] | None) -> set[str] | None:
+    """Normalise ``--lifecycles`` tokens into a lowercase set, splitting each on
+    commas and whitespace so ``'alpha,beta'`` and ``'alpha beta'`` are
+    equivalent. ``None`` (flag absent) stays ``None`` so the model falls back to
+    its built-in default envelope."""
+    if not tokens:
+        return None
+    values = {
+        part.strip().lower()
+        for token in tokens
+        for part in re.split(r"[,\s]+", token)
+        if part.strip()
+    }
+    return values or None
 
 
 def parse_sort_spec(spec: str) -> list[tuple[str, bool]]:
@@ -178,6 +196,20 @@ def build_parser() -> argparse.ArgumentParser:
             "(whole-role mode only): 'compose' (default) packs variants into "
             "size/storage bundles; 'swarm' counts one runner per deployable "
             "variant. Drives the --max-jobs budget per mode."
+        ),
+    )
+    p.add_argument(
+        "--lifecycles",
+        nargs="+",
+        default=None,
+        metavar="STAGE",
+        help=(
+            "Lifecycle envelope the 'compose'/'swarm' columns treat as "
+            "CI-tested: a role scores True for a mode only if its "
+            "meta/services.yml lifecycle is in this set (and it is invokable "
+            "and not skipped for the mode). Comma- or whitespace-separated, "
+            "e.g. 'alpha beta rc stable' or 'alpha,beta'. Omitted: the "
+            f"built-in default ({' '.join(sorted(TESTED_LIFECYCLES))})."
         ),
     )
     p.add_argument(
@@ -320,11 +352,14 @@ def main(argv: list[str] | None = None) -> int:
         print(f"Error: roles directory not found: {roles_dir}", file=sys.stderr)
         return 1
 
+    lifecycles = parse_lifecycles(args.lifecycles)
+
     if args.variant:
         rows = compute_variant_complexity_rows(
             roles_dir,
             include_group_names=not args.no_group_names,
             max_level=args.level,
+            lifecycles=lifecycles,
         )
     else:
         rows = compute_complexity_rows(
@@ -332,6 +367,7 @@ def main(argv: list[str] | None = None) -> int:
             include_group_names=not args.no_group_names,
             max_level=args.level,
             deploy_mode=args.deploy_mode,
+            lifecycles=lifecycles,
         )
 
     _apply_sort(rows, sort_spec)

@@ -12,6 +12,11 @@ on:
         required: false
         type: string
         default: ""
+      lifecycles:
+        description: "Lifecycle envelope for discovery (comma/space-separated). Empty: default (alpha beta rc stable)."
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -26,6 +31,7 @@ env:
   INFINITO_PLAYWRIGHT_KEEP: ${{ vars.INFINITO_PLAYWRIGHT_KEEP }}
   INFINITO_APP_DISCOVERY_RUNNER: host
   INFINITO_DEPLOY_MODE: compose
+  INFINITO_LIFECYCLES: ${{ inputs.lifecycles }}
 jobs:
   discover:
     name: ⛵ Navigate composition

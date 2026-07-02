@@ -18,6 +18,16 @@ on:
         required: false
         default: ""
         type: string
+      lifecycles:
+        description: "Lifecycle envelope for test-deploy discovery (comma/space-separated). Empty: default (alpha beta rc stable)."
+        required: false
+        default: ""
+        type: string
+      modes:
+        description: "Deploy modes to test (space-separated: 'swarm compose'). Only the listed modes run their deploy job."
+        required: false
+        default: "swarm compose"
+        type: string
 
 permissions:
   contents: read
@@ -32,5 +42,7 @@ jobs:
     with:
       distros: ${{ inputs.distros }}
       whitelist: ${{ inputs.whitelist }}
+      lifecycles: ${{ inputs.lifecycles }}
+      modes: ${{ inputs.modes }}
       roles_only: ${{ (inputs.whitelist != '' && inputs.whitelist != '__ALL__') && 'true' || 'false' }}
     secrets: inherit

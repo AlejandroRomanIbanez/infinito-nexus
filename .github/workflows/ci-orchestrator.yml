@@ -12,6 +12,16 @@ on:
         required: false
         type: string
         default: ""
+      lifecycles:
+        description: "Lifecycle envelope for test-deploy discovery (comma/space-separated). Empty: default (alpha beta rc stable)."
+        required: false
+        type: string
+        default: ""
+      modes:
+        description: "Deploy modes to run (space-separated: 'swarm compose'). Only listed modes run their deploy job."
+        required: false
+        type: string
+        default: "swarm compose"
       image_wait_attempts:
         description: "Polling attempts for waiting on prebuilt or mirrored images"
         required: false
@@ -192,6 +202,7 @@ jobs:
     secrets: inherit
 
   test-deploy-compose:
+    if: ${{ contains(inputs.modes, 'compose') }}
     needs:
       - test-dns
       - images-mirror-missing
@@ -199,13 +210,16 @@ jobs:
     with:
       distros: ${{ inputs.distros }}
       whitelist: ${{ inputs.whitelist }}
+      lifecycles: ${{ inputs.lifecycles }}
 
   test-deploy-swarm:
+    if: ${{ contains(inputs.modes, 'swarm') }}
     needs:
       - code-quality-gate
     uses: ./.github/workflows/test-deploy-swarm.yml
     with:
       whitelist: ${{ inputs.whitelist }}
+      lifecycles: ${{ inputs.lifecycles }}
 
   test-runner-smoke:
     needs:

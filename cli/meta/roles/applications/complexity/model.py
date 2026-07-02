@@ -110,14 +110,12 @@ def _attach_siblings(rows: list[ComplexityRow]) -> list[ComplexityRow]:
     ]
 
 
-def _tested_apps(skip_mode: str) -> set[str]:
+def _tested_apps(skip_mode: str, lifecycles: set[str]) -> set[str]:
     """Set of application ids the CI matrix deploys in *skip_mode*, via the
-    shared ``list_invokables_by_type`` discovery (invokable + tested-lifecycle
-    + per-mode ``skip`` opt-out). This is a project-global fact, so it always
-    reads the real ``roles/`` tree regardless of a test ``roles_dir``."""
-    grouped = list_invokables_by_type(
-        lifecycles=set(TESTED_LIFECYCLES), skip_mode=skip_mode
-    )
+    shared ``list_invokables_by_type`` discovery (invokable + *lifecycles*
+    envelope + per-mode ``skip`` opt-out). This is a project-global fact, so it
+    always reads the real ``roles/`` tree regardless of a test ``roles_dir``."""
+    grouped = list_invokables_by_type(lifecycles=set(lifecycles), skip_mode=skip_mode)
     return {app for apps in grouped.values() for app in apps}
 
 
@@ -174,7 +172,9 @@ def compute_complexity_rows(
     include_group_names: bool = True,
     max_level: int | None = None,
     deploy_mode: str = "compose",
+    lifecycles: set[str] | None = None,
 ) -> list[ComplexityRow]:
+    tested = set(lifecycles) if lifecycles else set(TESTED_LIFECYCLES)
     truth = truth_predicate(include_group_names=include_group_names)
     forward, reverse = build_graphs(roles_dir, truth=truth)
     variants = get_variants(roles_dir=roles_dir)
@@ -190,8 +190,8 @@ def compute_complexity_rows(
         }
     else:
         bundles = compose_bundle_counts(names, variants, roles_dir=roles_dir)
-    compose_apps = _tested_apps("compose")
-    swarm_apps = _tested_apps("swarm")
+    compose_apps = _tested_apps("compose", tested)
+    swarm_apps = _tested_apps("swarm", tested)
 
     rows = [
         _build_row(name, forward, reverse, max_level)._replace(
@@ -219,6 +219,7 @@ def compute_variant_complexity_rows(
     *,
     include_group_names: bool = True,
     max_level: int | None = None,
+    lifecycles: set[str] | None = None,
 ) -> list[ComplexityRow]:
     """One row per ``meta/variants.yml`` variant of every application role.
 
@@ -229,13 +230,14 @@ def compute_variant_complexity_rows(
     the catalog embeds this role does not change with the role's own
     variant selection.
     """
+    tested = set(lifecycles) if lifecycles else set(TESTED_LIFECYCLES)
     truth = truth_predicate(include_group_names=include_group_names)
     forward, reverse = build_graphs(roles_dir, truth=truth)
     registry = build_service_registry(roles_dir)
     variants = get_variants(roles_dir=roles_dir)
     overrides = get_variant_overrides_only(roles_dir=roles_dir)
-    compose_apps = _tested_apps("compose")
-    swarm_apps = _tested_apps("swarm")
+    compose_apps = _tested_apps("compose", tested)
+    swarm_apps = _tested_apps("swarm", tested)
 
     rows: list[ComplexityRow] = []
     for role_dir in sorted(p for p in roles_dir.iterdir() if p.is_dir()):
