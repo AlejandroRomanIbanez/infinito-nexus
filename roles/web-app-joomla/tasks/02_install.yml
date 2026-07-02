@@ -62,14 +62,12 @@
   until: _joomla_install_soft_success | bool
   changed_when: _joomla_install_soft_success | bool
   failed_when: >-
-    {{
-      (
-        j_install.rc is defined
-        and j_install.rc != 0
-        and not (_joomla_install_soft_success | bool)
-      )
-      or (_joomla_install_git_tree_refusal | bool)
-    }}
+    (
+      j_install.rc is defined
+      and j_install.rc != 0
+      and not (_joomla_install_soft_success | bool)
+    )
+    or (_joomla_install_git_tree_refusal | bool)
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   when:
     - joomla_installed.rc != 0

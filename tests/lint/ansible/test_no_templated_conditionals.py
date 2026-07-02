@@ -50,15 +50,12 @@ _EXCLUDED_META_FILES = frozenset(
 _CONDITIONAL_KEYS = ("when", "failed_when", "changed_when", "until")
 _JINJA = re.compile(r"\{\{|\{%")
 
-# A conditional key with an inline scalar value on the same line, e.g.
-#   when: "{{ FLAG | bool }}"
-#   failed_when: rc != 0
 _SCALAR_KEY = re.compile(rf"^\s*(?:{'|'.join(_CONDITIONAL_KEYS)}):\s*(?P<value>\S.*)$")
-# A conditional key introducing a YAML list (value on following lines), e.g.
-#   when:
-#     - FLAG | bool
 _LIST_KEY = re.compile(rf"^(?P<indent>\s*)(?:{'|'.join(_CONDITIONAL_KEYS)}):\s*$")
 _LIST_ITEM = re.compile(r"^(?P<indent>\s*)-\s*(?P<value>.*)$")
+_BLOCK_KEY = re.compile(
+    rf"^(?P<indent>\s*)(?:{'|'.join(_CONDITIONAL_KEYS)}):\s*[>|][+-]?\d*\s*$"
+)
 
 
 def _candidate_paths() -> list[Path]:
@@ -84,6 +81,19 @@ def _hits_for(lines: list[str]) -> list[tuple[int, str]]:
     """Return (1-based line number, snippet) for each templated conditional."""
     hits: list[tuple[int, str]] = []
     for idx, line in enumerate(lines, start=1):
+        block_key = _BLOCK_KEY.match(line)
+        if block_key:
+            key_indent = len(block_key.group("indent"))
+            for follow_no in range(idx + 1, len(lines) + 1):
+                follow = lines[follow_no - 1]
+                if not follow.strip():
+                    continue
+                if len(follow) - len(follow.lstrip()) <= key_indent:
+                    break
+                if _JINJA.search(follow):
+                    hits.append((idx, line.strip()))
+                    break
+            continue
         scalar = _SCALAR_KEY.match(line)
         if scalar:
             if _JINJA.search(scalar.group("value")):
