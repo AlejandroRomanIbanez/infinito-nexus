@@ -35,7 +35,7 @@ listmonk:
   pids_limit: 1024
   min_storage: 5GB
   image: listmonk/listmonk
-  version: latest
+  version: "v6.2.0"
   backup:
     no_stop_required: true
   name: listmonk
