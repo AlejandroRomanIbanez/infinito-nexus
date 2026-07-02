@@ -76,9 +76,11 @@ gitea:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 redis:
+  bond: 1
   backup:
     disabled: true
-  enabled: false
+  enabled: true
+  shared: "{{ 'svc-db-redis' in group_names }}"
   cpus: 0.25
   mem_reservation: 0.2g
   mem_limit: 0.3g
