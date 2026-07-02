@@ -37,6 +37,11 @@
     {{ lookup('container_service', 'svc-prx-openresty', 'openresty') }}
   register: openresty_swarm_update
   changed_when: openresty_swarm_update.rc == 0
+  retries: 5
+  delay: 3
+  until: >-
+    openresty_swarm_update.rc == 0 or
+    ('update out of sequence' not in ((openresty_swarm_update.stderr | default('')) | lower))
   timeout: 600
   when:
     - DEPLOYMENT_MODE == 'swarm'
