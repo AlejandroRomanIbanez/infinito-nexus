@@ -3,8 +3,8 @@ ARG ROULETTE_VERSION
 FROM ${ROULETTE_IMAGE}:${ROULETTE_VERSION}
 WORKDIR /app
 ARG ROULETTE_WHEEL_APP_REL
-COPY ./${ROULETTE_WHEEL_APP_REL}/package.json ./
-RUN npm install
+COPY ./${ROULETTE_WHEEL_APP_REL}/package.json ./${ROULETTE_WHEEL_APP_REL}/package-lock.json ./
+RUN npm ci
 COPY ./${ROULETTE_WHEEL_APP_REL}/ ./
 RUN npm run build
 CMD ["npm", "run", "start"]
