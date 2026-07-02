@@ -23,9 +23,9 @@ SEMAPHORE_COOKIE_ENCRYPTION: "{{ lookup('config', application_id, 'credentials.c
 # LDAP is disabled. Distinct login + email so it never collides (unique
 # constraints) with the OIDC/LDAP identities, and so the OIDC callback (which
 # rejects local users sharing an email) is never short-circuited by it.
-SEMAPHORE_ADMIN_USERNAME: "breakglass"
-SEMAPHORE_ADMIN_PASSWORD: "{{ lookup('users', 'administrator').password }}"
-SEMAPHORE_ADMIN_EMAIL: "breakglass@{{ DOMAIN_PRIMARY }}"
+SEMAPHORE_ADMIN_USERNAME: "{{ lookup('users', 'web-app-semaphore-breakglass').username }}"
+SEMAPHORE_ADMIN_PASSWORD: "{{ lookup('users', 'web-app-semaphore-breakglass').password }}"
+SEMAPHORE_ADMIN_EMAIL: "{{ lookup('users', 'web-app-semaphore-breakglass').email }}"
 SEMAPHORE_ADMIN_NAME: "Semaphore Break-glass Admin"
 
 # OIDC administrator identity — must equal the Keycloak administrator's

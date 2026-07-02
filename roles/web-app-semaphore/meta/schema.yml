@@ -1,7 +1,8 @@
 ---
 credentials:
   access_key_encryption:
-    description: Base64-encoded 32-byte key Semaphore uses to encrypt access keys stored in the database (SEMAPHORE_ACCESS_KEY_ENCRYPTION); the 'base64:' prefix is stripped at render time.
+    description: Base64-encoded 32-byte key Semaphore uses to encrypt access keys stored in the database (SEMAPHORE_ACCESS_KEY_ENCRYPTION); the 'base64:' prefix
+      is stripped at render time.
     algorithm: base64_prefixed_32
   cookie_hash:
     description: Base64-encoded 32-byte key used to sign session cookies (SEMAPHORE_COOKIE_HASH); the 'base64:' prefix is stripped at render time.

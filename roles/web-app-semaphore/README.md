@@ -25,14 +25,14 @@ Semaphore's auth has hard constraints (verified against the upstream `v2.18.12` 
 
 The role works with these constraints rather than against them:
 
-- **Break-glass local admin** — always seeded via `SEMAPHORE_ADMIN*` with a dedicated login (`breakglass`) and dedicated email (`breakglass@<DOMAIN_PRIMARY>`) so it never collides with the SSO/LDAP identities. Reachable through the form **only when LDAP is disabled**, where it is the sole admin.
+- **Break-glass local admin** — always seeded via `SEMAPHORE_ADMIN*` from the `web-app-semaphore-breakglass` user (login `breakglass-administrator`, email `breakglass-administrator@<DOMAIN_PRIMARY>`, mail forwarded to the administrator mailbox) so it never collides with the SSO/LDAP identities. Reachable through the form **only when LDAP is disabled**, where it is the sole admin.
 - **OIDC admin** — when SSO is enabled the role creates the Keycloak `administrator` (matching `preferred_username` + email) as an **external admin** at deploy time via `semaphore user add --admin --external`. The OIDC callback then matches that external account by email and signs the operator straight in as a Semaphore admin — no manual promotion, no claim mapping needed.
 - **Regular SSO/LDAP users** (e.g. `biber`) are created as non-admin members on first sign-in.
 
 | Variant | Admin login | Member login |
 | --- | --- | --- |
 | V1 (sso+ldap) | Keycloak `administrator` via OIDC (external admin) | `biber` via OIDC or LDAP |
-| V2 (no auth) | `breakglass` via the local form | — |
+| V2 (no auth) | `breakglass-administrator` via the local form | — |
 | V3 (ldap only) | — (LDAP users are non-admin; promote manually if needed) | `biber` via LDAP |
 
 ## Variant matrix
