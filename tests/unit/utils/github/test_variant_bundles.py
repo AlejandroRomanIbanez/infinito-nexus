@@ -141,7 +141,10 @@ class TestMain(unittest.TestCase):
         with (
             patch.object(vb, "get_variants", return_value={"web-app-five": [{}] * 5}),
             patch.object(vb, "app_variant_storages", return_value={}),
-            patch.dict("os.environ", {"INFINITO_VARIANT_BUNDLE_SIZE": "3"}),
+            patch.dict(
+                "os.environ",
+                {"INFINITO_VARIANT_BUNDLE_SIZE": "3", "INFINITO_DEPLOY_MODE": ""},
+            ),
             patch("builtins.print") as mock_print,
         ):
             rc = vb.main(['["web-app-five"]'])

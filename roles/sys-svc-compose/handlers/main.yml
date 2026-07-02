@@ -10,7 +10,7 @@
     - compose build
 
 - ansible.builtin.import_tasks: compose.yml
-  when: DEPLOYMENT_MODE == 'compose'
+  when: compose_mode == 'compose'
 
 - ansible.builtin.import_tasks: swarm.yml
-  when: DEPLOYMENT_MODE == 'swarm'
+  when: compose_mode == 'swarm'

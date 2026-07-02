@@ -40,6 +40,8 @@ bigbluebutton:
   ports:
     local:
       http: 48087
+    internal:
+      http: 48087
     public:
       stun_turn: 3478
       stun_turn_tls: 5349

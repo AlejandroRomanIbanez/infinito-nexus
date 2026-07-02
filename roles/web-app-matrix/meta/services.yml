@@ -59,6 +59,8 @@ element:
   ports:
     local:
       http: 8022
+    internal:
+      http: 80
   min_storage: 1GB
   cpus: "0.2"
   mem_reservation: 128m
