@@ -221,7 +221,6 @@ ignore = [
 "library/docker_bridge_gateway.py" = ["BLE001"]
 "plugins/filter/active_docker.py" = ["BLE001"]
 "plugins/filter/compose_volumes.py" = ["BLE001"]
-"plugins/filter/container_volumes.py" = ["BLE001"]
 "plugins/filter/docker_service_enabled.py" = ["BLE001"]
 "plugins/filter/dotenv.py" = ["BLE001"]
 "plugins/filter/get_all_application_ids.py" = ["BLE001"]

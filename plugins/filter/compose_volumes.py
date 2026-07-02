@@ -16,6 +16,7 @@ try:
     from utils.roles.applications.config import get
     from utils.roles.applications.mounts import (
         content_hash,
+        mount_when_passes,
         normalize_volumes_meta,
     )
     from utils.roles.applications.services.database import (
@@ -32,6 +33,7 @@ except ModuleNotFoundError:
     from utils.roles.applications.config import get
     from utils.roles.applications.mounts import (
         content_hash,
+        mount_when_passes,
         normalize_volumes_meta,
     )
     from utils.roles.applications.services.database import (
@@ -48,7 +50,6 @@ def _to_plain(obj: Any) -> Any:
     if obj is None:
         return None
 
-    # Cast string-like to built-in str: PyYAML cannot represent Ansible proxy types.
     if isinstance(obj, str):
         return str(obj)
 
@@ -86,8 +87,6 @@ def _resolve_database_volume_name(
 
 
 def _swarm_nfs_driver_opts(dir_var_lib: str, volume_name: str) -> dict[str, Any]:
-    # Bind from host's already-NFS-mounted DIR_VAR_LIB; Docker's `type: nfs`
-    # would re-handshake portmap, which is unreachable in nested DinD.
     return {
         "driver": "local",
         "driver_opts": {
@@ -228,10 +227,6 @@ def compose_volumes(
         secrets.update(extra_secrets)
 
     role_data = applications.get(application_id) or {}
-    # Prefer the canonical list from the sibling registry (held outside
-    # `applications` on purpose: its raw Jinja `source:` strings must
-    # not flow through templar). Fall back to the legacy dict view for
-    # roles that still use the unmigrated dict-keyed-by-name shape.
     raw_meta_volumes = (
         get_canonical_volumes(application_id) or role_data.get("volumes") or {}
     )
@@ -248,6 +243,13 @@ def compose_volumes(
             if docker_name:
                 spec["name"] = docker_name
             volumes[semantic_name] = spec
+            continue
+
+        if vtype in ("config", "secret") and not any(
+            mount_when_passes(mount, render_jinja)
+            for mount in entry.get("mounts") or []
+            if isinstance(mount, dict)
+        ):
             continue
 
         if vtype == "config":
@@ -270,11 +272,6 @@ def compose_volumes(
     swarm_nfs_enabled = (
         deployment_mode == "swarm" and str(storage_backend).lower() == "nfs"
     )
-    # NFS placement is derived from the role's default_placement, never a per-volume
-    # flag: a pinned (default_placement: manager) role stays on one node so its volumes
-    # are node-local; an unpinned role can reschedule, so its volumes must live on shared
-    # NFS to survive and stay consistent across nodes. State that cannot live on NFS
-    # (DB / queue / sqlite engines) is kept node-local by pinning its role instead.
     role_pinned = (
         str(get_role_default_placement(application_id) or "").strip().lower()
         == "manager"
@@ -283,14 +280,11 @@ def compose_volumes(
     for vol_name, vol_spec in list(volumes.items()):
         if not isinstance(vol_spec, dict):
             continue
-        vol_spec.pop("nfs", None)  # legacy per-volume flag: ignored, placement decides
+        vol_spec.pop("nfs", None)
         if swarm_nfs_enabled and not role_pinned:
             named = vol_spec.get("name", vol_name)
             vol_spec.update(_swarm_nfs_driver_opts(dir_var_lib, str(named)))
 
-    # Always emit `volumes:` (possibly empty) to preserve the legacy
-    # contract callers rely on; emit `configs:`/`secrets:` only when
-    # the role actually declares any.
     payload: dict[str, Any] = {"volumes": _to_plain(volumes)}
     if configs:
         payload["configs"] = _to_plain(configs)

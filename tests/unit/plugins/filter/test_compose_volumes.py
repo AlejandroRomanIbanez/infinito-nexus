@@ -267,9 +267,6 @@ class TestComposeVolumes(unittest.TestCase):
         self.assertNotIn("nfs", vol)
 
     def test_swarm_pinned_role_stays_node_local(self):
-        # NFS is derived from the role's placement: a pinned role
-        # (default_placement: manager) keeps its volumes node-local even on a
-        # swarm/nfs backend, so engine state stays put instead of being shared.
         apps = self._base_apps()
         with mock.patch(
             "plugins.filter.compose_volumes.get_role_default_placement",
@@ -323,6 +320,35 @@ class TestComposeVolumes(unittest.TestCase):
 
         self.assertNotIn("driver_opts", data["volumes"]["images"])
         self.assertNotIn("nfs", data["volumes"]["images"])
+
+    def test_config_with_all_mounts_gated_off_is_not_declared(self):
+        apps = self._base_apps()
+        apps["app"]["volumes"] = {
+            "auth_ldap": {
+                "type": "config",
+                "source": "/opt/compose/app/volumes/auth_ldap.xml",
+                "mounts": [
+                    {
+                        "service": "backend",
+                        "target": "/etc/auth_ldap.xml",
+                        "when": False,
+                    }
+                ],
+            },
+            "proxy_conf": {
+                "type": "config",
+                "source": "/opt/compose/app/volumes/default.conf",
+                "mounts": [
+                    {"service": "proxy", "target": "/etc/nginx/conf.d/default.conf"}
+                ],
+            },
+        }
+        rendered = _call(apps, "app")
+        data = self._parse_yaml(rendered)
+
+        self.assertIn("configs", data)
+        self.assertNotIn("auth_ldap", data["configs"])
+        self.assertIn("proxy_conf", data["configs"])
 
 
 if __name__ == "__main__":

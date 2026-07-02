@@ -20,34 +20,9 @@ if TYPE_CHECKING:
 from utils.cache.applications import get_canonical_volumes
 from utils.roles.applications.mounts import (
     mount_default_read_only,
+    mount_when_passes,
     normalize_volumes_meta,
 )
-
-
-def _mount_when_passes(
-    mount: dict[str, Any], render_jinja: Callable[[str], str] | None
-) -> bool:
-    when = mount.get("when")
-    if when is None:
-        return True
-    if isinstance(when, bool):
-        return when
-    text = str(when).strip()
-    if not text:
-        return True
-    if "{{" not in text and "{%" not in text:
-        return text.lower() not in {"false", "no", "0", "off"}
-    # Treat any render failure as "skip" so we never emit half-resolved
-    # expressions downstream.
-    if render_jinja is None:
-        return False
-    try:
-        rendered = render_jinja(text)
-    except Exception:
-        return False
-    if isinstance(rendered, bool):
-        return rendered
-    return str(rendered).strip().lower() not in {"false", "no", "0", "off", ""}
 
 
 def _coerce_mode_int(value: Any) -> int:
@@ -103,7 +78,7 @@ def container_volumes(
     )
     canonical_entries = normalize_volumes_meta(raw_meta_volumes)
 
-    volumes_block: list[Any] = []  # str (short form) | dict (long form tmpfs)
+    volumes_block: list[Any] = []
     configs_block: list[dict[str, Any]] = []
     secrets_block: list[dict[str, Any]] = []
 
@@ -116,7 +91,7 @@ def container_volumes(
                 continue
             if mount.get("service") != service:
                 continue
-            if not _mount_when_passes(mount, render_jinja):
+            if not mount_when_passes(mount, render_jinja):
                 continue
 
             target = mount.get("target")

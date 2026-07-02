@@ -31,7 +31,7 @@ import hashlib
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
-    from collections.abc import Iterable
+    from collections.abc import Callable, Iterable
 
 _VALID_TYPES = frozenset({"bind", "volume", "config", "secret", "tmpfs"})
 _TYPE_REQUIRES_SOURCE = frozenset({"bind", "config", "secret"})
@@ -224,3 +224,36 @@ def mounts_for_service(
     for mount in volume.get("mounts") or []:
         if isinstance(mount, dict) and mount.get("service") == service:
             yield mount
+
+
+def mount_when_passes(
+    mount: dict[str, Any], render_jinja: Callable[[str], str] | None
+) -> bool:
+    """Evaluate the optional ``when:`` gate of a single mount entry.
+
+    Args:
+        mount: one dict from ``volume['mounts']``.
+        render_jinja: renders a Jinja expression string; None disables rendering.
+
+    Returns:
+        True when the mount is active.
+    """
+    when = mount.get("when")
+    if when is None:
+        return True
+    if isinstance(when, bool):
+        return when
+    text = str(when).strip()
+    if not text:
+        return True
+    if "{{" not in text and "{%" not in text:
+        return text.lower() not in {"false", "no", "0", "off"}
+    if render_jinja is None:
+        return False
+    try:
+        rendered = render_jinja(text)
+    except Exception:  # noqa: BLE001
+        return False
+    if isinstance(rendered, bool):
+        return rendered
+    return str(rendered).strip().lower() not in {"false", "no", "0", "off", ""}
