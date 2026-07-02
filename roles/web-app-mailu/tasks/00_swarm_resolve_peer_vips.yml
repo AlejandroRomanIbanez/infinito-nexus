@@ -18,6 +18,7 @@
   run_once: true
   changed_when: false
   register: mailu_swarm_vip_raw
+  when: peer.name != 'redis' or not lookup('engine', 'redis', application_id, 'local')
   loop:
     - { name: db, service: "{{ MAILU_SWARM_DB_ENGINE }}_{{ MAILU_SWARM_DB_ENGINE }}", overlay: "{{ MAILU_SWARM_DB_ENGINE }}" }
     - { name: redis, service: "redis_redis", overlay: "redis" }
@@ -37,19 +38,24 @@
   run_once: true
   changed_when: false
   register: mailu_swarm_net_raw
+  when: peer.name != 'redis' or not lookup('engine', 'redis', application_id, 'local')
   loop:
     - { name: db, overlay: "{{ MAILU_SWARM_DB_ENGINE }}" }
     - { name: redis, overlay: "redis" }
   loop_control:
     loop_var: peer
 
-- name: "🧰 Pin central mariadb/redis VIPs as admin extra_hosts facts (swarm)"
+- name: "🧰 Pin central mariadb VIP as an admin extra_hosts fact (swarm)"
   ansible.builtin.set_fact:
     MAILU_SWARM_DB_ADDR: >-
       {{ mailu_swarm_vip_raw.results[0].stdout | split('#') | map('trim') | select
          | map('split', '=') | selectattr('0', 'equalto', mailu_swarm_net_raw.results[0].stdout | trim)
          | map(attribute='1') | first | split('/') | first }}
+
+- name: "🧰 Pin central redis VIP as an admin extra_hosts fact (swarm)"
+  ansible.builtin.set_fact:
     MAILU_SWARM_REDIS_ADDR: >-
       {{ mailu_swarm_vip_raw.results[1].stdout | split('#') | map('trim') | select
          | map('split', '=') | selectattr('0', 'equalto', mailu_swarm_net_raw.results[1].stdout | trim)
          | map(attribute='1') | first | split('/') | first }}
+  when: not lookup('engine', 'redis', application_id, 'local')

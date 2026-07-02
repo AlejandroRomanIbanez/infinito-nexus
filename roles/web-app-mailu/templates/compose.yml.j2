@@ -51,7 +51,9 @@
 {% endif %}
 {% if DEPLOYMENT_MODE == 'swarm' %}
       - "{{ MAILU_SWARM_DB_HOST }}:{{ MAILU_SWARM_DB_ADDR }}"
+{% if not lookup('engine', 'redis', application_id, 'local') %}
       - "{{ MAILU_SWARM_REDIS_HOST }}:{{ MAILU_SWARM_REDIS_ADDR }}"
+{% endif %}
 {% endif %}
 {% endif %}
 
