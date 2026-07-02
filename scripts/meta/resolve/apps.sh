@@ -85,6 +85,8 @@ apps_json="$(
 		jq -R -s -c 'split("\n") | map(select(length>0))'
 )"
 
+apps_json="$(printf '%s' "${apps_json}" | jq -c 'sort')"
+
 if [[ -n "${GITHUB_ACTIONS:-}" && -z "${ACT:-}" ]]; then
 	required_storage="${INFINITO_REQUIRED_STORAGE}"
 
