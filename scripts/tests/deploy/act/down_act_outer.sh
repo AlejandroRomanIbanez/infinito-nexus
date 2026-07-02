@@ -11,3 +11,5 @@ if [ -n "${ids}" ]; then
 else
 	echo "→ no act outer container present (nothing to do)"
 fi
+
+exit 0
