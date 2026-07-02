@@ -37,6 +37,11 @@ act-workflow:
 autoformat: install-lint
 	@bash scripts/lint/wrapper.sh autoformat
 
+.PHONY: autoformat-restage
+# Autoformat, then re-stage files it rewrote that were already staged -- only when no unstaged changes were present beforehand.
+autoformat-restage:
+	@bash scripts/git/autoformat_restage.sh "$(MAKE)" autoformat
+
 .PHONY: bootstrap
 # Install dependencies and prepare the project.
 bootstrap: install setup
@@ -441,6 +446,12 @@ network-refresh:
 network-trust-ca:
 	@bash scripts/system/tls/trust/linux.sh
 	@bash scripts/system/tls/trust/wsl2.sh
+
+.PHONY: quality
+# Autoformat then run the full test suite in one shot (pre-commit gate).
+quality:
+	@"$(MAKE)" autoformat
+	@"$(MAKE)" test
 
 .PHONY: requirements-archive
 # Archive fully-checked requirement files via pkgmgr (installs kpmx if missing).
