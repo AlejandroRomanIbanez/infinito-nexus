@@ -14,6 +14,8 @@
       "Bash(make)",
       "Edit",
       "Read",
+      "Skill(artifact-design)",
+      "Skill(artifact-design:*)",
       "WebFetch(domain:01.org)",
       "WebFetch(domain:about.gitlab.com)",
       "WebFetch(domain:access.redhat.com)",
