@@ -31,6 +31,8 @@ opencloud:
   image: opencloudeu/opencloud
   version: 7.2.0
   min_storage: 20GB
+  # nocheck: default-placement-manager  single-binary single-writer (embedded NATS + decomposedfs); one replica on the stack host
+  default_placement: manager
   backup:
     no_stop_required: true
   cpus: "2.0"
