@@ -72,3 +72,6 @@
     apply:
       delegate_to: "{{ STACK_HOST }}"
       run_once: true
+
+- name: "📄 Matomo | Re-render consumer injections after the final compose flush"
+  include_tasks: 10_reinject_consumers.yml
