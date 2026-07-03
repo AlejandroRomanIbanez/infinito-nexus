@@ -5,7 +5,7 @@
     -e CONFIG_KEY={{ item.key }}
     -e CONFIG_VALUE={{ item.value | quote }}
     -e CONFIG_FILE={{ ESPOCRM_CONFIG_FILE_PRIVATE | quote }}
-    {{ ESPOCRM_CONTAINER_ADDRESS }} sh < {{ role_path }}/files/patch_config_key.sh
+    {{ ESPOCRM_LOCAL_CID | quote }} sh < {{ role_path }}/files/patch_config_key.sh
   loop:
     - { key: host, value: "{{ lookup('database', application_id, 'host') }}" }
     - { key: dbname, value: "{{ lookup('database', application_id, 'name') }}" }
@@ -21,7 +21,7 @@
     cmd: >-
       container exec -i --user {{ ESPOCRM_USER }}
       -e ESPOCRM_URL={{ ESPOCRM_URL | quote }}
-      {{ ESPOCRM_CONTAINER_ADDRESS | quote }} php
+      {{ ESPOCRM_LOCAL_CID | quote }} php
     stdin: "{{ lookup('file', 'set_siteurl.php') }}"
   register: siteurl_set
   changed_when: "'CHANGED' in siteurl_set.stdout"

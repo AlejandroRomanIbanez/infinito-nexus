@@ -18,30 +18,46 @@
 - name: "🐳 Docker Compose Up for '{{ application_id }}'"
   meta: flush_handlers
 
+- name: "🧭 Resolve EspoCRM host node + local container id"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
+  vars:
+    resolve_service_key: "{{ entity_name }}"
+    resolve_output_prefix: ESPOCRM
+    resolve_compose_cid: "{{ ESPOCRM_CONTAINER }}"
+
 - name: 🔎 Check if config.php exists in EspoCRM
-  shell: >
-    container exec --user root {{ ESPOCRM_CONTAINER_ADDRESS }} test -f {{ ESPOCRM_CONFIG_FILE_PRIVATE }}
+  shell: |
+    # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
+    container exec --user root {{ ESPOCRM_LOCAL_CID | quote }} test -f {{ ESPOCRM_CONFIG_FILE_PRIVATE }}
   register: config_file_exists
   changed_when: false
   failed_when: false
+  delegate_to: "{{ ESPOCRM_HOST_NODE }}"
 
 - name: 🩹 Patch EspoCRM config.php
-  include_tasks: 01_patch_config.yml
+  include_tasks:
+    file: 01_patch_config.yml
+    apply:
+      delegate_to: "{{ ESPOCRM_HOST_NODE }}"
   when: config_file_exists.rc == 0
 - name: ▶️ Run EspoCRM upgrade
-  shell: >
-    container exec --user {{ ESPOCRM_USER }} {{ ESPOCRM_CONTAINER_ADDRESS }}
-    php command.php upgrade -y
+  shell: |
+    # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
+    container exec --user {{ ESPOCRM_USER }} {{ ESPOCRM_LOCAL_CID | quote }} \
+      php command.php upgrade -y
   register: espocrm_upgrade
   changed_when: "'Upgrading' in espocrm_upgrade.stdout or 'successfully' in espocrm_upgrade.stdout"
   failed_when: false
+  delegate_to: "{{ ESPOCRM_HOST_NODE }}"
 
 - name: ▶️ Run flag setter as root (fallback)
-  shell: >
-    container exec --user root {{ ESPOCRM_CONTAINER_ADDRESS }}
-    php {{ ESPOCRM_SCRIPT_SEED_DOCKER }}
+  shell: |
+    # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
+    container exec --user root {{ ESPOCRM_LOCAL_CID | quote }} \
+      php {{ ESPOCRM_SCRIPT_SEED_DOCKER }}
   register: flags_result_root
   changed_when: "'CHANGED' in flags_result_root.stdout"
+  delegate_to: "{{ ESPOCRM_HOST_NODE }}"
 
 - name: 🚿 Flush handlers to make DB available before password reset
   meta: flush_handlers
