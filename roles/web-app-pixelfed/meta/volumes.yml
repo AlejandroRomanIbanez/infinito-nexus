@@ -25,3 +25,11 @@ entrypoint:
   mounts:
     - service: pixelfed
       target: /infinito-pixelfed-entrypoint.sh
+
+worker_entrypoint:
+  type: config
+  source: "{{ [lookup('container', 'web-app-pixelfed', 'directories.instance'), 'worker-entrypoint.sh'] | path_join }}"
+  mode: "0555"
+  mounts:
+    - service: worker
+      target: /infinito-pixelfed-worker-entrypoint.sh

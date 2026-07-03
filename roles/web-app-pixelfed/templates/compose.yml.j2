@@ -20,12 +20,13 @@
       AUTORUN_LARAVEL_VIEW_CACHE: "false"
       AUTORUN_ENABLED: "false"
     {{ lookup('container_volumes', application_id, 'worker') | indent(4) }}
-    entrypoint: /worker-entrypoint.sh
+    entrypoint: "{{ PIXELFED_WORKER_ENTRYPOINT_DOCKER }}"
     healthcheck:
       test: php artisan horizon:status | grep running
       interval: 60s
       timeout: 5s
       retries: 1
+      start_period: 300s
     {{ lookup('container_depends_on', application_id, extra={
   'pixelfed': {'condition': 'service_started'},
 }) | indent(4) }}
