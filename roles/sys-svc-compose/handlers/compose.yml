@@ -1,4 +1,10 @@
 ---
+- name: "🛡️ Guard instance dir at compose flush"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/guard_instance_dir.yml') }}"
+  listen:
+    - compose up
+    - compose build
+
 - name: Generate CA trust override
   ansible.builtin.shell: |
     set -euo pipefail
