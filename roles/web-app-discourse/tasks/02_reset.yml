@@ -12,10 +12,7 @@
   changed_when: disc_net_disconnect.rc == 0
   failed_when: >
     disc_net_disconnect.rc != 0 and
-    ('is not connected' not in (disc_net_disconnect.stderr | default('') | lower)) and
-    ('no such network' not in (disc_net_disconnect.stderr | default('') | lower)) and
-    ('no such container' not in (disc_net_disconnect.stderr | default('') | lower)) and
-    ('not found' not in (disc_net_disconnect.stderr | default('') | lower))
+    not (disc_net_disconnect.stderr | default('') | docker_network_noop('disconnect'))
 
 - name: "📦 destroy container '{{ DISCOURSE_CONTAINER }}'"
   ansible.builtin.command:
