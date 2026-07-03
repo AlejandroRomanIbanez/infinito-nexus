@@ -47,6 +47,7 @@
       --ignore-buildable
   register: pull
   changed_when: "'pulled' in pull.stdout"
+  timeout: 3600
   retries: 10
   delay: 30
   until: pull is succeeded
@@ -63,6 +64,7 @@
   args:
     chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
     executable: /bin/bash
+  timeout: 3600
   listen:
     - compose build
 
