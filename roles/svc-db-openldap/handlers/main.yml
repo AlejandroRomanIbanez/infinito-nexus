@@ -8,12 +8,8 @@
     - "Import configuration LDIF files"
   register: r
   failed_when: >-
-    r.rc != 0 and (
-      "Type or value exists" not in (r.stderr | default('')) and
-      "already exists" not in (r.stderr | default('')) and
-      "Duplicate value" not in (r.stderr | default('')) and
-      "Duplicate attribute value" not in (r.stderr | default(''))
-    )
+    r.rc != 0 and
+    not (r.stderr | default('') | ldap_modify_noop)
 
 - name: Load refint module in OpenLDAP (cn=config via EXTERNAL)
   ansible.builtin.shell: >-
@@ -24,12 +20,8 @@
     - "Import configuration LDIF files"
   register: r
   failed_when: >-
-    r.rc != 0 and (
-      "Type or value exists" not in (r.stderr | default('')) and
-      "already exists" not in (r.stderr | default('')) and
-      "Duplicate value" not in (r.stderr | default('')) and
-      "Duplicate attribute value" not in (r.stderr | default(''))
-    )
+    r.rc != 0 and
+    not (r.stderr | default('') | ldap_modify_noop)
 
 - name: Add memberof overlay (cn=config via EXTERNAL)
   ansible.builtin.shell: >-
