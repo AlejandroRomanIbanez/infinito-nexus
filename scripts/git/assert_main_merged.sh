@@ -7,8 +7,8 @@
 # (default main).
 set -euo pipefail
 
-remote="${INFINITO_MAIN_REMOTE:-origin}"
-branch="${INFINITO_MAIN_BRANCH:-main}"
+remote="${INFINITO_MAIN_REMOTE:-origin}" # nocheck: git maintainer tooling knob, not a deployment env key
+branch="${INFINITO_MAIN_BRANCH:-main}"   # nocheck: git maintainer tooling knob, not a deployment env key
 
 cd "$(git rev-parse --show-toplevel)"
 

@@ -4,7 +4,6 @@ entity_name: "{{ application_id | get_entity_name }}"
 
 ERPNEXT_BACKEND_CONTAINER: "erpnext-backend"
 ERPNEXT_FRONTEND_CONTAINER: "erpnext-frontend"
-ERPNEXT_BACKEND_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'backend') }}"
 ERPNEXT_WEBSOCKET_CONTAINER: "erpnext-websocket"
 ERPNEXT_SCHEDULER_CONTAINER: "erpnext-scheduler"
 ERPNEXT_QUEUE_SHORT_CONTAINER: "erpnext-queue-short"
@@ -30,8 +29,6 @@ ERPNEXT_EMAIL_ENABLED: "{{ lookup('config', application_id, 'services.email.enab
 ERPNEXT_DB_HOST: "{{ lookup('database', application_id, 'host') }}"
 ERPNEXT_DB_PORT: "{{ lookup('database', application_id, 'port') }}"
 
-# Central svc-db-mariadb root pw lives under its own credentials.root_password; per-role
-# MariaDB uses the consumer's database password as its root pw (sys-svc-rdbms convention).
 ERPNEXT_DB_ROOT_USER: "root"
 ERPNEXT_DB_ROOT_PASSWORD: >-
   {{ lookup('config', 'svc-db-mariadb', 'credentials.root_password')
