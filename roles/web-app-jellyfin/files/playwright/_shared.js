@@ -22,10 +22,11 @@ function onLoginSurface(page) {
 }
 
 async function assertAuthenticated(page, label) {
-  // Jellyfin lands on the home dashboard; the app header / drawer button render
-  // only for an authenticated session.
   await expect(
-    page.locator(".headerUserButton, .mainDrawerButton, button.headerButton, [is='emby-button'].headerUserButton").first(),
+    page
+      .getByRole("button", { name: "Menu" })
+      .or(page.getByRole("button", { name: "Search" }))
+      .first(),
     `${label}: authenticated Jellyfin chrome must be visible`,
   ).toBeVisible({ timeout: 60_000 });
 }
@@ -79,19 +80,39 @@ async function signInViaOidc(page, username, password, label) {
 }
 
 async function logout(page, label = "session") {
-  const userBtn = page.locator(".headerUserButton, button.headerUserButton").first();
-  if (await userBtn.count()) {
-    await userBtn.click().catch(() => {});
-    const signOut = page.locator("a, button, .listItem").filter({ hasText: /sign\s*out|log\s*out|logout|abmelden/i }).first();
-    if (await signOut.count()) {
-      await signOut.click().catch(() => {});
+  try {
+    const menu = page
+      .getByRole("button", { name: "Menu" })
+      .or(page.locator(".headerUserButton, .mainDrawerButton"))
+      .first();
+    if (await menu.count()) {
+      await menu.click({ timeout: 5_000 }).catch(() => {});
     }
+    const signOut = page
+      .getByRole("link", { name: /sign\s*out|log\s*out|logout|abmelden/i })
+      .or(page.locator("a, button, .listItem").filter({ hasText: /sign\s*out|log\s*out|logout|abmelden/i }))
+      .first();
+    if (await signOut.count()) {
+      await signOut.click({ timeout: 5_000 }).catch(() => {});
+      await page.waitForLoadState("domcontentloaded", { timeout: 8_000 }).catch(() => {});
+    }
+  } catch {
+    /* best-effort */
   }
-  await page.waitForTimeout(1500);
-  if (!onLoginSurface(page)) {
-    await page.context().clearCookies();
-    await gotoLogin(page);
-  }
+
+  await page.context().clearCookies();
+  await gotoLogin(page).catch(() => {});
+  await page
+    .evaluate(() => {
+      try {
+        window.localStorage.clear();
+        window.sessionStorage.clear();
+      } catch (e) {
+        /* noop */
+      }
+    })
+    .catch(() => {});
+  await gotoLogin(page);
   await expect
     .poll(() => onLoginSurface(page), {
       timeout: 30_000,

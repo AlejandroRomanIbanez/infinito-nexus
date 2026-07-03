@@ -12,7 +12,7 @@
       - "media:/media"
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 {{ lookup('container_depends_on', application_id) }}
-{% include 'roles/sys-svc-container/templates/healthcheck/wget.yml.j2' %}
+{% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
 
 {{ lookup('applications') | compose_volumes(
     application_id,
