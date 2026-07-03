@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
   pds:
-{% set container_port = 3000 %}
+{% set container_port = BLUESKY_PDS_INTERNAL_PORT | int %}
 {% set container_healthcheck = 'xrpc/_health' %}
     {{ lookup('container_image', application_id, 'pds') }}
 {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -12,7 +12,7 @@
     {{ lookup('container_networks') | indent(4) }}
 
 {% if BLUESKY_WEB_ENABLED %}
-{% set container_port = 8100 %}
+{% set container_port = BLUESKY_WEB_INTERNAL_PORT | int %}
 {% set service_name = 'web' %}
   {{ service_name }}:
 {% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
@@ -42,15 +42,16 @@
     {{ lookup('compose_restart') }}
     {{ lookup('container_ports', ['broker', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     environment:
-      BROKER_PORT: "8080"
-      SOCIAL_APP_URL: "http://web:8100"
+      BROKER_PORT: "{{ BLUESKY_BROKER_INTERNAL_PORT }}"
+      SOCIAL_APP_URL: "http://web:{{ BLUESKY_WEB_INTERNAL_PORT }}"
       PDS_URL: "{{ lookup('tls', application_id, 'protocols.web') }}://{{ BLUESKY_API_DOMAIN }}"
+      PDS_INTERNAL_URL: "http://pds:{{ BLUESKY_PDS_INTERNAL_PORT }}"
       PDS_HANDLE_DOMAIN: "{{ BLUESKY_PDS_HANDLE_DOMAIN }}"
       PDS_ADMIN_PASSWORD: "{{ BLUESKY_ADMIN_PASSWORD | replace('$', '$$') }}"
       BLUESKY_BRIDGE_ENCRYPTION_KEY: "{{ BLUESKY_BRIDGE_ENCRYPTION_KEY }}"
       INSECURE_TLS: "{{ MODE_DEBUG | string | lower }}"
     healthcheck:
-      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:8080/healthz"]
+      test: ["CMD", "wget", "-q", "-O-", "http://127.0.0.1:{{ BLUESKY_BROKER_INTERNAL_PORT }}/healthz"]
       interval: 30s
       timeout: 5s
       retries: 3
