@@ -1,4 +1,6 @@
+{% set service_name = MATRIX_MDAD_SERVICE %}
   {{ MATRIX_MDAD_SERVICE }}:
+{% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
     {{ lookup('compose_only', 'container_name', MATRIX_MDAD_CONTAINER) }}
     build:
       context: {{ MATRIX_MDAD_RUNNER_BUILD_DIR }}
