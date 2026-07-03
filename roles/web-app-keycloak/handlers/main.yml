@@ -16,5 +16,5 @@
   until: group_sync.rc == 0
   failed_when: group_sync.rc != 0
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-  delegate_to: "{{ KEYCLOAK_HOST_NODE | default(inventory_hostname) }}"
+  delegate_to: "{{ KEYCLOAK_HOST_NODE }}"
   ignore_errors: true

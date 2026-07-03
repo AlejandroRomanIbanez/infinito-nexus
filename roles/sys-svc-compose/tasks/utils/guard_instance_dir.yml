@@ -4,6 +4,7 @@
     path: "{{ lookup('container', application_id, 'directories.instance') }}"
   register: sys_svc_compose_instance_dir
   changed_when: false
+  delegate_to: "{{ STACK_HOST }}"
 
 - name: "🛑 Fail: instance dir missing at handler flush for '{{ application_id }}'"
   ansible.builtin.fail:

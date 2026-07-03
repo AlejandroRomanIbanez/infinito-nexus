@@ -11,7 +11,6 @@
 # Param: resolve_converge_retries - swarm converge retries (default 600)
 # Param: resolve_converge_delay   - swarm converge delay seconds (default 2)
 # Param: resolve_cid_filters      - extra `container ps` filters for the cid lookup (default '')
-# Param: resolve_run_host         - host that runs the manager-only queries (default: inventory_hostname)
 - name: "🔧 resolve_host_cid | resolve swarm service name for '{{ resolve_service_key }}'"
   ansible.builtin.set_fact:
     _resolve_service_name: "{{ (resolve_service_name | default('')) or (lookup('container_service', application_id, resolve_service_key) if DEPLOYMENT_MODE == 'swarm'
@@ -24,7 +23,6 @@
     wait_service_name: "{{ _resolve_service_name }}"
     wait_retries: "{{ resolve_converge_retries | default(600) }}"
     wait_delay: "{{ resolve_converge_delay | default(2) }}"
-    wait_run_host: "{{ resolve_run_host | default(inventory_hostname) }}"
 
 - name: "🔍 resolve_host_cid | resolve hosting node for '{{ resolve_service_key }}'"
   ansible.builtin.shell: |
@@ -33,7 +31,7 @@
       --format '{{ "{{.Node}}" }}' | head -1
   register: _resolve_node
   changed_when: false
-  delegate_to: "{{ resolve_run_host | default(inventory_hostname) }}"
+  delegate_to: "{{ STACK_HOST }}"
   when: DEPLOYMENT_MODE == 'swarm'
 
 - name: "🔧 resolve_host_cid | set {{ resolve_output_prefix }}_HOST_NODE"

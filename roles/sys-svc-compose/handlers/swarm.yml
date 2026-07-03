@@ -1,15 +1,10 @@
 ---
 - name: "🛡️ Guard instance dir at swarm flush"
-  ansible.builtin.include_tasks:
-    file: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/guard_instance_dir.yml') }}"
-    apply:
-      run_once: true
-      delegate_to: "{{ STACK_HOST }}"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/guard_instance_dir.yml') }}"
+  run_once: true
   listen:
     - compose up
     - swarm deploy
-  run_once: true
-  delegate_to: "{{ STACK_HOST }}"
 
 - name: "swarm: pre-deploy build of local images"
   ansible.builtin.shell: |

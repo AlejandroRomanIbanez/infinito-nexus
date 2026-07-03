@@ -99,4 +99,3 @@
     resolve_output_prefix: KEYCLOAK
     resolve_compose_cid: "{{ lookup('container_address', application_id, entity_name) }}"
     resolve_cid_filters: "--filter health=healthy"
-    resolve_run_host: "{{ STACK_HOST }}"

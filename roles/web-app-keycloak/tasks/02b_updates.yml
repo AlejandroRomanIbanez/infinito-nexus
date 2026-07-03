@@ -9,7 +9,6 @@
         resolve_service_key: "{{ entity_name }}"
         resolve_output_prefix: KEYCLOAK
         resolve_compose_cid: "{{ lookup('container_address', application_id, entity_name) }}"
-        resolve_run_host: "{{ STACK_HOST if DEPLOYMENT_MODE == 'swarm' else inventory_hostname }}"
       when: DEPLOYMENT_MODE == 'swarm'
 
     - name: "📂 Run Keycloak object-update routines on the freshly resolved node"
@@ -36,7 +35,6 @@
         resolve_service_key: "{{ entity_name }}"
         resolve_output_prefix: KEYCLOAK
         resolve_compose_cid: "{{ lookup('container_address', application_id, entity_name) }}"
-        resolve_run_host: "{{ STACK_HOST if DEPLOYMENT_MODE == 'swarm' else inventory_hostname }}"
 
     - name: "🔁 Keycloak updates | Retry object updates on the freshly resolved node"
       ansible.builtin.include_tasks:
