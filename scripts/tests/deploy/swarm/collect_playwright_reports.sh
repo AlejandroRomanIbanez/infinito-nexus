@@ -12,4 +12,5 @@ source <(grep -E '^INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR=' "${SCRIPT_DIR}/../../.
 dest="/tmp/playwright-artifacts/${APP_ID}"
 mkdir -p "${dest}"
 
-docker cp "${MGR}:${INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR}/." "${dest}" 2>/dev/null || true
+docker exec "${MGR}" tar -C "${INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR}" -cf - . 2>/dev/null |
+	tar -C "${dest}" -xf - 2>/dev/null || true
