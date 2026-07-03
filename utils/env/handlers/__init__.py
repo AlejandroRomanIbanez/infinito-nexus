@@ -10,6 +10,7 @@ from __future__ import annotations
 from . import (
     gha_passthrough,
     github_repository_owner,
+    infinito_ca_cert_host,
     infinito_container,
     infinito_docker_volume,
     infinito_image,
@@ -44,6 +45,7 @@ ORDERED_HANDLERS = [
     infinito_running_on_github,
     infinito_variant_bundle_size,
     infinito_is_wsl2,
+    infinito_ca_cert_host,
     infinito_outer_network_mtu,
     infinito_inventory,
     gha_passthrough,
@@ -61,6 +63,5 @@ ORDERED_HANDLERS = [
     infinito_package_cache_admin_password,
 ]
 
-# Back-compat for tests/integration/meta/env/test_dotenv_generator.py
 PASSTHROUGH_STATIC_KEYS = passthrough.STATIC_KEYS
 GHA_STATIC_KEYS = gha_passthrough.STATIC_KEYS
