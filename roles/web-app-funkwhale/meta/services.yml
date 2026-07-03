@@ -11,6 +11,8 @@ funkwhale:
     local:
       sso: 16502
       http: 8012
+  proxy:
+    service_key: front
   run_after:
     - web-app-matomo
     - web-app-keycloak
