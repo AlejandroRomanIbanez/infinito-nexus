@@ -32,6 +32,10 @@
   include_tasks: update/08_users_realm.yml
   when: not KEYCLOAK_LDAP_ENABLED | bool
 
+- name: "📂 Load RBAC realm group provisioning routines for '{{ application_id }}'"
+  include_tasks: update/08b_rbac_groups_realm.yml
+  when: not KEYCLOAK_LDAP_ENABLED | bool
+
 - name: "📂 Load Users Update routines for '{{ application_id }}' (emailVerified)"
   include_tasks: update/08_users_email_verified.yml
   when: KEYCLOAK_USER_EMAILS_VERIFIED | bool
