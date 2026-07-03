@@ -25,7 +25,7 @@ log_handler = :INFO
 ; Server settings
 http_interface = 0.0.0.0
 http_port = {{ container_port }}
-longpolling_port = {{ container_websocket_port }}
+gevent_port = {{ container_websocket_port }}
 proxy_mode = True
 workers = 4
 max_cron_threads = 2
