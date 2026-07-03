@@ -10,5 +10,5 @@ test.beforeEach(shared.beforeEach);
 
 require("./test-guest").register(shared);
 require("./test-login-native-administrator").register(shared);
-require("./test-login-oidc-biber").register(shared);
 require("./test-login-ldap-biber").register(shared);
+require("./test-login-oidc-biber").register(shared);

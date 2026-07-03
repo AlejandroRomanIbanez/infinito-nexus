@@ -27,6 +27,10 @@ JELLYFIN_LDAP_ENABLED: "{{ lookup('config', application_id, 'services.ldap.enabl
 # registered first). Catalog package names are hardcoded in files/configure-auth.sh.
 JELLYFIN_SSO_PLUGIN_MANIFEST: "https://raw.githubusercontent.com/9p4/jellyfin-plugin-sso/manifest-release/manifest.json"
 
+JELLYFIN_LDAP_PLUGIN_VERSION: "{{ lookup('config', application_id, 'addons.ldap-authentication.version') }}"
+JELLYFIN_LDAP_PLUGIN_URL: "{{ lookup('config', application_id, 'addons.ldap-authentication.url') }}"
+JELLYFIN_LDAP_PLUGIN_MD5: "{{ lookup('config', application_id, 'addons.ldap-authentication.md5') }}"
+
 # LDAP connection (central OpenLDAP) — consumed by files/configure-auth.sh
 JELLYFIN_LDAP_SERVER: "{{ LDAP.SERVER.DOMAIN }}"
 JELLYFIN_LDAP_PORT: "{{ LDAP.SERVER.PORT }}"

@@ -11,7 +11,7 @@
 - name: flush docker service
   meta: flush_handlers
 
-- name: Provision Jellyfin auth (first-run wizard + LDAP/OIDC plugins + config)
+- name: Provision Jellyfin (first-run wizard + break-glass admin; LDAP/OIDC plugins + config when enabled)
   ansible.builtin.script:
     cmd: "{{ role_path }}/files/configure-auth.sh"
   environment:
@@ -22,6 +22,9 @@
     JELLYFIN_SSO_ENABLED: "{{ JELLYFIN_SSO_ENABLED | string | lower }}"
     JELLYFIN_LDAP_ENABLED: "{{ JELLYFIN_LDAP_ENABLED | string | lower }}"
     JELLYFIN_SSO_PLUGIN_MANIFEST: "{{ JELLYFIN_SSO_PLUGIN_MANIFEST }}"
+    JELLYFIN_LDAP_PLUGIN_VERSION: "{{ JELLYFIN_LDAP_PLUGIN_VERSION }}"
+    JELLYFIN_LDAP_PLUGIN_URL: "{{ JELLYFIN_LDAP_PLUGIN_URL }}"
+    JELLYFIN_LDAP_PLUGIN_MD5: "{{ JELLYFIN_LDAP_PLUGIN_MD5 }}"
     JELLYFIN_LDAP_SERVER: "{{ JELLYFIN_LDAP_SERVER }}"
     JELLYFIN_LDAP_PORT: "{{ JELLYFIN_LDAP_PORT }}"
     JELLYFIN_LDAP_BIND_DN: "{{ JELLYFIN_LDAP_BIND_DN }}"
@@ -31,6 +34,5 @@
     JELLYFIN_OIDC_ISSUER: "{{ JELLYFIN_OIDC_ISSUER }}"
     JELLYFIN_OIDC_CLIENT_ID: "{{ JELLYFIN_OIDC_CLIENT_ID }}"
     JELLYFIN_OIDC_CLIENT_SECRET: "{{ JELLYFIN_OIDC_CLIENT_SECRET }}"
-  when: (JELLYFIN_SSO_ENABLED | bool) or (JELLYFIN_LDAP_ENABLED | bool)
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   changed_when: true
