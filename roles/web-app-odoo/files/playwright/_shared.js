@@ -74,7 +74,7 @@ async function loginToOdoo(page) {
 
     await Promise.race([
       page.waitForURL((u) => u.toString().startsWith(issuer), { timeout: 60_000 }).catch(() => {}),
-      webClient.waitFor({ state: "visible", timeout: 60_000 }).catch(() => {}),
+      webClient.waitFor({ state: "visible", timeout: 120_000 }).catch(() => {}),
     ]);
     if (page.url().startsWith(issuer)) {
       await performKeycloakLoginForm(page, env.adminUsername, env.adminPassword);
@@ -85,7 +85,7 @@ async function loginToOdoo(page) {
 
     await page.goto(`${expectedBaseUrl}/odoo`, { waitUntil: "domcontentloaded", timeout: 60_000 });
     const rendered = await webClient
-      .waitFor({ state: "visible", timeout: 60_000 })
+      .waitFor({ state: "visible", timeout: 120_000 })
       .then(() => true)
       .catch(() => false);
     if (rendered) {

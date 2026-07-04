@@ -38,10 +38,8 @@ OPENLDAP_PROVISION_SCHEMAS: "{{ lookup('config', application_id, 'services.openl
 OPENLDAP_PROVISION_USERS: "{{ lookup('config', application_id, 'services.openldap.provision.users') }}"
 OPENLDAP_PROVISION_GROUPS: "{{ lookup('config', application_id, 'services.openldap.provision.groups') }}"
 OPENLDAP_PROVISION_UPDATE: "{{ lookup('config', application_id, 'services.openldap.provision.update') }}"
-OPENLDAP_PROVISION_RESERVED: "{{ lookup('config', application_id, 'services.openldap.provision.reserved') }}"
-
-# Users to be processed by LDAP
-OPENLDAP_USERS: "{{ lookup('users') if OPENLDAP_PROVISION_RESERVED else lookup('users') | non_reserved_users }}"
+# Users to be processed by LDAP (users provisioned into the identity directory)
+OPENLDAP_USERS: "{{ lookup('users') | non_reserved_users }}"
 
 OPENLDAP_PYTHON_LDAP_NATIVE_LIB_PACKAGES_BY_OS_FAMILY:
   Debian:

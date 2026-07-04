@@ -46,6 +46,28 @@ def _merge_users(
     return merged
 
 
+def _derive_accounts(roles: Any) -> list[str]:
+    roles = roles if isinstance(roles, (list, tuple)) else []
+    return (
+        ["mailbox", "identity"]
+        if ("bot" in roles or "administrator" in roles)
+        else ["identity"]
+    )
+
+
+def _apply_account_defaults(users: dict[str, Any]) -> dict[str, Any]:
+    # Inventory-only users merge in after _build_users and would otherwise
+    # carry no accounts/forward at all; give them the same derived defaults.
+    for user in users.values():
+        if not isinstance(user, dict):
+            continue
+        if user.get("accounts") is None:
+            user["accounts"] = _derive_accounts(user.get("roles", []))
+        if "forward" not in user:
+            user["forward"] = ""
+    return users
+
+
 def _compute_reserved_usernames(roles_dir: Path) -> list[str]:
     reserved: set[str] = set()
     for role_dir in roles_dir.iterdir():
@@ -124,7 +146,10 @@ def _build_users(
         )
         roles = overrides.get("roles", [])
         password = overrides.get("password", become_pwd)
-        reserved = overrides.get("reserved", False)
+        accounts = overrides.get("accounts")
+        if accounts is None:
+            accounts = _derive_accounts(roles)
+        forward = overrides.get("forward", "")
         tokens = overrides.get("tokens", {})
         authorized_keys = overrides.get("authorized_keys", [])
 
@@ -142,7 +167,8 @@ def _build_users(
             "roles": roles,
             "tokens": tokens,
             "authorized_keys": authorized_keys,
-            "reserved": reserved,
+            "accounts": accounts,
+            "forward": forward,
             "description": description,
         }
 
@@ -340,7 +366,7 @@ def get_user_defaults(
         definitions = _load_user_defs(resolved_roles_dir)
         for reserved_username in _compute_reserved_usernames(resolved_roles_dir):
             if reserved_username not in definitions:
-                definitions[reserved_username] = {"reserved": True}
+                definitions[reserved_username] = {"accounts": []}
         built = _build_users(
             definitions,
             primary_domain="{{ DOMAIN_PRIMARY }}",
@@ -377,7 +403,7 @@ def get_merged_users(
     defaults = get_user_defaults(roles_dir=roles_dir)
     overrides = _resolve_override_mapping(variables, "users", templar=templar)
 
-    merged = _merge_users(defaults, overrides)
+    merged = _apply_account_defaults(_merge_users(defaults, overrides))
     hydrated = _hydrate_users_tokens(
         merged,
         _load_store_users(tokens_file),

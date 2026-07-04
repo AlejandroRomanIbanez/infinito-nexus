@@ -153,6 +153,27 @@ class TestBuildUsers(unittest.TestCase):
         )
         self.assertEqual(users["alice"]["email"], "alice@example.org")
 
+    def test_accounts_derivation_and_forward_defaults(self):
+        defs = OrderedDict(
+            [
+                ("plain", {}),
+                ("botuser", {"roles": ["bot"]}),
+                ("adminuser", {"roles": ["administrator"]}),
+                ("pinned", {"accounts": ["host"], "forward": "plain"}),
+                ("empty", {"accounts": []}),
+            ]
+        )
+        users = cache_users._build_users(
+            defs, primary_domain="x.example", start_id=1001, become_pwd="pw"
+        )
+        self.assertEqual(users["plain"]["accounts"], ["identity"])
+        self.assertEqual(users["botuser"]["accounts"], ["mailbox", "identity"])
+        self.assertEqual(users["adminuser"]["accounts"], ["mailbox", "identity"])
+        self.assertEqual(users["pinned"]["accounts"], ["host"])
+        self.assertEqual(users["empty"]["accounts"], [])
+        self.assertEqual(users["plain"]["forward"], "")
+        self.assertEqual(users["pinned"]["forward"], "plain")
+
 
 class TestMergeUsers(unittest.TestCase):
     def test_overrides_extend_defaults(self):
@@ -163,6 +184,20 @@ class TestMergeUsers(unittest.TestCase):
         # The defaults description survives when not overridden.
         self.assertEqual(merged["alice"]["description"], "from-defaults")
         self.assertIn("bob", merged)
+
+    def test_apply_account_defaults_covers_inventory_only_users(self):
+        merged = cache_users._apply_account_defaults(
+            {
+                "invuser": {"username": "invuser"},
+                "invbot": {"username": "invbot", "roles": ["bot"]},
+                "pinned": {"username": "pinned", "accounts": [], "forward": "x"},
+            }
+        )
+        self.assertEqual(merged["invuser"]["accounts"], ["identity"])
+        self.assertEqual(merged["invuser"]["forward"], "")
+        self.assertEqual(merged["invbot"]["accounts"], ["mailbox", "identity"])
+        self.assertEqual(merged["pinned"]["accounts"], [])
+        self.assertEqual(merged["pinned"]["forward"], "x")
 
 
 class TestHydrateUsersTokens(unittest.TestCase):
@@ -279,7 +314,7 @@ class TestGetUserDefaults(unittest.TestCase):
             (roles / "svc-db-mariadb").mkdir(parents=True)
             defaults = cache_users.get_user_defaults(roles_dir=roles)
             self.assertIn("mariadb", defaults)
-            self.assertTrue(defaults["mariadb"]["reserved"])
+            self.assertEqual(defaults["mariadb"]["accounts"], [])
 
 
 class TestGetMergedUsersWithOverrides(unittest.TestCase):
