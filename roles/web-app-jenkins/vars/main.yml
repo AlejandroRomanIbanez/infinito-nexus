@@ -3,6 +3,8 @@ application_id: web-app-jenkins
 container_port: 8080
 entity_name: "{{ application_id | get_entity_name }}"
 
+swarm_stack_converge_retries: 600
+
 JENKINS_IMAGE: "{{ lookup('config', application_id, 'services.jenkins.image') }}"
 JENKINS_VERSION: "{{ lookup('config', application_id, 'services.jenkins.version') }}"
 JENKINS_CONTAINER: "{{ lookup('config', application_id, 'services.jenkins.name') }}"

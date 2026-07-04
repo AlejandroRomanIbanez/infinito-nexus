@@ -2,6 +2,8 @@
 application_id: "web-app-odoo"
 entity_name: "{{ application_id | get_entity_name }}"
 
+swarm_stack_converge_retries: 600
+
 websocket_port: "{{ lookup('config', application_id, 'services.odoo.ports.local.websocket') }}"
 
 container_port: 8069
@@ -55,7 +57,6 @@ ODOO_LDAP_USER_ATTR: "{{ LDAP.USER.ATTRIBUTES.ID }}"
 ODOO_LDAP_CREATE_USER: true
 ODOO_LDAP_TLS: "{{ LDAP.SERVER.SECURITY in ['TLS', 'SSL'] }}"
 
-## LDAP Configuration (for res_company_ldap table)
 ODOO_LDAP_CONFIG:
   name: "OpenLDAP"
   sequence: 1

@@ -1,6 +1,8 @@
 ---
 application_id: "web-app-pixelfed"
 
+swarm_stack_converge_retries: 600
+
 PIXELFED_CONTAINER: "{{ lookup('config', application_id, 'services.pixelfed.name') }}"
 PIXELFED_WORKER_CONTAINER: "{{ lookup('config', application_id, 'services.worker.name') }}"
 PIXELFED_TITEL: "{{ lookup('config', application_id, 'services.pixelfed.titel') }}"
