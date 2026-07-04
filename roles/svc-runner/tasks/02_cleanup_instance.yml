@@ -1,3 +1,4 @@
+---
 - name: Stop and remove runner container for instance {{ runner_instance }}
   community.docker.docker_container:
     name: "runner-{{ runner_instance }}"
