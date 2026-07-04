@@ -107,7 +107,7 @@ async function logout(page, label = "session") {
       try {
         window.localStorage.clear();
         window.sessionStorage.clear();
-      } catch (e) {
+      } catch {
         /* noop */
       }
     })
