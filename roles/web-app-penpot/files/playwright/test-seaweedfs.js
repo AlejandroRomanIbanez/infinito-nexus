@@ -1,13 +1,3 @@
-// SeaweedFS object-store scenario for Penpot.
-//
-// Penpot is configured with S3 asset storage (env.j2:
-// PENPOT_ASSETS_STORAGE_BACKEND=assets-s3 / PENPOT_STORAGE_ASSETS_S3_BUCKET),
-// so an image uploaded as a design asset is written to the consumer bucket as
-// a new object. The action signs the administrator in via the in-app OpenID
-// entry (Keycloak), opens a fresh Drafts file in the workspace editor and
-// uploads a small PNG; the shared check proves the bucket grew via the Filer
-// UI. Login reuses the suite's `penpotOidcLogin` helper from `./_shared`.
-
 const { test, expect } = require("@playwright/test");
 const { skipUnlessServiceEnabled } = require("./service-gating");
 const { runSeaweedfsStorageCheck } = require("./personas");
@@ -32,9 +22,9 @@ test("seaweedfs: an uploaded Penpot image asset is stored in the SeaweedFS bucke
         .poll(() => appPage.url(), { timeout: 90_000, message: "expected to enter the Penpot workspace editor" })
         .toContain("/workspace");
 
-      const validPng = shared.validImagePng();
       const markerBase = `infinito-storage-check-${Date.now()}`;
       const marker = `${markerBase}.png`;
+      const validPng = Buffer.concat([shared.validImagePng(), Buffer.from(markerBase)]);
       const fileInput = appPage.locator('input[type="file"]').first();
       await fileInput.waitFor({ state: "attached", timeout: 60_000 });
       await fileInput.setInputFiles({ name: marker, mimeType: "image/png", buffer: validPng });
