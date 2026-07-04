@@ -3,6 +3,8 @@ matomo:
   bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
+  # nocheck: matomo-track - gateway serves a plaintext "OK" health page, no HTML to inject into
+  track: false
 coturn:
   bond: 1
   enabled: true
@@ -46,6 +48,8 @@ css:
   bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
+  # nocheck: matomo-track - same plaintext health page, shared CSS <link> cannot inject
+  track: false
 prometheus:
   bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"

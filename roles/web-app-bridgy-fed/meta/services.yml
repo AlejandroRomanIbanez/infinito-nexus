@@ -16,7 +16,7 @@ dashboard:
   shared: "{{ 'web-app-dashboard' in group_names }}"
 # nocheck: dynamic-flag
 # nocheck: email
-# nocheck: playwright-service-flag — email silenced, no Playwright surface
+# nocheck: playwright-service-flag - email silenced, no Playwright surface
 email:
   enabled: false
   shared: false
@@ -24,11 +24,15 @@ matomo:
   bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
-# nocheck: playwright-service-flag — css consumer, no Playwright surface (provider: web-svc-css)
+  # nocheck: matomo-track - root serves Werkzeug's default 404 without </head>/<body>, head injection cannot anchor
+  track: false
+# nocheck: playwright-service-flag - css consumer, no Playwright surface (provider: web-svc-css)
 css:
   bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
+  # nocheck: matomo-track - same 404-without-anchors page, shared CSS <link> cannot inject
+  track: false
 prometheus:
   bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
