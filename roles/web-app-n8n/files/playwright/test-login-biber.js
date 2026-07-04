@@ -1,15 +1,13 @@
 const { test, expect } = require("@playwright/test");
 
 exports.register = function (shared) {
-  // biber has no n8n-local account (tasks/02_bootstrap.yml provisions only
-  // the owner). n8n Community Edition does not accept oauth2-proxy's session
-  // as its own, so biber cannot reach n8n's authenticated workflow surface at
-  // all — only the SSO edge gate is in scope for a non-admin persona here.
-  // This test proves the edge gate itself: after the Keycloak round-trip,
-  // oauth2-proxy's internal auth-check endpoint MUST accept biber's session
-  // (202), the same response nginx's `auth_request /oauth2/auth` relies on to
-  // let the request through to n8n's own login form.
-  test("biber: Keycloak SSO clears the oauth2-proxy edge gate", async ({ page }) => {
+  // hooks.js (EXTERNAL_HOOK_FILES) auto-provisions ANY Keycloak identity
+  // forwarded via the trusted Remote-Email header as a `global:member` n8n
+  // user — not just the owner account tasks/02_bootstrap.yml creates. So
+  // biber, a non-admin persona with no pre-existing n8n-local account, now
+  // reaches n8n's authenticated workflow surface too, exactly like the
+  // administrator.
+  test("biber: Keycloak SSO auto-provisions and lands on the workflow editor", async ({ page }) => {
     shared.skipUnlessServiceEnabled("sso");
     expect(shared.env.biberUsername, "BIBER_USERNAME must be set").toBeTruthy();
     expect(shared.env.biberPassword, "BIBER_PASSWORD must be set").toBeTruthy();
@@ -17,11 +15,10 @@ exports.register = function (shared) {
 
     await shared.signInViaN8nOidc(page, shared.env.biberUsername, shared.env.biberPassword, "biber");
 
-    const authCheck = await page.request.get(`${shared.env.n8nBaseUrl}/oauth2/auth`);
-    expect(
-      authCheck.status(),
-      "expected oauth2-proxy to accept biber's Keycloak session (202)"
-    ).toBe(202);
+    await expect(page.locator("body")).toContainText(
+      /workflow|execution|credential|canvas|overview/i,
+      { timeout: 60_000 }
+    );
 
     await shared.n8nLogout(page);
   });

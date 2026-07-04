@@ -5,7 +5,18 @@
   include_role:
     name: sys-stk-full
   vars:
-    compose_handlers_flush: true
+    compose_handlers_flush: false
+
+- name: "Stage n8n SSO auto-provisioning hook (EXTERNAL_HOOK_FILES)"
+  ansible.builtin.copy:
+    src: hooks.js
+    dest: "{{ N8N_HOOKS_FILE_HOST }}"
+    mode: "0644"
+  notify:
+    - compose up
+
+- name: "flush handlers to ensure that '{{ N8N_CONTAINER }}' is up with the SSO hook mounted"
+  meta: flush_handlers
 
 - name: "Wait for n8n HTTP endpoint"
   wait_for:

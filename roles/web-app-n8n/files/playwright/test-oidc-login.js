@@ -30,7 +30,13 @@ exports.register = function (shared) {
       })
       .toContain(shared.env.canonicalDomain);
 
-    await expect(page.locator("body")).toBeVisible({ timeout: 60_000 });
+    // hooks.js auto-provisions/logs in the user from the trusted Remote-Email
+    // header, so the round-trip lands directly on n8n's authenticated
+    // surface — no second, n8n-local sign-in step.
+    await expect(page.locator("body")).toContainText(
+      /workflow|execution|credential|canvas|overview/i,
+      { timeout: 60_000 }
+    );
 
     await shared.n8nLogout(page);
   });

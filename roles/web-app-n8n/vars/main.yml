@@ -22,3 +22,8 @@ N8N_INTERNAL_API_URL: "http://{{ DOCKER_REACH_HOST }}:{{ N8N_HTTP_PORT }}"
 
 # Auth integrations
 N8N_SSO_ENABLED: "{{ lookup('config', application_id, 'services.sso.enabled') | bool }}"
+
+# SSO auto-provisioning hook (EXTERNAL_HOOK_FILES); see files/hooks.js and
+# templates/proxy.conf.j2 for the trusted Remote-Email header it reads.
+N8N_HOOKS_FILE_HOST: "{{ [ lookup('container', application_id, 'directories.instance'), 'hooks.js' ] | path_join }}"
+N8N_HOOKS_FILE_CONTAINER: "/home/node/hooks.js"

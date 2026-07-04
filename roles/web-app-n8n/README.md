@@ -12,7 +12,7 @@ This role deploys n8n Community Edition using the upstream `docker.n8n.io/n8nio/
 
 - **Visual workflow editor:** Drag-and-drop canvas with 400+ built-in integrations.
 - **Webhook triggers:** Expose workflow endpoints for external systems to call.
-- **SSO via oauth2-proxy:** V1 gates all access through the shared Keycloak OIDC client (oauth2-proxy edge). n8n Community Edition (`authenticationMethod=email`) does not accept that edge session as its own, so every request still lands on n8n's native login form behind the gate.
+- **SSO via oauth2-proxy with auto-provisioning:** V1 gates all access through the shared Keycloak OIDC client (oauth2-proxy edge). openresty forwards the authenticated identity to n8n as a trusted `Remote-Email` header (`templates/proxy.conf.j2`); an `EXTERNAL_HOOK_FILES` script (`files/hooks.js`, adapted from [PavelSozonov/n8n-community-sso](https://github.com/PavelSozonov/n8n-community-sso)) reads that header, auto-provisions a local n8n user on first sign-in, and issues n8n's own session cookie — so every Keycloak user lands directly in the workflow editor, with no second, n8n-local login step.
 - **Encrypted credential storage:** `N8N_ENCRYPTION_KEY` protects all saved credentials at rest; the key is stable across re-deploys.
 - **Postgres backend:** Workflow definitions, execution history, and user data persist in the central `svc-db-postgres`.
 
@@ -27,7 +27,7 @@ This role deploys n8n Community Edition using the upstream `docker.n8n.io/n8nio/
 
 The deployment bootstrap (`tasks/02_bootstrap.yml`) automatically creates the owner account on first run using the platform-generated `owner_password` credential. No manual wizard step is required.
 
-**V1 (SSO):** The oauth2-proxy edge gate redirects all requests to Keycloak. Passing Keycloak SSO only proves identity at the edge — n8n itself has no concept of that session, so the browser still lands on n8n's own login form. Only the owner account (`users.administrator.email` + the break-glass `owner_password`) is provisioned inside n8n, so the administrator persona completes that second login with the owner credential. Regular Keycloak users are validated at the SSO edge (oauth2-proxy accepts the request) but have no n8n-local account and therefore cannot reach n8n's own workflow surface in V1.
+**V1 (SSO):** The oauth2-proxy edge gate redirects all requests to Keycloak. `files/hooks.js` reads the trusted `Remote-Email` header openresty sets once the gate passes and auto-provisions/logs in the matching n8n user (role `global:member`, or the pre-existing owner for `users.administrator.email`), so every Keycloak user — administrator and regular users alike — lands directly on n8n's own workflow surface with no second, n8n-local login step.
 
 **V2 (no auth):** n8n presents its native login UI. The administrator logs in with the email configured in `users.administrator.email` and the password stored in the platform credential `credentials.owner_password`. Retrieve it with:
 

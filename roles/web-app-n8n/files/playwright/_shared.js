@@ -25,14 +25,13 @@ async function n8nLogout(page) {
   await page.context().clearCookies();
 }
 
-// Drives the Keycloak SSO round-trip through oauth2-proxy only. n8n
-// Community Edition (`authenticationMethod=email`) does not accept
-// oauth2-proxy's session as its own, so the redirect back lands on
-// n8n's native login form, NOT an authenticated surface. Callers that
-// need n8n's own workflow surface MUST additionally drive
-// `performN8nLoginForm` (see below); callers that only need to prove
-// the SSO edge gate accepted the persona (e.g. biber, who has no
-// n8n-local account) stop here.
+// Drives the Keycloak SSO round-trip through oauth2-proxy. hooks.js
+// (EXTERNAL_HOOK_FILES, roles/web-app-n8n/files/hooks.js) reads the trusted
+// Remote-Email header openresty sets once the oauth2-proxy auth_request gate
+// passes and auto-provisions/issues n8n's own session cookie, so the redirect
+// back lands directly on n8n's authenticated workflow surface — no second,
+// n8n-local sign-in step. `performN8nLoginForm` (see below) is only needed
+// for the V2 (no SSO) native-login path.
 async function signInViaN8nOidc(page, username, password, personaLabel) {
   const expectedOidcAuthUrl = `${oidcIssuerUrl}/protocol/openid-connect/auth`;
 
@@ -55,10 +54,11 @@ async function signInViaN8nOidc(page, username, password, personaLabel) {
     .toContain(canonicalDomain);
 }
 
-// Completes n8n's own local login form. Only the owner account
-// (administrator's email + the break-glass N8N_OWNER_PASSWORD) is
-// provisioned by tasks/02_bootstrap.yml, so this is only driven by the
-// administrator persona.
+// Completes n8n's own local login form. Used by the administrator persona
+// for the V2 (no SSO) journey, where the owner account (administrator's
+// email + the break-glass N8N_OWNER_PASSWORD) provisioned by
+// tasks/02_bootstrap.yml is the only way to reach n8n's authenticated
+// surface.
 async function performN8nLoginForm(page, email, password) {
   const emailInput    = page.locator('input[type="email"], input[name="email"]').first();
   const passwordInput = page.locator('input[type="password"], input[name="password"]').first();
