@@ -6,25 +6,13 @@
 # matrix exercises the in-group_names branch of web-svc-coturn.
 
 - services:
-    matomo:
-      enabled: true
-      shared: true
     prometheus:
-      enabled: true
-      shared: true
-    css:
       enabled: true
       shared: true
     redis:
       shared: true
 - services:
-    matomo:
-      enabled: false
-      shared: false
     prometheus:
-      enabled: false
-      shared: false
-    css:
       enabled: false
       shared: false
     redis:
