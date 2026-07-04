@@ -35,6 +35,44 @@ class TestActiveVariantMap(unittest.TestCase):
             self.assertEqual(mod._active_variant_map(), {"web-app-z": 2})
 
 
+class TestForceSharedDbView(unittest.TestCase):
+    def _keys(self, value):
+        return unittest.mock.patch.object(
+            mod, "db_provider_service_keys", return_value=value
+        )
+
+    def test_flips_shared_on_existing_db_entries(self):
+        apps = {
+            "web-app-x": {
+                "services": {
+                    "postgres": {"enabled": True, "shared": False},
+                    "sso": {"enabled": False, "shared": False},
+                }
+            }
+        }
+        with self._keys({"postgres", "mariadb"}):
+            result = mod._force_shared_db_view(apps)
+        self.assertTrue(result["web-app-x"]["services"]["postgres"]["shared"])
+        self.assertFalse(result["web-app-x"]["services"]["sso"]["shared"])
+
+    def test_missing_entries_are_not_created(self):
+        apps = {"web-app-x": {"services": {"sso": {"enabled": True}}}}
+        with self._keys({"mariadb"}):
+            result = mod._force_shared_db_view(apps)
+        self.assertNotIn("mariadb", result["web-app-x"]["services"])
+
+    def test_input_is_not_mutated(self):
+        apps = {"web-app-x": {"services": {"mariadb": {"shared": False}}}}
+        with self._keys({"mariadb"}):
+            mod._force_shared_db_view(apps)
+        self.assertFalse(apps["web-app-x"]["services"]["mariadb"]["shared"])
+
+    def test_no_db_keys_returns_input(self):
+        apps = {"web-app-x": {"services": {}}}
+        with self._keys(set()):
+            self.assertIs(mod._force_shared_db_view(apps), apps)
+
+
 class TestApplicationsForActiveVariants(unittest.TestCase):
     def setUp(self):
         self.base = {

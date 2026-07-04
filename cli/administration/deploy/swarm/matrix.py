@@ -52,10 +52,13 @@ def _provision(
     )
 
 
-def _extend_inventory(*, app_id: str, inv_dir: str) -> int:
+def _extend_inventory(
+    *, app_id: str, inv_dir: str, round_variants: dict[str, int]
+) -> int:
     env = os.environ.copy()
     env["APP_ID"] = app_id
     env["INV_PATH"] = f"{inv_dir}/devices.yml"
+    env["INFINITO_APP_VARIANTS"] = json.dumps(round_variants, sort_keys=True)
     return _run(
         ["python3", "-m", "utils.tests.swarm.extend_inventory"],
         env=env,
@@ -228,7 +231,9 @@ def main(argv: list[str] | None = None) -> int:
         if rc == 0:
             rc = _force_shared_db(inv_dir=inv_root)
         if rc == 0:
-            rc = _extend_inventory(app_id=app_id, inv_dir=inv_root)
+            rc = _extend_inventory(
+                app_id=app_id, inv_dir=inv_root, round_variants=round_variants
+            )
         if rc == 0:
             rc = _write_extras(extras_path=extras_path)
         if rc == 0:

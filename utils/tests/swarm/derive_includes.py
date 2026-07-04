@@ -15,6 +15,9 @@ Input (env): ``APP_ID``. Optional ``INFINITO_APP_VARIANTS`` (JSON
 selects the active variant so a variant that pins ``services.*`` flags
 to ``false`` prunes those providers from the closure instead of the
 provision step pulling them in from the variant-free base config.
+
+DB-provider services are exempt from that pruning: the dep walk applies
+the same force-shared view as ``utils.tests.swarm.force_shared_db``.
 """
 
 from __future__ import annotations
@@ -30,6 +33,7 @@ from utils.roles.applications.in_group_deps import applications_if_group_and_all
 from utils.roles.applications.services.registry import (
     build_service_registry_from_applications,
 )
+from utils.tests.swarm.force_shared_db import db_provider_service_keys
 
 _ROLES_DIR = PROJECT_ROOT / "roles"
 
@@ -81,16 +85,47 @@ def _applications_for_active_variants(
     return applications
 
 
+def _force_shared_db_view(applications: dict[str, Any]) -> dict[str, Any]:
+    """Mirror ``force_shared_db``: flip ``shared: true`` on every existing
+    svc-db-* provider service entry so the dep walk sees the topology the
+    swarm deploy will actually run."""
+    db_keys = db_provider_service_keys(_ROLES_DIR)
+    if not db_keys:
+        return applications
+    result = dict(applications)
+    for app_id, config in applications.items():
+        services = config.get("services") if isinstance(config, dict) else None
+        if not isinstance(services, dict):
+            continue
+        flipped = {
+            key
+            for key, entry in services.items()
+            if key in db_keys
+            and isinstance(entry, dict)
+            and entry.get("shared") is not True
+        }
+        if not flipped:
+            continue
+        patched_services = dict(services)
+        for key in flipped:
+            patched_services[key] = {**services[key], "shared": True}
+        result[app_id] = {**config, "services": patched_services}
+    return result
+
+
 def derive_includes(app_id: str) -> list[str]:
     """Resolve APP_ID's transitive include set under the active variants.
 
     The service registry (service key -> provider role) stays built from
     the full rendered base set so provider discovery is unaffected by the
-    active variants; only the dep-walk sees the variant configs.
+    active variants; only the dep-walk sees the variant configs (with the
+    swarm force-shared DB view applied on top).
     """
     base_applications = get_merged_applications(roles_dir=str(_ROLES_DIR))
     service_registry = build_service_registry_from_applications(base_applications)
-    applications = _applications_for_active_variants(base_applications)
+    applications = _force_shared_db_view(
+        _applications_for_active_variants(base_applications)
+    )
     transitive = applications_if_group_and_all_deps(
         applications,
         [app_id],
