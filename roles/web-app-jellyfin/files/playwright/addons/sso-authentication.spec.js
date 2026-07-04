@@ -3,6 +3,7 @@ const { skipUnlessAddonEnabled } = require("../addon-gating");
 const shared = require("../_shared");
 
 test.use({ ignoreHTTPSErrors: true });
+
 test.beforeEach(shared.beforeEach);
 
 test("addon sso-authentication: biber signs in via the SSO/OIDC plugin and lands on the Jellyfin home", async ({ page }) => {

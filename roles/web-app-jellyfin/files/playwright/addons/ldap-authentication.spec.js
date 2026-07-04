@@ -3,6 +3,7 @@ const { skipUnlessAddonEnabled } = require("../addon-gating");
 const shared = require("../_shared");
 
 test.use({ ignoreHTTPSErrors: true });
+
 test.beforeEach(shared.beforeEach);
 
 test("addon ldap-authentication: biber signs in via the LDAP plugin and lands on the Jellyfin home", async ({ page }) => {
