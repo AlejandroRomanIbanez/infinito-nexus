@@ -41,7 +41,7 @@ def json_from_noisy_stdout(text: Any) -> Any:
         chunk = s[idx:].strip()
         try:
             return json.loads(chunk)
-        except Exception as e:
+        except ValueError as e:
             last_err = e
 
     raise ValueError(f"Failed to parse JSON from noisy stdout: {last_err}")

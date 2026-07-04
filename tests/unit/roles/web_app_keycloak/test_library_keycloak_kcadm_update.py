@@ -13,8 +13,8 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 ROLE_DIR = PROJECT_ROOT / "roles" / "web-app-keycloak"
-LIB_PATH = ROLE_DIR / "library" / "keycloak_kcadm_update.py"
-MODUTILS_PATH = ROLE_DIR / "module_utils" / "kcadm_json.py"
+LIB_PATH = PROJECT_ROOT / "library" / "keycloak_kcadm_update.py"
+MODUTILS_PATH = PROJECT_ROOT / "utils" / "kcadm_json.py"
 
 
 def _load_py_module(name: str, path: Path):
@@ -29,16 +29,24 @@ def _load_py_module(name: str, path: Path):
 def _install_role_local_kcadm_json_into_ansible_module_utils() -> None:
     """
     Make: from ansible.module_utils.kcadm_json import ...
-    resolve to roles/web-app-keycloak/module_utils/kcadm_json.py
+    resolve to utils/kcadm_json.py (the global module_utils dir).
     """
     role_modutils = _load_py_module(
         "role_web_app_keycloak_module_utils_kcadm_json_for_ansible", MODUTILS_PATH
     )
 
-    if "ansible" not in sys.modules:
-        sys.modules["ansible"] = types.ModuleType("ansible")
-    if "ansible.module_utils" not in sys.modules:
-        sys.modules["ansible.module_utils"] = types.ModuleType("ansible.module_utils")
+    try:
+        importlib.import_module("ansible.module_utils.basic")
+    except ImportError:
+        if "ansible" not in sys.modules:
+            sys.modules["ansible"] = types.ModuleType("ansible")
+        if "ansible.module_utils" not in sys.modules:
+            sys.modules["ansible.module_utils"] = types.ModuleType(
+                "ansible.module_utils"
+            )
+        basic = types.ModuleType("ansible.module_utils.basic")
+        basic.AnsibleModule = object
+        sys.modules["ansible.module_utils.basic"] = basic
 
     sys.modules["ansible.module_utils.kcadm_json"] = role_modutils
 

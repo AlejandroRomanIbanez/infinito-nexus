@@ -119,16 +119,12 @@ result:
 
 
 def _shell(cmd, check):
-    # `cmd` comes from this Ansible module's own argv plus inventory
-    # overrides (host-trusted), and shell features (pipes, &&) are
-    # required by the kcadm-wrapper invocations the module composes.
-    rc = subprocess.run(  # noqa: S602
+    rc = subprocess.run(  # noqa: S602 - host-trusted argv; kcadm wrapper needs shell pipes/&&
         cmd,
         shell=True,
         check=check,
         capture_output=True,
     )
-    # kcadm/JVM warnings can appear on stdout; keep raw output.
     stdout = rc.stdout.decode("utf-8", errors="replace").strip()
     stderr = rc.stderr.decode("utf-8", errors="replace").strip()
     return rc.returncode, stdout, stderr
@@ -230,7 +226,6 @@ def resolve_object_id(
         return obj_id, True
 
     if object_kind == "realm":
-        # For realms we treat lookup_value as id/realm name; we will verify on get.
         return str(lookup_value), True
 
     if object_kind == "client-scope":
