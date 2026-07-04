@@ -45,7 +45,7 @@ MOODLE_NGINX_CONTAINER: "{{ lookup('config', application_id, 'services.nginx.nam
 MOODLE_CRON_CONTAINER: "{{ lookup('config', application_id, 'services.cron.name') }}"
 
 MOODLE_OIDC_ENABLED: "{{ lookup('config', application_id, 'services.sso.enabled') }}"
-MOODLE_LDAP_ENABLED: "{{ lookup('config', application_id, 'services.ldap.enabled', true) }}"
+MOODLE_LDAP_ENABLED: "{{ lookup('config', application_id, 'services.ldap.enabled') }}"
 
 MOODLE_OIDC_CUSTOM_SCOPE: "{{ lookup('config', 'web-app-keycloak', 'services.keycloak.scopes.moodle') }}"
 MOODLE_OIDC_SCOPES: "openid profile email phone address {{ MOODLE_OIDC_CUSTOM_SCOPE }}"

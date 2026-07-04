@@ -22,6 +22,10 @@ class ConfigEntryNotSetError(AppConfigKeyError):
     """
 
 
+# Exception: the sentinel must not be False - genuine False leaves would be coerced to the default.
+_MISSING = object()
+
+
 def get(
     applications,
     application_id,
@@ -30,7 +34,6 @@ def get(
     default=None,
     skip_missing_app=False,
 ):
-    # Path to the schema file for this application
     schema_path = str(Path("roles") / application_id / ROLE_FILE_META_SCHEMA)
 
     def schema_defines(path):
@@ -50,7 +53,6 @@ def get(
         return True
 
     def access(obj, key, path_trace):
-        # Match either 'key' or 'key[index]'
         m = re.match(r"^([a-zA-Z0-9_-]+)(?:\[(\d+)\])?$", key)
         if not m:
             raise AppConfigKeyError(
@@ -63,7 +65,7 @@ def get(
 
         if isinstance(obj, (AnsibleUndefined, AnsibleUndefinedVariable)):
             if not strict:
-                return default if default is not None else False
+                return _MISSING
             raise AppConfigKeyError(
                 f"Key '{k}' is undefined at '{'.'.join(path_trace)}'\n"
                 f"  actual type: {type(obj).__name__}\n"
@@ -73,19 +75,15 @@ def get(
                 f"config_path: {config_path}"
             )
 
-        # Access dict key
         if isinstance(obj, Mapping):
             if k not in obj:
-                # Non-strict mode: always return default on missing key
                 if not strict:
-                    return default if default is not None else False
-                # Schema-defined but unset: strict raises ConfigEntryNotSetError
+                    return _MISSING
                 trace_path = ".".join(path_trace[1:])
                 if schema_defines(trace_path):
                     raise ConfigEntryNotSetError(
                         f"Config entry '{trace_path}' is defined in schema at '{schema_path}' but not set in application '{application_id}'."
                     )
-                # Generic missing-key error
                 raise AppConfigKeyError(
                     f"Key '{k}' not found in dict at '{key}'\n"
                     f"Full path so far: {'.'.join(path_trace)}\n"
@@ -96,7 +94,7 @@ def get(
             obj = obj[k]
         else:
             if not strict:
-                return default if default is not None else False
+                return _MISSING
             raise AppConfigKeyError(
                 f"Expected dict for '{k}', got {type(obj).__name__} at '{key}'\n"
                 f"Full path so far: {'.'.join(path_trace)}\n"
@@ -105,11 +103,10 @@ def get(
                 f"config_path: {config_path}"
             )
 
-        # If index was provided, access list element
         if idx is not None:
             if not isinstance(obj, list):
                 if not strict:
-                    return default if default is not None else False
+                    return _MISSING
                 raise AppConfigKeyError(
                     f"Expected list for '{k}[{idx}]', got {type(obj).__name__}\n"
                     f"Full path so far: {'.'.join(path_trace)}\n"
@@ -120,7 +117,7 @@ def get(
             i = int(idx)
             if i >= len(obj):
                 if not strict:
-                    return default if default is not None else False
+                    return _MISSING
                 raise AppConfigKeyError(
                     f"Index {i} out of range for list at '{k}'\n"
                     f"Full path so far: {'.'.join(path_trace)}\n"
@@ -131,13 +128,11 @@ def get(
             obj = obj[i]
         return obj
 
-    # Begin traversal
     path_trace = [f"applications[{application_id!r}]"]
     try:
         obj = applications[application_id]
     except KeyError:
         if skip_missing_app:
-            # Simply return default instead of failing
             return default if default is not None else False
         raise AppConfigKeyError(
             f"Application ID '{application_id}' not found in applications dict.\n"
@@ -149,6 +144,6 @@ def get(
     for part in config_path.split("."):
         path_trace.append(part)
         obj = access(obj, part, path_trace)
-        if obj is False and not strict:
+        if obj is _MISSING:
             return default if default is not None else False
     return obj
