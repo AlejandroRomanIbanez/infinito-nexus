@@ -62,15 +62,17 @@ def main() -> int:
     admin["authorized_keys"] = [admin_pubkey]
     default_users["administrator"] = admin
 
+    static_env = parse_static_env(PROJECT_ROOT / "default.env")
+
     extras = {
         "RUNTIME": detect_runtime(),
+        "DOMAIN_PRIMARY": os.environ.get("INFINITO_DOMAIN")
+        or static_env["INFINITO_DOMAIN"],
         "storage": {
             "backend": "nfs",
             "nfs": {
                 "server": nfs_ip,
-                "export_base": parse_static_env(PROJECT_ROOT / "default.env")[
-                    "INFINITO_SWARM_NFS_EXPORT_BASE"
-                ],
+                "export_base": static_env["INFINITO_SWARM_NFS_EXPORT_BASE"],
                 "version": 4,
             },
         },
