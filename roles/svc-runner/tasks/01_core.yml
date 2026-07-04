@@ -99,16 +99,13 @@
   when: _runners_to_remove | length > 0
 
 - name: 🔍 Gather all containers for orphan detection
-  community.docker.docker_host_info:
+  community.docker.docker_host_info: # nocheck: docker-module-uses-container-cli  read-only info module; returns structured container facts the wrapper's raw JSON would need parsed
     containers: true
   register: _all_containers_info
   changed_when: false
 
 - name: 🗑️ Remove orphaned runner containers (beyond RUNNER_COUNT)
-  community.docker.docker_container:
-    name: "{{ (item.Names | default([item.Name]))[0] | regex_replace('^/', '') }}"
-    state: absent
-    force_kill: true
+  ansible.builtin.command: "container rm -f {{ (item.Names | default([item.Name]))[0] | regex_replace('^/', '') }}"
   vars:
     _project: "{{ (item.Labels | default({}))['com.docker.compose.project'] | default('') }}"
     _instance_num: "{{ _project | regex_replace('^' ~ RUNNER_PROJECT_PREFIX ~ '-', '') }}"
@@ -205,17 +202,20 @@
         mode: "0755"
 
 - name: 📦 Build runner container image
-  community.docker.docker_image:
-    name: "{{ RUNNER_IMAGE_NAME }}"
-    tag: "{{ RUNNER_IMAGE_TAG }}"
-    source: build
-    build:
-      path: "{{ RUNNER_INSTALL_DIR }}/build"
-      args:
-        RUNNER_BASE_IMAGE: "{{ RUNNER_BASE_IMAGE }}"
-        RUNNER_UID: "{{ RUNNER_UID }}"
-        RUNNER_GID: "{{ RUNNER_GID }}"
-    force_source: true
+  ansible.builtin.command:
+    argv:
+      - container
+      - build
+      - -t
+      - "{{ RUNNER_IMAGE_NAME }}:{{ RUNNER_IMAGE_TAG }}"
+      - --build-arg
+      - "RUNNER_BASE_IMAGE={{ RUNNER_BASE_IMAGE }}"
+      - --build-arg
+      - "RUNNER_UID={{ RUNNER_UID }}"
+      - --build-arg
+      - "RUNNER_GID={{ RUNNER_GID }}"
+      - "{{ RUNNER_INSTALL_DIR }}/build"
+  changed_when: true
 
 - name: 🚀 Deploy runner compose stack
   ansible.builtin.shell: |

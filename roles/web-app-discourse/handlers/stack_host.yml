@@ -1,10 +1,19 @@
 ---
-- name: "stop and remove discourse container if it exist"
-  community.docker.docker_container:
-    name: "{{ DISCOURSE_CONTAINER }}"
-    state: absent
+- name: "stop discourse container gracefully if it exist"
+  ansible.builtin.command: "container stop {{ DISCOURSE_CONTAINER }}"
+  register: container_stop
+  changed_when: container_stop.rc == 0
+  failed_when: >
+    container_stop.rc != 0 and
+    'No such container' not in (container_stop.stderr | default(''))
+
+- name: "remove discourse container if it exist"
+  ansible.builtin.command: "container rm {{ DISCOURSE_CONTAINER }}"
   register: container_action
-  failed_when: container_action.failed and 'No such container' not in container_action.msg
+  changed_when: container_action.rc == 0
+  failed_when: >
+    container_action.rc != 0 and
+    'No such container' not in (container_action.stderr | default(''))
 
 - name: "add central database temporary to discourse network"
   command: "container network connect {{ DISCOURSE_NETWORK }} {{ DISCOURSE_DATABASE_CONTAINER }}"

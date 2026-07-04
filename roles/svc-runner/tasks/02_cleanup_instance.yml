@@ -1,13 +1,11 @@
 ---
 - name: 🗑️ Stop and remove runner container for instance {{ runner_instance }}
-  community.docker.docker_container:
-    name: "runner-{{ runner_instance }}"
-    state: absent
-    force_kill: true
+  ansible.builtin.command: "container rm -f runner-{{ runner_instance }}"
+  changed_when: true
   failed_when: false
 
 - name: 🔍 Gather containers for runner instance {{ runner_instance }}
-  community.docker.docker_host_info:
+  community.docker.docker_host_info: # nocheck: docker-module-uses-container-cli  read-only info module; returns structured container facts the wrapper's raw JSON would need parsed
     containers: true
     containers_filters:
       label:
@@ -17,10 +15,7 @@
   failed_when: false
 
 - name: 🗑️ Remove containers for runner instance {{ runner_instance }}
-  community.docker.docker_container:
-    name: "{{ (item.Names | default([item.Name]))[0] | regex_replace('^/', '') }}"
-    state: absent
-    force_kill: true
+  ansible.builtin.command: "container rm -f {{ (item.Names | default([item.Name]))[0] | regex_replace('^/', '') }}"
   loop: "{{ _runner_container_info.containers | default([]) }}"
   loop_control:
     label: "{{ (item.Names | default([item.Name]))[0] }}"

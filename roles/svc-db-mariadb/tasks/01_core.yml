@@ -16,7 +16,7 @@
   when: MARIADB_EXPOSE_LOCAL | bool
 
 - name: "⏳ Wait until MariaDB container {{ MARIADB_NAME }} is running"
-  community.docker.docker_container_info:
+  community.docker.docker_container_info: # nocheck: docker-module-uses-container-cli  read-only info module; returns structured container facts the wrapper's raw JSON would need parsed
     name: "{{ MARIADB_NAME }}"
   register: db_info
   until:
