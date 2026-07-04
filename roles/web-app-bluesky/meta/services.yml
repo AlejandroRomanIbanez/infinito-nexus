@@ -116,6 +116,8 @@ api:
 bluesky:
   # nocheck: default-placement-manager  embedded sqlite (PDS) engine state; node-local in swarm
   default_placement: manager
+  proxy:
+    service_key: pds
   ports:
     local:
       sso: 16497
