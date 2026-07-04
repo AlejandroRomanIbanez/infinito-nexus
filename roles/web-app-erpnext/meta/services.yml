@@ -80,3 +80,39 @@ backend:
   mem_reservation: 2g
   mem_limit: 4g
   pids_limit: 2048
+frontend:
+  name: erpnext-frontend
+  cpus: "0.5"
+  mem_reservation: 64m
+  mem_limit: 512m
+  pids_limit: 512
+websocket:
+  name: erpnext-websocket
+  cpus: "0.5"
+  mem_reservation: 128m
+  mem_limit: 512m
+  pids_limit: 512
+scheduler:
+  name: erpnext-scheduler
+  cpus: "0.5"
+  mem_reservation: 256m
+  mem_limit: 1g
+  pids_limit: 512
+queue-short:
+  name: erpnext-queue-short
+  cpus: "1.0"
+  mem_reservation: 256m
+  mem_limit: 1g
+  pids_limit: 512
+queue-long:
+  name: erpnext-queue-long
+  cpus: "1.0"
+  mem_reservation: 256m
+  mem_limit: 2g
+  pids_limit: 512
+configurator:
+  name: erpnext-configurator
+  cpus: "0.5"
+  mem_reservation: 128m
+  mem_limit: 1g
+  pids_limit: 512

@@ -64,6 +64,7 @@
     {{ lookup('container_volumes', application_id, ZAMMAD_SEARCH_SERVICE) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
+  {% if not (lookup('engine', 'memcached', application_id, 'shared') | bool) %}
   {% set service_name = ZAMMAD_MEMCACHED_SERVICE %}
   {{ service_name }}:
     {{ lookup('container_image', 'svc-db-memcached', 'memcached') }}
@@ -71,6 +72,7 @@
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["memcached", "-m", "256"]
     {{ lookup('container_networks') | indent(4) }}
+  {% endif %}
 
   {% set service_name = ZAMMAD_NGINX_SERVICE %}
   {{ service_name }}:

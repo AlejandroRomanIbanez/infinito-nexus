@@ -20,15 +20,15 @@ MATRIX_SYNAPSE_NAME: "{{ lookup('config', application_id, 'services.synapse.name
 MATRIX_SYNAPSE_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'synapse') }}"
 MATRIX_SYNAPSE_VOLUME: "{{ lookup('volume', application_id, 'synapse_data').name }}"
 MATRIX_MDAD_SERVICE: "matrix"
-MATRIX_MDAD_CONTAINER: "matrix"
+MATRIX_MDAD_CONTAINER: "{{ application_id | get_entity_name }}"
 MATRIX_MDAD_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, MATRIX_MDAD_SERVICE) }}"
 MATRIX_SYNAPSE_DOMAIN: "{{ lookup('domains', application_id).synapse }}"
 MATRIX_SYNAPSE_PORT: "{{ lookup('config', 'web-app-matrix', 'services.synapse.ports.local.http') }}"
 MATRIX_SYNAPSE_CONTAINER_PORT: "{{ lookup('config', application_id, 'services.synapse.ports.internal.http') }}"
 MATRIX_SYNAPSE_CONFIG_PATH_HOST: "{{ [ lookup('container', application_id, 'directories.config'), 'homeserver.yaml' ] | path_join }}"
-MATRIX_SYNAPSE_CONFIG_PATH_CONTAINER: "/data/homeserver.yaml"
+MATRIX_SYNAPSE_CONFIG_PATH_CONTAINER: "/data/homeserver.yaml" # nocheck: container-var-name-lookup in-container path, not a container name
 MATRIX_SYNAPSE_LOG_PATH_HOST: "{{ [ lookup('container', application_id, 'directories.config'), MATRIX_SYNAPSE_DOMAIN ~'.log.config' ] | path_join }}"
-MATRIX_SYNAPSE_LOG_PATH_CONTAINER: "/data/{{ MATRIX_SYNAPSE_DOMAIN }}.log.config"
+MATRIX_SYNAPSE_LOG_PATH_CONTAINER: "/data/{{ MATRIX_SYNAPSE_DOMAIN }}.log.config" # nocheck: container-var-name-lookup in-container path, not a container name
 MATRIX_SYNAPSE_BIND_MOUNT_MODE: "0644"
 MATRIX_SYNAPSE_URL: "{{ lookup('tls', application_id, 'protocols.web') }}://{{ MATRIX_SYNAPSE_DOMAIN }}"
 MATRIX_SYNAPSE_LISTEN_FLAGS: "{{ MATRIX_FEDERATION_PORT }} {{ 'ssl ' if (lookup('tls', application_id, 'enabled') | bool) else '' }} default_server"

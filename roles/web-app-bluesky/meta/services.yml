@@ -93,6 +93,12 @@ broker:
   mem_reservation: 128m
   mem_limit: 256m
   pids_limit: 256
+sso-proxy:
+  name: bluesky-sso-proxy
+  cpus: "0.25"
+  mem_reservation: 64m
+  mem_limit: 256m
+  pids_limit: 512
 # nocheck: playwright-service-flag - css consumer, no Playwright surface (provider: web-svc-css)
 css:
   bond: 1

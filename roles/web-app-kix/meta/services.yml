@@ -68,7 +68,14 @@ kix:
   mem_reservation: 512m
   mem_limit: 1g
   pids_limit: 512
+proxy:
+  name: kix-proxy
+  cpus: "0.5"
+  mem_reservation: 64m
+  mem_limit: 512m
+  pids_limit: 512
 backend:
+  name: kix-backend
   image: docker-registry.kixdesk.com/public/backend
   version: stable
   min_storage: 5GB
@@ -80,6 +87,7 @@ backend:
   mem_limit: 4g
   pids_limit: 1024
 frontend:
+  name: kix-frontend
   image: docker-registry.kixdesk.com/public/frontend
   version: stable
   min_storage: 2GB
@@ -91,6 +99,7 @@ frontend:
   mem_limit: 1g
   pids_limit: 512
 db:
+  name: kix-db
   image: docker-registry.kixdesk.com/public/db
   version: stable
   min_storage: 5GB

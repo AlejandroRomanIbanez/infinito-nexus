@@ -53,6 +53,7 @@ seaweedfs:
     internal:
       http: 8333
 proxy:
+  name: seaweedfs-proxy
   image: nginx
   version: 1.31-alpine
   cpus: "0.2"

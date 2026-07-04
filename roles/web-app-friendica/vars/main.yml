@@ -3,7 +3,7 @@ application_id: "web-app-friendica"
 entity_name: "{{ application_id | get_entity_name }}"
 
 FRIENDICA_SERVICE: "{{ entity_name }}"
-FRIENDICA_CONTAINER: "friendica"
+FRIENDICA_CONTAINER: "{{ entity_name }}"
 FRIENDICA_BASE_URL: "{{ lookup('tls', application_id, 'url.base') | regex_replace('/+$', '') }}"
 
 FRIENDICA_APPLICATION_DIR: "/var/www/html"

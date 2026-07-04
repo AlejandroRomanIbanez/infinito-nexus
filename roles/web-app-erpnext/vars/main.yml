@@ -2,13 +2,13 @@
 application_id: "web-app-erpnext"
 entity_name: "{{ application_id | get_entity_name }}"
 
-ERPNEXT_BACKEND_CONTAINER: "erpnext-backend"
-ERPNEXT_FRONTEND_CONTAINER: "erpnext-frontend"
-ERPNEXT_WEBSOCKET_CONTAINER: "erpnext-websocket"
-ERPNEXT_SCHEDULER_CONTAINER: "erpnext-scheduler"
-ERPNEXT_QUEUE_SHORT_CONTAINER: "erpnext-queue-short"
-ERPNEXT_QUEUE_LONG_CONTAINER: "erpnext-queue-long"
-ERPNEXT_CONFIGURATOR_CONTAINER: "erpnext-configurator"
+ERPNEXT_BACKEND_CONTAINER: "{{ lookup('config', application_id, 'services.backend.name') }}"
+ERPNEXT_FRONTEND_CONTAINER: "{{ lookup('config', application_id, 'services.frontend.name') }}"
+ERPNEXT_WEBSOCKET_CONTAINER: "{{ lookup('config', application_id, 'services.websocket.name') }}"
+ERPNEXT_SCHEDULER_CONTAINER: "{{ lookup('config', application_id, 'services.scheduler.name') }}"
+ERPNEXT_QUEUE_SHORT_CONTAINER: "{{ lookup('config', application_id, 'services.queue-short.name') }}"
+ERPNEXT_QUEUE_LONG_CONTAINER: "{{ lookup('config', application_id, 'services.queue-long.name') }}"
+ERPNEXT_CONFIGURATOR_CONTAINER: "{{ lookup('config', application_id, 'services.configurator.name') }}"
 
 ERPNEXT_BACKEND_PORT: 8000
 ERPNEXT_WEBSOCKET_PORT: 9000

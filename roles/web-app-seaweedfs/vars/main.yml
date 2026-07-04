@@ -11,7 +11,7 @@ SEAWEEDFS_MASTER_PORT_INTERNAL: 9333
 
 SEAWEEDFS_S3_PORT_PUBLIC: "{{ lookup('config', application_id, 'services.seaweedfs.ports.local.http') }}"
 
-SEAWEEDFS_PROXY_CONTAINER: "{{ application_id | get_entity_name }}-proxy"
+SEAWEEDFS_PROXY_CONTAINER: "{{ lookup('config', application_id, 'services.proxy.name') }}"
 
 SEAWEEDFS_S3_DOMAIN: "{{ lookup('config', application_id, 'domains.canonical.api') }}"
 SEAWEEDFS_FILER_DOMAIN: "{{ lookup('config', application_id, 'domains.canonical.filer') }}"

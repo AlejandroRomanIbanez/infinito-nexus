@@ -67,8 +67,15 @@ jitsi:
   mem_reservation: 1g
   mem_limit: 3g
   pids_limit: 2048
+web:
+  name: jitsi-web
+  cpus: "0.5"
+  mem_reservation: 128m
+  mem_limit: 512m
+  pids_limit: 512
 # nocheck: playwright-service-flag - internal sub-component (XMPP server, not a user-facing surface)
 prosody:
+  name: jitsi-prosody
   image: jitsi/prosody
   version: "stable-9646"
   ports:
@@ -82,6 +89,7 @@ prosody:
   pids_limit: 1024
 # nocheck: playwright-service-flag - internal sub-component (conference focus)
 jicofo:
+  name: jitsi-jicofo
   image: jitsi/jicofo
   version: "stable-9646"
   cpus: "1.0"
@@ -90,6 +98,7 @@ jicofo:
   pids_limit: 1024
 # nocheck: playwright-service-flag - internal sub-component (video bridge, media plane)
 jvb:
+  name: jitsi-jvb
   image: jitsi/jvb
   version: "stable-9646"
   cpus: "2.0"

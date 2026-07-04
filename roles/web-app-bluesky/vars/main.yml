@@ -50,12 +50,12 @@ BLUESKY_BROKER_IMAGE: "bluesky_broker_custom"
 BLUESKY_BROKER_BASE_IMAGE: "{{ lookup('config', application_id, 'services.broker.base_image') }}"
 BLUESKY_BROKER_BASE_VERSION: "{{ lookup('config', application_id, 'services.broker.base_version') }}"
 BLUESKY_BROKER_SERVICE: "broker"
-BLUESKY_BROKER_CONTAINER: "{{ application_id | get_entity_name }}-{{ BLUESKY_BROKER_SERVICE }}"
+BLUESKY_BROKER_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ BLUESKY_BROKER_SERVICE ~ '.name') }}"
 BLUESKY_BROKER_PORT: "{{ lookup('config', application_id, 'services.broker.ports.local.http') }}"
 BLUESKY_BROKER_INTERNAL_PORT: "{{ lookup('config', application_id, 'services.broker.ports.internal.http') }}"
 
 BLUESKY_BRIDGE_ENCRYPTION_KEY: "{{ lookup('config', application_id, 'credentials.bridge_encryption_key') }}"
 
-BLUESKY_SSO_PROXY_CONTAINER: "{{ application_id | get_entity_name }}-sso-proxy"
+BLUESKY_SSO_PROXY_CONTAINER: "{{ lookup('config', application_id, 'services.sso-proxy.name') }}"
 BLUESKY_SSO_PROXY_CFG_PATH: "{{ [ lookup('container', application_id, 'directories.volumes'), lookup('config', 'web-app-keycloak', 'services.sso_proxy.configuration_file')
   ] | path_join }}"

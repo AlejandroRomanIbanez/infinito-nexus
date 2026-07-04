@@ -7,10 +7,10 @@ JITSI_PROSODY_SERVICE: "prosody"
 JITSI_JICOFO_SERVICE: "jicofo"
 JITSI_JVB_SERVICE: "jvb"
 
-JITSI_WEB_CONTAINER: "{{ entity_name }}-{{ JITSI_WEB_SERVICE }}"
-JITSI_PROSODY_CONTAINER: "{{ entity_name }}-{{ JITSI_PROSODY_SERVICE }}"
-JITSI_JICOFO_CONTAINER: "{{ entity_name }}-{{ JITSI_JICOFO_SERVICE }}"
-JITSI_JVB_CONTAINER: "{{ entity_name }}-{{ JITSI_JVB_SERVICE }}"
+JITSI_WEB_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ JITSI_WEB_SERVICE ~ '.name') }}"
+JITSI_PROSODY_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ JITSI_PROSODY_SERVICE ~ '.name') }}"
+JITSI_JICOFO_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ JITSI_JICOFO_SERVICE ~ '.name') }}"
+JITSI_JVB_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ JITSI_JVB_SERVICE ~ '.name') }}"
 
 JITSI_JVB_MEDIA_PORT: "{{ lookup('config', application_id, 'services.jitsi.ports.public.media') }}"
 

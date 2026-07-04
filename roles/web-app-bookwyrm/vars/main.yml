@@ -32,7 +32,7 @@ BOOKWYRM_IMAGE: "{{ lookup('config', application_id, 'services.' ~ entity_name ~
 BOOKWYRM_VERSION: "{{ lookup('config', application_id, 'services.' ~ entity_name ~'.version') }}"
 BOOKWYRM_REPOSITORY: "{{ lookup('config', application_id, 'services.' ~ entity_name ~'.repository') }}"
 BOOKWYRM_REF: "{{ lookup('config', application_id, 'services.' ~ entity_name ~'.ref') }}"
-BOOKWYRM_WORKER_CONTAINER: "{{ BOOKWYRM_CONTAINER }}-worker"
+BOOKWYRM_WORKER_CONTAINER: "{{ lookup('config', application_id, 'services.worker.name') }}"
 
 BOOKWYRM_REDIS_HOST: "{{ lookup('engine', 'redis', application_id, 'host') }}"
 BOOKWYRM_REDIS_PORT: "{{ lookup('engine', 'redis', application_id, 'port') }}"

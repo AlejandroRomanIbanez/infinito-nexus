@@ -30,7 +30,6 @@ from utils.roles.applications.services.engines import (
 )
 from utils.roles.entity_name import get_entity_name
 
-# Fields returned by the lookup (``want`` selects one, default ``all``).
 _FIELDS = (
     "engine",
     "enabled",
@@ -43,6 +42,7 @@ _FIELDS = (
     "instance",
     "prefix",
     "url",
+    "container",
 )
 
 
@@ -82,8 +82,6 @@ class LookupModule(LookupBase):
         shared = is_engine_shared(applications, consumer_id, engine)
         svc_cfg = engine_service(applications, consumer_id, engine)
 
-        # Central name = the central engine's service name; embedded host = the
-        # engine's bare service key inside the consumer stack (e.g. "redis").
         central_name = str(
             get(
                 applications,
@@ -112,12 +110,9 @@ class LookupModule(LookupBase):
         host = central_name if shared else engine
         instance = central_name if shared else entity
 
-        # Redis ACL users live only in memory and are lost whenever the central
-        # redis container is recreated (a deploy can recreate it after the
-        # consumer was provisioned), so per-consumer ACL users are not durable.
-        # Shared consumers therefore authenticate as the central `default` user
-        # with the engine-wide password (security-equivalent: the per-consumer
-        # ACL was already +@all ~* allkeys).
+        # Exception: shared redis authenticates as the central `default` user, not
+        # a per-consumer ACL user — ACL users live only in memory and are lost when
+        # a deploy recreates the central redis after the consumer was provisioned.
         if engine == "redis" and shared:
             username = "default"
             password = str(
@@ -144,8 +139,21 @@ class LookupModule(LookupBase):
             url = f"{scheme}://{auth}{host}:{port}"
         elif engine in ("elasticsearch", "typesense", "qdrant"):
             url = f"http://{host}:{port}"
-        else:  # unbound
+        else:
             url = host
+
+        consumer_name = str(
+            get(
+                applications,
+                consumer_id,
+                f"services.{engine}.name",
+                strict=False,
+                default="",
+                skip_missing_app=True,
+            )
+            or ""
+        ).strip()
+        container = central_name if shared else (consumer_name or f"{entity}-{engine}")
 
         resolved = {
             "engine": engine,
@@ -159,6 +167,7 @@ class LookupModule(LookupBase):
             "instance": instance,
             "prefix": prefix,
             "url": url,
+            "container": container,
         }
         if want == "all":
             return [resolved]

@@ -4,7 +4,7 @@ entity_name: "{{ application_id | get_entity_name }}"
 
 database_password: "{{ lookup('config', application_id, 'credentials.database_password') }}" # nocheck: lookup-config-path
 
-DISCOURSE_CONTAINER: "{{ application_id | get_entity_name }}"
+DISCOURSE_CONTAINER: "{{ entity_name }}"
 DISCOURSE_NETWORK: "{{ application_id | get_entity_name }}"
 DISCOURSE_VOLUME: "{{ lookup('volume', application_id, 'data').name }}"
 DISCOURSE_PLUGINS: "{{ lookup('config', application_id, 'addons') }}"
@@ -22,7 +22,7 @@ DISCOURSE_LDAP_AUTH_PLUGIN_REF: "{{ lookup('config', application_id, 'addons.dis
 
 DISCOURSE_DATABASE: "{{ lookup('database', application_id ) }}"
 DISCOURSE_DATABASE_TYPE: "{{ DISCOURSE_DATABASE.type }}"
-DISCOURSE_DATABASE_CONTAINER: "{{ DISCOURSE_DATABASE.container }}"
+DISCOURSE_DATABASE_CONTAINER: "{{ DISCOURSE_DATABASE.container }}" # nocheck: container-var-name-lookup references the shared database container, not this role's service
 DISCOURSE_DATABASE_IS_SHARED: "{{ DISCOURSE_DATABASE.shared }}"
 
 DISCOURSE_REPOSITORY_DIR: "{{ lookup('container', application_id, 'directories.services') }}{{ lookup('config', application_id, 'services.discourse.repository') }}/"
