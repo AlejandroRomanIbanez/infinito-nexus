@@ -3,6 +3,11 @@
   block:
     - name: "▶️ Run shared service preload for {{ service_key }}"
       include_tasks: preload_service.yml
+      when:
+        - lookup('vars', service_run_once_var, default='__missing__') == '__missing__'
+        - >-
+          (lookup('service', service_key).required | bool)
+          or (service_role in group_names)
   always:
     - name: "🧹 Clear shared service preload context for {{ service_key }}"
       ansible.builtin.set_fact:
