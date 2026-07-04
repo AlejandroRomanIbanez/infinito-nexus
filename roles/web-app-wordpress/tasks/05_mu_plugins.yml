@@ -11,9 +11,11 @@
 
 - name: "📋 Copy infinito-oidc-rbac-mapper.php into the container"
   shell: >
-    container cp
-    {{ [role_path, 'files/mu-plugins/infinito-oidc-rbac-mapper.php'] | path_join }}
-    {{ WORDPRESS_CONTAINER_ADDRESS }}:{{ WORDPRESS_DOCKER_HTML_PATH }}/wp-content/mu-plugins/infinito-oidc-rbac-mapper.php
+    container exec -i {{ WORDPRESS_CONTAINER_ADDRESS }}
+    tee {{ WORDPRESS_DOCKER_HTML_PATH }}/wp-content/mu-plugins/infinito-oidc-rbac-mapper.php
+    > /dev/null
+  args:
+    stdin: "{{ lookup('file', [role_path, 'files/mu-plugins/infinito-oidc-rbac-mapper.php'] | path_join) }}"
   register: cp_mu_plugin
   changed_when: cp_mu_plugin.rc == 0
   failed_when: cp_mu_plugin.rc != 0
@@ -27,9 +29,11 @@
 
 - name: "📋 Copy infinito-http-ca-trust.php into the container"
   shell: >
-    container cp
-    {{ [role_path, 'files/mu-plugins/infinito-http-ca-trust.php'] | path_join }}
-    {{ WORDPRESS_CONTAINER_ADDRESS }}:{{ WORDPRESS_DOCKER_HTML_PATH }}/wp-content/mu-plugins/infinito-http-ca-trust.php
+    container exec -i {{ WORDPRESS_CONTAINER_ADDRESS }}
+    tee {{ WORDPRESS_DOCKER_HTML_PATH }}/wp-content/mu-plugins/infinito-http-ca-trust.php
+    > /dev/null
+  args:
+    stdin: "{{ lookup('file', [role_path, 'files/mu-plugins/infinito-http-ca-trust.php'] | path_join) }}"
   register: cp_ca_trust_mu_plugin
   changed_when: cp_ca_trust_mu_plugin.rc == 0
   failed_when: cp_ca_trust_mu_plugin.rc != 0
