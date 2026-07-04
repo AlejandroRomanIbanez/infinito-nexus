@@ -1,11 +1,13 @@
 ---
 - name: "🩹 Patch EspoCRM DB config key '{{ item.key }}' (idempotent)"
-  ansible.builtin.shell: >-
-    container exec -i --user root
-    -e CONFIG_KEY={{ item.key }}
-    -e CONFIG_VALUE={{ item.value | quote }}
-    -e CONFIG_FILE={{ ESPOCRM_CONFIG_FILE_PRIVATE | quote }}
-    {{ ESPOCRM_LOCAL_CID | quote }} sh < {{ role_path }}/files/patch_config_key.sh
+  ansible.builtin.shell:
+    cmd: >-
+      container exec -i --user root
+      -e CONFIG_KEY={{ item.key }}
+      -e CONFIG_VALUE={{ item.value | quote }}
+      -e CONFIG_FILE={{ ESPOCRM_CONFIG_FILE_PRIVATE | quote }}
+      {{ ESPOCRM_LOCAL_CID | quote }} sh
+    stdin: "{{ lookup('file', 'patch_config_key.sh') }}"
   loop:
     - { key: host, value: "{{ lookup('database', application_id, 'host') }}" }
     - { key: dbname, value: "{{ lookup('database', application_id, 'name') }}" }
