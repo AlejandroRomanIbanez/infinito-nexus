@@ -1,5 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
   {% set service_name = entity_name %}
+  {% set container_healthcheck_start_period = '5m' %}
   {{ service_name }}:
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
