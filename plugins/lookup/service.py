@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from ansible.errors import AnsibleError
@@ -10,6 +11,7 @@ from utils.roles.applications.config import get
 from utils.roles.applications.services.registry import (
     build_role_to_primary_service_key,
     build_service_registry_from_applications,
+    build_service_registry_from_roles_dir,
     canonical_service_key,
     equivalent_service_keys,
 )
@@ -185,6 +187,18 @@ class LookupModule(LookupBase):
       lookup('service', 'matomo')
       lookup('service', 'web-app-matomo')   # resolved via reverse mapping
 
+    A term unknown to the play-local registry (no app in the play declares
+    it) falls back to the role-wide static registry read from roles_dir,
+    the same source the sys-service-loader iterates. Such a key resolves
+    with its provider role and all deployment flags computed against the
+    play (typically all false). Only a term unknown to BOTH registries
+    raises.
+
+    Optional kwarg:
+      roles_dir — roles directory for the static fallback registry
+                  (default: <cwd>/roles, matching the service_registry
+                  lookup convention).
+
     Reads 'applications' and 'group_names' from Ansible variables and discovers
     service providers from the role-local services metadata.
 
@@ -231,16 +245,30 @@ class LookupModule(LookupBase):
 
         role_to_key = _build_role_to_key(service_registry)
 
+        roles_dir = Path(kwargs.get("roles_dir") or Path.cwd() / "roles")
+        static_registry: dict[str, Any] | None = None
+        static_role_to_key: dict[str, str] | None = None
+
         results: list[dict[str, Any]] = []
         for term in terms:
             term_str = str(term).strip()
             if not term_str:
                 raise AnsibleError("service: service key/role must not be empty")
 
-            service_key, role = _resolve_term(term_str, service_registry, role_to_key)
-            flags = _compute_flags(
-                applications, group_names, service_registry, service_key
-            )
+            registry = service_registry
+            try:
+                service_key, role = _resolve_term(
+                    term_str, service_registry, role_to_key
+                )
+            except AnsibleError:
+                if static_registry is None:
+                    static_registry = build_service_registry_from_roles_dir(roles_dir)
+                    static_role_to_key = _build_role_to_key(static_registry)
+                service_key, role = _resolve_term(
+                    term_str, static_registry, static_role_to_key
+                )
+                registry = static_registry
+            flags = _compute_flags(applications, group_names, registry, service_key)
             results.append({"id": service_key, "role": role, **flags})
 
         return results

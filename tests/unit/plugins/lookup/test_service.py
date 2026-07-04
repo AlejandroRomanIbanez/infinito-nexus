@@ -17,9 +17,22 @@ _SERVICE_REGISTRY = {
 }
 
 
-def _run(terms, applications, group_names, service_registry=None):
+def _run(
+    terms,
+    applications,
+    group_names,
+    service_registry=None,
+    static_registry=None,
+    **kwargs,
+):
     loader_patch = patch("plugins.lookup.service.lookup_loader")
-    patches = [loader_patch]
+    patches = [
+        loader_patch,
+        patch(
+            "plugins.lookup.service.build_service_registry_from_roles_dir",
+            return_value=static_registry or {},
+        ),
+    ]
     if service_registry is not None:
         patches.append(
             patch(
@@ -36,6 +49,7 @@ def _run(terms, applications, group_names, service_registry=None):
         return lm.run(
             terms,
             variables={"group_names": group_names},
+            **kwargs,
         )
     finally:
         for p in reversed(patches):
@@ -297,9 +311,37 @@ class TestServiceErrors(unittest.TestCase):
         with self.assertRaises(AnsibleError):
             _run(["   "], {}, [], service_registry=_SERVICE_REGISTRY)
 
-    def test_raises_when_term_unknown(self):
+    def test_raises_when_term_unknown_in_both_registries(self):
         with self.assertRaises(AnsibleError):
             _run(["totally-unknown-key"], {}, [], service_registry=_SERVICE_REGISTRY)
+
+
+class TestServiceStaticFallback(unittest.TestCase):
+    def test_out_of_play_key_resolves_via_static_registry(self):
+        result = _run(
+            ["css"],
+            {"web-app-foo": {"services": {}}},
+            ["web-app-foo"],
+            service_registry={"matomo": {"role": "web-app-matomo"}},
+            static_registry=_SERVICE_REGISTRY,
+        )[0]
+        self.assertEqual(result["id"], "css")
+        self.assertEqual(result["role"], "web-svc-cdn")
+        self.assertFalse(result["enabled"])
+        self.assertFalse(result["shared"])
+        self.assertFalse(result["required"])
+        self.assertFalse(result["local"])
+
+    def test_out_of_play_alias_aggregates_canonical_consumer_flags(self):
+        result = _run(
+            ["css"],
+            {"web-app-foo": {"services": {"cdn": {"enabled": True, "shared": True}}}},
+            ["web-app-foo"],
+            service_registry={"matomo": {"role": "web-app-matomo"}},
+            static_registry=_SERVICE_REGISTRY,
+        )[0]
+        self.assertTrue(result["enabled"])
+        self.assertTrue(result["required"])
 
 
 if __name__ == "__main__":
