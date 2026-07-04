@@ -5,10 +5,7 @@
   include_role:
     name: sys-stk-full
   vars:
-    compose_handlers_flush: false
-
-- name: "🚿 flush compose and SSO proxy"
-  meta: flush_handlers
+    compose_handlers_flush: true
 
 - name: "⏳ Wait for Pi-hole HTTP endpoint"
   wait_for:

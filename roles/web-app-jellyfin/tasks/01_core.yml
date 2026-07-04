@@ -6,10 +6,7 @@
     name: sys-stk-full
   vars:
     application_id: "web-app-jellyfin"
-    compose_handlers_flush: false
-
-- name: "🚿 Flush compose handlers for {{ application_id }}"
-  meta: flush_handlers
+    compose_handlers_flush: true
 
 - name: "🔐 Provision Jellyfin auth (wizard, LDAP/OIDC plugins) for {{ application_id }}"
   ansible.builtin.script:

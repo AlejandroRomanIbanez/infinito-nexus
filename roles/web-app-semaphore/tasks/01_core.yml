@@ -5,10 +5,7 @@
   include_role:
     name: sys-stk-full
   vars:
-    compose_handlers_flush: false
-
-- name: "🚿 Flush compose handlers for {{ application_id }}"
-  ansible.builtin.meta: flush_handlers
+    compose_handlers_flush: true
 
 - name: "⏳ Wait until the Semaphore API/DB is ready"
   ansible.builtin.command:
