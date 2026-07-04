@@ -1,13 +1,13 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-
-  qdrant:
+  {% set service_name = 'qdrant' %}
+  {{ service_name }}:
     {{ lookup('compose_only', 'container_name', QDRANT_CONTAINER) }}
     {{ lookup('container_image', application_id, 'qdrant') }}
 
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-{% if QDRANT_EXPOSE_LOCAL %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% if QDRANT_EXPOSE_LOCAL %}
     {{ lookup('container_ports', ['qdrant', 'qdrant', DOCKER_BIND_HOST]) | indent(4) }}
-{% endif %}
+    {% endif %}
     {{ lookup('container_volumes', application_id, 'qdrant') | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
     healthcheck:

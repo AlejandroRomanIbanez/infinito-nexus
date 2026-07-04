@@ -1,20 +1,21 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-  jenkins:
+  {% set service_replicas = 1 %}
+  {% set container_healthcheck_start_period = '10m' %}
+  {% set service_name = 'jenkins' %}
+  {{ service_name }}:
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
       args:
         JENKINS_IMAGE: "{{ JENKINS_IMAGE }}"
         JENKINS_VERSION: "{{ JENKINS_VERSION }}"
     {{ lookup('container_image', application_id, 'jenkins', custom=True) }}
     {{ lookup('compose_only', 'container_name', JENKINS_CONTAINER) }}
-{% set service_replicas = 1 %}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     environment:
       JAVA_OPTS: "-Djenkins.install.runSetupWizard=false"
       CASC_JENKINS_CONFIG: /var/jenkins_home/casc.yaml
     {{ lookup('container_ports', ['jenkins', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     {{ lookup('container_volumes', application_id, 'jenkins') | indent(4) }}
-{% set container_healthcheck_start_period = '10m' %}
-{% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
     {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}

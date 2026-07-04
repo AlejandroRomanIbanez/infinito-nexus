@@ -1,6 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-
-  mariadb:
+  {% set service_name = 'mariadb' %}
+  {{ service_name }}:
     {{ lookup('compose_only', 'container_name', MARIADB_NAME) }}
     {{ lookup('container_image', application_id, 'mariadb', custom=True) }}
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
@@ -11,10 +11,10 @@
       - "--transaction-isolation=READ-COMMITTED"
       - "--binlog-format=ROW"
 
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-{% if MARIADB_EXPOSE_LOCAL %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% if MARIADB_EXPOSE_LOCAL %}
     {{ lookup('container_ports', ['mariadb', 'mariadb', DOCKER_BIND_HOST]) | indent(4) }}
-{% endif %}
+    {% endif %}
     {{ lookup('container_volumes', application_id, 'mariadb') | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
     healthcheck:

@@ -1,25 +1,27 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
-  opentalk:
+  {% set service_name = 'opentalk' %}
+  {{ service_name }}:
     {{ lookup('container_image', application_id, 'opentalk') }}
     {{ lookup('compose_only', 'container_name', OPENTALK_FRONTEND_CONTAINER) }}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_ports', ['opentalk', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
     {{ lookup('depends_on', {'controller': 'service_started'}) }}
 
-  controller:
+  {% set service_name = 'controller' %}
+  {{ service_name }}:
     {{ lookup('container_image', application_id, 'controller') }}
     {{ lookup('compose_only', 'container_name', OPENTALK_CTRL_CONTAINER) }}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_ports', ['controller', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     {{ lookup('container_volumes', application_id, 'controller') | indent(4) }}
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-{% set service_name = 'livekit' %}
+  {% set service_name = 'livekit' %}
   {{ service_name }}:
-{% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
     {{ lookup('container_image', application_id, 'livekit') }}
     {{ lookup('compose_only', 'container_name', OPENTALK_LIVEKIT_CONTAINER) }}
     {{ lookup('compose_restart') }}
@@ -32,9 +34,9 @@
     logging:
       driver: journald
 
-{% set service_name = 'rabbit' %}
+  {% set service_name = 'rabbit' %}
   {{ service_name }}:
-{% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
     {{ lookup('container_image', application_id, 'rabbit') }}
     {{ lookup('compose_only', 'container_name', OPENTALK_RABBIT_CONTAINER) }}
     {{ lookup('compose_restart') }}
@@ -50,9 +52,9 @@
     logging:
       driver: journald
 
-{% set service_name = 'recorder' %}
+  {% set service_name = 'recorder' %}
   {{ service_name }}:
-{% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
     {{ lookup('container_image', application_id, 'recorder') }}
     {{ lookup('compose_only', 'container_name', OPENTALK_RECORDER_CONTAINER) }}
     {{ lookup('compose_restart') }}

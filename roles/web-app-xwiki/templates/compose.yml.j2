@@ -1,5 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-  xwiki:
+  {% set service_name = 'xwiki' %}
+  {{ service_name }}:
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
       args:
         XWIKI_IMAGE: "{{ XWIKI_IMAGE }}"
@@ -11,10 +12,10 @@
     {{ lookup('container_ports', ['xwiki', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     environment:
       JAVA_OPTS: >-
-{% if xwiki_oidc_enabled_switch| bool %}
+        {% if xwiki_oidc_enabled_switch| bool %}
         -Dxwiki.authentication.authservice=oidc
         -Dxwiki.authentication.authclass=org.xwiki.contrib.oidc.auth.OIDCAuthServiceImpl
-{% elif xwiki_ldap_enabled_switch | bool %}
+        {% elif xwiki_ldap_enabled_switch | bool %}
         -Dxwiki.authentication.authclass=org.xwiki.contrib.ldap.XWikiLDAPAuthServiceImpl
         -Dxwiki.authentication.authservice=ldap
         -Dxwiki.authentication.ldap=1
@@ -28,13 +29,13 @@
         -Dxwiki.authentication.ldap.bind_pass={{ XWIKI_LDAP_BIND_PASS }}
         -Dxwiki.authentication.ldap.fields_mapping={{ XWIKI_LDAP_FIELDS_MAPPING }}
         -Dxwiki.authentication.ldap.update_user=1
-{% else %}
+        {% else %}
         -Dxwiki.authentication.authservice=standard
         -Dxwiki.authentication.authclass=com.xpn.xwiki.user.impl.xwiki.XWikiAuthServiceImpl
-{% endif %}
+        {% endif %}
     {{ lookup('container_volumes', application_id, 'xwiki') | indent(4) }}
-{% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 

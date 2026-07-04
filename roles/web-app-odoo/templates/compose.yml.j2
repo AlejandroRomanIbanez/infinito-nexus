@@ -1,7 +1,10 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-{% set service_replicas = 1 %}
+  {% set service_replicas = 1 %}
 
-{% set service_name = ODOO_SERVICE %}
+  {% set container_port = 8069 %}
+  {% set container_healthcheck = 'web/health' %}
+  {% set container_healthcheck_start_period = '5m' %}
+  {% set service_name = ODOO_SERVICE %}
   {{ service_name }}:
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
       args:
@@ -12,11 +15,8 @@
     init: true
     stop_signal: SIGTERM
     stop_grace_period: 30s
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-{% set container_port = 8069 %}
-{% set container_healthcheck = 'web/health' %}
-{% set container_healthcheck_start_period = '5m' %}
-{% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
     {{ lookup('container_ports',
               ['odoo', 'http', DOCKER_BIND_HOST],
               ['odoo', 'websocket', DOCKER_BIND_HOST]) | indent(4) }}
@@ -25,14 +25,14 @@
       - USER={{ ODOO_DB_USER }}
       - PASSWORD={{ ODOO_DB_PASSWORD }}
       - ODOO_URL={{ ODOO_URL }}
-{% if ODOO_OIDC_ENABLED | bool %}
+      {% if ODOO_OIDC_ENABLED | bool %}
       - ODOO_OIDC_CLIENT_ID={{ ODOO_OIDC_CLIENT_ID }}
       - ODOO_OIDC_CLIENT_SECRET={{ ODOO_OIDC_CLIENT_SECRET }}
       - ODOO_OIDC_ISSUER_URL={{ ODOO_OIDC_ISSUER_URL }}
       - ODOO_OIDC_TOKEN_URL={{ ODOO_OIDC_TOKEN_URL }}
       - ODOO_OIDC_JWKS_URI={{ ODOO_OIDC_JWKS_URI }}
       - ODOO_OIDC_UID_FIELD={{ ODOO_OIDC_UID_FIELD }}
-{% endif %}
+      {% endif %}
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}

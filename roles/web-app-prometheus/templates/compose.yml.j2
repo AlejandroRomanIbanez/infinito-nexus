@@ -1,7 +1,8 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
-  prometheus:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {% set service_name = 'prometheus' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'prometheus') }}
     {{ lookup('compose_only', 'container_name', PROMETHEUS_CONTAINER) }}
     {{ lookup('container_ports', ['prometheus', 'http', DOCKER_BIND_HOST]) | indent(4) }}
@@ -14,19 +15,21 @@
     {{ lookup('container_volumes', application_id, 'prometheus') | indent(4) }}
 
     {{ lookup('container_networks') | indent(4) }}
-{% for metrics_app_id in lookup('native_metrics_apps') %}
+      {% for metrics_app_id in lookup('native_metrics_apps') %}
       {{ metrics_app_id | get_entity_name }}:
-{% endfor %}
-  blackbox-exporter:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+      {% endfor %}
+  {% set service_name = 'blackbox-exporter' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'blackbox-exporter') }}
     {{ lookup('compose_only', 'container_name', BLACKBOX_CONTAINER) }}
     command:
       - "--config.file={{ BLACKBOX_CONFIG_DOCKER }}"
     {{ lookup('container_volumes', application_id, 'blackbox-exporter') | indent(4) }}
 
-  alertmanager:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {% set service_name = 'alertmanager' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'alertmanager') }}
     {{ lookup('compose_only', 'container_name', ALERTMANAGER_CONTAINER) }}
     command:
@@ -34,35 +37,28 @@
       - "--storage.path=/alertmanager"
     {{ lookup('container_volumes', application_id, 'alertmanager') | indent(4) }}
 
-  cadvisor:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {% set service_name = 'cadvisor' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'cadvisor') }}
     {{ lookup('compose_only', 'container_name', CADVISOR_CONTAINER) }}
-{% if DEPLOYMENT_MODE == 'compose' %}
+    {% if DEPLOYMENT_MODE == 'compose' %}
     privileged: true
     devices:
       - /dev/kmsg
-{% endif %}
+    {% endif %}
     {{ lookup('container_volumes', application_id, 'cadvisor') | indent(4) }}
 
-  node-exporter:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {% set service_name = 'node-exporter' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'node-exporter') }}
     {{ lookup('compose_only', 'container_name', NODE_EXPORTER_CONTAINER) }}
-{% if DEPLOYMENT_MODE == 'compose' %}
-    # network_mode: host is required so node-exporter sees the host's real
-    # network interfaces, disk mounts, and process table. Without it, interface
-    # bandwidth metrics reflect the container's virtual stack only and are
-    # meaningless. pid: host is required to collect accurate per-process CPU
-    # and memory metrics. Security trade-off: removes Docker network isolation
-    # for this read-only monitoring container, which is the standard accepted
-    # practice for node-exporter. Port note: node-exporter binds on host port
-    # 9100; ensure nothing else on the host uses port 9100. Swarm services
-    # cannot honor network_mode/pid host, so this is compose-only.
+    {% if DEPLOYMENT_MODE == 'compose' %}
     # nocheck: network-mode-host-without-swarm-gate
     network_mode: host
     pid: host
-{% endif %}
+    {% endif %}
     {{ lookup('container_volumes', application_id, 'node-exporter') | indent(4) }}
     command:
       - "--path.procfs=/host/proc"
@@ -72,7 +68,8 @@
 
 {{ lookup('compose_volumes', application_id) }}
 {{ lookup('compose_networks') }}
-{% for metrics_app_id in lookup('native_metrics_apps') %}
-  {{ metrics_app_id | get_entity_name }}:
+  {% for metrics_app_id in lookup('native_metrics_apps') %}
+  {% set service_name = metrics_app_id | get_entity_name %}
+  {{ service_name }}:
     external: true
-{% endfor %}
+  {% endfor %}

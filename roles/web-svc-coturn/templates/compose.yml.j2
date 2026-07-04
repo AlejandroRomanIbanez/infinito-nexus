@@ -1,6 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-  nginx:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {% set service_name = 'nginx' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'gateway') }}
     {{ lookup('compose_only', 'container_name', entity_name ~ '_nginx') }}
     {{ lookup('container_ports', ['coturn', 'http', DOCKER_BIND_HOST]) | indent(4) }}
@@ -10,35 +11,36 @@
       && nginx -g 'daemon off;'"
     {{ lookup('container_networks') | indent(4) }}
 
-  coturn:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {% set service_name = 'coturn' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'coturn') }}
     {{ lookup('compose_only', 'container_name', COTURN_CONTAINER) }}
     network_mode: {{ COTURN_NETWORK_MODE }}
-{% if COTURN_NETWORK_MODE == 'bridge' %}
+    {% if COTURN_NETWORK_MODE == 'bridge' %}
     ports:
       - "{{ COTURN_STUN_TURN_PORT }}:{{ COTURN_STUN_TURN_PORT }}/udp"  # nocheck: compose-ports-must-use-container-ports
       - "{{ COTURN_STUN_TURN_PORT }}:{{ COTURN_STUN_TURN_PORT }}/tcp"  # nocheck: compose-ports-must-use-container-ports
-{% if COTURN_TLS_ENABLED| bool %}
+      {% if COTURN_TLS_ENABLED| bool %}
       - "{{ COTURN_STUN_TURN_PORT_TLS }}:{{ COTURN_STUN_TURN_PORT_TLS }}/tcp"  # nocheck: compose-ports-must-use-container-ports
-{% endif %}
+      {% endif %}
       - "{{ COTURN_RELAY_PORT_RANGE }}/udp"  # nocheck: compose-ports-must-use-container-ports
     {{ lookup('container_networks') | indent(4) }}
-{% endif %}
+    {% endif %}
     {{ lookup('container_volumes', application_id, 'coturn') | indent(4) }}
     command: >
-{% if COTURN_USER_AUTH_ENABLED | bool %}
+      {% if COTURN_USER_AUTH_ENABLED | bool %}
       --lt-cred-mech
       --user="${COTURN_USER_NAME}:${COTURN_USER_PASSWORD}"
-{% else %}
+      {% else %}
       --use-auth-secret
       --static-auth-secret="${COTURN_STATIC_AUTH_SECRET}"
-{% endif %}
+      {% endif %}
       --log-file=stdout
       --external-ip={{ networks.internet.ip4 }}
-{% if networks.internet.ip6 | default('') %}
+      {% if networks.internet.ip6 | default('') %}
       --external-ip={{ networks.internet.ip6 }}
-{% endif %}
+      {% endif %}
       --realm="${COTURN_REALM}"
       --fingerprint
       --total-quota=100
@@ -48,11 +50,11 @@
       --listening-port={{ COTURN_STUN_TURN_PORT }}
       --min-port={{ COTURN_RELAY_PORT_START }}
       --max-port={{ COTURN_RELAY_PORT_END }}
-{% if COTURN_TLS_ENABLED| bool %}
+      {% if COTURN_TLS_ENABLED| bool %}
       --tls-listening-port={{ COTURN_STUN_TURN_PORT_TLS }}
       --cert={{ COTURN_TLS_CERT_PATH }}
       --pkey={{ COTURN_TLS_KEY_PATH }}
-{% endif %}
+      {% endif %}
       --cipher-list=DEFAULT
     healthcheck:
       test: ["CMD", "sh", "-c", "command -v turnutils_stunclient >/dev/null && turnutils_stunclient -p {{ COTURN_STUN_TURN_PORT }} 127.0.0.1 || nc -z 127.0.0.1 {{ COTURN_STUN_TURN_PORT }}"]

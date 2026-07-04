@@ -1,5 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-  wordpress:
+  {% set service_name = 'wordpress' %}
+  {{ service_name }}:
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'wordpress', custom=True) }}
     {{ lookup('compose_only', 'container_name', WORDPRESS_CONTAINER) }}
@@ -11,7 +12,7 @@
     {{ lookup('container_ports', ['wordpress', 'http', DOCKER_BIND_HOST]) | indent(4) }}
 {{ lookup('container_volumes', application_id, 'wordpress') | indent(4) }}
 
-{% include 'roles/sys-svc-container/templates/healthcheck/msmtp_curl.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/healthcheck/msmtp_curl.yml.j2' %}
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 

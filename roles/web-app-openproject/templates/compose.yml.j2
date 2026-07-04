@@ -9,15 +9,15 @@ x-op-app: &app
 
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
-  cache:
-{% set service_name = 'cache' %}
+  {% set service_name = 'cache' %}
+  {{ service_name }}:
     {{ lookup('container_image', 'svc-db-memcached', 'memcached') }}
     {{ lookup('compose_only', 'container_name', OPENPROJECT_CACHE_CONTAINER) }}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
 
-  proxy:
-{% set service_name = 'proxy' %}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {% set service_name = 'proxy' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'proxy', custom=True, version=OPENPROJECT_VERSION) }}
     {{ lookup('compose_only', 'container_name', OPENPROJECT_PROXY_CONTAINER) }}
     {{ lookup('compose_only', 'pull_policy', 'never') }}
@@ -28,10 +28,12 @@ x-op-app: &app
     {{ lookup('depends_on', [OPENPROJECT_WEB_SERVICE]) }}
     {{ lookup('container_volumes', application_id, 'proxy') | indent(4) }}
 
-  {{ OPENPROJECT_WEB_SERVICE }}:
+  {% set service_name = OPENPROJECT_WEB_SERVICE %}
+  {% set container_port = 8080 %}
+  {% set container_healthcheck = 'health_checks/default' %}
+  {{ service_name }}:
     <<: *app
-{% set service_name = OPENPROJECT_WEB_SERVICE %}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: "./docker/prod/web"
     {{ lookup('compose_only', 'container_name', OPENPROJECT_WEB_CONTAINER) }}
     {{ lookup('container_networks') | indent(4) }}
@@ -39,15 +41,13 @@ x-op-app: &app
   'cache': {'condition': 'service_started'},
   OPENPROJECT_SEEDER_SERVICE: {'condition': 'service_started'},
 }) | indent(4) }}
-{% set container_port = 8080 %}
-{% set container_healthcheck = 'health_checks/default' %}
-{% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
     {{ lookup('container_volumes', application_id, OPENPROJECT_WEB_SERVICE) | indent(4) }}
 
-{% set service_name = 'worker' %}
-  worker:
+  {% set service_name = 'worker' %}
+  {{ service_name }}:
     <<: *app
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: "./docker/prod/worker"
     {{ lookup('compose_only', 'container_name', OPENPROJECT_WORKER_CONTAINER) }}
     {{ lookup('container_networks') | indent(4) }}
@@ -57,10 +57,10 @@ x-op-app: &app
 }) | indent(4) }}
     {{ lookup('container_volumes', application_id, 'worker') | indent(4) }}
 
-  cron:
+  {% set service_name = 'cron' %}
+  {{ service_name }}:
     <<: *app
-{% set service_name = 'cron' %}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: "./docker/prod/cron"
     {{ lookup('compose_only', 'container_name', OPENPROJECT_CRON_CONTAINER) }}
     {{ lookup('container_networks') | indent(4) }}
@@ -70,11 +70,11 @@ x-op-app: &app
 }) | indent(4) }}
     {{ lookup('container_volumes', application_id, 'cron') | indent(4) }}
 
-  {{ OPENPROJECT_SEEDER_SERVICE }}:
+  {% set service_name = OPENPROJECT_SEEDER_SERVICE %}
+  {% set docker_restart_policy = 'on-failure' %}
+  {{ service_name }}:
     <<: *app
-{% set service_name = OPENPROJECT_SEEDER_SERVICE %}
-{% set docker_restart_policy = 'on-failure' %}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: "./docker/prod/seeder"
     {{ lookup('compose_only', 'container_name', OPENPROJECT_SEEDER_CONTAINER) }}
     {{ lookup('container_networks') | indent(4) }}

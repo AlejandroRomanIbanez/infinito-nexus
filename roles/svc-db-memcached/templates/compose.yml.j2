@@ -1,6 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-
-  memcached:
+  {% set service_name = 'memcached' %}
+  {{ service_name }}:
     {{ lookup('compose_only', 'container_name', MEMCACHED_CONTAINER) }}
     {{ lookup('container_image', application_id, 'memcached') }}
     command:
@@ -8,10 +8,10 @@
       - "-m"
       - "{{ MEMCACHED_MEMORY_LIMIT_MB }}"
 
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-{% if MEMCACHED_EXPOSE_LOCAL %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% if MEMCACHED_EXPOSE_LOCAL %}
     {{ lookup('container_ports', ['memcached', 'memcached', DOCKER_BIND_HOST]) | indent(4) }}
-{% endif %}
+    {% endif %}
     {{ lookup('container_networks') | indent(4) }}
     healthcheck:
       test:

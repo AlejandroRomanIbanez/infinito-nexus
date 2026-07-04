@@ -1,7 +1,8 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 {% set ERPNEXT_CONFIG_READY_GATE = "until grep -q redis_socketio sites/common_site_config.json 2>/dev/null; do sleep 2; done;" %}
 
-  backend:
+  {% set service_name = 'backend' %}
+  {{ service_name }}:
     {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_BACKEND_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -10,7 +11,8 @@
     {{ lookup('container_volumes', application_id, ERPNEXT_BACKEND_CONTAINER) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-  queue-short:
+  {% set service_name = 'queue-short' %}
+  {{ service_name }}:
     {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_QUEUE_SHORT_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -19,7 +21,8 @@
     {{ lookup('container_volumes', application_id, ERPNEXT_QUEUE_SHORT_CONTAINER) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-  queue-long:
+  {% set service_name = 'queue-long' %}
+  {{ service_name }}:
     {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_QUEUE_LONG_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -28,7 +31,8 @@
     {{ lookup('container_volumes', application_id, ERPNEXT_QUEUE_LONG_CONTAINER) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-  frontend:
+  {% set service_name = 'frontend' %}
+  {{ service_name }}:
     {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_FRONTEND_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -49,8 +53,9 @@
     {{ lookup('container_volumes', application_id, ERPNEXT_FRONTEND_CONTAINER) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-{% set service_replicas = 1 %}
-  websocket:
+  {% set service_name = 'websocket' %}
+  {% set service_replicas = 1 %}
+  {{ service_name }}:
     {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_WEBSOCKET_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -59,7 +64,8 @@
     {{ lookup('container_volumes', application_id, ERPNEXT_WEBSOCKET_CONTAINER) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-  scheduler:
+  {% set service_name = 'scheduler' %}
+  {{ service_name }}:
     {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_SCHEDULER_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -68,10 +74,11 @@
     {{ lookup('container_volumes', application_id, ERPNEXT_SCHEDULER_CONTAINER) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-  configurator:
+  {% set service_name = 'configurator' %}
+  {% set docker_restart_policy = 'no' %}
+  {{ service_name }}:
     {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_CONFIGURATOR_CONTAINER) }}
-{% set docker_restart_policy = 'no' %}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     entrypoint:
       - bash

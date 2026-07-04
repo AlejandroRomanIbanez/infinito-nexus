@@ -1,6 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-  celeryworker:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {% set service_name = 'celeryworker' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'api') }}
     command: celery -A funkwhale_api.taskapp worker -l INFO --concurrency={{FUNKWHALE_CELERYD_CONCURRENCY}}
     environment:
@@ -9,16 +10,18 @@
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-  celerybeat:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {% set service_name = 'celerybeat' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'api') }}
     command: celery -A funkwhale_api.taskapp beat --pidfile= -l INFO
     {{ lookup('container_volumes', application_id, 'celerybeat') | indent(4) }}
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-  api:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {% set service_name = 'api' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'api') }}
     command: gunicorn
     {{ lookup('container_volumes', application_id, 'api') | indent(4) }}
@@ -27,8 +30,9 @@
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-  front:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {% set service_name = 'front' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'funkwhale') }}
     {{ lookup('depends_on', ['api']) }}
     environment:
@@ -37,15 +41,16 @@
     {{ lookup('container_ports', ['funkwhale', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-  typesense:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {% set service_name = 'typesense' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'typesense') }}
     {{ lookup('container_volumes', application_id, 'typesense') | indent(4) }}
     command: --data-dir /data --enable-cors --api-key {{ FUNKWHALE_TYPESENSE_API_KEY }}
-{% if DEPLOYMENT_MODE == 'compose' %}
+    {% if DEPLOYMENT_MODE == 'compose' %}
     profiles:
       - typesense
-{% endif %}
+    {% endif %}
 
 {{ lookup('compose_volumes', application_id) }}
 {{ lookup('compose_networks') }}

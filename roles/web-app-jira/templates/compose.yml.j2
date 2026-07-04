@@ -1,5 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-  jira:
+  {% set service_name = 'jira' %}
+  {{ service_name }}:
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
       args:
         JIRA_IMAGE: "{{ JIRA_IMAGE }}"
@@ -10,8 +11,8 @@
     hostname: '{{ JIRA_HOSTNAME }}'
     {{ lookup('container_ports', ['jira', 'http', DOCKER_BIND_HOST]) | indent(4) }}
 {{ lookup('container_volumes', application_id, 'jira') | indent(4) }}
-{% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 

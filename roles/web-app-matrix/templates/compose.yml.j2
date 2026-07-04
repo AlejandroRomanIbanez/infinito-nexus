@@ -1,9 +1,9 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-{% if matrix_flavor == 'ansible' %}
-{% include 'flavor/ansible/services.yml.j2' %}
-{% else %}
-{% include 'flavor/compose/services.yml.j2' %}
-{% endif %}
+    {% if matrix_flavor == 'ansible' %}
+    {% include 'flavor/ansible/services.yml.j2' %}
+    {% else %}
+    {% include 'flavor/compose/services.yml.j2' %}
+    {% endif %}
 
 {{ lookup('compose_volumes', application_id) }}
 

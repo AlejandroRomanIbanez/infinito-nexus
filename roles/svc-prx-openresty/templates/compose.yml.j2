@@ -1,7 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-{# host-mode 80/443: stop-first avoids the rolling-update port-bind deadlock #}
-{% set service_update_order = 'stop-first' %}
-  openresty:
+  {% set service_update_order = 'stop-first' %}
+  {% set service_name = 'openresty' %}
+  {{ service_name }}:
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
       args:
@@ -13,7 +13,7 @@
         LUA_PROMETHEUS_URL_KEYS:      "{{ OPENRESTY_LUA_PROMETHEUS_URL_KEYS }}"
     {{ lookup('compose_only', 'container_name', OPENRESTY_CONTAINER) }}
     {{ lookup('container_image', application_id, 'openresty', custom=True) }}
-{% if DEPLOYMENT_MODE == 'swarm' %}
+    {% if DEPLOYMENT_MODE == 'swarm' %}
     ports:
       - target: 80
         published: 80
@@ -24,9 +24,9 @@
         protocol: tcp
         mode: host
     {{ lookup('container_networks') | indent(4) }}
-{% else %}
+    {% else %}
     network_mode: "host"
-{% endif %}
+    {% endif %}
     {{ lookup('container_volumes', application_id, 'openresty') | indent(4) }}
     command: ["openresty", "-g", "daemon off;"]
     healthcheck:

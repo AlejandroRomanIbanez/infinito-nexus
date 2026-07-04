@@ -1,6 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
-  {{ KIX_DB_CONTAINER }}:
+  {% set service_name = KIX_DB_CONTAINER %}
+  {{ service_name }}:
     {{ lookup('container_image', application_id, 'db') }}
     {{ lookup('compose_only', 'container_name', KIX_DB_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
@@ -9,7 +10,8 @@
     shm_size: '2gb'
     {{ lookup('container_networks') | indent(4) }}
 
-  {{ KIX_BACKEND_CONTAINER }}:
+  {% set service_name = KIX_BACKEND_CONTAINER %}
+  {{ service_name }}:
     {{ lookup('container_image', application_id, 'backend') }}
     {{ lookup('compose_only', 'container_name', KIX_BACKEND_CONTAINER) }}
     hostname: backend
@@ -19,7 +21,8 @@
     {{ lookup('container_volumes', application_id, KIX_BACKEND_CONTAINER) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-  {{ KIX_FRONTEND_CONTAINER }}:
+  {% set service_name = KIX_FRONTEND_CONTAINER %}
+  {{ service_name }}:
     {{ lookup('container_image', application_id, 'frontend') }}
     {{ lookup('compose_only', 'container_name', KIX_FRONTEND_CONTAINER) }}
     hostname: frontend
@@ -38,7 +41,8 @@
     {{ lookup('container_volumes', application_id, KIX_FRONTEND_CONTAINER) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-  {{ KIX_PROXY_CONTAINER }}:
+  {% set service_name = KIX_PROXY_CONTAINER %}
+  {{ service_name }}:
     {{ lookup('container_image', application_id, 'kix') }}
     {{ lookup('compose_only', 'container_name', KIX_PROXY_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}

@@ -1,6 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
-  {{ LIBRETRANSLATE_SERVICE }}:
+  {% set service_name = LIBRETRANSLATE_SERVICE %}
+  {{ service_name }}:
     {{ lookup('container_image', application_id, 'libretranslate') }}
     volumes: []
     {{ lookup('container_ports', ['libretranslate', 'http', DOCKER_BIND_HOST]) | indent(4) }}
@@ -10,7 +11,7 @@
       timeout: 10s
       retries: 3
       start_period: 30s
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id,

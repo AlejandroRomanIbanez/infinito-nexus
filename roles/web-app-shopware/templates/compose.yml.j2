@@ -3,13 +3,12 @@ x-environment: &shopware
   working_dir: {{ SHOPWARE_ROOT }}
   {{ lookup('compose_only', 'pull_policy', 'never') }}
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-{% set service_replicas = 1 %}
+  {% set service_replicas = 1 %}
 
-{% set service_name = 'init' %}
-{% set docker_restart_policy = 'no' %}
+  {% set service_name = 'init' %}
+  {% set docker_restart_policy = 'no' %}
   {{ service_name }}:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-{% set docker_restart_policy = DOCKER_RESTART_POLICY %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     <<: *shopware
     {{ lookup('compose_only', 'container_name', SHOPWARE_INIT_CONTAINER) }}
     entrypoint: [ "sh", "{{ SHOPWARE_INIT_DOCKER }}" ]
@@ -18,10 +17,11 @@ x-environment: &shopware
 
     {{ lookup('container_networks') | indent(4) }}
 
-{% set service_name = 'web' %}
-{% set container_port = lookup('config',application_id, 'services.web.ports.internal.http') %}
+  {% set service_name = 'web' %}
+  {% set docker_restart_policy = DOCKER_RESTART_POLICY %}
+  {% set container_port = lookup('config',application_id, 'services.web.ports.internal.http') %}
   {{ service_name }}:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     <<: *shopware
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
       args:
@@ -46,9 +46,9 @@ x-environment: &shopware
 
     {{ lookup('container_networks') | indent(4) }}
 
-{% set service_name = 'worker' %}
+  {% set service_name = 'worker' %}
   {{ service_name }}:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     <<: *shopware
     {{ lookup('compose_only', 'container_name', SHOPWARE_WORKER_CONTAINER) }}
     entrypoint: {{ SHOPWARE_WORKER_ENTRYPOINT }}
@@ -63,9 +63,9 @@ x-environment: &shopware
 
     {{ lookup('container_networks') | indent(4) }}
 
-{% set service_name = 'scheduler' %}
+  {% set service_name = 'scheduler' %}
   {{ service_name }}:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     <<: *shopware
     {{ lookup('compose_only', 'container_name', SHOPWARE_SCHED_CONTAINER) }}
     entrypoint: {{ SHOPWARE_SCHED_ENTRYPOINT }}
@@ -81,10 +81,10 @@ x-environment: &shopware
 
     {{ lookup('container_networks') | indent(4) }}
 
-{% if SHOPWARE_OPENSEARCH_ENABLED %}
-{% set service_name = 'opensearch' %}
+  {% if SHOPWARE_OPENSEARCH_ENABLED %}
+  {% set service_name = 'opensearch' %}
   {{ service_name }}:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'opensearch') }}
     {{ lookup('compose_only', 'container_name', SHOPWARE_OPENSEARCH_CONTAINER) }}
     environment:
@@ -102,7 +102,7 @@ x-environment: &shopware
       retries: 5
       start_period: 60s
     {{ lookup('container_networks') | indent(4) }}
-{% endif %}
+  {% endif %}
 
 {{ lookup('compose_volumes', application_id) }}
 {{ lookup('compose_networks') }}

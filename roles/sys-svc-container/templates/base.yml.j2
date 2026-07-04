@@ -11,8 +11,8 @@
     logging:
       driver: journald
 {% if DEPLOYMENT_MODE == 'compose' %}
-{% filter indent(4) %}
-    {% include 'roles/sys-svc-container/templates/resource.yml.j2' %}
+{% filter indent(4, True) %}
+{% include 'roles/sys-svc-container/templates/resource.yml.j2' %}
 {% endfilter %}
 {% endif %}
 {% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}

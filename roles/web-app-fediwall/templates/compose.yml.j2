@@ -1,5 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-  {{ FEDIWALL_SERVICE }}:
+  {% set service_name = FEDIWALL_SERVICE %}
+  {{ service_name }}:
     {{ lookup('compose_only', 'container_name', FEDIWALL_CONTAINER) }}
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
       args:
@@ -8,8 +9,8 @@
         FEDIWALL_DIST_DIR_REL:  "{{ FEDIWALL_DIST_DIR_REL }}"
     {{ lookup('container_image', application_id, 'fediwall', custom=True) }}
     {{ lookup('container_ports', ['fediwall', 'http', DOCKER_BIND_HOST]) | indent(4) }}
-{% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_networks') | indent(4) }}
 
 {{ lookup('compose_volumes', application_id) }}

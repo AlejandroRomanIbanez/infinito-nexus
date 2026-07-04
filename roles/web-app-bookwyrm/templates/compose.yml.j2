@@ -1,7 +1,8 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
-  bookwyrm:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {% set service_name = 'bookwyrm' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: >-
       bash -c '
         /venv/bin/python manage.py migrate --noinput &&
@@ -21,12 +22,13 @@
     hostname: "{{ BOOKWYRM_HOSTNAME }}"
     {{ lookup('container_ports', ['bookwyrm', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     {{ lookup('container_volumes', application_id, 'bookwyrm') | indent(4) }}
-{% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-  worker:
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {% set service_name = 'worker' %}
+  {{ service_name }}:
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_image', application_id, 'worker', custom=True, version=BOOKWYRM_REF) }}
     {{ lookup('compose_only', 'container_name', BOOKWYRM_WORKER_CONTAINER) }}
     command: "/venv/bin/celery -A celerywyrm worker -l INFO"
