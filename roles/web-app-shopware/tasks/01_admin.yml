@@ -1,21 +1,25 @@
 ---
 - name: "🔧 Rename Shopware admin to {{ lookup('users', 'administrator').username }}"
-  ansible.builtin.shell: >-
-    container exec -i --user {{ SHOPWARE_USER }}
-    -e SHOPWARE_ROOT={{ SHOPWARE_ROOT | quote }}
-    -e NEW_USER={{ lookup('users', 'administrator').username | quote }}
-    {{ SHOPWARE_WEB_CONTAINER_ADDRESS }}
-    sh < {{ role_path }}/files/rename_admin_user.sh
+  ansible.builtin.shell:
+    cmd: >- # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
+      container exec -i --user {{ SHOPWARE_USER }}
+      -e SHOPWARE_ROOT={{ SHOPWARE_ROOT | quote }}
+      -e NEW_USER={{ lookup('users', 'administrator').username | quote }}
+      {{ SHOPWARE_WEB_LOCAL_CID | quote }}
+      sh
+    stdin: "{{ lookup('ansible.builtin.file', role_path ~ '/files/rename_admin_user.sh') }}"
   changed_when: false
 
 - name: "✅ Ensure Shopware admin exists and has the desired password"
-  shell: >-
-    container exec -i --user {{ SHOPWARE_USER }}
-    -e SHOPWARE_ROOT={{ SHOPWARE_ROOT | quote }}
-    -e ADMIN_USER={{ lookup('users', 'administrator').username | quote }}
-    -e ADMIN_PASSWORD={{ lookup('users', 'administrator').password | quote }}
-    -e ADMIN_FIRST_NAME={{ lookup('users', 'administrator').username | quote }}
-    -e ADMIN_LAST_NAME={{ DOMAIN_PRIMARY | lower | quote }}
-    -e ADMIN_EMAIL={{ lookup('users', 'administrator').email | quote }}
-    {{ SHOPWARE_WEB_CONTAINER_ADDRESS }}
-    sh < {{ role_path }}/files/ensure_admin_user.sh
+  ansible.builtin.shell:
+    cmd: >- # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
+      container exec -i --user {{ SHOPWARE_USER }}
+      -e SHOPWARE_ROOT={{ SHOPWARE_ROOT | quote }}
+      -e ADMIN_USER={{ lookup('users', 'administrator').username | quote }}
+      -e ADMIN_PASSWORD={{ lookup('users', 'administrator').password | quote }}
+      -e ADMIN_FIRST_NAME={{ lookup('users', 'administrator').username | quote }}
+      -e ADMIN_LAST_NAME={{ DOMAIN_PRIMARY | lower | quote }}
+      -e ADMIN_EMAIL={{ lookup('users', 'administrator').email | quote }}
+      {{ SHOPWARE_WEB_LOCAL_CID | quote }}
+      sh
+    stdin: "{{ lookup('ansible.builtin.file', role_path ~ '/files/ensure_admin_user.sh') }}"
