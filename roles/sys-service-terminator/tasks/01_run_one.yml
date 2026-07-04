@@ -19,7 +19,7 @@
       delay: "{{ SYS_SERVICE_RUNNER_DELAY }}"
       until: result is not failed
       when: >-
-        DEPLOYMENT_MODE != 'swarm'
+        DEPLOYMENT_MODE == 'compose'
         or system_service_run_unit_present.rc == 0
 
   rescue:
@@ -36,11 +36,11 @@
           - "SYS_SERVICE_RUNNER_DELAY={{ SYS_SERVICE_RUNNER_DELAY }}"
 
     - name: "🐳 docker diagnostics (best-effort via script file)"
-      ansible.builtin.shell: |
-        set -u
-        export SYS_SERVICE_RUNNER_DOCKER_LOG_TAIL="{{ SYS_SERVICE_RUNNER_DOCKER_LOG_TAIL }}"
-        export SYS_SERVICE_RUNNER_DOCKER_INCLUDE_EXITED="{{ SYS_SERVICE_RUNNER_DOCKER_INCLUDE_EXITED| bool | lower }}"
-        bash "{{ role_path }}/files/docker_diagnostics.sh"
+      ansible.builtin.script:
+        cmd: docker_diagnostics.sh
+      environment:
+        SYS_SERVICE_RUNNER_DOCKER_LOG_TAIL: "{{ SYS_SERVICE_RUNNER_DOCKER_LOG_TAIL }}"
+        SYS_SERVICE_RUNNER_DOCKER_INCLUDE_EXITED: "{{ SYS_SERVICE_RUNNER_DOCKER_INCLUDE_EXITED | bool | lower }}"
       become: true
       register: sys_runner_docker_diag
       changed_when: false
