@@ -1,4 +1,4 @@
-{# Param: container_port - internal port the HTTP service listens on #}
+{% set container_port = container_port | default(lookup('config', application_id, 'services.' ~ service_name ~ '.ports.internal.http', '')) %}
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:{{ container_port }}/ >/dev/null || curl -fsS http://127.0.0.1:{{ container_port }}/ >/dev/null"]
       interval: 30s

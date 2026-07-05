@@ -1,5 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
+  {# nocheck: container-port-set-unused #}
   {% set container_port = PENPOT_FRONTEND_INTERNAL_PORT %}
   {% set service_name = PENPOT_FRONTEND_SERVICE %}
   {{ service_name }}:

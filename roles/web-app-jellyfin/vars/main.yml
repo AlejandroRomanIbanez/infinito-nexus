@@ -1,6 +1,5 @@
 ---
 application_id: "web-app-jellyfin"
-container_port: "{{ lookup('config', application_id, 'services.jellyfin.ports.internal.http') }}"
 
 JELLYFIN_NAME: "{{ lookup('config', application_id, 'services.jellyfin.name') }}"
 

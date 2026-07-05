@@ -1,5 +1,6 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
+  {# nocheck: container-port-set-unused #}
   {% set container_port = BLUESKY_PDS_INTERNAL_PORT | int %}
   {% set container_healthcheck = 'xrpc/_health' %}
   {% set service_name = 'pds' %}
@@ -14,6 +15,7 @@
 
   {% if BLUESKY_WEB_ENABLED %}
   {% set service_name = 'web' %}
+  {# nocheck: container-port-set-unused #}
   {% set container_port = BLUESKY_WEB_INTERNAL_PORT | int %}
   {{ service_name }}:
     {% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}

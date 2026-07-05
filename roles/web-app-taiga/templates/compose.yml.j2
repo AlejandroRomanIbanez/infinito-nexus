@@ -80,6 +80,7 @@ build:
       taiga:
 
   {% set service_name = TAIGA_FRONT_SERVICE %}
+  {# nocheck: container-port-set-unused #}
   {% set container_port = lookup('config', application_id, 'services.' ~ entity_name ~ '.ports.internal.http') %}
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', TAIGA_CONTAINER ~ '-' ~ service_name) }}
@@ -145,7 +146,6 @@ build:
       taiga:
 
   {% set service_name = 'gateway' %}
-  {% set container_port = lookup('config', application_id, 'services.' ~ entity_name ~ '.ports.internal.http') %}
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', TAIGA_CONTAINER ~ '-' ~ service_name) }}
     {{ lookup('container_image', application_id, 'gateway') }}

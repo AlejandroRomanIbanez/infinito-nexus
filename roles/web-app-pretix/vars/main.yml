@@ -1,6 +1,5 @@
 ---
 application_id: "web-app-pretix"
-container_port: "{{ lookup('config', application_id, 'services.pretix.ports.internal.http') }}"
 container_hostname: "{{ lookup('domain',application_id) }}"
 
 PRETIX_URL: "{{ lookup('tls', application_id, 'url.base') }}"

@@ -2,8 +2,6 @@
 application_id: "web-app-gitea"
 entity_name: "{{ application_id | get_entity_name }}"
 
-container_port: "{{ lookup('config', application_id, 'services.gitea.ports.internal.http') }}"
-
 GITEA_LDAP_AUTH_ARGS:
   - '--name "LDAP ({{ DOMAIN_PRIMARY }})"'
   - '--host "{{ LDAP.SERVER.DOMAIN }}"'

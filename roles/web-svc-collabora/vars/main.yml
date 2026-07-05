@@ -5,8 +5,6 @@ entity_name: "{{ application_id | get_entity_name }}"
 domain: "{{ lookup('domain',application_id) }}"
 http_port: "{{ lookup('config', application_id, 'services.collabora.ports.local.http') }}"
 
-container_port: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.ports.internal.http') }}"
-
 COLLABORA_CONTAINER: "{{ lookup('config', application_id, 'services.collabora.name') }}"
 COLLABORA_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, entity_name) }}"
 COLLABORA_DOCKER_CONF_EXEC: "container exec {{ COLLABORA_CONTAINER_ADDRESS }} coolconfig"

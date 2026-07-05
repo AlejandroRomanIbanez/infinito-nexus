@@ -4,6 +4,7 @@
   {% set service_name = name %}
 {% if replicas is not none %}{% set service_replicas = replicas %}{% endif %}
 {% if restart is not none %}{% set docker_restart_policy = restart %}{% endif %}
+{# nocheck: container-port-set-unused #}
 {% if hc_port is not none %}{% set container_port = hc_port %}{% endif %}
 {% if hc_path is not none %}{% set container_healthcheck = hc_path %}{% endif %}
   {{ service_name }}:
