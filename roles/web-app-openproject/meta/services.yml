@@ -37,6 +37,9 @@ seaweedfs:
   shared: "{{ 'web-app-seaweedfs' in group_names }}"
 web:
   name: openproject-web
+  ports:
+    internal:
+      http: 8080
   image: openproject/openproject
   version: "17"
   backup:
@@ -121,7 +124,6 @@ openproject:
       http: 8023
     internal:
       http: 80
-      web: 8080
   proxy:
     service_key: web
   run_after:
