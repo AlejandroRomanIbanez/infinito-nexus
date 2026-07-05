@@ -16,9 +16,10 @@ set +e
 timeout 900 docker exec "${MGR}" \
 	tar -C "${INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR}" -cf - . 2>/dev/null |
 	tar -C "${dest}" -xf - 2>/dev/null
-producer_rc=${PIPESTATUS[0]}
-consumer_rc=${PIPESTATUS[1]}
+pipe_rc=("${PIPESTATUS[@]}")
 set -e
+producer_rc=${pipe_rc[0]}
+consumer_rc=${pipe_rc[1]}
 
 if [ "${producer_rc}" -eq 124 ]; then
 	echo "collect_playwright_reports: docker exec timed out after 900s (manager hung)" >&2
