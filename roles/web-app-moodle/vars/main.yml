@@ -55,8 +55,8 @@ MOODLE_SITE_TITLE: "{{ lookup('config', application_id, 'services.moodle.site_ti
 MOODLE_FPM_PORT: 9000
 MOODLE_NGINX_PORT: 80
 
-MOODLE_PHP_MEMORY_LIMIT: "512M"
-MOODLE_PHP_UPLOAD_MAX_FILESIZE: "256M"
-MOODLE_PHP_POST_MAX_SIZE: "256M"
+MOODLE_PHP_MEMORY_LIMIT: "{{ lookup('config', application_id, 'services.moodle.performance.php.memory_limit') }}"
+MOODLE_PHP_UPLOAD_MAX_FILESIZE: "{{ lookup('config', application_id, 'services.moodle.performance.php.upload_max_filesize') }}"
+MOODLE_PHP_POST_MAX_SIZE: "{{ lookup('config', application_id, 'services.moodle.performance.php.post_max_size') }}"
 MOODLE_PHP_MAX_EXECUTION_TIME: "300"
 MOODLE_PHP_MAX_INPUT_VARS: "5000"
