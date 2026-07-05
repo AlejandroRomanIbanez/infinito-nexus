@@ -3,8 +3,7 @@ import re
 from utils.cache.yaml import dump_yaml_str, load_yaml_str
 
 
-def compose_mods(yml_text, compose_repository_path, env_file):
-    # Named volume rewrites
+def compose_mods(yml_text, compose_repository_path, env_file, extra_hosts=None):
     yml_text = re.sub(
         r"\./data/postgres:/var/lib/postgresql/data",
         "database:/var/lib/postgresql/data",
@@ -29,10 +28,8 @@ def compose_mods(yml_text, compose_repository_path, env_file):
         r"\./data/mediasoup:/var/mediasoup", "mediasoup:/var/mediasoup", yml_text
     )
 
-    # Make other ./ paths absolute to the given repository
     yml_text = re.sub(r"\./", compose_repository_path.rstrip("/") + "/", yml_text)
 
-    # Keep the old context helpers (harmless if YAML step below fixes everything)
     yml_text = re.sub(
         r"(^\s*context:\s*)mod/(.*)",
         r"\1" + compose_repository_path.rstrip("/") + r"/mod/\2",
@@ -56,10 +53,19 @@ def compose_mods(yml_text, compose_repository_path, env_file):
             if not isinstance(svc, dict):
                 continue
 
-            # ensure env_file
             svc["env_file"] = [env_file]
 
-            # handle build when it is a string: e.g., build: "mod/periodic"
+            if extra_hosts and svc.get("network_mode") != "host":
+                hosts = svc.get("extra_hosts")
+                if isinstance(hosts, dict):
+                    hosts = [f"{k}:{v}" for k, v in hosts.items()]
+                elif not isinstance(hosts, list):
+                    hosts = []
+                for entry in extra_hosts:
+                    if entry not in hosts:
+                        hosts.append(entry)
+                svc["extra_hosts"] = hosts
+
             if "build" in svc:
                 b = svc["build"]
                 if isinstance(b, str):
@@ -69,7 +75,6 @@ def compose_mods(yml_text, compose_repository_path, env_file):
                     if isinstance(ctx, str):
                         b["context"] = _prefix_mod(ctx)
 
-            # extras
             if name == "redis":
                 vols = svc.get("volumes")
                 if not vols or not isinstance(vols, list):
@@ -95,7 +100,6 @@ def compose_mods(yml_text, compose_repository_path, env_file):
 
         data["services"] = services
 
-        # Only add volumes block if not present
         data.setdefault(
             "volumes",
             {

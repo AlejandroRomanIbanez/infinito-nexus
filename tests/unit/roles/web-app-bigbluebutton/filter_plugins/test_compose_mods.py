@@ -147,6 +147,50 @@ volumes:
             self.assertIn(key, actual_data)
             self.assertEqual(sort_dict(actual_data[key]), sort_dict(expected_data[key]))
 
+    def test_extra_hosts_injected_except_host_network(self):
+        original = """
+services:
+  greenlight:
+    image: bigbluebutton/greenlight:v3
+  freeswitch:
+    network_mode: host
+    image: bbb/freeswitch
+  nginx:
+    extra_hosts:
+      - "existing.example:1.2.3.4"
+  etherpad:
+    extra_hosts:
+      mapped.example: 5.6.7.8
+"""
+        data = load_yaml_str(
+            compose_mods(
+                original,
+                self.compose_repository_path,
+                self.env_file,
+                extra_hosts=["auth.infinito.example:host-gateway"],
+            )
+        )
+        services = data["services"]
+        self.assertIn(
+            "auth.infinito.example:host-gateway", services["greenlight"]["extra_hosts"]
+        )
+        self.assertNotIn("extra_hosts", services["freeswitch"])
+        self.assertEqual(
+            services["nginx"]["extra_hosts"],
+            ["existing.example:1.2.3.4", "auth.infinito.example:host-gateway"],
+        )
+        self.assertEqual(
+            services["etherpad"]["extra_hosts"],
+            ["mapped.example:5.6.7.8", "auth.infinito.example:host-gateway"],
+        )
+
+    def test_extra_hosts_absent_without_kwarg(self):
+        data = load_yaml_str(
+            compose_mods(self.original, self.compose_repository_path, self.env_file)
+        )
+        for svc in data["services"].values():
+            self.assertNotIn("extra_hosts", svc)
+
 
 if __name__ == "__main__":
     unittest.main()
