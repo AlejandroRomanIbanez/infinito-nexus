@@ -2,7 +2,12 @@
 
   {% set service_name = LIBRETRANSLATE_SERVICE %}
   {{ service_name }}:
-    {{ lookup('container_image', application_id, 'libretranslate') }}
+    {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
+      args:
+        LIBRETRANSLATE_IMAGE: "{{ LIBRETRANSLATE_IMAGE }}"
+        LIBRETRANSLATE_VERSION: "{{ LIBRETRANSLATE_VERSION }}"
+        LIBRETRANSLATE_LOAD_ONLY: "{{ LIBRETRANSLATE_LOAD_ONLY }}"
+    {{ lookup('container_image', application_id, 'libretranslate', custom=True) }}
     volumes: []
     {{ lookup('container_ports', ['libretranslate', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     healthcheck:

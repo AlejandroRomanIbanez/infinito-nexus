@@ -5,8 +5,11 @@ libretranslate:
   enabled: true
   shared: true
   image: libretranslate/libretranslate
-  version: latest
+  version: v1.9.6
   min_storage: 5GB
+  load_only:
+    - en
+    - de
   ports:
     local:
       http: 8045
