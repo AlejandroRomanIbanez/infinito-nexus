@@ -6,13 +6,16 @@
     resolve_output_prefix: TAIGA_MANAGER
     resolve_compose_cid: "{{ TAIGA_MANAGER_CONTAINER }}"
 
-- name: "▶️ Run Taiga migrations (required before admin creation)"
+- name: "⏳ Wait for taiga-back to apply migrations (manager must not re-apply)"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
     container exec -i
     {{ TAIGA_MANAGER_LOCAL_CID | quote }}
-    python manage.py migrate --noinput
-  register: taiga_migrate
-  changed_when: taiga_migrate.rc == 0
+    python manage.py migrate --check
+  register: taiga_migrate_check
+  until: taiga_migrate_check.rc == 0
+  retries: 30
+  delay: 10
+  changed_when: false
   delegate_to: "{{ TAIGA_MANAGER_HOST_NODE }}"
 
 - name: "📁 Create Taiga admin user (idempotent)"
