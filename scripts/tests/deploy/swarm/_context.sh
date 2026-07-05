@@ -99,7 +99,9 @@ fi
 
 PRIMARY_NFS_VOLUME="$(printf '%s\n' "${NFS_VOLUMES}" | head -n1)"
 
-export APP_ID ENTITY STACK_NAME SERVICE_NAME PRIMARY_SERVICE_KEY CUSTOM_IMAGE_REPO DB_DEP NFS_VOLUMES PRIMARY_NFS_VOLUME DEFAULT_PLACEMENT_MANAGER HAS_SWARM_SERVICE PROBE_PORT
+NFS_CHECK_MOUNTPOINT="/mnt/nfs-check"
+
+export APP_ID ENTITY STACK_NAME SERVICE_NAME PRIMARY_SERVICE_KEY CUSTOM_IMAGE_REPO DB_DEP NFS_VOLUMES PRIMARY_NFS_VOLUME DEFAULT_PLACEMENT_MANAGER HAS_SWARM_SERVICE PROBE_PORT NFS_CHECK_MOUNTPOINT
 
 # Exits the calling chaos step (09/10/11) with success when the role is
 # manager-pinned (no worker task exists to drain).
@@ -117,6 +119,12 @@ skip_if_no_swarm_service() {
 		echo "SKIP: ${ENTITY} (${APP_ID}) deploys no swarm service — converge/chaos gate does not apply"
 		exit 0
 	fi
+}
+
+# Param: $1 node container, $2 app container id, $3 port
+probe_app_reachable() {
+	docker exec "$1" docker exec "$2" sh -c \
+		"curl -sS http://localhost:$3/ || wget -qO- http://localhost:$3/ || nc -z localhost $3" >/dev/null 2>&1
 }
 
 if [ "${SWARM_NFS_PILOT_VERBOSE:-0}" = "1" ]; then

@@ -39,8 +39,7 @@ if [ -z "${APP_CTR}" ]; then
 	exit 1
 fi
 for i in $(seq 1 30); do
-	if docker exec "${NODE}" docker exec "${APP_CTR}" sh -c \
-		"curl -sS http://localhost:${PROBE_PORT}/ || wget -qO- http://localhost:${PROBE_PORT}/ || bash -c 'exec 3<>/dev/tcp/localhost/${PROBE_PORT}'" >/dev/null 2>&1; then
+	if probe_app_reachable "${NODE}" "${APP_CTR}" "${PROBE_PORT}"; then
 		echo "${ENTITY} HTTP reachable inside container after ${i}s"
 		break
 	fi

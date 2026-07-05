@@ -25,10 +25,15 @@ echo "${REPL}" | grep -qE '^([0-9]+)/\1$' || {
 
 if [ -n "${PRIMARY_NFS_VOLUME}" ]; then
 	docker exec "${NEW_NODE}" sh -c "
-    mkdir -p /mnt/nfs-check
-    mount -t nfs -o vers=3,nolock ${NFS_IP}:${NFS_STATE_PATH} /mnt/nfs-check
-    grep -q 'pre-drain marker' /mnt/nfs-check/${PRIMARY_NFS_VOLUME}/.pre-drain
-    umount /mnt/nfs-check
+    mkdir -p ${NFS_CHECK_MOUNTPOINT}
+    mount -t nfs4 -o vers=4 ${NFS_IP}:${NFS_STATE_PATH} ${NFS_CHECK_MOUNTPOINT} \
+      || mount -t nfs4 -o vers=4 ${NFS_IP}:/ ${NFS_CHECK_MOUNTPOINT} \
+      || mount -t nfs -o vers=3,nolock ${NFS_IP}:${NFS_STATE_PATH} ${NFS_CHECK_MOUNTPOINT} \
+      || exit 1
+    grep -q 'pre-drain marker' ${NFS_CHECK_MOUNTPOINT}/${PRIMARY_NFS_VOLUME}/.pre-drain
+    rc=\$?
+    umount ${NFS_CHECK_MOUNTPOINT}
+    exit \$rc
   " || {
 		echo "FAILURE: marker missing on NFS volume '${PRIMARY_NFS_VOLUME}'"
 		exit 1
@@ -45,8 +50,7 @@ if [ -z "${APP_CTR}" ]; then
 	exit 1
 fi
 for i in $(seq 1 30); do
-	if docker exec "${NEW_NODE}" docker exec "${APP_CTR}" sh -c \
-		"curl -sS http://localhost:${PROBE_PORT}/ || wget -qO- http://localhost:${PROBE_PORT}/ || bash -c 'exec 3<>/dev/tcp/localhost/${PROBE_PORT}'" >/dev/null 2>&1; then
+	if probe_app_reachable "${NEW_NODE}" "${APP_CTR}" "${PROBE_PORT}"; then
 		echo "${ENTITY} reachable after reschedule"
 		exit 0
 	fi
