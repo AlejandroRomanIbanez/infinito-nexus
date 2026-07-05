@@ -35,8 +35,8 @@ if [ -n "$not_running" ]; then
 		done
 		echo "=== journalctl -u docker (last 3 min) ==="
 		journalctl -u docker --no-pager -n 100 --since "3 min ago" 2>/dev/null || echo "(journalctl -u docker unavailable)"
-		echo "=== docker events (last 3 min) ==="
-		timeout 5 docker events --since 3m --until 0s 2>/dev/null || echo "(docker events unavailable)"
+		echo "=== container events (last 3 min) ==="
+		timeout 5 container events --since 3m --until 0s 2>/dev/null || echo "(events unavailable)"
 	} >&2
 	exit 1
 fi
