@@ -39,12 +39,6 @@
     dest: "{{ TAIGA_FRONTEND_CONF_PATH }}"
   notify: compose up
 
-- name: "📁 create {{ TAIGA_COMPOSE_INIT_PATH }}"
-  stack_host_template:
-    src: "compose-inits.yml.j2"
-    dest: "{{ TAIGA_COMPOSE_INIT_PATH }}"
-  notify: compose up
-
 - name: "🚿 Flush Taiga handlers"
   meta: flush_handlers
 
