@@ -16,7 +16,7 @@
     stop_signal: SIGTERM
     stop_grace_period: 30s
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2' %}
+    {% include 'roles/sys-svc-container/templates/healthcheck/tcp.yml.j2' %}
     {{ lookup('container_ports',
               ['odoo', 'http', DOCKER_BIND_HOST],
               ['odoo', 'websocket', DOCKER_BIND_HOST]) | indent(4) }}
