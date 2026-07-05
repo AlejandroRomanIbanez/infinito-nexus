@@ -12,13 +12,22 @@
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
+- name: "🔍 Postgres | Resolve hosting node + container id"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
+  vars:
+    resolve_service_key: "{{ entity_name }}"
+    resolve_service_name: "{{ lookup('database', database_consumer_id, 'service_name') }}"
+    resolve_output_prefix: POSTGRES
+    resolve_compose_cid: "{{ lookup('database', database_consumer_id, 'container') }}"
+
 - name: ⏳ Wait until postgres TCP auth works
   block:
     - name: ⏳ Wait for Postgres TCP auth
-      ansible.builtin.shell: >
-        {{ POSTGRES_EXEC_SHELL }}
+      ansible.builtin.shell: > # nocheck: container-exec-resolver  POSTGRES_LOCAL_CID resolved at delegate_to runtime
+        container exec -e PGPASSWORD={{ POSTGRES_PASSWORD | quote }} {{ POSTGRES_LOCAL_CID | quote }} sh -lc
         'psql -h "{{ POSTGRES_LOCAL_HOST }}" -p "{{ POSTGRES_PORT }}"
         -U postgres -d postgres -c "SELECT 1"'
+      delegate_to: "{{ POSTGRES_HOST_NODE }}"
       register: pg_ready
       until: pg_ready.rc == 0
       retries: 30
