@@ -7,6 +7,9 @@ data:
       target: /var/www/html/
     - service: cron
       target: /var/www/html/
+    - service: proxy
+      target: /var/www/html/
+      read_only: true
 
 whiteboard_tmp:
   name: nextcloud_whiteboard_tmp

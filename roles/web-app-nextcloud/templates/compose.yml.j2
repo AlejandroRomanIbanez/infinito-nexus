@@ -10,8 +10,6 @@
     {{ lookup('compose_restart') }}
     {{ lookup('container_ports', ['nextcloud', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
-    volumes_from:
-      - {{ NEXTCLOUD_SERVICE }}
     {% include 'roles/sys-svc-container/templates/healthcheck/curl.yml.j2'  %}
     {{ lookup('container_networks') | indent(4) }}
     {% if NEXTCLOUD_HPB_NETWORK_MODE == 'host' %}
