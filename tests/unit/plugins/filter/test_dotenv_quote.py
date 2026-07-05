@@ -26,7 +26,6 @@ class TestDotenvQuote(unittest.TestCase):
         self.assertEqual(self.f("abc"), '"abc"')
 
     def test_single_quote_is_preserved(self):
-        # leading single quote should remain part of the value
         self.assertEqual(self.f("'secret"), '"\'secret"')
 
     def test_dollar_is_escaped_for_compose(self):
@@ -37,8 +36,6 @@ class TestDotenvQuote(unittest.TestCase):
         self.assertEqual(self.f("a$b$c"), '"a$$b$$c"')
 
     def test_existing_double_dollars_are_doubled_again(self):
-        # The filter is deterministic and does not try to "detect" prior escaping.
-        # This is fine for correctness (it still results in literal '$$' at runtime).
         self.assertEqual(self.f("$$FOO"), '"$$$$FOO"')
 
     def test_backslash_is_escaped(self):
@@ -48,7 +45,6 @@ class TestDotenvQuote(unittest.TestCase):
         self.assertEqual(self.f('pa"ss'), r'"pa\"ss"')
 
     def test_backslash_and_quote_combination(self):
-        # order matters: backslash first, then double quote
         self.assertEqual(self.f(r"pa\"ss"), r'"pa\\\"ss"')
 
     def test_non_string_input_is_stringified(self):
@@ -72,9 +68,6 @@ class TestDotenvQuoteModeAware(unittest.TestCase):
     """
 
     def setUp(self):
-        # The filter renders shell env-file values, not HTML; autoescape
-        # would replace `&`, `<`, `>`, `'`, `"` with HTML entities and
-        # break every assertion below.
         env = jinja2.Environment(autoescape=False)  # noqa: S701 - test renders a .env value, not HTML
         env.filters["dotenv_quote"] = FilterModule().filters()["dotenv_quote"]
         self.env = env
@@ -102,7 +95,9 @@ class TestDotenvQuoteModeAware(unittest.TestCase):
         self.assertEqual(self._render(42, mode="swarm"), "42")
 
     def test_swarm_quotes_value_with_interior_whitespace(self):
-        self.assertEqual(self._render("My Org Helpdesk", mode="swarm"), '"My Org Helpdesk"')
+        self.assertEqual(
+            self._render("My Org Helpdesk", mode="swarm"), '"My Org Helpdesk"'
+        )
 
     def test_swarm_whitespace_value_escapes_quotes_not_dollars(self):
         self.assertEqual(self._render('a "b" $c', mode="swarm"), '"a \\"b\\" $c"')
@@ -112,14 +107,9 @@ class TestDotenvQuoteModeAware(unittest.TestCase):
         self.assertEqual(self._render("$ecret", mode="compose"), '"$$ecret"')
 
     def test_unknown_mode_falls_back_to_compose_quoting(self):
-        # A typo or unset value MUST NOT silently degrade to swarm
-        # passthrough (would leak unquoted values into compose where
-        # ``$VAR`` interpolation then mangles passwords).
         self.assertEqual(self._render("abc", mode="kubernetes"), '"abc"')
 
     def test_missing_deployment_mode_falls_back_to_compose_quoting(self):
-        # Same as above for the unset-key case - compose is the safe
-        # default.
         self.assertEqual(self._render("abc"), '"abc"')
 
 

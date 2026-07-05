@@ -1,6 +1,6 @@
 ---
 - name: ➕ Add /var/www/discourse to Git safe.directory
-  ansible.builtin.shell: >
+  ansible.builtin.shell: > # nocheck: container-exec-resolver  discourse is a launcher-managed container named literally in both modes
     container exec {{ WORDPRESS_DISCOURSE_CONTAINER_ADDRESS }}
     git config --global --add safe.directory /var/www/discourse
   changed_when: false
@@ -20,7 +20,7 @@
   failed_when: false
 
 - name: ⚙️ Generate new WP Discourse API key via Rake task
-  ansible.builtin.shell: >
+  ansible.builtin.shell: > # nocheck: container-exec-resolver  discourse is a launcher-managed container named literally in both modes
     container exec {{ WORDPRESS_DISCOURSE_CONTAINER_ADDRESS }}
     bash -lc "cd /var/www/discourse && bin/rake api_key:create_master['WP Discourse Integration']"
   register: discourse_generated_api_key
