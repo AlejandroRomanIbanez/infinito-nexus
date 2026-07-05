@@ -44,7 +44,7 @@ sso:
   oauth2:
     origin:
       host: yourls
-      port: "80"
+      port: "{{ lookup('config', 'web-app-yourls', 'services.yourls.ports.internal.http') }}"
     allowed_groups:
       - "{{ lookup('rbac_group_path', application_id='web-app-yourls', role='administrator') }}"
     acl:
