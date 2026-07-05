@@ -18,6 +18,7 @@ JOOMLA_UPLOAD_CONFIG: "{{ [ lookup('container', application_id, 'directories.ins
 JOOMLA_UPLOAD_SIZE: "{{ lookup('config', application_id, 'services.joomla.upload.size_mb') }}"
 JOOMLA_UPLOAD_MAX_FILESIZE: "{{ (JOOMLA_UPLOAD_SIZE | int) }}M"
 JOOMLA_POST_MAX_SIZE: "{{ ((JOOMLA_UPLOAD_SIZE | int) * 12 // 10) }}M"
+JOOMLA_PHP_MEMORY_LIMIT: "{{ lookup('config', application_id, 'services.joomla.performance.php.memory_limit') }}"
 
 JOOMLA_USER_NAME: "{{ lookup('users', 'administrator').username }}"
 JOOMLA_USER: "{{ JOOMLA_USER_NAME | capitalize }}"
