@@ -57,7 +57,6 @@ module.exports = {
         const cookieName = 'n8n-auth';
 
         const UserRepo = this.dbCollections.User;
-        const RoleRepo = this.dbCollections.Role;
 
         const { stack } = app.router;
         const idx = stack.findIndex((l) => l?.name === 'cookieParser');
@@ -111,10 +110,9 @@ module.exports = {
 
             this.logger?.info(`SSO auto-login attempt for email: ${userEmail}`);
 
-            // 1) Try to fetch the user including the 'role' relation (needed by n8n 1.112.6)
+            // 1) Try to fetch the user (n8n 1.95.3 stores 'role' as a plain string column)
             let user = await UserRepo.findOne({
               where: { email: userEmail },
-              relations: ['role'],
             });
 
             // 2) If not found — create the user (with 'global:member' role) and a project
@@ -152,23 +150,8 @@ module.exports = {
               }
             }
 
-            // 4) Ensure 'user.role' exists (critical in 1.112.6, which dereferences role.slug)
+            // 4) Ensure 'user.role' exists (plain string column, e.g. 'global:member')
             if (!user.role) {
-              // Try to load by roleId
-              if (user.roleId && RoleRepo) {
-                user.role = await RoleRepo.findOneBy({ id: user.roleId });
-              } else {
-                // As a last resort, reload the user with relations
-                const reloaded = await UserRepo.findOne({
-                  where: { id: user.id },
-                  relations: ['role'],
-                });
-                if (reloaded) user = reloaded;
-              }
-            }
-
-            if (!user.role || !user.role.slug) {
-              // Without a valid role cookie issuance will crash on 1.112.6
               this.logger?.error(`User ${userEmail} has no valid role; cannot issue cookie.`);
               res.statusCode = 401;
               res.end(`User ${userEmail} has no valid role. Ask admin to assign a role.`);
