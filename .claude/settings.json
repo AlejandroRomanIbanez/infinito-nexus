@@ -115,6 +115,7 @@
       "WebFetch(domain:docs.kixdesk.com)",
       "WebFetch(domain:docs.livekit.io)",
       "WebFetch(domain:docs.moodle.org)",
+      "WebFetch(domain:docs.nextcloud.com)",
       "WebFetch(domain:docs.opencloud.eu)",
       "WebFetch(domain:docs.opentalk.eu)",
       "WebFetch(domain:docs.pretix.eu)",
