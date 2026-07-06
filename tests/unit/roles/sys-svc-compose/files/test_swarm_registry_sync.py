@@ -51,9 +51,11 @@ class TestSwarmRegistrySync(unittest.TestCase):
         return calls
 
     def test_sibling_of_local_build_is_not_pulled(self) -> None:
-        # daemon/websocket reference espocrm's already-prefixed build image
-        # without their own build:; that local-only ref must NOT be pulled from
-        # the registry (the espocrm_custom 'pull access denied' regression).
+        """daemon/websocket reference espocrm's already-prefixed build image
+        without their own build:; that local-only ref must NOT be pulled from
+        the registry (the espocrm_custom 'pull access denied' regression), and
+        locally-built images must never be rmi'd (recovery/base images depend on
+        them staying in the engine store)."""
         img = f"{PREFIX}espocrm_custom:latest"
         calls = self._sync(
             {
@@ -63,27 +65,45 @@ class TestSwarmRegistrySync(unittest.TestCase):
             }
         )
         self.assertNotIn(["docker", "pull", "espocrm_custom:latest"], calls)
-        # the locally-built image is still tagged/pushed to the registry
         self.assertIn(["docker", "push", img], calls)
+        rmi = [c for c in calls if c[:2] == ["docker", "rmi"]]
+        self.assertEqual(rmi, [])
+
+    def test_pulled_external_is_removed_after_push(self) -> None:
+        """A mirrored external is dropped from the engine store after the push so
+        it is not double-stored (engine + registry) on constrained runners."""
+        calls = self._sync({"web": {"image": f"{PREFIX}nginx:1.25"}})
+        self.assertIn(["docker", "rmi", f"{PREFIX}nginx:1.25", "nginx:1.25"], calls)
+
+    def test_shared_external_removed_once(self) -> None:
+        """Two services referencing the same external yield a single rmi pair."""
+        calls = self._sync(
+            {
+                "a": {"image": "nginx:1.25"},
+                "b": {"image": "nginx:1.25"},
+            }
+        )
+        rmi = [c for c in calls if c[:2] == ["docker", "rmi"]]
+        self.assertEqual(rmi, [["docker", "rmi", f"{PREFIX}nginx:1.25", "nginx:1.25"]])
 
     def test_real_upstream_image_is_still_pulled(self) -> None:
-        # a prefixed image with a genuine upstream (not locally built) must
-        # still be pulled + retagged; the de-prefix must not over-skip.
+        """A prefixed image with a genuine upstream (not locally built) must
+        still be pulled + retagged; the de-prefix must not over-skip."""
         calls = self._sync({"web": {"image": f"{PREFIX}nginx:1.25"}})
         self.assertIn(["docker", "pull", "nginx:1.25"], calls)
         self.assertIn(["docker", "tag", "nginx:1.25", f"{PREFIX}nginx:1.25"], calls)
 
     def test_already_in_registry_is_not_repulled(self) -> None:
-        # if the prefixed image already has a manifest in the registry, it is
-        # neither pulled nor re-pushed.
+        """If the prefixed image already has a manifest in the registry, it is
+        neither pulled nor re-pushed."""
         img = f"{PREFIX}nginx:1.25"
         calls = self._sync({"web": {"image": img}}, manifest=lambda i: True)
         self.assertNotIn(["docker", "pull", "nginx:1.25"], calls)
         self.assertNotIn(["docker", "push", img], calls)
 
     def test_main_empty_prefix_short_circuits(self) -> None:
-        # compose mode passes an empty --registry-prefix; main() returns early
-        # and never touches docker.
+        """Compose mode passes an empty --registry-prefix; main() returns early
+        and never touches docker."""
         import sys
 
         argv = ["swarm_registry_sync.py", "--chdir", "/x", "--registry-prefix", ""]

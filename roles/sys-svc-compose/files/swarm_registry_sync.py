@@ -33,11 +33,9 @@ def sync(*, compose_file: Path, prefix: str) -> int:
         return 0
 
     targets: list[str] = []
+    pulled: list[tuple[str, str]] = []
     changed = False
 
-    # Refs some service builds locally; a sibling service may reference the same
-    # (already-prefixed) image without its own build:, and must not try to pull
-    # that local-only ref from the registry.
     locally_built = {
         svc["image"].removeprefix(prefix)
         for svc in services.values()
@@ -64,6 +62,7 @@ def sync(*, compose_file: Path, prefix: str) -> int:
             rc = run(["docker", "tag", upstream, image])
             if rc != 0:
                 raise RuntimeError(f"docker tag {upstream} {image} failed (rc={rc})")
+            pulled.append((upstream, image))
             continue
 
         if "build" in svc:
@@ -77,15 +76,18 @@ def sync(*, compose_file: Path, prefix: str) -> int:
             continue
 
         new_image = f"{prefix}{image}"
+        svc["image"] = new_image
+        targets.append(new_image)
+        changed = True
+        if manifest_exists(new_image):
+            continue
         rc = run(["docker", "pull", image])
         if rc != 0:
             raise RuntimeError(f"docker pull {image} failed (rc={rc})")
         rc = run(["docker", "tag", image, new_image])
         if rc != 0:
             raise RuntimeError(f"docker tag {image} {new_image} failed (rc={rc})")
-        svc["image"] = new_image
-        targets.append(new_image)
-        changed = True
+        pulled.append((image, new_image))
 
     if changed:
         with compose_file.open("w") as f:
@@ -100,6 +102,9 @@ def sync(*, compose_file: Path, prefix: str) -> int:
         rc = run(["docker", "push", image])
         if rc != 0:
             raise RuntimeError(f"docker push {image} failed (rc={rc})")
+
+    for upstream, image in dict.fromkeys(pulled):
+        run(["docker", "rmi", image, upstream])
 
     return 0
 
