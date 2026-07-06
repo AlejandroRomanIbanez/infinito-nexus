@@ -220,6 +220,7 @@
       "WebFetch(domain:raw.githubusercontent.com)",
       "WebFetch(domain:refspecs.linuxfoundation.org)",
       "WebFetch(domain:registry-1.docker.io)",
+      "WebFetch(domain:registry.opencode.de)",
       "WebFetch(domain:releases.jquery.com)",
       "WebFetch(domain:releases.nixos.org)",
       "WebFetch(domain:repo.magento.com)",
