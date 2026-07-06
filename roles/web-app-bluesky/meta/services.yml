@@ -72,7 +72,7 @@ view:
   pids_limit: 256
 pds:
   image: ghcr.io/bluesky-social/pds
-  version: latest
+  version: 0.4.0
   min_storage: 10GB
   cpus: "1.0"
   mem_reservation: 1g
@@ -80,9 +80,8 @@ pds:
   pids_limit: 1024
 broker:
   name: bluesky-broker
-  image: bluesky-broker
-  base_image: node
-  base_version: 22-alpine
+  image: node
+  version: 22-alpine
   ports:
     local:
       http: 8076
