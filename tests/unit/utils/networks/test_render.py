@@ -466,6 +466,33 @@ class TestRenderComposeNetworks(unittest.TestCase):
         self.assertIn("external: true", rendered)
         self.assertNotIn("default:", rendered)
 
+    def test_empty_own_entity_swarm_omits_name(self):
+        rendered = render_compose_networks(
+            application_id="svc-runner",
+            deployment_mode="swarm",
+            registry={},
+            get_entity_name=lambda _role: "",
+            lookup_config=_const_lookup_config(),
+            lookup_database=_const_lookup_database(),
+        )
+        self.assertIn("driver: overlay", rendered)
+        self.assertNotIn("name:", rendered)
+
+    def test_empty_own_entity_compose_omits_name(self):
+        rendered = render_compose_networks(
+            application_id="svc-runner",
+            deployment_mode="compose",
+            registry={},
+            get_entity_name=lambda _role: "",
+            lookup_config=_const_lookup_config(
+                **{"networks.local.subnet": "10.0.0.0/24"}
+            ),
+            lookup_database=_const_lookup_database(),
+        )
+        self.assertIn("driver: bridge", rendered)
+        self.assertIn("subnet: 10.0.0.0/24", rendered)
+        self.assertNotIn("name:", rendered)
+
 
 class TestComputeExternalNetworkRoles(unittest.TestCase):
     def test_returns_consumer_provider_role(self):

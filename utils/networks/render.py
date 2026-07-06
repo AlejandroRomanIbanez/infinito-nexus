@@ -232,7 +232,7 @@ def render_compose_networks(
     if not _suppress_default(application_id):
         lines.append("  default:")
         if deployment_mode == "swarm":
-            if not is_own_shared_net_provider:
+            if not is_own_shared_net_provider and own_entity:
                 lines.append(f"    name: {own_entity}")
             lines.append("    driver: overlay")
             lines.append("    attachable: true")
@@ -250,7 +250,8 @@ def render_compose_networks(
         else:
             subnet = lookup_config(application_id, "networks.local.subnet", "")
             if subnet:
-                lines.append(f"    name: {own_entity}")
+                if own_entity:
+                    lines.append(f"    name: {own_entity}")
                 lines.append("    driver: bridge")
                 lines.append("    ipam:")
                 lines.append("      driver: default")
