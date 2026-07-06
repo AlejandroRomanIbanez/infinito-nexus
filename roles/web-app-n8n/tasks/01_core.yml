@@ -12,6 +12,7 @@
     src: hooks.js
     dest: "{{ N8N_HOOKS_FILE_HOST }}"
     mode: "0644"
+  when: N8N_SSO_ENABLED | bool
   notify:
     - compose up
 

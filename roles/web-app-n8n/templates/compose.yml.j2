@@ -8,7 +8,9 @@
       - "{{ DOCKER_BIND_HOST }}:{{ N8N_HTTP_PORT }}:{{ N8N_INTERNAL_PORT }}"
     volumes:
       - n8n_data:/home/node/.n8n
+{% if N8N_SSO_ENABLED %}
       - {{ N8N_HOOKS_FILE_HOST }}:{{ N8N_HOOKS_FILE_CONTAINER }}:ro
+{% endif %}
 {% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
 
 {% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
