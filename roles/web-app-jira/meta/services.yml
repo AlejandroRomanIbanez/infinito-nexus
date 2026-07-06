@@ -29,7 +29,7 @@ postgres:
   shared: "{{ 'svc-db-postgres' in group_names }}"
 jira:
   image: atlassian/jira-software
-  version: latest
+  version: 11.3.7
   name: jira
   min_storage: 20GB
   cpus: "2.0"

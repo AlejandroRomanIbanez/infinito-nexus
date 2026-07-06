@@ -6,7 +6,7 @@ ollama:
   backup:
     no_stop_required: true
   image: ollama/ollama
-  version: latest
+  version: 0.31.1
   name: ollama
   min_storage: 20GB
   cpus: "4.0"

@@ -22,7 +22,7 @@ lam:
   shared: true
   provides: lam
   image: ghcr.io/ldapaccountmanager/lam
-  version: latest
+  version: "9.6"
   min_storage: 1GB
   ports:
     local:

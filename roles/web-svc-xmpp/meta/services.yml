@@ -18,7 +18,7 @@ ldap:
   shared: "{{ 'svc-db-openldap' in group_names }}"
 xmpp:
   image: ejabberd/ecs
-  version: latest
+  version: "26.04"
   name: ejabberd
   ports:
     local:

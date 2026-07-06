@@ -18,7 +18,7 @@ collabora:
   enabled: true
   shared: true
   image: collabora/code
-  version: latest
+  version: 26.04.2.1.1
   name: collabora
   min_storage: 10GB
   cpus: 2

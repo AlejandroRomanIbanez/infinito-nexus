@@ -72,8 +72,7 @@ redis:
   backup:
     disabled: true
   enabled: true
-  # Swarm ignores per-service dns: and ipv4_address, and mailu is manager-pinned,
-  # so the central redis overlay only adds VIP pressure: use the embedded sidecar.
+  # Exception: central redis overlay adds VIP pressure on manager-pinned mailu; embedded redis avoids it.
   shared: "{{ ('svc-db-redis' in group_names) and (DEPLOYMENT_MODE == 'compose') }}"
   cpus: "0.2"
   mem_reservation: 256m
@@ -141,7 +140,7 @@ antivirus:
   enabled: true
   shared: false
   image: clamav/clamav-debian
-  version: latest
+  version: 1.5.3
   cpus: "0.6"
   mem_reservation: 2g
   mem_limit: 3g

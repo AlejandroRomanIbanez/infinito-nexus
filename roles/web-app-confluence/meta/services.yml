@@ -29,7 +29,7 @@ postgres:
   shared: "{{ 'svc-db-postgres' in group_names }}"
 confluence:
   image: atlassian/confluence
-  version: latest
+  version: 10.2.13
   name: confluence
   min_storage: 20GB
   cpus: "3.0"

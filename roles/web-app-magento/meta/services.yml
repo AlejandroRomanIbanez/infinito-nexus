@@ -40,7 +40,7 @@ php:
   pids_limit: 512
 nginx:
   image: markoshust/magento-nginx
-  version: latest
+  version: "1.28"
   name: magento-nginx
   backup:
     no_stop_required: true
@@ -74,7 +74,7 @@ search:
       http: 9200
   enabled: true
   image: opensearchproject/opensearch
-  version: latest
+  version: 2.19.6
   name: magento-opensearch
   min_storage: 10GB
   cpus: "1.0"

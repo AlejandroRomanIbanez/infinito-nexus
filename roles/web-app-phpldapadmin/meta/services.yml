@@ -17,7 +17,7 @@ matomo:
   shared: "{{ 'web-app-matomo' in group_names }}"
 phpldapadmin:
   image: phpldapadmin/phpldapadmin
-  version: latest
+  version: 2.3.11
   min_storage: 1GB
   ports:
     local:

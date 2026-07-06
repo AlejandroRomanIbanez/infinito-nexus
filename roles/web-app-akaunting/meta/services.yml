@@ -39,7 +39,7 @@ akaunting:
   backup:
     no_stop_required: true
   image: docker.io/akaunting/akaunting
-  version: latest
+  version: 3.1.21
   repository: https://github.com/akaunting/docker.git
   ref: master
   name: akaunting

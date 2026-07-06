@@ -26,7 +26,7 @@ onlyoffice:
   enabled: true
   shared: true
   image: onlyoffice/documentserver
-  version: latest
+  version: 9.4.0
   name: onlyoffice
   min_storage: 20GB
   cpus: 2
