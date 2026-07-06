@@ -15,6 +15,8 @@ TAIGA_PLUGINS_ENABLED: "{{ TAIGA_OIDC_ENABLED | bool or TAIGA_LDAP_ENABLED | boo
 TAIGA_CONFIG_APPEND_MARKER: "INFINITO_TAIGA_AUTH_CONFIG"
 TAIGA_OIDC_PLUGIN_REPOSITORY: "{{ lookup('config', application_id, 'services.sso.oidc.repository') }}"
 TAIGA_OIDC_PLUGIN_REF: "{{ lookup('config', application_id, 'services.sso.oidc.ref') }}"
+TAIGA_OIDC_FRONTEND_BUILDER_IMAGE: "{{ lookup('config', application_id, 'services.front.image') }}"
+TAIGA_OIDC_FRONTEND_BUILDER_VERSION: "{{ lookup('config', application_id, 'services.front.version') }}"
 TAIGA_OIDC_BACKEND_PIP_SPEC: "{{ 'git+' ~ TAIGA_OIDC_PLUGIN_REPOSITORY ~ '@' ~ TAIGA_OIDC_PLUGIN_REF ~ '#egg=taiga-contrib-oidc-auth&subdirectory=back' }}"
 TAIGA_OIDC_FRONTEND_BUILD_COMMAND: "./node_modules/.bin/gulp build"
 TAIGA_LDAP_PIP_SPEC: "taiga-contrib-ldap-auth-ext==0.5.0"
