@@ -2,7 +2,8 @@
 set -euo pipefail
 
 API="${JELLYFIN_API}"
-CT="${JELLYFIN_NAME}"
+CT="${JELLYFIN_CT}"
+PHASE="${JELLYFIN_PHASE}"
 CLIENT_HDR='X-Emby-Authorization: MediaBrowser Client="infinito", Device="ansible", DeviceId="infinito-deploy", Version="1.0.0"'
 
 log() { echo "[jellyfin-auth] $*"; }
@@ -75,6 +76,8 @@ write_config() {
   container exec -i "${CT}" sh -c "mkdir -p /config/plugins/configurations && cat > /config/plugins/configurations/$1"
 }
 
+if [ "${PHASE}" = "install" ]; then
+
 wait_up
 seed_admin_and_get_token || log "WARN: admin token unavailable after wizard retries; SSO manifest + login-button branding will be skipped"
 
@@ -88,8 +91,18 @@ fi
 [ -n "${TOKEN:-}" ] && [ "${JELLYFIN_SSO_ENABLED}" = "true" ] && install_plugin "SSO%20Authentication"
 
 sleep 10
-container restart "${CT}" >/dev/null
+log "plugin install phase complete (restart is driven by the calling task)"
+exit 0
+
+fi
+
+if [ "${PHASE}" != "configure" ]; then
+  log "ERROR: unknown JELLYFIN_PHASE '${PHASE}' (expected install|configure)"
+  exit 1
+fi
+
 wait_up
+seed_admin_and_get_token || log "WARN: admin token unavailable; SSO configuration + branding will be skipped"
 
 if [ "${JELLYFIN_LDAP_ENABLED}" = "true" ]; then
   write_config "LDAP-Auth.xml" <<XML
@@ -166,5 +179,4 @@ if [ -n "${TOKEN:-}" ] && [ "${JELLYFIN_SSO_ENABLED}" = "true" ]; then
   fi
 fi
 
-container restart "${CT}" >/dev/null
-log "auth provisioning complete"
+log "auth provisioning complete (final restart is driven by the calling task)"
