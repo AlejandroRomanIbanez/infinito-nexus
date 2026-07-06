@@ -33,6 +33,7 @@ from utils.docker.image.ref import (
     MCR_REGISTRY,
     split_registry_and_name,
 )
+from utils.docker.registry import fetch_registry_tags
 from utils.roles.mapping import ROLE_FILE_META_SERVICES
 from utils.update.base import (
     is_semver,
@@ -165,6 +166,11 @@ def is_mcr(image: str) -> bool:
     return parsed is not None and parsed[0] == MCR_REGISTRY
 
 
+def is_supported_registry(image: str) -> bool:
+    """Whether *image* resolves to a registry the generic v2 client can query."""
+    return split_registry_and_name(image) is not None
+
+
 def mcr_repo(image: str) -> str:
     parsed = split_registry_and_name(image)
     if parsed is None or parsed[0] != MCR_REGISTRY:
@@ -176,10 +182,6 @@ _LINK_NEXT_RE = re.compile(r'<([^>]+)>\s*;\s*rel="next"', re.IGNORECASE)
 
 
 def fetch_mcr_tags(image: str, max_pages: int = 10) -> list[str]:
-    # MCR speaks the standard Docker Registry V2 API (anonymous for public
-    # repos). Tag pages are returned in 100-tag chunks; the next page
-    # location ships via the standard RFC 5988 `Link: <…>; rel="next"`
-    # response header.
     name = mcr_repo(image)
     base = f"https://{MCR_REGISTRY}"
     url = f"{base}/v2/{quote(name, safe='/')}/tags/list?n=100"
@@ -283,12 +285,10 @@ def find_outdated_updates(repo_root: Path) -> list[DockerImageVersionUpdate]:
             return image, fetch_ghcr_tags(image)
         if is_mcr(image):
             return image, fetch_mcr_tags(image)
-        return image, []
+        return image, fetch_registry_tags(image)
 
     unique_images = {
-        entry.image
-        for entry in entries
-        if is_dockerhub(entry.image) or is_ghcr(entry.image) or is_mcr(entry.image)
+        entry.image for entry in entries if is_supported_registry(entry.image)
     }
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=resolve_max_fetch_workers()
