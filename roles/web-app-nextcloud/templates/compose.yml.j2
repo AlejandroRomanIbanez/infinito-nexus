@@ -1,4 +1,5 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
+  {% set container_healthcheck_start_period = '10m' %}
 
   {% set service_name = NEXTCLOUD_PROXY_SERVICE %}
   {{ service_name }}:
@@ -31,6 +32,7 @@
       interval: 1m
       timeout: 10s
       retries: 3
+      start_period: {{ container_healthcheck_start_period }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
@@ -100,6 +102,7 @@
       interval: 1m
       timeout: 10s
       retries: 3
+      start_period: {{ container_healthcheck_start_period }}
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
