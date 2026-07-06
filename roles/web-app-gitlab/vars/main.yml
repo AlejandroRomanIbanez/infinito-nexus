@@ -41,7 +41,8 @@ GITLAB_OMNIBUS_BASE:
   - "redis['enable']=false"
   - "gitlab_rails['redis_host']='{{ lookup('engine', 'redis', application_id, 'host') }}'"
   - "gitlab_rails['redis_port']='{{ lookup('engine', 'redis', application_id, 'port') }}'"
-  - "gitlab_rails['redis_password']={{ lookup('engine', 'redis', application_id, 'password') | ruby_dq }}"
+  - "gitlab_rails['redis_password']={{ (lookup('engine', 'redis', application_id, 'password') | ruby_dq) if lookup('engine', 'redis', application_id, 'password')
+    else 'nil' }}"
 
 GITLAB_OMNIBUS_OIDC:
   - ""
@@ -78,7 +79,6 @@ GITLAB_OMNIBUS_SMTP:
   - "gitlab_rails['gitlab_email_from']={{ GITLAB_EMAIL['from'] | ruby_dq }}"
   - "gitlab_rails['gitlab_email_reply_to']={{ GITLAB_EMAIL['from'] | ruby_dq }}"
 
-## Object storage (consolidated, S3-compatible — SeaweedFS)
 GITLAB_OBJSTORE_ENABLED: "{{ lookup('objstore', application_id, 'enabled') | bool }}"
 GITLAB_OBJSTORE_BUCKET: "{{ lookup('objstore', application_id, 'bucket') }}"
 GITLAB_OBJSTORE_ACCESS_KEY: "{{ lookup('objstore', application_id, 'access_key') }}"
