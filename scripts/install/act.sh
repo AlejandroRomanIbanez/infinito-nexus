@@ -7,7 +7,7 @@ set -euo pipefail
 mode="${1:-install}"
 
 if [ "${mode}" != "update" ] && command -v act >/dev/null 2>&1; then
-  exit 0
+	exit 0
 fi
 
 bin_dir="${ACT_INSTALL_DIR:-/usr/local/bin}"
@@ -15,23 +15,23 @@ sudo=""
 [ -w "${bin_dir}" ] || sudo="sudo"
 
 case "$(uname -m)" in
-  x86_64) asset="act_Linux_x86_64.tar.gz" ;;
-  aarch64 | arm64) asset="act_Linux_arm64.tar.gz" ;;
-  *)
-    echo "[install-act] unsupported architecture: $(uname -m)" >&2
-    exit 1
-    ;;
+x86_64) asset="act_Linux_x86_64.tar.gz" ;;
+aarch64 | arm64) asset="act_Linux_arm64.tar.gz" ;;
+*)
+	echo "[install-act] unsupported architecture: $(uname -m)" >&2
+	exit 1
+	;;
 esac
 
 fetch() {
-  if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$1"
-  elif command -v wget >/dev/null 2>&1; then
-    wget -qO- "$1"
-  else
-    echo "[install-act] curl or wget is required to install act" >&2
-    exit 1
-  fi
+	if command -v curl >/dev/null 2>&1; then
+		curl -fsSL "$1"
+	elif command -v wget >/dev/null 2>&1; then
+		wget -qO- "$1"
+	else
+		echo "[install-act] curl or wget is required to install act" >&2
+		exit 1
+	fi
 }
 
 tmp="$(mktemp -d)"
