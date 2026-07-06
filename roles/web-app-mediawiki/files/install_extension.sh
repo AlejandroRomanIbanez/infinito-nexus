@@ -1,25 +1,18 @@
 #!/usr/bin/env bash
 #
 # Install a MediaWiki extension into the running container, idempotent.
-# Runs ON THE HOST; targets the container via `container exec` / `container cp`.
+# Runs ON THE HOSTING NODE (delegated); targets the local container via
+# `container exec` / `container cp`.
 #
 # Required env, supplied by the calling Ansible task:
 #   EXT_NAME                   extension name (subdir under extensions/)
-#   EXT_TARBALL                host-side path to the downloaded .tar.gz
+#   EXT_TARBALL                node-side path to the downloaded .tar.gz
 #   MEDIAWIKI_HTML_DIR         target directory inside the container
 #   MEDIAWIKI_USER             unix user to own extracted files inside the container
-#   BARE_NAME                  bare compose container name
-#   STACK                      swarm stack name
-#   SERVICE_KEY                swarm service key
-#   DEPLOYMENT_MODE            'swarm' or 'compose'
-#   BIN_RESOLVE_CONTAINER_ID   path to resolver helper (swarm only)
+#   MW_CID                     resolved container id (resolve_host_cid), local to this node
 set -euo pipefail
 
-if [ "${DEPLOYMENT_MODE:-compose}" = "swarm" ]; then
-  ADDRESS="$("$BIN_RESOLVE_CONTAINER_ID" "$STACK" "$SERVICE_KEY")"
-else
-  ADDRESS="$BARE_NAME"
-fi
+ADDRESS="${MW_CID:?MW_CID env var (resolved container id) required}"
 
 DST="${MEDIAWIKI_HTML_DIR}/extensions/${EXT_NAME}"
 

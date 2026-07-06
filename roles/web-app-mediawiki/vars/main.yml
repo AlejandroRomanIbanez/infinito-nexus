@@ -19,7 +19,6 @@ MEDIAWIKI_VERSION: "{{ lookup('config', application_id, 'services.' ~ entity_nam
 MEDIAWIKI_IMAGE: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.image') }}"
 MEDIAWIKI_CUSTOM_IMAGE: "{{ entity_name }}_custom"
 MEDIAWIKI_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.name') }}"
-MEDIAWIKI_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, entity_name) }}"
 MEDIAWIKI_VOLUME_IMAGES: "{{ lookup('volume', application_id, 'images').name }}"
 MEDIAWIKI_VOLUME_EXTENSIONS: "{{ lookup('volume', application_id, 'extensions').name }}"
 MEDIAWIKI_USER: "www-data"

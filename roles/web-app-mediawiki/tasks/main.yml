@@ -11,6 +11,14 @@
 - name: "🐳 Finalize compose deploy for '{{ application_id }}'"
   include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/finalize.yml') }}"
 
+- name: "🔍 Resolve {{ application_id }} hosting node + container id"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
+  vars:
+    resolve_service_key: mediawiki
+    resolve_output_prefix: MEDIAWIKI
+    resolve_compose_cid: "{{ MEDIAWIKI_CONTAINER }}"
+  when: IS_STACK_HOST | bool
+
 - name: "📂 Load extensions procedures for '{{ application_id }}'"
   include_tasks: "02_extensions.yml"
   when:
@@ -19,11 +27,13 @@
 
 - name: "📂 Load update procedures for '{{ application_id }}'"
   include_tasks: 03_install.yml
-  when: >-
-    (_role_templates_render.changed | default(false)) or
-    (_install_results.changed | default(false)) or
-    (_ext_composer.changed | default(false)) or
-    (_vendor.changed | default(false))
+  when:
+    - IS_STACK_HOST | bool
+    - >-
+      (_role_templates_render.changed | default(false)) or
+      (_install_results.changed | default(false)) or
+      (_ext_composer.changed | default(false)) or
+      (_vendor.changed | default(false))
 
 - name: "📂 Load admin setup procedures for '{{ application_id }}'"
   include_tasks: 04_admin.yml

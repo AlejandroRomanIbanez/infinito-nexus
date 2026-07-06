@@ -8,13 +8,8 @@
 # Usage:
 #   composer_install_extension.sh MW_USER HTML_DIR EXT_NAME EXT_BRANCH
 #
-# Required env, supplied by the calling Ansible task (mode-aware container
-# addressing, identical to install_extension.sh):
-#   BARE_NAME                  bare compose container name
-#   STACK                      swarm stack name
-#   SERVICE_KEY                swarm service key
-#   DEPLOYMENT_MODE            'swarm' or 'compose'
-#   BIN_RESOLVE_CONTAINER_ID   path to resolver helper (swarm only)
+# Required env, supplied by the calling Ansible task:
+#   MW_CID                     resolved container id (resolve_host_cid), local to this node
 set -euo pipefail
 
 MW_USER="$1"
@@ -22,11 +17,7 @@ HTML_DIR="$2"
 EXT_NAME="$3"
 EXT_BRANCH="$4"
 
-if [ "${DEPLOYMENT_MODE:-compose}" = "swarm" ]; then
-  CONTAINER="$("$BIN_RESOLVE_CONTAINER_ID" "$STACK" "$SERVICE_KEY")"
-else
-  CONTAINER="$BARE_NAME"
-fi
+CONTAINER="${MW_CID:?MW_CID env var (resolved container id) required}"
 
 container exec -u "$MW_USER" "$CONTAINER" bash -lc "
     set -e
