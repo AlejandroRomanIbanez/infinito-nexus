@@ -398,6 +398,7 @@ def get_merged_users(
         _cache_key(resolved_roles_dir),
         _stable_variables_signature(source_variables),
         _tokens_file_signature(tokens_file),
+        templar is not None,
     )
     cached = _MERGED_USERS_CACHE.get(cache_key)
     if cached is not None:
