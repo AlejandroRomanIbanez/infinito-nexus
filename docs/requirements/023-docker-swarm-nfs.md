@@ -30,7 +30,7 @@ The implementation MUST keep a clean abstraction line between the render backend
 - [x] Node labels declared for a host in inventory are applied to the joining node (`docker node update --label-add`).
 - [x] The role exposes stack-management primitives (`deploy`, `update`, `remove`) consumable by the deploy pipeline of any role rendering a swarm stack.
 - [x] The role renders a valid `docker-stack.yml` for any role whose target host is in `svc-swarm-node`, derived from the same per-role inputs as today's `docker-compose.yml`.
-- [x] `deploy.replicas` defaults to `len(groups[application_id])` so the swarm scheduler is told how many replicas the inventory declares. A per-role `service_replicas` override stays available for cases where the operator wants a different replica count than the host count.
+- [x] `deploy.replicas` defaults to `len(groups[application_id])` so the swarm scheduler is told how many replicas the inventory declares. A per-service `replicas` field in `meta/services.yml` overrides that for cases where the operator wants a different replica count than the host count.
 - [x] `deploy.update_config` is taken from a per-role variable with documented defaults `parallelism: 1`, `delay: 10s`.
 - [x] Tasks are scheduled freely across the role's declared hosts under v1; no per-role `deploy.placement.constraints` is rendered by default. Pinning is reintroduced only via NFS-driver vs local-volume choice (see [Docker volume integration](#docker-volume-integration)).
 - [x] The stack is rendered with **one `docker stack` per role** (consistent with today's one-compose-project-per-role model). Granular `docker stack deploy / update / rm` operations per role MUST be possible. A single global stack across all Infinito services is explicitly rejected.

@@ -40,6 +40,7 @@ mariadb:
   shared: "{{ 'svc-db-mariadb' in group_names }}"
 # nocheck: playwright-service-flag — self-provider
 pixelfed:
+  replicas: 1
   bond: 1
   shared: true
   enabled: true

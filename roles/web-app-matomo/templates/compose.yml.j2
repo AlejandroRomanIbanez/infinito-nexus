@@ -21,7 +21,6 @@
   {% set service_name = MATOMO_BOOTSTRAP_SERVICE %}
   {% set docker_restart_policy = 'no' %}
   {% set docker_compose_env = MATOMO_BOOTSTRAP_ENV_FILE %}
-  {% set service_replicas = 0 if DEPLOYMENT_MODE == 'swarm' else 1 %}
   {{ service_name }}:
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {% if DEPLOYMENT_MODE == 'compose' %}

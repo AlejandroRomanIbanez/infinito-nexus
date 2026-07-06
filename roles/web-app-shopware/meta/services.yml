@@ -43,6 +43,7 @@ init:
   min_storage: 1GB
   pids_limit: 256
 shopware:
+  replicas: 1
   image: composer
   version: "2.10"
   min_storage: 20GB

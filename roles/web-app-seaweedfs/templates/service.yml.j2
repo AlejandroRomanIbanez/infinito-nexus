@@ -22,7 +22,6 @@
 {{ include_resource_for('seaweedfs') }}
 {% endif %}
 {% set service_name = 'seaweedfs' %}
-{% set service_replicas = 1 %}
 {% include 'roles/sys-svc-container/templates/deploy.yml.j2' %}
 {% endif %}
 {{ "\n" }}

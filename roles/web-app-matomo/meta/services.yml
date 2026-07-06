@@ -44,6 +44,7 @@ matomo:
     service_key: matomo
   lifecycle: beta
 bootstrap:
+  replicas: 0
   image: ghcr.io/kevinveenbirkenbach/matomo-bootstrap
   version: 1.1.13
   name: matomo-bootstrap

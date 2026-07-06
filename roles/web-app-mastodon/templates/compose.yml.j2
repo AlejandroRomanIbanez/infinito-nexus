@@ -1,8 +1,7 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
-{% macro mastodon_service(name, container, image_key, command, ports_key=none, hc_port=none, hc_path=none, hc_test=none, with_volumes=false, after_migrate=true, replicas=none, restart=none) -%}
+{% macro mastodon_service(name, container, image_key, command, ports_key=none, hc_port=none, hc_path=none, hc_test=none, with_volumes=false, after_migrate=true, restart=none) -%}
   {% set service_name = name %}
-{% if replicas is not none %}{% set service_replicas = replicas %}{% endif %}
 {% if restart is not none %}{% set docker_restart_policy = restart %}{% endif %}
 {# nocheck: container-port-set-unused #}
 {% if hc_port is not none %}{% set container_port = hc_port %}{% endif %}
@@ -41,7 +40,7 @@
 {{ mastodon_service(MASTODON_SERVICE_NAME, MASTODON_CONTAINER, 'mastodon', 'bash -c "rm -f /mastodon/tmp/pids/server.pid; bundle exec rails s -p 3000"', ports_key='http', hc_port=3000, hc_path='health', with_volumes=true) }}
 {{ mastodon_service(MASTODON_STREAMING_SERVICE_NAME, MASTODON_STREAMING_CONTAINER, 'streaming', 'node ./streaming', ports_key='websocket', hc_port=4000, hc_path='api/v1/streaming/health') }}
 {{ mastodon_service(MASTODON_SIDEKIQ_SERVICE_NAME, MASTODON_SIDEKIQ_CONTAINER, 'mastodon', 'bundle exec sidekiq', hc_test='["CMD-SHELL", "pgrep -f sidekiq || exit 1"]', with_volumes=true) }}
-{{ mastodon_service(MASTODON_MIGRATE_SERVICE_NAME, MASTODON_MIGRATE_CONTAINER, 'mastodon', 'bundle exec rails db:prepare', after_migrate=false, replicas=1, restart='on-failure') }}
+{{ mastodon_service(MASTODON_MIGRATE_SERVICE_NAME, MASTODON_MIGRATE_CONTAINER, 'mastodon', 'bundle exec rails db:prepare', after_migrate=false, restart='on-failure') }}
 
 {{ lookup('compose_volumes', application_id) }}
 {{ lookup('compose_networks') }}

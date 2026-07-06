@@ -53,7 +53,6 @@
     {{ lookup('container_networks') | indent(4) }}
 
   {% set service_name = 'websocket' %}
-  {% set service_replicas = 1 %}
   {{ service_name }}:
     {{ lookup('container_image', application_id, 'erpnext') }}
     {{ lookup('compose_only', 'container_name', ERPNEXT_WEBSOCKET_CONTAINER) }}

@@ -36,7 +36,7 @@ The rules this test enforces, distilled from that skeleton:
 3. **set-service-name** - every ``{{ service_name }}:`` key is preceded by
    its own ``{% set service_name = ... %}`` since the previous service.
 4. **vars-before-key** - all per-service knobs (``container_port``,
-   ``service_replicas``, ``container_healthcheck``,
+   ``container_healthcheck``,
    ``container_healthcheck_start_period``, ``docker_restart_policy``,
    ``service_update_order``, ``docker_compose_env``) are set ABOVE the
    ``{{ service_name }}:`` key, never inside the service body.
@@ -179,7 +179,6 @@ _SERVICE_SCOPED_VARS = frozenset(
     {
         "service_name",
         "container_port",
-        "service_replicas",
         "container_healthcheck",
         "container_healthcheck_start_period",
         "docker_restart_policy",

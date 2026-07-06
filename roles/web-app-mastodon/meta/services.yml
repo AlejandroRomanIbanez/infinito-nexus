@@ -79,6 +79,7 @@ sidekiq:
   mem_limit: 1.5g
   pids_limit: 512
 migrate:
+  replicas: 1
   name: mastodon-migrate
   cpus: "1.0"
   mem_reservation: 1g

@@ -1,5 +1,4 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
-  {% set service_replicas = 1 %}
   {% set container_healthcheck_start_period = '15m' %}
 
   {% set service_name = SUITECRM_SERVICE %}

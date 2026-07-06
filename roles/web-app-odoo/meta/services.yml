@@ -31,6 +31,7 @@ postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 odoo:
+  replicas: 1
   image: odoo
   version: "19.0"
   name: odoo

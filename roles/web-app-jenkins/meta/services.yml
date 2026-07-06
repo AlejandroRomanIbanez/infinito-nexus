@@ -25,6 +25,7 @@ ldap:
   enabled: "{{ 'svc-db-openldap' in group_names }}"
   shared: "{{ 'svc-db-openldap' in group_names }}"
 jenkins:
+  replicas: 1
   image: jenkins/jenkins
   version: lts
   name: jenkins

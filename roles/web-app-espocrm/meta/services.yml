@@ -30,6 +30,7 @@ mariadb:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
 espocrm:
+  replicas: 1
   image: espocrm/espocrm
   version: "9.3.10"
   name: espocrm

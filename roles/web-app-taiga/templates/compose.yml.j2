@@ -159,7 +159,6 @@ build:
     {{ lookup('depends_on', [TAIGA_FRONT_SERVICE, TAIGA_SERVICE, TAIGA_EVENTS_SERVICE]) }}
 
   {% set service_name = TAIGA_MANAGER_SERVICE %}
-  {% set service_replicas = 1 %}
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', TAIGA_MANAGER_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}

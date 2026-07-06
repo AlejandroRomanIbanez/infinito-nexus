@@ -87,12 +87,14 @@ frontend:
   mem_limit: 512m
   pids_limit: 512
 websocket:
+  replicas: 1
   name: erpnext-websocket
   cpus: "0.5"
   mem_reservation: 128m
   mem_limit: 512m
   pids_limit: 512
 scheduler:
+  replicas: 1
   name: erpnext-scheduler
   cpus: "0.5"
   mem_reservation: 256m
@@ -111,6 +113,7 @@ queue-long:
   mem_limit: 2g
   pids_limit: 512
 configurator:
+  replicas: 1
   name: erpnext-configurator
   cpus: "0.5"
   mem_reservation: 128m
