@@ -11,7 +11,7 @@
       - container
       - exec
       - -i
-      - "{{ WORDPRESS_DISCOURSE_CONTAINER_ADDRESS }}"
+      - "{{ WORDPRESS_DISCOURSE_CONTAINER_ADDRESS }}" # nocheck: container-exec-resolver  discourse is a launcher-managed container named literally in both modes
       - bash
       - -lc
       - "cd /var/www/discourse && script/rails runner -"

@@ -18,7 +18,7 @@
       - "STORAGE_NAME={{ nextcloud_op_storage_name }}"
       - -e
       - "NC_HAS_OP_SECRET={{ nextcloud_op_client_secret_current.stdout | trim }}"
-      - "{{ nextcloud_op_web_container }}"
+      - "{{ nextcloud_op_web_container }}" # nocheck: container-exec-resolver  runs only behind the bare-name partner probe gate, compose co-location
       - bash
       - -lc
       - "cd /app && bundle exec rails runner -"
@@ -102,7 +102,7 @@
           - "NC_OAUTH_CLIENT_ID={{ nextcloud_op_ncclient.clientId }}"
           - -e
           - "NC_OAUTH_CLIENT_SECRET={{ nextcloud_op_ncclient.clientSecret }}"
-          - "{{ nextcloud_op_web_container }}"
+          - "{{ nextcloud_op_web_container }}" # nocheck: container-exec-resolver  runs only behind the bare-name partner probe gate, compose co-location
           - bash
           - -lc
           - "cd /app && bundle exec rails runner -"

@@ -11,7 +11,7 @@
       - "NC_REDIRECT_PATH=/apps/integration_gitlab/oauth-redirect"
       - -e
       - "NC_HAS_SECRET={{ nextcloud_gl_client_secret_current.stdout | trim }}"
-      - "{{ nextcloud_gl_container }}"
+      - "{{ nextcloud_gl_container }}" # nocheck: container-exec-resolver  runs only behind the bare-name partner probe gate, compose co-location
       - gitlab-rails
       - runner
       - "-"
@@ -62,7 +62,7 @@
       - "NC_APP_ID=integration_gitlab"
       - -e
       - "NC_ENC_B64={{ {'client_id': nextcloud_gl_client_id, 'client_secret': nextcloud_gl_client_secret} | to_json | b64encode }}"
-      - "{{ NEXTCLOUD_CONTAINER }}"
+      - "{{ NEXTCLOUD_CONTAINER }}" # nocheck: container-exec-resolver  runs only behind the bare-name partner probe gate, compose co-location
       - php
     stdin: "{{ lookup('file', 'set_encrypted_appconfig.php') }}"
   register: nextcloud_gl_enc_set

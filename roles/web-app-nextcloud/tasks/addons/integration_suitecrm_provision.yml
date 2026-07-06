@@ -16,7 +16,7 @@
       - "NC_CLIENT_NAME={{ nextcloud_crm_client_name }}"
       - -e
       - "NC_CLIENT_SECRET={{ nextcloud_crm_client_secret }}"
-      - "{{ nextcloud_crm_container }}"
+      - "{{ nextcloud_crm_container }}" # nocheck: container-exec-resolver  runs only behind the bare-name partner probe gate, compose co-location
       - php
       - -d
       - error_reporting=E_ERROR

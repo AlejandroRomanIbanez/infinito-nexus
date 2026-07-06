@@ -10,7 +10,7 @@
     argv:
       - container
       - exec
-      - "{{ PIXELFED_LOCAL_CID }}"
+      - "{{ PIXELFED_LOCAL_CID }}" # nocheck: container-exec-resolver  PIXELFED_LOCAL_CID resolved at delegate_to runtime
       - sh
       - -lc
       - 'ps -ef | grep -v grep | grep -q "apache2 -DFOREGROUND"'
@@ -26,7 +26,7 @@
     argv:
       - container
       - exec
-      - "{{ PIXELFED_LOCAL_CID }}"
+      - "{{ PIXELFED_LOCAL_CID }}" # nocheck: container-exec-resolver  PIXELFED_LOCAL_CID resolved at delegate_to runtime
       - sh
       - -lc
       - test -e /var/www/storage/.docker.init
@@ -66,9 +66,6 @@
 
 - name: "🚚 Choose Pixelfed migration strategy"
   ansible.builtin.set_fact:
-    # Preserve the "no marker + no users" reset path. It is the safety net for
-    # broken first boots where Pixelfed partially initialized and would
-    # otherwise keep failing on later deploys.
     pixelfed_bootstrap_requires_reset: >-
       {{
         (pixelfed_bootstrap_marker_exists.rc | default(1) | int) != 0
@@ -104,7 +101,7 @@
       - exec
       - -u
       - "{{ PIXELFED_APP_USER }}"
-      - "{{ PIXELFED_LOCAL_CID }}"
+      - "{{ PIXELFED_LOCAL_CID }}" # nocheck: container-exec-resolver  PIXELFED_LOCAL_CID resolved at delegate_to runtime
       - sh
       - -lc
       - |
@@ -125,7 +122,7 @@
       - exec
       - -u
       - "{{ PIXELFED_APP_USER }}"
-      - "{{ PIXELFED_LOCAL_CID }}"
+      - "{{ PIXELFED_LOCAL_CID }}" # nocheck: container-exec-resolver  PIXELFED_LOCAL_CID resolved at delegate_to runtime
       - sh
       - -lc
       - |
@@ -146,7 +143,7 @@
       - exec
       - -u
       - "{{ PIXELFED_APP_USER }}"
-      - "{{ PIXELFED_LOCAL_CID }}"
+      - "{{ PIXELFED_LOCAL_CID }}" # nocheck: container-exec-resolver  PIXELFED_LOCAL_CID resolved at delegate_to runtime
       - php
       - artisan
       - instance:actor
@@ -157,8 +154,6 @@
   until: pixelfed_instance_actor.rc == 0
   delegate_to: "{{ PIXELFED_HOST_NODE }}"
 
-# The worker uses this marker to skip its own init path. Do not move this above
-# the actor/storage setup or the worker can start against an incomplete app.
 - name: "🏷️ Mark Pixelfed bootstrap as complete for the worker container"
   ansible.builtin.command:
     argv:
@@ -166,7 +161,7 @@
       - exec
       - -u
       - "{{ PIXELFED_APP_USER }}"
-      - "{{ PIXELFED_LOCAL_CID }}"
+      - "{{ PIXELFED_LOCAL_CID }}" # nocheck: container-exec-resolver  PIXELFED_LOCAL_CID resolved at delegate_to runtime
       - sh
       - -lc
       - |

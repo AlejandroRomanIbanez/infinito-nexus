@@ -1,6 +1,8 @@
 """Enforce that every ``container exec`` / ``docker exec`` call resolves
 the target via the ``container_address`` lookup (directly or through a
-constant set with it).
+constant set with it). Covers the inline shell-string form and the
+``command: argv: [container, exec, ...]`` list form, where the two
+verbs sit on separate lines and evade any same-line regex.
 
 Rationale
 =========
@@ -17,7 +19,9 @@ Per-line opt-out
 ================
 Add ``# nocheck: container-exec-resolver`` on the same line as the
 ``container exec`` / ``docker exec`` call OR on the immediately
-preceding non-empty line. Legitimate uses include: ``--user`` setup
+preceding non-empty line. For the ``argv:`` list form, put the marker
+on the list item that holds the container target.
+Legitimate uses include: ``--user`` setup
 where the container is provided by an upstream tool (rare), and
 diagnostic scripts that already accept a resolved container ID as
 parameter (the resolution happened earlier).
@@ -29,6 +33,8 @@ import re
 import unittest
 from pathlib import Path
 
+import yaml
+
 from utils.annotations.suppress import is_suppressed_at
 from utils.cache.files import iter_project_files_with_content
 from utils.cache.yaml import load_yaml_any
@@ -37,17 +43,8 @@ from . import PROJECT_ROOT
 
 _RULE = "container-exec-resolver"
 
-# Match `(container|docker) exec [optional flags...] <name-or-jinja>` where
-# <name-or-jinja> is the first non-flag token. We do NOT try to be a full
-# shell parser; this regex captures the candidate token so the resolver
-# can inspect it.
 _EXEC_PROLOGUE = re.compile(r"\b(?:container|docker)\s+exec\b")
 
-# Flags known to take a separate (non-`=`) value. Any other `-x` token
-# is treated as boolean. Errs on the side of MORE targets reported as
-# unresolved -- false positives are caught by the unit tests and noticed
-# in dev; false NEGATIVES would let the swarm-incompatible pattern slip
-# through.
 _VALUED_FLAGS = frozenset(
     {
         "-u",
@@ -61,16 +58,8 @@ _VALUED_FLAGS = frozenset(
     }
 )
 
-# A Jinja `{{ <varname> }}` expression. We extract the inner expression
-# so the resolver can decide whether it's an approved variable name or
-# a direct lookup call.
 _JINJA_EXPR = re.compile(r"\{\{\s*(?P<expr>[^}]+?)\s*\}\}")
 
-# Direct lookup call signatures that emit swarm-safe container addresses.
-# Matches ``lookup('container_address', ...)`` directly, or the database
-# lookup's ``'address'`` want-path (e.g. ``lookup('database', app,
-# 'address')``) which the database plugin renders through the same
-# resolver subshell as container_address.
 _DIRECT_LOOKUP = re.compile(
     r"lookup\(\s*['\"]container_address['\"]"
     r"|lookup\(\s*['\"]database['\"][^)]*['\"]address['\"]"
@@ -176,19 +165,15 @@ def _extract_target(rest: str) -> str | None:
             idx += 1
         if idx >= len(rest):
             return None
-        # Line continuation backslash at end of line: stop -- the real
-        # target is on the next physical line.
         if rest[idx] == "\\" and (idx + 1 >= len(rest) or rest[idx + 1].isspace()):
             return None
         if rest[idx] == "-":
-            # Parse a flag. `-x`, `--xy`, `--xy=value` all supported.
             j = idx + 1
             while j < len(rest) and not rest[j].isspace() and rest[j] != "=":
                 j += 1
             flag = rest[idx:j]
             idx = j
             if idx < len(rest) and rest[idx] == "=":
-                # `--flag=value`: consume the inline value.
                 idx += 1
                 if rest[idx : idx + 2] == "{{":
                     end = rest.find("}}", idx)
@@ -199,7 +184,6 @@ def _extract_target(rest: str) -> str | None:
             elif flag in _VALUED_FLAGS:
                 idx = _consume_value(rest, idx)
             continue
-        # First non-flag token = target.
         if rest[idx : idx + 2] == "{{":
             end = rest.find("}}", idx)
             return rest[idx : end + 2] if end >= 0 else None
@@ -212,6 +196,86 @@ def _extract_target(rest: str) -> str | None:
             j += 1
         return rest[idx:j]
     return None
+
+
+_ARGV_EXEC_BINARIES = frozenset({"container", "docker"})
+
+
+def _collect_argv_item_lists(node: yaml.Node, out: list[list[tuple[int, str]]]) -> None:
+    """Append the ``(line_no, value)`` scalar items of every ``argv:``
+    sequence beneath *node*. Walks the whole node tree so tasks nested
+    in ``block``/``rescue``/``always`` are covered."""
+    if isinstance(node, yaml.SequenceNode):
+        for item in node.value:
+            _collect_argv_item_lists(item, out)
+        return
+    if not isinstance(node, yaml.MappingNode):
+        return
+    for key, value in node.value:
+        if (
+            isinstance(key, yaml.ScalarNode)
+            and key.value == "argv"
+            and isinstance(value, yaml.SequenceNode)
+        ):
+            out.append(
+                [
+                    (element.start_mark.line + 1, element.value)
+                    for element in value.value
+                    if isinstance(element, yaml.ScalarNode)
+                ]
+            )
+        else:
+            _collect_argv_item_lists(value, out)
+
+
+def _argv_exec_target(items: list[tuple[int, str]]) -> tuple[int, str] | None:
+    """Return ``(line_no, token)`` of the container target when *items*
+    spell ``(container|docker) exec [flags...] <target> ...``, else None."""
+    if len(items) < 3:
+        return None
+    if items[0][1] not in _ARGV_EXEC_BINARIES or items[1][1] != "exec":
+        return None
+    idx = 2
+    while idx < len(items):
+        value = items[idx][1]
+        if value.startswith("-"):
+            flag = value.split("=", 1)[0]
+            idx += 2 if ("=" not in value and flag in _VALUED_FLAGS) else 1
+            continue
+        return items[idx]
+    return None
+
+
+def _scan_argv_blocks(
+    rel_path: str,
+    content: str,
+    lines: list[str],
+    approved: set[str],
+    findings: list[tuple[str, int, str]],
+) -> None:
+    if not (
+        rel_path.endswith((".yml", ".yaml"))
+        and ("/tasks/" in rel_path or "/handlers/" in rel_path)
+    ):
+        return
+    try:
+        docs = list(yaml.compose_all(content, Loader=yaml.SafeLoader))
+    except yaml.YAMLError:
+        return
+    item_lists: list[list[tuple[int, str]]] = []
+    for doc in docs:
+        if doc is not None:
+            _collect_argv_item_lists(doc, item_lists)
+    for items in item_lists:
+        target = _argv_exec_target(items)
+        if target is None:
+            continue
+        line_no, token = target
+        if _classify_target(token, approved).startswith("ok-"):
+            continue
+        if is_suppressed_at(lines, line_no, _RULE, mode="same-or-above"):
+            continue
+        findings.append((rel_path, line_no, lines[line_no - 1].strip()))
 
 
 def _is_comment_line(line: str) -> bool:
@@ -266,6 +330,7 @@ class TestContainerExecUsesResolver(unittest.TestCase):
             lines = content.splitlines()
             for idx, line in enumerate(lines):
                 _scan_line(rel, idx + 1, line, lines, approved, findings)
+            _scan_argv_blocks(rel, content, lines, approved, findings)
 
         if findings:
             formatted = "\n".join(
@@ -290,7 +355,8 @@ class TestContainerExecUsesResolver(unittest.TestCase):
                 "Or, where the indirection genuinely does not apply "
                 "(diagnostic scripts that already carry a resolved ID, "
                 "etc.), add `# nocheck: container-exec-resolver` on the "
-                "same line or the line immediately above.\n\n"
+                "same line or the line immediately above (for `argv:` "
+                "lists: on the container target item).\n\n"
                 f"Offending lines:\n{formatted}"
             )
 

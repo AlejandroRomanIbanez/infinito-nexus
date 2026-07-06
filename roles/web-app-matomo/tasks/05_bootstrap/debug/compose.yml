@@ -123,7 +123,7 @@
       - exec
       - --user
       - root
-      - "{{ MATOMO_NAME }}"
+      - "{{ MATOMO_NAME }}" # nocheck: container-exec-resolver  compose-only debug flavor, bare name resolves in compose mode
       - sh
       - -lc
       - |
