@@ -14,6 +14,11 @@ set -euo pipefail
 : "${ACT_INPUTS:=}"
 : "${ACT_ENV:=}"
 
+if [[ "${ACT_PLATFORM_IMAGE}" == local/act-runner-fixed:latest ]] &&
+	! docker image inspect "${ACT_PLATFORM_IMAGE}" >/dev/null 2>&1; then
+	bash "$(dirname "${BASH_SOURCE[0]}")/build_runner_image.sh"
+fi
+
 _act_cache_path="${ACT_ACTION_CACHE_PATH:-/tmp/actcache/act}"
 _stale_mounts=$(mount | grep -E " on ${_act_cache_path}/[^ ]+ type devtmpfs " || true)
 if [[ -n "${_stale_mounts}" ]]; then

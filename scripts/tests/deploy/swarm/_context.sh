@@ -124,7 +124,9 @@ skip_if_no_swarm_service() {
 # Param: $1 node container, $2 app container id, $3 port
 probe_app_reachable() {
 	docker exec "$1" docker exec "$2" sh -c \
-		"curl -sS http://localhost:$3/ || wget -qO- http://localhost:$3/ || nc -z localhost $3" >/dev/null 2>&1
+		"curl -sS http://localhost:$3/ || wget -qO- http://localhost:$3/ || nc -z localhost $3" >/dev/null 2>&1 ||
+		docker exec "$1" docker exec "$2" bash -c "exec 3<>/dev/tcp/localhost/$3" >/dev/null 2>&1 ||
+		docker exec "$1" sh -c "docker inspect -f '{{.State.Health.Status}}' $2 | grep -qx healthy" >/dev/null 2>&1
 }
 
 if [ "${SWARM_NFS_PILOT_VERBOSE:-0}" = "1" ]; then
