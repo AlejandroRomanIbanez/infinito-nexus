@@ -99,7 +99,6 @@ async function penpotRegister(page, fullname, email, password) {
   await assertAuthenticated(page);
 }
 
-// Native: local-DB account via the email/password form + the "Login" button.
 async function penpotNativeLogin(page, email, password) {
   await page.goto(loginRoute(env.baseUrl));
   const emailField = page.getByLabel(/work email/i);
@@ -107,8 +106,8 @@ async function penpotNativeLogin(page, email, password) {
   await expect(emailField, "Expected the Penpot login form").toBeVisible({ timeout: 60_000 });
   await emailField.fill(email);
   await passwordField.fill(password);
-  const loginButton = page.getByRole("button", { name: /^Login$/i });
-  await expect(loginButton, "Expected the Login button to enable once the form is filled").toBeEnabled({ timeout: 30_000 });
+  const loginButton = page.getByTestId("login-submit");
+  await expect(loginButton, "Expected the login submit button to enable once the form is filled").toBeEnabled({ timeout: 30_000 });
   await loginButton.click();
   await assertAuthenticated(page);
 }
