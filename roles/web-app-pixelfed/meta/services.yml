@@ -40,7 +40,6 @@ mariadb:
   shared: "{{ 'svc-db-mariadb' in group_names }}"
 # nocheck: playwright-service-flag — self-provider
 pixelfed:
-  replicas: 1
   bond: 1
   shared: true
   enabled: true
@@ -64,6 +63,8 @@ pixelfed:
   lifecycle: beta
   pids_limit: 512
 worker:
+  # nocheck: single-replica
+  replicas: 1
   name: pixelfed_worker
   cpus: 1.0
   mem_reservation: 0.75g
