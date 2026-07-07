@@ -19,15 +19,3 @@
 - name: 🎬 Initialize Odoo database with core modules
   include_tasks: 01a_bootstrap_schema.yml
   when: odoo_schema_exists.rows is not defined or odoo_schema_exists.rows | length == 0
-
-- name: 🔄 Update existing Odoo modules (if schema exists)
-  ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
-    container exec {{ ODOO_LOCAL_CID | quote }}
-    odoo --no-http
-    --database={{ ODOO_DB_NAME }}
-    --update={{ ODOO_MODULES_CORE | join(',') }}
-    --stop-after-init
-  delegate_to: "{{ ODOO_HOST_NODE }}"
-  register: odoo_update
-  changed_when: "'upgraded' in (odoo_update.stdout ~ odoo_update.stderr) or 'updated' in (odoo_update.stdout ~ odoo_update.stderr)"
-  when: odoo_schema_exists.rows is defined and odoo_schema_exists.rows | length > 0
