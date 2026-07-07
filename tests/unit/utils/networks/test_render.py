@@ -478,6 +478,41 @@ class TestRenderComposeNetworks(unittest.TestCase):
         self.assertIn("driver: overlay", rendered)
         self.assertNotIn("name:", rendered)
 
+    def test_node_local_swarm_container_networks_compose_shape(self):
+        rendered = render_container_networks(
+            application_id="svc-runner",
+            deployment_mode="swarm",
+            registry={},
+            get_entity_name=lambda _role: "",
+            lookup_config=_const_lookup_config(),
+            lookup_database=_const_lookup_database(),
+            node_local=True,
+        )
+        expected = render_container_networks(
+            application_id="svc-runner",
+            deployment_mode="compose",
+            registry={},
+            get_entity_name=lambda _role: "",
+            lookup_config=_const_lookup_config(),
+            lookup_database=_const_lookup_database(),
+        )
+        self.assertEqual(rendered, expected)
+
+    def test_node_local_swarm_renders_bridge(self):
+        rendered = render_compose_networks(
+            application_id="svc-runner",
+            deployment_mode="swarm",
+            registry={},
+            get_entity_name=lambda _role: "",
+            lookup_config=_const_lookup_config(
+                **{"networks.local.subnet": "10.0.0.0/24"}
+            ),
+            lookup_database=_const_lookup_database(),
+            node_local=True,
+        )
+        self.assertNotIn("overlay", rendered)
+        self.assertIn("driver: bridge", rendered)
+
     def test_empty_own_entity_compose_omits_name(self):
         rendered = render_compose_networks(
             application_id="svc-runner",

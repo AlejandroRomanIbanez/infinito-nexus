@@ -88,5 +88,6 @@ class LookupModule(LookupBase):
             lookup_config=_lookup_config,
             lookup_database=_lookup_database,
             swarm_encrypted=swarm_encrypted,
+            node_local=bool(kwargs.get("node_local", False)),
         )
         return [rendered]

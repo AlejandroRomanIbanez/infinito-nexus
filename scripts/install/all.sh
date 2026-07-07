@@ -10,6 +10,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 cd "${REPO_ROOT}"
 
+# shellcheck source=scripts/meta/env/python.sh
+source "${REPO_ROOT}/scripts/meta/env/python.sh"
+
 STAMP="build/install.stamp"
 DEPS=(
 	pyproject.toml
@@ -27,6 +30,10 @@ fi
 
 needs_install=0
 if [[ ! -f "${STAMP}" ]]; then
+	needs_install=1
+elif [[ ! -x "${VENV}/bin/python" ]]; then
+	# Exception: repo copies (docker cp / tar into containers) carry the stamp but not the venv; a stamp without its venv is stale and would silently skip the whole install chain.
+	echo "[install] stamp present but venv missing at ${VENV}; reinstalling" >&2
 	needs_install=1
 else
 	for dep in "${DEPS[@]}"; do

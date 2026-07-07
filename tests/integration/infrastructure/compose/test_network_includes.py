@@ -46,6 +46,7 @@ NOCHECK_RE = re.compile(r"#\s*nocheck:\s*networks-literal\b")
 
 CONTAINER_LOOKUP = "{{ lookup('container_networks') | indent(4) }}"
 COMPOSE_LOOKUP = "{{ lookup('compose_networks') }}"
+COMPOSE_LOOKUP_RE = re.compile(r"\{\{\s*lookup\(\s*'compose_networks'[^)]*\)\s*\}\}")
 LEGACY_INCLUDE_RE = re.compile(
     r"\{%\s*include\s+['\"]roles/sys-svc-(?:compose|container)"
     r"/templates/networks\.yml\.j2['\"]\s*%\}"
@@ -84,7 +85,7 @@ def _scan_compose_lookup_count(path) -> tuple[int, bool]:
     for line in text.splitlines():
         if NETWORK_MODE_RE.match(line):
             has_network_mode = True
-        if COMPOSE_LOOKUP in line:
+        if COMPOSE_LOOKUP_RE.search(line):
             compose_count += 1
     return compose_count, has_network_mode
 

@@ -56,7 +56,9 @@ class LookupModule(LookupBase):
             with contextlib.suppress(Exception):
                 raw_mode = templar.template(raw_mode)
 
-        if str(raw_mode).strip() == "swarm":
+        if str(raw_mode).strip() == "swarm" and not bool(
+            kwargs.get("node_local", False)
+        ):
             return [""]
 
         if terms:

@@ -214,7 +214,10 @@ def render_compose_networks(
     lookup_config: Callable[[str, str, Any], Any],
     lookup_database: Callable[[str, str], Any],
     swarm_encrypted: bool = True,
+    node_local: bool = False,
 ) -> str:
+    if node_local:
+        deployment_mode = "compose"
     attachments, _ = _compute_attachments(
         registry, application_id, deployment_mode, lookup_config, lookup_database
     )
@@ -270,7 +273,10 @@ def render_container_networks(
     lookup_config: Callable[[str, str, Any], Any],
     lookup_database: Callable[[str, str], Any],
     provider_self_alias: bool = True,
+    node_local: bool = False,
 ) -> str:
+    if node_local:
+        deployment_mode = "compose"
     attachments, default_aliases = _compute_attachments(
         registry, application_id, deployment_mode, lookup_config, lookup_database
     )

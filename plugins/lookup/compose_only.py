@@ -58,6 +58,6 @@ class LookupModule(LookupBase):
                 mode_force = templar.template(mode_force)
         effective_mode = str(mode_force or raw_mode).strip()
 
-        if effective_mode == "swarm":
+        if effective_mode == "swarm" and not bool(kwargs.get("node_local", False)):
             return [""]
         return [f'{key}: "{value}"']

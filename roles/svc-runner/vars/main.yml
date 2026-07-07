@@ -8,6 +8,7 @@ RUNNER_PROJECT_PREFIX: "{{ lookup('config', application_id, 'services.svc-runner
 RUNNER_SYSCTL_CONF: "{{ lookup('config', application_id, 'services.svc-runner.sysctl_conf') }}"
 RUNNER_IMAGE_NAME: "{{ lookup('config', application_id, 'services.svc-runner.image_name') }}"
 RUNNER_IMAGE_TAG: "{{ lookup('config', application_id, 'services.svc-runner.image_tag') }}"
+RUNNER_IMAGE_REF: "{{ SWARM_REGISTRY_PREFIX }}{{ RUNNER_IMAGE_NAME }}:{{ RUNNER_IMAGE_TAG }}"
 RUNNER_INSTALL_DIR: "{{ lookup('config', application_id, 'services.svc-runner.install_dir') }}"
 RUNNER_CPUS: "{{ lookup('config', application_id, 'services.svc-runner.cpus') | int }}"
 RUNNER_BASE_IMAGE: "{{ lookup('config', application_id, 'services.svc-runner.image') }}:{{ lookup('config', application_id, 'services.svc-runner.version') }}"
