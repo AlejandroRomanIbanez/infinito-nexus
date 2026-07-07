@@ -2,6 +2,8 @@
 application_id: "web-app-espocrm"
 entity_name: "{{ application_id | get_entity_name }}"
 
+swarm_stack_converge_retries: 600
+
 websocket_port: "{{ lookup('config', application_id, 'services.espocrm.ports.local.websocket') }}"
 
 ESPOCRM_VERSION: "{{ lookup('config', application_id, 'services.' ~ entity_name ~'.version') }}"

@@ -30,9 +30,6 @@ mariadb:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
 espocrm:
-  # TODO: scalable to N replicas once the entrypoint is restructured (flock the image init via /bin/true, own the server launch) and PHP sessions move to the NFS-shared volume, validated in a live swarm + compose loop
-  # nocheck: single-replica
-  replicas: 1
   image: espocrm/espocrm
   version: "9.3.10"
   name: espocrm
@@ -56,11 +53,15 @@ espocrm:
     - web-app-mailu
   lifecycle: beta
 daemon:
+  # nocheck: single-replica
+  replicas: 1
   cpus: 0.5
   mem_reservation: 0.25g
   mem_limit: 0.5g
   pids_limit: 384
 websocket:
+  # nocheck: single-replica
+  replicas: 1
   cpus: 0.5
   mem_reservation: 0.25g
   mem_limit: 0.5g
