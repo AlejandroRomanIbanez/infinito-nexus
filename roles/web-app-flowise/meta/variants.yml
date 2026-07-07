@@ -25,6 +25,9 @@
       enabled: true
       shared: true
     qdrant:
+      enabled: true
+      shared: true
+    postgres:
       shared: true
     redis:
       shared: true
@@ -54,6 +57,9 @@
       enabled: false
       shared: false
     qdrant:
+      enabled: false
+      shared: false
+    postgres:
       shared: false
     redis:
       shared: false

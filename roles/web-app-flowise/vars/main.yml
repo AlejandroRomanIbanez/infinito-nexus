@@ -15,7 +15,4 @@ FLOWISE_LITELLM_CONFIG_PATH_HOST: "{{ [ lookup('container', application_id, 'dir
 FLOWISE_LITELLM_CONFIG_PATH_DOCKER: "/etc/litellm/config.yaml"
 FLOWISE_LITELLM_MASTER_KEY: "{{ lookup('config', application_id, 'credentials.llm_master_key') }}"
 
-FLOWISE_QDRANT_CONTAINER: "{{ lookup('config', application_id, 'services.qdrant.name') }}"
-FLOWISE_QDRANT_HTTP_PORT: 6333
-FLOWISE_QDRANT_GRPC_PORT: 6334
 FLOWISE_QDRANT_INTERNAL_URL: "{{ lookup('engine', 'qdrant', application_id, 'url') }}"

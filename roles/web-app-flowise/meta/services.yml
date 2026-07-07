@@ -1,4 +1,5 @@
 ---
+# nocheck: seaweedfs-required
 logout:
   bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
@@ -37,25 +38,18 @@ litellm:
   mem_limit: 1g
   pids_limit: 1024
   min_storage: 1GB
-# nocheck: playwright-service-flag — vector engine, covered by role-local integration tests
+# nocheck: playwright-service-flag - DB engine, covered by role-local integration tests
 qdrant:
   bond: 1
-  enabled: true # nocheck: dynamic-flag
+  enabled: "{{ 'svc-db-qdrant' in group_names }}"
   shared: "{{ 'svc-db-qdrant' in group_names }}"
-  backup:
-    no_stop_required: true
-  image: qdrant/qdrant
-  version: v1.18.2
-  name: qdrant
-  cpus: "2.0"
-  mem_reservation: 2g
-  mem_limit: 4g
-  pids_limit: 2048
-  min_storage: 1GB
+# nocheck: playwright-service-flag - DB engine, covered by role-local integration tests
+postgres:
+  bond: 1
+  enabled: true # nocheck: dynamic-flag
+  shared: "{{ 'svc-db-postgres' in group_names }}"
 # nocheck: playwright-service-flag: shared provider entity; the app itself is covered by this role's own Playwright spec
 flowise:
-  # nocheck: default-placement-manager  embedded qdrant + sqlite engine state; node-local in swarm
-  default_placement: manager
   bond: 1
   enabled: true
   shared: true

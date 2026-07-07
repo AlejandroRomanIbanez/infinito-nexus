@@ -5,13 +5,6 @@ flowise_data:
     - service: flowise
       target: /root/.flowise
 
-qdrant_data:
-  type: volume
-  name: flowise_qdrant_data
-  mounts:
-    - service: qdrant
-      target: /qdrant/storage
-
 litellm_config:
   type: config
   source: "{{ [lookup('container', 'web-app-flowise', 'directories.config'), 'litellm.config.yaml'] | path_join }}"
