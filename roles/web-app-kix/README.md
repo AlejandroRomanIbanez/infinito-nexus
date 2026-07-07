@@ -6,7 +6,7 @@
 
 ## Overview
 
-This role deploys KIX as an Infinito.Nexus web app behind the project's standard `sys-stk-front-proxy` and `web-app-keycloak`'s SSO-proxy sidecar chain. The upstream `kix-on-premise` four-container stack (proxy, backend, frontend, db) ships from `docker-registry.kixdesk.com/public/`. The bundled `db` image carries the KIX-specific PostgreSQL init schema, so the role does not consume the shared `svc-db-postgres` cluster; the backend cache reuses the shared `svc-db-redis` instance auto-wired by `sys-stk-backend` for the OAuth2-proxy session store. Initial admin credentials are seeded via `INITIAL_ADMIN_PW` on first start (see `meta/schema.yml`).
+This role deploys KIX as an Infinito.Nexus web app behind the project's standard `sys-stk-front-proxy` and `web-app-keycloak`'s SSO-proxy sidecar chain. The upstream `kix-on-premise` proxy, backend, and frontend containers ship from `docker-registry.kixdesk.com/public/`. The backend initialises its schema (`scripts/database/kix-schema.xml`) against the central `svc-db-postgres` cluster, or against the embedded postgres sidecar when no central provider is in the inventory, with `pg_trgm` pre-activated via `services.postgres.extensions`; the cache is the role-local passwordless redis sidecar (the frontend ignores `REDIS_CACHE_PASSWORD`). Initial admin credentials are seeded via `INITIAL_ADMIN_PW` on first start (see `meta/schema.yml`).
 
 ## Features
 

@@ -1,11 +1,4 @@
 ---
-kix_db:
-  type: volume
-  name: kix_kix_db
-  mounts:
-    - service: db
-      target: /var/lib/postgresql/data
-
 kix_shared:
   type: volume
   name: kix_kix_shared

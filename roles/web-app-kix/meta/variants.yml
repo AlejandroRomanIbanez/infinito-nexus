@@ -23,6 +23,8 @@
     matomo:
       enabled: true
       shared: true
+    postgres:
+      shared: true
     sso:
       enabled: true
       shared: true
@@ -48,6 +50,8 @@
     matomo:
       enabled: false
       shared: false
+    postgres:
+      shared: false
     sso:
       enabled: false
       shared: false
@@ -76,6 +80,8 @@
     matomo:
       enabled: false
       shared: false
+    postgres:
+      shared: true
     prometheus:
       enabled: false
       shared: false

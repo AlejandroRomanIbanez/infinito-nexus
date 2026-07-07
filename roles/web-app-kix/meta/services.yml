@@ -1,4 +1,5 @@
 ---
+# nocheck: seaweedfs-required
 logout:
   bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
@@ -43,13 +44,20 @@ prometheus:
 # nocheck: shared
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag - DB engine, covered by role-local integration tests
+postgres:
+  bond: 1
+  enabled: true
+  shared: "{{ 'svc-db-postgres' in group_names }}"
+  extensions:
+    - pg_trgm
+# nocheck: shared
+# nocheck: dynamic-flag
+# nocheck: playwright-service-flag - DB engine, covered by role-local integration tests
 redis:
   bond: 1
   enabled: true
   shared: false
 kix:
-  # nocheck: default-placement-manager  embedded postgres engine state; node-local in swarm
-  default_placement: manager
   image: docker-registry.kixdesk.com/public/proxy
   version: stable
   min_storage: 10GB
@@ -75,6 +83,8 @@ proxy:
   mem_limit: 512m
   pids_limit: 512
 backend:
+  # nocheck: single-replica
+  replicas: 1
   name: kix-backend
   image: docker-registry.kixdesk.com/public/backend
   version: stable
@@ -87,6 +97,8 @@ backend:
   mem_limit: 4g
   pids_limit: 1024
 frontend:
+  # nocheck: single-replica
+  replicas: 1
   name: kix-frontend
   image: docker-registry.kixdesk.com/public/frontend
   version: stable
@@ -97,13 +109,4 @@ frontend:
   cpus: "0.5"
   mem_reservation: 512m
   mem_limit: 1g
-  pids_limit: 512
-db:
-  name: kix-db
-  image: docker-registry.kixdesk.com/public/db
-  version: stable
-  min_storage: 5GB
-  cpus: "0.5"
-  mem_reservation: 1g
-  mem_limit: 2g
   pids_limit: 512
