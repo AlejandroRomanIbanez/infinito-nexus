@@ -11,21 +11,33 @@ print(c["options"].get(sys.argv[2], ""))
 PY
 }
 
-_schema_present() {
-  python3 - "$ODOO_RC" <<'PY'
-import configparser, sys, psycopg2
-c = configparser.ConfigParser(); c.read(sys.argv[1])
+_guarded_init() {
+  python3 - "$ODOO_RC" "$ODOO_INIT_MODULES" <<'PY'
+import configparser, subprocess, sys, psycopg2
+rc, modules = sys.argv[1], sys.argv[2]
+c = configparser.ConfigParser(); c.read(rc)
 o = c["options"]
+db = o.get("db_name")
 conn = psycopg2.connect(
     host=o.get("db_host"), port=o.get("db_port", "5432"),
     user=o.get("db_user"), password=o.get("db_password"),
-    dbname=o.get("db_name"),
+    dbname=db,
 )
+conn.autocommit = True
 cur = conn.cursor()
-cur.execute("SELECT to_regclass('public.ir_module_module')")
-present = cur.fetchone()[0] is not None
-conn.close()
-sys.exit(0 if present else 1)
+cur.execute("SELECT pg_advisory_lock(hashtext('odoo_bootstrap_init'))")
+try:
+    cur.execute("SELECT to_regclass('public.ir_module_module')")
+    if cur.fetchone()[0] is None:
+        print("[odoo-entrypoint] empty database -> installing core modules: %s" % modules, flush=True)
+        subprocess.run(
+            ["odoo", "--no-http", "--database=%s" % db,
+             "--init=%s" % modules, "--stop-after-init"],
+            check=True,
+        )
+finally:
+    cur.execute("SELECT pg_advisory_unlock(hashtext('odoo_bootstrap_init'))")
+    conn.close()
 PY
 }
 
@@ -34,11 +46,7 @@ if [ -n "${ODOO_INIT_MODULES:-}" ]; then
     --db_host "$(_db_param db_host)" --db_port "$(_db_param db_port)" \
     --db_user "$(_db_param db_user)" --db_password "$(_db_param db_password)" \
     --timeout 120
-  if ! _schema_present; then
-    echo "[odoo-entrypoint] empty database -> installing core modules: ${ODOO_INIT_MODULES}"
-    odoo --no-http --database="$(_db_param db_name)" \
-      --init="${ODOO_INIT_MODULES}" --stop-after-init
-  fi
+  _guarded_init
 fi
 
 exec /entrypoint.sh "$@"
