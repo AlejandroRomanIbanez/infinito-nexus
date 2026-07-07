@@ -9,10 +9,6 @@ server {
 
   {% include 'roles/sys-svc-proxy/templates/headers/access_control_allow.conf.j2' %}
   
-  ##
-  # Application
-  ##
-
   {% set location = "@html" %}
   {% include 'roles/sys-svc-proxy/templates/location/html.conf.j2' %}
 
@@ -42,10 +38,6 @@ server {
     try_files /dev/null {{ location }};
   }
 
-  ##
-  # Websocket
-  ##
-
   {% set webserver_websocket_location = "@websocket" %}
   {% include 'roles/sys-svc-proxy/templates/location/ws.conf.j2' %}
 
@@ -54,9 +46,8 @@ server {
   }
 
   location /tracker/socket {
-    # Peers send a message to the tracker every 15 minutes
-    # Don't close the websocket before then
-    proxy_read_timeout 15m; # default is 60s
+    # Exception: peers ping the tracker every 15 minutes; nginx's 60s default read timeout would close the websocket between pings
+    proxy_read_timeout 15m;
 
     try_files /dev/null {{ webserver_websocket_location }};
   }
