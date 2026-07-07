@@ -22,7 +22,7 @@
 - name: "✅ ELASTICSEARCH | Confirm cluster answers (HTTP API)"
   ansible.builtin.shell: >
     {{ ELASTICSEARCH_EXEC_SHELL }}
-    'curl -fsS -u "elastic:$ELASTIC_PW"
+    '{{ 30 | curl }} -fS -u "elastic:$ELASTIC_PW"
     "{{ ELASTICSEARCH_API_BASE }}/_cluster/health?wait_for_status=yellow&timeout=5s" >/dev/null'
   register: es_health_ready
   retries: 60

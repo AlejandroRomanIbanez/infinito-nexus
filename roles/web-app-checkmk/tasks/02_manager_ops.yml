@@ -9,7 +9,7 @@
 - name: "⏳ Wait until the Checkmk site web interface is ready"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
     container exec {{ CHECKMK_LOCAL_CID | quote }}
-    curl -fsS -o /dev/null
+    {{ 30 | curl }} -fS -o /dev/null
     http://localhost:{{ container_port }}/{{ CHECKMK_SITE }}/check_mk/login.py
   register: checkmk_ready
   changed_when: false

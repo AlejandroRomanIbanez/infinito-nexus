@@ -22,3 +22,4 @@
       ('already' not in (mailu_alias_result.stderr | lower)) and
       ('duplicate' not in (mailu_alias_result.stderr | lower))
     )
+  timeout: "{{ lookup('timeout', 120) | int }}"

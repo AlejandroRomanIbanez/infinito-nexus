@@ -4,6 +4,8 @@
 # (normal in DinD CI where runners cannot register against GitHub).
 set -euo pipefail
 
+CURL="curl --connect-timeout 5 --max-time 30"
+
 if [[ -z "${RUNNER_API_TOKEN:-}" ]]; then
     echo "SKIP: RUNNER_API_TOKEN not set — skipping GitHub registration and smoke dispatch"
     exit 0
@@ -12,7 +14,7 @@ fi
 fail_count=0
 
 echo "Checking GitHub runner registration via API..."
-if ! runners_json=$(curl -sf \
+if ! runners_json=$(${CURL} -sf \
     -H "Authorization: Bearer ${RUNNER_API_TOKEN}" \
     -H "Accept: application/vnd.github+json" \
     "https://api.github.com/repos/${RUNNER_GITHUB_OWNER}/${RUNNER_GITHUB_REPO}/actions/runners"); then
@@ -34,7 +36,7 @@ fi
 echo "Dispatching test-runner-smoke.yml against ref=${RUNNER_GIT_REF}..."
 dispatch_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)
 
-dispatch_http=$(curl -sf -o /dev/null -w "%{http_code}" \
+dispatch_http=$(${CURL} -sf -o /dev/null -w "%{http_code}" \
     -X POST \
     -H "Authorization: Bearer ${RUNNER_API_TOKEN}" \
     -H "Accept: application/vnd.github+json" \
@@ -52,7 +54,7 @@ else
     attempts=0
     while [[ -z "${smoke_run_id}" && "${attempts}" -lt 12 ]]; do
         sleep 5
-        if ! runs_json=$(curl -sf \
+        if ! runs_json=$(${CURL} -sf \
             -H "Authorization: Bearer ${RUNNER_API_TOKEN}" \
             -H "Accept: application/vnd.github+json" \
             "https://api.github.com/repos/${RUNNER_GITHUB_OWNER}/${RUNNER_GITHUB_REPO}/actions/workflows/test-runner-smoke.yml/runs?per_page=10"); then
@@ -79,7 +81,7 @@ print(runs[0]['id'] if runs else '')
         smoke_conclusion=""
         while [[ "$(date +%s)" -lt "${deadline}" ]]; do
             sleep 30
-            if ! run_json=$(curl -sf \
+            if ! run_json=$(${CURL} -sf \
                 -H "Authorization: Bearer ${RUNNER_API_TOKEN}" \
                 -H "Accept: application/vnd.github+json" \
                 "https://api.github.com/repos/${RUNNER_GITHUB_OWNER}/${RUNNER_GITHUB_REPO}/actions/runs/${smoke_run_id}"); then

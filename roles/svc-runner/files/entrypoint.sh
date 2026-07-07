@@ -24,7 +24,7 @@ find /tmp -mindepth 1 -maxdepth 1 -exec rm -rf {} + 2>/dev/null || true
 : "${RUNNER_NAME:?RUNNER_NAME must be set}"
 : "${RUNNER_LABELS:?RUNNER_LABELS must be set}"
 
-TOKEN=$(curl -fsSL \
+TOKEN=$(curl --connect-timeout 5 --max-time 60 -fsSL \
     -X POST \
     -H "Authorization: Bearer ${RUNNER_API_TOKEN}" \
     -H "Accept: application/vnd.github.v3+json" \

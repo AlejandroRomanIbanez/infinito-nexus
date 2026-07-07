@@ -33,7 +33,7 @@ download_file() {
   local dest="$2"
 
   if command -v curl >/dev/null 2>&1; then
-    curl -fsSL "${url}" -o "${dest}"
+    curl --connect-timeout 5 --max-time 120 -fsSL "${url}" -o "${dest}"
     return 0
   fi
 
@@ -217,7 +217,6 @@ case "${ACTION}" in
     exit 2
     ;;
   *)
-    # Legacy mode: default action is sanitize-sources.
     sanitize_sources "${1}" "${2:-1}" "${3:-${KEY_PATH}}"
     ;;
 esac

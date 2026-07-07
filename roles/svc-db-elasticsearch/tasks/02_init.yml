@@ -18,7 +18,7 @@
     - name: "⏳ ELASTICSEARCH | Wait for security API"
       ansible.builtin.shell: >
         {{ ELASTICSEARCH_EXEC_SHELL }}
-        'curl -fsS -u "elastic:$ELASTIC_PW"
+        '{{ 30 | curl }} -fS -u "elastic:$ELASTIC_PW"
         "{{ ELASTICSEARCH_API_BASE }}/_security/_authenticate" >/dev/null'
       register: es_security_ready
       until: es_security_ready.rc == 0
@@ -51,7 +51,7 @@
 - name: "📁 Create role scoped to '{{ elasticsearch_consumer_entity }}-*' indices"
   ansible.builtin.shell: >
     {{ ELASTICSEARCH_EXEC_SHELL }}
-    'curl -fsS -u "elastic:$ELASTIC_PW"
+    '{{ 30 | curl }} -fS -u "elastic:$ELASTIC_PW"
     -X PUT "{{ ELASTICSEARCH_API_BASE }}/_security/role/{{ elasticsearch_consumer_entity }}"
     -H "Content-Type: application/json"
     -d {{ {
@@ -82,7 +82,7 @@
 - name: "📁 Create user '{{ elasticsearch_consumer_username }}' bound to its index role"
   ansible.builtin.shell: >
     {{ ELASTICSEARCH_EXEC_SHELL }}
-    'curl -fsS -u "elastic:$ELASTIC_PW"
+    '{{ 30 | curl }} -fS -u "elastic:$ELASTIC_PW"
     -X PUT "{{ ELASTICSEARCH_API_BASE }}/_security/user/{{ elasticsearch_consumer_username }}"
     -H "Content-Type: application/json"
     -d {{ es_user_payload | to_json | quote }}'
@@ -96,7 +96,7 @@
 - name: "✅ Ensure consumer index namespace exists: {{ elasticsearch_consumer_entity }}"
   ansible.builtin.shell: >
     {{ ELASTICSEARCH_EXEC_SHELL }}
-    'curl -sS -o /dev/null -w "%{http_code}" -u "elastic:$ELASTIC_PW"
+    '{{ 30 | curl }} -S -o /dev/null -w "%{http_code}" -u "elastic:$ELASTIC_PW"
     -X PUT "{{ ELASTICSEARCH_API_BASE }}/{{ elasticsearch_consumer_entity }}-default"'
   register: es_index_result
   until: es_index_result.rc == 0 and es_index_result.stdout is search('20[0-9]|400')

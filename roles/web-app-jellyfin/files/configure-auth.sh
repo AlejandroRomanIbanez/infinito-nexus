@@ -2,6 +2,7 @@
 set -euo pipefail
 
 API="${JELLYFIN_API}"
+CURL="curl --connect-timeout 5 --max-time 30"
 CT="${JELLYFIN_CT}"
 PHASE="${JELLYFIN_PHASE}"
 CLIENT_HDR='X-Emby-Authorization: MediaBrowser Client="infinito", Device="ansible", DeviceId="infinito-deploy", Version="1.0.0"'
@@ -10,25 +11,25 @@ log() { echo "[jellyfin-auth] $*"; }
 
 wait_up() {
   for _ in $(seq 1 60); do
-    curl -fsS -o /dev/null "${API}/System/Info/Public" && return 0
+    ${CURL} -fsS -o /dev/null "${API}/System/Info/Public" && return 0
     sleep 5
   done
   log "Jellyfin did not become ready at ${API}"; return 1
 }
 
 complete_wizard() {
-  curl -fsS -X POST "${API}/Startup/Configuration" -H "Content-Type: application/json" -H "${CLIENT_HDR}" \
+  ${CURL} -fsS -X POST "${API}/Startup/Configuration" -H "Content-Type: application/json" -H "${CLIENT_HDR}" \
     -d '{"UICulture":"en-US","MetadataCountryCode":"US","PreferredMetadataLanguage":"en"}' >/dev/null 2>&1 || true
-  curl -fsS "${API}/Startup/User" -H "${CLIENT_HDR}" >/dev/null 2>&1 || true
-  curl -fsS -X POST "${API}/Startup/User" -H "Content-Type: application/json" -H "${CLIENT_HDR}" \
+  ${CURL} -fsS "${API}/Startup/User" -H "${CLIENT_HDR}" >/dev/null 2>&1 || true
+  ${CURL} -fsS -X POST "${API}/Startup/User" -H "Content-Type: application/json" -H "${CLIENT_HDR}" \
     -d "{\"Name\":\"${JELLYFIN_ADMIN_USERNAME}\",\"Password\":\"${JELLYFIN_ADMIN_PASSWORD}\"}" >/dev/null 2>&1 || true
-  curl -fsS -X POST "${API}/Startup/RemoteAccess" -H "Content-Type: application/json" -H "${CLIENT_HDR}" \
+  ${CURL} -fsS -X POST "${API}/Startup/RemoteAccess" -H "Content-Type: application/json" -H "${CLIENT_HDR}" \
     -d '{"EnableRemoteAccess":true,"EnableAutomaticPortMapping":false}' >/dev/null 2>&1 || true
-  curl -fsS -X POST "${API}/Startup/Complete" -H "${CLIENT_HDR}" >/dev/null 2>&1 || true
+  ${CURL} -fsS -X POST "${API}/Startup/Complete" -H "${CLIENT_HDR}" >/dev/null 2>&1 || true
 }
 
 get_token() {
-  curl -fsS -X POST "${API}/Users/AuthenticateByName" -H "Content-Type: application/json" -H "${CLIENT_HDR}" \
+  ${CURL} -fsS -X POST "${API}/Users/AuthenticateByName" -H "Content-Type: application/json" -H "${CLIENT_HDR}" \
     -d "{\"Username\":\"${JELLYFIN_ADMIN_USERNAME}\",\"Pw\":\"${JELLYFIN_ADMIN_PASSWORD}\"}" \
     | sed -n 's/.*"AccessToken":"\([^"]*\)".*/\1/p'
 }
@@ -44,7 +45,7 @@ seed_admin_and_get_token() {
 }
 
 install_plugin() {
-  if curl -fsS -X POST "${API}/Packages/Installed/${1}" -H "Authorization: MediaBrowser Token=\"${TOKEN}\"" >/dev/null 2>&1; then
+  if ${CURL} -fsS -X POST "${API}/Packages/Installed/${1}" -H "Authorization: MediaBrowser Token=\"${TOKEN}\"" >/dev/null 2>&1; then
     log "requested install: ${1}"
   else
     log "install request failed (already present?): ${1}"
@@ -56,7 +57,7 @@ install_ldap_plugin() {
   : "${JELLYFIN_LDAP_PLUGIN_VERSION:?missing (set via meta/addons/ldap-authentication.yml)}"
   local tmp
   tmp="$(mktemp -d)"
-  if ! curl -fsSL -o "${tmp}/ldap.zip" "${JELLYFIN_LDAP_PLUGIN_URL}"; then
+  if ! ${CURL} --max-time 300 -fsSL -o "${tmp}/ldap.zip" "${JELLYFIN_LDAP_PLUGIN_URL}"; then
     log "ERROR: failed to download LDAP plugin from ${JELLYFIN_LDAP_PLUGIN_URL}"
     rm -rf "${tmp}"; return 1
   fi
@@ -82,7 +83,7 @@ wait_up
 seed_admin_and_get_token || log "WARN: admin token unavailable after wizard retries; SSO manifest + login-button branding will be skipped"
 
 if [ -n "${TOKEN:-}" ] && [ "${JELLYFIN_SSO_ENABLED}" = "true" ]; then
-  curl -fsS -X POST "${API}/Repositories" -H "Content-Type: application/json" \
+  ${CURL} -fsS -X POST "${API}/Repositories" -H "Content-Type: application/json" \
     -H "Authorization: MediaBrowser Token=\"${TOKEN}\"" \
     -d "[{\"Name\":\"jellyfin-plugin-sso\",\"Url\":\"${JELLYFIN_SSO_PLUGIN_MANIFEST}\",\"Enabled\":true}]" >/dev/null 2>&1 || true
 fi
@@ -131,7 +132,7 @@ fi
 
 if [ -n "${TOKEN:-}" ] && [ "${JELLYFIN_SSO_ENABLED}" = "true" ]; then
   SSO_PLUGIN_GUID="505ce9d1-d916-42fa-86ca-673ef241d7df"
-  if curl -fsS -X POST "${API}/Plugins/${SSO_PLUGIN_GUID}/Configuration" \
+  if ${CURL} -fsS -X POST "${API}/Plugins/${SSO_PLUGIN_GUID}/Configuration" \
       -H "Content-Type: application/json" \
       -H "Authorization: MediaBrowser Token=\"${TOKEN}\"" --data @- >/dev/null 2>&1 <<JSON
 {
@@ -170,7 +171,7 @@ JSON
 fi
 
 if [ -n "${TOKEN:-}" ] && [ "${JELLYFIN_SSO_ENABLED}" = "true" ]; then
-  if curl -fsS -X POST "${API}/System/Configuration/branding" -H "Content-Type: application/json" \
+  if ${CURL} -fsS -X POST "${API}/System/Configuration/branding" -H "Content-Type: application/json" \
       -H "Authorization: MediaBrowser Token=\"${TOKEN}\"" \
       -d '{"LoginDisclaimer":"<form action=\"/sso/OID/start/Keycloak\"><button class=\"raised block emby-button button-submit\">Sign in with Keycloak</button></form>","CustomCss":"a.raised.emby-button { padding: 0.9em 1em; color: inherit !important; } .disclaimerContainer { display: block; }","SplashscreenEnabled":false}' >/dev/null 2>&1; then
     log "configured SSO login button via branding"
