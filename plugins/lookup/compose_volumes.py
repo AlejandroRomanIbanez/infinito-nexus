@@ -42,7 +42,11 @@ class LookupModule(LookupBase):
 
         deployment_mode = kwargs.get("deployment_mode")
         if deployment_mode is None:
-            deployment_mode = vars_.get("DEPLOYMENT_MODE", "compose")
+            mode_force = vars_.get("compose_mode_force", "")
+            if templar is not None:
+                with contextlib.suppress(Exception):
+                    mode_force = templar.template(mode_force)
+            deployment_mode = mode_force or vars_.get("DEPLOYMENT_MODE", "compose")
 
         storage = kwargs.get("storage")
         if storage is None:

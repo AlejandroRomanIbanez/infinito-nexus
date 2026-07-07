@@ -36,7 +36,8 @@ BBB_RELAY_PORT_END: "{{ lookup('config', application_id, 'services.bigbluebutton
 BBB_RELAY_PORT_RANGE: "{{ BBB_RELAY_PORT_START }}-{{ BBB_RELAY_PORT_END }}"
 
 BBB_COLLABORA_ENABLED: "{{ not (lookup('config',application_id, 'services.collabora.shared')) }}"
-BBB_COLLABORA_URL: "{{ 'https://collabora:9980/cool' if BBB_COLLABORA_ENABLED else ((lookup('tls', 'web-svc-collabora', 'url.base'))) }}"
+BBB_COLLABORA_PORT: "{{ lookup('config', 'web-svc-collabora', 'services.collabora.ports.internal.http') }}"
+BBB_COLLABORA_URL: "{{ ('https://collabora:' ~ BBB_COLLABORA_PORT ~ '/cool') if BBB_COLLABORA_ENABLED else ((lookup('tls', 'web-svc-collabora', 'url.base'))) }}"
 
 BBB_RECORDING_ENABLED: "{{ lookup('config', application_id, 'services.'~ entity_name ~'.recording.enabled') }}"
 BBB_RECORDING_CLEANUP_ENABLED: "{{ lookup('config', application_id, 'services.'~ entity_name ~'.recording.cleanup') }}"

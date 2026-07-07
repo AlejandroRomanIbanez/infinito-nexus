@@ -91,6 +91,31 @@ class TestComposeVolumesLookup(unittest.TestCase):
             lm.run(["web-app-x"], variables=vars_)
         self.assertEqual(captured.get("deployment_mode"), "swarm")
 
+    def test_compose_mode_force_overrides_deployment_mode(self):
+        vars_ = {
+            "DEPLOYMENT_MODE": "swarm",
+            "compose_mode_force": "compose",
+            "DIR_VAR_LIB": _DIR_VAR_LIB,
+        }
+        lm = self._make(vars_)
+        captured = {}
+
+        def _render(apps, app_id, **kw):
+            captured.update(kw)
+            return ""
+
+        with (
+            mock.patch.object(self.module, "lookup_loader") as loader_mock,
+            mock.patch.object(
+                self.module, "_render_compose_volumes", side_effect=_render
+            ),
+        ):
+            loader_mock.get.return_value = mock.MagicMock(
+                run=lambda *_a, **_k: [{"web-app-x": {}}]
+            )
+            lm.run(["web-app-x"], variables=vars_)
+        self.assertEqual(captured.get("deployment_mode"), "compose")
+
     def test_storage_auto_wires_from_vars(self):
         vars_ = {
             "DEPLOYMENT_MODE": "swarm",

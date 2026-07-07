@@ -9,6 +9,7 @@
     compose_repository_pull: true
     compose_repository_url: "{{ BBB_REPOSITORY }}"
     compose_repository_ref: "{{ BBB_REF }}"
+    compose_repository_recursive: false
     webserver_extra_configuration: >-
       {{ lookup(
            'ansible.builtin.template',

@@ -1,5 +1,4 @@
 ---
-# include-gated: when: DEPLOYMENT_MODE == "compose"
 - name: "📁 create compose.yml for bigbluebutton"
   command:
     cmd: bash ./scripts/generate-compose
@@ -22,7 +21,9 @@
     dest: "{{ BBB_COMPOSE_FILE_FINAL }}"
   notify:
     - compose up
-- name: 🔨 Prebuild etherpad image
+- name: "🛡️ Fail if any service still builds locally"
   command:
-    cmd: compose build etherpad
-    chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
+    cmd: grep -E '^\s+build:' {{ BBB_COMPOSE_FILE_FINAL }}
+  register: bbb_build_grep
+  changed_when: false
+  failed_when: bbb_build_grep.rc != 1

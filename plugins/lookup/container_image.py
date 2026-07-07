@@ -119,7 +119,11 @@ def _swarm_prefix(variables: dict[str, Any], templar: Any) -> str:
     if templar is not None:
         with contextlib.suppress(Exception):
             raw_mode = templar.template(raw_mode)
-    deployment_mode = str(raw_mode).strip()
+    mode_force = variables.get("compose_mode_force", "")
+    if templar is not None:
+        with contextlib.suppress(Exception):
+            mode_force = templar.template(mode_force)
+    deployment_mode = str(mode_force or raw_mode).strip()
     if deployment_mode != "swarm":
         return ""
 

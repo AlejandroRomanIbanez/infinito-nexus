@@ -11,7 +11,7 @@
     single_branch: true
     depth: 1
     update: true
-    recursive: true
+    recursive: "{{ compose_repository_recursive | default(true) }}"
     force: true
     accept_hostkey: true
   register: docker_repo_pull

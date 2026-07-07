@@ -131,6 +131,20 @@ class TestContainerImageLookup(unittest.TestCase):
         )
         self.assertEqual(out, ['image: "mattermost/mattermost-team-edition:11.8.0"'])
 
+    def test_compose_mode_force_suppresses_swarm_prefix(self):
+        out = _run(
+            "web-app-mattermost",
+            "mattermost",
+            variables={
+                "DEPLOYMENT_MODE": "swarm",
+                "compose_mode_force": "compose",
+                "swarm": {
+                    "registry": {"host": "registry.example.com", "port": 5000},
+                },
+            },
+        )
+        self.assertEqual(out, ['image: "mattermost/mattermost-team-edition:11.8.0"'])
+
     def test_swarm_mode_with_registry_is_prefixed(self):
         out = _run(
             "web-app-mattermost",
