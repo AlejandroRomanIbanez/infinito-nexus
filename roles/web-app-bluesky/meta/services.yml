@@ -119,7 +119,7 @@ api:
   mem_limit: 1g
   pids_limit: 512
 bluesky:
-  # nocheck: default-placement-manager  embedded sqlite (PDS) engine state; node-local in swarm
+  # nocheck: default-placement-manager  PDS is sqlite-only (WAL forced on all four DBs; pds 0.4 has no external-DB backend) and WAL is unsupported over NFS, so pds_data must stay node-local
   default_placement: manager
   proxy:
     service_key: pds
