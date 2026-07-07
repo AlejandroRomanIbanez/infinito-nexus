@@ -2,8 +2,12 @@ import base64
 import re
 import unittest
 
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    PublicFormat,
+    load_pem_private_key,
+)
 
 from utils.manager.value_generator import ValueGenerator
 
@@ -73,6 +77,20 @@ class TestValueGenerator(unittest.TestCase):
         point = _b64url_decode(v)
         self.assertEqual(len(point), 65)
         self.assertEqual(point[0], 0x04)
+
+    def test_generate_value_rsa_pem_2048(self):
+        v = self.vg.generate_value("rsa_pem_2048")
+        self.assertTrue(v.startswith("-----BEGIN RSA PRIVATE KEY-----"))
+        self.assertTrue(v.rstrip().endswith("-----END RSA PRIVATE KEY-----"))
+        key = load_pem_private_key(v.encode(), password=None)
+        self.assertIsInstance(key, rsa.RSAPrivateKey)
+        self.assertEqual(key.key_size, 2048)
+
+    def test_generate_value_rsa_pem_2048_is_not_cached(self):
+        self.assertNotEqual(
+            self.vg.generate_value("rsa_pem_2048"),
+            self.vg.generate_value("rsa_pem_2048"),
+        )
 
     def test_vapid_keypair_is_cached(self):
         self.assertEqual(

@@ -5,8 +5,13 @@ import secrets
 import string
 
 import bcrypt
-from cryptography.hazmat.primitives.asymmetric import ec
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
+from cryptography.hazmat.primitives.asymmetric import ec, rsa
+from cryptography.hazmat.primitives.serialization import (
+    Encoding,
+    NoEncryption,
+    PrivateFormat,
+    PublicFormat,
+)
 
 
 class ValueGenerator:
@@ -74,6 +79,7 @@ class ValueGenerator:
         • "base64_prefixed_32"
         • "vapid_private"
         • "vapid_public"
+        • "rsa_pem_2048"
         """
         if algorithm == "random_hex":
             return secrets.token_hex(64)
@@ -105,4 +111,9 @@ class ValueGenerator:
             return self.generate_vapid_keypair()[0]
         if algorithm == "vapid_public":
             return self.generate_vapid_keypair()[1]
+        if algorithm == "rsa_pem_2048":
+            key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+            return key.private_bytes(
+                Encoding.PEM, PrivateFormat.TraditionalOpenSSL, NoEncryption()
+            ).decode()
         return "undefined"

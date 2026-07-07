@@ -143,6 +143,13 @@ def compose_volumes(
     optional ``name:`` field = docker volume name). Entries with
     ``type: config`` / ``type: secret`` emit their respective top-level
     sections; everything else flows through the volumes section.
+
+    A ``type: volume`` entry may set ``nfs: false`` to opt out of the
+    swarm NFS rewrite: the volume then stays a plain node-local named
+    volume even when ``storage.backend`` is ``nfs`` (e.g. gitaly
+    repository storage, which upstream forbids on NFS). Any other
+    ``nfs`` value (absent, ``true``, or the uid/gid/mode dict consumed
+    by the NFS subdir pre-creation) keeps the rewrite.
     """
 
     if applications is None:
@@ -242,6 +249,8 @@ def compose_volumes(
             docker_name = entry.get("name")
             if docker_name:
                 spec["name"] = docker_name
+            if "nfs" in entry:
+                spec["nfs"] = entry["nfs"]
             volumes[semantic_name] = spec
             continue
 
@@ -282,8 +291,8 @@ def compose_volumes(
     for vol_name, vol_spec in list(volumes.items()):
         if not isinstance(vol_spec, dict):
             continue
-        vol_spec.pop("nfs", None)
-        if swarm_nfs_enabled and not role_pinned:
+        nfs_opted_out = vol_spec.pop("nfs", None) is False
+        if swarm_nfs_enabled and not role_pinned and not nfs_opted_out:
             named = vol_spec.get("name", vol_name)
             vol_spec.update(_swarm_nfs_driver_opts(dir_var_lib, str(named)))
 

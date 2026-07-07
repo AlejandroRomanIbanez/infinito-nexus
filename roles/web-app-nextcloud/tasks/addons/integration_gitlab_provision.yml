@@ -12,8 +12,10 @@
       - -e
       - "NC_HAS_SECRET={{ nextcloud_gl_client_secret_current.stdout | trim }}"
       - "{{ nextcloud_gl_container }}" # nocheck: container-exec-resolver  runs only behind the bare-name partner probe gate, compose co-location
-      - gitlab-rails
+      - /srv/gitlab/bin/rails
       - runner
+      - -e
+      - production
       - "-"
     stdin: "{{ lookup('file', 'gitlab/provision_oauth_app.rb') }}"
   register: nextcloud_gl_provision

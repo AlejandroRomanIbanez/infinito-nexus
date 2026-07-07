@@ -266,6 +266,96 @@ class TestComposeVolumes(unittest.TestCase):
         self.assertEqual(vol["driver_opts"]["device"], f"{_DIR_VAR_LIB}/app_images")
         self.assertNotIn("nfs", vol)
 
+    def test_swarm_nfs_false_opt_out_stays_plain_local_volume(self):
+        apps = self._base_apps()
+        rendered = _call(
+            apps,
+            "app",
+            extra_volumes={
+                "repositories": {"name": "app_repositories", "nfs": False},
+                "shared": {"name": "app_shared"},
+            },
+            deployment_mode="swarm",
+            storage={
+                "backend": "nfs",
+                "nfs": {"server": "10.0.0.20", "export_base": "/srv/nfs"},
+            },
+        )
+        data = self._parse_yaml(rendered)
+
+        repositories = data["volumes"]["repositories"]
+        self.assertEqual(repositories, {"name": "app_repositories"})
+        shared = data["volumes"]["shared"]
+        self.assertEqual(shared["driver"], "local")
+        self.assertEqual(shared["driver_opts"]["device"], f"{_DIR_VAR_LIB}/app_shared")
+
+    def test_swarm_nfs_false_opt_out_from_meta_volumes(self):
+        apps = self._base_apps()
+        apps["app"]["volumes"] = {
+            "repositories": {
+                "type": "volume",
+                "name": "app_repositories",
+                "nfs": False,
+                "mounts": [{"service": "gitaly", "target": "/home/git/repositories"}],
+            },
+            "shared": {
+                "type": "volume",
+                "name": "app_shared",
+                "mounts": [{"service": "web", "target": "/srv/app/shared"}],
+            },
+        }
+        rendered = _call(
+            apps,
+            "app",
+            deployment_mode="swarm",
+            storage={
+                "backend": "nfs",
+                "nfs": {"server": "10.0.0.20", "export_base": "/srv/nfs"},
+            },
+        )
+        data = self._parse_yaml(rendered)
+
+        self.assertEqual(data["volumes"]["repositories"], {"name": "app_repositories"})
+        self.assertIn("driver_opts", data["volumes"]["shared"])
+
+    def test_swarm_nfs_dict_value_keeps_rewrite(self):
+        apps = self._base_apps()
+        apps["app"]["volumes"] = {
+            "data": {
+                "type": "volume",
+                "name": "app_data",
+                "nfs": {"uid": 1000, "gid": 1000, "mode": "0750"},
+                "mounts": [{"service": "web", "target": "/data"}],
+            },
+        }
+        rendered = _call(
+            apps,
+            "app",
+            deployment_mode="swarm",
+            storage={
+                "backend": "nfs",
+                "nfs": {"server": "10.0.0.20", "export_base": "/srv/nfs"},
+            },
+        )
+        data = self._parse_yaml(rendered)
+
+        vol = data["volumes"]["data"]
+        self.assertEqual(vol["driver_opts"]["device"], f"{_DIR_VAR_LIB}/app_data")
+        self.assertNotIn("nfs", vol)
+
+    def test_compose_mode_nfs_false_leaves_no_nfs_key(self):
+        apps = self._base_apps()
+        rendered = _call(
+            apps,
+            "app",
+            extra_volumes={"repositories": {"name": "app_repositories", "nfs": False}},
+            deployment_mode="compose",
+            storage={"backend": "local"},
+        )
+        data = self._parse_yaml(rendered)
+
+        self.assertEqual(data["volumes"]["repositories"], {"name": "app_repositories"})
+
     def test_swarm_pinned_role_stays_node_local(self):
         apps = self._base_apps()
         with mock.patch(

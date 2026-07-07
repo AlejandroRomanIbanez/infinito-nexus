@@ -1,7 +1,7 @@
 ---
 - name: 🔍 Resolve GitLab integration provisioning facts
   set_fact:
-    nextcloud_gl_container: "{{ lookup('config', 'web-app-gitlab', 'services.gitlab.name') }}"
+    nextcloud_gl_container: "{{ lookup('config', 'web-app-gitlab', 'services.webservice.name') }}"
     nextcloud_gl_nc_base_url: "{{ lookup('tls', 'web-app-nextcloud', 'url.base') | regex_replace('/$', '') }}"
   changed_when: false
 

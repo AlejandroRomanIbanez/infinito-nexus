@@ -1,19 +1,114 @@
 ---
-config:
+# Exception: nfs false keeps gitaly repository storage node-local in swarm; upstream forbids git repositories on NFS
+repositories:
   type: volume
-  name: gitlab_config
+  name: gitlab_repositories
+  nfs: false
   mounts:
-    - service: gitlab
-      target: /etc/gitlab
-logs:
+    - service: gitaly
+      target: /home/git/repositories
+shared:
   type: volume
-  name: gitlab_logs
+  name: gitlab_shared
   mounts:
-    - service: gitlab
-      target: /var/log/gitlab
-data:
+    - service: webservice
+      target: /srv/gitlab/shared
+    - service: sidekiq
+      target: /srv/gitlab/shared
+    - service: workhorse
+      target: /srv/gitlab/shared
+uploads:
   type: volume
-  name: gitlab_data
+  name: gitlab_uploads
   mounts:
-    - service: gitlab
-      target: /var/opt/gitlab
+    - service: webservice
+      target: /srv/gitlab/public/uploads
+    - service: sidekiq
+      target: /srv/gitlab/public/uploads
+    - service: workhorse
+      target: /srv/gitlab/public/uploads
+builds:
+  type: volume
+  name: gitlab_builds
+  mounts:
+    - service: webservice
+      target: /srv/gitlab/builds
+    - service: sidekiq
+      target: /srv/gitlab/builds
+rails_templates:
+  type: bind
+  source: "{{ [lookup('container', 'web-app-gitlab', 'directories.config'), 'rails'] | path_join }}"
+  read_only: true
+  mounts:
+    - service: webservice
+      target: /var/opt/gitlab/config/templates
+    - service: sidekiq
+      target: /var/opt/gitlab/config/templates
+    - service: migrations
+      target: /var/opt/gitlab/config/templates
+rails_secrets:
+  type: bind
+  source: "{{ [lookup('container', 'web-app-gitlab', 'directories.config'), 'secrets'] | path_join }}"
+  read_only: true
+  mounts:
+    - service: webservice
+      target: /var/opt/gitlab/config/secrets
+    - service: sidekiq
+      target: /var/opt/gitlab/config/secrets
+    - service: migrations
+      target: /var/opt/gitlab/config/secrets
+workhorse_templates:
+  type: bind
+  source: "{{ [lookup('container', 'web-app-gitlab', 'directories.config'), 'workhorse'] | path_join }}"
+  read_only: true
+  mounts:
+    - service: workhorse
+      target: /var/opt/gitlab/config/templates
+workhorse_secret:
+  type: bind
+  source: "{{ [lookup('container', 'web-app-gitlab', 'directories.config'), 'secrets', '.gitlab_workhorse_secret'] | path_join }}"
+  read_only: true
+  mounts:
+    - service: workhorse
+      target: /etc/gitlab/gitlab-workhorse/secret
+    - service: webservice
+      target: /srv/gitlab/.gitlab_workhorse_secret
+shell_templates:
+  type: bind
+  source: "{{ [lookup('container', 'web-app-gitlab', 'directories.config'), 'shell'] | path_join }}"
+  read_only: true
+  mounts:
+    - service: shell
+      target: /srv/gitlab-config
+shell_secret:
+  type: bind
+  source: "{{ [lookup('container', 'web-app-gitlab', 'directories.config'), 'secrets', '.gitlab_shell_secret'] | path_join }}"
+  read_only: true
+  mounts:
+    - service: shell
+      target: /srv/gitlab-secrets/.gitlab_shell_secret
+gitaly_config:
+  type: bind
+  source: "{{ [lookup('container', 'web-app-gitlab', 'directories.config'), 'gitaly'] | path_join }}"
+  read_only: true
+  mounts:
+    - service: gitaly
+      target: /etc/gitaly
+hostkeys:
+  type: bind
+  source: "{{ [lookup('container', 'web-app-gitlab', 'directories.config'), 'hostkeys'] | path_join }}"
+  read_only: true
+  mounts:
+    - service: shell
+      target: /srv/ssh-hostkeys
+smtp_initializer:
+  type: bind
+  source: "{{ [lookup('container', 'web-app-gitlab', 'directories.config'), 'smtp_settings.rb'] | path_join }}"
+  read_only: true
+  mounts:
+    - service: webservice
+      target: /srv/gitlab/config/initializers/smtp_settings.rb
+      when: "{{ lookup('email', 'web-app-gitlab').enabled | bool }}"
+    - service: sidekiq
+      target: /srv/gitlab/config/initializers/smtp_settings.rb
+      when: "{{ lookup('email', 'web-app-gitlab').enabled | bool }}"
