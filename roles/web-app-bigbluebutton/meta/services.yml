@@ -30,7 +30,6 @@ bigbluebutton:
   enabled: true
   shared: true
   repository: https://github.com/bigbluebutton/docker.git
-  # Exception: the packaging repo has no tags; release branches are the only reproducible pins
   ref: v3.0.23
   recording:
     enabled: false

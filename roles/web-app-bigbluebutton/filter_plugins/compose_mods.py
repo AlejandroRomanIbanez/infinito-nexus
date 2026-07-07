@@ -49,7 +49,6 @@ def compose_mods(yml_text, compose_repository_path, env_file, extra_hosts=None):
                     hosts.append(entry)
             svc["extra_hosts"] = hosts
 
-        # Exception: local builds refetch libopusenc/sounds/keys from flaky hosts; pull the published image instead
         if "build" in svc and svc.get("image"):
             svc.pop("build")
 
