@@ -4,8 +4,6 @@
     path: "{{ MEDIAWIKI_EXT_CFG_BASE }}"
     state: directory
     mode: "0755"
-  delegate_to: "{{ MEDIAWIKI_HOST_NODE }}"
-
 - name: "⬇️ EXT | Download extension tarballs ({{ MEDIAWIKI_EXT_BRANCH }})"
   get_url_retry:
     url: "{{ ext.url }}"
@@ -15,8 +13,6 @@
   loop_control:
     loop_var: ext
     label: "{{ ext.name }}"
-  delegate_to: "{{ MEDIAWIKI_HOST_NODE }}"
-
 - name: "📋 EXT | Copy & extract into container if not installed"
   script: install_extension.sh
   environment:
@@ -31,8 +27,6 @@
     label: "{{ ext.name }}"
   register: _install_results
   changed_when: "'INSTALLED:' in _install_results.stdout"
-  delegate_to: "{{ MEDIAWIKI_HOST_NODE }}"
-
 - name: "📦 EXT | composer install in each extension when needed"
   script: >-
     composer_install_extension.sh
@@ -46,8 +40,6 @@
     label: "{{ ext.name }}"
   register: _vendor
   changed_when: "'COMPOSER_INSTALLED:' in _vendor.stdout"
-  delegate_to: "{{ MEDIAWIKI_HOST_NODE }}"
-
 - name: "✅ EXT | Sanity check: Jumbojett OpenIDConnect client present"
   shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
     container exec {{ MEDIAWIKI_LOCAL_CID | quote }} bash -lc
@@ -57,4 +49,3 @@
   register: _oidc_class
   changed_when: false
   failed_when: _oidc_class.rc != 0
-  delegate_to: "{{ MEDIAWIKI_HOST_NODE }}"

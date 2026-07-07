@@ -20,7 +20,10 @@
   when: IS_STACK_HOST | bool
 
 - name: "📂 Load extensions procedures for '{{ application_id }}'"
-  include_tasks: "02_extensions.yml"
+  include_tasks:
+    file: "02_extensions.yml"
+    apply:
+      delegate_to: "{{ MEDIAWIKI_HOST_NODE }}"
   when:
     - MEDIAWIKI_OIDC_ENABLED | bool
     - IS_STACK_HOST | bool
