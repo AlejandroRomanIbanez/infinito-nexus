@@ -16,10 +16,6 @@
   ansible.builtin.include_tasks:
     file: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml') }}"
   vars:
-    # Exception: files inside a CONFIG_TEMPLATE_DIRECTORY are cp'd by the CNG
-    # set-config script into CONFIG_DIRECTORY on EVERY container start; the
-    # first cp creates the destination with the source mode, so without owner
-    # write the truncating re-copy fails with EACCES on restart (crash-loop).
     role_templates:
       - src: "config/gitlab.yml.j2"
         dest: "{{ [GITLAB_CONFIG_RAILS_DIR, 'gitlab.yml'] | path_join }}"
