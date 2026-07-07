@@ -35,6 +35,66 @@ builds:
       target: /srv/gitlab/builds
     - service: sidekiq
       target: /srv/gitlab/builds
+# Exception: the CNG images declare VOLUME /var/log(+/gitlab-shell|/gitaly) and
+# /var/opt/gitlab; without named mounts every container spawns anonymous volumes
+# that fail the hlth-volumes check. nfs false keeps this ephemeral state
+# node-local in swarm; sharing production.log across nodes over NFS is wrong.
+webservice_logs:
+  type: volume
+  name: gitlab_webservice_logs
+  nfs: false
+  mounts:
+    - service: webservice
+      target: /var/log
+webservice_state:
+  type: volume
+  name: gitlab_webservice_state
+  nfs: false
+  mounts:
+    - service: webservice
+      target: /var/opt/gitlab
+sidekiq_logs:
+  type: volume
+  name: gitlab_sidekiq_logs
+  nfs: false
+  mounts:
+    - service: sidekiq
+      target: /var/log
+sidekiq_state:
+  type: volume
+  name: gitlab_sidekiq_state
+  nfs: false
+  mounts:
+    - service: sidekiq
+      target: /var/opt/gitlab
+migrations_logs:
+  type: volume
+  name: gitlab_migrations_logs
+  nfs: false
+  mounts:
+    - service: migrations
+      target: /var/log
+migrations_state:
+  type: volume
+  name: gitlab_migrations_state
+  nfs: false
+  mounts:
+    - service: migrations
+      target: /var/opt/gitlab
+shell_logs:
+  type: volume
+  name: gitlab_shell_logs
+  nfs: false
+  mounts:
+    - service: shell
+      target: /var/log/gitlab-shell
+gitaly_logs:
+  type: volume
+  name: gitlab_gitaly_logs
+  nfs: false
+  mounts:
+    - service: gitaly
+      target: /var/log/gitaly
 rails_templates:
   type: bind
   source: "{{ [lookup('container', 'web-app-gitlab', 'directories.config'), 'rails'] | path_join }}"
