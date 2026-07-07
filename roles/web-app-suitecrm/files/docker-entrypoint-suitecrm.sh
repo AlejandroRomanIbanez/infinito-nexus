@@ -43,10 +43,39 @@ mkdir -p "$TMPDIR"
 chown "$WEB_USER:$WEB_GROUP" "$TMPDIR"
 chmod 775 "$TMPDIR"
 
-BOOT_LOCK="${APP_DIR}/.suitecrm-boot.lock"
+BOOT_LOCK="${APP_DIR}/.suitecrm-boot.lock.d"
 
-(
-  flock 9
+# Exception: the swarm NFS mount forces local_lock=flock, so flock(2) never
+# crosses nodes; atomic mkdir on the NFS server is the working cross-replica mutex.
+_have_lock=0
+_lock_tries=0
+while :; do
+  if mkdir "$BOOT_LOCK" 2>/dev/null; then
+    _have_lock=1
+    break
+  fi
+  # Exception: 1800s exceeds the orchestrator kill ceiling (start_period 15m
+  # plus retries), so only a dead leader's lock can be this old.
+  _lock_mtime=$(stat -c %Y "$BOOT_LOCK" 2>/dev/null || echo 0)
+  if [ "$_lock_mtime" -gt 0 ] && [ $(($(date +%s) - _lock_mtime)) -ge 1800 ]; then
+    log "Stale boot lock detected - removing it and retrying."
+    rmdir "$BOOT_LOCK" 2>/dev/null || true
+    continue
+  fi
+  if [ -f "$INSTALL_FLAG" ]; then
+    break
+  fi
+  _lock_tries=$((_lock_tries + 1))
+  if [ "$_lock_tries" -ge 180 ]; then
+    log "ERROR: timed out waiting for the boot lock or install flag."
+    exit 1
+  fi
+  sleep 5
+done
+
+if [ "$_have_lock" = "1" ]; then
+  trap 'rmdir "$BOOT_LOCK" 2>/dev/null || true' EXIT
+  trap 'rmdir "$BOOT_LOCK" 2>/dev/null || true; exit 143' TERM INT
 
   CACHE_REFRESH=0
   if [ ! -f "$INSTALL_FLAG" ]; then
@@ -78,7 +107,17 @@ BOOT_LOCK="${APP_DIR}/.suitecrm-boot.lock"
   else
     log "Existing prod cache - skipping cache:clear/warmup."
   fi
-) 9>"$BOOT_LOCK"
+
+  # Exception: install/cache:clear above run as root; the legacy language
+  # caches they wipe are regenerated lazily by apache as www-data, which
+  # cannot write into root-owned cache dirs -> permanent 500 without this.
+  chown -R "$WEB_USER:$WEB_GROUP" "${APP_DIR}/cache" "${APP_DIR}/public/legacy/cache" 2>/dev/null || true
+
+  rmdir "$BOOT_LOCK" 2>/dev/null || true
+  trap - EXIT TERM INT
+else
+  log "SuiteCRM installed by another replica - skipping installer and cache pass."
+fi
 
 echo "OK" > "${APP_DIR}/public/healthcheck.html"
 chown "$WEB_USER:$WEB_GROUP" "${APP_DIR}/public/healthcheck.html"
