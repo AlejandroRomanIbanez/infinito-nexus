@@ -50,7 +50,7 @@ users:
     website: "https://www.infinito.nexus/"
     email: "biber@infinito.example"
     gpg: "DUMMY-GPG-KEY-NOT-SET"
-    password: "VeryUnsecurePassword"
+    password: "VeryUnsecurePassword!1"
 
     uid: 10001
     gid: 10001
