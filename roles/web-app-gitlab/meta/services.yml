@@ -75,6 +75,7 @@ webservice:
   pids_limit: 2048
 sidekiq:
   image: registry.gitlab.com/gitlab-org/build/cng/gitlab-sidekiq-ce
+  version: v19.1.1
   name: gitlab-sidekiq
   cpus: "1.0"
   mem_reservation: 2g
@@ -85,6 +86,7 @@ sidekiq:
       http: 3808
 workhorse:
   image: registry.gitlab.com/gitlab-org/build/cng/gitlab-workhorse-ce
+  version: v19.1.1
   name: gitlab-workhorse
   cpus: "0.5"
   mem_reservation: 256m
@@ -94,6 +96,7 @@ gitaly:
   # nocheck: single-replica
   replicas: 1
   image: registry.gitlab.com/gitlab-org/build/cng/gitaly
+  version: v19.1.1
   name: gitlab-gitaly
   ports:
     internal:
@@ -104,6 +107,7 @@ gitaly:
   pids_limit: 1024
 shell:
   image: registry.gitlab.com/gitlab-org/build/cng/gitlab-shell
+  version: v19.1.1
   name: gitlab-shell
   ports:
     internal:
@@ -116,6 +120,7 @@ migrations:
   # nocheck: single-replica
   replicas: 1
   image: registry.gitlab.com/gitlab-org/build/cng/gitlab-rails-ce
+  version: v19.1.1
   name: gitlab-migrations
   cpus: "1.0"
   mem_reservation: 1g

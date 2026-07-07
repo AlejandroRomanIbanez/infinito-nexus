@@ -274,26 +274,40 @@ def collect_entries(repo_root: Path) -> list[DockerImageVersionEntry]:
     return entries
 
 
+def _registry_cursor(version: str) -> str | None:
+    """Pagination seed for the generic v2 tag scan.
+
+    Returns ``"v"`` for v-prefixed pins so the scan skips ahead of
+    commit-sha tags that sort before the release tags, ``None``
+    otherwise (scan from the first page).
+    """
+    return "v" if version.startswith("v") else None
+
+
 def find_outdated_updates(repo_root: Path) -> list[DockerImageVersionUpdate]:
     entries = collect_entries(repo_root)
     updates: list[DockerImageVersionUpdate] = []
 
-    def _fetch(image: str) -> tuple[str, list[str]]:
+    def _fetch(item: tuple[str, str]) -> tuple[str, list[str]]:
+        image, version = item
         if is_dockerhub(image):
             return image, fetch_dockerhub_tags(image)
         if is_ghcr(image):
             return image, fetch_ghcr_tags(image)
         if is_mcr(image):
             return image, fetch_mcr_tags(image)
-        return image, fetch_registry_tags(image)
+        return image, fetch_registry_tags(image, last=_registry_cursor(version))
 
-    unique_images = {
-        entry.image for entry in entries if is_supported_registry(entry.image)
-    }
+    image_versions: dict[str, str] = {}
+    for entry in entries:
+        if is_supported_registry(entry.image):
+            image_versions.setdefault(entry.image, entry.version)
     with concurrent.futures.ThreadPoolExecutor(
         max_workers=resolve_max_fetch_workers()
     ) as pool:
-        image_tags: dict[str, list[str]] = dict(pool.map(_fetch, unique_images))
+        image_tags: dict[str, list[str]] = dict(
+            pool.map(_fetch, image_versions.items())
+        )
 
     for entry in entries:
         tags = image_tags.get(entry.image, [])

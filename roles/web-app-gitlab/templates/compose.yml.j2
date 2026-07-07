@@ -2,7 +2,7 @@
   {% set service_name = GITLAB_WEBSERVICE_SERVICE_NAME %}
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', GITLAB_WEBSERVICE_CONTAINER) }}
-    {{ lookup('container_image', application_id, service_name, version=GITLAB_VERSION) }}
+    {{ lookup('container_image', application_id, service_name) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     environment:
       CONFIG_TEMPLATE_DIRECTORY: "/var/opt/gitlab/config/templates"
@@ -25,7 +25,7 @@
   {% set service_name = GITLAB_WORKHORSE_SERVICE_NAME %}
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', GITLAB_WORKHORSE_CONTAINER) }}
-    {{ lookup('container_image', application_id, service_name, version=GITLAB_VERSION) }}
+    {{ lookup('container_image', application_id, service_name) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     environment:
       CONFIG_TEMPLATE_DIRECTORY: "/var/opt/gitlab/config/templates"
@@ -51,7 +51,7 @@
   {% set container_healthcheck_start_period = '300s' %}
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', GITLAB_SIDEKIQ_CONTAINER) }}
-    {{ lookup('container_image', application_id, service_name, version=GITLAB_VERSION) }}
+    {{ lookup('container_image', application_id, service_name) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     environment:
       CONFIG_TEMPLATE_DIRECTORY: "/var/opt/gitlab/config/templates"
@@ -67,7 +67,7 @@
   {% set service_name = GITLAB_GITALY_SERVICE_NAME %}
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', GITLAB_GITALY_CONTAINER) }}
-    {{ lookup('container_image', application_id, service_name, version=GITLAB_VERSION) }}
+    {{ lookup('container_image', application_id, service_name) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     healthcheck:
       test: ["CMD", "/scripts/healthcheck"]
@@ -82,7 +82,7 @@
   {% set service_name = GITLAB_SHELL_SERVICE_NAME %}
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', GITLAB_SHELL_CONTAINER) }}
-    {{ lookup('container_image', application_id, service_name, version=GITLAB_VERSION) }}
+    {{ lookup('container_image', application_id, service_name) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     environment:
       CONFIG_TEMPLATE_DIRECTORY: "/srv/gitlab-config"
@@ -103,7 +103,7 @@
   {% set docker_restart_policy = 'on-failure' %}
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', GITLAB_MIGRATIONS_CONTAINER) }}
-    {{ lookup('container_image', application_id, service_name, version=GITLAB_VERSION) }}
+    {{ lookup('container_image', application_id, service_name) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     environment:
       CONFIG_TEMPLATE_DIRECTORY: "/var/opt/gitlab/config/templates"

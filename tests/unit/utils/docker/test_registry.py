@@ -121,6 +121,21 @@ class TestFetchRegistryTags(unittest.TestCase):
         ):
             self.assertEqual(registry.fetch_registry_tags("foo"), [])
 
+    def test_last_cursor_seeds_query(self) -> None:
+        with mock.patch.object(
+            registry.urllib.request,
+            "urlopen",
+            return_value=_Resp(body=b'{"tags": ["v1.0.0"]}'),
+        ) as opened:
+            self.assertEqual(
+                registry.fetch_registry_tags("registry.gitlab.com/foo/bar", last="v"),
+                ["v1.0.0"],
+            )
+        url = opened.call_args.args[0].full_url
+        self.assertEqual(
+            url, "https://registry.gitlab.com/v2/foo/bar/tags/list?n=1000&last=v"
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

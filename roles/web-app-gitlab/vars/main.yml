@@ -9,7 +9,6 @@ GITLAB_HOSTNAME: "{{ lookup('domain', application_id) }}"
 GITLAB_TLS_ENABLED: "{{ lookup('tls', application_id, 'enabled') | bool }}"
 GITLAB_WEB_PORT: "{{ lookup('tls', application_id, 'ports.web') }}"
 
-GITLAB_VERSION: "{{ lookup('config', application_id, 'services.webservice.version') }}"
 GITLAB_SSH_PORT: "{{ lookup('config', application_id, 'services.gitlab.ports.public.ssh') }}"
 GITLAB_WORKHORSE_PORT: "{{ lookup('config', application_id, 'services.gitlab.ports.internal.http') }}"
 GITLAB_SSHD_PORT: "{{ lookup('config', application_id, 'services.gitlab.ports.internal.ssh') }}"

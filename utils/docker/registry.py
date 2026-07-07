@@ -107,13 +107,23 @@ def _request(url: str, repo: str, method: str, accept: str | None):
     return None
 
 
-def fetch_registry_tags(image: str, max_pages: int = 10) -> list[str]:
-    """Return all tags for *image* from its registry (empty on any failure)."""
+def fetch_registry_tags(
+    image: str, max_pages: int = 10, last: str | None = None
+) -> list[str]:
+    """Return all tags for *image* from its registry (empty on any failure).
+
+    ``last`` seeds the OCI pagination cursor: only tags sorting lexically
+    after it are returned. Repos like GitLab CNG carry tens of thousands
+    of commit-sha tags before the ``v*`` release tags, so an unseeded
+    scan exhausts ``max_pages`` without ever reaching them.
+    """
     resolved = _resolve(image)
     if resolved is None:
         return []
     host, repo = resolved
-    url = f"https://{host}/v2/{quote(repo, safe='/')}/tags/list?n=100"
+    url = f"https://{host}/v2/{quote(repo, safe='/')}/tags/list?n=1000"
+    if last:
+        url += f"&last={quote(last, safe='')}"
     tags: list[str] = []
     for _page in range(max_pages):
         result = _request(url, repo, method="GET", accept="application/json")
