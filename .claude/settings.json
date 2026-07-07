@@ -94,6 +94,7 @@
       "WebFetch(domain:deepwiki.com)",
       "WebFetch(domain:developer.adobe.com)",
       "WebFetch(domain:developer.mozilla.org)",
+      "WebFetch(domain:developer.shopware.com)",
       "WebFetch(domain:developer.wordpress.org)",
       "WebFetch(domain:developers.cloudflare.com)",
       "WebFetch(domain:discuss.frappe.io)",
