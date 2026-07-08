@@ -7,8 +7,8 @@ CI job dies at the 6h runner cut.
 Exempt:
 
 * lines already rendering ``| curl``
-* lines carrying ``--max-time`` themselves (plain .sh files cannot render
-  the filter; they pin the flags inline or via a script-local variable)
+* lines carrying ``--max-time`` themselves (plain .sh files and Dockerfiles
+  cannot render the filter; they pin the flags inline or via a variable)
 * Docker healthcheck blocks (the healthcheck ``timeout:`` field caps them)
 * package-name mentions (``name: curl``) - only command invocations match
 * lines suppressed via ``# nocheck: curl-timeout`` (same line or above)
@@ -33,6 +33,7 @@ _GLOBS = (
     "roles/*/tasks/**/*.yml",
     "roles/*/templates/**/*.j2",
     "roles/*/files/**/*.sh",
+    "roles/*/files/**/Dockerfile",
 )
 
 
