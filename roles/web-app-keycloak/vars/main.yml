@@ -132,17 +132,17 @@ KEYCLOAK_USER_EMAILS_VERIFIED: "{{ lookup('config', application_id, 'services.ke
 # single SPOT.
 KEYCLOAK_MOODLE_ENABLED: "{{ 'web-app-moodle' in group_names }}"
 
-# Stalwart's WebAdmin SPA uses a fixed `stalwart-webui` client_id (no runtime
-# override), so provision a matching public (PKCE) client when Stalwart is
-# deployed. (Follow-up: replace this/Moodle/Nextcloud gates with self-declaration.)
+# The WebAdmin SPA hardcodes its client_id, so provision a matching public
+# (PKCE) client. (Follow-up: replace these gates with self-declaration.)
 KEYCLOAK_STALWART_WEBUI_ENABLED: "{{ 'web-app-stalwart' in group_names }}"
+KEYCLOAK_STALWART_WEBUI_CLIENT_ID: "stalwart-webui"
 
-# Roundcube (Stalwart webmail) confidential client. Separate from the WebAdmin SPA
-# client: Roundcube does a server-side code exchange and needs a *small* access
-# token (no roles/groups) so its XOAUTH2 SASL line fits Stalwart's SMTP 4096-byte
-# limit. Reuses the shared client secret (see clients/stalwart_webmail.json.j2).
+# Roundcube confidential client — needs a small access token (no roles/groups)
+# so its XOAUTH2 SASL line fits Stalwart's 4096-byte SMTP limit. Keep the id in
+# sync with STALWART_WEBMAIL_OIDC_CLIENT_ID (web-app-stalwart).
 KEYCLOAK_STALWART_WEBMAIL_ENABLED: "{{ 'web-app-stalwart' in group_names }}"
-KEYCLOAK_STALWART_WEBMAIL_BASE: "https://webmail.{{ DOMAIN_PRIMARY }}"  # nocheck: domain-spot
+KEYCLOAK_STALWART_WEBMAIL_CLIENT_ID: "stalwart-webmail"
+KEYCLOAK_STALWART_WEBMAIL_BASE: "{{ lookup('tls', 'web-app-stalwart', 'protocols.web') ~ '://' ~ lookup('config', 'web-app-stalwart', 'server.domains.canonical.webmail') }}"
 KEYCLOAK_STALWART_WEBMAIL_REDIRECT_URIS:
   - "{{ KEYCLOAK_STALWART_WEBMAIL_BASE }}/*"
 KEYCLOAK_STALWART_WEBMAIL_WEB_ORIGINS:

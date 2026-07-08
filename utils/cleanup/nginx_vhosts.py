@@ -36,7 +36,7 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
 DEFAULT_NGINX_DIR = Path("/etc/nginx")
-DEFAULT_DOMAIN_PRIMARY = "infinito.example"
+DEFAULT_DOMAIN_PRIMARY = "infinito.test"
 _PROTOCOLS: tuple[str, ...] = ("http", "https")
 
 
@@ -51,7 +51,7 @@ def _resolve_domain_primary(domain_primary: str | None) -> str:
     if domain_primary is not None:
         return domain_primary
     # The entity-keyed purge chain never forwards DOMAIN; fall back to the
-    # container's live INFINITO_DOMAIN before the example default.
+    # container's live INFINITO_DOMAIN before the static default.
     return (
         os.environ.get("DOMAIN")
         or os.environ.get("INFINITO_DOMAIN")

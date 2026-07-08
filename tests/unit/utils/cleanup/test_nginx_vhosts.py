@@ -320,10 +320,10 @@ class TestResolveDomainPrimary(unittest.TestCase):
     def test_empty_domain_falls_back_to_infinito_domain(self) -> None:
         with patch.dict(
             os.environ,
-            {"DOMAIN": "", "INFINITO_DOMAIN": "infinito.test"},
+            {"DOMAIN": "", "INFINITO_DOMAIN": "live.infinito.test"},
             clear=False,
         ):
-            self.assertEqual(mod._resolve_domain_primary(None), "infinito.test")
+            self.assertEqual(mod._resolve_domain_primary(None), "live.infinito.test")
 
     def test_default_when_nothing_set(self) -> None:
         env = {
@@ -332,7 +332,7 @@ class TestResolveDomainPrimary(unittest.TestCase):
             if k not in ("DOMAIN", "INFINITO_DOMAIN")
         }
         with patch.dict(os.environ, env, clear=True):
-            self.assertEqual(mod._resolve_domain_primary(None), "infinito.example")
+            self.assertEqual(mod._resolve_domain_primary(None), "infinito.test")
 
 
 if __name__ == "__main__":  # pragma: no cover

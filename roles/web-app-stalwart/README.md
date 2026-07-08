@@ -24,7 +24,6 @@ into one binary. This role runs:
 | `webmail` (Roundcube) | Browser webmail (parity with Mailu) |
 | `clamav` | Attachment antivirus, called as an SMTP DATA-stage milter |
 | `postgres` *(shared)* | Account / mail / metadata store |
-| `redis` *(shared)* | In-memory / rate-limit store |
 
 Dynamic state (domains, accounts, passwords, DKIM, certificates) is administered
 at runtime via the JMAP management API; `config.json` only bootstraps the data
@@ -72,10 +71,11 @@ account (or the Keycloak SSO token when SSO is enabled).
 - All-in-one mail server (SMTP/IMAP/JMAP/POP3/ManageSieve)
 - CalDAV / CardDAV / WebDAV collaboration
 - Built-in spam filtering
+- ClamAV antivirus as an SMTP DATA-stage milter (`services.clamav.enabled: false` for spam-only)
 - DKIM signing with automatic key management; SPF / DMARC published in DNS
 - OpenID Connect SSO via Keycloak
 - Roundcube webmail
-- PostgreSQL + Redis backing stores
+- PostgreSQL backing store
 
 ## Further Reading
 

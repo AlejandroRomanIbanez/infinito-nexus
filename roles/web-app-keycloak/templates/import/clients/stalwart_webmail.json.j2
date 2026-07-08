@@ -4,7 +4,7 @@
   shared client secret. Keep `description` below under Keycloak's 255-char column.
 #}
 {
-  "clientId": "stalwart-webmail",
+  "clientId": "{{ KEYCLOAK_STALWART_WEBMAIL_CLIENT_ID }}",
   "name": "Stalwart Webmail (Roundcube)",
   "description": "Roundcube webmail client. Minimal scopes (no roles/groups) keep the OIDC access token small enough for Stalwart's XOAUTH2 SMTP SASL line (4096-byte limit). Reuses the shared client secret.",
   "enabled": true,

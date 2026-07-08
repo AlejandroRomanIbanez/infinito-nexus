@@ -13,7 +13,7 @@ $config['oauth_provider'] = 'generic';
 $config['oauth_provider_name'] = '{{ OIDC.BUTTON_TEXT }}';
 // Minimal-scope client so the access token stays under Stalwart's 4096-byte
 // XOAUTH2 SASL line limit. See roles/web-app-keycloak clients/stalwart_webmail.json.j2.
-$config['oauth_client_id'] = 'stalwart-webmail';
+$config['oauth_client_id'] = '{{ STALWART_WEBMAIL_OIDC_CLIENT_ID }}';
 $config['oauth_auth_uri'] = '{{ OIDC.CLIENT.AUTHORIZE_URL }}';
 $config['oauth_token_uri'] = '{{ OIDC.CLIENT.TOKEN_URL }}';
 $config['oauth_identity_uri'] = '{{ OIDC.CLIENT.USER_INFO_URL }}';

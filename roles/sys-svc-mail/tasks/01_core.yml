@@ -10,27 +10,14 @@
   ansible.builtin.assert:
     that:
       - "('run_once_' ~ (MAIL_PROVIDER | replace('-', '_'))) in vars"
+      - (lookup('users', 'no-reply').tokens | default({})).get(MAIL_PROVIDER, '') | length > 0
     fail_msg: >-
       {{ MAIL_PROVIDER }} must be preloaded by sys-service-loader before
       sys-svc-mail runs. Missing run_once_{{ MAIL_PROVIDER | replace('-', '_') }}
-      indicates that a service was loaded outside the constructor
-      service-loader path.
+      or missing users['no-reply'].tokens['{{ MAIL_PROVIDER }}'] indicates that
+      a service was loaded outside the constructor service-loader path.
   when:
     - MAIL_PROVIDER in group_names
-
-# The no-reply submission token is created during mail-provider provisioning. On
-# local/CI deploys the mail domain uses a reserved TLD (.example) which Stalwart
-# rejects, so provisioning is skipped and the token is absent — warn instead of
-# failing the whole deploy.
-- name: "Warn if the no-reply submission token is missing"
-  ansible.builtin.debug:
-    msg: >-
-      users['no-reply'].tokens['{{ MAIL_PROVIDER }}'] is empty — outbound mail
-      will not authenticate until the no-reply account is provisioned (expected
-      on local/CI reserved-TLD domains).
-  when:
-    - MAIL_PROVIDER in group_names
-    - (lookup('users', 'no-reply').tokens | default({})).get(MAIL_PROVIDER, '') | length == 0
 
 - name: Setup emails via localhost
   include_role:

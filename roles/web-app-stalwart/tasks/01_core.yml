@@ -1,6 +1,18 @@
 ---
 - include_tasks: utils/once/flag.yml
 
+# Stalwart's compiled-in validation rejects .example/.invalid (RFC 6761) —
+# fail before any state change.
+- name: "Assert the mail domain is provisionable by Stalwart"
+  ansible.builtin.assert:
+    that:
+      - STALWART_DOMAIN.split('.')[-1] not in ['example', 'invalid']
+    fail_msg: >-
+      Stalwart rejects the mail domain '{{ STALWART_DOMAIN }}' (TLD
+      '.{{ STALWART_DOMAIN.split('.')[-1] }}'). Use a real domain, or a
+      `.test` domain for local/CI stacks.
+    quiet: true
+
 - name: "Disable SMTP to avoid port conflicts"
   include_tasks: "{{ [playbook_dir, 'roles/sys-svc-mail-smtp/tasks/disable.yml' ] | path_join }}"
 
@@ -123,8 +135,7 @@
 - name: Wait for Stalwart database and management API
   include_tasks: 02_wait_for_api.yml
 
-# WebUI bundle — domain-independent (runs even for reserved TLDs); non-fatal so a
-# 404 WebAdmin never blocks the deploy.
+# WebUI bundle — non-fatal so a 404 WebAdmin never blocks the deploy.
 - name: "Provision the Stalwart WebUI (WebAdmin) bundle"
   block:
     - include_tasks: 10_webadmin.yml

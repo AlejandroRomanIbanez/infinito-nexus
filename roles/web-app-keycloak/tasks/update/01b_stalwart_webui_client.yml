@@ -7,12 +7,12 @@
     kc_desired: >-
       {{
         KEYCLOAK_DICTIONARY_REALM.clients
-          | selectattr('clientId', 'equalto', 'stalwart-webui')
+          | selectattr('clientId', 'equalto', KEYCLOAK_STALWART_WEBUI_CLIENT_ID)
           | list | first
       }}
   keycloak_kcadm_update:
     object_kind: "client"
-    lookup_value: "stalwart-webui"
+    lookup_value: "{{ KEYCLOAK_STALWART_WEBUI_CLIENT_ID }}"
     desired: "{{ kc_desired }}"
     kcadm_exec: "{{ KEYCLOAK_EXEC_KCADM }}"
     realm: "{{ KEYCLOAK_REALM }}"

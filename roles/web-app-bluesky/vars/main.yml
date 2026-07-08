@@ -45,7 +45,7 @@ BLUESKY_API_PORT: "{{ lookup('config', 'web-app-bluesky', 'services.api.ports.lo
 # AT Protocol's handle syntax forbids reserved TLDs (`.example`, `.test`,
 # `.invalid`, `.local`, `.localhost`, `.arpa`, `.alt`, `.internal`,
 # `.onion`) — see https://atproto.com/specs/handle. The dev/test env runs
-# under DOMAIN_PRIMARY=infinito.example, which would make PDS createAccount
+# under DOMAIN_PRIMARY=infinito.test, which would make PDS createAccount
 # reject every broker-provisioned handle with
 # `InvalidHandle: Handle TLD is invalid or disallowed`.
 # Map disallowed TLDs to `.app` (real, allowed) so the spec's structural

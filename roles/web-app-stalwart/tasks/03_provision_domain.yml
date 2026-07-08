@@ -1,20 +1,61 @@
 ---
-# Provision the mail domain + accounts (JMAP). Stalwart rejects domains whose TLD
-# is neither a real public suffix nor one of its reserved TLDs (test/local/
-# internal/...). The platform's local/CI domain uses `.example`, which Stalwart
-# rejects, so skip those. `.test`/real domains are provisioned normally.
-- name: "Determine whether the mail domain is rejected by Stalwart"
+# Provision the mail domain, accounts, TLS, OIDC, antivirus and DNS (JMAP).
+# The domain was asserted provisionable in 01_core.yml before any state change.
+- name: "List existing Stalwart domains"
+  include_tasks: jmap_call.yml
+  vars:
+    stalwart_jmap_body: >-
+      {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
+          'methodCalls': [['x:Domain/get', {'ids': none}, 'c0']]} | to_json }}
+
+- name: "Resolve existing domain id (if any)"
   ansible.builtin.set_fact:
-    stalwart_domain_reserved: "{{ STALWART_DOMAIN.split('.')[-1] in ['example', 'invalid'] }}"
+    stalwart_domain_id: >-
+      {{ (stalwart_jmap.methodResponses[0][1].list
+          | selectattr('name', 'equalto', STALWART_DOMAIN)
+          | map(attribute='id') | first) | default('') }}
 
-- name: "Warn: skipping Stalwart provisioning for an unsupported domain"
-  ansible.builtin.debug:
-    msg: >-
-      Domain '{{ STALWART_DOMAIN }}' uses a TLD Stalwart rejects (.example/.invalid).
-      Skipping provisioning. Deploy with a real domain (or a `.test` domain for a
-      local end-to-end mail test) to provision accounts.
-  when: stalwart_domain_reserved | bool
+- name: "Create Stalwart domain '{{ STALWART_DOMAIN }}'"
+  include_tasks: jmap_call.yml
+  vars:
+    stalwart_jmap_body: >-
+      {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
+          'methodCalls': [['x:Domain/set',
+            {'create': {'d': {'name': STALWART_DOMAIN}}}, 'c0']]} | to_json }}
+  when: stalwart_domain_id | length == 0
 
-- name: "Provision Stalwart domain + accounts"
-  ansible.builtin.include_tasks: 03b_provision_domain.yml
-  when: not (stalwart_domain_reserved | bool)
+- name: "Capture newly created domain id"
+  ansible.builtin.set_fact:
+    stalwart_domain_id: "{{ stalwart_jmap.methodResponses[0][1].created.d.id }}"
+  when: stalwart_domain_id | length == 0
+
+- name: "Provision Stalwart accounts"
+  include_tasks: 04_manage_user.yml
+  vars:
+    stalwart_user_key: "{{ user_item.key }}"
+    stalwart_user_name: "{{ user_item.value.username }}"
+    stalwart_user_password: "{{ user_item.value.password }}"
+    stalwart_user_roles: "{{ user_item.value.roles | default([]) }}"
+  loop: "{{ lookup('users') | dict2items }}"
+  loop_control:
+    loop_var: user_item
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+- name: "Configure Stalwart mail-listener TLS (platform cert)"
+  include_tasks: 07_tls.yml
+  when: lookup('tls', application_id, 'enabled') | bool
+
+- name: "Wire Keycloak as the OIDC authentication directory (SSO)"
+  include_tasks: 08_oidc.yml
+  when: STALWART_SSO_ENABLED | bool
+
+- name: "Register the ClamAV antivirus milter"
+  include_tasks: 09_antivirus.yml
+  when: STALWART_ANTIVIRUS_ENABLED | bool
+
+- name: "Read Stalwart-managed DKIM public key"
+  include_tasks: 05_read_dkim.yml
+
+- name: "Publish Stalwart DNS records"
+  include_tasks: 06_dns-records.yml
+  when: stalwart_dkim_selector is defined

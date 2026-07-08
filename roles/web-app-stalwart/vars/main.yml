@@ -45,13 +45,14 @@ STALWART_CLAMAV_MILTER_TIMEOUT_COMMAND_MS: 5000
 STALWART_CLAMAV_MILTER_TIMEOUT_DATA_MS: 15000
 STALWART_CLAMAV_VOLUME: "stalwart_clamav_data"
 STALWART_CLAMAV_MILTER_CONF: "{{ [ STALWART_CONFIG_DIR, 'clamav-milter.conf' ] | path_join }}"
-# webmail is a secondary canonical (declared in meta/server.yml
-# domains.canonical); lookup('domain') only exposes the primary.
-STALWART_WEBMAIL_DOMAIN: "webmail.{{ DOMAIN_PRIMARY }}"  # nocheck: domain-spot
+# webmail is the secondary canonical (lookup('domain') only exposes the primary).
+STALWART_WEBMAIL_DOMAIN: "{{ lookup('config', application_id, 'server.domains.canonical.webmail') }}"
 STALWART_WEBMAIL_HTTP_PORT: "{{ lookup('config', application_id, 'services.webmail.ports.local.http') }}"
 # Roundcube OAuth config include (rendered only when SSO is enabled).
 STALWART_WEBMAIL_CONFIG_DIR: "{{ [ STALWART_VOLUMES_DIR, 'webmail' ] | path_join }}"
 STALWART_WEBMAIL_OAUTH_CONFIG: "{{ [ STALWART_WEBMAIL_CONFIG_DIR, 'oauth.inc.php' ] | path_join }}"
+# Keep in sync with KEYCLOAK_STALWART_WEBMAIL_CLIENT_ID (web-app-keycloak).
+STALWART_WEBMAIL_OIDC_CLIENT_ID: "stalwart-webmail"
 
 # WebUI (WebAdmin) bundle: Stalwart fetches it from GitHub on first boot, which fails
 # behind restricted egress, so the controller stages it locally (see 10_webadmin.yml).
