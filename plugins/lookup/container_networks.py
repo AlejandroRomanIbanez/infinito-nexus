@@ -53,9 +53,10 @@ class LookupModule(LookupBase):
                 "container_networks lookup: application_id is required in variables"
             )
 
+        mode_force = _resolve_var(templar, vars_.get("compose_mode_force", ""))
         deployment_mode = str(
-            _resolve_var(templar, vars_.get("DEPLOYMENT_MODE", "compose"))
-        )
+            mode_force or _resolve_var(templar, vars_.get("DEPLOYMENT_MODE", "compose"))
+        ).strip()
         provider_self_alias = bool(kwargs.get("provider_self_alias", True))
 
         applications = lookup_loader.get(

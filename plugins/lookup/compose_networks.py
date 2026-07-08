@@ -52,9 +52,10 @@ class LookupModule(LookupBase):
                 "compose_networks lookup: application_id is required in variables"
             )
 
+        mode_force = _resolve_var(templar, vars_.get("compose_mode_force", ""))
         deployment_mode = str(
-            _resolve_var(templar, vars_.get("DEPLOYMENT_MODE", "compose"))
-        )
+            mode_force or _resolve_var(templar, vars_.get("DEPLOYMENT_MODE", "compose"))
+        ).strip()
 
         swarm_cfg = _resolve_var(templar, vars_.get("swarm", {})) or {}
         swarm_encrypted = True
