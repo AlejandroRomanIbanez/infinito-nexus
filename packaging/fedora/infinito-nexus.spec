@@ -1,5 +1,5 @@
 Name:           infinito-nexus
-Version:        11.4.0
+Version:        11.6.0
 Release:        1%{?dist}
 Summary:        Meta package for Infinito.Nexus host dependencies
 
@@ -58,6 +58,55 @@ install -d %{buildroot}%{_docdir}/%{name}
 %doc %{_docdir}/%{name}/DEPENDENCIES
 
 %changelog
+* Wed Jul 08 2026 Kevin Veen-Birkenbach <kevin@veen.world> - 11.6.0-1
+- * New *web-app-n8n* role: n8n workflow automation (Community Edition). SSO is wired through a trusted-header edge hook that is copied and mounted only when SSO is enabled (native SSO is enterprise-only in CE), LDAP sign-in is supported, and per-scenario Playwright coverage exercises the CE edge-SSO model. Ships at lifecycle *alpha*; subnet and port collisions with the new *web-app-semaphore* role were resolved on the way in. See the [web-app-n8n README](roles/web-app-n8n/README.md).
+
+- * CI fixes: resolved four CI failures across the *web-app-n8n*, *web-app-pihole* and *web-app-mastodon* roles.
+
+- * Routine maintenance: dependabot bumps of *docker/login-action* 4.3.0 to 4.4.0 and *eslint-plugin-playwright* 2.10.4 to 2.10.5; removed a stray *.claude/settings.local.json*.
+
+- * Image and dependency version jumps (net since 11.5.0):
+-   * *web-app-baserow*: 2.2.2 to 2.3.0
+-   * *web-app-semaphore*: v2.18.16 to v2.18.21
+-   * *web-app-pihole*: 2026.06.0 to 2026.07.2
+-   * *web-app-seaweedfs*: 4.37 to 4.38
+-   * *web-app-opencloud*: 7.2.0 to 7.2.1
+-   * *web-app-mattermost*: 11.8.2 to 11.8.3
+-   * *web-app-decidim*: 0.31.5 to 0.31.6
+-   * *web-app-prometheus* (Alertmanager): v0.33.0 to v0.33.1
+-   * *web-app-bluesky* (git ref): 1.126.0 to 1.127.0
+
+- **Contributors**
+
+- * [Prageeth Panicker](https://github.com/pragepani): web-app-n8n role (workflow automation, edge-header SSO, LDAP, Playwright)
+- * [Kevin Veen-Birkenbach](https://veen.world): n8n review, CI fixes and version maintenance
+
+* Sat Jul 04 2026 Kevin Veen-Birkenbach <kevin@veen.world> - 11.5.0-1
+- * Three new web-app roles, each with SSO/LDAP wiring and per-scenario Playwright coverage:
+-   * *web-app-semaphore* ([requirement 028](docs/requirements/028-web-app-semaphore.md)): Semaphore UI with OIDC SSO + LDAP. The break-glass admin is sourced from the users model, OIDC admin seeding is idempotent, and the OIDC callback strips a trailing base-URL slash. Shipped at lifecycle *beta*.
+-   * *web-app-checkmk* ([requirement 029](docs/requirements/029-web-app-checkmk.md)): Checkmk behind oauth2-proxy SSO with LDAP; the SSO variant injects a reachable logout control.
+-   * *web-app-jellyfin* ([requirement 030](docs/requirements/030-web-app-jellyfin.md)): Jellyfin media server; LDAP and OIDC auth are modelled as *meta/addons* with per-addon integration hooks and specs.
+
+- * Users-model rework: the per-user *reserved* flag is replaced by an *accounts* list (*host*/*mailbox*/*identity*) with role-derived defaults, so inventory-only users keep their LDAP/Keycloak accounts. A new *forward* field makes Mailu create *username@domain* forward aliases via a new create-only alias task. Mailbox creation and password rotation now gate on *mailbox* in *accounts*, the Mailu RBAC role *mail-bot* is renamed *bot*, and *svc-db-openldap* always provisions the identity subset.
+
+- * Fixes: *web-app-odoo* restarts after auth provisioning so workers drop stale config; *web-app-roulette-wheel* builds with *npm ci* against the app lockfile; *web-app-discourse* allows *data:* script sources in the CSP.
+
+- * New lint: git branch names are validated against the naming convention. Agent docs gained a hard pre-redeploy verification gate in the role iteration loop.
+
+- * Routine maintenance: dependabot bumps of *actions/checkout* 6 to 7, *docker/login-action* 4.1.0 to 4.3.0 and *docker/setup-buildx-action* 4.0.0 to 4.2.0; *skills-lock.json* refresh.
+
+- * Image and dependency version jumps (net since 11.4.0):
+-   * *web-app-mediawiki*: 1.45 to 1.46
+-   * *web-app-erpnext*: v16.25.0 to v16.26.2
+-   * *web-app-peertube*: v8.2.1 to v8.2.2
+-   * *web-app-prometheus*: v3.12.0 to v3.13.0
+-   * *web-app-opentalk* (LiveKit): v1.13.2 to v1.13.3
+-   * *web-app-semaphore*: pinned v2.18.16 (new role)
+
+- **Contributors**
+
+- * [Kevin Veen-Birkenbach](https://veen.world): Semaphore, Checkmk and Jellyfin roles, users-model rework, fixes and version maintenance
+
 * Wed Jul 01 2026 Kevin Veen-Birkenbach <kevin@veen.world> - 11.4.0-1
 - * Self-hosted CI runners: new *svc-runner* role plus *cli/deploy/runner* command spin up N containerised GitHub Actions runners on any server, adding to the 20 GitHub-hosted ones. Each runner is isolated (own subnet, ports, inventory, Docker volume, DNS) and auto-re-registers. Runs on Debian, Ubuntu and Arch, supports Docker-in-Docker, and ships a full in-runner E2E deploy test. See the *svc-runner* README.
 

@@ -130,7 +130,7 @@ class TestUsersLookup(unittest.TestCase):
             {
                 "sld": {
                     "username": "{{ DOMAIN_PRIMARY.split('.')[0] }}",
-                    "reserved": True,
+                    "accounts": [],
                 }
             },
         )
@@ -156,7 +156,7 @@ class TestUsersLookup(unittest.TestCase):
             {
                 "sld": {
                     "username": "{{ DOMAIN_PRIMARY.split('.')[0] }}",
-                    "reserved": True,
+                    "accounts": [],
                 }
             },
         )
@@ -180,7 +180,7 @@ class TestUsersLookup(unittest.TestCase):
             {
                 "sld": {
                     "username": "{{ DOMAIN_PRIMARY.split('.')[0] }}",
-                    "reserved": True,
+                    "accounts": [],
                 }
             },
         )
@@ -202,7 +202,7 @@ class TestUsersLookup(unittest.TestCase):
             {
                 "sld": {
                     "username": "{{ DOMAIN_PRIMARY.split('.')[0] }}",
-                    "reserved": True,
+                    "accounts": [],
                 }
             },
         )
