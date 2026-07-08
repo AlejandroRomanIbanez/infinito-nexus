@@ -15,8 +15,8 @@
           }}}, 'c0']]} | to_json }}
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-# The mail-bot SMTP token is the account password.
-- name: "Persist Stalwart submission credential for mail-bot '{{ stalwart_user_name }}'"
+# The bot SMTP token is the account password.
+- name: "Persist Stalwart submission credential for bot '{{ stalwart_user_name }}'"
   ansible.builtin.include_role:
     name: sys-token-store
     tasks_from: write.yml
@@ -24,5 +24,5 @@
     sys_token_store_user_key: "{{ stalwart_user_key }}"
     sys_token_store_app: "{{ application_id }}"
     sys_token_store_token: "{{ stalwart_user_password }}"
-  when: "'mail-bot' in stalwart_user_roles"
+  when: "'bot' in stalwart_user_roles"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
