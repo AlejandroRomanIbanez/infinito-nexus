@@ -33,6 +33,7 @@ _SORT_KEYS = {
     "lifecycle": lambda r: r.lifecycle,
     "compose": lambda r: int(r.compose),
     "swarm": lambda r: int(r.swarm),
+    "stack": lambda r: int(r.stack),
 }
 
 
@@ -57,6 +58,7 @@ def _row_fields(r: ComplexityRow) -> dict[str, Any]:
         "random": r.random,
         "compose": r.compose,
         "swarm": r.swarm,
+        "stack": r.stack,
     }
 
 
@@ -177,8 +179,11 @@ def build_parser() -> argparse.ArgumentParser:
             "literals like {alpha,beta} are allowed. Fields: name, "
             "lifecycle, base, embeds, embeds_direct, consumers, "
             "consumers_direct, weight, variants, bundles, id, covered_by, "
-            "variant, siblings, random, compose, swarm. compose/swarm are "
-            "booleans (compare with ==true / ==false). String compares are "
+            "variant, siblings, random, compose, swarm, stack. "
+            "compose/swarm/stack are "
+            "booleans (compare with ==true / ==false). 'stack' is True when the "
+            "role ships its own compose stack template. "
+            "String compares are "
             "case-"
             "insensitive. A bare word (no operator) means 'name %% word'. "
             "e.g. 'lifecycle == beta and weight > 50', "

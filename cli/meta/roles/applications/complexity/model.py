@@ -19,6 +19,7 @@ from .graph import (
     direct_dep_roles,
     is_application_role,
     resolve_transitively,
+    role_has_stack,
     truth_predicate,
 )
 
@@ -66,6 +67,11 @@ class ComplexityRow(NamedTuple):
     lifecycle in the tested envelope + the role's ``skip`` list, plus, for
     ``swarm``, at least one non-all-off (deployable) variant. Under
     ``--variant`` ``swarm`` is per-variant (an all-off variant is False).
+    ``stack`` is True when the role renders its own container stack (ships a
+    ``templates/*compose*.yml.j2``); host-only roles (backup, wireguard,
+    swapfile) and pure service-injectors are False. ``swarm`` implies
+    ``stack``: a role with no compose template of its own is never a swarm
+    stack-deploy target, so ``swarm`` is forced False when ``stack`` is False.
     """
 
     name: str
@@ -91,6 +97,7 @@ class ComplexityRow(NamedTuple):
     lifecycle: str = ""
     compose: bool = False
     swarm: bool = False
+    stack: bool = False
 
 
 def _base_hash(name: str, services: list[str]) -> str:
@@ -193,17 +200,24 @@ def compute_complexity_rows(
     compose_apps = _tested_apps("compose", tested)
     swarm_apps = _tested_apps("swarm", tested)
 
-    rows = [
-        _build_row(name, forward, reverse, max_level)._replace(
-            variants=len(variants.get(name) or []) or 1,
-            bundles=bundles.get(name, 1),
-            lifecycle=_role_lifecycle(variants.get(name)),
-            compose=name in compose_apps,
-            swarm=name in swarm_apps
-            and bool(deployable_variant_indices(overrides.get(name))),
+    rows = []
+    for name in names:
+        stack = role_has_stack(roles_dir / name)
+        swarm = (
+            name in swarm_apps
+            and bool(deployable_variant_indices(overrides.get(name)))
+            and stack
         )
-        for name in names
-    ]
+        rows.append(
+            _build_row(name, forward, reverse, max_level)._replace(
+                variants=len(variants.get(name) or []) or 1,
+                bundles=bundles.get(name, 1),
+                lifecycle=_role_lifecycle(variants.get(name)),
+                compose=name in compose_apps,
+                swarm=swarm,
+                stack=stack,
+            )
+        )
     return _attach_siblings(rows)
 
 
@@ -247,6 +261,7 @@ def compute_variant_complexity_rows(
         lifecycle = _role_lifecycle(variants.get(name))
         compose = name in compose_apps
         swarm_role = name in swarm_apps
+        stack = role_has_stack(role_dir)
         deployable = set(deployable_variant_indices(overrides.get(name)))
         for index, variant_config in enumerate(variants.get(name) or []):
             providers = direct_dep_roles(
@@ -260,7 +275,8 @@ def compute_variant_complexity_rows(
                 )._replace(
                     lifecycle=lifecycle,
                     compose=compose,
-                    swarm=swarm_role and index in deployable,
+                    swarm=swarm_role and index in deployable and stack,
+                    stack=stack,
                 )
             )
     return _attach_siblings(rows)

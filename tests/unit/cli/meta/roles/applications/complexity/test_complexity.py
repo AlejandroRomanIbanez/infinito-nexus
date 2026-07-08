@@ -21,6 +21,7 @@ from utils.cache.yaml import load_yaml_str
 from utils.roles.mapping import (
     ROLE_FILE_META_SERVICES,
     ROLE_FILE_META_VARIANTS,
+    ROLE_FILE_TEMPL_COMPOSE,
     ROLE_FILE_VARS_MAIN,
 )
 
@@ -306,6 +307,9 @@ class TestComposeSwarmColumns(unittest.TestCase):
                 "r1:\n  enabled: true\n  shared: true\n"
             ),
         )
+        r2_compose = roles_dir / "r2" / ROLE_FILE_TEMPL_COMPOSE
+        r2_compose.parent.mkdir(parents=True, exist_ok=True)
+        r2_compose.write_text("services: {}\n", encoding="utf-8")
         _mk_variants(
             roles_dir,
             "r2",
@@ -358,6 +362,80 @@ class TestComposeSwarmColumns(unittest.TestCase):
             self.assertTrue(r2[0].swarm)
             self.assertFalse(r2[1].swarm)
             self.assertTrue(r2[0].compose and r2[1].compose)
+
+
+class TestStackColumn(unittest.TestCase):
+    def _build(self, roles_dir: Path) -> None:
+        _mk_role(
+            roles_dir,
+            "stack-app",
+            "stack-app:\n  enabled: true\n  shared: true\n",
+        )
+        compose = roles_dir / "stack-app" / ROLE_FILE_TEMPL_COMPOSE
+        compose.parent.mkdir(parents=True, exist_ok=True)
+        compose.write_text("services: {}\n", encoding="utf-8")
+        _mk_role(
+            roles_dir,
+            "host-app",
+            "host-app:\n  enabled: true\n  shared: true\n",
+        )
+
+    def test_stack_is_true_only_for_image_bearing_roles(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            roles_dir = Path(td) / "roles"
+            roles_dir.mkdir()
+            self._build(roles_dir)
+
+            by_name = {r.name: r for r in compute_complexity_rows(roles_dir)}
+            self.assertTrue(by_name["stack-app"].stack)
+            self.assertFalse(by_name["host-app"].stack)
+
+    def test_stack_is_per_role_in_variant_mode(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            roles_dir = Path(td) / "roles"
+            roles_dir.mkdir()
+            self._build(roles_dir)
+
+            by_name = {r.name: r for r in compute_variant_complexity_rows(roles_dir)}
+            self.assertTrue(by_name["stack-app"].stack)
+            self.assertFalse(by_name["host-app"].stack)
+
+    def test_filter_by_stack(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            roles_dir = Path(td) / "roles"
+            roles_dir.mkdir()
+            self._build(roles_dir)
+
+            buf = io.StringIO()
+            with (
+                mock.patch(
+                    "cli.meta.roles.applications.complexity.cli.PROJECT_ROOT",
+                    Path(td),
+                ),
+                redirect_stdout(buf),
+            ):
+                rc = main(["--format", "string", "--filter", "stack == true"])
+
+            self.assertEqual(rc, 0)
+            self.assertEqual(buf.getvalue().split(), ["stack-app"])
+
+    def test_swarm_is_false_when_stack_is_false(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            roles_dir = Path(td) / "roles"
+            roles_dir.mkdir()
+            self._build(roles_dir)
+
+            with mock.patch(
+                "cli.meta.roles.applications.complexity.model._tested_apps",
+                return_value={"stack-app", "host-app"},
+            ):
+                whole = {r.name: r for r in compute_complexity_rows(roles_dir)}
+                per_variant = {
+                    r.name: r for r in compute_variant_complexity_rows(roles_dir)
+                }
+            self.assertFalse(whole["host-app"].stack)
+            self.assertFalse(whole["host-app"].swarm)
+            self.assertFalse(per_variant["host-app"].swarm)
 
 
 class TestLifecycleFilter(unittest.TestCase):

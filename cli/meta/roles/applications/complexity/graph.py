@@ -47,6 +47,19 @@ def _load_role_services(role_dir: Path) -> dict[str, Any]:
     return data if isinstance(data, dict) else {}
 
 
+def role_has_stack(role_dir: Path) -> bool:
+    """True iff the role renders its own container stack, i.e. ships a
+    ``templates/*compose*.yml.j2``. Host-only roles (backup cron,
+    wireguard, swapfile) and pure service-injectors carry no compose
+    template and return False. Presence (not an ``image`` key) is the
+    signal so build-from-source stacks that pull no registry image
+    (e.g. discourse's launcher) still count as a stack."""
+    templates = role_dir / "templates"
+    if not templates.is_dir():
+        return False
+    return any(templates.rglob("*compose*.yml.j2"))
+
+
 def _direct_service_dep_roles(
     services_map: dict[str, Any],
     registry: dict[str, dict[str, Any]],
