@@ -82,6 +82,19 @@ For security reporting and disclosure, see [SECURITY.md](SECURITY.md).
 
 For expert installation, contact details, and project participation, see [SUPPORT.md](SUPPORT.md).
 
+## Support Us ❤️
+
+Infinito.Nexus is developed independently. Your support helps fund development, infrastructure, documentation, and the long-term growth of the project.
+
+You can support us via:
+
+- 💙 **[GitHub Sponsors](https://github.com/sponsors/kevinveenbirkenbach)**
+- ☕ **[Buy Us a Coffee](https://buymeacoffee.com/kevinveenbirkenbach)**
+- 💳 **[PayPal](https://s.veen.world/paypaldonate)**
+- ₿ `bitcoin:bc1qn667c729cy64p5x58m3vg7zmudwqvf0fww7ph5`
+
+Thank you for supporting Infinito.Nexus! ♾️
+
 ## License ⚖️
 
 Infinito.Nexus is distributed under the **Infinito.Nexus Community License (Non-Commercial)**. Please see [LICENSE.md](LICENSE.md) for full terms.
