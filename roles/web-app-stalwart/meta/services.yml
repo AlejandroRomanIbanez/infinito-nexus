@@ -36,7 +36,7 @@ stalwart:
   domain: "{{ lookup('email').domain }}"
   ports:
     local:
-      http: 8086
+      http: 8081
   run_after:
     - web-app-matomo
   lifecycle: beta
@@ -66,7 +66,7 @@ webmail:
   pids_limit: 512
   ports:
     local:
-      http: 8087
+      http: 8089
 # nocheck: dynamic-flag — role-local sub-component, always deployed with the stack
 # nocheck: playwright-service-flag — antivirus milter, covered by role deploy test
 clamav:

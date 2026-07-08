@@ -28,4 +28,4 @@ csp:
       - "{{ lookup('tls', 'web-app-keycloak', 'url.base') | regex_replace('/+$', '') }}"
 networks:
   local:
-    subnet: 192.168.105.208/28
+    subnet: 192.168.106.32/28
