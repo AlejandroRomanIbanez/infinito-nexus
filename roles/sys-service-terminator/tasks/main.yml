@@ -15,6 +15,3 @@
     loop_var: system_service_run_unit
     label: "{{ system_service_run_unit }}"
   when: (system_service_run_list | length) > 0
-
-- name: "🔓 Unlock all timers"
-  ansible.builtin.include_tasks: 02_unlock.yml

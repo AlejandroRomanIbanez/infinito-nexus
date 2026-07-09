@@ -15,3 +15,8 @@
   include_role:
     name: test-e2e-cli
   when: RUNTIME in ['dev', 'act', 'github']
+
+- name: "🔓 Unlock all timers"
+  include_role:
+    name: sys-service-terminator
+    tasks_from: 02_unlock.yml
