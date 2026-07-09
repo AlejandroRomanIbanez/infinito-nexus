@@ -178,7 +178,6 @@ class TestServiceRegistryOrdering(unittest.TestCase):
         meta_dir = role_dir / "meta"
         meta_dir.mkdir(parents=True, exist_ok=True)
 
-        # Inject run_after onto the primary entity.
         services = dict(services_payload)
         if run_after is not None:
             primary = dict(services.get(primary_entity, {}) or {})
@@ -190,7 +189,6 @@ class TestServiceRegistryOrdering(unittest.TestCase):
             dump_yaml_str(services),
             encoding="utf-8",
         )
-        # meta/main.yml MUST NOT carry run_after anymore.
         meta_dir.joinpath("main.yml").write_text(
             "galaxy_info: {}\n",
             encoding="utf-8",
@@ -272,6 +270,40 @@ class TestServiceRegistryOrdering(unittest.TestCase):
                 "web-app-dashboard",
             ],
         )
+
+    def test_preload_false_entries_stay_resolvable_but_are_not_ordered(self):
+        registry = {
+            "container_backup": {
+                "role": "svc-bkp-container-2-local",
+                "bucket": "server",
+                "deploy_type": "server",
+                "preload": False,
+            },
+            "matomo": {
+                "role": "web-app-matomo",
+                "bucket": "web-app",
+                "deploy_type": "server",
+            },
+        }
+
+        with tempfile.TemporaryDirectory() as td:
+            roles_dir = Path(td)
+            self._mk_role(
+                roles_dir,
+                "svc-bkp-container-2-local",
+                "container-2-local",
+                {"container-2-local": {"enabled": True, "shared": True}},
+            )
+            self._mk_role(
+                roles_dir,
+                "web-app-matomo",
+                "matomo",
+                {"matomo": {"enabled": False, "shared": True}},
+            )
+
+            ordered = ordered_primary_service_entries(registry, roles_dir)
+
+        self.assertEqual([entry["role"] for entry in ordered], ["web-app-matomo"])
 
     def test_cross_type_run_after_fails_hard(self):
         registry = {

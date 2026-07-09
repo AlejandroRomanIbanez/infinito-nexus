@@ -90,9 +90,6 @@ def load_applications_from_roles_dir(roles_dir: Path) -> dict[str, dict[str, Any
         application_id = _normalized_name(vars_data.get("application_id"))
         if not application_id:
             continue
-        # Every role's metadata lives under meta/<topic>.yml. Reassemble
-        # the legacy `{compose: {services: ...}, server: ...}` shape so
-        # this module's downstream readers stay unchanged.
         meta_dir = role_dir / "meta"
         config: dict[str, Any] = {}
         services_data = read_yaml_file(meta_dir / "services.yml")
@@ -123,11 +120,6 @@ def discover_role_services(
     if provides == entity_name:
         provides = ""
 
-    # A primary entry is a provider declaration iff `shared` is truthy, or it
-    # carries `provides:`, or it has alias entries pointing at it. The value
-    # of `shared` matters: `disable` env var can write `shared: false` to
-    # neutralise a primary entity that only carries metadata, and that MUST
-    # NOT flip the entity into "provider" status.
     is_provider = bool(primary_entry) and (
         bool(primary_entry.get("shared"))
         or "provides" in primary_entry
@@ -153,6 +145,7 @@ def discover_role_services(
         "service_type": detect_service_channel(role_name),
         "shared": bool(primary_entry.get("shared", False)),
         "enabled": bool(primary_entry.get("enabled", False)),
+        "preload": bool(primary_entry.get("preload", True)),
         "covers": covers,
     }
     app_networks = _as_mapping(config.get("networks"))
@@ -311,10 +304,6 @@ def resolve_service_dependency_roles_from_config(
 
 
 def load_run_after_from_roles_dir(roles_dir: Path, role_name: str) -> list[str]:
-    # `run_after` lives at `meta/services.yml.<primary_entity>.run_after`.
-    # The helper resolves the primary entity name and surfaces shape errors
-    # via MetaServicesShapeError, which we wrap so loaders see a single
-    # error type from this module.
     try:
         result = get_role_run_after(roles_dir / role_name, role_name=role_name)
     except Exception as exc:
@@ -340,7 +329,7 @@ def ordered_primary_service_entries(
     primary_entries = {
         entry["role"]: {"id": service_key, **entry}
         for service_key, entry in service_registry.items()
-        if "canonical" not in entry
+        if "canonical" not in entry and entry.get("preload", True)
     }
 
     ordered: list[dict[str, Any]] = []
@@ -379,11 +368,6 @@ def ordered_primary_service_entries(
                 if dep_bucket_order < current_bucket_order:
                     continue
                 if dep_role not in primary_entries:
-                    # The dependency target is not part of the discovered
-                    # provider set in this play (e.g. matomo skipped via
-                    # `disable` env var). The ordering constraint is moot
-                    # — there's nothing in this bucket to wait for. Skip
-                    # silently rather than aborting the whole load.
                     continue
 
                 graph[dep_role].append(role_name)
