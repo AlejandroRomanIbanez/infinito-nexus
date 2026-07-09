@@ -52,6 +52,8 @@ n8n:
   mem_reservation: 512m
   mem_limit: 1g
   pids_limit: 512
+  # nocheck: single-replica n8n Community Edition caches isInstanceOwnerSetUp per process with no cross-replica invalidation; replicas that miss the owner-setup POST keep serving showSetupOnFirstLoad=true and bounce the SPA to /setup after login; multi-main requires licensed queue mode
+  replicas: 1
   ports:
     internal:
       http: 5678
