@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-# nocheck: raw-docker
 # Replay the text dumps of the backup generation into the running
 # databases via baudolo-restore postgres|mariadb --empty. Requires the
 # containers restarted by restore_cycle.sh and credentials from
@@ -47,13 +46,13 @@ for sql_file in "${SQL_FILES[@]}"; do
     fi
     IFS=';' read -r _instance _database db_user db_password <<<"${row}"
 
-    container="$(docker ps --filter "volume=${volume}" --format '{{.Names}}' | head -n1)"
+    container="$(container ps --filter "volume=${volume}" --format '{{.Names}}' | head -n1)"
     if [[ -z "${container}" ]]; then
         echo "SKIP: no running container mounts volume ${volume}"
         continue
     fi
 
-    image="$(docker inspect -f '{{.Config.Image}}' "${container}")"
+    image="$(container inspect -f '{{.Config.Image}}' "${container}")"
     case "${image}" in
         *postgres*) engine="postgres" ;;
         *mariadb* | *mysql*) engine="mariadb" ;;
