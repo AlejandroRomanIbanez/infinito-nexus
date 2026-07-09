@@ -59,9 +59,11 @@ services:
 {% set service_name = 'postgres' %}
   {{ service_name }}:
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
+{% if lookup('config', application_id, 'services.prometheus.enabled') | bool %}
 {% set service_name = 'prometheus-exporter' %}
   {{ service_name }}:
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
+{% endif %}
 {% if BBB_GREENLIGHT_ENABLED | bool %}
 {% set service_name = 'greenlight' %}
   {{ service_name }}:
