@@ -14,8 +14,8 @@ NFSV4 {
 
 EXPORT {
     Export_Id = 1;
-    Path = {{ storage.nfs.export_base }};
-    Pseudo = {{ storage.nfs.export_base }};
+    Path = {{ lookup('nfs_export_base') }};
+    Pseudo = {{ lookup('nfs_export_base') }};
     Access_Type = RW;
     Squash = Root_Squash;
     SecType = sys;

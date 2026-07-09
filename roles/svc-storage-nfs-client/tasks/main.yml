@@ -1,16 +1,13 @@
 ---
-- name: "✅ Assert NFS server + export base are configured"
+- name: "✅ Assert the NFS server is configured"
   ansible.builtin.assert:
     that:
       - storage.nfs.server is defined
       - storage.nfs.server | length > 0
-      - storage.nfs.export_base is defined
-      - storage.nfs.export_base | length > 0
     fail_msg: |
-      svc-storage-nfs-client requires `storage.nfs.server` and
-      `storage.nfs.export_base` to be set in group_vars (see
-      group_vars/all/15_storage.yml). Reachable NFS server IP/hostname
-      and the matching export base path are mandatory.
+      svc-storage-nfs-client requires `storage.nfs.server` to be set in
+      the inventory (see group_vars/all/15_storage.yml). A reachable NFS
+      server IP/hostname is mandatory.
 
 - name: "📦 Install NFS client packages"
   ansible.builtin.package:

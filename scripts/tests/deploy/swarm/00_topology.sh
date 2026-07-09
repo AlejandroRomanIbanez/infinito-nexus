@@ -14,8 +14,8 @@ SWARM_PREFIX="${SWARM_NAME}-"
 
 MGR="${SWARM_PREFIX}${INFINITO_SWARM_MGR_NAME}"
 
-NFS_EXPORT_BASE="$(grep -A4 '^  nfs:' "${_repo_root}/group_vars/all/15_storage.yml" | grep 'export_base:' | awk '{print $2}')"
-: "${NFS_EXPORT_BASE:?export_base missing in group_vars/all/15_storage.yml}"
+NFS_EXPORT_BASE="$(grep -E '^  export_base:' "${_repo_root}/roles/svc-storage-nfs-server/meta/services.yml" | awk '{print $2}')"
+: "${NFS_EXPORT_BASE:?export_base missing in svc-storage-nfs-server meta/services.yml}"
 
 NFS_STATE_SUBDIR="$(grep '^STATE_SUBDIR = ' "${_repo_root}/utils/storage/nfs.py" | cut -d'"' -f2)"
 : "${NFS_STATE_SUBDIR:?STATE_SUBDIR missing in utils/storage/nfs.py}"

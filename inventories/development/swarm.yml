@@ -14,8 +14,6 @@ networks:
 
 storage:
   backend: nfs
-  nfs:
-    version: 4
 
 SVC_STORAGE_NFS_SERVER_STATE_ALLOWED_CIDRS:
   - "192.168.244.0/24" # nocheck: hardcoded-subnet (act swarm-lab subnet; nodes + controller mount the fsid=0 state export from it)

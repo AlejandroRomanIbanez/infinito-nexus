@@ -3,7 +3,13 @@ from __future__ import annotations
 from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
-from utils.storage.nfs import STATE_SUBDIR, client_src, state_path
+from utils.storage.nfs import (
+    STATE_SUBDIR,
+    client_src,
+    get_client_version,
+    get_export_base,
+    state_path,
+)
 
 
 class LookupModule(LookupBase):
@@ -15,5 +21,5 @@ class LookupModule(LookupBase):
         flavor = lookup_loader.get(
             "nfs_flavor", loader=self._loader, templar=self._templar
         ).run([], variables=variables)[0]
-        state = state_path(nfs.get("export_base"), STATE_SUBDIR)
-        return [client_src(nfs.get("server"), nfs.get("version", 4), flavor, state)]
+        state = state_path(get_export_base(), STATE_SUBDIR)
+        return [client_src(nfs.get("server"), get_client_version(), flavor, state)]

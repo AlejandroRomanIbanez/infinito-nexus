@@ -3,7 +3,7 @@ galaxy_info:
   author: Kevin Veen-Birkenbach
   description: |
     Install NFSv4 client packages on every swarm node and validate that
-    the configured `storage.nfs.export_base` from
+    the export base (svc-storage-nfs-server services.yml SPOT) from
     `svc-storage-nfs-server` is mountable. Failing to mount fails the
     deploy with a precise error message.
   license: Infinito.Nexus Community License (Non-Commercial)

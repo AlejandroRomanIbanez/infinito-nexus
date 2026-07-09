@@ -10,7 +10,7 @@ mount it as if it were a local filesystem.
 ## Overview
 
 This role installs the distro-appropriate NFS kernel server, exports
-`storage.nfs.export_base` (default `/srv/nfs`), and restricts access to
+the export base from its own services.yml SPOT (`/srv/nfs`), and restricts access to
 inventory members of the `svc-swarm-node` group. The export options
 default to `rw,sync,no_subtree_check,root_squash,no_all_squash`. NFS
 server HA, Kerberos integration, and client-side mounting are out of

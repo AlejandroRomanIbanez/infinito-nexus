@@ -1,7 +1,7 @@
 ---
 - name: "✅ Ensure export base directory exists"
   ansible.builtin.file:
-    path: "{{ storage.nfs.export_base }}"
+    path: "{{ lookup('nfs_export_base') }}"
     state: directory
     owner: root
     group: root
@@ -18,9 +18,9 @@
 - name: "✅ Assert the state subdir is strictly nested under the export base"
   ansible.builtin.assert:
     that:
-      - STORAGE_NFS_STATE_PATH != storage.nfs.export_base
+      - STORAGE_NFS_STATE_PATH != lookup('nfs_export_base')
     fail_msg: >-
-      STORAGE_NFS_STATE_PATH must be a strict subdir of storage.nfs.export_base;
+      STORAGE_NFS_STATE_PATH must be a strict subdir of the nfs export base;
       equal paths collide on the two distinct exports (root_squash vs no_root_squash).
 
 - name: "🔧 Bind-mount state subdir onto itself for stable fsid=0 export root boundary"

@@ -11,7 +11,8 @@ helpers and userspace tools to perform that mount.
 
 This role installs the distro-appropriate NFS client packages on every
 host in the Ansible group `svc-swarm-node` and probe-mounts the
-configured `storage.nfs.server:storage.nfs.export_base` to confirm
+configured `storage.nfs.server` and the export base from the
+svc-storage-nfs-server services.yml SPOT to confirm
 reachability and writability at deploy time. The actual docker volume
 mounts happen later, driven by the Docker engine at container start.
 
@@ -23,7 +24,7 @@ mounts happen later, driven by the Docker engine at container start.
   unmounts; failures surface immediately at deploy time, never at first
   container boot.
 - **Strict assertion:** Missing `storage.nfs.server` or
-  `storage.nfs.export_base` fails the deploy with a precise error.
+  fails the deploy with a precise error.
 
 ## Credits
 

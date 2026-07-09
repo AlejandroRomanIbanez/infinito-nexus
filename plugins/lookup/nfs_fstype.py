@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from ansible.plugins.lookup import LookupBase
 
-from utils.storage.nfs import fstype
+from utils.storage.nfs import fstype, get_client_version
 
 
 class LookupModule(LookupBase):
@@ -10,5 +10,4 @@ class LookupModule(LookupBase):
 
     def run(self, terms, variables=None, **kwargs):
         variables = variables or getattr(self._templar, "available_variables", {}) or {}
-        version = variables.get("storage", {}).get("nfs", {}).get("version", 4)
-        return [fstype(version)]
+        return [fstype(get_client_version())]

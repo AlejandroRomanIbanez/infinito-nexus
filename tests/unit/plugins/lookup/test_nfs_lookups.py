@@ -21,7 +21,7 @@ def _run(name, variables):
 
 BASE = {
     "storage": {
-        "nfs": {"export_base": "/srv/nfs", "version": 4, "server": "192.168.244.2"}
+        "nfs": {"server": "192.168.244.2"}
     },
     "RUNTIME": "github",
 }
@@ -85,7 +85,7 @@ class TestNfsConfigBackedLookups(unittest.TestCase):
         self.assertEqual(kwargs.get("variables"), {"RUNTIME": "github"})
 
     def test_client_src_kernel_v4_uses_root_mount(self):
-        nfs = {"export_base": "/srv/nfs", "version": 4, "server": "10.0.0.2"}
+        nfs = {"server": "10.0.0.2"}
         vars_ = {"storage": {"nfs": nfs}}
         m, lm = _load("nfs_client_src", vars_)
         with mock.patch.object(m, "lookup_loader") as loader:

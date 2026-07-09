@@ -72,7 +72,6 @@ def main() -> int:
             "backend": "nfs",
             "nfs": {
                 "server": nfs_ip,
-                "version": 4,
             },
         },
         "swarm": {

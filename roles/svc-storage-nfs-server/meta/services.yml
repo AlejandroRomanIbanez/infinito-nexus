@@ -1,6 +1,7 @@
 ---
 nfs-server:
   name: nfs-server
+  export_base: /srv/nfs
   # nocheck: dynamic-flag — local/CI swarm test (dev/act) needs userspace ganesha; kernel nfsd wedges in privileged DinD. Prod (host) keeps kernel.
   flavor: "{{ 'ganesha' if RUNTIME in ['dev', 'act'] else 'kernel' }}"
   lifecycle: beta
