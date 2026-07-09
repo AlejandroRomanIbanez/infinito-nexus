@@ -23,7 +23,6 @@ BASE = {
     "storage": {
         "nfs": {"export_base": "/srv/nfs", "version": 4, "server": "192.168.244.2"}
     },
-    "STORAGE_NFS_STATE_SUBDIR": "infinito-state",
     "RUNTIME": "github",
 }
 
@@ -87,7 +86,7 @@ class TestNfsConfigBackedLookups(unittest.TestCase):
 
     def test_client_src_kernel_v4_uses_root_mount(self):
         nfs = {"export_base": "/srv/nfs", "version": 4, "server": "10.0.0.2"}
-        vars_ = {"storage": {"nfs": nfs}, "STORAGE_NFS_STATE_SUBDIR": "infinito-state"}
+        vars_ = {"storage": {"nfs": nfs}}
         m, lm = _load("nfs_client_src", vars_)
         with mock.patch.object(m, "lookup_loader") as loader:
             loader.get.return_value = mock.MagicMock(run=lambda *a, **k: ["kernel"])
