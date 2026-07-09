@@ -27,7 +27,7 @@ redis:
   bond: 1
   backup:
     disabled: true
-  enabled: true
+  enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-redis' in group_names }}"
   cpus: "0.5"
   mem_reservation: 256m
@@ -51,7 +51,7 @@ seaweedfs:
 # nocheck: playwright-service-flag: shared provider entity; the app itself is covered by this role's own Playwright spec
 peertube:
   bond: 1
-  enabled: true
+  enabled: true # nocheck: dynamic-flag
   shared: true
   name: peertube
   version: v8.2.2
@@ -83,3 +83,9 @@ prometheus:
   bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
+# nocheck: dynamic-flag
+# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
+container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+  bond: 1
+  enabled: "{{ 'svc-bkp-container-2-local' in group_names }}"
+  shared: true

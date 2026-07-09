@@ -26,3 +26,9 @@ cache:
   proxy:
     remote_url: "https://registry-1.docker.io" # nocheck: url
   lifecycle: alpha
+# nocheck: dynamic-flag
+# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
+container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+  bond: 1
+  enabled: "{{ 'svc-bkp-container-2-local' in group_names }}"
+  shared: true

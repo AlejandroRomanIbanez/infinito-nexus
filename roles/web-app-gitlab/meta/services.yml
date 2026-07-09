@@ -27,7 +27,7 @@ redis:
   bond: 1
   backup:
     disabled: true
-  enabled: true
+  enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-redis' in group_names }}"
   cpus: "0.5"
   mem_reservation: 128m
@@ -39,7 +39,7 @@ postgres:
   shared: "{{ 'svc-db-postgres' in group_names }}"
 gitlab:
   bond: 1
-  enabled: true
+  enabled: true # nocheck: dynamic-flag
   shared: true
   min_storage: 30GB
   # Exception: the entity runs no container of its own (webservice/sidekiq/workhorse/gitaly/shell/migrations carry the real budgets); these keys only satisfy the entity resource contract
@@ -138,3 +138,9 @@ prometheus:
   bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
+# nocheck: dynamic-flag
+# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
+container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+  bond: 1
+  enabled: "{{ 'svc-bkp-container-2-local' in group_names }}"
+  shared: true

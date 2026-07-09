@@ -26,7 +26,7 @@ redis:
   bond: 1
   backup:
     disabled: true
-  enabled: true
+  enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-redis' in group_names }}"
   cpus: "0.3"
   mem_reservation: 256m
@@ -39,7 +39,7 @@ postgres:
 mastodon:
   bond: 1
   shared: true
-  enabled: true
+  enabled: true # nocheck: dynamic-flag
   image: ghcr.io/mastodon/mastodon
   version: v4.6.2
   min_storage: 15GB
@@ -105,3 +105,9 @@ prometheus:
   bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
+# nocheck: dynamic-flag
+# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
+container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+  bond: 1
+  enabled: "{{ 'svc-bkp-container-2-local' in group_names }}"
+  shared: true

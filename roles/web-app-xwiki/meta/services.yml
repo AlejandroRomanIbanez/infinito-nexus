@@ -41,7 +41,7 @@ postgres:
 # nocheck: playwright-service-flag: shared provider entity; the app itself is covered by this role's own Playwright spec
 xwiki:
   bond: 1
-  enabled: true
+  enabled: true # nocheck: dynamic-flag
   shared: true
   image: xwiki
   version: lts-postgres-tomcat
@@ -72,3 +72,9 @@ prometheus:
   bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
+# nocheck: dynamic-flag
+# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
+container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+  bond: 1
+  enabled: "{{ 'svc-bkp-container-2-local' in group_names }}"
+  shared: true

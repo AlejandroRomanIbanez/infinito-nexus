@@ -181,3 +181,9 @@ bbb-webrtc-recorder:
   image: alangecker/bbb-docker-webrtc-recorder
   version: "v0.14.0"
   enabled: false
+
+# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
+container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+  bond: 1
+  enabled: "{{ 'svc-bkp-container-2-local' in group_names }}"
+  shared: true

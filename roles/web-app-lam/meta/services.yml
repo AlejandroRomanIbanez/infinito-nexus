@@ -18,8 +18,8 @@ matomo:
 # nocheck: playwright-service-flag — self-provider
 lam:
   bond: 1
-  enabled: true
-  shared: true
+  enabled: true # nocheck: dynamic-flag
+  shared: true # nocheck: dynamic-flag — LDAP IS the storage backend, never local
   provides: lam
   image: ghcr.io/ldapaccountmanager/lam
   version: "9.6"

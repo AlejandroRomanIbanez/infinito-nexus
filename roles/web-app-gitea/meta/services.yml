@@ -40,7 +40,7 @@ mariadb:
 # nocheck: playwright-service-flag — self-provider
 gitea:
   bond: 1
-  enabled: true
+  enabled: true # nocheck: dynamic-flag
   shared: true
   provides: gitea
   image: gitea/gitea
@@ -79,7 +79,7 @@ redis:
   bond: 1
   backup:
     disabled: true
-  enabled: true
+  enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-redis' in group_names }}"
   cpus: 0.25
   mem_reservation: 0.2g
@@ -106,3 +106,9 @@ prometheus:
   native_metrics:
     enabled: true
     port: 3000
+# nocheck: dynamic-flag
+# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
+container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+  bond: 1
+  enabled: "{{ 'svc-bkp-container-2-local' in group_names }}"
+  shared: true

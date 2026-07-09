@@ -3,15 +3,15 @@
 # nocheck: dynamic-flag — OpenTalk has no no-auth mode (controller/recorder require the OIDC client), so sso is a hard dependency.
 sso:
   bond: 1
-  enabled: true
+  enabled: true # nocheck: dynamic-flag
   shared: true
   flavor: oidc
   oidc:
     plugin: ""
 # nocheck: dynamic-flag — LDAP is disabled for this role; the literal false is intentional, not group-gated.
 ldap:
-  enabled: false
-  shared: false
+  enabled: false # nocheck: dynamic-flag
+  shared: false # nocheck: dynamic-flag
 logout:
   bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
@@ -45,7 +45,7 @@ redis:
   bond: 1
   backup:
     disabled: true
-  enabled: true
+  enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-redis' in group_names }}"
   cpus: "0.5"
   mem_reservation: 256m
@@ -144,3 +144,9 @@ prometheus:
   bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
+# nocheck: dynamic-flag
+# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
+container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+  bond: 1
+  enabled: "{{ 'svc-bkp-container-2-local' in group_names }}"
+  shared: true

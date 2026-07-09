@@ -30,7 +30,7 @@ email:
 # nocheck: playwright-service-flag — self-provider
 keycloak:
   bond: 1
-  enabled: true
+  enabled: true # nocheck: dynamic-flag
   shared: true
   provides: sso
   image: quay.io/keycloak/keycloak

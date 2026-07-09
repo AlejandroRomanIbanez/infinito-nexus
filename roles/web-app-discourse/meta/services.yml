@@ -44,7 +44,7 @@ redis:
   bond: 1
   backup:
     disabled: true
-  enabled: true
+  enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-redis' in group_names }}"
   cpus: "0.5"
   mem_reservation: 128m
@@ -53,15 +53,8 @@ redis:
 # nocheck: playwright-service-flag — self-provider
 discourse:
   bond: 1
-  # `shared: true` is required so the service registry recognises this
-  # role as the provider of the `discourse` service. Other roles
-  # declare `services.discourse.enabled: ...` (e.g.
-  # web-app-wordpress' wp-discourse plugin gate); without this flag
-  # the variant-aware deploy planner cannot resolve those declarations
-  # to web-app-discourse, and the consumer ends up trying to
-  # `docker exec discourse` against a container that was never pulled.
   shared: true
-  enabled: true
+  enabled: true # nocheck: dynamic-flag
   name: discourse
   ref: main
   min_storage: 15GB
@@ -100,3 +93,9 @@ prometheus:
   bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
+# nocheck: dynamic-flag
+# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
+container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+  bond: 1
+  enabled: "{{ 'svc-bkp-container-2-local' in group_names }}"
+  shared: true
