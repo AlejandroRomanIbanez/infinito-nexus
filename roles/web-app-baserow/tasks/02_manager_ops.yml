@@ -20,7 +20,7 @@
   until: baserow_migrate_result.rc == 0
 
 - name: "🔄 Restart Baserow application after applying migrations (compose mode)"
-  ansible.builtin.command: "container restart {{ BASEROW_APP_CONTAINER_ADDRESS | quote }}"
+  ansible.builtin.command: "container restart {{ BASEROW_APP_CONTAINER_ADDRESS | quote }}" # nocheck: container-address-quote compose-gated task
   register: baserow_restart_after_migrate
   changed_when: baserow_restart_after_migrate.rc == 0
   when:

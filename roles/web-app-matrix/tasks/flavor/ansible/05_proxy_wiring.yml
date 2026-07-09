@@ -47,7 +47,7 @@
 - name: "📁 ansible-flavor: create native Synapse admin (DiD, idempotent shared-secret)"
   when: IS_STACK_HOST | bool
   ansible.builtin.shell:
-    cmd: >- # nocheck: raw-docker, container-exec-resolver  inner docker CLI talks to the DiD daemon inside matrix-mdad; no host docker involved
+    cmd: >- # nocheck: raw-docker, container-exec-resolver, container-address-quote  inner docker CLI talks to the DiD daemon inside matrix-mdad; no host docker involved; ansible flavor forces compose mode
       container exec {{ MATRIX_MDAD_CONTAINER_ADDRESS | quote }} docker exec matrix-synapse register_new_matrix_user
       -u {{ MATRIX_ADMINISTRATOR_USERNAME | quote }}
       -p {{ MATRIX_ADMINISTRATOR_PASSWORD | quote }}

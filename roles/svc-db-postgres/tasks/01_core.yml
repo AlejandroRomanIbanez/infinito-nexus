@@ -41,10 +41,8 @@
   changed_when: false
 
 - name: "✅ POSTGRES | Ensure postgres superuser password matches inventory"
-  ansible.builtin.script: >
-    set_postgres_superuser_password.sh
-    {{ POSTGRES_CONTAINER_ADDRESS | quote }}
-    {{ POSTGRES_PASSWORD | quote }}
+  ansible.builtin.script: > # nocheck: container-address-quote script evals the fragment itself
+    set_postgres_superuser_password.sh {{ POSTGRES_CONTAINER_ADDRESS | quote }} {{ POSTGRES_PASSWORD | quote }}
   register: postgres_pw_result
   delegate_to: "{{ STACK_HOST }}"
   run_once: true

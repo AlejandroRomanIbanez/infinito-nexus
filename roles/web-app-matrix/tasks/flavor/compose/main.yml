@@ -1,5 +1,4 @@
 ---
-# include-gated: when: DEPLOYMENT_MODE == "compose"
 - name: 🔨 Build enabled bridge list from meta/addons/
   set_fact:
     MATRIX_BRIDGES: >-

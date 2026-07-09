@@ -27,7 +27,7 @@
     container exec -i
     -e APP_KEY="{{ SNIPE_IT_APP_KEY }}"
     -e XDG_CONFIG_HOME=/tmp
-    {{ SNIPE_IT_CONTAINER_ADDRESS | quote }}
+    {{ SNIPE_IT_CONTAINER_ADDRESS }}
     php artisan migrate --force
   register: snipeit_migrate
   changed_when: >
@@ -40,7 +40,7 @@
     container exec -i
     -e APP_KEY="{{ SNIPE_IT_APP_KEY }}"
     -e XDG_CONFIG_HOME=/tmp
-    {{ SNIPE_IT_CONTAINER_ADDRESS | quote }}
+    {{ SNIPE_IT_CONTAINER_ADDRESS }}
     php -d memory_limit=512M artisan db:seed --force
   register: snipeit_seed
   changed_when: "'Seeding:' in snipeit_seed.stdout"

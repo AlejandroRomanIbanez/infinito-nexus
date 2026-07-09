@@ -2,7 +2,7 @@
 ---
 - name: "⏳ snipe-it: wait until settings table is seeded"
   ansible.builtin.shell:
-    cmd: "container exec -i {{ SNIPE_IT_CONTAINER_ADDRESS | quote }} php"
+    cmd: "container exec -i {{ SNIPE_IT_CONTAINER_ADDRESS }} php"
     stdin: "{{ lookup('file', 'wait_settings.php') }}"
   register: snipe_settings_ready
   retries: 60
@@ -28,12 +28,12 @@
       -e LDAP_USER_MAIL_ATTR={{ LDAP.USER.ATTRIBUTES.MAIL | quote }}
       -e LDAP_AUTH_FILTER_QUERY={{ SNIPE_IT_LDAP_AUTH_FILTER_QUERY | quote }}
       -e OIDC_RESET_URL={{ OIDC.CLIENT.RESET_CREDENTIALS | quote }}
-      {{ SNIPE_IT_CONTAINER_ADDRESS | quote }} php
+      {{ SNIPE_IT_CONTAINER_ADDRESS }} php
     stdin: "{{ lookup('file', 'apply_ldap_config.php') }}"
   changed_when: true
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
 - name: "🧹 snipe-it: clear Laravel caches"
   ansible.builtin.shell:
-    cmd: "container exec -i {{ SNIPE_IT_CONTAINER_ADDRESS | quote }} php artisan optimize:clear"
+    cmd: "container exec -i {{ SNIPE_IT_CONTAINER_ADDRESS }} php artisan optimize:clear"
   changed_when: true

@@ -87,12 +87,23 @@
   async: "{{ ASYNC_TIME if ASYNC_ENABLED | bool else omit }}"
   poll: "{{ ASYNC_POLL if ASYNC_ENABLED | bool else omit }}"
 
-- name: "🔄 Restart synapse to load freshly generated bridge appservice registrations"
+- name: "🔄 Restart synapse to load bridge registrations (compose mode)"
   command:
     cmd: "{{ BIN_COMPOSE }} restart synapse"
     chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
   changed_when: true
-  when: MATRIX_BRIDGES | length > 0
+  when:
+    - MATRIX_BRIDGES | length > 0
+    - DEPLOYMENT_MODE == 'compose'
+
+- name: "🔄 Restart synapse to load bridge registrations (swarm mode)"
+  ansible.builtin.command: "container service update --force {{ lookup('container_service', application_id, 'synapse') }}"
+  changed_when: true
+  timeout: "{{ lookup('timeout', 600) | int }}"
+  when:
+    - MATRIX_BRIDGES | length > 0
+    - DEPLOYMENT_MODE == 'swarm'
+    - IS_STACK_HOST | bool
 
 - name: ⏳ wait for Synapse client/versions endpoint
   uri_retry:
@@ -106,7 +117,7 @@
 
 - name: 📁 create admin account
   shell: >-
-    container exec -i {{ MATRIX_SYNAPSE_CONTAINER_ADDRESS | quote }}
+    container exec -i {{ MATRIX_SYNAPSE_CONTAINER_ADDRESS }}
     register_new_matrix_user
     -u {{ MATRIX_ADMINISTRATOR_USERNAME | quote }}
     -p {{ MATRIX_ADMINISTRATOR_PASSWORD | quote }}
@@ -122,7 +133,7 @@
 
 - name: 📁 create chatgpt bot
   shell: >-
-    container exec -i {{ MATRIX_SYNAPSE_CONTAINER_ADDRESS | quote }}
+    container exec -i {{ MATRIX_SYNAPSE_CONTAINER_ADDRESS }}
     register_new_matrix_user
     -u chatgptbot
     -p {{ lookup('config', application_id, 'credentials.chatgpt_bridge_user_password') | quote }}

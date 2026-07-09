@@ -1,8 +1,4 @@
 ---
-# This task file applies OpenProject settings safely.
-# It waits for the web container to be running, ensures migrations are applied,
-# then sets all configured settings via rails runner fed from STDIN (robust quoting).
-
 - name: ⏳ Wait until OpenProject web container is running (compose)
   shell: >
     container inspect -f '{{"{{"}}.State.Status{{"}}"}}' {{ OPENPROJECT_WEB_CONTAINER }}
@@ -20,7 +16,7 @@
 
 - name: ▶️ Run database migrations
   shell: >
-    container exec -i {{ OPENPROJECT_WEB_CONTAINER_ADDRESS | quote }} bash -lc
+    container exec -i {{ OPENPROJECT_WEB_CONTAINER_ADDRESS }} bash -lc
     "cd /app && bin/rails db:migrate RAILS_ENV=production"
   register: openproject_migrate
   retries: 30
@@ -43,17 +39,12 @@
     wait_service_key: "{{ OPENPROJECT_WEB_SERVICE }}"
 
 - name: 🔧 Set settings in OpenProject (rails runner via STDIN from an external script)
-  ansible.builtin.command:
-    argv:
-      - container
-      - exec
-      - -i
-      - -e
-      - "OPENPROJECT_RAILS_SETTINGS={{ OPENPROJECT_RAILS_SETTINGS | to_json }}"
-      - "{{ OPENPROJECT_WEB_CONTAINER_ADDRESS }}"
-      - bash
-      - -lc
-      - "cd /app && bundle exec rails runner -"
+  ansible.builtin.shell:
+    cmd: >-
+      container exec -i
+      -e OPENPROJECT_RAILS_SETTINGS={{ OPENPROJECT_RAILS_SETTINGS | to_json | quote }}
+      {{ OPENPROJECT_WEB_CONTAINER_ADDRESS }}
+      bash -lc "cd /app && bundle exec rails runner -"
     stdin: "{{ lookup('file', 'ruby/apply_settings.rb') }}"
   register: openproject_apply_settings
   retries: 30

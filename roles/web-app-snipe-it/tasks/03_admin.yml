@@ -3,7 +3,7 @@
   ansible.builtin.shell: |
     container exec -i \
       -e APP_KEY="{{ SNIPE_IT_APP_KEY }}" \
-      {{ SNIPE_IT_CONTAINER_ADDRESS | quote }} \
+      {{ SNIPE_IT_CONTAINER_ADDRESS }} \
       php -r '
         require "vendor/autoload.php";
         $app = require "bootstrap/app.php";
@@ -21,7 +21,7 @@
   ansible.builtin.shell: >
     container exec -i
     -e APP_KEY="{{ SNIPE_IT_APP_KEY }}"
-    {{ SNIPE_IT_CONTAINER_ADDRESS | quote }}
+    {{ SNIPE_IT_CONTAINER_ADDRESS }}
     php artisan snipeit:create-admin
     --first_name "{{ lookup('users', 'administrator').firstname }}"
     --last_name "{{ lookup('users', 'administrator').lastname }}"
