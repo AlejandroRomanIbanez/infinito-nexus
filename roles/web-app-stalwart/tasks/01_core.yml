@@ -33,12 +33,25 @@
 # real file. The controller can fetch what Stalwart (pinned CA roots) cannot.
 - name: "Stage the Stalwart WebUI bundle for offline unpack"
   block:
-    - name: "Download the Stalwart WebUI bundle"
+    - name: "Ensure the WebUI cache directory exists"
+      ansible.builtin.file:
+        path: "{{ STALWART_WEBUI_CACHE_FILE | dirname }}"
+        state: directory
+        mode: "0755"
+
+    - name: "Download the Stalwart WebUI bundle (skipped when cached)"
       get_url_retry:
         url: "{{ STALWART_WEBUI_RESOURCE_URL }}"
-        dest: "{{ STALWART_WEBUI_LOCAL_FILE }}"
+        dest: "{{ STALWART_WEBUI_CACHE_FILE }}"
         mode: "0644"
       register: stalwart_webui_fetch
+
+    - name: "Install the cached WebUI bundle into the instance dir"
+      ansible.builtin.copy:
+        src: "{{ STALWART_WEBUI_CACHE_FILE }}"
+        dest: "{{ STALWART_WEBUI_LOCAL_FILE }}"
+        remote_src: true
+        mode: "0644"
   rescue:
     - name: "Warn: WebUI bundle download failed (WebAdmin will 404 until reachable)"
       ansible.builtin.debug:

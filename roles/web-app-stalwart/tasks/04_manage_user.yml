@@ -15,6 +15,27 @@
           }}}, 'c0']]} | to_json }}
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
+# notCreated(primaryKeyViolation) carries the existing account id.
+- name: "Resolve pre-existing account id for '{{ stalwart_user_name }}'"
+  ansible.builtin.set_fact:
+    stalwart_existing_account_id: >-
+      {{ ((stalwart_jmap.methodResponses[0][1].notCreated | default({}))
+          .get('a', {}).get('objectId', {}) or {}).get('id', '') }}
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+# Converge the password on re-runs: a create-only flow leaves the DB on stale
+# credentials whenever the inventory secret differs (msmtp then fails with 535).
+- name: "Update password for existing account '{{ stalwart_user_name }}'"
+  include_tasks: jmap_call.yml
+  vars:
+    stalwart_jmap_body: >-
+      {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
+          'methodCalls': [['x:Account/set', {'update': {stalwart_existing_account_id: {
+            'credentials': {'0': {'@type': 'Password', 'secret': stalwart_user_password}}
+          }}}, 'c0']]} | to_json }}
+  when: stalwart_existing_account_id | length > 0
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
 # The bot SMTP token is the account password.
 - name: "Persist Stalwart submission credential for bot '{{ stalwart_user_name }}'"
   ansible.builtin.include_role:
