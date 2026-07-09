@@ -6,7 +6,7 @@
 - name: 🔧 Set fact for site ID if site already exists
   set_fact:
     matomo_site_id: "{{ site_check.json[0].idsite }}"
-  when: "(site_check.json | length) > 0"
+  when: "site_check.json is not mapping and (site_check.json | length) > 0"
   changed_when: false
 
 - name: ➕ Add site to Matomo and get ID if not exists
