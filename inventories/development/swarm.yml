@@ -15,7 +15,6 @@ networks:
 storage:
   backend: nfs
   nfs:
-    export_base: /srv/nfs
     version: 4
 
 SVC_STORAGE_NFS_SERVER_STATE_ALLOWED_CIDRS:
@@ -27,4 +26,4 @@ swarm:
   registry:
     port: 5000
 
-RUNNER_SRC_DIR: "{{ lookup('env', 'INFINITO_NODE_SRC_DIR') }}"
+RUNNER_SRC_DIR: "{{ lookup('env', 'INFINITO_NODE_SRC_DIR') }}" # nocheck: swarm-only inventory; evaluated on the CI runner where load.sh exports it, never inside the compose DiD

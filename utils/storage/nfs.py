@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from pathlib import PurePosixPath
 
+STATE_SUBDIR = "infinito-state"
+
 
 def state_path(export_base, subdir):
     return str(PurePosixPath(str(export_base)) / str(subdir))

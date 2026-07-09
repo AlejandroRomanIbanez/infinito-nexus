@@ -34,6 +34,8 @@ if [ -n "$not_running" ]; then
 		for svc in $not_running; do
 			echo "=== docker service ps --no-trunc ${svc} ==="
 			docker service ps --no-trunc "$svc" 2>/dev/null || true
+			echo "=== docker service logs --tail 200 ${svc} ==="
+			timeout 30 docker service logs --no-task-ids --tail 200 "$svc" 2>&1 || true
 			echo "=== docker service inspect ${svc} ==="
 			docker service inspect "$svc" 2>/dev/null || true
 		done
