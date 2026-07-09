@@ -51,5 +51,5 @@ BKP_CONTAINER_2_LOCAL_EXEC: >-
   --compose-dir {{ DIR_COMPOSITIONS }}
   --databases-csv {{ FILE_DATABASE_SECRETS }}
   --backups-dir {{ DIR_BACKUPS }}
-  --dump-only
+  --dump-only-sql
   {{ BKP_CONTAINER_2_LOCAL_CLI_ARGS_LIST | select('string') | join(' ') }}

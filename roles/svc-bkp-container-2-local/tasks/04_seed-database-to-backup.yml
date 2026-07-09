@@ -64,5 +64,5 @@
       - "{{ database_username | string }}"
       - "{{ database_password | string }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-  async: "{{ ASYNC_TIME if ASYNC_ENABLED | bool else omit }}"
-  poll: "{{ ASYNC_POLL if ASYNC_ENABLED | bool else omit }}"
+  # todo: add flock to baudolo-seed upstream, then async seeding becomes safe again.
+  throttle: 1
