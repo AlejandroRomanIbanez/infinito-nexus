@@ -33,15 +33,6 @@
     group: root
     mode: "0600"
 
-- name: 🔎 Check if databases.csv has content
-  file_has_content:
-    path: "{{ FILE_DATABASE_SECRETS }}"
-  register: db_csv
-
-- name: 🧮 Compute backup force-flush flag
-  ansible.builtin.set_fact:
-    _backup_force_flush_instant: "{{ MODE_BACKUP | bool and db_csv.exists and db_csv.has_content }}"
-
 - name: "▶️ Execute system service setup for '{{ system_service_id }}'"
   include_role:
     name: sys-service
@@ -49,9 +40,10 @@
     system_service_copy_files: false
     system_service_timer_enabled: true
     system_service_force_linear_sync: true
-    system_service_force_flush_instant: "{{ _backup_force_flush_instant }}"
+    # Exception: baudolo stops containers, a mid-deploy start would be destructive.
+    system_service_force_flush_instant: false
     system_service_force_flush_final: "{{ (RUNTIME in ['act','github']) and (MODE_BACKUP | bool) }}"
-    system_service_suppress_flush: "{{ not _backup_force_flush_instant }}"
+    system_service_suppress_flush: true
     system_service_on_calendar: "{{ SYS_SCHEDULE_BACKUP_CONTAINER_TO_LOCAL }}"
     system_service_tpl_exec_start_pre: '{{ BIN_LOCK }} {{ SYS_SERVICE_GROUP_MANIPULATION | join(" ")  }} --ignore {{ SYS_SERVICE_BACKUP_CONTAINER_2_LOCAL }} --timeout
       "{{ SYS_TIMEOUT_BACKUP_SERVICES }}"'
