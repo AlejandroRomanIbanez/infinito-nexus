@@ -9,8 +9,3 @@
 - name: 🖥️ general host setup
   include_role:
     name: drv-non-free
-
-- name: 🧪 Run CLI tests for workstation roles
-  include_role:
-    name: test-e2e-cli
-  when: RUNTIME in ['dev', 'act', 'github']

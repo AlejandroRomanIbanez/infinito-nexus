@@ -10,3 +10,8 @@
 - name: "🛠️ Finalize services"
   include_role:
     name: sys-service-terminator
+
+- name: 🧪 Run CLI tests for deployed roles
+  include_role:
+    name: test-e2e-cli
+  when: RUNTIME in ['dev', 'act', 'github']

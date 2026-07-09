@@ -36,8 +36,3 @@
   include_role:
     name: "test-e2e-playwright"
   when: RUNTIME in ['dev', 'act', 'github']
-
-- name: 🧪 Run CLI tests for server roles
-  include_role:
-    name: test-e2e-cli
-  when: RUNTIME in ['dev', 'act', 'github']
