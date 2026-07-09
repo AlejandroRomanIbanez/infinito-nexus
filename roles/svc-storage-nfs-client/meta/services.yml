@@ -5,7 +5,7 @@ nfs-server:
   bond: 1
 nfs-client:
   name: nfs-client
-  version: 4
+  nfs_version: 4
   lifecycle: beta
   skip:
     - compose

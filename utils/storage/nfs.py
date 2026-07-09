@@ -1,25 +1,43 @@
 from __future__ import annotations
 
+import re
 from pathlib import PurePosixPath
+
+from utils.cache.files import read_text
+from utils.roles.mapping import ROLE_FILE_META_SERVICES
 
 STATE_SUBDIR = "infinito-state"
 
-NFS_SERVER_SERVICES_YML = "roles/svc-storage-nfs-server/meta/services.yml"
-NFS_CLIENT_SERVICES_YML = "roles/svc-storage-nfs-client/meta/services.yml"
+NFS_SERVER_SERVICES_YML = f"roles/svc-storage-nfs-server/{ROLE_FILE_META_SERVICES}"
+NFS_CLIENT_SERVICES_YML = f"roles/svc-storage-nfs-client/{ROLE_FILE_META_SERVICES}"
+
+
+def _read_spot_value(services_yml: str, key: str) -> str:
+    """Read a scalar entity value via line parse.
+
+    Exception: stdlib-only on purpose - these SPOTs feed the .env
+    generation, which bootstraps fresh hosts before PyYAML exists.
+
+    Args:
+        services_yml: repo-relative services.yml path.
+        key: two-space-indented scalar key to read.
+    """
+    pattern = re.compile(rf"^  {re.escape(key)}:\s*(\S+)\s*$")
+    for line in read_text(services_yml).splitlines():
+        match = pattern.match(line)
+        if match:
+            return match.group(1)
+    raise KeyError(f"{key} not found in {services_yml}")
 
 
 def get_export_base() -> str:
     """NFS export base from the provider's services.yml SPOT."""
-    from utils.cache.yaml import load_yaml_any
-
-    return load_yaml_any(NFS_SERVER_SERVICES_YML)["nfs-server"]["export_base"]
+    return _read_spot_value(NFS_SERVER_SERVICES_YML, "export_base")
 
 
 def get_client_version() -> int:
     """NFS mount protocol version from the client's services.yml SPOT."""
-    from utils.cache.yaml import load_yaml_any
-
-    return int(load_yaml_any(NFS_CLIENT_SERVICES_YML)["nfs-client"]["version"])
+    return int(_read_spot_value(NFS_CLIENT_SERVICES_YML, "nfs_version"))
 
 
 def state_path(export_base, subdir):

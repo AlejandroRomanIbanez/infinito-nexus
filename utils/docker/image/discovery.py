@@ -206,8 +206,8 @@ def iter_role_images(repo_root: Path) -> Iterable[ImageRef]:
             if not isinstance(service, dict):
                 continue
 
-            image = (service.get("image") or "").strip()
-            version = (service.get("version") or "").strip()
+            image = str(service.get("image") or "").strip()
+            version = str(service.get("version") or "").strip()
 
             if not image or not version:
                 continue

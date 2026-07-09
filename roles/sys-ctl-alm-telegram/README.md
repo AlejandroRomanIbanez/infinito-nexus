@@ -2,7 +2,7 @@
 
 ## Description
 
-This role installs and configures the necessary components for sending notifications via systemd when a service fails. It sets up the `sys-ctl-alm-telegram` service and configures parameters and customizable templates for sending messages through [Telegram](https://telegram.org).
+This role installs and configures the necessary components for sending notifications via systemd when a service fails. It sets up the `sys-ctl-alm-telegram` service and configures parameters and customizable templates for sending messages through [Telegram](https://telegram.org). <!-- nocheck: url telegram.org answers 404 on the bare root -->
 
 ## Overview
 

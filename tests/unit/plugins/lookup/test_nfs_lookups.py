@@ -20,9 +20,7 @@ def _run(name, variables):
 
 
 BASE = {
-    "storage": {
-        "nfs": {"server": "192.168.244.2"}
-    },
+    "storage": {"nfs": {"server": "192.168.244.2"}},
     "RUNTIME": "github",
 }
 
