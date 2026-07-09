@@ -1,6 +1,6 @@
 import unittest
 
-from plugins.filter.seaweedfs import seaweedfs_command
+from plugins.filter.seaweedfs import seaweedfs_command, seaweedfs_sidecar_script
 
 BASE = [
     "server",
@@ -27,6 +27,21 @@ class TestSeaweedfsCommandFilter(unittest.TestCase):
 
     def test_ip_localhost_present(self):
         self.assertIn("-ip=localhost", seaweedfs_command())
+
+
+class TestSeaweedfsSidecarScriptFilter(unittest.TestCase):
+    def test_embeds_server_command(self):
+        script = seaweedfs_sidecar_script("opentalk", 8333)
+        self.assertIn("/entrypoint.sh " + " ".join(BASE), script)
+
+    def test_creates_bucket_after_status_probe(self):
+        script = seaweedfs_sidecar_script("opentalk", 8333)
+        probe = script.index("http://127.0.0.1:8333/status")
+        create = script.index("s3.bucket.create -name opentalk")
+        self.assertLess(probe, create)
+
+    def test_keeps_server_in_foreground(self):
+        self.assertTrue(seaweedfs_sidecar_script("app", 8333).endswith('wait "$pid"'))
 
 
 if __name__ == "__main__":

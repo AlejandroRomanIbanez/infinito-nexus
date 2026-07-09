@@ -23,6 +23,10 @@
   notify:
     - compose up
 
+- name: "📂 Provision the OpenTalk Keycloak clients"
+  include_tasks: 03_keycloak_client.yml
+  when: OPENTALK_OIDC_ENABLED | bool
+
 - name: "🚿 Flush handlers for '{{ application_id }}' so compose up sees rendered configs"
   meta: flush_handlers
 
@@ -59,7 +63,3 @@
   when:
     - lookup('objstore', application_id, 'local') | bool
     - lookup('objstore', application_id, 'bucket') not in objstore_buckets.stdout
-
-- name: "📂 Provision the OpenTalk Keycloak clients"
-  include_tasks: 03_keycloak_client.yml
-  when: OPENTALK_OIDC_ENABLED | bool

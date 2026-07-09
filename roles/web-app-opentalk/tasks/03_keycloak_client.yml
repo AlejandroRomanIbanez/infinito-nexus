@@ -110,14 +110,3 @@
   delegate_to: "{{ OPENTALK_KEYCLOAK_HOST_NODE }}"
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-
-- name: "🔄 Restart OpenTalk controller for the refreshed client (compose)"
-  ansible.builtin.command: "container restart {{ OPENTALK_CTRL_CONTAINER }}"
-  changed_when: true
-  when: DEPLOYMENT_MODE == 'compose'
-
-- name: "🔄 Restart OpenTalk controller for the refreshed client (swarm)"
-  ansible.builtin.command: "container service update --force {{ lookup('container_service', application_id, 'controller') }}"
-  changed_when: true
-  timeout: "{{ lookup('timeout', 600) | int }}"
-  when: DEPLOYMENT_MODE == 'swarm'
