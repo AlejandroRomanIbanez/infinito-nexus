@@ -72,6 +72,7 @@ _DIRECTIVE_RE = re.compile(
     r"\b("
     r"noqa|nocheck|nosec|bandit|type:\s*ignore|type:\s*\w|pragma|pylint|mypy|ruff"
     r"|flake8|pyright|isort|fmt:\s*(?:on|off)|yapf|coding[:=]|shellcheck|yamllint"
+    r"|hadolint"
     r"|rubocop|frozen_string_literal|sourcery|phpcs|phpstan|psalm|phan"
     r"|codingStandardsIgnore|stylelint|eslint|prettier|jscpd|checkov|tflint"
     r"|ansible-lint|markdownlint|shfmt|depend(?:abot|s)|renovate"

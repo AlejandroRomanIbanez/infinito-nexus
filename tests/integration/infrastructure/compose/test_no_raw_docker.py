@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from utils.annotations.suppress import is_suppressed_at, is_suppressed_in_head
 from utils.cache.files import iter_project_files, read_text
 
 from . import PROJECT_ROOT
@@ -55,7 +56,6 @@ WHITELIST_PATH_FRAGMENTS: tuple[str, ...] = (
     "infinito_nexus.egg-info/",
 )
 
-WHITELIST_EXACT_PATHS: tuple[str, ...] = ("roles/svc-runner/files/test/local.sh",)
 
 _CMD_PREFIX = r"""
 (?:
@@ -183,8 +183,6 @@ def git_ls_files(root: Path) -> list[Path]:
 def is_whitelisted(path: Path, root: Path) -> bool:
     rel = path.relative_to(root).as_posix()
 
-    if rel in WHITELIST_EXACT_PATHS:
-        return True
     if path.name in WHITELIST_FILENAMES:
         return True
     if any(rel.endswith(suf) for suf in WHITELIST_SUFFIXES):
@@ -192,6 +190,10 @@ def is_whitelisted(path: Path, root: Path) -> bool:
 
     rel_wrapped = f"/{rel}/"
     return bool(any(fragment in rel_wrapped for fragment in WHITELIST_PATH_FRAGMENTS))
+
+
+SUPPRESS_RULE: str = "raw-docker"
+HEAD_SCAN_LINES: int = 30
 
 
 def scan_file(path: Path, root: Path) -> list[Finding]:
@@ -203,9 +205,15 @@ def scan_file(path: Path, root: Path) -> list[Finding]:
     except (OSError, UnicodeDecodeError):
         return findings
 
-    for idx, line in enumerate(text.splitlines(), start=1):
+    lines = text.splitlines()
+    if is_suppressed_in_head(lines, SUPPRESS_RULE, scan_lines=HEAD_SCAN_LINES):
+        return findings
+
+    for idx, line in enumerate(lines, start=1):
         for rule_name, pattern, suggestion in RULES:
             if pattern.search(line):
+                if is_suppressed_at(lines, idx, SUPPRESS_RULE, mode="same-or-above"):
+                    break
                 findings.append(
                     Finding(
                         file=rel,
