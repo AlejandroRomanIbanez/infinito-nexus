@@ -26,16 +26,13 @@ test("seaweedfs: an uploaded Penpot image asset is stored in the SeaweedFS bucke
       const markerBase = `infinito-storage-check-${seed}`;
       const marker = `${markerBase}.png`;
       const validPng = shared.uniqueImagePng(seed);
-      const fileInput = appPage.locator('input[type="file"]').first();
+      const fileInput = appPage.locator("#image-upload");
       await fileInput.waitFor({ state: "attached", timeout: 60_000 });
       await fileInput.setInputFiles({ name: marker, mimeType: "image/png", buffer: validPng });
 
-      // Penpot names the created layer/asset after the uploaded basename
-      // (extension stripped), so match the basename — a single, unique node —
-      // rather than a loose `image` alternative that matches workspace chrome.
       await expect(
-        appPage.getByText(markerBase, { exact: false }).first(),
-        `the uploaded image asset '${marker}' must be acknowledged in the Penpot workspace`,
+        appPage.getByRole("tabpanel", { name: "Layers" }).getByText(markerBase, { exact: false }).first(),
+        `the uploaded image asset '${marker}' must appear as a layer in the Penpot workspace`,
       ).toBeVisible({ timeout: 60_000 });
     },
   });
