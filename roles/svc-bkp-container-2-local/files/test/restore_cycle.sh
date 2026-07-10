@@ -7,7 +7,6 @@
 set -euo pipefail
 
 : "${BKP_TEST_BACKUPS_DIR:?}"
-: "${BKP_TEST_COMPOSE_DIR:?}"
 : "${BKP_TEST_RESTORE_BIN:?}"
 : "${BKP_TEST_RSYNC_IMAGE:?}"
 : "${BKP_TEST_HEALTH_TIMEOUT:?}"
@@ -40,15 +39,23 @@ if (( ${#RUNNING[@]} < 1 )); then
 fi
 echo "OK: ${#RUNNING[@]} running container(s) recorded"
 
-mapfile -t PROJECTS < <(container ps --format '{{.Label "com.docker.compose.project"}}' |
-    awk -v self="${SELF_PROJECT}" '$0 != "" && $0 != self' | sort -u)
-if (( ${#PROJECTS[@]} < 1 )); then
+declare -A PROJECT_DIR
+while IFS=$'\t' read -r project workdir; do
+    if [[ -z "${project}" ]] || [[ "${project}" == "${SELF_PROJECT}" ]]; then
+        continue
+    fi
+    PROJECT_DIR["${project}"]="${workdir}"
+done < <(container ps --filter label=com.docker.compose.project \
+    --format '{{.Label "com.docker.compose.project"}}\t{{.Label "com.docker.compose.project.working_dir"}}' |
+    sort -u)
+if (( ${#PROJECT_DIR[@]} < 1 )); then
     echo "FAIL: no compose projects found to cycle"
     exit 1
 fi
+mapfile -t PROJECTS < <(printf '%s\n' "${!PROJECT_DIR[@]}" | sort)
 for project in "${PROJECTS[@]}"; do
-    if [[ ! -d "${BKP_TEST_COMPOSE_DIR}/${project}" ]]; then
-        echo "FAIL: no compose dir ${BKP_TEST_COMPOSE_DIR}/${project} for running project ${project}"
+    if [[ ! -d "${PROJECT_DIR[${project}]}" ]]; then
+        echo "FAIL: compose working dir '${PROJECT_DIR[${project}]}' for running project ${project} does not exist"
         exit 1
     fi
 done
@@ -58,7 +65,7 @@ container pull "${BKP_TEST_RSYNC_IMAGE}" >/dev/null
 
 echo "Stopping compose projects..."
 for project in "${PROJECTS[@]}"; do
-    compose --chdir "${BKP_TEST_COMPOSE_DIR}/${project}" down
+    compose --chdir "${PROJECT_DIR[${project}]}" --project "${project}" down --remove-orphans
 done
 for name in "${RUNNING[@]}"; do
     if [[ "$(container inspect -f '{{.State.Status}}' "${name}" 2>/dev/null || echo gone)" == "running" ]]; then
@@ -90,9 +97,24 @@ for volume in "${VOLUMES[@]}"; do
 done
 
 echo "Starting compose projects..."
-for project in "${PROJECTS[@]}"; do
-    compose --chdir "${BKP_TEST_COMPOSE_DIR}/${project}" up -d
+up_failed=0
+for round in 1 2 3; do
+    up_failed=0
+    for project in "${PROJECTS[@]}"; do
+        if ! compose --chdir "${PROJECT_DIR[${project}]}" --project "${project}" up -d; then
+            echo "WARN: up failed for ${project} (round ${round})"
+            up_failed=$((up_failed + 1))
+        fi
+    done
+    if (( up_failed == 0 )); then
+        break
+    fi
+    sleep 60
 done
+if (( up_failed > 0 )); then
+    echo "FAIL: ${up_failed} project(s) failed to start after 3 rounds"
+    exit 1
+fi
 
 DEADLINE=$(( $(date +%s) + BKP_TEST_HEALTH_TIMEOUT ))
 NOHC_NAMES=()
