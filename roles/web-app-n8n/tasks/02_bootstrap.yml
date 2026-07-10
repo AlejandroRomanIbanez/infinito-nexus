@@ -39,5 +39,16 @@
       firstName: "{{ lookup('users', 'administrator').firstname | replace('.', ' ') | trim }}"
       lastName: "{{ lookup('users', 'administrator').lastname | replace('.', ' ') | trim }}"
       password: "{{ N8N_OWNER_PASSWORD }}"
-    status_code: [200, 201]
+    status_code: [200, 201, 400]
+    return_content: true
+  register: n8n_owner_setup
   when: n8n_owner_probe.status != 200
+
+- name: "✅ Assert n8n owner setup succeeded or was already done"
+  ansible.builtin.assert:
+    that:
+      - >-
+        (n8n_owner_setup is skipped)
+        or (n8n_owner_setup.status in [200, 201])
+        or ('already setup' in (n8n_owner_setup.content | default('')))
+    fail_msg: "n8n owner setup returned {{ n8n_owner_setup.status | default('n/a') }}: {{ n8n_owner_setup.content | default('') }}"

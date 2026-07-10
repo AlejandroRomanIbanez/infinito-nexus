@@ -44,3 +44,4 @@
     file: 02_bootstrap.yml
     apply:
       no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+      run_once: true
