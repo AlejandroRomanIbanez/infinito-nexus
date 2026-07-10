@@ -35,7 +35,9 @@
     compose_handlers_flush: true
     webserver_vhost_flavour: "basic"
     webserver_extra_configuration: "client_max_body_size 31M;"
-    domain: "{{ MAILU_HOSTNAME }}"
+    # Own canonical, NOT MAILU_HOSTNAME: in legacy mode the latter is the
+    # active provider's vhost and writing it would clobber that provider.
+    domain: "{{ MAILU_CANONICAL_HOST }}"
 
 - name: "Flush Docker Compose handlers"
   meta: flush_handlers
@@ -82,7 +84,11 @@
 - name: "Include Cert deploy service for '{{ role_name }}'"
   include_role:
     name: sys-ctl-mtn-cert-deploy
-  when: lookup('tls', application_id, 'enabled') | bool
+  # Active provider only: the cert-deploy unit is shared (run-once) and a
+  # legacy instance runs TLS_FLAVOR=notls behind the proxy anyway.
+  when:
+    - lookup('tls', application_id, 'enabled') | bool
+    - MAILU_ACTIVE_PROVIDER | bool
   # Alarm mail setup reaches sys-svc-mail and therefore requires the Mailu
   # API token that is created in 04_manage_user.yml.
 
@@ -94,3 +100,8 @@
 
 - name: Set Mailu DNS records
   include_tasks: 06_dns-records.yml
+
+# Refresh-or-defer: a /sso hit before Keycloak is up poisons the cached discovery.
+- name: "Apply Mailu OIDC provider config"
+  include_tasks: 09_oidc_apply.yml
+  when: MAILU_OIDC_ENABLED | bool
