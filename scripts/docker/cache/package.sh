@@ -12,11 +12,11 @@ set -euo pipefail
 
 CACHE_MAX_AGE_MIN="${INFINITO_CACHE_PACKAGE_MAX_AGE_MIN}"
 
-# REST goes via `docker exec curl` to bypass sandbox network isolation.
 PKGCACHE_CONTAINER="infinito-package-cache"
 NEXUS_REST="http://127.0.0.1:8081/service/rest"
 
 BOOTSTRAP_DONE_FILE="/nexus-data/.infinito-bootstrap-done"
+NEXUS_ADMIN_PW_FILE="/nexus-data/.infinito-admin-password"
 NEXUS_DEFAULT_PASSWORD="admin123"
 
 log() { printf '[package-cache-bootstrap] %s\n' "$*" >&2; }
@@ -35,11 +35,19 @@ wait_for_nexus() {
 	return 1
 }
 
+store_admin_password() {
+	printf %s "${INFINITO_CACHE_PACKAGE_ADMIN_PASSWORD}" |
+		docker exec -i "${PKGCACHE_CONTAINER}" sh -c "umask 077; cat > '${NEXUS_ADMIN_PW_FILE}'"
+}
+
 rotate_admin_password() {
 	ADMIN_USER="admin"
 	if docker exec "${PKGCACHE_CONTAINER}" test -f "${BOOTSTRAP_DONE_FILE}"; then
 		log "Already bootstrapped; using stored admin password"
-		ADMIN_PASS="${INFINITO_CACHE_PACKAGE_ADMIN_PASSWORD}"
+		ADMIN_PASS="$(docker exec "${PKGCACHE_CONTAINER}" cat "${NEXUS_ADMIN_PW_FILE}" 2>/dev/null || true)"
+		if [ -z "${ADMIN_PASS}" ]; then
+			ADMIN_PASS="${INFINITO_CACHE_PACKAGE_ADMIN_PASSWORD}"
+		fi
 		return 0
 	fi
 
@@ -48,7 +56,6 @@ rotate_admin_password() {
 		-H "Content-Type: text/plain" \
 		-X PUT "${NEXUS_REST}/v1/security/users/admin/change-password" \
 		--data-binary "${INFINITO_CACHE_PACKAGE_ADMIN_PASSWORD}"; then
-		# Recover from a partially-completed previous bootstrap.
 		if nexus_curl -fsS -o /dev/null -u "admin:${INFINITO_CACHE_PACKAGE_ADMIN_PASSWORD}" \
 			"${NEXUS_REST}/v1/repositories" >/dev/null 2>&1; then
 			log "Default rotation rejected but configured password authenticates; assuming previous bootstrap, marking done"
@@ -58,12 +65,12 @@ rotate_admin_password() {
 			return 1
 		fi
 	fi
+	store_admin_password
 	docker exec "${PKGCACHE_CONTAINER}" touch "${BOOTSTRAP_DONE_FILE}"
 	ADMIN_PASS="${INFINITO_CACHE_PACKAGE_ADMIN_PASSWORD}"
 }
 
 ensure_blobstore() {
-	# Nexus quota expects MB; convert from "Ng".
 	local quota_gb="${INFINITO_CACHE_PACKAGE_BLOBSTORE_MAX%g}"
 	local quota_mb=$((quota_gb * 1024))
 	local payload
@@ -124,8 +131,6 @@ ensure_all_proxies() {
 
 ensure_eula_accepted() {
 	local code
-	# Sonatype rejects payloads whose disclaimer is not byte-identical;
-	# the unicode quotes around accepted:* are intentional.
 	# shellcheck disable=SC1112
 	code="$(nexus_curl -sS -o /dev/null -w '%{http_code}' \
 		-u "${ADMIN_USER}:${ADMIN_PASS}" \
