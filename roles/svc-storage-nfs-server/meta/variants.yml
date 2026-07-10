@@ -2,3 +2,13 @@
 - services:
     nfs-server:
       flavor: "{{ 'ganesha' if RUNTIME in ['dev', 'act'] else 'kernel' }}"
+    nfs_backup:
+      enabled: true
+      shared: true
+
+- services:
+    nfs-server:
+      flavor: "{{ 'ganesha' if RUNTIME in ['dev', 'act'] else 'kernel' }}"
+    nfs_backup:
+      enabled: false
+      shared: false

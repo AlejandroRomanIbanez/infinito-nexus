@@ -10,6 +10,40 @@ File payloads are captured with rsync hard-link snapshots; databases register th
 This role installs the `baudolo` CLI, lays out the on-host backup tree, deploys the systemd service that drives the periodic run, and wires the cleanup-of-failed-backups dependency so partial snapshots are not retained.
 Database seeding for individual apps is contributed by the consumer roles via `tasks/04_seed-database-to-backup.yml`, which they include conditionally once `svc-bkp-container-2-local` is in `group_names`.
 
+## Schema
+
+```
+Nightly path (SYS_SCHEDULE_BACKUP_CONTAINER_TO_LOCAL, 01:00)
+  systemd timer
+    └─> svc-bkp-container-2-local.<version>.<domain>.service
+          ├─ ExecStartPre: sys-lock against the manipulation group
+          └─ ExecStart: baudolo backup
+                ├─ file payloads: per-volume rsync snapshots,
+                │    --link-dest <previous generation>   (unchanged files = hard links)
+                ├─ databases: every row in databases.csv (seeded by consumer
+                │    roles via tasks/04_seed-database-to-backup.yml) is dumped
+                │    as a consistent SQL snapshot
+                └─ containers: `no_stop_required` keep running,
+                     others stop for the dump and resume
+
+Pre-deploy path (MODE_BACKUP, tasks/stages/01_constructor.yml)
+  pre_deploy_snapshot.sh <unit> <databases-csv>
+    ├─ no unit installed (fresh host, version glob checked)  -> SKIP
+    ├─ databases.csv missing/empty                           -> SKIP
+    └─ else: systemctl start <previous deploy's unit>        -> nightly path above
+
+Snapshot tree
+  <backups_dir>/<sha256(machine-id)>/backup-docker-to-local/<YYYYmmddHHMMSS>/...
+
+Failure path
+  unit failure -> OnFailure: alarm + sys-ctl-cln-faild-bkps
+    -> partial generations are torn down so they cannot poison --link-dest
+
+Downstream pull
+  remote host (svc-bkp-remote-2-local) --ssh--> user-backup ssh-wrapper
+    -> whitelisted ls/rsync per backup type -> pulls the newest generation
+```
+
 ## Features
 
 - **Per-container snapshots:** rsync `--link-dest` snapshots deduplicate unchanged files across runs.

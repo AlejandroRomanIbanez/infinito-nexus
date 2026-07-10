@@ -16,3 +16,8 @@ nfs-server:
   mem_reservation: "64m"
   mem_limit: "256m"
   pids_limit: 256
+
+nfs_backup:
+  bond: 1
+  enabled: "{{ 'svc-bkp-nfs-2-local' in group_names }}"
+  shared: "{{ 'svc-bkp-nfs-2-local' in group_names }}"
