@@ -63,7 +63,7 @@ async:
   pids_limit: 512
 front:
   image: node
-  version: 16-alpine
+  version: 26-alpine
   cpus: "0.3"
   mem_reservation: 256m
   mem_limit: 512m

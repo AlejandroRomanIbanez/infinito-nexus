@@ -5,7 +5,7 @@ svc-runner:
   github_repo: core
   docker_base: /mnt/docker
   image: ubuntu
-  version: "22.04"
+  version: "26.10"
   docker_gid_fallback: 999
   project_prefix: runner
   sysctl_conf: /etc/sysctl.d/99-github-runner.conf

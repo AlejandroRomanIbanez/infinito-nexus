@@ -24,7 +24,7 @@ css:
   shared: "{{ 'web-svc-css' in group_names }}"
 roulette-wheel:
   image: node
-  version: 24-bookworm
+  version: 26-bookworm
   repository: https://github.com/kevinveenbirkenbach/roulette-wheel.git
   ref: master
   min_storage: 1GB

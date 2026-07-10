@@ -7,7 +7,7 @@ qdrant:
   bond: 1
   image: qdrant/qdrant
   name: qdrant
-  version: v1.12.4
+  version: v1.18.2
   min_storage: 5GB
   backup:
     database_routine: true

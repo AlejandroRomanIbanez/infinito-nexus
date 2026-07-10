@@ -7,7 +7,7 @@ rabbitmq:
   bond: 1
   image: rabbitmq
   name: rabbitmq
-  version: "3.13-management-alpine"
+  version: "4.3-management-alpine"
   min_storage: 5GB
   backup:
     database_routine: true

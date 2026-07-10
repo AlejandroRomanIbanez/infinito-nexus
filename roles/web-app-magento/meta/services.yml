@@ -74,7 +74,7 @@ search:
       http: 9200
   enabled: true
   image: opensearchproject/opensearch
-  version: 2.19.6
+  version: 3.7.0
   name: magento-opensearch
   min_storage: 10GB
   cpus: "1.0"

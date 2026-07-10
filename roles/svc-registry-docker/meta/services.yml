@@ -11,7 +11,7 @@ docker:
   shared: true
   bond: 1
   image: registry
-  version: "2"
+  version: "3"
   name: registry
   min_storage: 5GB
   cpus: "0.5"

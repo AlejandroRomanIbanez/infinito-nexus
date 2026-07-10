@@ -56,7 +56,7 @@ opentalk:
   placement: manager
   name: opentalk
   image: registry.opencode.de/opentalk/web-frontend
-  version: v2.8.1
+  version: v2.9.0
   min_storage: 4GB
   backup:
     no_stop_required: true
@@ -75,7 +75,7 @@ opentalk:
 controller:
   name: opentalk-controller
   image: registry.opencode.de/opentalk/controller
-  version: v0.33.2
+  version: v0.34.1
   min_storage: 8GB
   backup:
     no_stop_required: true
