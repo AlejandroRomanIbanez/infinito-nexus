@@ -1,7 +1,10 @@
 #!/bin/sh
 # Serialize the image entrypoint's first-boot install/upgrade across N swarm
 # replicas that share the /var/www/html NFS volume, then start the server
-# ourselves on every replica.
+# ourselves on every replica. With --wait-ready <cmd...> instead: block until
+# the ready marker exists, then exec cmd. Swarm ignores depends_on, and any
+# EspoCRM PHP run mid-install (daemon/websocket app-check) leaves NFS
+# silly-rename files in data/cache that make the installer's rm/rebuild fail.
 set -eu
 
 log() { printf '%s %s\n' "[entrypoint]" "$*" >&2; }
@@ -20,6 +23,28 @@ SESSION_DIR="${APP_DIR}/data/.sessions"
 BOOT_LOCK="${APP_DIR}/data/.infinito-espocrm-boot.lock.d"
 READY_MARKER="${APP_DIR}/data/.infinito-espocrm-boot.ready"
 ORIG_ENTRYPOINT="/usr/local/bin/docker-entrypoint.sh"
+
+if [ "${1:-}" = "--wait-ready" ]; then
+  shift
+  if [ "$#" -eq 0 ]; then
+    log "ERROR: --wait-ready requires a command to exec."
+    exit 1
+  fi
+  if [ ! -f "$READY_MARKER" ]; then
+    log "Waiting for the boot ready marker before starting: $*"
+  fi
+  waited=0
+  until [ -f "$READY_MARKER" ]; do
+    if [ "$waited" -ge "${ESPOCRM_WAIT_READY_TIMEOUT_S:-1800}" ]; then
+      log "ERROR: ready marker did not appear within ${ESPOCRM_WAIT_READY_TIMEOUT_S:-1800}s; giving up."
+      exit 1
+    fi
+    sleep 5
+    waited=$((waited + 5))
+  done
+  log "Exec: $*"
+  exec "$@"
+fi
 
 MAINTENANCE="$(bool_norm "${ESPOCRM_SEED_MAINTENANCE_MODE:-}")"
 CRON_DISABLED="$(bool_norm "${ESPOCRM_SEED_CRON_DISABLED:-}")"
