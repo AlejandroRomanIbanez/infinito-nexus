@@ -24,26 +24,8 @@
       delegate_to: "{{ STACK_HOST }}"
 
   rescue:
-    - name: "💾 swarm | dump '{{ wait_service_key }}' service ps + logs on converge failure"
-      ansible.builtin.shell: |
-        echo "===== container service ps {{ wait_service_key }} ====="
-        container service ps --no-trunc {{ _wait_service_name | quote }} 2>&1 || true
-        echo "===== container service logs (full) ====="
-        container service logs --no-task-ids {{ _wait_service_name | quote }} 2>&1 || true
-      register: _swarm_converge_dump
-      changed_when: false
-      failed_when: false
-      delegate_to: "{{ STACK_HOST }}"
-      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-
-    - name: "👁️ swarm | show '{{ wait_service_key }}' converge diagnostics"
-      ansible.builtin.debug:
-        msg: "{{ (_swarm_converge_dump.stdout | default('')).split('\n') }}"
-      when: not (MASK_CREDENTIALS_IN_LOGS | bool)
-
-    - name: "🛑 swarm | abort with '{{ wait_service_key }}' converge root cause"
-      ansible.builtin.fail:
-        msg: >-
-          swarm service '{{ wait_service_key }}' did not converge after
-          {{ wait_retries | default(600) }} retries
-          (delay {{ wait_delay | default(2) }}s). See the service ps + logs dump above.
+    - name: "🩺 Sys Svc Compose | capture rescue diagnostics"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ wait_service_key | quote }}
+        {{ ('swarm converge failed for ' ~ wait_service_key) | quote }}

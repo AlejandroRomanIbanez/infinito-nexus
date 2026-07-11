@@ -18,25 +18,11 @@
       changed_when: false
 
   rescue:
-    - name: "📦 MEMCACHED | container logs (last 200 lines)"
-      ansible.builtin.command: "container logs --tail 200 {{ MEMCACHED_CONTAINER }}"
-      register: dbg_memcached_logs
-      changed_when: false
-      failed_when: false
-
-    - name: "📊 MEMCACHED | Failure report"
-      ansible.builtin.debug:
-        msg:
-          memcached_container: "{{ MEMCACHED_CONTAINER }}"
-          memcached_host: "{{ MEMCACHED_LOCAL_HOST }}"
-          memcached_port: "{{ MEMCACHED_PORT }}"
-          last_logs: "{{ dbg_memcached_logs.stdout | default('') }}"
-
-    - name: "🛑 MEMCACHED | Fail explicitly after logs"
-      ansible.builtin.fail:
-        msg: >-
-          Memcached did not answer the version handshake.
-          Last 200 container log lines were printed above.
+    - name: "🩺 Memcached | capture rescue diagnostics"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ application_id | quote }}
+        {{ 'Memcached version handshake never answered' | quote }}
 
 - name: "🚫 MEMCACHED | No per-consumer provisioning (key-prefix isolation only)"
   ansible.builtin.debug:

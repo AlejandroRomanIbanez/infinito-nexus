@@ -6,7 +6,6 @@ database_type: "{{ entity_name }}"
 
 MEMCACHED_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.name') }}"
 MEMCACHED_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, entity_name) }}"
-MEMCACHED_PORT: "{{ database_port | default(lookup('config', application_id, 'services.memcached.ports.local.memcached')) }}"
 MEMCACHED_EXPOSE_LOCAL: true
 MEMCACHED_LOCAL_HOST: "127.0.0.1"
 MEMCACHED_RETRIES: 5

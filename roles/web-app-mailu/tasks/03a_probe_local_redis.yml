@@ -22,21 +22,8 @@
       changed_when: false
 
   rescue:
-    - block:
-        - name: "📊 Collect Mailu redis container logs after readiness timeout"
-          ansible.builtin.shell: >
-            container logs --tail=300 {{ MAILU_REDIS_LOCAL_CID | quote }}
-          delegate_to: "{{ MAILU_REDIS_HOST_NODE }}"
-          register: mailu_redis_logs
-          changed_when: false
-      always:
-        - name: "🛑 Fail: Mailu redis not ready"
-          ansible.builtin.fail:
-            msg: |
-              Mailu redis did not respond to PING in time.
-
-              Last stderr:
-              {{ mailu_redis_check.stderr | default('') }}
-
-              --- Mailu redis container logs (last 300 lines) ---
-              {{ mailu_redis_logs.stdout | default('No logs available') }}
+    - name: "🩺 Mailu | capture rescue diagnostics"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ application_id | quote }}
+        {{ 'Mailu redis not ready' | quote }}

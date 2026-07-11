@@ -23,40 +23,8 @@
         or system_service_run_unit_present.rc == 0
 
   rescue:
-    - name: 👁️ Show shared diagnostics for failed final-run service
-      ansible.builtin.include_role:
-        name: sys-service
-        tasks_from: utils/debug.yml
-      vars:
-        system_service_debug_unit: "{{ system_service_run_unit }}"
-        system_service_debug_context_lines:
-          - "system_service_run_unit={{ system_service_run_unit }}"
-          - "SYS_SERVICE_RUNNER_STATE={{ SYS_SERVICE_RUNNER_STATE }}"
-          - "SYS_SERVICE_RUNNER_RETRIES={{ SYS_SERVICE_RUNNER_RETRIES }}"
-          - "SYS_SERVICE_RUNNER_DELAY={{ SYS_SERVICE_RUNNER_DELAY }}"
-
-    - name: "🐳 docker diagnostics (best-effort via script file)"
-      ansible.builtin.script:
-        cmd: docker_diagnostics.sh
-      environment:
-        SYS_SERVICE_RUNNER_DOCKER_LOG_TAIL: "{{ SYS_SERVICE_RUNNER_DOCKER_LOG_TAIL }}"
-        SYS_SERVICE_RUNNER_DOCKER_INCLUDE_EXITED: "{{ SYS_SERVICE_RUNNER_DOCKER_INCLUDE_EXITED | bool | lower }}"
-      become: true
-      register: sys_runner_docker_diag
-      changed_when: false
-      failed_when: false
-      when: SYS_SERVICE_RUNNER_DOCKER_DIAGNOSTICS | bool
-
-    - name: 👁️ Show docker diagnostics
-      ansible.builtin.debug:
-        msg: |
-          === docker diagnostics ===
-          {{ sys_runner_docker_diag.stdout | default('') }}
-          {{ sys_runner_docker_diag.stderr | default('') }}
-      when: SYS_SERVICE_RUNNER_DOCKER_DIAGNOSTICS | bool
-
-    - name: "🛑 Fail with diagnostics"
-      ansible.builtin.fail:
-        msg: >-
-          Final-run service failed: {{ system_service_run_unit }}.
-          See shared service diagnostics above.
+    - name: "🩺 Sys Service Terminator | capture rescue diagnostics"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ system_service_run_unit | quote }}
+        {{ 'final-run service failed' | quote }}

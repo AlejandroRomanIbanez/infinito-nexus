@@ -17,14 +17,25 @@
         apply:
           delegate_to: "{{ KEYCLOAK_HOST_NODE }}"
   rescue:
+    - name: "🔢 Keycloak updates | Advance cross-node recovery attempt counter" # nocheck: rescue-recovery a cross-node reschedule needs a swarm-wide node re-resolve plus a change of delegate_to, which Ansible can only do by catching the failure and retrying; a diagnostics-only rescue cannot re-target the delegate, so this block recovers and only captures diagnostics once recovery is exhausted
+      ansible.builtin.set_fact:
+        kc_update_attempt: "{{ (kc_update_attempt | default(0) | int) + 1 }}"
+
+    - name: "🩺 Keycloak updates | Capture rescue diagnostics before the terminal failure"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ application_id | quote }}
+        {{ 'Keycloak object update failed' | quote }}
+      changed_when: false
+      failed_when: false
+      when: >-
+        DEPLOYMENT_MODE == 'compose'
+        or (kc_update_attempt | int) >= (kc_update_max_attempts | int)
+
     - name: "🐳 Keycloak updates | Re-raise failure unchanged in compose (no swarm recovery)"
       ansible.builtin.fail:
         msg: "{{ ansible_failed_result.msg | default('Keycloak object update failed') }}"
       when: DEPLOYMENT_MODE == 'compose'
-
-    - name: "🔢 Keycloak updates | Advance cross-node recovery attempt counter"
-      ansible.builtin.set_fact:
-        kc_update_attempt: "{{ (kc_update_attempt | default(0) | int) + 1 }}"
 
     - name: "🛑 Keycloak updates | Fail after exhausting cross-node recovery retries"
       ansible.builtin.fail:

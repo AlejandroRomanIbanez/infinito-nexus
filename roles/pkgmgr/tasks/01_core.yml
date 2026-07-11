@@ -66,39 +66,10 @@
       until: pkgmgr_update.rc == 0
 
   rescue:
-    - name: "📊 PKGMGR | Failure report (sanitized)"
-      ansible.builtin.debug:
-        msg:
-          note: "Sanitized debug (no credentials printed)."
-          cmd: >-
-            timeout --signal=KILL 1800s
-            {{ ansible_facts['env']['HOME'] }}/.venvs/pkgmgr/bin/pkgmgr update pkgmgr --clone-mode shallow
-          env:
-            GIT_TERMINAL_PROMPT: "0"
-            GIT_SSH_COMMAND: "ssh -o BatchMode=yes -o StrictHostKeyChecking=yes"
-            PYTHONUNBUFFERED: "1"
-            HOME: "{{ ansible_facts['env']['HOME'] }}"
-            # show presence & shape, not content
-            NIX_CONFIG_present: "{{ (ansible_facts['env']['NIX_CONFIG'] | default('')) | length > 0 }}"
-            NIX_CONFIG_len: "{{ (ansible_facts['env']['NIX_CONFIG'] | default('')) | length }}"
-            NIX_CONFIG_has_access_tokens: >-
-              {{
-                (ansible_facts['env']['NIX_CONFIG'] | default('')) is search('(^|\\n)\\s*access-tokens\\s*=\\s*github\\.com=')
-              }}
-            NIX_CONFIG_has_empty_github_token: >-
-              {{
-                (ansible_facts['env']['NIX_CONFIG'] | default('')) is search('(^|\\n)\\s*access-tokens\\s*=\\s*github\\.com=\\s*($|\\n)')
-              }}
-            GITHUB_TOKEN_present: "{{ (ansible_facts['env']['GITHUB_TOKEN'] | default('')) | length > 0 }}"
-            GH_TOKEN_present: "{{ (ansible_facts['env']['GH_TOKEN'] | default('')) | length > 0 }}"
-          result:
-            rc: "{{ pkgmgr_update.rc | default('n/a') }}"
-            stdout_tail: "{{ (pkgmgr_update.stdout | default('')).splitlines()[-60:] | join('\n') }}"
-            stderr_tail: "{{ (pkgmgr_update.stderr | default('')).splitlines()[-60:] | join('\n') }}"
-
-    - name: "🛑 PKGMGR | Fail explicitly after sanitized debug"
-      ansible.builtin.fail:
-        msg: >-
-          pkgmgr update failed. See sanitized debug output above (no credentials printed).
+    - name: "🩺 Pkgmgr | capture rescue diagnostics"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ application_id | default('pkgmgr') | quote }}
+        {{ 'pkgmgr update failed' | quote }}
 
 - include_tasks: utils/once/flag.yml

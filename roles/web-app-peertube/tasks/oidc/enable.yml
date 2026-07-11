@@ -57,20 +57,11 @@
       delegate_to: "{{ PEERTUBE_HOST_NODE }}"
 
   rescue:
-    - name: "💾 PEERTUBE | Dump diagnostics after install failure"
-      ansible.builtin.script: "{{ role_path }}/files/diagnostics.sh {{ PEERTUBE_CONTAINER }}"
-      environment:
-        PEERTUBE_OIDC_PLUGIN_INSTALL_MAX_OLD_SPACE_MB: "{{ PEERTUBE_OIDC_PLUGIN_INSTALL_MAX_OLD_SPACE_MB }}"
-        PEERTUBE_MAX_OLD_SPACE_SIZE: "{{ PEERTUBE_MAX_OLD_SPACE_SIZE }}"
-      changed_when: false
-      failed_when: false
-
-    - name: "🛑 PEERTUBE | Fail explicitly after diagnostics"
-      ansible.builtin.fail:
-        msg: >-
-          Installing peertube-plugin-auth-openid-connect failed.
-          See PEERTUBE DIAGNOSTICS block above for state, OOMKilled, exit
-          code, logs, stats, host memory, and dmesg OOM-killer evidence.
+    - name: "🩺 PeerTube | capture rescue diagnostics"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ application_id | quote }}
+        {{ 'OIDC plugin install failed' | quote }}
 
 - name: "🔄 Update the settings column of the auth-openid-connect plugin"
   database_query:

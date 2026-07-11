@@ -12,6 +12,7 @@ from . import (
     github_repository_owner,
     infinito_ca_cert_host,
     infinito_container,
+    infinito_dir_var_lib,
     infinito_docker_volume,
     infinito_image,
     infinito_image_repository,
@@ -26,6 +27,7 @@ from . import (
     infinito_playwright_reports_base_dir,
     infinito_pull_policy,
     infinito_registry_cache_max_size,
+    infinito_rescue_diagnostics_dir,
     infinito_running_on_act,
     infinito_running_on_github,
     infinito_swarm_nfs_export_base,
@@ -39,6 +41,8 @@ from . import (
 
 ORDERED_HANDLERS = [
     passthrough,
+    infinito_dir_var_lib,
+    infinito_rescue_diagnostics_dir,
     infinito_swarm_nfs_export_base,
     infinito_swarm_nfs_state_path,
     infinito_playwright_reports_base_dir,

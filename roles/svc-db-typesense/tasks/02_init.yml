@@ -35,25 +35,11 @@
       until: ts_admin_ready.rc == 0
 
   rescue:
-    - name: "📦 TYPESENSE | container logs (last 200 lines)"
-      ansible.builtin.command: "container logs --tail 200 {{ TYPESENSE_NAME }}"
-      register: dbg_ts_logs
-      changed_when: false
-      failed_when: false
-
-    - name: "📊 TYPESENSE | Failure report"
-      ansible.builtin.debug:
-        msg:
-          typesense_container: "{{ TYPESENSE_NAME }}"
-          typesense_host: "{{ TYPESENSE_HOST }}"
-          typesense_port: "{{ TYPESENSE_PORT }}"
-          last_logs: "{{ dbg_ts_logs.stdout | default('') }}"
-
-    - name: "🛑 TYPESENSE | Fail explicitly after logs"
-      ansible.builtin.fail:
-        msg: >-
-          Typesense did not become ready for admin API authentication.
-          Last 200 container log lines were printed above.
+    - name: "🩺 Typesense | capture rescue diagnostics"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ application_id | quote }}
+        {{ 'Typesense admin API key not ready' | quote }}
 
 - name: "🔐 Create scoped API key for {{ typesense_consumer_username }} (prefix-bound)"
   ansible.builtin.shell:

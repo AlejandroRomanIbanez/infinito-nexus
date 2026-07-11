@@ -21,7 +21,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
 # shellcheck source=/dev/null
-source <(grep -E '^INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR=' "${REPO_ROOT}/.env")
+source <(grep -E '^INFINITO_(PLAYWRIGHT_REPORTS_BASE|RESCUE_DIAGNOSTICS)_DIR=' "${REPO_ROOT}/.env")
 
 apps=""
 
@@ -70,6 +70,13 @@ cleanup() {
 	# nocheck: container-cp - container-to-host extraction on the CI host itself
 	docker cp "${INFINITO_CONTAINER}:${INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR}/." \
 		"${_playwright_host_dir}" 2>/dev/null || true
+
+	local _rescue_host_dir="/tmp/rescue-diagnostics/${INFINITO_DISTRO}/${apps}"
+	mkdir -p "${_rescue_host_dir}"
+	echo ">>> Copying rescue diagnostics from ${INFINITO_CONTAINER} to ${_rescue_host_dir}"
+	# nocheck: container-cp - container-to-host extraction on the CI host itself
+	docker cp "${INFINITO_CONTAINER}:${INFINITO_RESCUE_DIAGNOSTICS_DIR}/." \
+		"${_rescue_host_dir}" 2>/dev/null || true
 
 	local _inv_parent
 	_inv_parent="$(dirname "${INFINITO_INVENTORY_DIR}")"

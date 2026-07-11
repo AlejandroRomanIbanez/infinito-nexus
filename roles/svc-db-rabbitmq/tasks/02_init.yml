@@ -26,25 +26,11 @@
       changed_when: false
 
   rescue:
-    - name: "📦 RABBITMQ | container logs (last 200 lines)"
-      ansible.builtin.command: "container logs --tail 200 {{ RABBITMQ_CONTAINER }}"
-      register: dbg_rmq_logs
-      changed_when: false
-      failed_when: false
-
-    - name: "📊 RABBITMQ | Failure report"
-      ansible.builtin.debug:
-        msg:
-          rabbitmq_container: "{{ RABBITMQ_CONTAINER }}"
-          rabbitmq_host: "{{ RABBITMQ_LOCAL_HOST }}"
-          rabbitmq_port: "{{ RABBITMQ_PORT }}"
-          last_logs: "{{ dbg_rmq_logs.stdout | default('') }}"
-
-    - name: "🛑 RABBITMQ | Fail explicitly after logs"
-      ansible.builtin.fail:
-        msg: >-
-          RabbitMQ did not become ready for rabbitmqctl management requests.
-          Last 200 container log lines were printed above.
+    - name: "🩺 RabbitMQ | capture rescue diagnostics"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ application_id | quote }}
+        {{ 'rabbitmqctl broker await_startup never succeeded' | quote }}
 
 - name: "📋 RABBITMQ | List existing vhosts"
   ansible.builtin.shell: >

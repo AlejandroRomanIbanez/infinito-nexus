@@ -29,30 +29,11 @@
       delay: 5
 
   rescue:
-    - name: 👁️ Show Moodle container status
-      ansible.builtin.shell: >
-        container inspect {{ MOODLE_CONTAINER_ADDRESS }}
-      register: moodle_inspect
-      changed_when: false
-      failed_when: false
-
-    - name: 👁️ Show Moodle container logs
-      ansible.builtin.shell: >
-        container logs --tail=200 {{ MOODLE_CONTAINER_ADDRESS }}
-      register: moodle_logs
-      changed_when: false
-      failed_when: false
-
-    - name: 🛑 Fail with diagnostic output
-      ansible.builtin.fail:
-        msg: |
-          ❌ Moodle container did not become healthy in time.
-
-          --- container inspect ---
-          {{ moodle_inspect.stdout | default('no output') }}
-
-          --- container logs (last 200 lines) ---
-          {{ moodle_logs.stdout | default('no output') }}
+    - name: "🩺 Moodle | capture rescue diagnostics"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ application_id | quote }}
+        {{ 'Moodle container did not become healthy' | quote }}
 
 - name: "▶️ Run Moodle install (idempotent)"
   shell: >

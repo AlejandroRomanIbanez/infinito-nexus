@@ -27,24 +27,8 @@
       changed_when: false
 
   rescue:
-    - block:
-        - name: "📊 Collect Mailu admin container logs after HTTP API readiness timeout"
-          ansible.builtin.shell: >
-            container logs --tail=300 {{ MAILU_ADMIN_LOCAL_CID | quote }}
-          delegate_to: "{{ MAILU_ADMIN_HOST_NODE }}"
-          register: mailu_admin_http_logs
-          changed_when: false
-      always:
-        - name: "🛑 Fail: Mailu admin HTTP API not ready"
-          ansible.builtin.fail:
-            msg: |
-              Mailu admin HTTP API did not respond on :8080 in time.
-
-              Last stderr:
-              {{ mailu_admin_http_check.stderr | default('') }}
-
-              Last status code:
-              {{ mailu_admin_http_check.stdout | default('') }}
-
-              --- Mailu admin container logs (last 300 lines) ---
-              {{ mailu_admin_http_logs.stdout | default('No logs available') }}
+    - name: "🩺 Mailu | capture rescue diagnostics"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ application_id | quote }}
+        {{ 'Mailu admin HTTP API not ready' | quote }}

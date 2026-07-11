@@ -178,6 +178,14 @@ jobs:
           path: /tmp/playwright-artifacts/
           if-no-files-found: ignore
 
+      - name: ⬆️ Upload rescue diagnostics
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rescue-diagnostics-compose-${{ matrix.apps }}${{ matrix.variant_slug && format('-{0}', matrix.variant_slug) || '' }}
+          path: /tmp/rescue-diagnostics/
+          if-no-files-found: ignore
+
       - name: 🗜️ Zip generated inventory for debugging
         if: always()
         shell: bash

@@ -38,25 +38,11 @@
       no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
   rescue:
-    - name: "📦 REDIS | container logs (last 200 lines)"
-      ansible.builtin.command: "container logs --tail 200 {{ REDIS_CONTAINER }}"
-      register: dbg_redis_logs
-      changed_when: false
-      failed_when: false
-
-    - name: "📊 REDIS | Failure report"
-      ansible.builtin.debug:
-        msg:
-          redis_container: "{{ REDIS_CONTAINER }}"
-          redis_host: "{{ REDIS_LOCAL_HOST }}"
-          redis_port: "{{ REDIS_PORT }}"
-          last_logs: "{{ dbg_redis_logs.stdout | default('') }}"
-
-    - name: "🛑 REDIS | Fail explicitly after logs"
-      ansible.builtin.fail:
-        msg: >-
-          Redis did not become ready for authenticated administration.
-          Last 200 container log lines were printed above.
+    - name: "🩺 Redis | capture rescue diagnostics"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ application_id | quote }}
+        {{ 'Redis admin auth never became ready' | quote }}
 
 - name: "📖 REDIS | Read current ACL rules for {{ redis_acl_username }}"
   ansible.builtin.shell: >

@@ -16,5 +16,8 @@
       changed_when: false
       failed_when: openresty_test_post.rc != 0
   rescue:
-    - name: "📂 Load OpenResty assert rescue debug routines"
-      include_tasks: 02a_assert_rescue_debug.yml
+    - name: "🩺 OpenResty | capture rescue diagnostics"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ application_id | quote }}
+        {{ 'OpenResty post-flight config check failed' | quote }}

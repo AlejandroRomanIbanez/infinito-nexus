@@ -14,7 +14,7 @@
     resolve_output_prefix: MAILU_ADMIN
     resolve_compose_cid: "{{ MAILU_ADMIN_CONTAINER_ADDRESS }}"
 
-- name: "⏳ Wait until Mailu database schema is initialized (domain table exists)"
+- name: "⏳ Wait until Mailu database schema is initialized and admin app is ready"
   block:
     - name: "🔎 Check for Mailu DB domain table"
       ansible.builtin.shell: > # nocheck: container-exec-resolver  MAILU_DB_LOCAL_CID resolved at delegate_to runtime
@@ -31,32 +31,6 @@
       delegate_to: "{{ MAILU_DB_HOST_NODE }}"
       no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-  rescue:
-    - block:
-        - name: "📊 Collect Mailu admin container logs (last 300 lines)"
-          ansible.builtin.shell: >
-            container logs --tail=300 {{ MAILU_ADMIN_LOCAL_CID | quote }}
-          register: mailu_admin_logs
-          changed_when: false
-          delegate_to: "{{ MAILU_ADMIN_HOST_NODE }}"
-      always:
-        - name: "🛑 Fail: Mailu database schema not initialized"
-          ansible.builtin.fail:
-            msg: |
-              Mailu database schema was not initialized in time.
-
-              Expected table: {{ lookup('database', application_id, 'name') }}.domain
-
-              On swarm, this typically reflects mailu admin's hard requirement on a
-              DNSSEC-validating resolver dialed via the per-service `dns:` field
-              pinned to the resolver container's static ipv4_address (compose-only;
-              the overlay scheduler ignores ipv4_address and `dns:`).
-
-              --- Mailu admin container logs (last 300 lines) ---
-              {{ mailu_admin_logs.stdout | default('No logs available') }}
-
-- name: "⏳ Wait until Mailu admin Flask app is ready"
-  block:
     - name: "🔎 Check Mailu admin Flask routes command"
       ansible.builtin.shell: > # nocheck: container-exec-resolver  MAILU_ADMIN_LOCAL_CID resolved at delegate_to runtime
         container exec -i {{ MAILU_ADMIN_LOCAL_CID | quote }} flask routes
@@ -68,21 +42,8 @@
       delegate_to: "{{ MAILU_ADMIN_HOST_NODE }}"
 
   rescue:
-    - block:
-        - name: "📊 Collect Mailu admin container logs after Flask readiness timeout"
-          ansible.builtin.shell: >
-            container logs --tail=300 {{ MAILU_ADMIN_LOCAL_CID | quote }}
-          register: mailu_admin_cli_logs
-          changed_when: false
-          delegate_to: "{{ MAILU_ADMIN_HOST_NODE }}"
-      always:
-        - name: "🛑 Fail: Mailu admin Flask app not ready"
-          ansible.builtin.fail:
-            msg: |
-              Mailu admin Flask app was not ready in time.
-
-              Last stderr:
-              {{ mailu_admin_cli_check.stderr | default('') }}
-
-              --- Mailu admin container logs (last 300 lines) ---
-              {{ mailu_admin_cli_logs.stdout | default('No logs available') }}
+    - name: "🩺 Mailu | capture rescue diagnostics"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ application_id | quote }}
+        {{ 'Mailu database schema or admin app not ready' | quote }}

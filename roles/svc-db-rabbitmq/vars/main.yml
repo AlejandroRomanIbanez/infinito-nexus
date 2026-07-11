@@ -8,9 +8,7 @@ RABBITMQ_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ entity_na
 RABBITMQ_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, RABBITMQ_CONTAINER) }}"
 RABBITMQ_USER: "admin"
 RABBITMQ_PASSWORD: "{{ lookup('config', application_id, 'credentials.RABBITMQ_PASSWORD') }}"
-RABBITMQ_PORT: "{{ database_port | default(lookup('config', application_id, 'services.rabbitmq.ports.local.rabbitmq')) }}"
 RABBITMQ_EXPOSE_LOCAL: true
-RABBITMQ_LOCAL_HOST: "127.0.0.1"
 RABBITMQ_RETRIES: 30
 RABBITMQ_DELAY: 5
 

@@ -28,25 +28,11 @@
       no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
   rescue:
-    - name: "📦 ELASTICSEARCH | container logs (last 200 lines)"
-      ansible.builtin.command: "container logs --tail 200 {{ ELASTICSEARCH_CONTAINER }}"
-      register: dbg_es_logs
-      changed_when: false
-      failed_when: false
-
-    - name: "📊 ELASTICSEARCH | Failure report"
-      ansible.builtin.debug:
-        msg:
-          elasticsearch_container: "{{ ELASTICSEARCH_CONTAINER }}"
-          elasticsearch_host: "{{ ELASTICSEARCH_LOCAL_HOST }}"
-          elasticsearch_port: "{{ ELASTICSEARCH_PORT }}"
-          last_logs: "{{ dbg_es_logs.stdout | default('') }}"
-
-    - name: "🛑 ELASTICSEARCH | Fail explicitly after logs"
-      ansible.builtin.fail:
-        msg: >-
-          Elasticsearch did not become ready for security API requests.
-          Last 200 container log lines were printed above.
+    - name: "🩺 Elasticsearch | capture rescue diagnostics"
+      ansible.builtin.script: >-
+        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
+        {{ application_id | quote }}
+        {{ 'Elasticsearch security API not ready' | quote }}
 
 - name: "📁 Create role scoped to '{{ elasticsearch_consumer_entity }}-*' indices"
   ansible.builtin.shell: >
