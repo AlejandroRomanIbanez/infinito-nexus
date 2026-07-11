@@ -160,6 +160,14 @@ jobs:
         shell: bash
         run: ./scripts/github/runner/dump_state.sh "post-deploy failure (${{ matrix.apps }})"
 
+      - name: "🩺 Collect rescue diagnostics (recursive DiD snapshot)"
+        if: failure()
+        shell: bash
+        run: |
+          INFINITO_RESCUE_DIAGNOSTICS_DIR="/tmp/rescue-diagnostics/${{ matrix.apps }}" \
+            python3 utils/diagnostics/container.py \
+            "${{ matrix.apps }}" "post-deploy failure" || true
+
       - name: 📋 Playwright step summary
         if: always()
         shell: bash

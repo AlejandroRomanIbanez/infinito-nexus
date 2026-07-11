@@ -13,26 +13,17 @@
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: ⏳ Wait until elasticsearch security API works
-  block:
-    - name: "⏳ ELASTICSEARCH | Wait for security API"
-      ansible.builtin.shell: >
-        {{ ELASTICSEARCH_EXEC_SHELL }}
-        '{{ 30 | curl }} -fS -u "elastic:$ELASTIC_PW"
-        "{{ ELASTICSEARCH_API_BASE }}/_security/_authenticate" >/dev/null'
-      register: es_security_ready
-      until: es_security_ready.rc == 0
-      retries: 30
-      delay: 5
-      changed_when: false
-      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-
-  rescue:
-    - name: "🩺 Elasticsearch | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ application_id | quote }}
-        {{ 'Elasticsearch security API not ready' | quote }}
+- name: "⏳ ELASTICSEARCH | Wait for security API"
+  ansible.builtin.shell: >
+    {{ ELASTICSEARCH_EXEC_SHELL }}
+    '{{ 30 | curl }} -fS -u "elastic:$ELASTIC_PW"
+    "{{ ELASTICSEARCH_API_BASE }}/_security/_authenticate" >/dev/null'
+  register: es_security_ready
+  until: es_security_ready.rc == 0
+  retries: 30
+  delay: 5
+  changed_when: false
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
 - name: "📁 Create role scoped to '{{ elasticsearch_consumer_entity }}-*' indices"
   ansible.builtin.shell: >

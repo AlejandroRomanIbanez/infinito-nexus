@@ -47,29 +47,20 @@
     executable: /bin/bash
   become: true
 
-- name: "🔄 PKGMGR | Update pkgmgr (non-interactive) with safe debug on failure"
-  block:
-    - name: 🔄 update pkgmgr (non-interactive)
-      ansible.builtin.shell: |
-        set -euo pipefail
-        export GIT_TERMINAL_PROMPT=0
-        export GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=yes"
-        export PYTHONUNBUFFERED=1
-        timeout --signal=KILL 1800s "{{ ansible_facts['env']['HOME'] }}/.venvs/pkgmgr/bin/pkgmgr" update pkgmgr --clone-mode shallow </dev/null
-      args:
-        executable: /bin/bash
-      register: pkgmgr_update
-      changed_when: "'already up to date' not in (pkgmgr_update.stdout | lower)"
-      become: true
-      retries: 3
-      delay: 20
-      until: pkgmgr_update.rc == 0
-
-  rescue:
-    - name: "🩺 Pkgmgr | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ application_id | default('pkgmgr') | quote }}
-        {{ 'pkgmgr update failed' | quote }}
+- name: 🔄 update pkgmgr (non-interactive)
+  ansible.builtin.shell: |
+    set -euo pipefail
+    export GIT_TERMINAL_PROMPT=0
+    export GIT_SSH_COMMAND="ssh -o BatchMode=yes -o StrictHostKeyChecking=yes"
+    export PYTHONUNBUFFERED=1
+    timeout --signal=KILL 1800s "{{ ansible_facts['env']['HOME'] }}/.venvs/pkgmgr/bin/pkgmgr" update pkgmgr --clone-mode shallow </dev/null
+  args:
+    executable: /bin/bash
+  register: pkgmgr_update
+  changed_when: "'already up to date' not in (pkgmgr_update.stdout | lower)"
+  become: true
+  retries: 3
+  delay: 20
+  until: pkgmgr_update.rc == 0
 
 - include_tasks: utils/once/flag.yml

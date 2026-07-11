@@ -13,24 +13,15 @@
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-- name: ⏳ Wait until rabbitmqctl reaches the broker
-  block:
-    - name: "⏳ RABBITMQ | Wait for management API readiness"
-      ansible.builtin.shell: >
-        {{ RABBITMQ_EXEC_SHELL }}
-        'rabbitmqctl -q await_startup'
-      register: rmq_startup_ready
-      until: rmq_startup_ready.rc == 0
-      retries: 30
-      delay: 5
-      changed_when: false
-
-  rescue:
-    - name: "🩺 RabbitMQ | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ application_id | quote }}
-        {{ 'rabbitmqctl broker await_startup never succeeded' | quote }}
+- name: "⏳ RABBITMQ | Wait for management API readiness"
+  ansible.builtin.shell: >
+    {{ RABBITMQ_EXEC_SHELL }}
+    'rabbitmqctl -q await_startup'
+  register: rmq_startup_ready
+  until: rmq_startup_ready.rc == 0
+  retries: 30
+  delay: 5
+  changed_when: false
 
 - name: "📋 RABBITMQ | List existing vhosts"
   ansible.builtin.shell: >

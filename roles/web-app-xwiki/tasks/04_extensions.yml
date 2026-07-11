@@ -45,11 +45,10 @@
         XWIKI_CONTAINER_ADDRESS: "{{ XWIKI_CONTAINER_ADDRESS }}"
       changed_when: false
       failed_when: false
-    - name: "🩺 XWiki | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ application_id | quote }}
-        {{ 'Extension install failed' | quote }}
+    - name: "🛑 XWiki | fail after extension diagnostics"
+      ansible.builtin.fail:
+        msg: "Extension install failed; repo reachability + xwiki.properties were dumped into the diagnostics folder (the workflow-level rescue capture collects the
+          full snapshot)"
 
   always:
     - name: "🗑️ XWIKI | Delete installer page (best effort)"

@@ -44,11 +44,9 @@
       changed_when: false
       failed_when: false
       no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-    - name: "🩺 Postgres | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ application_id | quote }}
-        {{ 'Postgres TCP auth never became ready' | quote }}
+    - name: "🛑 Postgres | fail after pg_hba dump"
+      ansible.builtin.fail:
+        msg: "Postgres TCP auth never became ready; pg_hba.conf was dumped into the diagnostics folder (the workflow-level rescue capture collects the full snapshot)"
 
 - name: "📁 Create database: {{ database_name }}"
   community.postgresql.postgresql_db:
@@ -78,31 +76,22 @@
   retries: "{{ POSTGRES_RETRIES }}"
   delay: "{{ POSTGRES_DELAY }}"
 
-- name: "✅ Ensure LOGIN for role {{ database_username }} (debug on failure)"
-  block:
-    - name: "🟢 POSTGRES | Enable login for role {{ database_username }}"
-      # nocheck: database-query — svc-db-postgres bootstraps its own DB; the `database_query` module's `lookup('database', ...)` indirection isn't usable from inside the role that provides the lookup target.
-      community.postgresql.postgresql_query:
-        login_db: postgres
-        login_user: postgres
-        login_password: "{{ postgres_login_password_string }}"
-        login_host: "{{ POSTGRES_LOCAL_HOST }}"
-        login_port: "{{ POSTGRES_PORT }}"
-        query: |
-          ALTER ROLE "{{ database_username }}"
-            WITH LOGIN;
-      register: postgres_enable_login
-      until: postgres_enable_login is succeeded
-      retries: "{{ POSTGRES_RETRIES }}"
-      delay: "{{ POSTGRES_DELAY }}"
-      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-
-  rescue:
-    - name: "🩺 Postgres | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ application_id | quote }}
-        {{ 'ALTER ROLE consumer WITH LOGIN failed' | quote }}
+- name: "🟢 POSTGRES | Enable login for role {{ database_username }}"
+  # nocheck: database-query — svc-db-postgres bootstraps its own DB; the `database_query` module's `lookup('database', ...)` indirection isn't usable from inside the role that provides the lookup target.
+  community.postgresql.postgresql_query:
+    login_db: postgres
+    login_user: postgres
+    login_password: "{{ postgres_login_password_string }}"
+    login_host: "{{ POSTGRES_LOCAL_HOST }}"
+    login_port: "{{ POSTGRES_PORT }}"
+    query: |
+      ALTER ROLE "{{ database_username }}"
+        WITH LOGIN;
+  register: postgres_enable_login
+  until: postgres_enable_login is succeeded
+  retries: "{{ POSTGRES_RETRIES }}"
+  delay: "{{ POSTGRES_DELAY }}"
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
 - name: "🔐 Grant ALL privileges on tables in public schema to {{ database_username }}"
   community.postgresql.postgresql_privs:

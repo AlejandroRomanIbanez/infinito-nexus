@@ -1,18 +1,9 @@
 ---
-- name: "⏳ Wait until Mailu antispam container is up"
-  block:
-    - name: "🔍 Probe Mailu antispam"
-      ansible.builtin.shell: >
-        container exec -i {{ MAILU_ANTISPAM_CONTAINER_ADDRESS }} true
-      register: mailu_antispam_check
-      retries: 30
-      delay: 5
-      until: mailu_antispam_check.rc == 0
-      changed_when: false
-
-  rescue:
-    - name: "🩺 Mailu | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ application_id | quote }}
-        {{ 'Mailu antispam not ready' | quote }}
+- name: "🔍 Probe Mailu antispam"
+  ansible.builtin.shell: >
+    container exec -i {{ MAILU_ANTISPAM_CONTAINER_ADDRESS }} true
+  register: mailu_antispam_check
+  retries: 30
+  delay: 5
+  until: mailu_antispam_check.rc == 0
+  changed_when: false

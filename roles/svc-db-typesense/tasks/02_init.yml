@@ -21,25 +21,16 @@
       No Typesense API key resolved for consumer '{{ database_consumer_id }}'.
       The consumer must declare services.typesense.password (shared: true).
 
-- name: ⏳ Wait until Typesense accepts the admin API key
-  block:
-    - name: "🔍 TYPESENSE | Probe /health with admin key (inside container)"
-      ansible.builtin.shell: >
-        {{ TYPESENSE_EXEC_SHELL }}
-        'exec 3<>/dev/tcp/127.0.0.1/8108; printf "GET /health HTTP/1.0\r\nX-TYPESENSE-API-KEY: {{ TYPESENSE_API_KEY }}\r\n\r\n" >&3; grep -q "200 OK" <&3'
-      register: ts_admin_ready
-      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-      changed_when: false
-      retries: 30
-      delay: 5
-      until: ts_admin_ready.rc == 0
-
-  rescue:
-    - name: "🩺 Typesense | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ application_id | quote }}
-        {{ 'Typesense admin API key not ready' | quote }}
+- name: "🔍 TYPESENSE | Probe /health with admin key (inside container)"
+  ansible.builtin.shell: >
+    {{ TYPESENSE_EXEC_SHELL }}
+    'exec 3<>/dev/tcp/127.0.0.1/8108; printf "GET /health HTTP/1.0\r\nX-TYPESENSE-API-KEY: {{ TYPESENSE_API_KEY }}\r\n\r\n" >&3; grep -q "200 OK" <&3'
+  register: ts_admin_ready
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+  changed_when: false
+  retries: 30
+  delay: 5
+  until: ts_admin_ready.rc == 0
 
 - name: "🔐 Create scoped API key for {{ typesense_consumer_username }} (prefix-bound)"
   ansible.builtin.shell:

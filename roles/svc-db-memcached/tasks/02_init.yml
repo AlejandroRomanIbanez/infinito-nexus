@@ -5,24 +5,15 @@
       - application_id == 'svc-db-memcached'
       - database_consumer_id != 'svc-db-memcached'
 
-- name: ⏳ Wait until Memcached answers
-  block:
-    - name: "✅ MEMCACHED | Confirm engine answers before provisioning (version handshake)"
-      ansible.builtin.shell: >
-        {{ MEMCACHED_EXEC_SHELL }}
-        '{{ MEMCACHED_PROBE }}'
-      register: memcached_ready
-      until: memcached_ready.rc == 0
-      retries: "{{ MEMCACHED_RETRIES }}"
-      delay: "{{ MEMCACHED_DELAY }}"
-      changed_when: false
-
-  rescue:
-    - name: "🩺 Memcached | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ application_id | quote }}
-        {{ 'Memcached version handshake never answered' | quote }}
+- name: "✅ MEMCACHED | Confirm engine answers before provisioning (version handshake)"
+  ansible.builtin.shell: >
+    {{ MEMCACHED_EXEC_SHELL }}
+    '{{ MEMCACHED_PROBE }}'
+  register: memcached_ready
+  until: memcached_ready.rc == 0
+  retries: "{{ MEMCACHED_RETRIES }}"
+  delay: "{{ MEMCACHED_DELAY }}"
+  changed_when: false
 
 - name: "🚫 MEMCACHED | No per-consumer provisioning (key-prefix isolation only)"
   ansible.builtin.debug:

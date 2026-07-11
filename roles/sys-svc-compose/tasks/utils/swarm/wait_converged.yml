@@ -22,10 +22,3 @@
       delay: "{{ wait_delay | default(2) }}"
       until: _swarm_converged.rc == 0
       delegate_to: "{{ STACK_HOST }}"
-
-  rescue:
-    - name: "🩺 Sys Svc Compose | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ wait_service_key | quote }}
-        {{ ('swarm converge failed for ' ~ wait_service_key) | quote }}

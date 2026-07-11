@@ -4,27 +4,16 @@
   register: system_service_run_unit_present
   changed_when: false
   failed_when: false
-  become: true
   when: DEPLOYMENT_MODE == 'swarm'
 
-- name: "📌 Apply state for {{ system_service_run_unit }}"
-  block:
-    - name: "🔄 Apply state (retry up to {{ SYS_SERVICE_RUNNER_RETRIES }} times)"
-      ansible.builtin.systemd:
-        name: "{{ system_service_run_unit }}"
-        state: "{{ SYS_SERVICE_RUNNER_STATE }}"
-      become: true
-      register: result
-      retries: "{{ SYS_SERVICE_RUNNER_RETRIES }}"
-      delay: "{{ SYS_SERVICE_RUNNER_DELAY }}"
-      until: result is not failed
-      when: >-
-        DEPLOYMENT_MODE == 'compose'
-        or system_service_run_unit_present.rc == 0
-
-  rescue:
-    - name: "🩺 Sys Service Terminator | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ system_service_run_unit | quote }}
-        {{ 'final-run service failed' | quote }}
+- name: "🔄 Apply state (retry up to {{ SYS_SERVICE_RUNNER_RETRIES }} times)"
+  ansible.builtin.systemd:
+    name: "{{ system_service_run_unit }}"
+    state: "{{ SYS_SERVICE_RUNNER_STATE }}"
+  register: result
+  retries: "{{ SYS_SERVICE_RUNNER_RETRIES }}"
+  delay: "{{ SYS_SERVICE_RUNNER_DELAY }}"
+  until: result is not failed
+  when: >-
+    DEPLOYMENT_MODE == 'compose'
+    or system_service_run_unit_present.rc == 0

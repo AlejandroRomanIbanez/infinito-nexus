@@ -13,16 +13,8 @@
   delay: 1
   until: docker_active.stdout.strip() == "active"
 
-- name: Fail with debug if docker did not start
-  block:
-    - name: Assert docker is active
-      ansible.builtin.assert:
-        that:
-          - docker_active.stdout.strip() == "active"
-        fail_msg: "docker.service did not become active within 60s (is-active={{ docker_active.stdout | default('') }})"
-  rescue:
-    - name: "🩺 Sys Svc Container | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ 'sys-svc-container' | quote }}
-        {{ 'docker.service failed to start' | quote }}
+- name: Assert docker is active
+  ansible.builtin.assert:
+    that:
+      - docker_active.stdout.strip() == "active"
+    fail_msg: "docker.service did not become active within 60s (is-active={{ docker_active.stdout | default('') }})"

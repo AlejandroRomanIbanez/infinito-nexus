@@ -4,7 +4,7 @@
 # rescue diagnostics folder so it ships in the uploaded snapshot next to the
 # generic capture. pg_hba.conf is the auth config the generic rescue script
 # cannot capture, which is exactly what a failed TCP-auth wait needs. Prints
-# one summary line and always exits 0 so the final rescue.sh still runs.
+# one summary line and always exits 0 so the rescue flow continues to the fail task.
 #
 # Required environment:
 #   POSTGRES_CONTAINER_ADDRESS   exec address of the postgres container

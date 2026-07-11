@@ -18,22 +18,13 @@
 - name: 🚿 flush docker service
   meta: flush_handlers
 
-- name: ⏳ Wait for Moodle container to become healthy
-  block:
-    - name: ⏳ Wait until the Moodle container is healthy
-      ansible.builtin.shell: >
-        container inspect --format '{% raw %}{{.State.Health.Status}}{% endraw %}' {{ MOODLE_CONTAINER_ADDRESS }}
-      register: health_check
-      until: health_check.stdout.strip() == "healthy"
-      retries: 120
-      delay: 5
-
-  rescue:
-    - name: "🩺 Moodle | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ application_id | quote }}
-        {{ 'Moodle container did not become healthy' | quote }}
+- name: ⏳ Wait until the Moodle container is healthy
+  ansible.builtin.shell: >
+    container inspect --format '{% raw %}{{.State.Health.Status}}{% endraw %}' {{ MOODLE_CONTAINER_ADDRESS }}
+  register: health_check
+  until: health_check.stdout.strip() == "healthy"
+  retries: 120
+  delay: 5
 
 - name: "▶️ Run Moodle install (idempotent)"
   shell: >

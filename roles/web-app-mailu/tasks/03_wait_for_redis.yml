@@ -10,25 +10,16 @@
     resolve_output_prefix: MAILU_ADMIN
     resolve_compose_cid: "{{ MAILU_ADMIN_CONTAINER_ADDRESS }}"
 
-- name: "⏳ Wait until Mailu admin HTTP API listens on :8080"
-  block:
-    - name: "🔍 Probe Mailu admin HTTP API"
-      ansible.builtin.shell: |
-        # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
-        container exec -i {{ MAILU_ADMIN_LOCAL_CID | quote }} \
-          {{ 30 | curl }} -S -o /dev/null -w "%{http_code}" http://localhost:8080/sso/login
-      delegate_to: "{{ MAILU_ADMIN_HOST_NODE }}"
-      register: mailu_admin_http_check
-      retries: 30
-      delay: 5
-      until:
-        - mailu_admin_http_check.rc == 0
-        - (mailu_admin_http_check.stdout | default('') | regex_search('^[1-5][0-9][0-9]$')) is not none
-      changed_when: false
-
-  rescue:
-    - name: "🩺 Mailu | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ application_id | quote }}
-        {{ 'Mailu admin HTTP API not ready' | quote }}
+- name: "🔍 Probe Mailu admin HTTP API"
+  ansible.builtin.shell: |
+    # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
+    container exec -i {{ MAILU_ADMIN_LOCAL_CID | quote }} \
+      {{ 30 | curl }} -S -o /dev/null -w "%{http_code}" http://localhost:8080/sso/login
+  delegate_to: "{{ MAILU_ADMIN_HOST_NODE }}"
+  register: mailu_admin_http_check
+  retries: 30
+  delay: 5
+  until:
+    - mailu_admin_http_check.rc == 0
+    - (mailu_admin_http_check.stdout | default('') | regex_search('^[1-5][0-9][0-9]$')) is not none
+  changed_when: false

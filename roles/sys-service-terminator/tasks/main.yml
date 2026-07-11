@@ -9,7 +9,10 @@
   when: MODE_DEBUG | bool
 
 - name: "▶️ Run collected services"
-  ansible.builtin.include_tasks: 01_run_one.yml
+  ansible.builtin.include_tasks:
+    file: 01_run_one.yml
+    apply:
+      become: true
   loop: "{{ system_service_run_list }}"
   loop_control:
     loop_var: system_service_run_unit

@@ -24,25 +24,16 @@
       '{{ database_consumer_id }}'. Ensure services.redis.shared is true and a
       password is provisioned for the consumer.
 
-- name: ⏳ Wait until Redis accepts admin auth
-  block:
-    - name: "⏳ REDIS | Wait for authenticated PING"
-      ansible.builtin.shell: >
-        {{ REDIS_EXEC_SHELL }}
-        '{{ REDIS_CLI }} ping'
-      register: redis_admin_ready
-      until: redis_admin_ready.stdout is search('PONG')
-      retries: 30
-      delay: 5
-      changed_when: false
-      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-
-  rescue:
-    - name: "🩺 Redis | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ application_id | quote }}
-        {{ 'Redis admin auth never became ready' | quote }}
+- name: "⏳ REDIS | Wait for authenticated PING"
+  ansible.builtin.shell: >
+    {{ REDIS_EXEC_SHELL }}
+    '{{ REDIS_CLI }} ping'
+  register: redis_admin_ready
+  until: redis_admin_ready.stdout is search('PONG')
+  retries: 30
+  delay: 5
+  changed_when: false
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
 - name: "📖 REDIS | Read current ACL rules for {{ redis_acl_username }}"
   ansible.builtin.shell: >

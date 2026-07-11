@@ -1,14 +1,6 @@
 ---
-- block:
-    - name: "▶️ Matomo bootstrap | Run bootstrap ({{ DEPLOYMENT_MODE }})"
-      ansible.builtin.include_tasks: "05_bootstrap/flavors/{{ DEPLOYMENT_MODE }}.yml"
-
-  rescue:
-    - name: "🩺 Matomo bootstrap | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ application_id | quote }}
-        {{ 'Matomo bootstrap run failed' | quote }}
+- name: "▶️ Matomo bootstrap | Run bootstrap ({{ DEPLOYMENT_MODE }})"
+  ansible.builtin.include_tasks: "05_bootstrap/flavors/{{ DEPLOYMENT_MODE }}.yml"
 
 - name: "🔧 Matomo bootstrap | Set effective token (existing, else parse bootstrap stdout)"
   ansible.builtin.set_fact:

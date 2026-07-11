@@ -56,13 +56,6 @@
       changed_when: true
       delegate_to: "{{ PEERTUBE_HOST_NODE }}"
 
-  rescue:
-    - name: "🩺 PeerTube | capture rescue diagnostics"
-      ansible.builtin.script: >-
-        {{ lookup('path_absolute', 'scripts/system/diagnostics/rescue.sh') }}
-        {{ application_id | quote }}
-        {{ 'OIDC plugin install failed' | quote }}
-
 - name: "🔄 Update the settings column of the auth-openid-connect plugin"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
