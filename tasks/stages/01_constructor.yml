@@ -183,7 +183,7 @@
     loop_var: snapshot
     label: "{{ snapshot.role }}"
   register: _pre_deploy_snapshot
-  changed_when: "'SKIP' not in (_pre_deploy_snapshot.stdout | default(''))"
+  changed_when: "'SKIP' not in _pre_deploy_snapshot.stdout"
   timeout: "{{ lookup('timeout', 3600) | int }}"
   when:
     - MODE_BACKUP | bool
