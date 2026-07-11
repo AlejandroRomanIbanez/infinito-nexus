@@ -637,11 +637,10 @@ system-purge:
 	@bash scripts/system/purge/system.sh
 
 .PHONY: test
-# Run the full test pipeline (lint + tests).
+# Run the full test pipeline.
 # Note: parallel execution with fail-fast.
-test: install install-lint
+test: install
 	@bash scripts/make/parallel.sh \
-		lint \
 		test-external \
 		test-integration \
 		test-lint \
