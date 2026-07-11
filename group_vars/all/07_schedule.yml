@@ -36,6 +36,7 @@ SYS_SCHEDULE_REPAIR_DOCKER_HARD: "Sun *-*-* 00:00:00" # Restart docker instances
 SYS_SCHEDULE_BACKUP_REMOTE_TO_LOCAL: "*-*-* 00:30:00" # Pull Backup of the previous day
 SYS_SCHEDULE_BACKUP_CONTAINER_TO_LOCAL: "*-*-* 01:00:00" # Backup the current day
 SYS_SCHEDULE_BACKUP_NFS_TO_LOCAL: "*-*-* 01:30:00" # Differential NFS export snapshot after the container backup
+SYS_SCHEDULE_BACKUP_SECRETS_TO_LOCAL: "*-*-* 01:45:00" # Differential host secrets/CA/ACME/node-identity snapshot after the NFS backup
 
 SYS_SCHEDULE_MAINTANANCE_LETSENCRYPT_RENEW: "*-*-2/2  10:00:00" # Renew Mailu certificates every two days (even days only)
 SYS_SCHEDULE_MAINTANANCE_LETSENCRYPT_DEPLOY: "*-*-* 11,23:00:00" # Deploy letsencrypt certificates twice per day to docker containers

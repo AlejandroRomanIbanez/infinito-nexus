@@ -1,0 +1,16 @@
+---
+secrets-2-local:
+  bond: 1
+  enabled: true
+  shared: true
+  preload: false
+  provides: secrets_backup
+  lifecycle: beta
+  skip:
+    - compose
+    - swarm
+  min_storage: 0GB
+  cpus: "0.5"
+  mem_reservation: "256m"
+  mem_limit: "512m"
+  pids_limit: 256
