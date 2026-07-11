@@ -11,6 +11,6 @@ secrets-2-local:
     - swarm
   min_storage: 0GB
   cpus: "0.5"
-  mem_reservation: "256m"
-  mem_limit: "512m"
+  mem_reservation: "128m"
+  mem_limit: "256m"
   pids_limit: 256

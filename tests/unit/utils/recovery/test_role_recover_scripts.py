@@ -204,6 +204,35 @@ class DeviceRecoverTests(unittest.TestCase):
             self.assertTrue(any(c[:2] == ["umount", str(mount)] for c in calls))
             self.assertTrue(any(c[:2] == ["cryptsetup", "luksClose"] for c in calls))
 
+    def test_main_device_target_scopes_the_snapshot_root(self):
+        mod = _load("svc-bkp-local-2-device", "device_recover")
+        with tempfile.TemporaryDirectory() as td:
+            mount = Path(td) / "mnt"
+            target = Path(td) / "target"
+            target.mkdir()
+            with (
+                mock.patch.object(mod.subprocess, "run"),
+                mock.patch.object(
+                    mod, "_newest_snapshot", return_value=Path(td) / "snap"
+                ) as newest,
+                mock.patch.object(mod, "DeviceRecovery") as mock_dev,
+                mock.patch.object(
+                    sys,
+                    "argv",
+                    [
+                        "recover.py",
+                        "dev.img",
+                        str(mount),
+                        str(target),
+                        "--device-target",
+                        "/infinito",
+                    ],
+                ),
+            ):
+                mock_dev.return_value.run.return_value = 0
+                self.assertEqual(mod.main(), 0)
+            self.assertEqual(newest.call_args.args[0], mount / "infinito")
+
     def test_main_cleans_up_even_when_recover_raises(self):
         mod = _load("svc-bkp-local-2-device", "device_recover")
         with tempfile.TemporaryDirectory() as td:

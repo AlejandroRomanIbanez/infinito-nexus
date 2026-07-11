@@ -1,5 +1,7 @@
 ---
 local-2-device:
+  enabled: false
+  shared: true
   mount: ""
   target: ""
   source: ""

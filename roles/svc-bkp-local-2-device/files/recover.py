@@ -10,7 +10,12 @@ No pre-recover service backup runs: the device itself is the backup
 this role maintains.
 
 Usage:
-    recover.py DEVICE MOUNT_DIR TARGET_DIR [--snapshot TIMESTAMP] [--passphrase-stdin]
+    recover.py DEVICE MOUNT_DIR TARGET_DIR [--device-target SUBPATH]
+               [--snapshot TIMESTAMP] [--passphrase-stdin]
+
+``--device-target`` is the role's ``services.local-2-device.target``
+subpath the backup unit synced into (snapshots live under
+``<mount>/<target>/...``, not directly under the mountpoint).
 """
 
 from __future__ import annotations
@@ -56,6 +61,11 @@ def main() -> int:
     parser.add_argument("mount_dir", help="directory to mount the opened device on")
     parser.add_argument("target_dir", help="local backup root to restore into")
     parser.add_argument(
+        "--device-target",
+        default="",
+        help="services.local-2-device.target subpath holding the snapshots on the device",
+    )
+    parser.add_argument(
         "--snapshot",
         help="snapshot timestamp to restore (default: newest on the device)",
     )
@@ -75,7 +85,8 @@ def main() -> int:
         mount_dir.mkdir(parents=True, exist_ok=True)
         subprocess.run(["mount", f"/dev/mapper/{_MAPPER}", str(mount_dir)], check=True)
         try:
-            snapshot = _newest_snapshot(mount_dir, args.snapshot)
+            snapshot_root = mount_dir / args.device_target.lstrip("/")
+            snapshot = _newest_snapshot(snapshot_root, args.snapshot)
             print(f"OK: restoring device snapshot {snapshot}")
             return DeviceRecovery(str(snapshot / "backup"), args.target_dir).run()
         finally:
