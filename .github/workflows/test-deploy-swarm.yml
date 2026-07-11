@@ -192,6 +192,7 @@ jobs:
         run: make setup
 
       - name: "🚀 Matrix-deploy ${{ matrix.apps }}: provision/deploy/e2e/verify per round"
+        timeout-minutes: 300
         env:
           variant: ${{ matrix.variant }}
         run: |
