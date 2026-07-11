@@ -7,6 +7,10 @@
 #     .env file.
 #   - The application under test is still running.
 #
+# The stage base comes from INFINITO_PLAYWRIGHT_STAGE_BASE_DIR (env handler);
+# DiD nodes run this without a generated .env, so the script falls back to
+# the same role-vars SPOT the handler reads.
+#
 # This script intentionally does NOT re-render .env. It restages the
 # role-local Playwright files (spec + companions) from the repo and reruns
 # Playwright via the same container image the deploy-time runner uses.
@@ -29,7 +33,15 @@ role_playwright_dir="$repo_root/roles/$role/files/playwright"
 spec_src="$role_playwright_dir/playwright.spec.js"
 services_yml="$repo_root/roles/test-e2e-playwright/meta/services.yml"
 
-stage_base="${TEST_E2E_PLAYWRIGHT_STAGE_BASE_DIR:-/tmp/test-e2e-playwright}"
+stage_base="${INFINITO_PLAYWRIGHT_STAGE_BASE_DIR:-}"
+if [[ -z "$stage_base" ]]; then
+	stage_base="$(awk '$1 == "TEST_E2E_PLAYWRIGHT_STAGE_BASE_DIR:" {gsub(/"/, "", $2); print $2}' \
+		"$repo_root/roles/test-e2e-playwright/vars/main.yml")"
+fi
+[[ -n "$stage_base" ]] || {
+	echo "TEST_E2E_PLAYWRIGHT_STAGE_BASE_DIR missing in roles/test-e2e-playwright/vars/main.yml (SPOT)" >&2
+	exit 2
+}
 reports_base="${INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR:?source scripts/meta/env/load.sh or run via make}"
 
 stage_dir="$stage_base/$role"
