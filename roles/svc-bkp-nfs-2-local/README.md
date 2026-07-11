@@ -45,6 +45,20 @@ Downstream pull
 - **Baudolo-compatible layout:** snapshots land in the same `<machine-hash>/<repo>/<generation>` tree as the container backups, so pull and cleanup tooling applies unchanged.
 - **Schedule-coordinated:** the systemd unit is part of the global manipulation group, so it never races backup/cleanup/repair jobs on the same host.
 
+## Recover
+
+Run `files/recover.py` on the host that serves the NFS export:
+
+```
+recover.py <backups>/<machine-hash>/backup-nfs-to-local/<generation>/files/state/<volume> <export-base>/state/<volume>
+```
+
+1. Stop every stack consuming the subtree: `docker stack rm <stack>`.
+2. Run the script; it first starts the role's deployed backup unit (a fresh differential `backup-nfs-to-local` generation of the live export), then mirrors the snapshot into the target (`rsync -a --delete`). `--no-service-backup` skips the unit run when the target holds nothing worth saving.
+3. Redeploy the stack; the NFS clients re-mount and pick up the restored state.
+
+The target subtree must already exist; the script refuses to create export subtrees implicitly.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.
