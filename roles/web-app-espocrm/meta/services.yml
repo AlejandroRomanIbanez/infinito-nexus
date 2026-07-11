@@ -31,7 +31,7 @@ mariadb:
   shared: "{{ 'svc-db-mariadb' in group_names }}"
 espocrm:
   image: espocrm/espocrm
-  version: "10.0.1"
+  version: "10.0.2"
   name: espocrm
   min_storage: 8GB
   cpus: 1.5
