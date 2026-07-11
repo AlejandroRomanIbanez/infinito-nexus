@@ -4,11 +4,17 @@
 transitive deps will need at deploy time.
 
 ``svc-swarm-manager`` (subset marker),
-``svc-storage-nfs-client`` (no ``application_id``) and
+``svc-storage-nfs-client`` (no ``application_id``),
 ``svc-registry-docker`` (consumed by the swarm handler that pushes
 locally-built images, but not declared as a meta-dep so it stays
 out of compose-mode deploys) are added explicitly because the
 dep-walker only knows roles that are in the ``applications`` dict.
+The DR-drill backup roles arrive implicitly: the apps'
+``container_backup`` service declaration pulls
+``svc-bkp-volume-2-local`` into the closure, and
+``svc-bkp-nfs-2-local`` deploys via its group membership on the NFS
+server host (``extend_inventory``) through the group-driven role
+includes.
 
 Input (env): ``APP_ID``. Optional ``INFINITO_APP_VARIANTS`` (JSON
 ``{app_id: variant_index}``, set per round by the matrix orchestrator)

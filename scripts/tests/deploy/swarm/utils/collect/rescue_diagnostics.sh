@@ -2,9 +2,9 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
-# shellcheck source=scripts/tests/deploy/swarm/00_topology.sh
-. "${SCRIPT_DIR}/00_topology.sh"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../../../.." && pwd)"
+# shellcheck source=scripts/tests/deploy/swarm/topology/base.sh
+. "${SCRIPT_DIR}/../../topology/base.sh"
 # shellcheck source=/dev/null
 source <(grep -E '^INFINITO_RESCUE_DIAGNOSTICS_DIR=' "${REPO_ROOT}/.env")
 
@@ -38,12 +38,13 @@ capture_node() {
 	local pipe_rc=("${PIPESTATUS[@]}")
 	set -e
 	if [ "${pipe_rc[0]}" -eq 124 ]; then
-		echo "collect_rescue_diagnostics: docker exec on ${node} timed out" >&2
+		echo "rescue_diagnostics: docker exec on ${node} timed out" >&2
 	fi
 }
 
 capture_node "${MGR}" "${INFINITO_SWARM_MGR_NAME}"
 capture_node "${WRK1}" "${INFINITO_SWARM_WRK1_NAME}"
 capture_node "${WRK2}" "${INFINITO_SWARM_WRK2_NAME}"
+capture_node "${BACKUP_NODE}" "${INFINITO_SWARM_BACKUP_NAME}"
 
 exit 0

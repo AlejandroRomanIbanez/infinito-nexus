@@ -1,11 +1,14 @@
 #!/usr/bin/env bash
+# Provision the per-round test inventory. The nfs-server group is wired by
+# utils/tests/swarm/extend_inventory.py, not via --include; the variant
+# overlay and credential-generation variant map arrive per round from the
+# matrix orchestrator and are empty in the standalone single-round path.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/_context.sh"
+source "${SCRIPT_DIR}/../utils/_context.sh"
 
-# nfs-server group is wired by utils/tests/swarm/extend_inventory.py; not via --include.
 mapfile -t includes < <(python3 -m utils.tests.swarm.derive_includes)
 
 INV_DIR="${INFINITO_INVENTORY_DIR:-/tmp/inv}" # nocheck: swarm-test base (matrix sets it per round; /tmp/inv standalone)
@@ -19,9 +22,6 @@ provision_args=(
 	--workers 2
 	--vars-file "${INFINITO_INVENTORY_VARS_FILE}"
 )
-# Variant overlay (services + credentials baked under applications.<app>) and
-# the credential-generation variant map, both set per round by the matrix
-# orchestrator. Empty/absent in the standalone single-round path.
 if [[ -n "${INFINITO_VARS_PAYLOAD:-}" ]]; then
 	provision_args+=(--vars "${INFINITO_VARS_PAYLOAD}")
 fi

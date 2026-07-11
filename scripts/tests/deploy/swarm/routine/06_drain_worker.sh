@@ -1,9 +1,14 @@
 #!/usr/bin/env bash
+# Drain the worker running the app and force a reschedule. The cluster runs
+# without a registry and deploys with --resolve-image never, so a role that
+# ships a build: context produces its <ENTITY>_custom:<tag> image only on the
+# manager; mirror it onto each worker first so swarm can re-schedule there.
+# Roles without a custom build use an upstream image present on every worker.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/_context.sh"
+source "${SCRIPT_DIR}/../utils/_context.sh"
 
 skip_if_no_swarm_service
 skip_chaos_if_manager_pinned
@@ -13,10 +18,6 @@ skip_chaos_if_manager_pinned
 	exit 1
 }
 
-# No registry + --resolve-image never: workers need the image pushed manually.
-# Roles that ship a `build:` context produce a `<ENTITY>_custom:<tag>` image on
-# the manager; mirror it onto each worker so swarm can re-schedule there. Roles
-# without a custom build use an upstream image present on every worker — skip.
 echo "==> Distributing ${CUSTOM_IMAGE_REPO} image to swarm workers"
 IMAGE_TAG=$(docker exec "${MGR}" docker images --format '{{.Repository}}:{{.Tag}}' |
 	grep "^${CUSTOM_IMAGE_REPO}:" | head -1 || true)

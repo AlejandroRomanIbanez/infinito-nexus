@@ -4,7 +4,7 @@
 # Naming constants are the SPOT in default.env, shared with the Python harness
 # (utils/tests/swarm/*). Read default.env directly (not the generated .env): the
 # workflow sources this file before `make dotenv` runs, so .env may not exist yet.
-_repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
+_repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../.." && pwd)"
 _default_env="${_repo_root}/default.env"
 # shellcheck source=/dev/null
 source <(grep -E '^INFINITO_SWARM_[A-Z0-9_]+=' "$_default_env")
@@ -23,6 +23,8 @@ NFS_STATE_SUBDIR="$(grep '^STATE_SUBDIR = ' "${_repo_root}/utils/storage/nfs.py"
 NFS_STATE_PATH="${NFS_EXPORT_BASE}/${NFS_STATE_SUBDIR}"
 
 NFS_SERVER="${SWARM_PREFIX}${INFINITO_SWARM_NFS_NAME}"
+
+BACKUP_NODE="${SWARM_PREFIX}${INFINITO_SWARM_BACKUP_NAME}"
 
 SWARM_LAB_NETWORK="${SWARM_PREFIX}${INFINITO_SWARM_LAB_NET_NAME}"
 

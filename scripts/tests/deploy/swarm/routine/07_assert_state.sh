@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/_context.sh"
+source "${SCRIPT_DIR}/../utils/_context.sh"
 
 skip_if_no_swarm_service
 skip_chaos_if_manager_pinned

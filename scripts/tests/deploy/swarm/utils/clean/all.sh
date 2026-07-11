@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Reclaim ALL leftover act-swarm state (DinD nodes, NFS sidecars, lab networks,
 # act outer containers) from aborted or wedged roundtrip swarm runs, across every
-# cluster id. Unlike 13_cleanup.sh (one cluster via SWARM_NAME), this nukes every
+# cluster id. Unlike 08_cleanup.sh (one cluster via SWARM_NAME), this nukes every
 # act-swarm container/network so the next swarm step starts from a clean host.
 # Run BETWEEN swarm runs: it would kill an in-flight one.
 #
 # Scope is precise, never by guessed name prefix, so unrelated containers (a
 # production `nfs-server`, someone's own `swarm-mgr`, ...) are NEVER touched:
 #   - DinD nodes + NFS sidecars carry the INFINITO_SWARM_TEST_LABEL label (SPOT in
-#     default.env, stamped by 01_start_nfs.sh / 02_start_swarm_nodes.sh).
+#     default.env, stamped by routine/01_bootstrap.sh).
 #   - the act outer container is matched by act's own job-name prefix.
 #   - lab networks are matched by the `swarm-lab` token the harness assigns.
 # Containers created before the label existed are not matched; those are wedged
@@ -23,7 +23,7 @@ set -uo pipefail
 
 # INFINITO_SWARM_TEST_LABEL lives in the env SPOT (default.env -> .env).
 # shellcheck source=scripts/meta/env/load.sh
-source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)/scripts/meta/env/load.sh"
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../../.." && pwd)/scripts/meta/env/load.sh"
 
 _act_name='act--Test-Deploy-swarm'
 

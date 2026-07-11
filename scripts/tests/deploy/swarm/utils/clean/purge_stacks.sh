@@ -7,12 +7,12 @@ set -euo pipefail
 # the plan-constant purge_set (comma/space separated application ids).
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
-# shellcheck source=scripts/tests/deploy/swarm/00_topology.sh
-source "${SCRIPT_DIR}/00_topology.sh"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../../../.." && pwd)"
+# shellcheck source=scripts/tests/deploy/swarm/topology/base.sh
+source "${SCRIPT_DIR}/../../topology/base.sh"
 
 : "${apps:?apps is not set (e.g. apps=web-app-keycloak,svc-db-postgres)}"
-: "${MGR:?MGR is not set; 00_topology.sh must define it}"
+: "${MGR:?MGR is not set; topology/base.sh must define it}"
 
 DIR_VAR_LIB="$(python3 -c "import yaml,sys;print(yaml.safe_load(open(sys.argv[1]))['DIR_VAR_LIB'])" \
 	"${REPO_ROOT}/group_vars/all/05_paths.yml")"
@@ -24,7 +24,7 @@ for app_id in "${app_list[@]}"; do
 
 	mapfile -t ctx < <(
 		APP_ID="${app_id}" bash -c \
-			"source '${SCRIPT_DIR}/_context.sh' >/dev/null 2>&1; printf '%s\n' \"\${ENTITY}\"; printf '%s' \"\${NFS_VOLUMES}\""
+			"source '${SCRIPT_DIR}/../_context.sh' >/dev/null 2>&1; printf '%s\n' \"\${ENTITY}\"; printf '%s' \"\${NFS_VOLUMES}\""
 	)
 	entity="${ctx[0]:-}"
 	[ -n "${entity}" ] || continue

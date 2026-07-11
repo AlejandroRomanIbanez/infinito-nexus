@@ -567,14 +567,14 @@ setup-clean: clean setup
 # Note: removes what the docker CLI can; D-state remnants (wedged kernel NFS) need a host docker restart under sudo, or are reported in a no-priv sandbox.
 # Note: run BETWEEN swarm runs; it would kill an in-flight one.
 swarm-clean:
-	@bash scripts/tests/deploy/swarm/clean_all.sh
+	@bash scripts/tests/deploy/swarm/utils/clean/all.sh
 
 .PHONY: swarm-clean-stale-nfs
 # Recover stale in-namespace NFS mounts from wedged act-swarm nfs-server containers.
 # Usage: make swarm-clean-stale-nfs [cid=<container-id-or-name>] [mount=/mnt/gtest]
 # Note: needs sudo; may restart containerd/docker only if docker rm still cannot reap the container.
 swarm-clean-stale-nfs:
-	@CID='$(cid)' NFS_MOUNT='$(mount)' bash scripts/tests/deploy/swarm/clean_stale_nfs.sh
+	@CID='$(cid)' NFS_MOUNT='$(mount)' bash scripts/tests/deploy/swarm/utils/clean/stale_nfs.sh
 
 .PHONY: swarm-down
 # Release a named swarm-test cluster (DinD nodes, lab network, act outer container).
@@ -582,7 +582,7 @@ swarm-clean-stale-nfs:
 # Note: Safe to run multiple times.
 swarm-down:
 	@test -n '$(name)' || { echo 'usage: make swarm-down name=<cluster-id> (the app id if you did not pass name=)'; exit 2; }
-	@SWARM_NAME='$(name)' INFINITO_KEEP_SWARM_NODES=false bash scripts/tests/deploy/swarm/13_cleanup.sh
+	@SWARM_NAME='$(name)' INFINITO_KEEP_SWARM_NODES=false bash scripts/tests/deploy/swarm/routine/08_cleanup.sh
 	@bash scripts/tests/deploy/act/down_act_outer.sh
 
 .PHONY: swarm-exec
@@ -620,7 +620,7 @@ swarm-shell:
 # Note: Use `make swarm-exec` / `make swarm-shell` to inspect, `make swarm-down` to release.
 swarm-zombie: install-act
 	@test -n '$(app)' || { echo 'usage: make swarm-zombie app=<application_id> [variant=<idx>] [name=<cluster-id>] [disable=<keys>]'; exit 2; }
-	@SWARM_NAME='$(or $(name),$(app))' INFINITO_KEEP_SWARM_NODES=false bash scripts/tests/deploy/swarm/13_cleanup.sh
+	@SWARM_NAME='$(or $(name),$(app))' INFINITO_KEEP_SWARM_NODES=false bash scripts/tests/deploy/swarm/routine/08_cleanup.sh
 	@bash scripts/tests/deploy/act/down_act_outer.sh
 	@ACT_RM=false \
 	 ACT_BIND=true \

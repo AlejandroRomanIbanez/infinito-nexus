@@ -2,10 +2,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# shellcheck source=scripts/tests/deploy/swarm/00_topology.sh
-. "${SCRIPT_DIR}/00_topology.sh"
+# shellcheck source=scripts/tests/deploy/swarm/topology/base.sh
+. "${SCRIPT_DIR}/../../topology/base.sh"
 # shellcheck source=/dev/null
-source <(grep -E '^INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR=' "${SCRIPT_DIR}/../../../../.env")
+source <(grep -E '^INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR=' "${SCRIPT_DIR}/../../../../../../.env")
 
 : "${APP_ID:?APP_ID required}"
 
@@ -22,10 +22,10 @@ producer_rc=${pipe_rc[0]}
 consumer_rc=${pipe_rc[1]}
 
 if [ "${producer_rc}" -eq 124 ]; then
-	echo "collect_playwright_reports: docker exec timed out after 900s (manager hung)" >&2
+	echo "playwright_reports: docker exec timed out after 900s (manager hung)" >&2
 	exit 124
 fi
 
 if [ "${producer_rc}" -ne 0 ] || [ "${consumer_rc}" -ne 0 ]; then
-	echo "collect_playwright_reports: collection failed (producer=${producer_rc} consumer=${consumer_rc}); reports may be partial" >&2
+	echo "playwright_reports: collection failed (producer=${producer_rc} consumer=${consumer_rc}); reports may be partial" >&2
 fi

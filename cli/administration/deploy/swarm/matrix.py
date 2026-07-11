@@ -24,7 +24,8 @@ import sys
 
 from . import PROJECT_ROOT
 
-_SWARM_SCRIPTS = PROJECT_ROOT / "scripts" / "tests" / "deploy" / "swarm"
+_SWARM_DIR = PROJECT_ROOT / "scripts" / "tests" / "deploy" / "swarm"
+_SWARM_SCRIPTS = _SWARM_DIR / "routine"
 _ROLES_DIR = str(PROJECT_ROOT / "roles")
 _SWARM_EXTRAS_VARS = "inventories/development/swarm.yml"
 _DEFAULT_INVENTORY_DIR = "/tmp/inv"  # noqa: S108 - ephemeral swarm-test inventory base in CI
@@ -46,7 +47,7 @@ def _provision(
     env["INFINITO_APP_VARIANTS"] = json.dumps(round_variants, sort_keys=True)
     env["INFINITO_VARS_PAYLOAD"] = json.dumps(vars_payload, sort_keys=True)
     return _run(
-        ["bash", str(_SWARM_SCRIPTS / "05_provision_inventory.sh")],
+        ["bash", str(_SWARM_SCRIPTS / "02_provision_inventory.sh")],
         env=env,
         label=f"provision inventory ({inv_dir})",
     )
@@ -115,16 +116,28 @@ def _converge_and_verify(*, app_id: str) -> int:
     env = os.environ.copy()
     env["APP_ID"] = app_id
     rc = _run(
-        ["bash", str(_SWARM_SCRIPTS / "07_wait_converge.sh")],
+        ["bash", str(_SWARM_SCRIPTS / "03_wait_converge.sh")],
         env=env,
         label="wait for stack convergence",
     )
     if rc != 0:
         return rc
     return _run(
-        ["bash", str(_SWARM_SCRIPTS / "08_verify_reachable.sh")],
+        ["bash", str(_SWARM_SCRIPTS / "04_verify_reachable.sh")],
         env=env,
         label="verify reachability",
+    )
+
+
+def _backup_restore_drill(*, app_id: str, inv_dir: str, extras_path: str) -> int:
+    env = os.environ.copy()
+    env["APP_ID"] = app_id
+    env["INFINITO_INVENTORY_DIR"] = inv_dir
+    env["DRILL_EXTRAS"] = extras_path
+    return _run(
+        ["bash", str(_SWARM_SCRIPTS / "backup" / "base.sh")],
+        env=env,
+        label="backup + restore DR drill",
     )
 
 
@@ -134,7 +147,7 @@ def _purge(*, purge_set: tuple[str, ...]) -> int:
     env = os.environ.copy()
     env["apps"] = ",".join(purge_set)
     return _run(
-        ["bash", str(_SWARM_SCRIPTS / "purge_stacks.sh")],
+        ["bash", str(_SWARM_DIR / "utils" / "clean" / "purge_stacks.sh")],
         env=env,
         label=f"purge prior-round stacks ({', '.join(purge_set)})",
     )
@@ -246,6 +259,10 @@ def main(argv: list[str] | None = None) -> int:
             )
         if rc == 0:
             rc = _converge_and_verify(app_id=app_id)
+        if rc == 0 and plan_index == 0:
+            rc = _backup_restore_drill(
+                app_id=app_id, inv_dir=inv_root, extras_path=extras_path
+            )
         if rc != 0:
             return rc
 

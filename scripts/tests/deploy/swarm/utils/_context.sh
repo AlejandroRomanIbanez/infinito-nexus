@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
+_REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../.." && pwd)"
 # shellcheck source=scripts/meta/env/load.sh
 source "${_REPO_ROOT}/scripts/meta/env/load.sh"
 

@@ -1,15 +1,16 @@
 #!/usr/bin/env bash
+# Wait until every stack service converges. With NFS shared storage the DB
+# dep runs as its own single-replica swarm service (volumes on NFS,
+# schedulable on any node), named "<dep>_<dep>" like the app service; the
+# check list is empty when APP_ID has no DB dep.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/_context.sh"
+source "${SCRIPT_DIR}/../utils/_context.sh"
 
 skip_if_no_swarm_service
 
-# With NFS shared storage the DB dep runs as its own single-replica swarm service
-# (volumes on NFS, schedulable on any node), named "<dep>_<dep>" like the app
-# service; empty when APP_ID has no DB dep.
 DB_SERVICE=""
 [ "${DB_DEP}" != "none" ] && DB_SERVICE="${DB_DEP}_${DB_DEP}"
 

@@ -4,7 +4,7 @@
 # mount whose server was killed before the client mount was detached.
 set -uo pipefail
 
-ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
+ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../../.." && pwd)"
 
 # shellcheck source=scripts/meta/env/load.sh
 source "${ROOT_DIR}/scripts/meta/env/load.sh" >/dev/null 2>&1 || true
@@ -26,7 +26,6 @@ _docker_ids() {
 			--filter "name=nfs-server" 2>/dev/null
 	fi
 
-	# Fallback for old leftovers created before the swarm label existed.
 	docker ps -aq --filter "name=web-app-prometheus-nfs-server" 2>/dev/null
 }
 

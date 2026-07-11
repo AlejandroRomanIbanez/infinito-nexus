@@ -3,7 +3,7 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck disable=SC1091
-source "${SCRIPT_DIR}/_context.sh"
+source "${SCRIPT_DIR}/../utils/_context.sh"
 
 mapfile -t PORTS < <(
 	docker exec "${MGR}" docker service inspect "${SERVICE_NAME}" \
