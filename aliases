@@ -97,6 +97,7 @@ alias i8te='(i8pi && tunit && tint && lint)' # unit + integration + lint
 alias i8te2='m test'
 alias i8teli='m test-lint'
 alias i8tema='m test-main-merged'
+alias i8temesi='m test-merge-signed'
 alias i8teni='m test-integration'
 alias i8tenu='m test-unit'
 alias i8tesi='m test-signed'
