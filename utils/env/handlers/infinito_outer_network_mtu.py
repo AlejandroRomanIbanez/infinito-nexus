@@ -2,8 +2,11 @@
 
 Derived from the host's default-route interface MTU so the compose bridge
 never exceeds the path MTU (TLS handshakes silently drop fragments otherwise).
-Falls back to the static default in ``default.env`` when detection fails
-(no default route, no readable ``/sys/class/net/<iface>/mtu``, …).
+When no default route is readable (agent sandboxes run in a network
+namespace whose /proc/net/route is empty, while /sys/class/net still shows
+the host NICs), falls back to the minimum MTU across UP physical interfaces;
+only if that finds nothing either does the static default from
+``default.env`` apply.
 """
 
 from __future__ import annotations
@@ -41,11 +44,38 @@ def _iface_mtu(iface: str) -> str | None:
         return None
 
 
+def _min_physical_uplink_mtu(net_class: Path = Path("/sys/class/net")) -> str | None:
+    """Minimum MTU across UP interfaces that have a ``device`` symlink
+    (physical NICs; veth/bridge/wireguard/loopback have none). The minimum is
+    the safe choice: a lower bridge MTU always passes, a higher one blackholes."""
+    mtus: list[int] = []
+    try:
+        ifaces = sorted(net_class.iterdir())
+    except OSError:
+        return None
+    for iface_dir in ifaces:
+        if not (iface_dir / "device").exists():
+            continue
+        try:
+            operstate = (iface_dir / "operstate").read_text()  # nocheck: cache-read
+            if operstate.strip() != "up":
+                continue
+            mtu_text = (iface_dir / "mtu").read_text()  # nocheck: cache-read
+            mtus.append(int(mtu_text.strip()))
+        except (OSError, ValueError):
+            continue
+    if not mtus:
+        return None
+    return str(min(mtus))
+
+
 def detect_outer_mtu() -> str | None:
     iface = _default_route_iface()
-    if iface is None:
-        return None
-    return _iface_mtu(iface)
+    if iface is not None:
+        mtu = _iface_mtu(iface)
+        if mtu:
+            return mtu
+    return _min_physical_uplink_mtu()
 
 
 def apply(eb: EnvBuilder, ctx: BuildContext) -> None:

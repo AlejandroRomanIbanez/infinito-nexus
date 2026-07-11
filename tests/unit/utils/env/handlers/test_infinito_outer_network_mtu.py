@@ -65,6 +65,49 @@ class TestIfaceMtu(unittest.TestCase):
             self.assertIsNone(handler._iface_mtu("eth0"))
 
 
+class TestMinPhysicalUplinkMtu(unittest.TestCase):
+    def _fake_iface(
+        self,
+        root: Path,
+        name: str,
+        *,
+        mtu: str,
+        operstate: str,
+        physical: bool,
+    ) -> None:
+        iface = root / name
+        iface.mkdir(parents=True)
+        (iface / "mtu").write_text(f"{mtu}\n")
+        (iface / "operstate").write_text(f"{operstate}\n")
+        if physical:
+            (iface / "device").mkdir()
+
+    def test_min_over_up_physical_ifaces(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._fake_iface(root, "eth0", mtu="1400", operstate="up", physical=True)
+            self._fake_iface(root, "enp5s0", mtu="1500", operstate="up", physical=True)
+            self._fake_iface(
+                root, "enp9s0", mtu="1500", operstate="down", physical=True
+            )
+            self._fake_iface(root, "veth12", mtu="900", operstate="up", physical=False)
+            self.assertEqual(handler._min_physical_uplink_mtu(root), "1400")
+
+    def test_none_when_no_up_physical_iface(self) -> None:
+        import tempfile
+
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            self._fake_iface(root, "veth12", mtu="900", operstate="up", physical=False)
+            self._fake_iface(root, "eth0", mtu="1400", operstate="down", physical=True)
+            self.assertIsNone(handler._min_physical_uplink_mtu(root))
+
+    def test_none_when_sysfs_missing(self) -> None:
+        self.assertIsNone(handler._min_physical_uplink_mtu(Path("/nonexistent-sysfs")))
+
+
 class TestDetectOuterMtu(unittest.TestCase):
     def test_returns_mtu_when_iface_and_file_present(self) -> None:
         with (
@@ -73,14 +116,25 @@ class TestDetectOuterMtu(unittest.TestCase):
         ):
             self.assertEqual(handler.detect_outer_mtu(), "1450")
 
-    def test_returns_none_when_no_default_iface(self) -> None:
-        with patch.object(handler, "_default_route_iface", return_value=None):
-            self.assertIsNone(handler.detect_outer_mtu())
+    def test_falls_back_to_sysfs_min_when_no_default_iface(self) -> None:
+        with (
+            patch.object(handler, "_default_route_iface", return_value=None),
+            patch.object(handler, "_min_physical_uplink_mtu", return_value="1400"),
+        ):
+            self.assertEqual(handler.detect_outer_mtu(), "1400")
 
-    def test_returns_none_when_mtu_unreadable(self) -> None:
+    def test_falls_back_to_sysfs_min_when_mtu_unreadable(self) -> None:
         with (
             patch.object(handler, "_default_route_iface", return_value="eth0"),
             patch.object(handler, "_iface_mtu", return_value=None),
+            patch.object(handler, "_min_physical_uplink_mtu", return_value="1280"),
+        ):
+            self.assertEqual(handler.detect_outer_mtu(), "1280")
+
+    def test_returns_none_when_route_and_sysfs_both_fail(self) -> None:
+        with (
+            patch.object(handler, "_default_route_iface", return_value=None),
+            patch.object(handler, "_min_physical_uplink_mtu", return_value=None),
         ):
             self.assertIsNone(handler.detect_outer_mtu())
 
