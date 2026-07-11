@@ -19,7 +19,7 @@ if [[ "${ACT_PLATFORM_IMAGE}" == local/act-runner-fixed:latest ]] &&
 	bash "$(dirname "${BASH_SOURCE[0]}")/build_runner_image.sh"
 fi
 
-_act_cache_path="${ACT_ACTION_CACHE_PATH:-/tmp/actcache/act}"
+_act_cache_path="${ACT_ACTION_CACHE_PATH:-/tmp/actcache/act}" # nocheck: act-tool cache path, not a stack variable
 _stale_mounts=$(mount | grep -E " on ${_act_cache_path}/[^ ]+ type devtmpfs " || true)
 if [[ -n "${_stale_mounts}" ]]; then
 	echo "ERROR: stale devtmpfs bind-mounts inside ${_act_cache_path} block act from refreshing the actions cache." >&2
@@ -69,7 +69,7 @@ cmd+=(--concurrent-jobs "1")
 
 cmd+=(--pull="${ACT_PULL}")
 cmd+=(--action-offline-mode)
-cmd+=(--action-cache-path "${ACT_ACTION_CACHE_PATH:-/tmp/actcache/act}")
+cmd+=(--action-cache-path "${ACT_ACTION_CACHE_PATH:-/tmp/actcache/act}") # nocheck: act-tool cache path, not a stack variable
 if [[ "${ACT_RM}" == "true" ]]; then
 	cmd+=(--rm)
 fi

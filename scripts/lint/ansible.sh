@@ -11,7 +11,7 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
 cd "${REPO_ROOT}"
 
-ANSIBLE_LOCAL_TEMP="${TMPDIR:-/tmp}/infinito-ansible-local-tmp"
+ANSIBLE_LOCAL_TEMP="${TMPDIR:-/tmp}/infinito-ansible-local-tmp" # nocheck: posix TMPDIR convention
 mkdir -p "${ANSIBLE_LOCAL_TEMP}"
 export ANSIBLE_LOCAL_TEMP
 

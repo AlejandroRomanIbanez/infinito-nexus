@@ -22,7 +22,7 @@ fi
 }
 
 modes="${modes:-compose swarm}"
-_log_dir="${TMPDIR:-/tmp}"
+_log_dir="${TMPDIR:-/tmp}" # nocheck: posix TMPDIR convention
 
 read -ra _apps <<<"${apps//$'\n'/ }"
 read -ra _modes <<<"$modes"

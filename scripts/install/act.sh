@@ -10,7 +10,7 @@ if [ "${mode}" != "update" ] && command -v act >/dev/null 2>&1; then
 	exit 0
 fi
 
-bin_dir="${ACT_INSTALL_DIR:-/usr/local/bin}"
+bin_dir="${ACT_INSTALL_DIR:-/usr/local/bin}" # nocheck: installer-local target dir, runs before default.env exists
 sudo=""
 [ -w "${bin_dir}" ] || sudo="sudo"
 
