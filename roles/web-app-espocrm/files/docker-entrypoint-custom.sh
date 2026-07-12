@@ -95,8 +95,12 @@ if [ "$_have_lock" = "1" ]; then
       log "ERROR: image entrypoint init failed (rc=$_init_rc); last trace lines:"
       tail -n 40 "$_init_trace" >&2 || true
       log "----- data/logs (newest) -----"
-      _newest_log=$(ls -t "${APP_DIR}/data/logs/"*.log 2>/dev/null | head -1)
-      [ -n "$_newest_log" ] && tail -n 60 "$_newest_log" >&2 || log "(no app log found)"
+      _newest_log=$(find "${APP_DIR}/data/logs/" -maxdepth 1 -name '*.log' -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -n 1 | cut -d' ' -f2-)
+      if [ -n "$_newest_log" ]; then
+        tail -n 60 "$_newest_log" >&2 || true
+      else
+        log "(no app log found)"
+      fi
       exit "$_init_rc"
     fi
   else
