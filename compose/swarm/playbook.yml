@@ -35,6 +35,7 @@
     - block:
         - name: wait for systemd ready (status from stdout; rc is nonzero when degraded)
           command: systemctl is-system-running
+          timeout: 15
           register: lab_systemd
           until: lab_systemd.stdout is search('running|degraded|starting|maintenance')
           failed_when: lab_systemd.stdout is not search('running|degraded|starting|maintenance')
@@ -45,6 +46,7 @@
         - name: dump docker logs
           command:
             argv: [docker, logs, "{{ inventory_hostname }}"]
+          timeout: 30
           delegate_to: localhost
           ignore_errors: true
           changed_when: false
@@ -53,11 +55,13 @@
           loop:
             - journalctl --no-pager -n 50
             - systemctl list-jobs --no-pager
+          timeout: 30
           ignore_errors: true
           changed_when: false
         - name: dump container state
           command:
             argv: [docker, inspect, --format, "{{ '{{json .State}}' }}", "{{ inventory_hostname }}"]
+          timeout: 30
           delegate_to: localhost
           ignore_errors: true
           changed_when: false
@@ -67,6 +71,7 @@
 
     - name: wipe stale NFS export state (as root in-node; the act runner cannot)
       command: find {{ lab_export_base }} -mindepth 1 -delete
+      timeout: 120
       when: inventory_hostname == lab_nfs
       changed_when: true
 
@@ -82,6 +87,7 @@
         - "{{ lab_mgr }}"
         - "{{ lab_nfs }}"
         - "{{ lab_backup }}"
+      timeout: 30
       delegate_to: localhost
       run_once: true
       register: lab_ips
@@ -104,6 +110,7 @@
         - "MGR_IP={{ lab_mgr_ip }}"
         - "NFS_IP={{ lab_nfs_ip }}"
         - "BACKUP_IP={{ lab_backup_ip }}"
+      timeout: 30
       delegate_to: localhost
       run_once: true
 
@@ -113,6 +120,7 @@
         chdir: "{{ lab_repo_root }}"
       environment:
         HOSTS_ENTRY_IP: "{{ lab_domain_target }}"
+      timeout: 60
       register: lab_hosts_entries
       when: lab_is_mgr or inventory_hostname == lab_nfs
       delegate_to: localhost
@@ -124,6 +132,7 @@
         marker: "# {mark} INFINITO LAB DOMAINS"
         block: "{{ lab_hosts_entries.stdout }}"
         unsafe_writes: true
+      timeout: 30
       when: lab_is_mgr or inventory_hostname == lab_nfs
 
     - name: write the dnsmasq lab config
@@ -137,6 +146,7 @@
           server={{ resolver }}
           {% endfor %}
           address=/{{ lab_domain }}/{{ lab_domain_target }}
+      timeout: 30
       when: lab_dns_node
 
     - name: enable and restart dnsmasq
@@ -144,6 +154,7 @@
         name: dnsmasq
         enabled: true
         state: restarted
+      timeout: 60
       when: lab_dns_node
 
     - name: point resolv.conf at dnsmasq
@@ -151,10 +162,12 @@
         dest: /etc/resolv.conf
         content: "nameserver 127.0.0.1\n"
         unsafe_writes: true
+      timeout: 30
       when: lab_dns_node
 
     - name: verify the app domain resolves to its lab target
       command: getent ahosts {{ ('test.' ~ lab_domain) if lab_is_worker else lab_domain }}
+      timeout: 10
       register: lab_resolve
       until: lab_resolve.stdout is search('^' ~ (lab_domain_target | regex_escape) ~ ' ', multiline=True)
       retries: 30
@@ -164,6 +177,7 @@
 
     - name: pack the repo once on the controller
       command: tar -C {{ lab_repo_root }} -cf {{ lab_runner_temp }}/infinito-src.tar .
+      timeout: 300
       delegate_to: localhost
       run_once: true
       changed_when: true
@@ -173,17 +187,20 @@
         path: "{{ lab_node_src }}"
         state: directory
         mode: "0755"
+      timeout: 30
 
     - name: unpack the repo onto the node
       unarchive:
         src: "{{ lab_runner_temp }}/infinito-src.tar"
         dest: "{{ lab_node_src }}"
+      timeout: 300
 
     - name: copy the .deb onto the node
       copy:
         src: "{{ lab_deb_path }}"
         dest: "/tmp/{{ lab_deb_path | basename }}"
         mode: "0644"
+      timeout: 120
 
     - name: install the .deb (python + infinito CLI + ansible)
       command: bash {{ lab_install_script }}
@@ -193,4 +210,5 @@
         LANG: C.UTF-8
         LC_ALL: C.UTF-8
         PACKAGE_INSTALL_FROM: "/tmp/{{ lab_deb_path | basename }}"
+      timeout: 600
       changed_when: true
