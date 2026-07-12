@@ -16,7 +16,6 @@ set -euo pipefail
 : "${BKP_TEST_BACKUPS_DIR:?}"
 : "${BKP_TEST_SERVICE:?}"
 : "${BKP_TEST_RESTORE_BIN:?}"
-: "${BKP_TEST_RSYNC_IMAGE:?}"
 : "${BKP_TEST_HEALTH_TIMEOUT:?}"
 
 if [[ "${BKP_TEST_IS_STACK_HOST}" != "true" ]]; then

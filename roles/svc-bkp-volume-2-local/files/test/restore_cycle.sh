@@ -8,7 +8,6 @@ set -euo pipefail
 
 : "${BKP_TEST_BACKUPS_DIR:?}"
 : "${BKP_TEST_RESTORE_BIN:?}"
-: "${BKP_TEST_RSYNC_IMAGE:?}"
 : "${BKP_TEST_HEALTH_TIMEOUT:?}"
 : "${MACHINE_HASH:?}"
 : "${REPO_DIR:?}"
@@ -61,7 +60,6 @@ for project in "${PROJECTS[@]}"; do
 done
 echo "OK: ${#PROJECTS[@]} compose project(s) recorded: ${PROJECTS[*]}"
 
-container pull "${BKP_TEST_RSYNC_IMAGE}" >/dev/null
 
 echo "Stopping compose projects..."
 for project in "${PROJECTS[@]}"; do
@@ -83,16 +81,15 @@ for volume in "${VOLUMES[@]}"; do
         echo "SKIP: volume ${volume} does not exist on this host"
         continue
     fi
-    container run --rm -v "${volume}:/wipe" "${BKP_TEST_RSYNC_IMAGE}" \
-        sh -c 'rm -rf /wipe/* /wipe/.[!.]* /wipe/..?*' >/dev/null
-    if [[ -n "$(container run --rm -v "${volume}:/wipe" "${BKP_TEST_RSYNC_IMAGE}" sh -c 'find /wipe -mindepth 1 -print -quit')" ]]; then
+    _wipe_mp="$(container volume inspect --format '{{ .Mountpoint }}' "${volume}")"
+    rm -rf "${_wipe_mp:?}"/* "${_wipe_mp}"/.[!.]* "${_wipe_mp}"/..?* 2>/dev/null || true
+    if [[ -n "$(find "${_wipe_mp}" -mindepth 1 -print -quit)" ]]; then
         echo "FAIL: volume ${volume} not empty after wipe"
         exit 1
     fi
     "${BKP_TEST_RESTORE_BIN}" files "${volume}" "${MACHINE_HASH}" "${NEWEST_GENERATION}" \
         --backups-dir "${BKP_TEST_BACKUPS_DIR}" \
-        --repo-name "${REPO_NAME}" \
-        --rsync-image "${BKP_TEST_RSYNC_IMAGE}"
+        --repo-name "${REPO_NAME}"
     echo "OK: restored ${volume}"
 done
 
@@ -100,8 +97,13 @@ echo "Starting compose projects..."
 up_failed=0
 for round in 1 2 3; do
     up_failed=0
+    declare -A UP_PID=()
     for project in "${PROJECTS[@]}"; do
-        if ! compose --chdir "${PROJECT_DIR[${project}]}" --project "${project}" up -d; then
+        compose --chdir "${PROJECT_DIR[${project}]}" --project "${project}" up -d &
+        UP_PID["${project}"]=$!
+    done
+    for project in "${!UP_PID[@]}"; do
+        if ! wait "${UP_PID[${project}]}"; then
             echo "WARN: up failed for ${project} (round ${round})"
             up_failed=$((up_failed + 1))
         fi

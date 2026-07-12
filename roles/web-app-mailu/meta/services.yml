@@ -30,6 +30,8 @@ mailu:
   provides: email
   version: "2024.06"
   name: mailu
+  backup:
+    project_hard_restart: true
   min_storage: 20GB
   domain: "{{ lookup('email').domain }}"
   ports:
