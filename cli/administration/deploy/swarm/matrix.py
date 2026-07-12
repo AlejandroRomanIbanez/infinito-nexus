@@ -112,6 +112,27 @@ def _deploy(
     return _run(env=env, cmd=cmd, label=f"deploy round {round_index + 1}/{total}")
 
 
+def _deploy_backup_host(*, app_id: str, inv_dir: str, extras_path: str) -> int:
+    env = os.environ.copy()
+    env["APP_ID"] = app_id
+    cmd = [
+        "python3",
+        "-m",
+        "cli.administration.deploy.dedicated",
+        f"{inv_dir}/backup.yml",
+        "-p",
+        f"{inv_dir}/.password",
+        "--skip-build",
+        "--skip-cleanup",
+        "--skip-backup",
+        "-e",
+        f"@{_SWARM_EXTRAS_VARS}",
+        "-e",
+        f"@{extras_path}",
+    ]
+    return _run(env=env, cmd=cmd, label="deploy backup host (backup.yml)")
+
+
 def _converge_and_verify(*, app_id: str) -> int:
     env = os.environ.copy()
     env["APP_ID"] = app_id
@@ -266,6 +287,12 @@ def main(argv: list[str] | None = None) -> int:
             )
         if rc == 0:
             rc = _converge_and_verify(app_id=app_id)
+        if rc == 0 and plan_index == 0:
+            rc = _deploy_backup_host(
+                app_id=app_id,
+                inv_dir=inv_root,
+                extras_path=f"{inv_root}/swarm-nfs-extras.deploy.yml",
+            )
         if rc == 0 and plan_index == 0:
             rc = _backup_restore_drill(
                 app_id=app_id, inv_dir=inv_root, extras_path=extras_path

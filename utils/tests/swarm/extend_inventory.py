@@ -12,6 +12,12 @@ only the SWARM_NAME prefix is applied here so host names match the
 containers. The env get() keeps SWARM_NAME import-safe; main() enforces it
 at run time.
 
+The backup host is NOT appended to the cluster inventory: it lives in a
+sibling ``backup.yml`` next to ``INV_PATH`` (same host_vars dir), deployed
+as a second play after the cluster one. Without a svc-swarm-node group that
+play resolves DEPLOYMENT_MODE=compose and IS_STACK_HOST=true on the backup
+host, so the backup roles run without cluster-membership special cases.
+
 Inputs (env): ``APP_ID``, ``INV_PATH`` (default ``/tmp/inv/devices.yml``).
 Optional ``INFINITO_APP_VARIANTS`` (consumed by ``derive_includes``).
 """
@@ -80,8 +86,6 @@ def main() -> int:
     group_hosts.append(("svc-bkp-volume-2-local", _MANAGER))
     group_hosts.append(("svc-bkp-secrets-2-local", _MANAGER))
     group_hosts.append(("svc-bkp-nfs-2-local", _NFS_SERVER))
-    group_hosts.append(("svc-bkp-remote-2-local", _BACKUP))
-    group_hosts.append(("svc-bkp-local-2-device", _BACKUP))
 
     inv = load_yaml_any(str(inv_path), default_if_missing={})
     inv.setdefault("all", {}).setdefault("children", {})
@@ -93,6 +97,18 @@ def main() -> int:
 
     dump_yaml(str(inv_path), inv)
     print(inv_path.read_text())  # nocheck: cache-read — re-reads the file just written
+
+    backup_inv = {
+        "all": {
+            "children": {
+                group: {"hosts": {_BACKUP: dict(_DOCKER_VARS)}}
+                for group in ("svc-bkp-remote-2-local", "svc-bkp-local-2-device")
+            }
+        }
+    }
+    backup_path = inv_path.parent / "backup.yml"
+    dump_yaml(str(backup_path), backup_inv)
+    print(backup_path.read_text())  # nocheck: cache-read
     return 0
 
 
