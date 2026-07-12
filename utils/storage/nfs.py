@@ -50,7 +50,9 @@ def fstype(version):
 
 def mount_opts(version, runtime):
     reliability = (
-        "soft,timeo=50,retrans=3" if runtime in ("dev", "act") else "hard,timeo=600"
+        "soft,timeo=50,retrans=3"
+        if runtime in ("dev", "act", "github")
+        else "hard,timeo=600"
     )
     locking = "local_lock=flock" if int(version) >= 4 else "nolock"
     return f"vers={version},rw,{reliability},{locking}"
