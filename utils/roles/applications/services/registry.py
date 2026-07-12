@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections import deque
 from typing import TYPE_CHECKING, Any
 
 from utils.cache.yaml import load_yaml_any
@@ -10,6 +9,7 @@ from utils.roles.meta_lookup import get_role_run_after
 from utils.roles.validation.invokable import types_from_group_names
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Iterable
     from pathlib import Path
 
 
@@ -145,7 +145,6 @@ def discover_role_services(
         "service_type": detect_service_channel(role_name),
         "shared": bool(primary_entry.get("shared", False)),
         "enabled": bool(primary_entry.get("enabled", False)),
-        "preload": bool(primary_entry.get("preload", True)),
         "covers": covers,
     }
     app_networks = _as_mapping(config.get("networks"))
@@ -322,6 +321,65 @@ _BUCKET_ORDER = {
 }
 
 
+def bucket_order_key(role_name: str, bucket: str | None) -> tuple[int, str]:
+    """Tie-break key for a ready role: coarse bucket first, then name.
+
+    The bucket is a name-prefix-derived loader phase; it only breaks ties
+    among roles with no pending run_after prerequisite, so run_after stays
+    bucket-agnostic (an edge orders across any bucket).
+    """
+    return (_BUCKET_ORDER.get(bucket, len(_BUCKET_ORDER)), role_name)
+
+
+def run_after_topological_order(
+    nodes: Iterable[str],
+    run_after_of: Callable[[str], Iterable[str]],
+    tiebreak_of: Callable[[str], Any],
+) -> list[str]:
+    """Order ``nodes`` so every run_after prerequisite precedes its dependents.
+
+    run_after edges order across any category; ``tiebreak_of`` only decides
+    among nodes that are simultaneously ready (no pending prerequisite), so a
+    coarse phase can stay the default for edge-less roles without constraining
+    run_after itself.
+
+    Args:
+        nodes: role names to order (deduplicated internally).
+        run_after_of: role name -> its run_after role names.
+        tiebreak_of: role name -> sort key for ready-set tie-breaking.
+
+    Raises:
+        ServiceRegistryError: on a run_after cycle.
+    """
+    node_list = list(dict.fromkeys(nodes))
+    node_set = set(node_list)
+    graph: dict[str, list[str]] = {node: [] for node in node_list}
+    indegree: dict[str, int] = dict.fromkeys(node_list, 0)
+
+    for node in node_list:
+        for dep in run_after_of(node):
+            if dep not in node_set:
+                continue
+            graph[dep].append(node)
+            indegree[node] += 1
+
+    ready = [node for node, count in indegree.items() if count == 0]
+    ordered: list[str] = []
+    while ready:
+        ready.sort(key=tiebreak_of)
+        node = ready.pop(0)
+        ordered.append(node)
+        for dependent in sorted(graph[node]):
+            indegree[dependent] -= 1
+            if indegree[dependent] == 0:
+                ready.append(dependent)
+
+    if len(ordered) != len(node_set):
+        raise ServiceRegistryError("Circular run_after dependency detected.")
+
+    return ordered
+
+
 def ordered_primary_service_entries(
     service_registry: dict[str, dict[str, Any]],
     roles_dir: Path,
@@ -329,65 +387,12 @@ def ordered_primary_service_entries(
     primary_entries = {
         entry["role"]: {"id": service_key, **entry}
         for service_key, entry in service_registry.items()
-        if "canonical" not in entry and entry.get("preload", True)
+        if "canonical" not in entry
     }
 
-    ordered: list[dict[str, Any]] = []
-    for bucket in ("universal", "workstation", "server", "web-svc", "web-app"):
-        roles_in_bucket = sorted(
-            role_name
-            for role_name, entry in primary_entries.items()
-            if entry.get("bucket") == bucket
-        )
-        if not roles_in_bucket:
-            continue
-
-        graph: dict[str, list[str]] = {role_name: [] for role_name in roles_in_bucket}
-        indegree: dict[str, int] = dict.fromkeys(roles_in_bucket, 0)
-
-        for role_name in roles_in_bucket:
-            current = primary_entries[role_name]
-            current_deploy_type = _normalized_name(current.get("deploy_type"))
-            current_bucket_order = _BUCKET_ORDER[bucket]
-
-            for dep_role in load_run_after_from_roles_dir(roles_dir, role_name):
-                dep_deploy_type = detect_deploy_type(dep_role)
-                if dep_deploy_type != current_deploy_type:
-                    raise ServiceRegistryError(
-                        f"{role_name}: run_after '{dep_role}' crosses deploy types "
-                        f"({current_deploy_type} -> {dep_deploy_type})."
-                    )
-
-                dep_bucket = detect_service_bucket(dep_role)
-                dep_bucket_order = _BUCKET_ORDER.get(dep_bucket, current_bucket_order)
-                if dep_bucket_order > current_bucket_order:
-                    raise ServiceRegistryError(
-                        f"{role_name}: run_after '{dep_role}' points to a later loader "
-                        f"bucket ({dep_bucket}), which cannot be satisfied."
-                    )
-                if dep_bucket_order < current_bucket_order:
-                    continue
-                if dep_role not in primary_entries:
-                    continue
-
-                graph[dep_role].append(role_name)
-                indegree[role_name] += 1
-
-        ready = deque(sorted(role for role, count in indegree.items() if count == 0))
-        emitted = 0
-        while ready:
-            role_name = ready.popleft()
-            ordered.append(primary_entries[role_name])
-            emitted += 1
-
-            for dependent in sorted(graph[role_name]):
-                indegree[dependent] -= 1
-                if indegree[dependent] == 0:
-                    ready.append(dependent)
-
-        if emitted != len(roles_in_bucket):
-            raise ServiceRegistryError(
-                f"Circular run_after dependency detected in bucket '{bucket}'."
-            )
-
-    return ordered
+    order = run_after_topological_order(
+        primary_entries,
+        lambda role: load_run_after_from_roles_dir(roles_dir, role),
+        lambda role: bucket_order_key(role, primary_entries[role].get("bucket")),
+    )
+    return [primary_entries[role] for role in order]

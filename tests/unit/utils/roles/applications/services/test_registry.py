@@ -271,41 +271,7 @@ class TestServiceRegistryOrdering(unittest.TestCase):
             ],
         )
 
-    def test_preload_false_entries_stay_resolvable_but_are_not_ordered(self):
-        registry = {
-            "container_backup": {
-                "role": "svc-bkp-volume-2-local",
-                "bucket": "server",
-                "deploy_type": "server",
-                "preload": False,
-            },
-            "matomo": {
-                "role": "web-app-matomo",
-                "bucket": "web-app",
-                "deploy_type": "server",
-            },
-        }
-
-        with tempfile.TemporaryDirectory() as td:
-            roles_dir = Path(td)
-            self._mk_role(
-                roles_dir,
-                "svc-bkp-volume-2-local",
-                "volume-2-local",
-                {"volume-2-local": {"enabled": True, "shared": True}},
-            )
-            self._mk_role(
-                roles_dir,
-                "web-app-matomo",
-                "matomo",
-                {"matomo": {"enabled": False, "shared": True}},
-            )
-
-            ordered = ordered_primary_service_entries(registry, roles_dir)
-
-        self.assertEqual([entry["role"] for entry in ordered], ["web-app-matomo"])
-
-    def test_cross_type_run_after_fails_hard(self):
+    def test_run_after_orders_across_buckets(self):
         registry = {
             "file": {
                 "role": "web-svc-file",
@@ -333,6 +299,36 @@ class TestServiceRegistryOrdering(unittest.TestCase):
                 "sys-svc-mail",
                 "mail",
                 {"mail": {"enabled": False, "shared": True}},
+            )
+
+            ordered = ordered_primary_service_entries(registry, roles_dir)
+
+        self.assertEqual(
+            [entry["role"] for entry in ordered],
+            ["sys-svc-mail", "web-svc-file"],
+        )
+
+    def test_circular_run_after_fails_hard(self):
+        registry = {
+            "file": {"role": "web-svc-file", "bucket": "web-svc"},
+            "asset": {"role": "web-svc-asset", "bucket": "web-svc"},
+        }
+
+        with tempfile.TemporaryDirectory() as td:
+            roles_dir = Path(td)
+            self._mk_role(
+                roles_dir,
+                "web-svc-file",
+                "file",
+                {"file": {"enabled": False, "shared": True}},
+                run_after=["web-svc-asset"],
+            )
+            self._mk_role(
+                roles_dir,
+                "web-svc-asset",
+                "asset",
+                {"asset": {"enabled": False, "shared": True}},
+                run_after=["web-svc-file"],
             )
 
             with self.assertRaises(ServiceRegistryError):
