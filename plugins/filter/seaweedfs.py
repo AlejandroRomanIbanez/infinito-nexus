@@ -28,7 +28,7 @@ def seaweedfs_command(s3_config=""):
     return command
 
 
-def seaweedfs_sidecar_script(bucket, s3_port):
+def seaweedfs_sidecar_script(bucket, s3_port, access_key, secret_key):
     """Build the ``sh -c`` bootstrap script for the embedded sidecar.
 
     The sidecar creates its consumer's bucket itself at startup because a
@@ -44,17 +44,30 @@ def seaweedfs_sidecar_script(bucket, s3_port):
     dies on ``docker stop`` without signalling the backgrounded weed, and
     the store loses its graceful flush on every stop.
 
+    The ``s3.configure`` grant is required since SeaweedFS 4.39: a server
+    started without an ``-s3.config`` has zero identities, and ListBuckets
+    then returns an empty list to the consumer's access key, so the consumer
+    reads the bucket as missing even though it exists.
+
     Args:
         bucket: consumer bucket name created idempotently at startup.
         s3_port: S3 API port polled via ``/status`` before bucket creation.
+        access_key: consumer S3 access key granted access to the bucket.
+        secret_key: consumer S3 secret key.
     """
     server = " ".join(seaweedfs_command())
+    grant = (
+        f"s3.configure -user {bucket} -access_key {access_key} "
+        f"-secret_key {secret_key} -buckets {bucket} "
+        f"-actions Read,Write,List,Tagging -apply"
+    )
     return (
         f"/entrypoint.sh {server} & pid=$!; "
         f'trap \'kill -TERM "$pid" 2>/dev/null; wait "$pid"\' TERM INT; i=0; '
         f"until wget -q -O /dev/null http://127.0.0.1:{s3_port}/status; do "
         f'i=$((i+1)); [ "$i" -ge 150 ] && exit 1; kill -0 "$pid" || exit 1; sleep 2; done; '
         f"echo 's3.bucket.create -name {bucket}' | /usr/bin/weed shell -master=localhost:9333 || true; "
+        f"echo '{grant}' | /usr/bin/weed shell -master=localhost:9333; "
         f'wait "$pid"'
     )
 
