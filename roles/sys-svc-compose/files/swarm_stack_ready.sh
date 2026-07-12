@@ -16,6 +16,11 @@ is_completed_oneshot() {
 	' <<<"$ps"
 }
 
+if ! services=$(timeout 15 docker stack services --format '{{.Name}} {{.Replicas}}' "$STACK"); then
+	echo "not converged: docker stack services failed or timed out for ${STACK}" >&2
+	exit 1
+fi
+
 not_running=""
 while read -r name reps; do
 	[ -n "$name" ] || continue
@@ -24,7 +29,7 @@ while read -r name reps; do
 	fi
 	is_completed_oneshot "$name" && continue
 	not_running="$not_running $name"
-done < <(timeout 15 docker stack services --format '{{.Name}} {{.Replicas}}' "$STACK")
+done <<<"$services"
 
 if [ -n "$not_running" ]; then
 	echo "not converged:$not_running" >&2

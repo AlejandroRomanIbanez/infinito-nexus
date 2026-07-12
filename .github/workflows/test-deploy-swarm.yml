@@ -164,7 +164,7 @@ jobs:
         run: make setup
 
       - name: "🚀 Matrix-deploy ${{ matrix.apps }}: provision/deploy/e2e/verify per round"
-        timeout-minutes: 270
+        timeout-minutes: 240
         env:
           variant: ${{ matrix.variant }}
         run: |
@@ -186,7 +186,7 @@ jobs:
 
       - name: "📊 Collect diagnostics on failure"
         if: failure()
-        timeout-minutes: 30
+        timeout-minutes: 15
         run: scripts/tests/deploy/swarm/utils/collect/diagnostics.sh
 
       - name: "🗜️ Zip generated inventory for debugging"
@@ -206,7 +206,7 @@ jobs:
 
       - name: "📊 Collect Playwright reports from the manager"
         if: always()
-        timeout-minutes: 20
+        timeout-minutes: 15
         shell: bash
         env:
           APP_ID: ${{ matrix.apps }}
@@ -222,7 +222,7 @@ jobs:
 
       - name: "🩺 Collect rescue diagnostics (recursive DiD snapshot)"
         if: failure()
-        timeout-minutes: 30
+        timeout-minutes: 25
         shell: bash
         run: |
           INFINITO_RESCUE_DIAGNOSTICS_DIR="/tmp/rescue-diagnostics/${{ matrix.apps }}" \
