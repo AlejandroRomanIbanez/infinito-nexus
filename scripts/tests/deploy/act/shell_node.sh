@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# shellcheck source=scripts/tests/deploy/swarm/topology/base.sh
-. "$(dirname "$0")/../swarm/topology/base.sh"
+# shellcheck source=scripts/tests/deploy/swarm/utils/topology/base.sh
+. "$(dirname "$0")/../swarm/utils/topology/base.sh"
 
 node="${node:-${MGR}}"
 

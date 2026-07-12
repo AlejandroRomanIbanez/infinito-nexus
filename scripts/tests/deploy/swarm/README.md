@@ -25,7 +25,7 @@ uses ssh here); swarm init/join itself happens inside the deploy via the
 flowchart TB
     subgraph infra["🥾 Cluster bring-up (per matrix app)"]
         direction TB
-        topo["🗺️ topology/base + topology/export<br/>SPOT node names + NFS paths → GITHUB_ENV"]:::infra
+        topo["🗺️ utils/topology/base + export<br/>SPOT node names + NFS paths → GITHUB_ENV"]:::infra
         cluster["🐝 01_bootstrap.sh<br/>host side: pre-clean, compose build + up<br/>all 5 nodes + lab network, sudo .deb build"]:::infra
         boot["🧱 compose/swarm/playbook.yml (over docker connection)<br/>systemd wait, NFS-export wipe, IPs → GITHUB_ENV,<br/>lab DNS, repo + .deb install on every node"]:::infra
         topo --> cluster --> boot
@@ -64,8 +64,8 @@ flowchart TB
 
     subgraph teardown["🧹 Always"]
         direction TB
-        diag["📊 utils/collect: diagnostics / rescue / playwright reports"]:::teardown
-        clean["🗑️ 08_cleanup (kill nodes + lab network)"]:::teardown
+        diag["📊 collect: diagnostics / playwright reports +<br/>workflow-level recursive container.py rescue snapshot"]:::teardown
+        clean["🗑️ utils/clean/teardown (kill nodes + lab network)"]:::teardown
         diag --> clean
     end
 
@@ -129,15 +129,15 @@ mount/target/source) come from `utils/tests/swarm/write_extras.py`.
 
 ## Scripts
 
-The sequenced flow lives in `routine/`, the naming SPOT in `topology/`,
+The sequenced flow lives in `routine/`, the naming SPOT in `utils/topology/`,
 shared helpers in `utils/`, and
 the cluster declaration (image, containers, network, DNS play) in
 `compose/swarm/` + `compose/swarm.yml`.
 
 | Stage | Script | Purpose |
 |---|---|---|
-| bring-up | `topology/base.sh` | SPOT: node names + NFS export/state paths (sourced, not run) |
-| bring-up | `topology/export.sh` | write the topology SPOT into `$GITHUB_ENV` |
+| bring-up | `utils/topology/base.sh` | SPOT: node names + NFS export/state paths (sourced, not run) |
+| bring-up | `utils/topology/export.sh` | write the topology SPOT into `$GITHUB_ENV` |
 | bring-up | `compose/swarm.yml` + `compose/swarm/Dockerfile` | declare the 5 node containers, node image + lab network (compose SPOT) |
 | bring-up | `routine/01_bootstrap.sh` | one CI step, host side: pre-clean, `compose build` + one `compose up`, sudo `.deb` build, then the play |
 | bring-up | `compose/swarm/playbook.yml` | node side over docker connection: systemd wait, NFS-export wipe, IPs into `$GITHUB_ENV`, lab DNS, repo + `.deb` install |
@@ -150,9 +150,8 @@ the cluster declaration (image, containers, network, DNS play) in
 | chaos | `routine/06_drain_worker.sh` | drain the app's worker + force reschedule |
 | chaos | `routine/07_assert_state.sh` | assert the marker + reachability survived |
 | teardown | `utils/collect/diagnostics.sh` | collect stack/service diagnostics on failure |
-| teardown | `utils/collect/rescue_diagnostics.sh` | pull per-node rescue diagnostics |
 | teardown | `utils/collect/playwright_reports.sh` | pull Playwright reports from the manager |
-| teardown | `routine/08_cleanup.sh` | kill the nodes + remove the lab network |
+| teardown | `utils/clean/teardown.sh` | kill the nodes + remove the lab network |
 | helper | `utils/_context.sh` | per-app facts (entity, service, NFS volume, probes) |
 | helper | `utils/unmount_nfs_mounts.sh` | best-effort NFS unmount before node removal |
 | recovery | `utils/clean/all.sh` | reap leftover clusters across every cluster id |

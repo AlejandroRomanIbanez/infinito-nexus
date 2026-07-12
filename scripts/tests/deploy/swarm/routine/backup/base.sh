@@ -17,8 +17,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../../../.." && pwd)"
-# shellcheck source=scripts/tests/deploy/swarm/topology/base.sh
-. "${SCRIPT_DIR}/../../topology/base.sh"
+# shellcheck source=scripts/tests/deploy/swarm/utils/topology/base.sh
+. "${SCRIPT_DIR}/../../utils/topology/base.sh"
 # shellcheck source=scripts/tests/deploy/swarm/utils/_context.sh
 source "${SCRIPT_DIR}/../../utils/_context.sh"
 

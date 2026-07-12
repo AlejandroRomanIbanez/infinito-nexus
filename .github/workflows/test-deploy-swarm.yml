@@ -140,7 +140,7 @@ jobs:
 
       - name: "📥 Load swarm topology SPOT into job env"
         shell: bash
-        run: scripts/tests/deploy/swarm/topology/export.sh
+        run: scripts/tests/deploy/swarm/utils/topology/export.sh
 
       - name: 🔧 Set up Python
         uses: actions/setup-python@v6
@@ -219,12 +219,13 @@ jobs:
           path: /tmp/playwright-artifacts/
           if-no-files-found: ignore
 
-      - name: "📊 Collect rescue diagnostics from every node"
+      - name: "🩺 Collect rescue diagnostics (recursive DiD snapshot)"
         if: failure()
         shell: bash
-        env:
-          APP_ID: ${{ matrix.apps }}
-        run: scripts/tests/deploy/swarm/utils/collect/rescue_diagnostics.sh
+        run: |
+          INFINITO_RESCUE_DIAGNOSTICS_DIR="/tmp/rescue-diagnostics/${{ matrix.apps }}" \
+            python3 utils/diagnostics/container.py \
+            "${{ matrix.apps }}" "post-deploy failure" || true
 
       - name: "⬆️ Upload rescue diagnostics"
         if: ${{ always() && !env.ACT }}
@@ -236,4 +237,4 @@ jobs:
 
       - name: "🧹 Cleanup"
         if: always()
-        run: ${{ env.SCRIPTS }}/08_cleanup.sh
+        run: scripts/tests/deploy/swarm/utils/clean/teardown.sh

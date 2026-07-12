@@ -3,7 +3,7 @@
 # later workflow step sees the node names and NFS paths as plain env vars.
 set -euo pipefail
 
-# shellcheck source=scripts/tests/deploy/swarm/topology/base.sh
+# shellcheck source=scripts/tests/deploy/swarm/utils/topology/base.sh
 . "$(dirname "$0")/base.sh"
 
 {

@@ -4,7 +4,7 @@
 # Naming constants are the SPOT in default.env, shared with the Python harness
 # (utils/tests/swarm/*). Read default.env directly (not the generated .env): the
 # workflow sources this file before `make dotenv` runs, so .env may not exist yet.
-_repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../.." && pwd)"
+_repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../../.." && pwd)"
 _default_env="${_repo_root}/default.env"
 # shellcheck source=/dev/null
 source <(grep -E '^INFINITO_SWARM_[A-Z0-9_]+=' "$_default_env")

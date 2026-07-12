@@ -10,8 +10,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 set -a
-# shellcheck source=scripts/tests/deploy/swarm/topology/base.sh
-. "${SCRIPT_DIR}/../topology/base.sh"
+# shellcheck source=scripts/tests/deploy/swarm/utils/topology/base.sh
+. "${SCRIPT_DIR}/../utils/topology/base.sh"
 set +a
 
 # shellcheck source=scripts/meta/env/load.sh

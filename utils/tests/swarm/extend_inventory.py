@@ -7,7 +7,7 @@ will use.
 The dep walk delegates to ``derive_includes`` so the group set matches
 the provisioned include/credential closure.
 
-Node base names are the SPOT in default.env (shared with scripts/tests/deploy/swarm/topology/base.sh);
+Node base names are the SPOT in default.env (shared with scripts/tests/deploy/swarm/utils/topology/base.sh);
 only the SWARM_NAME prefix is applied here so host names match the
 containers. The env get() keeps SWARM_NAME import-safe; main() enforces it
 at run time.

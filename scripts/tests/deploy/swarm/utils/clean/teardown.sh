@@ -8,14 +8,14 @@ if [ "${INFINITO_KEEP_SWARM_NODES}" = "true" ]; then
 	exit 0
 fi
 
-# shellcheck source=scripts/tests/deploy/swarm/topology/base.sh
+# shellcheck source=scripts/tests/deploy/swarm/utils/topology/base.sh
 . "$(dirname "$0")/../topology/base.sh"
 
-REPO_ROOT="$(cd "$(dirname "$0")/../../../../.." && pwd)"
+REPO_ROOT="$(cd "$(dirname "$0")/../../../../../.." && pwd)"
 DIR_VAR_LIB="$(python3 -c "import yaml,sys;print(yaml.safe_load(open(sys.argv[1]))['DIR_VAR_LIB'])" \
 	"${REPO_ROOT}/group_vars/all/05_paths.yml")"
 
-bash "$(dirname "$0")/../utils/unmount_nfs_mounts.sh" "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}" || true
+bash "$(dirname "$0")/../unmount_nfs_mounts.sh" "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}" || true
 
 if mountpoint -q "${DIR_VAR_LIB}" 2>/dev/null; then
 	umount -lf "${DIR_VAR_LIB}" || true

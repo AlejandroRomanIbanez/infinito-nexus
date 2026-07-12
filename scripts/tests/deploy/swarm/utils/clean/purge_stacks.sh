@@ -8,8 +8,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../../../.." && pwd)"
-# shellcheck source=scripts/tests/deploy/swarm/topology/base.sh
-source "${SCRIPT_DIR}/../../topology/base.sh"
+# shellcheck source=scripts/tests/deploy/swarm/utils/topology/base.sh
+source "${SCRIPT_DIR}/../topology/base.sh"
 
 : "${apps:?apps is not set (e.g. apps=web-app-keycloak,svc-db-postgres)}"
 : "${MGR:?MGR is not set; topology/base.sh must define it}"

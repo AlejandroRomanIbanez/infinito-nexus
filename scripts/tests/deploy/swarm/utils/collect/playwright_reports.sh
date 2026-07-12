@@ -2,8 +2,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-# shellcheck source=scripts/tests/deploy/swarm/topology/base.sh
-. "${SCRIPT_DIR}/../../topology/base.sh"
+# shellcheck source=scripts/tests/deploy/swarm/utils/topology/base.sh
+. "${SCRIPT_DIR}/../topology/base.sh"
 # shellcheck source=/dev/null
 source <(grep -E '^INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR=' "${SCRIPT_DIR}/../../../../../../.env")
 

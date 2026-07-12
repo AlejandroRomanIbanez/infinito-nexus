@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Reclaim ALL leftover act-swarm state (DinD nodes, NFS sidecars, lab networks,
 # act outer containers) from aborted or wedged roundtrip swarm runs, across every
-# cluster id. Unlike 08_cleanup.sh (one cluster via SWARM_NAME), this nukes every
+# cluster id. Unlike teardown.sh (one cluster via SWARM_NAME), this nukes every
 # act-swarm container/network so the next swarm step starts from a clean host.
 # Run BETWEEN swarm runs: it would kill an in-flight one.
 #
