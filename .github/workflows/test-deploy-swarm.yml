@@ -184,6 +184,23 @@ jobs:
       - name: "✅ Assert state survived the reschedule"
         run: ${{ env.SCRIPTS }}/07_assert_state.sh
 
+      - name: "🩺 Collect rescue diagnostics (recursive DiD snapshot)"
+        if: failure()
+        timeout-minutes: 25
+        shell: bash
+        run: |
+          INFINITO_RESCUE_DIAGNOSTICS_DIR="/tmp/rescue-diagnostics/${{ matrix.apps }}" \
+            python3 utils/diagnostics/container.py \
+            "${{ matrix.apps }}" "post-deploy failure" || true
+
+      - name: "⬆️ Upload rescue diagnostics"
+        if: ${{ always() && !env.ACT }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: rescue-diagnostics-swarm-${{ matrix.apps }}${{ matrix.variant_slug && format('-{0}', matrix.variant_slug) || '' }}
+          path: /tmp/rescue-diagnostics/
+          if-no-files-found: ignore
+
       - name: "📊 Collect diagnostics on failure"
         if: failure()
         timeout-minutes: 15
@@ -218,23 +235,6 @@ jobs:
         with:
           name: playwright-swarm-${{ matrix.apps }}${{ matrix.variant_slug && format('-{0}', matrix.variant_slug) || '' }}
           path: /tmp/playwright-artifacts/
-          if-no-files-found: ignore
-
-      - name: "🩺 Collect rescue diagnostics (recursive DiD snapshot)"
-        if: failure()
-        timeout-minutes: 25
-        shell: bash
-        run: |
-          INFINITO_RESCUE_DIAGNOSTICS_DIR="/tmp/rescue-diagnostics/${{ matrix.apps }}" \
-            python3 utils/diagnostics/container.py \
-            "${{ matrix.apps }}" "post-deploy failure" || true
-
-      - name: "⬆️ Upload rescue diagnostics"
-        if: ${{ always() && !env.ACT }}
-        uses: actions/upload-artifact@v7
-        with:
-          name: rescue-diagnostics-swarm-${{ matrix.apps }}${{ matrix.variant_slug && format('-{0}', matrix.variant_slug) || '' }}
-          path: /tmp/rescue-diagnostics/
           if-no-files-found: ignore
 
       - name: "🧹 Cleanup"

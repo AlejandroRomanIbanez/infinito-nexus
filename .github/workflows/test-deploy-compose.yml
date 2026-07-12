@@ -171,24 +171,6 @@ jobs:
             python3 utils/diagnostics/container.py \
             "${{ matrix.apps }}" "post-deploy failure" || true
 
-      - name: 📋 Playwright step summary
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 utils/github/playwright_summary.py \
-            /tmp/playwright-artifacts \
-            "${{ matrix.apps }}" \
-            >> "$GITHUB_STEP_SUMMARY"
-
-      - name: ⬆️ Upload Playwright artifacts
-        if: always()
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: playwright-compose-${{ matrix.apps }}${{ matrix.variant_slug && format('-{0}', matrix.variant_slug) || '' }}
-          path: /tmp/playwright-artifacts/
-          if-no-files-found: ignore
-
       - name: ⬆️ Upload rescue diagnostics
         if: always()
         uses: actions/upload-artifact@v7
@@ -210,4 +192,22 @@ jobs:
         with:
           name: inventory-compose-${{ matrix.apps }}
           path: /tmp/inventory-compose-${{ matrix.apps }}.zip
+          if-no-files-found: ignore
+
+      - name: 📋 Playwright step summary
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 utils/github/playwright_summary.py \
+            /tmp/playwright-artifacts \
+            "${{ matrix.apps }}" \
+            >> "$GITHUB_STEP_SUMMARY"
+
+      - name: ⬆️ Upload Playwright artifacts
+        if: always()
+        uses: actions/upload-artifact@v7.0.1
+        with:
+          name: playwright-compose-${{ matrix.apps }}${{ matrix.variant_slug && format('-{0}', matrix.variant_slug) || '' }}
+          path: /tmp/playwright-artifacts/
           if-no-files-found: ignore
