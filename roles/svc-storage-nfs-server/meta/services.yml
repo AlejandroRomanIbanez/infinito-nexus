@@ -5,9 +5,6 @@ nfs-server:
   # Exception: only ganesha is CI-tested; kernel nfsd loopback-deadlocks in the shared-kernel DinD labs (reclaim -> writeback -> same nfsd), so CI cannot cover it and kernel must stay a deliberate, untested per-inventory choice
   flavor: ganesha
   lifecycle: beta
-  skip:
-    - compose
-    - swarm
   enabled: true
   shared: true
   bond: 1

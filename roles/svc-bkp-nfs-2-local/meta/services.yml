@@ -12,9 +12,6 @@ nfs-2-local:
   run_after:
     - svc-storage-nfs-server
   lifecycle: beta
-  skip:
-    - compose
-    - swarm
   min_storage: 0GB
   cpus: "0.5"
   mem_reservation: "256m"

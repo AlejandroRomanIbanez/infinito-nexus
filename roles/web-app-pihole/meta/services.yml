@@ -54,8 +54,6 @@ sso:
     allowed_groups:
       - "{{ lookup('rbac_group_path', application_id='web-app-pihole', role='administrator') }}"
 pihole:
-  skip:
-    - swarm
   image: pihole/pihole
   version: "2026.07.2"
   upstream_dns: "{{ NETWORK_PUBLIC_DNS_RESOLVERS }}"

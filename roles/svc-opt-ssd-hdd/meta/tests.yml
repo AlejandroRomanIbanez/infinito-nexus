@@ -1,0 +1,4 @@
+---
+skip:
+  - compose
+  - swarm

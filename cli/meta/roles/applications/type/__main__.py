@@ -32,7 +32,7 @@ def main() -> None:
     parser.add_argument(
         "--skip-mode",
         choices=("compose", "swarm"),
-        help="Exclude roles whose meta/services.yml skip list contains this "
+        help="Exclude roles whose meta/tests.yml skip list contains this "
         "deployment mode (test-deploy discovery opt-out).",
     )
     parser.add_argument(
@@ -70,7 +70,6 @@ def main() -> None:
         print(json.dumps(grouped, indent=2, sort_keys=True))
         return
 
-    # text
     for t in ("server", "workstation", "universal"):
         apps = grouped.get(t, [])
         print(f"[{t}]")

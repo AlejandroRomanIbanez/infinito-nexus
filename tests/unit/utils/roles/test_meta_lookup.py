@@ -15,7 +15,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from utils.roles.mapping import ROLE_FILE_META_SERVICES
+from utils.roles.mapping import ROLE_FILE_META_SERVICES, ROLE_FILE_META_TESTS
 from utils.roles.meta_lookup import (
     MetaServicesShapeError,
     get_role_lifecycle,
@@ -34,6 +34,13 @@ class _RoleFixtures:
         role_dir = self.root / role_name
         (role_dir / "meta").mkdir(parents=True, exist_ok=True)
         path = role_dir / ROLE_FILE_META_SERVICES
+        path.write_text(textwrap.dedent(body).lstrip("\n"), encoding="utf-8")
+        return role_dir
+
+    def write_tests(self, role_name: str, body: str) -> Path:
+        role_dir = self.root / role_name
+        (role_dir / "meta").mkdir(parents=True, exist_ok=True)
+        path = role_dir / ROLE_FILE_META_TESTS
         path.write_text(textwrap.dedent(body).lstrip("\n"), encoding="utf-8")
         return role_dir
 
@@ -217,14 +224,12 @@ class TestMetaLookup(unittest.TestCase):
         )
 
     def test_skip_returns_modes(self) -> None:
-        role_dir = self.fx.write(
+        role_dir = self.fx.write_tests(
             "svc-storage-nfs-client",
             """
-            nfs-client:
-              lifecycle: beta
-              skip:
-                - compose
-                - swarm
+            skip:
+              - compose
+              - swarm
             """,
         )
         self.assertEqual(
@@ -242,12 +247,21 @@ class TestMetaLookup(unittest.TestCase):
         )
         self.assertEqual(get_role_skip(role_dir, role_name="web-app-yourls"), [])
 
+    def test_skip_absent_key_returns_empty(self) -> None:
+        role_dir = self.fx.write_tests(
+            "web-app-yourls",
+            """
+            cli:
+              timeout: 9000
+            """,
+        )
+        self.assertEqual(get_role_skip(role_dir, role_name="web-app-yourls"), [])
+
     def test_skip_non_list_raises(self) -> None:
-        role_dir = self.fx.write(
+        role_dir = self.fx.write_tests(
             "web-app-broken",
             """
-            broken:
-              skip: compose
+            skip: compose
             """,
         )
         with self.assertRaises(MetaServicesShapeError):

@@ -28,7 +28,7 @@ import yaml
 
 from utils.cache.yaml import load_yaml_any
 from utils.roles.entity_name import get_entity_name
-from utils.roles.mapping import ROLE_FILE_META_SERVICES
+from utils.roles.mapping import ROLE_FILE_META_SERVICES, ROLE_FILE_META_TESTS
 
 from . import PROJECT_ROOT
 
@@ -54,6 +54,23 @@ def _read_meta_services(role_dir: Path) -> dict | None:
     if not isinstance(loaded, dict):
         raise MetaServicesShapeError(
             f"{services_path} must be a YAML mapping at the file root."
+        )
+    return loaded
+
+
+def _read_meta_tests(role_dir: Path) -> dict | None:
+    tests_path = role_dir / ROLE_FILE_META_TESTS
+    if not tests_path.is_file():
+        return None
+    try:
+        loaded = load_yaml_any(str(tests_path))
+    except yaml.YAMLError as exc:
+        raise MetaServicesShapeError(f"{tests_path} is not valid YAML: {exc}") from exc
+    if loaded in (None, {}):
+        return None
+    if not isinstance(loaded, dict):
+        raise MetaServicesShapeError(
+            f"{tests_path} must be a YAML mapping at the file root."
         )
     return loaded
 
@@ -125,25 +142,25 @@ def get_role_lifecycle(role: PathLike, *, role_name: str | None = None) -> str |
 def get_role_skip(role: PathLike, *, role_name: str | None = None) -> list[str]:
     """Return the role's ``skip`` list: deployment modes the role is excluded
     from in test-deploy discovery (e.g. ``[compose, swarm]``), or ``[]`` when
-    absent. Lives at ``meta/services.yml.<primary_entity>.skip``."""
+    absent. Lives at ``meta/tests.yml.skip`` (the SPOT for per-role test
+    metadata)."""
     role_dir, name = _resolve_role(role, role_name)
-    services = _read_meta_services(role_dir)
-    primary = _primary_entry(name, services)
-    if primary is None:
+    tests = _read_meta_tests(role_dir)
+    if tests is None:
         return []
-    raw = primary.get("skip")
+    raw = tests.get("skip")
     if raw is None:
         return []
     if not isinstance(raw, list):
         raise MetaServicesShapeError(
-            f"Invalid skip type in meta/services.yml for role '{name}': "
+            f"Invalid skip type in meta/tests.yml for role '{name}': "
             f"expected list, got {type(raw).__name__}."
         )
     out: list[str] = []
     for item in raw:
         if not isinstance(item, str) or not item.strip():
             raise MetaServicesShapeError(
-                f"Invalid skip entry in meta/services.yml for role "
+                f"Invalid skip entry in meta/tests.yml for role "
                 f"'{name}': {item!r} (expected non-empty string)."
             )
         out.append(item.strip().lower())

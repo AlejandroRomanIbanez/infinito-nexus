@@ -7,9 +7,6 @@ nfs-client:
   name: nfs-client
   nfs_version: 4
   lifecycle: beta
-  skip:
-    - compose
-    - swarm
   min_storage: "50MB"
   cpus: "0.1"
   mem_reservation: "32m"

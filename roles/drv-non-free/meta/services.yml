@@ -1,7 +1,5 @@
 ---
 non-free:
-  skip:
-    - swarm
   min_storage: 0GB
   lifecycle: alpha
   cpus: "0.1"

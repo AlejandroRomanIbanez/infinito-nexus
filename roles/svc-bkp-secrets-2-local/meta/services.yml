@@ -6,9 +6,6 @@ secrets-2-local:
   preload: false
   provides: secrets_backup
   lifecycle: beta
-  skip:
-    - compose
-    - swarm
   min_storage: 0GB
   cpus: "0.5"
   mem_reservation: "128m"
