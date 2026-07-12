@@ -82,7 +82,8 @@ def get(
                 trace_path = ".".join(path_trace[1:])
                 if schema_defines(trace_path):
                     raise ConfigEntryNotSetError(
-                        f"Config entry '{trace_path}' is defined in schema at '{schema_path}' but not set in application '{application_id}'."
+                        f"Config entry '{trace_path}' is defined in schema at '{schema_path}' but not set in application '{application_id}'. "
+                        f"Present keys at this level: {sorted(obj.keys()) if isinstance(obj, Mapping) else type(obj).__name__}."
                     )
                 raise AppConfigKeyError(
                     f"Key '{k}' not found in dict at '{key}'\n"
