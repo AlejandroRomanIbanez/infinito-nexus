@@ -7,7 +7,6 @@ nfs-2-local:
   bond: 1
   enabled: true
   shared: true
-  preload: false
   provides: nfs_backup
   run_after:
     - svc-storage-nfs-server

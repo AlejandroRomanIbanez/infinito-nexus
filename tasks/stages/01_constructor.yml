@@ -192,29 +192,6 @@
     name: sys-token-store
   when: run_once_sys_token_store is not defined
 
-- name: "💾 Snapshot the pre-deploy state via the previous deploy's backup units"
-  ansible.builtin.script:
-    cmd: >-
-      {{ lookup('path_absolute', 'scripts/system/backup/pre_deploy_snapshot.sh') }}
-      {{ snapshot.unit }}
-      {{ snapshot.source }}
-  loop:
-    - role: svc-bkp-volume-2-local
-      unit: "{{ SYS_SERVICE_BACKUP_VOLUME_2_LOCAL }}"
-      source: "{{ FILE_DATABASE_SECRETS }}"
-    - role: svc-bkp-nfs-2-local
-      unit: "{{ SYS_SERVICE_BACKUP_NFS_2_LOCAL }}"
-      source: "{{ lookup('nfs_export_base') }}"
-  loop_control:
-    loop_var: snapshot
-    label: "{{ snapshot.role }}"
-  register: _pre_deploy_snapshot
-  changed_when: "'SKIP' not in _pre_deploy_snapshot.stdout"
-  timeout: "{{ lookup('timeout', 3600) | int }}"
-  when:
-    - MODE_BACKUP | bool
-    - snapshot.role in group_names
-
 - name: 🛠️ Preload shared services
   ansible.builtin.include_role:
     name: sys-service-loader

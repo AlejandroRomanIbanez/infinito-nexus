@@ -20,6 +20,20 @@ self-signed mode). The generation joins the same backup tree the pull
 and device roles consume, so it flows to the backup host and the
 encrypted device automatically.
 
+## Schema
+
+```mermaid
+flowchart TD
+    TIMER["systemd timer<br>SYS_SCHEDULE_BACKUP_SECRETS_TO_LOCAL"] --> UNIT
+    PRELOAD["sys-service-loader preload<br>MODE_BACKUP, before the app pass<br>(force_flush_instant + state started)"] --> UNIT
+    UNIT["svc-bkp-secrets-2-local.&lt;version&gt;.&lt;domain&gt;.service"] --> LOCK["ExecStartPre: sys-lock against the manipulation group"]
+    LOCK --> SCRIPT["ExecStart: script &lt;backups_dir&gt; backup-secrets-to-local<br>secrets= ca= acme= certbot= sources"]
+    SCRIPT --> SOURCES["per-source rsync snapshots<br>--link-dest previous generation (hard links)<br>optional sources skipped when absent"]
+    SOURCES --> TREE["&lt;backups_dir&gt;/&lt;sha256(machine-id)&gt;/<br>backup-secrets-to-local/&lt;YYYYmmddHHMMSS&gt;/files/&lt;name&gt;"]
+    UNIT -->|failure| ALARM["OnFailure: alarm"]
+    TREE --> PULL["svc-bkp-remote-2-local via ssh<br>user-backup ssh-wrapper: whitelisted ls/rsync per type<br>pulls the newest generation"]
+```
+
 ## Features
 
 - **Complete secret coverage:** secrets + tokens, self-signed CA,

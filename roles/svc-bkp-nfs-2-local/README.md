@@ -13,31 +13,18 @@ Deploy [sys-ctl-cln-bkps](../sys-ctl-cln-bkps/) to keep the snapshot tree bounde
 
 ## Schema
 
-```
-Nightly path (SYS_SCHEDULE_BACKUP_NFS_TO_LOCAL, 01:30)
-  systemd timer
-    └─> svc-bkp-nfs-2-local.<version>.<domain>.service
-          ├─ ExecStartPre: sys-lock against the manipulation group
-          └─ ExecStart: script.sh <export_base> <backups_dir> backup-nfs-to-local <state>/backup
-                ├─ export_base missing        -> ERROR exit 1 -> OnFailure alarm
-                ├─ rsync -a --delete
-                │    --exclude /<state>/backup           (shared backup root, no backups-in-backups)
-                │    --link-dest <previous generation>   (unchanged files = hard links)
-                ├─ rsync exit 24 (live export churn)     -> WARN, snapshot kept
-                └─ rsync any other failure               -> generation removed, exit != 0
-
-Pre-deploy path (MODE_BACKUP, tasks/stages/01_constructor.yml)
-  scripts/system/backup/pre_deploy_snapshot.sh <unit> <export_base>
-    ├─ no unit installed (fresh host, version glob checked)  -> SKIP
-    ├─ export empty/missing                                  -> SKIP
-    └─ else: systemctl start <previous deploy's unit>        -> nightly path above
-
-Snapshot tree (baudolo-compatible)
-  <backups_dir>/<sha256(machine-id)>/backup-nfs-to-local/<YYYYmmddHHMMSS>/files/...
-
-Downstream pull
-  remote host (svc-bkp-remote-2-local) --ssh--> user-backup ssh-wrapper
-    -> whitelisted ls/rsync per backup type -> pulls the newest generation
+```mermaid
+flowchart TD
+    TIMER["systemd timer<br>SYS_SCHEDULE_BACKUP_NFS_TO_LOCAL (01:30)"] --> UNIT
+    PRELOAD["sys-service-loader preload<br>MODE_BACKUP, run_after svc-storage-nfs-server<br>(force_flush_instant + state started)"] --> UNIT
+    UNIT["svc-bkp-nfs-2-local.&lt;version&gt;.&lt;domain&gt;.service"] --> LOCK["ExecStartPre: sys-lock against the manipulation group"]
+    LOCK --> SCRIPT["ExecStart: script.sh &lt;export_base&gt; &lt;backups_dir&gt;<br>backup-nfs-to-local &lt;state&gt;/backup"]
+    SCRIPT -->|export_base missing| ALARM["ERROR exit 1<br>OnFailure alarm"]
+    SCRIPT --> RSYNC["rsync -a --delete<br>--exclude /&lt;state&gt;/backup (no backups-in-backups)<br>--link-dest previous generation (hard links)"]
+    RSYNC -->|exit 24: live export churn| WARN["WARN, snapshot kept"]
+    RSYNC -->|any other failure| CLEAN["generation removed, exit != 0"]
+    RSYNC --> TREE["&lt;backups_dir&gt;/&lt;sha256(machine-id)&gt;/<br>backup-nfs-to-local/&lt;YYYYmmddHHMMSS&gt;/files/..."]
+    TREE --> PULL["svc-bkp-remote-2-local via ssh<br>user-backup ssh-wrapper: whitelisted ls/rsync per type<br>pulls the newest generation"]
 ```
 
 ## Features
