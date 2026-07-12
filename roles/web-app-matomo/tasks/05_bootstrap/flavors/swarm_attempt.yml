@@ -9,7 +9,7 @@
   when:
     - IS_STACK_HOST | bool
     - matomo_attempt_index | int > 0
-    - matomo_config_exists.rc | int == 1
+    - matomo_config_exists.rc | int != 0
     - ((matomo_bootstrap_swarm | default({})).rc | default(1)) | int != 0
 
 - name: "🐝 Matomo bootstrap | Swarm: force installer run and wait for its token"
