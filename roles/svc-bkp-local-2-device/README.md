@@ -10,6 +10,22 @@ The transfer is hard-link deduplicated against the previous snapshot, so each pl
 This role asserts that the mount, source, and target configuration values are present, deploys the rsync-driver script, and installs a systemd mount unit plus a oneshot service.
 The oneshot service is triggered automatically when the configured mount path appears, so the only operator action is to physically plug the device in.
 
+## Schema
+
+```mermaid
+flowchart TD
+    PLUG["operator plugs the device in"] --> MOUNT["systemd .mount unit<br>BACKUP_TO_USB_MOUNT appears"]
+    TIMER["systemd timer<br>SYS_SCHEDULE_BACKUP_LOCAL_TO_DEVICE"] --> COND
+    MOUNT --> UNIT
+    UNIT["svc-bkp-local-2-device.&lt;version&gt;.&lt;domain&gt;.service<br>(oneshot, Wants= the mount unit;<br>never started at deploy time: no device present)"] --> COND
+    COND{"ConditionPathIsMountPoint<br>device currently mounted?"}
+    COND -->|no| SKIP["unit skipped, no failure, no alarm"]
+    COND -->|yes| SCRIPT["ExecStart: script &lt;BACKUP_TO_USB_SOURCE&gt; &lt;BACKUP_TO_USB_DESTINATION&gt;"]
+    SCRIPT --> RSYNC["rsync snapshot of the local backup tree<br>--link-dest previous snapshot (hard links)"]
+    RSYNC --> DEVICE["complete point-in-time copy<br>on the external device"]
+    SCRIPT -->|failure| ALARM["OnFailure: alarm"]
+```
+
 ## Features
 
 - **Plug-triggered:** a systemd `.mount` unit fires the backup service the moment the device appears, so backups happen without an interactive command.
