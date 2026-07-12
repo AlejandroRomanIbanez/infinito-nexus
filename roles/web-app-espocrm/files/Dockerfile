@@ -9,6 +9,10 @@ ARG ESPOCRM_ENTRYPOINT_SCRIPT_DOCKER
 
 RUN cp -a /usr/src/espocrm/. /var/www/html/
 
+# Exception: upstream v10 entrypoint hardcodes `set-password admin`, killing installs with a non-default admin name; the grep guard fails the build if the line changes.
+RUN sed -i 's|bin/command set-password admin |bin/command set-password "$ESPOCRM_ADMIN_USERNAME" |' /usr/local/bin/docker-entrypoint.sh \
+    && grep -qF 'set-password "$ESPOCRM_ADMIN_USERNAME"' /usr/local/bin/docker-entrypoint.sh
+
 COPY ${ESPOCRM_SCRIPT_SEED_HOST_REL} ${ESPOCRM_SCRIPT_SEED_DOCKER}
 RUN chmod +x ${ESPOCRM_SCRIPT_SEED_DOCKER}
 
