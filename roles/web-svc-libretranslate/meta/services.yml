@@ -6,6 +6,7 @@ libretranslate:
   shared: true
   image: libretranslate/libretranslate
   version: v1.9.6
+  custom: true
   min_storage: 5GB
   load_only:
     - en

@@ -32,6 +32,7 @@ littlejs:
   ref: main
   image: nginx
   version: alpine
+  custom: true
   ports:
     local:
       http: 8063

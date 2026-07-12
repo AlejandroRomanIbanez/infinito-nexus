@@ -29,6 +29,7 @@ jenkins:
   replicas: 1
   image: jenkins/jenkins
   version: lts
+  custom: true
   name: jenkins
   ports:
     local:

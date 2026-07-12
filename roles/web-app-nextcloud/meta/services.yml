@@ -58,6 +58,7 @@ nextcloud:
   name: nextcloud
   image: nextcloud
   version: 33-fpm-alpine
+  custom: true
   min_storage: 20GB
   backup:
     no_stop_required: true
@@ -138,6 +139,7 @@ whiteboard:
   name: nextcloud-whiteboard
   image: ghcr.io/nextcloud-releases/whiteboard
   version: v1.5.9
+  custom: nextcloud-whiteboard
   backup:
     no_stop_required: true
   cpus: "1"

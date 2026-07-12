@@ -52,6 +52,7 @@ bookwyrm:
   # TODO: bump when upstream Bookwyrm declares support for Python >= 3.12 in requirements.txt
   # nocheck: docker-version
   version: 3.11-bookworm
+  custom: true
   repository: https://github.com/bookwyrm-social/bookwyrm.git
   ref: v0.9.1
   min_storage: 15GB
@@ -77,6 +78,7 @@ bookwyrm:
 # nocheck: playwright-service-flag — internal sub-component (multi-entity role)
 worker:
   name: bookwyrm-worker
+  custom: true
   enabled: true # nocheck: dynamic-flag
   cpus: "1.0"
   mem_reservation: 256m

@@ -47,6 +47,7 @@ seaweedfs:
   public: true
 snipe-it:
   version: v8.6.3-alpine
+  custom: true
   name: snipe-it
   image: snipe/snipe-it
   min_storage: 8GB

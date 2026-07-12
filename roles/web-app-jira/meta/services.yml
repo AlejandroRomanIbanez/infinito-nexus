@@ -30,6 +30,7 @@ postgres:
 jira:
   image: atlassian/jira-software
   version: 11.3.8
+  custom: true
   name: jira
   min_storage: 20GB
   cpus: "2.0"

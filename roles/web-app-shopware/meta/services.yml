@@ -47,6 +47,7 @@ init:
 shopware:
   image: composer
   version: "2.10"
+  custom: true
   min_storage: 20GB
   package:
     name: shopware/production

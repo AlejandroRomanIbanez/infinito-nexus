@@ -32,6 +32,7 @@ mariadb:
 espocrm:
   image: espocrm/espocrm
   version: "10.0.2"
+  custom: true
   name: espocrm
   min_storage: 8GB
   cpus: 1.5
@@ -53,6 +54,7 @@ espocrm:
     - web-app-mailu
   lifecycle: beta
 daemon:
+  custom: true
   # nocheck: single-replica
   replicas: 1
   cpus: 0.5
@@ -60,6 +62,7 @@ daemon:
   mem_limit: 0.5g
   pids_limit: 384
 websocket:
+  custom: true
   # nocheck: single-replica
   replicas: 1
   cpus: 0.5

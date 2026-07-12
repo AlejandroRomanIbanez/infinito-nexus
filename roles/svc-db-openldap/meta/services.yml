@@ -8,6 +8,7 @@ openldap:
   provides: ldap
   image: debian
   version: bookworm-slim
+  custom: true
   name: openldap
   min_storage: 2GB
   cpus: 1.25

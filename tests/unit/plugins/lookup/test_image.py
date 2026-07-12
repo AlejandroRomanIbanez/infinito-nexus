@@ -337,6 +337,44 @@ class TestImageLookup(unittest.TestCase):
             )
         self.assertEqual(out, ["mattermost_custom:11.8.0"])
 
+    def test_entry_custom_true_used_without_kwarg(self):
+        apps = _apps()
+        apps["web-app-mattermost"]["services"]["mattermost"]["custom"] = True
+        with patch(
+            "plugins.lookup.image.get_entity_name",
+            return_value="mattermost",
+        ):
+            out = _run(
+                "web-app-mattermost",
+                "mattermost",
+                variables={"DEPLOYMENT_MODE": "compose"},
+                applications=apps,
+            )
+        self.assertEqual(out, ["mattermost_custom:11.8.0"])
+
+    def test_entry_custom_string_used_without_kwarg(self):
+        apps = _apps()
+        apps["web-app-mattermost"]["services"]["mattermost"]["custom"] = "side"
+        out = _run(
+            "web-app-mattermost",
+            "mattermost",
+            variables={"DEPLOYMENT_MODE": "compose"},
+            applications=apps,
+        )
+        self.assertEqual(out, ["side_custom:11.8.0"])
+
+    def test_custom_kwarg_wins_over_entry_declaration(self):
+        apps = _apps()
+        apps["web-app-mattermost"]["services"]["mattermost"]["custom"] = True
+        out = _run(
+            "web-app-mattermost",
+            "mattermost",
+            variables={"DEPLOYMENT_MODE": "compose"},
+            applications=apps,
+            custom="side",
+        )
+        self.assertEqual(out, ["side_custom:11.8.0"])
+
     def test_custom_string_uses_string_base(self):
         apps = _apps(image="ghcr.io/x/whiteboard", version="v1.5.9")
         apps["web-app-mattermost"]["services"]["wb"] = apps["web-app-mattermost"][

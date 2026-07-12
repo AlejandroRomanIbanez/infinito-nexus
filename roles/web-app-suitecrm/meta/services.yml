@@ -41,6 +41,7 @@ suitecrm:
   # TODO: Make SuiteCRM compatible with PHP 8.5; update currently not possible. Reason: intentional legacy pin.
   # nocheck: docker-version
   version: 8.2-apache
+  custom: true
   app_version: 8.9.1
   name: suitecrm
   min_storage: 10GB

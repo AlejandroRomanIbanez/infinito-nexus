@@ -29,6 +29,7 @@ discourse:
 wordpress:
   version: 7.0.1
   image: wordpress
+  custom: true
   name: wordpress
   min_storage: 8GB
   backup:

@@ -33,6 +33,7 @@ postgres:
 odoo:
   image: odoo
   version: "19.0"
+  custom: true
   name: odoo
   min_storage: 20GB
   cpus: "2.0"

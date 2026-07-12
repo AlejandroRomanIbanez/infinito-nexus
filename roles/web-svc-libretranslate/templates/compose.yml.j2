@@ -7,7 +7,7 @@
         LIBRETRANSLATE_IMAGE: "{{ LIBRETRANSLATE_IMAGE }}"
         LIBRETRANSLATE_VERSION: "{{ LIBRETRANSLATE_VERSION }}"
         LIBRETRANSLATE_LOAD_ONLY: "{{ LIBRETRANSLATE_LOAD_ONLY }}"
-    {{ lookup('container_image', application_id, 'libretranslate', custom=True) }}
+    {{ lookup('container_image', application_id, 'libretranslate') }}
     volumes: []
     {{ lookup('container_ports', ['libretranslate', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     healthcheck:

@@ -12,7 +12,7 @@
         ODOO_ENTRYPOINT_SCRIPT_HOST_REL: "{{ ODOO_ENTRYPOINT_SCRIPT_HOST_REL }}"
         ODOO_ENTRYPOINT_SCRIPT_DOCKER: "{{ ODOO_ENTRYPOINT_SCRIPT_DOCKER }}"
     {{ lookup('compose_only', 'container_name', ODOO_CONTAINER) }}
-    {{ lookup('container_image', application_id, 'odoo', custom=True) }}
+    {{ lookup('container_image', application_id, 'odoo') }}
     init: true
     stop_signal: SIGTERM
     stop_grace_period: 30s

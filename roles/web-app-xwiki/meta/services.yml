@@ -45,6 +45,7 @@ xwiki:
   shared: true
   image: xwiki
   version: lts-postgres-tomcat
+  custom: true
   name: xwiki
   min_storage: 10GB
   backup:

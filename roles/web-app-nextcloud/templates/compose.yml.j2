@@ -20,7 +20,7 @@
 
   {% set service_name = NEXTCLOUD_SERVICE %}
   {{ service_name }}:
-    {{ lookup('container_image', application_id, 'nextcloud', custom=True) }}
+    {{ lookup('container_image', application_id, 'nextcloud') }}
     {{ lookup('compose_only', 'container_name', NEXTCLOUD_CONTAINER) }}
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
 
@@ -75,7 +75,7 @@
       context: .
       dockerfile: {{ NEXTCLOUD_WHITEBOARD_SERVICE_DOCKERFILE }}
     {{ lookup('compose_only', 'pull_policy', 'never') }}
-    {{ lookup('container_image', application_id, 'whiteboard', image=NEXTCLOUD_WHITEBOARD_IMAGE_CUSTOM, version=NEXTCLOUD_WHITEBOARD_VERSION) }}
+    {{ lookup('container_image', application_id, 'whiteboard') }}
     {% include 'roles/sys-svc-container/templates/healthcheck/nc.yml.j2' %}
     {{ lookup('compose_only', 'container_name', NEXTCLOUD_WHITEBOARD_CONTAINER) }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}

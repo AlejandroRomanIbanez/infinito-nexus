@@ -29,6 +29,7 @@ mariadb:
 mediawiki:
   image: mediawiki
   version: "1.46"
+  custom: true
   min_storage: 8GB
   backup:
     no_stop_required: true

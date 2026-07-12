@@ -21,15 +21,16 @@ and ``services.<key>.version``). ``image=`` and ``version=`` keyword
 overrides bypass those values for ad-hoc references (e.g. side-car init
 containers that do not appear in the services map).
 
-When ``custom=True``, the image name is auto-derived from
-``application_id`` as ``<entity_name>_custom`` (where ``<entity_name>``
-comes from ``utils.roles.entity_name.get_entity_name``). This is the
-canonical shape for locally-built images that do not have a registry
-upstream, shared across an app's custom services. When ``custom`` is a
-non-empty STRING, that string is the base instead: ``<custom>_custom``.
-Use the string form for a second, distinct custom image inside one app
-(where the shared ``<entity>_custom`` would collide). The ``image=``
-override still wins over ``custom`` when both are supplied.
+Locally-built images are declared once, in the service's config:
+``services.<key>.custom: true`` names the image ``<entity_name>_custom``
+(where ``<entity_name>`` comes from
+``utils.roles.entity_name.get_entity_name``) shared across an app's
+custom services, while a non-empty STRING names it ``<custom>_custom``
+for a second, distinct custom image inside one app (where the shared
+``<entity>_custom`` would collide). The compose template's ``build:``
+directive does the actual building; this lookup only derives the name
+the build is tagged with. A ``custom=`` kwarg overrides the config
+declaration, and an ``image=`` override wins over both.
 ``services.<key>.image`` is ignored entirely in custom mode (the lookup
 never reads it).
 
@@ -157,6 +158,9 @@ class LookupModule(LookupBase):
         ).run([], variables=vars_)[0]
 
         entry = _resolve_service_entry(applications, application_id, service_key)
+
+        if not custom:
+            custom = entry.get("custom") or False
 
         image_value = _as_str(image_override)
         if not image_value and custom:
