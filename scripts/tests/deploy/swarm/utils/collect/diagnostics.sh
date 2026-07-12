@@ -26,21 +26,6 @@ for node in "${MGR}" "${WRK1}" "${WRK2}"; do
 	done
 done
 
-sep "swarm nodes"
-dexec "${MGR}" docker node ls
-
-sep "all swarm services + replica state"
-dexec "${MGR}" docker service ls
-
-sep "per-service docker service ps (--no-trunc) for every existing service"
-for svc in $(dexec "${MGR}" docker service ls --format '{{.Name}}'); do
-	echo "--- ${svc} ---"
-	dexec "${MGR}" docker service ps --no-trunc "${svc}"
-	echo "--- ${svc} logs (tail) ---"
-	dexec "${MGR}" docker service logs --no-task-ids --tail 500 "${svc}" 2>&1 ||
-		echo "(service logs unavailable/timed out for ${svc})"
-done
-
 sep "docker images per node (filter custom + db + ${ENTITY})"
 for node in "${MGR}" "${WRK1}" "${WRK2}"; do
 	echo "--- ${node} ---"
@@ -67,9 +52,6 @@ if [ "${DB_DEP}" = "mariadb" ]; then
 		echo "(no live mariadb container found)"
 	fi
 fi
-
-sep "nfs-server logs"
-timeout 30 docker logs --tail 200 "${NFS_SERVER}"
 
 sep "nfs-server: /etc/exports + exportfs -v + export tree + ganesha conf"
 dexec "${NFS_SERVER}" cat /etc/exports

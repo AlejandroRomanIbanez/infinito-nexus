@@ -125,6 +125,7 @@ jobs:
         run: ./scripts/install/apt.sh jq
 
       - name: 🚀 Deploy app
+        timeout-minutes: 300
         shell: bash
         env:
           apps: ${{ matrix.apps }}
@@ -157,11 +158,13 @@ jobs:
 
       - name: 🩺 Dump runner state (on failure)
         if: failure()
+        timeout-minutes: 10
         shell: bash
         run: ./scripts/github/runner/dump_state.sh "post-deploy failure (${{ matrix.apps }})"
 
       - name: "🩺 Collect rescue diagnostics (recursive DiD snapshot)"
         if: failure()
+        timeout-minutes: 30
         shell: bash
         run: |
           INFINITO_RESCUE_DIAGNOSTICS_DIR="/tmp/rescue-diagnostics/${{ matrix.apps }}" \

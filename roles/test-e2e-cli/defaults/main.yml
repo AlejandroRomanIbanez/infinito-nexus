@@ -1,5 +1,6 @@
 ---
 TEST_E2E_CLI_STAGE_BASE_DIR: "/tmp/test-e2e-cli"
+TEST_E2E_CLI_TIMEOUT: "{{ lookup('timeout', 3600) | int }}"
 
 allowed_applications: []
 TEST_E2E_CLI_ONLY_ROLES: "{{ allowed_applications }}"

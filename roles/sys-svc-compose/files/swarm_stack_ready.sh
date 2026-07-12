@@ -5,7 +5,7 @@ set -euo pipefail
 
 is_completed_oneshot() {
 	local ps
-	ps=$(docker service ps --no-trunc \
+	ps=$(timeout 15 docker service ps --no-trunc \
 		--format '{{.DesiredState}}|{{.CurrentState}}' "$1" 2>/dev/null) || return 1
 	[ -n "$ps" ] || return 1
 	awk -F'|' '
@@ -24,25 +24,9 @@ while read -r name reps; do
 	fi
 	is_completed_oneshot "$name" && continue
 	not_running="$not_running $name"
-done < <(docker stack services --format '{{.Name}} {{.Replicas}}' "$STACK")
+done < <(timeout 15 docker stack services --format '{{.Name}} {{.Replicas}}' "$STACK")
 
 if [ -n "$not_running" ]; then
 	echo "not converged:$not_running" >&2
-	{
-		echo "=== docker node ls ==="
-		docker node ls 2>/dev/null || true
-		for svc in $not_running; do
-			echo "=== docker service ps --no-trunc ${svc} ==="
-			docker service ps --no-trunc "$svc" 2>/dev/null || true
-			echo "=== docker service logs --tail 200 ${svc} ==="
-			timeout 30 docker service logs --no-task-ids --tail 200 "$svc" 2>&1 || true
-			echo "=== docker service inspect ${svc} ==="
-			docker service inspect "$svc" 2>/dev/null || true
-		done
-		echo "=== journalctl -u docker (last 10 min) ==="
-		journalctl -u docker --no-pager -n 300 --since "10 min ago" 2>/dev/null || echo "(journalctl -u docker unavailable)"
-		echo "=== container events (last 10 min) ==="
-		timeout 5 container events --since 10m --until 0s 2>/dev/null || echo "(events unavailable)"
-	} >&2
 	exit 1
 fi

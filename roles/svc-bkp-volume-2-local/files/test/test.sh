@@ -63,7 +63,7 @@ MACHINE_DIR="${BKP_TEST_BACKUPS_DIR%/}/${MACHINE_HASH}"
 
 if [[ ! -d "${MACHINE_DIR}" ]]; then
     echo "No backup dir yet at ${MACHINE_DIR}; triggering an initial backup run"
-    if ! systemctl start "${BKP_TEST_SERVICE}"; then
+    if ! timeout "${BKP_TEST_HEALTH_TIMEOUT}" systemctl start "${BKP_TEST_SERVICE}"; then
         echo "backup unit start returned non-zero; inspecting result"
     fi
     wait_service_terminated
@@ -94,7 +94,7 @@ export MACHINE_HASH REPO_DIR REPO_NAME
 if [[ "${ASYNC_ENABLED}" == "true" ]]; then
     if (( COUNT < 2 )); then
         echo "Only ${COUNT} generation(s); triggering one extra backup run for differential coverage"
-        if ! systemctl start "${BKP_TEST_SERVICE}"; then
+        if ! timeout "${BKP_TEST_HEALTH_TIMEOUT}" systemctl start "${BKP_TEST_SERVICE}"; then
             echo "backup unit start returned non-zero; inspecting result"
         fi
         wait_service_terminated

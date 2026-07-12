@@ -67,7 +67,7 @@
 
 - name: 🚀 Run CLI test script for {{ application_id }}
   ansible.builtin.shell:
-    cmd: "set -a && . {{ _cli_stage_dir }}/test.env && set +a && bash {{ _cli_test_script }}"
+    cmd: "set -a && . {{ _cli_stage_dir }}/test.env && set +a && timeout {{ TEST_E2E_CLI_TIMEOUT }} bash {{ _cli_test_script }}"
     executable: /bin/bash
   register: _cli_run
   changed_when: false
