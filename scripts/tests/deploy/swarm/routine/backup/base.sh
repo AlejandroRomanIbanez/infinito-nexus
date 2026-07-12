@@ -135,8 +135,12 @@ fi
 echo "    marker present on backup host after pull"
 
 echo "==> [5/9] plug the LUKS 'USB' and sync via the deployed local-2-device unit"
+USB_SIZE_MB="$(docker exec "${BACKUP_NODE}" du -sm "${DIR_BACKUPS}" | awk '{print $1}')"
+USB_SIZE_MB=$((USB_SIZE_MB * 2 + 256))
+[ "${USB_SIZE_MB}" -lt 2048 ] && USB_SIZE_MB=2048
+echo "    sizing the loop image to ${USB_SIZE_MB}M (2x pulled tree + headroom, floor 2G)"
 docker exec "${BACKUP_NODE}" bash "${BKP_IN_NODE}/02_luks_device.sh" \
-	"${USB_IMG}" "${DEV_MOUNT}" "${DEV_DEST}" "${USB_MAPPER}" "${USB_PASS}"
+	"${USB_IMG}" "${DEV_MOUNT}" "${DEV_DEST}" "${USB_MAPPER}" "${USB_PASS}" "${USB_SIZE_MB}"
 if ! docker exec "${BACKUP_NODE}" bash "${TRIGGER_UNITS}" 'svc-bkp-local-2-device*.service'; then
 	echo "FAILURE: local-2-device unit missing or failed on ${BACKUP_NODE} (role not deployed?)"
 	exit 1
