@@ -28,6 +28,7 @@ class DirectoryRecovery(ABC):
     """
 
     unit_pattern: str
+    rsync_extra_args: tuple[str, ...] = ()
 
     def __init__(
         self, source_dir: str, target_dir: str, *, service_backup: bool = True
@@ -74,7 +75,14 @@ class DirectoryRecovery(ABC):
 
     def restore(self) -> None:
         subprocess.run(
-            ["rsync", "-a", "--delete", f"{self.source_dir}/", f"{self.target_dir}/"],
+            [
+                "rsync",
+                "-a",
+                "--delete",
+                *self.rsync_extra_args,
+                f"{self.source_dir}/",
+                f"{self.target_dir}/",
+            ],
             check=True,
         )
         print(f"OK: {self.target_dir} restored from {self.source_dir}")

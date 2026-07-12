@@ -28,18 +28,21 @@ class NfsBackupScriptTests(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def _run(self, source=None, generation=None):
+    def _run(self, source=None, generation=None, exclude=None):
         env = os.environ.copy()
         if generation is not None:
             env["BKP_NFS_2_LOCAL_GENERATION"] = generation
+        cmd = [
+            "bash",
+            str(SCRIPT),
+            str(source or self.source),
+            str(self.backups),
+            REPO_NAME,
+        ]
+        if exclude is not None:
+            cmd.append(exclude)
         return subprocess.run(
-            [
-                "bash",
-                str(SCRIPT),
-                str(source or self.source),
-                str(self.backups),
-                REPO_NAME,
-            ],
+            cmd,
             capture_output=True,
             text=True,
             check=False,
@@ -109,6 +112,31 @@ class NfsBackupScriptTests(unittest.TestCase):
         machine_dirs = list(self.backups.iterdir())
         if machine_dirs:
             self.assertEqual(list((machine_dirs[0] / REPO_NAME).iterdir()), [])
+
+    def test_exclude_is_anchored_and_survives_link_dest(self):
+        shared = self.source / "infinito-state" / "backup" / "hash" / "repo"
+        shared.mkdir(parents=True)
+        (shared / "dump.sql").write_text("secret")
+        decoy = self.source / "app" / "infinito-state" / "backup"
+        decoy.mkdir(parents=True)
+        (decoy / "decoy.txt").write_text("decoy")
+        (self.source / "infinito-state" / "state.txt").write_text("state")
+
+        exclude = "infinito-state/backup"
+        self.assertEqual(
+            self._run(generation="20240101000000", exclude=exclude).returncode, 0
+        )
+        self.assertEqual(
+            self._run(generation="20240101000001", exclude=exclude).returncode, 0
+        )
+
+        for generation in self._generations():
+            files = generation / "files"
+            self.assertFalse((files / "infinito-state" / "backup").exists())
+            self.assertTrue((files / "infinito-state" / "state.txt").is_file())
+            self.assertTrue(
+                (files / "app" / "infinito-state" / "backup" / "decoy.txt").is_file()
+            )
 
     def test_deleted_file_vanishes_only_from_new_generation(self):
         (self.source / "keep.txt").write_text("keep")

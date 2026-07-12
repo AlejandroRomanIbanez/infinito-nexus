@@ -6,15 +6,19 @@
 #   $1 SOURCE_DIR   NFS export base to back up
 #   $2 BACKUPS_DIR  local backup root
 #   $3 REPO_NAME    repository directory name inside the machine hash dir
+#   $4 EXCLUDE_REL  optional path relative to SOURCE_DIR to exclude
+#                   (the shared backup root inside the export; without it
+#                   every generation snapshots all previous backups)
 #
 # Environment:
 #   BKP_NFS_2_LOCAL_GENERATION  optional generation name override
 #                               (defaults to the current timestamp)
 set -euo pipefail
 
-SOURCE_DIR="${1:?usage: script.sh SOURCE_DIR BACKUPS_DIR REPO_NAME}"
-BACKUPS_DIR="${2:?usage: script.sh SOURCE_DIR BACKUPS_DIR REPO_NAME}"
-REPO_NAME="${3:?usage: script.sh SOURCE_DIR BACKUPS_DIR REPO_NAME}"
+SOURCE_DIR="${1:?usage: script.sh SOURCE_DIR BACKUPS_DIR REPO_NAME [EXCLUDE_REL]}"
+BACKUPS_DIR="${2:?usage: script.sh SOURCE_DIR BACKUPS_DIR REPO_NAME [EXCLUDE_REL]}"
+REPO_NAME="${3:?usage: script.sh SOURCE_DIR BACKUPS_DIR REPO_NAME [EXCLUDE_REL]}"
+EXCLUDE_REL="${4:-}"
 
 if [[ ! -d "${SOURCE_DIR}" ]]; then
     echo "ERROR: ${SOURCE_DIR} missing; this host is expected to serve the NFS export" >&2
@@ -42,6 +46,9 @@ trap cleanup_failed_generation ERR
 mkdir -p "${DEST_DIR}"
 
 rsync_args=(-a --delete)
+if [[ -n "${EXCLUDE_REL}" ]]; then
+    rsync_args+=(--exclude "/${EXCLUDE_REL#/}")
+fi
 if [[ -n "${PREVIOUS_FILES}" ]]; then
     rsync_args+=(--link-dest "${PREVIOUS_FILES}")
 fi

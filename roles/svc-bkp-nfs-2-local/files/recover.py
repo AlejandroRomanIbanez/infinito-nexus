@@ -21,10 +21,15 @@ _REPO_ROOT = Path(__file__).resolve().parents[3]  # nocheck: project-root-import
 sys.path.insert(0, str(_REPO_ROOT))
 
 from utils.recovery.base import DirectoryRecovery  # noqa: E402
+from utils.storage.nfs import STATE_SUBDIR  # noqa: E402
 
 
 class NfsExportRecovery(DirectoryRecovery):
     unit_pattern = "svc-bkp-nfs-2-local*.service"
+    rsync_extra_args = (
+        f"--filter=protect /{STATE_SUBDIR}/backup",
+        f"--exclude=/{STATE_SUBDIR}/backup",
+    )
 
 
 def main() -> int:
