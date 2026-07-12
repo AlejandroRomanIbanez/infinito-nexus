@@ -11,4 +11,6 @@ RUN apt-get update -qq && \
         dnsmasq python3 openssh-server openssh-client rsync cryptsetup e2fsprogs && \
     rm -rf /var/lib/apt/lists/* && \
     systemctl mask systemd-resolved && \
-    systemctl enable ssh
+    systemctl enable ssh && \
+    rm -f /var/lib/dbus/machine-id && \
+    truncate -s 0 /etc/machine-id
