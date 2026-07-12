@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # nocheck: raw-docker
-# svc-runner checks: container health, DooD socket, and (sync pass only) a full
-# nested web-app-dashboard deploy in a sealed throwaway dockerd. No GitHub/GHCR.
+# svc-runner checks: container health, DooD socket, and (sync pass only) a
+# variant-0 nested web-app-dashboard deploy in a sealed throwaway dockerd.
+# No GitHub/GHCR.
 set -euo pipefail
 
 fail_count=0
@@ -51,7 +52,7 @@ if ! container exec "${RUNNER_PROJECT_PREFIX}-1" bash -c '
     INFINITO_INVENTORY_DIR=/tmp/runner-dind-inventory \
     INFINITO_IMAGE="$img" INFINITO_BUILD=0 INFINITO_PULL_POLICY=never \
     make compose-deploy mode=reinstall type=server \
-        apps=web-app-dashboard \
+        apps=web-app-dashboard variant=0 \
         disable=matomo,sso,asset,simpleicons,logout,css,prometheus
 '; then
     echo "FAIL: local full reinstall deploy failed"

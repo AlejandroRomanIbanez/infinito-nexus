@@ -182,6 +182,7 @@ ROLE_FILE_META_VOLUMES = "meta/volumes.yml"
 ROLE_FILE_META_SCHEMA = "meta/schema.yml"
 ROLE_FILE_META_INFO = "meta/info.yml"
 ROLE_FILE_META_USERS = "meta/users.yml"
+ROLE_FILE_META_TESTS = "meta/tests.yml"
 
 ROLE_DIR_META_ADDONS = "meta/addons"
 
