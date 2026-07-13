@@ -192,6 +192,40 @@ def build_service_registry_from_roles_dir(
     )
 
 
+def expand_service_tokens(tokens: list[str], roles_dir: Path) -> list[str]:
+    """Normalize service reference tokens so a caller may name either the
+    service/entity key (e.g. ``email``, ``prometheus``) or the provider
+    application id (e.g. ``web-app-mailu``, ``web-app-prometheus``).
+
+    An application id is expanded to the service key(s) that role provides;
+    every other token is kept verbatim. Order-preserving, de-duplicated.
+    Used wherever the operator supplies service references (``disable``,
+    include/prune closures) so both spellings resolve identically.
+    """
+    if not tokens:
+        return []
+    try:
+        registry = build_service_registry_from_roles_dir(roles_dir)
+    except Exception:  # noqa: BLE001 - normalization must never crash a caller; fall back to the raw tokens
+        return list(dict.fromkeys(tokens))
+
+    role_to_keys: dict[str, list[str]] = {}
+    for key, entry in registry.items():
+        role = (entry or {}).get("role")
+        if isinstance(role, str) and role:
+            role_to_keys.setdefault(role, []).append(key)
+
+    out: list[str] = []
+    for token in tokens:
+        if token in registry:
+            out.append(token)
+        elif token in role_to_keys:
+            out.extend(role_to_keys[token])
+        else:
+            out.append(token)
+    return list(dict.fromkeys(out))
+
+
 def build_role_to_primary_service_key(
     service_registry: dict[str, dict[str, Any]],
 ) -> dict[str, str]:

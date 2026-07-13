@@ -140,7 +140,36 @@ def derive_includes(app_id: str) -> list[str]:
         service_registry=service_registry,
     )
     found = set(transitive) | set(_EXPLICIT_INCLUDES) | {app_id}
+    found -= _disabled_provider_roles(service_registry) - {app_id}
     return sorted(found)
+
+
+def _disabled_provider_roles(service_registry: dict[str, Any]) -> set[str]:
+    """Provider roles the ``disable`` env removes from the closure, so the
+    swarm include set matches what the provision-time services_disabler
+    disables (otherwise extend_inventory re-adds the pruned providers via
+    this same dep walk). Accepts service keys and provider application ids.
+    """
+    from utils.roles.applications.services.registry import (
+        canonical_service_key,
+        expand_service_tokens,
+    )
+
+    raw = os.environ.get("disable", "").strip()
+    if not raw:
+        return set()
+    tokens = expand_service_tokens(
+        [t.strip() for t in raw.replace(",", " ").split() if t.strip()], _ROLES_DIR
+    )
+    roles: set[str] = set()
+    for token in tokens:
+        if token not in service_registry:
+            continue
+        primary = canonical_service_key(service_registry, token)
+        role = (service_registry.get(primary) or {}).get("role")
+        if isinstance(role, str) and role:
+            roles.add(role)
+    return roles
 
 
 def main() -> int:
