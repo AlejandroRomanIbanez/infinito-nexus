@@ -186,6 +186,7 @@ class LookupModule(LookupBase):
     Usage:
       lookup('service', 'matomo')
       lookup('service', 'web-app-matomo')   # resolved via reverse mapping
+      query('service', ['a', 'b', 'c'])     # single list term -> one applications load for many keys
 
     A term unknown to the play-local registry (no app in the play declares
     it) falls back to the role-wide static registry read from roles_dir,
@@ -226,6 +227,9 @@ class LookupModule(LookupBase):
     ) -> list[dict[str, Any]]:
         if not terms:
             return []
+
+        if len(terms) == 1 and isinstance(terms[0], (list, tuple)):
+            terms = list(terms[0])
 
         vars_ = variables or getattr(self._templar, "available_variables", {}) or {}
 

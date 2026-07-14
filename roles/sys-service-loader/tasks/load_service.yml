@@ -1,16 +1,6 @@
 ---
-- name: "🔌 Load {{ service_key }} in shared service preload context"
-  block:
-    - name: "▶️ Run shared service preload for {{ service_key }}"
-      include_tasks: preload_service.yml
-      when:
-        - lookup('vars', service_run_once_var, default='__missing__') == '__missing__'
-        - >-
-          (lookup('service', service_key,
-                  roles_dir=lookup('path_absolute', 'roles')).required | bool)
-          or (service_role in group_names)
-  always:
-    - name: "🧹 Clear shared service preload context for {{ service_key }}"
-      ansible.builtin.set_fact:
-        service_loader_preloading: false
-      changed_when: false
+- name: "▶️ Run shared service preload for {{ service_key }}"
+  include_tasks: preload_service.yml
+  when:
+    - lookup('vars', service_run_once_var, default='__missing__') == '__missing__'
+    - (service_key in _required_service_ids) or (service_role in group_names)

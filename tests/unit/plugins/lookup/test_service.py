@@ -117,6 +117,18 @@ class TestServiceDirect(unittest.TestCase):
         self.assertFalse(results[1]["required"])
         self.assertFalse(results[2]["required"])
 
+    def test_single_list_term_is_flattened(self):
+        results = _run(
+            [["matomo", "cdn", "logout"]],
+            self.applications,
+            ["web-app-foo"],
+            service_registry=_SERVICE_REGISTRY,
+        )
+        self.assertEqual(len(results), 3)
+        self.assertTrue(results[0]["required"])
+        self.assertFalse(results[1]["required"])
+        self.assertFalse(results[2]["required"])
+
     def test_local_true_when_enabled_and_not_shared(self):
         self.assertTrue(self._get("cdn")["local"])
 

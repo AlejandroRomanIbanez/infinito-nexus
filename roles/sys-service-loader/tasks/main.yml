@@ -26,6 +26,20 @@
         ) | first
       }}
 
+- name: "🔍 Precompute required shared services (single applications load)"
+  ansible.builtin.set_fact:
+    _required_service_ids: >-
+      {{
+        query(
+          'service',
+          (_ordered_services | map(attribute='id') | list),
+          roles_dir=(lookup('path_absolute', 'roles'))
+        )
+        | selectattr('required')
+        | map(attribute='id')
+        | list
+      }}
+
 - name: "🔌 Load shared service"
   include_tasks: load_service.yml
   vars:

@@ -14,3 +14,8 @@
 
 - name: "🚿 Flush handlers after loading {{ service_key }}"
   meta: flush_handlers
+
+- name: "🧹 Clear shared service preload context for {{ service_key }}"
+  ansible.builtin.set_fact:
+    service_loader_preloading: false
+  changed_when: false
