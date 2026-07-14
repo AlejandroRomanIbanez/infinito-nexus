@@ -12,6 +12,8 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
+from utils.paths import DIR_SECRETS
+
 from . import PROJECT_ROOT
 
 RECOVER = PROJECT_ROOT / "roles" / "svc-bkp-secrets-2-local" / "files" / "recover.py"
@@ -37,7 +39,7 @@ class SecretsRecoverTests(unittest.TestCase):
 
     def test_targets_map_uses_domain_for_ca(self):
         targets = _load()._targets("example")
-        self.assertEqual(targets["secrets"], "/var/lib/infinito/secrets")
+        self.assertEqual(targets["secrets"], str(DIR_SECRETS))
         self.assertEqual(targets["ca"], "/etc/example/ca")
         self.assertEqual(targets["acme"], "/etc/letsencrypt")
         self.assertEqual(targets["certbot"], "/etc/certbot")

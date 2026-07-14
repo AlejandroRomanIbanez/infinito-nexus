@@ -35,6 +35,7 @@ from cli.meta.runtime import detect_runtime
 from utils import PROJECT_ROOT
 from utils.cache.yaml import dump_yaml, load_yaml
 from utils.env.parser import parse_static_env
+from utils.paths import DIR_BACKUPS
 
 _DEFAULT_INVENTORY = PROJECT_ROOT / "inventories" / "development" / "default.yml"
 
@@ -63,7 +64,7 @@ def backup_applications_overrides(mgr_ip: str, nfs_ip: str) -> dict:
                 "local-2-device": {
                     "mount": "/mnt/backup-to-device",
                     "target": "/infinito",
-                    "source": "/var/lib/infinito/backup",
+                    "source": str(DIR_BACKUPS),
                 },
             },
         },

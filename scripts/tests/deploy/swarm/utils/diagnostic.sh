@@ -15,6 +15,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 EXEC_NODE="${SCRIPT_DIR}/../../act/exec_node.sh"
+REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../../.." && pwd)"
+DIR_VAR_LIB="$(PYTHONPATH="${REPO_ROOT}" python3 -c 'from utils.paths import DIR_VAR_LIB; print(DIR_VAR_LIB)')"
 
 CLUSTER="${SWARM_NAME:?SWARM_NAME=<cluster-id> required}"
 UNIT_GLOB="${unit:-svc-bkp-*}"
@@ -38,13 +40,13 @@ for u in \$(systemctl list-units --type=service --all --no-legend '${UNIT_GLOB}'
   journalctl -u "\$u" --no-pager -n 60 2>/dev/null | tail -60
 done
 echo "### NFS mounts"
-mount 2>/dev/null | grep -iE 'nfs|/var/lib/infinito' || echo '(none)'
+mount 2>/dev/null | grep -iE 'nfs|${DIR_VAR_LIB}' || echo '(none)'
 echo "### D-state processes (uninterruptible; often a wedged NFS mount)"
 ps -eo stat,pid,comm,args 2>/dev/null | awk '\$1 ~ /^D/' || true
 echo "### rsync / baudolo / db-dump processes"
 ps -eo pid,etime,stat,args 2>/dev/null | grep -iE 'rsync|baudolo|mariadb-dump|pg_dump' | grep -v grep || echo '(none)'
 echo "### disk"
-df -h /var/lib/infinito 2>/dev/null || df -h /
+df -h '${DIR_VAR_LIB}' 2>/dev/null || df -h /
 PROBE_EOF
 
 B64="$(printf '%s' "${PROBE}" | base64 | tr -d '\n')"

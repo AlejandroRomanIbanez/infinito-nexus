@@ -12,6 +12,8 @@ from . import (
     github_repository_owner,
     infinito_ca_cert_host,
     infinito_container,
+    infinito_dir_backups,
+    infinito_dir_secrets,
     infinito_dir_var_lib,
     infinito_docker_volume,
     infinito_image,
@@ -43,6 +45,8 @@ from . import (
 ORDERED_HANDLERS = [
     passthrough,
     infinito_dir_var_lib,
+    infinito_dir_backups,
+    infinito_dir_secrets,
     infinito_rescue_diagnostics_dir,
     infinito_swarm_nfs_export_base,
     infinito_swarm_nfs_state_path,

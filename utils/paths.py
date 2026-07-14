@@ -64,6 +64,7 @@ def _dir_var_lib() -> str:
 
 
 DIR_VAR_LIB = Path(_dir_var_lib())
+DIR_BACKUPS = DIR_VAR_LIB / "backup"
 DIR_SECRETS = DIR_VAR_LIB / "secrets"
 FILE_TOKENS = DIR_SECRETS / "tokens.yml"
 FILE_DATABASE_SECRETS = DIR_SECRETS / "databases.csv"

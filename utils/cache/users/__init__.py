@@ -216,23 +216,26 @@ def _resolve_tokens_file(variables: Mapping[str, Any] | None) -> Path:
     variables = variables or {}
     _add_candidate(variables.get("FILE_TOKENS"))
 
+    tokens_name = _base.DEFAULT_TOKENS_FILE.name
+    secrets_name = _base.DEFAULT_TOKENS_FILE.parent.name
+
     dir_secrets = variables.get("DIR_SECRETS")
     if dir_secrets:
-        _add_candidate(Path(str(dir_secrets)) / "tokens.yml")
+        _add_candidate(Path(str(dir_secrets)) / tokens_name)
 
     dir_var_lib = variables.get("DIR_VAR_LIB")
     if dir_var_lib:
-        _add_candidate(Path(str(dir_var_lib)) / "secrets" / "tokens.yml")
+        _add_candidate(Path(str(dir_var_lib)) / secrets_name / tokens_name)
 
     _add_candidate(os.environ.get("FILE_TOKENS"))
 
     env_dir_secrets = os.environ.get("DIR_SECRETS")
     if env_dir_secrets:
-        _add_candidate(Path(env_dir_secrets) / "tokens.yml")
+        _add_candidate(Path(env_dir_secrets) / tokens_name)
 
     env_dir_var_lib = os.environ.get("DIR_VAR_LIB")
     if env_dir_var_lib:
-        _add_candidate(Path(env_dir_var_lib) / "secrets" / "tokens.yml")
+        _add_candidate(Path(env_dir_var_lib) / secrets_name / tokens_name)
 
     candidates.append(_base.DEFAULT_TOKENS_FILE)
 

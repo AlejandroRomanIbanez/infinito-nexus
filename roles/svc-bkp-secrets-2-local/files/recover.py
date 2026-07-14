@@ -27,6 +27,7 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parents[3]  # nocheck: project-root-import
 sys.path.insert(0, str(_REPO_ROOT))
 
+from utils.paths import DIR_SECRETS  # noqa: E402
 from utils.recovery.base import DirectoryRecovery  # noqa: E402
 
 
@@ -46,7 +47,7 @@ def _software_domain() -> str:
 
 def _targets(domain: str) -> dict[str, str]:
     return {
-        "secrets": "/var/lib/infinito/secrets",
+        "secrets": str(DIR_SECRETS),
         "ca": f"/etc/{domain}/ca",
         "acme": "/etc/letsencrypt",
         "certbot": "/etc/certbot",

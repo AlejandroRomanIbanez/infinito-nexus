@@ -10,13 +10,14 @@
 # multi-node swarm DR drill covers the real backup->recover chain).
 #
 # Destructive: nfs/secrets recover with `rsync --delete` into the live system
-# paths (/srv/nfs/infinito-state, /var/lib/infinito/secrets), so this must be
-# the last step before teardown and only ever inside the disposable CI
-# container -- never on a host whose state matters.
+# paths, so this must be the last step before teardown and only ever inside
+# the disposable CI container -- never on a host whose state matters.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
+DIR_SECRETS="$(PYTHONPATH="${REPO}" python3 -c 'from utils.paths import DIR_SECRETS; print(DIR_SECRETS)')"
+NFS_STATE="$(PYTHONPATH="${REPO}" python3 -c 'from cli.administration.recover.paths import NFS_EXPORT_STATE; print(NFS_EXPORT_STATE)')"
 VOL="recoverdrill_data"
 TOKEN="compose-recover-drill"
 MARKER=".recoverdrill-marker"
@@ -34,7 +35,7 @@ fi
 echo "==> [1/3] seed backup root + docker volume"
 rm -rf "${ROOT}"
 mkdir -p "${NFS_FILES}" "${SEC_FILES}" "${VOL_FILES}" \
-	/srv/nfs/infinito-state /var/lib/infinito/secrets
+	"${NFS_STATE}" "${DIR_SECRETS}"
 printf '%s' "${TOKEN}" >"${NFS_FILES}/${MARKER}"
 printf '%s' "${TOKEN}" >"${SEC_FILES}/${MARKER}"
 printf '%s' "${TOKEN}" >"${VOL_FILES}/${MARKER}"
@@ -46,12 +47,12 @@ PYTHONPATH="${REPO}" python3 -m cli.administration.recover \
 	full "${ROOT}" localhost --no-safety-backup
 
 echo "==> [3/3] verify restored markers"
-grep -qF "${TOKEN}" "/srv/nfs/infinito-state/${MARKER}"
-echo "    OK nfs marker restored to /srv/nfs/infinito-state"
+grep -qF "${TOKEN}" "${NFS_STATE}/${MARKER}"
+echo "    OK nfs marker restored to ${NFS_STATE}"
 grep -qF "${TOKEN}" "/var/lib/docker/volumes/${VOL}/_data/${MARKER}"
 echo "    OK volume marker restored to docker volume ${VOL}"
-grep -qF "${TOKEN}" "/var/lib/infinito/secrets/${MARKER}"
-echo "    OK secrets marker restored to /var/lib/infinito/secrets"
+grep -qF "${TOKEN}" "${DIR_SECRETS}/${MARKER}"
+echo "    OK secrets marker restored to ${DIR_SECRETS}"
 
 docker volume rm -f "${VOL}" >/dev/null 2>&1 || true
 echo "==> compose recover drill PASSED (full: nfs -> volume -> secrets)"
