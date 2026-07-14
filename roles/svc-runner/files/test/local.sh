@@ -5,6 +5,8 @@
 # No GitHub/GHCR.
 set -euo pipefail
 
+export CONTAINER_EXEC_TIMEOUT=3h
+
 fail_count=0
 
 echo "DinD mode: verifying runner containers started..."
