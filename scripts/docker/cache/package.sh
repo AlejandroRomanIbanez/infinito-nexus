@@ -9,8 +9,10 @@ set -euo pipefail
 : "${INFINITO_CACHE_PACKAGE_ADMIN_PASSWORD:?Source scripts/meta/env/load.sh first}"
 : "${INFINITO_CACHE_PACKAGE_BLOBSTORE_MAX:?Source scripts/meta/env/load.sh first}"
 : "${INFINITO_CACHE_PACKAGE_MAX_AGE_MIN:?Source scripts/meta/env/load.sh first}"
+: "${INFINITO_CACHE_PACKAGE_METADATA_MAX_AGE_MIN:?Source scripts/meta/env/load.sh first}"
 
-CACHE_MAX_AGE_MIN="${INFINITO_CACHE_PACKAGE_MAX_AGE_MIN}"
+CACHE_CONTENT_MAX_AGE_MIN="${INFINITO_CACHE_PACKAGE_MAX_AGE_MIN}"
+CACHE_METADATA_MAX_AGE_MIN="${INFINITO_CACHE_PACKAGE_METADATA_MAX_AGE_MIN}"
 
 PKGCACHE_CONTAINER="infinito-package-cache"
 NEXUS_REST="http://127.0.0.1:8081/service/rest"
@@ -101,7 +103,20 @@ ensure_proxy_repo() {
 		--data "${payload}" || true)"
 	case "${code}" in
 	201 | 204) log "${format} proxy ${name} created (HTTP ${code})" ;;
-	400 | 409) log "${format} proxy ${name} already exists (HTTP ${code})" ;;
+	400 | 409)
+		code="$(nexus_curl -sS -o /dev/null -w '%{http_code}' \
+			-u "${ADMIN_USER}:${ADMIN_PASS}" \
+			-H "Content-Type: application/json" \
+			-X PUT "${NEXUS_REST}/v1/repositories/${format}/proxy/${name}" \
+			--data "${payload}" || true)"
+		case "${code}" in
+		200 | 204) log "${format} proxy ${name} updated (HTTP ${code})" ;;
+		*)
+			log "unexpected HTTP ${code} updating ${format} proxy ${name}"
+			return 1
+			;;
+		esac
+		;;
 	*)
 		log "unexpected HTTP ${code} creating ${format} proxy ${name}"
 		return 1
@@ -110,23 +125,23 @@ ensure_proxy_repo() {
 }
 
 ensure_all_proxies() {
-	local storage='"storage":{"blobStoreName":"default","strictContentTypeValidation":true},"proxy":{"contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'},"negativeCache":{"enabled":true,"timeToLive":'"${CACHE_MAX_AGE_MIN}"'},"httpClient":{"blocked":false,"autoBlock":true}'
+	local storage='"storage":{"blobStoreName":"default","strictContentTypeValidation":true},"proxy":{"contentMaxAge":'"${CACHE_CONTENT_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'},"negativeCache":{"enabled":true,"timeToLive":'"${CACHE_METADATA_MAX_AGE_MIN}"'},"httpClient":{"blocked":false,"autoBlock":true}'
 
-	ensure_proxy_repo apt apt-debian "$(printf '{"name":"apt-debian","online":true,%s,"proxy":{"remoteUrl":"http://deb.debian.org/debian","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'},"apt":{"distribution":"bookworm","flat":false}}' "${storage}")"
-	ensure_proxy_repo apt apt-ubuntu "$(printf '{"name":"apt-ubuntu","online":true,%s,"proxy":{"remoteUrl":"http://archive.ubuntu.com/ubuntu","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'},"apt":{"distribution":"jammy","flat":false}}' "${storage}")"
-	ensure_proxy_repo apt apt-debian-security "$(printf '{"name":"apt-debian-security","online":true,%s,"proxy":{"remoteUrl":"http://deb.debian.org/debian-security","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'},"apt":{"distribution":"bookworm-security","flat":false}}' "${storage}")" # nocheck: url (bare GET on the deb.debian.org redirector returns 404; apt-client paths underneath dists/bookworm-security/ resolve correctly)
-	ensure_proxy_repo apt apt-ubuntu-security "$(printf '{"name":"apt-ubuntu-security","online":true,%s,"proxy":{"remoteUrl":"http://security.ubuntu.com/ubuntu","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'},"apt":{"distribution":"jammy-security","flat":false}}' "${storage}")"
-	ensure_proxy_repo pypi pypi-proxy "$(printf '{"name":"pypi-proxy","online":true,%s,"proxy":{"remoteUrl":"https://pypi.org/","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'}}' "${storage}")"
-	ensure_proxy_repo npm npm-proxy "$(printf '{"name":"npm-proxy","online":true,%s,"proxy":{"remoteUrl":"https://registry.npmjs.org/","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'}}' "${storage}")"
-	ensure_proxy_repo helm helm-bitnami "$(printf '{"name":"helm-bitnami","online":true,%s,"proxy":{"remoteUrl":"https://charts.bitnami.com/bitnami","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'}}' "${storage}")"
-	ensure_proxy_repo raw raw-githubusercontent "$(printf '{"name":"raw-githubusercontent","online":true,%s,"proxy":{"remoteUrl":"https://raw.githubusercontent.com/","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'},"raw":{"contentDisposition":"ATTACHMENT"}}' "${storage}")"
-	ensure_proxy_repo raw raw-codeload-github "$(printf '{"name":"raw-codeload-github","online":true,%s,"proxy":{"remoteUrl":"https://codeload.github.com/","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'},"raw":{"contentDisposition":"ATTACHMENT"}}' "${storage}")"
-	ensure_proxy_repo rubygems gem-proxy "$(printf '{"name":"gem-proxy","online":true,%s,"proxy":{"remoteUrl":"https://rubygems.org/","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'}}' "${storage}")"
-	ensure_proxy_repo go go-proxy "$(printf '{"name":"go-proxy","online":true,%s,"proxy":{"remoteUrl":"https://proxy.golang.org/","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'}}' "${storage}")"
-	ensure_proxy_repo yum yum-rocky "$(printf '{"name":"yum-rocky","online":true,%s,"proxy":{"remoteUrl":"https://download.rockylinux.org/pub/rocky/","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'},"yum":{"repodataDepth":5}}' "${storage}")"
-	ensure_proxy_repo yum yum-fedora "$(printf '{"name":"yum-fedora","online":true,%s,"proxy":{"remoteUrl":"https://dl.fedoraproject.org/pub/fedora/linux/","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'},"yum":{"repodataDepth":5}}' "${storage}")"
-	ensure_proxy_repo raw raw-packagist "$(printf '{"name":"raw-packagist","online":true,%s,"proxy":{"remoteUrl":"https://repo.packagist.org/","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'},"raw":{"contentDisposition":"ATTACHMENT"}}' "${storage}")" # nocheck: url
-	ensure_proxy_repo raw raw-alpine "$(printf '{"name":"raw-alpine","online":true,%s,"proxy":{"remoteUrl":"https://dl-cdn.alpinelinux.org/alpine/","contentMaxAge":'"${CACHE_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_MAX_AGE_MIN}"'},"raw":{"contentDisposition":"ATTACHMENT"}}' "${storage}")"
+	ensure_proxy_repo apt apt-debian "$(printf '{"name":"apt-debian","online":true,%s,"proxy":{"remoteUrl":"http://deb.debian.org/debian","contentMaxAge":'"${CACHE_CONTENT_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'},"apt":{"distribution":"bookworm","flat":false}}' "${storage}")"
+	ensure_proxy_repo apt apt-ubuntu "$(printf '{"name":"apt-ubuntu","online":true,%s,"proxy":{"remoteUrl":"http://archive.ubuntu.com/ubuntu","contentMaxAge":'"${CACHE_CONTENT_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'},"apt":{"distribution":"jammy","flat":false}}' "${storage}")"
+	ensure_proxy_repo apt apt-debian-security "$(printf '{"name":"apt-debian-security","online":true,%s,"proxy":{"remoteUrl":"http://deb.debian.org/debian-security","contentMaxAge":'"${CACHE_CONTENT_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'},"apt":{"distribution":"bookworm-security","flat":false}}' "${storage}")" # nocheck: url (bare GET on the deb.debian.org redirector returns 404; apt-client paths underneath dists/bookworm-security/ resolve correctly)
+	ensure_proxy_repo apt apt-ubuntu-security "$(printf '{"name":"apt-ubuntu-security","online":true,%s,"proxy":{"remoteUrl":"http://security.ubuntu.com/ubuntu","contentMaxAge":'"${CACHE_CONTENT_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'},"apt":{"distribution":"jammy-security","flat":false}}' "${storage}")"
+	ensure_proxy_repo pypi pypi-proxy "$(printf '{"name":"pypi-proxy","online":true,%s,"proxy":{"remoteUrl":"https://pypi.org/","contentMaxAge":'"${CACHE_CONTENT_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'}}' "${storage}")"
+	ensure_proxy_repo npm npm-proxy "$(printf '{"name":"npm-proxy","online":true,%s,"proxy":{"remoteUrl":"https://registry.npmjs.org/","contentMaxAge":'"${CACHE_CONTENT_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'}}' "${storage}")"
+	ensure_proxy_repo helm helm-bitnami "$(printf '{"name":"helm-bitnami","online":true,%s,"proxy":{"remoteUrl":"https://charts.bitnami.com/bitnami","contentMaxAge":'"${CACHE_CONTENT_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'}}' "${storage}")"
+	ensure_proxy_repo raw raw-githubusercontent "$(printf '{"name":"raw-githubusercontent","online":true,%s,"proxy":{"remoteUrl":"https://raw.githubusercontent.com/","contentMaxAge":'"${CACHE_CONTENT_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'},"raw":{"contentDisposition":"ATTACHMENT"}}' "${storage}")"
+	ensure_proxy_repo raw raw-codeload-github "$(printf '{"name":"raw-codeload-github","online":true,%s,"proxy":{"remoteUrl":"https://codeload.github.com/","contentMaxAge":'"${CACHE_CONTENT_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'},"raw":{"contentDisposition":"ATTACHMENT"}}' "${storage}")"
+	ensure_proxy_repo rubygems gem-proxy "$(printf '{"name":"gem-proxy","online":true,%s,"proxy":{"remoteUrl":"https://rubygems.org/","contentMaxAge":'"${CACHE_CONTENT_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'}}' "${storage}")"
+	ensure_proxy_repo go go-proxy "$(printf '{"name":"go-proxy","online":true,%s,"proxy":{"remoteUrl":"https://proxy.golang.org/","contentMaxAge":'"${CACHE_CONTENT_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'}}' "${storage}")"
+	ensure_proxy_repo yum yum-rocky "$(printf '{"name":"yum-rocky","online":true,%s,"proxy":{"remoteUrl":"https://download.rockylinux.org/pub/rocky/","contentMaxAge":'"${CACHE_CONTENT_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'},"yum":{"repodataDepth":5}}' "${storage}")"
+	ensure_proxy_repo yum yum-fedora "$(printf '{"name":"yum-fedora","online":true,%s,"proxy":{"remoteUrl":"https://dl.fedoraproject.org/pub/fedora/linux/","contentMaxAge":'"${CACHE_CONTENT_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'},"yum":{"repodataDepth":5}}' "${storage}")"
+	ensure_proxy_repo raw raw-packagist "$(printf '{"name":"raw-packagist","online":true,%s,"proxy":{"remoteUrl":"https://repo.packagist.org/","contentMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'},"raw":{"contentDisposition":"ATTACHMENT"}}' "${storage}")" # nocheck: url
+	ensure_proxy_repo raw raw-alpine "$(printf '{"name":"raw-alpine","online":true,%s,"proxy":{"remoteUrl":"https://dl-cdn.alpinelinux.org/alpine/","contentMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"',"metadataMaxAge":'"${CACHE_METADATA_MAX_AGE_MIN}"'},"raw":{"contentDisposition":"ATTACHMENT"}}' "${storage}")"
 }
 
 ensure_eula_accepted() {
