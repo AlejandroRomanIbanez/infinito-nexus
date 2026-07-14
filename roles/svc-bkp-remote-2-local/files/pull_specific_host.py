@@ -111,7 +111,7 @@ def pull_backups(hostname: str, backups_dir: str) -> None:
         Path(local_backup_destination_path).mkdir(parents=True, exist_ok=True)
 
         rsync_command = (
-            f"rsync -abP --delete --delete-excluded "
+            f"rsync -abP --numeric-ids --delete --delete-excluded "
             f'--rsync-path="sudo rsync" '
             f'--link-dest="{local_previous_version_dir}" '
             f'"{remote_source_path}" "{local_backup_destination_path}"'

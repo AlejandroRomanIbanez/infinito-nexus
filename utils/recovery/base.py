@@ -88,6 +88,7 @@ class DirectoryRecovery(ABC):
             [
                 "rsync",
                 "-a",
+                "--numeric-ids",
                 "--delete",
                 *self.rsync_extra_args,
                 f"{self.source_dir}/",
