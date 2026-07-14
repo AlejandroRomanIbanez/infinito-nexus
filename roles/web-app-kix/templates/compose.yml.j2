@@ -11,6 +11,8 @@
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_volumes', application_id, KIX_BACKEND_SERVICE) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
+    healthcheck:
+      start_period: {{ container_healthcheck_start_period }}
 
   {% set service_name = KIX_FRONTEND_SERVICE %}
   {{ service_name }}:
@@ -31,6 +33,8 @@
       - BACKEND_API_URL=http://{{ KIX_BACKEND_SERVICE }}:{{ KIX_BACKEND_INTERNAL_PORT }}/api/v1
     {{ lookup('container_volumes', application_id, KIX_FRONTEND_SERVICE) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
+    healthcheck:
+      start_period: {{ container_healthcheck_start_period }}
 
   {% set service_name = KIX_PROXY_SERVICE %}
   {{ service_name }}:
