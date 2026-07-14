@@ -1,5 +1,5 @@
 ---
-- name: "🩹 Patch EspoCRM DB config key '{{ item.key }}' (idempotent)"
+- name: "🩹 Patch EspoCRM DB config key (idempotent)"
   ansible.builtin.shell:
     cmd: >-
       container exec -i --user root
@@ -13,6 +13,8 @@
     - { key: dbname, value: "{{ lookup('database', application_id, 'name') }}" }
     - { key: user, value: "{{ lookup('database', application_id, 'username') }}" }
     - { key: password, value: "{{ lookup('database', application_id, 'password') }}" }
+  loop_control:
+    label: "{{ item.key }}"
   register: db_patch
   changed_when: "'CHANGED' in db_patch.stdout"
   notify: compose up
