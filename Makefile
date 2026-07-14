@@ -484,6 +484,10 @@ quality:
 	@"$(MAKE)" autoformat
 	@"$(MAKE)" test
 
+.PHONY: quality-high
+# Full gate: quality (autoformat + test) followed by every lint check.
+quality-high: quality lint
+
 .PHONY: requirements-archive
 # Archive fully-checked requirement files via pkgmgr (installs kpmx if missing).
 requirements-archive:

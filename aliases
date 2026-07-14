@@ -74,6 +74,7 @@ alias i8nive='m install-venv'
 alias i8on='m onboard'
 alias i8pi='pcd infinito' # cd to the infinito repo
 alias i8qu='m quality'
+alias i8quhi='m quality-high'
 alias i8re='m requirements-archive'
 alias i8ro='m roundtrip'
 alias i8ru='m runner-ci-deploy'
