@@ -3,13 +3,18 @@ from __future__ import annotations
 import re
 from pathlib import PurePosixPath
 
+from utils import PROJECT_ROOT
 from utils.cache.files import read_text
 from utils.roles.mapping import ROLE_FILE_META_SERVICES
 
 STATE_SUBDIR = "infinito-state"
 
-NFS_SERVER_SERVICES_YML = f"roles/svc-storage-nfs-server/{ROLE_FILE_META_SERVICES}"
-NFS_CLIENT_SERVICES_YML = f"roles/svc-storage-nfs-client/{ROLE_FILE_META_SERVICES}"
+NFS_SERVER_SERVICES_YML = str(
+    PROJECT_ROOT / "roles" / "svc-storage-nfs-server" / ROLE_FILE_META_SERVICES
+)
+NFS_CLIENT_SERVICES_YML = str(
+    PROJECT_ROOT / "roles" / "svc-storage-nfs-client" / ROLE_FILE_META_SERVICES
+)
 
 
 def _read_spot_value(services_yml: str, key: str) -> str:
