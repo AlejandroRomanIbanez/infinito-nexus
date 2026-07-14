@@ -73,7 +73,7 @@ recover.py <backups>/<machine-hash>/backup-docker-to-local/<generation>/<volume>
 ```
 
 1. Stop the consuming project (`docker compose down` / `docker stack rm <stack>`).
-2. Run the script; it first starts the role's deployed backup unit (a fresh differential baudolo generation of every volume and database), resolves the volume's mountpoint and mirrors the snapshot into it (`rsync -a --delete`). `--no-service-backup` skips the unit run when the target holds nothing worth saving.
+2. Run the script; it first starts the role's deployed backup unit (a fresh differential baudolo generation of every volume and database), resolves the volume's mountpoint and mirrors the snapshot into it (`rsync -a --delete`). `--no-safety-backup` skips the unit run when the target holds nothing worth saving.
 3. Restore databases with `baudolo-restore postgres|mariadb ...`, then start the project again; on swarm, NFS-backed volumes are restored via `svc-bkp-nfs-2-local`'s `recover.py` instead (see below).
 
 ## Credits

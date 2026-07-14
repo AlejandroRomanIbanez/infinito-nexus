@@ -8,7 +8,7 @@ serving the export with every consuming stack stopped; NFS clients
 re-mount on redeploy.
 
 Usage:
-    recover.py SOURCE_DIR TARGET_DIR [--no-service-backup]
+    recover.py SOURCE_DIR TARGET_DIR [--no-safety-backup]
 """
 
 from __future__ import annotations
@@ -37,13 +37,13 @@ def main() -> int:
     parser.add_argument("source_dir", help="snapshot directory to restore from")
     parser.add_argument("target_dir", help="live export subtree to restore into")
     parser.add_argument(
-        "--no-service-backup",
+        "--no-safety-backup",
         action="store_true",
-        help="skip the pre-recover backup unit run (only when the target holds nothing worth saving)",
+        help="skip the pre-recover safety backup of the current target (only when it holds nothing worth saving)",
     )
     args = parser.parse_args()
     return NfsExportRecovery(
-        args.source_dir, args.target_dir, service_backup=not args.no_service_backup
+        args.source_dir, args.target_dir, service_backup=not args.no_safety_backup
     ).run()
 
 

@@ -71,7 +71,7 @@ class TestDirectoryRecovery(unittest.TestCase):
             ):
                 recovery.backup_target()
 
-    def test_no_service_backup_skips_unit_run(self) -> None:
+    def test_no_safety_backup_skips_unit_run(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             source, target = self._mk(td)
             recovery = _Recovery(str(source), str(target), service_backup=False)

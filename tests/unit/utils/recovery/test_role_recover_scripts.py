@@ -68,7 +68,7 @@ class VolumeRecoverTests(unittest.TestCase):
         mod = _load("svc-bkp-volume-2-local", "volume_recover")
         for argv, expect_backup in (
             (["recover.py", "/snap", "vol"], True),
-            (["recover.py", "/snap", "vol", "--no-service-backup"], False),
+            (["recover.py", "/snap", "vol", "--no-safety-backup"], False),
         ):
             with (
                 mock.patch.object(mod, "VolumeRecovery") as mock_vol,
@@ -77,7 +77,7 @@ class VolumeRecoverTests(unittest.TestCase):
                 mock_vol.return_value.run.return_value = 0
                 self.assertEqual(mod.main(), 0)
                 mock_vol.assert_called_once_with(
-                    "/snap", "vol", service_backup=expect_backup
+                    "/snap", "vol", service_backup=expect_backup, docker_host=None
                 )
                 mock_vol.return_value.run.assert_called_once_with()
 
@@ -107,7 +107,7 @@ class NfsRecoverTests(unittest.TestCase):
         mod = _load("svc-bkp-nfs-2-local", "nfs_recover")
         for argv, expect_backup in (
             (["recover.py", "/snap", "/export"], True),
-            (["recover.py", "/snap", "/export", "--no-service-backup"], False),
+            (["recover.py", "/snap", "/export", "--no-safety-backup"], False),
         ):
             with (
                 mock.patch.object(mod, "NfsExportRecovery") as mock_nfs,

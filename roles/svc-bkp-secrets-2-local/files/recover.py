@@ -11,7 +11,7 @@ because overwriting the running machine-id / ssh host keys changes the
 host's identity mid-flight -- do it on a fresh host after total loss.
 
 Usage:
-    recover.py FILES_DIR [--restore-node-identity] [--no-service-backup]
+    recover.py FILES_DIR [--restore-node-identity] [--no-safety-backup] [--target-host HOST]
 
 where FILES_DIR is the ``<generation>/files`` directory of a
 backup-secrets-to-local generation.
@@ -74,9 +74,13 @@ def main() -> int:
         help="also restore ssh host keys + machine-id (only on a fresh host)",
     )
     parser.add_argument(
-        "--no-service-backup",
+        "--no-safety-backup",
         action="store_true",
-        help="skip the pre-recover backup unit run (only when the target holds nothing worth saving)",
+        help="skip the pre-recover safety backup of the current target (only when it holds nothing worth saving)",
+    )
+    parser.add_argument(
+        "--target-host",
+        help="[user@]host to rsync the secret subtrees onto over ssh (recover onto a remote machine)",
     )
     args = parser.parse_args()
 
@@ -95,20 +99,28 @@ def main() -> int:
     if not subtrees:
         raise SystemExit(f"ERROR: no restorable subtree under {files_dir}")
 
+    remote = args.target_host
     ran_backup = False
     for name, source, target in subtrees:
-        Path(target).mkdir(parents=True, exist_ok=True)
+        dest = f"{remote}:{target}" if remote else target
+        if not remote:
+            Path(target).mkdir(parents=True, exist_ok=True)
         recovery = SecretsRecovery(
-            str(source), target, service_backup=not args.no_service_backup
+            str(source), dest, service_backup=not args.no_safety_backup
         )
-        if recovery.service_backup and not ran_backup:
+        if recovery.service_backup and not remote and not ran_backup:
             recovery.backup_target()
             ran_backup = True
         recovery.restore()
-        print(f"OK: {name} restored into {target}")
+        print(f"OK: {name} restored into {dest}")
 
     if args.restore_node_identity and (files_dir / "node").is_dir():
-        _restore_node_identity(files_dir / "node")
+        if remote:
+            print(
+                "skip: --restore-node-identity is local-only (not applied to a remote target)"
+            )
+        else:
+            _restore_node_identity(files_dir / "node")
 
     return 0
 

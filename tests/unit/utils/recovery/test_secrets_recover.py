@@ -59,7 +59,7 @@ class SecretsRecoverTests(unittest.TestCase):
                 mock.patch.object(mod, "_software_domain", return_value="example"),
                 mock.patch.object(mod, "_targets", return_value=targets),
                 mock.patch.object(
-                    sys, "argv", ["recover.py", str(files_dir), "--no-service-backup"]
+                    sys, "argv", ["recover.py", str(files_dir), "--no-safety-backup"]
                 ),
             ):
                 mock_sec.return_value.service_backup = False
@@ -108,12 +108,12 @@ class SecretsRecoverTests(unittest.TestCase):
             (files_dir / "secrets").mkdir(parents=True)
             (files_dir / "node").mkdir(parents=True)
             for argv, expect in (
-                (["recover.py", str(files_dir), "--no-service-backup"], False),
+                (["recover.py", str(files_dir), "--no-safety-backup"], False),
                 (
                     [
                         "recover.py",
                         str(files_dir),
-                        "--no-service-backup",
+                        "--no-safety-backup",
                         "--restore-node-identity",
                     ],
                     True,

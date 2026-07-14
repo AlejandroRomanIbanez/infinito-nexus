@@ -8,6 +8,11 @@ usual differential backup logic to the live data before anything is
 overwritten. Roles subclass :class:`DirectoryRecovery`, set
 ``unit_pattern`` and ship a thin ``files/recover.py`` CLI around it
 (enforced by ``tests/lint/ansible/roles/test_bkp_roles_have_recover.py``).
+
+Host-agnostic: source and target may be a local path or a remote
+``[user@]host:/path`` (rsync pushes/pulls over ssh). A remote target
+skips the local pre-recover safety backup, since that host's live data
+is the remote's concern.
 """
 
 from __future__ import annotations
@@ -15,6 +20,11 @@ from __future__ import annotations
 import subprocess
 from abc import ABC
 from pathlib import Path
+
+
+def is_remote(location: str) -> bool:
+    """A location not starting with ``/`` is a remote ``[user@]host:/path``."""
+    return not location.startswith("/")
 
 
 class DirectoryRecovery(ABC):
@@ -38,9 +48,9 @@ class DirectoryRecovery(ABC):
         self.source_dir = Path(source_dir)
         self.target_dir = Path(target_dir)
         self.service_backup = service_backup
-        if not self.source_dir.is_dir():
+        if not is_remote(str(self.source_dir)) and not self.source_dir.is_dir():
             raise SystemExit(f"ERROR: snapshot {self.source_dir} does not exist")
-        if not self.target_dir.is_dir():
+        if not is_remote(str(self.target_dir)) and not self.target_dir.is_dir():
             raise SystemExit(
                 f"ERROR: target {self.target_dir} does not exist; refusing to "
                 "create it implicitly"
@@ -66,7 +76,7 @@ class DirectoryRecovery(ABC):
         if not units:
             raise SystemExit(
                 f"ERROR: no unit matches {self.unit_pattern}; deploy the role "
-                "first or pass --no-service-backup when the target holds "
+                "first or pass --no-safety-backup when the target holds "
                 "nothing worth saving"
             )
         for unit in units:
@@ -88,7 +98,7 @@ class DirectoryRecovery(ABC):
         print(f"OK: {self.target_dir} restored from {self.source_dir}")
 
     def run(self) -> int:
-        if self.service_backup:
+        if self.service_backup and not is_remote(str(self.target_dir)):
             self.backup_target()
         self.restore()
         return 0

@@ -8,8 +8,12 @@ resolves the volume's mountpoint and mirrors the snapshot into it
 (``rsync -a --delete``). Stop the consuming project first. Database
 restores stay with ``baudolo-restore postgres|mariadb``.
 
+Host-agnostic: with ``--docker-host ssh://user@host`` the volume is
+inspected on that host and the snapshot is rsync-pushed onto its
+mountpoint over ssh, recovering a volume on a remote machine.
+
 Usage:
-    recover.py SOURCE_DIR VOLUME [--no-service-backup]
+    recover.py SOURCE_DIR VOLUME [--no-safety-backup] [--docker-host ENDPOINT]
 """
 
 from __future__ import annotations
@@ -29,15 +33,26 @@ class VolumeRecovery(DirectoryRecovery):
     unit_pattern = "svc-bkp-volume-2-local*.service"
 
     def __init__(
-        self, source_dir: str, volume: str, *, service_backup: bool = True
+        self,
+        source_dir: str,
+        volume: str,
+        *,
+        service_backup: bool = True,
+        docker_host: str | None = None,
     ) -> None:
+        docker = ["docker", *(["-H", docker_host] if docker_host else [])]
         mountpoint = subprocess.run(
-            ["docker", "volume", "inspect", "--format", "{{.Mountpoint}}", volume],
+            [*docker, "volume", "inspect", "--format", "{{.Mountpoint}}", volume],
             check=True,
             capture_output=True,
             text=True,
         ).stdout.strip()
-        super().__init__(source_dir, mountpoint, service_backup=service_backup)
+        target = (
+            f"{docker_host.split('://', 1)[-1]}:{mountpoint}"
+            if docker_host
+            else mountpoint
+        )
+        super().__init__(source_dir, target, service_backup=service_backup)
 
 
 def main() -> int:
@@ -48,13 +63,20 @@ def main() -> int:
     )
     parser.add_argument("volume", help="docker volume name to restore into")
     parser.add_argument(
-        "--no-service-backup",
+        "--no-safety-backup",
         action="store_true",
-        help="skip the pre-recover backup unit run (only when the target holds nothing worth saving)",
+        help="skip the pre-recover safety backup of the current target (only when it holds nothing worth saving)",
+    )
+    parser.add_argument(
+        "--docker-host",
+        help="remote docker endpoint (e.g. ssh://user@host) to recover the volume on another host",
     )
     args = parser.parse_args()
     return VolumeRecovery(
-        args.source_dir, args.volume, service_backup=not args.no_service_backup
+        args.source_dir,
+        args.volume,
+        service_backup=not args.no_safety_backup,
+        docker_host=args.docker_host,
     ).run()
 
 
