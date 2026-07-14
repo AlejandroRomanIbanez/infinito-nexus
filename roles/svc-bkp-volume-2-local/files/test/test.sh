@@ -57,16 +57,15 @@ count_generations() {
 
 wait_service_terminated
 
+echo "Forcing a post-deploy backup run (the service-loader pre-state backup can predate the app volumes and be empty)"
+if ! timeout "${BKP_TEST_HEALTH_TIMEOUT}" systemctl start "${BKP_TEST_SERVICE}"; then
+    echo "backup unit start returned non-zero; inspecting result"
+fi
+wait_service_terminated
+
 MACHINE_HASH="$(sha256sum /etc/machine-id | cut -c1-64)"
 MACHINE_DIR="${BKP_TEST_BACKUPS_DIR%/}/${MACHINE_HASH}"
 
-if [[ ! -d "${MACHINE_DIR}" ]]; then
-    echo "No backup dir yet at ${MACHINE_DIR}; triggering an initial backup run"
-    if ! timeout "${BKP_TEST_HEALTH_TIMEOUT}" systemctl start "${BKP_TEST_SERVICE}"; then
-        echo "backup unit start returned non-zero; inspecting result"
-    fi
-    wait_service_terminated
-fi
 if [[ ! -d "${MACHINE_DIR}" ]]; then
     echo "FAIL: no backup dir for this machine at ${MACHINE_DIR}"
     exit 1
