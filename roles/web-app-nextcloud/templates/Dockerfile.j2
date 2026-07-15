@@ -3,10 +3,6 @@ FROM {{ NEXTCLOUD_IMAGE }}:{{ NEXTCLOUD_VERSION }}
 RUN apk add --no-cache ca-certificates && update-ca-certificates
 {% endif %}
 
-RUN mkdir -p {{ NEXTCLOUD_DOCKER_CONF_DIRECTORY }} \
- && chown {{ NEXTCLOUD_DOCKER_USER }}:{{ NEXTCLOUD_DOCKER_USER }} {{ NEXTCLOUD_DOCKER_CONF_DIRECTORY }} \
- && chmod 750 {{ NEXTCLOUD_DOCKER_CONF_DIRECTORY }}
-
 COPY {{ NEXTCLOUD_INIT_GATE_FILE }} /usr/local/bin/{{ NEXTCLOUD_INIT_GATE_FILE }}
 RUN chmod 0755 /usr/local/bin/{{ NEXTCLOUD_INIT_GATE_FILE }}
 ENTRYPOINT ["/usr/local/bin/{{ NEXTCLOUD_INIT_GATE_FILE }}"]
