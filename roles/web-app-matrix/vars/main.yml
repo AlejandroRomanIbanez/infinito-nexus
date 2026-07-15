@@ -47,6 +47,15 @@ MATRIX_MDAD_RUNNER_BASE_IMAGE: "{{ lookup('config', application_id, 'services.ma
 MATRIX_MDAD_RUNNER_BASE_VERSION: "{{ lookup('config', application_id, 'services.matrix.runner.base_version') }}"
 MATRIX_MDAD_RUNNER_DOCKER_CLI_IMAGE: "{{ lookup('config', application_id, 'services.matrix.runner.docker_cli_image') }}"
 MATRIX_MDAD_RUNNER_DOCKER_CLI_VERSION: "{{ lookup('config', application_id, 'services.matrix.runner.docker_cli_version') }}"
+MATRIX_MDAD_DAEMON_JSON:
+  bip: "{{ NETWORK_NESTED_DOCKER_BIP }}"
+  default-address-pools: "{{ NETWORK_NESTED_DOCKER_ADDRESS_POOLS }}"
+  exec-opts: ["native.cgroupdriver=systemd"]
+  iptables: true
+  log-driver: "json-file"
+  log-opts:
+    max-size: "10m"
+    max-file: "3"
 
 MATRIX_BRIDGE: "{{ lookup('config', application_id, 'services.matrix.plugins') }}"
 

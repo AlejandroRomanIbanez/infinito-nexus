@@ -1,9 +1,0 @@
-{
-  "exec-opts": ["native.cgroupdriver=systemd"],
-  "iptables": true,
-  "log-driver": "json-file",
-  "log-opts": {
-    "max-size": "10m",
-    "max-file": "3"
-  }
-}
