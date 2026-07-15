@@ -21,6 +21,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 
@@ -34,10 +35,32 @@ _DEFAULT_INVENTORY_DIR = "/tmp/inv"  # noqa: S108 - ephemeral swarm-test invento
 
 
 def _run(cmd: list[str], *, env: dict[str, str], label: str) -> int:
+    """Run a matrix step, aborting visibly before the runner disk fills.
+
+    The Actions Worker dies silently on ENOSPC while writing its own logs, so
+    a full disk truncates the job without diagnostics; terminating the step at
+    <6G free keeps enough room for rescue artifacts and the log upload.
+    """
     print(f"=== swarm-matrix: {label} ===", flush=True)
-    return int(
-        subprocess.run(cmd, cwd=str(PROJECT_ROOT), env=env, check=False).returncode
-    )
+    proc = subprocess.Popen(cmd, cwd=str(PROJECT_ROOT), env=env)
+    while True:
+        try:
+            return int(proc.wait(timeout=30))
+        except subprocess.TimeoutExpired:
+            if shutil.disk_usage("/").free < 6 * 2**30:
+                print(
+                    "=== swarm-matrix: DISK EXHAUSTION IMMINENT "
+                    "(<6G free on /) - aborting step ===",
+                    flush=True,
+                )
+                subprocess.run(["df", "-h", "/"], check=False)
+                proc.terminate()
+                try:
+                    proc.wait(timeout=30)
+                except subprocess.TimeoutExpired:
+                    proc.kill()
+                    proc.wait()
+                return 75
 
 
 def _provision(
@@ -310,13 +333,13 @@ def main(argv: list[str] | None = None) -> int:
             )
         if rc == 0:
             rc = _converge_and_verify(app_id=app_id)
-        if rc == 0 and plan_index == 0:
+        if rc == 0 and round_index == 0:
             rc = _deploy_backup_host(
                 app_id=app_id,
                 inv_dir=inv_root,
                 extras_path=f"{inv_root}/swarm-nfs-extras.deploy.yml",
             )
-        if rc == 0 and plan_index == 0:
+        if rc == 0 and round_index == 0:
             rc = _backup_restore_drill(
                 app_id=app_id, inv_dir=inv_root, extras_path=extras_path
             )
@@ -331,7 +354,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         if rc == 0:
             rc = _converge_and_verify(app_id=app_id)
-        if rc == 0 and plan_index == 0:
+        if rc == 0 and round_index == 0:
             rc = _verify_recovered_marker(app_id=app_id)
         if rc != 0:
             return rc

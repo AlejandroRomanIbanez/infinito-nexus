@@ -22,5 +22,7 @@ RUN set -eux; \
     fi; \
     systemctl mask systemd-resolved; \
     systemctl enable ssh 2>/dev/null || systemctl enable sshd; \
+    mkdir -p /etc/systemd/journald.conf.d; \
+    printf '[Journal]\nSystemMaxUse=256M\nRuntimeMaxUse=64M\n' > /etc/systemd/journald.conf.d/99-ci.conf; \
     rm -f /var/lib/dbus/machine-id; \
     truncate -s 0 /etc/machine-id
