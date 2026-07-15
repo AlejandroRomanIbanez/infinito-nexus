@@ -96,6 +96,7 @@ def collect_host(out: Path, app_id: str, context: str, stamp: str) -> None:
         ("free.txt", ["free", "-m"]),
         ("uptime.txt", ["uptime"]),
         ("journal.txt", ["journalctl", "-n", "1000", "--no-pager"]),
+        ("systemctl.txt", ["systemctl", "list-units", "--all", "--no-pager"]),
     ):
         capture(out, name, cmd)
     dmesg = run(["dmesg", "-T"]).stdout.decode(errors="replace")
@@ -124,6 +125,16 @@ def collect_runtime(out: Path, rt: str) -> tuple[list[str], list[str]]:
         safe = sanitize(name)
         capture(out / "containers", f"{safe}.log", [rt, "logs", name])
         capture(out / "containers", f"{safe}.inspect.json", [rt, "inspect", name])
+        capture(
+            out / "containers",
+            f"{safe}.systemctl.txt",
+            [rt, "exec", name, "systemctl", "status", "--all", "--no-pager"],
+        )
+        capture(
+            out / "containers",
+            f"{safe}.journal.txt",
+            [rt, "exec", name, "journalctl", "-n", "1000", "--no-pager"],
+        )
     capture(out, "services.txt", [rt, "service", "ls"])
     services = list_lines([rt, "service", "ls", "--format", "{{.Name}}"])
     for svc in services:

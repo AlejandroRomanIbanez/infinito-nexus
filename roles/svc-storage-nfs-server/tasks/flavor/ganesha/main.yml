@@ -4,8 +4,6 @@
     name: "{{ SVC_STORAGE_NFS_SERVER_PACKAGES['ganesha'][ansible_facts['os_family']] }}"
     state: present
 
-# Upstream: Debian/Ubuntu ship a broken nfs-ganesha-config.service that wedges
-# the unit start; mask it so the main nfs-ganesha service comes up.
 - name: "🔧 Mask the broken nfs-ganesha-config helper unit"
   ansible.builtin.systemd:
     name: nfs-ganesha-config.service
