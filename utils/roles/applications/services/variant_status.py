@@ -18,9 +18,11 @@ def variant_disables_all_services(override: dict[str, Any]) -> bool:
         entry sets ``enabled`` to a literal false (Python ``False`` or the
         string ``"false"``). A truthy/Jinja-conditional/absent ``enabled``, a
         non-mapping entry, or an empty/absent ``services`` block all return
-        False so the variant stays deployable. Such an all-off variant adds no
-        swarm coverage (the all-enabled variant already exercises the role), so
-        the swarm test matrix skips it.
+        False so the variant stays deployable. Such an all-off variant is the
+        role's standalone path (every optional service off). Swarm skips it: its
+        overlay/placement/VIP failure modes are exercised by the all-enabled
+        variant, and compose still runs the standalone path, so the extra swarm
+        runner adds cost, not coverage.
     """
     services = override.get("services") if isinstance(override, dict) else None
     if not isinstance(services, dict) or not services:
@@ -41,8 +43,9 @@ def deployable_variant_indices(overrides: list[Any] | None) -> list[int]:
     """The variant indices the CI matrix actually deploys for one role.
 
     Every variant except those whose ``meta/variants.yml`` override disables
-    all services (all-off variants add no coverage, since the all-enabled
-    variant already exercises the role). This is the single source of truth
+    all services (the all-off standalone path stays covered by compose, and
+    swarm's overlay/placement risk lives in the all-enabled variant, so the
+    extra swarm runner adds cost, not coverage). This is the single source of truth
     for the per-role job/bundle split: the swarm deploy matrix and the
     ``complexity`` report both count jobs through it.
 

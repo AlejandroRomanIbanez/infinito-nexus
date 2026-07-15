@@ -20,8 +20,9 @@ names (GitHub Actions expressions have no string-replace function).
 
 In swarm mode (``INFINITO_DEPLOY_MODE=swarm``) the split is one variant per
 runner (bundle size 1) and variants whose ``meta/variants.yml`` override
-disables every service are dropped: the all-enabled variant already exercises
-the role, so a bare all-off deploy adds no coverage. Surviving variants keep
+disables every service are dropped: the all-off standalone path stays covered
+by compose, and swarm's overlay/placement risk lives in the all-enabled
+variant, so the extra swarm runner adds cost, not coverage. Surviving variants keep
 their ABSOLUTE index, so the emitted ``variant`` index still maps to the same
 ``meta/variants.yml`` round the deploy planner resolves. Compose mode is
 unchanged.
