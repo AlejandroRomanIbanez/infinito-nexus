@@ -44,9 +44,10 @@ def get_entity_name(role_name):
 
     role_name_lc = role_name.lower()
     all_category_paths = [cat.lower() for cat in all_category_paths]
+    empty_match = False
     for cat in sorted(all_category_paths, key=len, reverse=True):
         if role_name_lc.startswith(cat + "-"):
             return role_name[len(cat) + 1 :]
         if role_name_lc == cat:
-            return ""
-    return role_name
+            empty_match = True
+    return "" if empty_match else role_name

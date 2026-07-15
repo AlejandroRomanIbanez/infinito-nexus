@@ -1,7 +1,9 @@
 ---
 # nocheck: dockerfile-custom
-svc-runner:
+runner:
   lifecycle: beta
+  proxy:
+    service_key: runner-1
   github_owner: infinito-nexus
   github_repo: core
   docker_base: /mnt/docker

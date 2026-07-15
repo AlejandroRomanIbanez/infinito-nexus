@@ -66,8 +66,14 @@ class TestGetEntityNameFilter(unittest.TestCase):
     def test_no_category_match(self):
         self.assertEqual(self.get_entity_name("foobar-role"), "foobar-role")
 
-    def test_exact_category_match(self):
-        self.assertEqual(self.get_entity_name("web-app"), "")
+    def test_exact_category_match_with_parent_prefix_strips(self):
+        self.assertEqual(self.get_entity_name("web-app"), "app")
+
+    def test_exact_category_match_without_parent_prefix(self):
+        self.assertEqual(self.get_entity_name("web"), "")
+
+    def test_role_equal_to_category_path_strips_parent(self):
+        self.assertEqual(self.get_entity_name("svc-db"), "db")
 
 
 if __name__ == "__main__":
