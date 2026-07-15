@@ -1,7 +1,16 @@
 ---
+- name: "🔍 Resolve mattermost hosting node + container id"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
+  vars:
+    resolve_service_key: "{{ entity_name }}"
+    resolve_output_prefix: MATTERMOST
+    resolve_compose_cid: "{{ MATTERMOST_CONTAINER_ADDRESS }}"
+    resolve_converge_retries: 60
+    resolve_converge_delay: 5
+
 - name: "⏳ Mattermost | Wait until mmctl local mode is ready"
-  shell: |
-    container exec -i {{ MATTERMOST_CONTAINER_ADDRESS }} \
+  ansible.builtin.shell: | # nocheck: container-exec-resolver  MATTERMOST_LOCAL_CID resolved at delegate_to runtime; container_address would return a manager-only subshell
+    container exec -i {{ MATTERMOST_LOCAL_CID | quote }} \
       /mattermost/bin/mmctl --local system status
   register: mm_ready_wait
   retries: 60
@@ -9,10 +18,11 @@
   until: mm_ready_wait.rc == 0
   changed_when: false
   failed_when: mm_ready_wait.rc != 0 and mm_ready_wait.attempts == 61
+  delegate_to: "{{ MATTERMOST_HOST_NODE }}"
 
 - name: "📁 Mattermost | Create system administrator user"
-  shell: |
-    container exec -i {{ MATTERMOST_CONTAINER_ADDRESS }} \
+  ansible.builtin.shell: | # nocheck: container-exec-resolver  MATTERMOST_LOCAL_CID resolved at delegate_to runtime; container_address would return a manager-only subshell
+    container exec -i {{ MATTERMOST_LOCAL_CID | quote }} \
       /mattermost/bin/mmctl --local user create \
         --email    "{{ lookup('users', 'administrator').email }}" \
         --username "{{ lookup('users', 'administrator').username }}" \
@@ -21,10 +31,11 @@
   register: mm_create_admin
   changed_when: mm_create_admin.rc == 0
   failed_when: mm_create_admin.rc != 0 and 'already exists' not in (mm_create_admin.stdout + mm_create_admin.stderr)
+  delegate_to: "{{ MATTERMOST_HOST_NODE }}"
 
 - name: "📁 Mattermost | Create default team"
-  shell: |
-    container exec -i {{ MATTERMOST_CONTAINER_ADDRESS }} \
+  ansible.builtin.shell: | # nocheck: container-exec-resolver  MATTERMOST_LOCAL_CID resolved at delegate_to runtime; container_address would return a manager-only subshell
+    container exec -i {{ MATTERMOST_LOCAL_CID | quote }} \
       /mattermost/bin/mmctl --local team create \
         --name         "main" \
         --display-name "{{ ORGANIZATION }}"
@@ -32,6 +43,7 @@
   changed_when: mm_create_team.rc == 0
   failed_when: mm_create_team.rc != 0 and 'already exists' not in (mm_create_team.stdout + mm_create_team.stderr) and 'existing team' not in
     (mm_create_team.stdout + mm_create_team.stderr)
+  delegate_to: "{{ MATTERMOST_HOST_NODE }}"
 
 - name: "🟢 Mattermost | Enable open invite on default team"
   database_query:
@@ -41,19 +53,21 @@
   changed_when: false
 
 - name: "🔎 Mattermost | Check which users are already in default team"
-  shell: |
-    container exec -i {{ MATTERMOST_CONTAINER_ADDRESS }} \
+  ansible.builtin.shell: | # nocheck: container-exec-resolver  MATTERMOST_LOCAL_CID resolved at delegate_to runtime; container_address would return a manager-only subshell
+    container exec -i {{ MATTERMOST_LOCAL_CID | quote }} \
       /mattermost/bin/mmctl --local user list --team main
   register: mm_team_members
   changed_when: false
+  delegate_to: "{{ MATTERMOST_HOST_NODE }}"
 
 - name: "➕ Mattermost | Add administrator to default team"
-  shell: |
-    container exec -i {{ MATTERMOST_CONTAINER_ADDRESS }} \
+  ansible.builtin.shell: | # nocheck: container-exec-resolver  MATTERMOST_LOCAL_CID resolved at delegate_to runtime; container_address would return a manager-only subshell
+    container exec -i {{ MATTERMOST_LOCAL_CID | quote }} \
       /mattermost/bin/mmctl --local team users add \
         main \
         "{{ lookup('users', 'administrator').email }}"
   when: lookup('users', 'administrator').email not in mm_team_members.stdout
+  delegate_to: "{{ MATTERMOST_HOST_NODE }}"
 
 - name: "🔎 Mattermost | Check administrator auth service"
   database_query:
@@ -67,9 +81,20 @@
   changed_when: false
   when: MATTERMOST_OIDC_ENABLED | bool
 
+- name: "🔍 Resolve openldap hosting node + container id"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
+  vars:
+    resolve_service_key: openldap
+    resolve_service_name: "{{ lookup('container_service', 'svc-db-openldap', 'openldap') }}"
+    resolve_output_prefix: MATTERMOST_LDAP
+    resolve_compose_cid: "{{ MATTERMOST_LDAP_CONTAINER_ADDRESS }}"
+  when:
+    - MATTERMOST_OIDC_ENABLED | bool
+    - (mm_admin_authservice.rows[0][0] | default('') | trim) != 'gitlab'
+
 - name: "🗂️ Mattermost | Get administrator uidNumber from LDAP"
-  shell: |
-    container exec -i {{ MATTERMOST_LDAP_CONTAINER_ADDRESS }} \
+  ansible.builtin.shell: | # nocheck: container-exec-resolver  MATTERMOST_LDAP_LOCAL_CID resolved at delegate_to runtime; container_address would return a manager-only subshell
+    container exec -i {{ MATTERMOST_LDAP_LOCAL_CID | quote }} \
       ldapsearch -x -H ldap://localhost:389 \
         -D {{ LDAP.DN.ADMINISTRATOR.DATA | quote }} \
         -w {{ LDAP.BIND_CREDENTIAL | quote }} \
@@ -79,6 +104,7 @@
   register: mm_admin_uidnumber
   changed_when: false
   failed_when: mm_admin_uidnumber.rc != 0 or mm_admin_uidnumber.stdout | trim == ''
+  delegate_to: "{{ MATTERMOST_LDAP_HOST_NODE }}"
   when:
     - MATTERMOST_OIDC_ENABLED | bool
     - (mm_admin_authservice.rows[0][0] | default('') | trim) != 'gitlab'
