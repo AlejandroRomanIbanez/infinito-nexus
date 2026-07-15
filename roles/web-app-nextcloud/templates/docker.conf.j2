@@ -25,9 +25,6 @@ http {
     fastcgi_send_timeout  900s;
     fastcgi_read_timeout  900s;
     proxy_buffering       off;
-    upstream php-handler {
-        server {{ NEXTCLOUD_SERVICE }}:9000;
-    }
     server {
         listen 80;
         {% if lookup('tls', application_id, 'enabled') | bool %}
@@ -78,7 +75,8 @@ http {
             fastcgi_param PATH_INFO $path_info;
             fastcgi_param modHeadersAvailable true;         # Avoid sending the security headers twice
             fastcgi_param front_controller_active true;     # Enable pretty urls
-            fastcgi_pass php-handler;
+            set $php_handler {{ NEXTCLOUD_SERVICE }}:9000;
+            fastcgi_pass $php_handler;
             fastcgi_intercept_errors on;
             fastcgi_request_buffering off;
         }
