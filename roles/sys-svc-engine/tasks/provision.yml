@@ -8,6 +8,7 @@
         name: "{{ _engine_provider_role }}"
       vars:
         application_id: "{{ _engine_provider_role }}"
+        compose_mode_force: ""
       when: >-
         lookup(
           'vars',
@@ -23,3 +24,4 @@
         database_init: true
         database_consumer_id: "{{ _engine_consumer_id }}"
         compose_repository_pull: false
+        compose_mode_force: ""

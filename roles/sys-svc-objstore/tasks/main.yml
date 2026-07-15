@@ -10,9 +10,6 @@
     _provider_role: "{{ lookup('objstore', _objstore_consumer_id, 'id') }}"
   when: lookup('objstore', _objstore_consumer_id, 'shared') | bool
   block:
-    # Consumers that are registry providers themselves can be preloaded before
-    # the object-store provider (same loader bucket, alphabetical topo-order),
-    # so load the provider lazily instead of asserting the preload.
     - name: "🧩 Load object-store provider '{{ _provider_role }}' (lazy)"
       ansible.builtin.include_role:
         name: "{{ _provider_role }}"
@@ -23,6 +20,7 @@
         compose_repository_url: "{{ '' }}"
         compose_repository_ref: "{{ '' }}"
         compose_repository_pull: false
+        compose_mode_force: ""
       when: >-
         lookup(
           'vars',
@@ -38,3 +36,4 @@
         objstore_init: true
         objstore_consumer_id: "{{ _objstore_consumer_id }}"
         compose_repository_pull: false
+        compose_mode_force: ""
