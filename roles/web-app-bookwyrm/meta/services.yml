@@ -47,6 +47,11 @@ redis:
   mem_limit: 512m
   pids_limit: 512
 bookwyrm:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   name: bookwyrm
   image: python
   # TODO: bump when upstream Bookwyrm declares support for Python >= 3.12 in requirements.txt

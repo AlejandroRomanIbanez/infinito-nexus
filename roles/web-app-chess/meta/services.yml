@@ -23,6 +23,11 @@ postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 chess:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: ghcr.io/kevinveenbirkenbach/fedi-chess
   version: v1.0.1
   name: web-app-chess

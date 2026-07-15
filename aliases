@@ -47,6 +47,7 @@ alias i8lipa='m lint-packages'
 alias i8lipa2='m lint-playwright'
 alias i8lipo='m lint-python'
 alias i8lise='m lint-shellcheck'
+alias i8matix='infinito meta roles applications complexity' # deploy matrix / complexity overview
 alias i8me='m meta-list'
 alias i8memi='m meta-mig'
 alias i8mete='m meta-tree'

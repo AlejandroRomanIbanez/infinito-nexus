@@ -1,6 +1,11 @@
 ---
 # nocheck: playwright-service-flag — self-provider; injection presence is asserted per consumer via roles_with_service('logout')
 logout:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   bond: 1
   enabled: true
   shared: true

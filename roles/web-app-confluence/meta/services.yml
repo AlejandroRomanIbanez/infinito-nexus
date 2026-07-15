@@ -28,6 +28,11 @@ postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 confluence:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: atlassian/confluence
   version: 10.2.14
   custom: true

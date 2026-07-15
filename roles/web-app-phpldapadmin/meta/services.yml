@@ -16,6 +16,11 @@ matomo:
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 phpldapadmin:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: phpldapadmin/phpldapadmin
   version: 2.3.11
   min_storage: 1GB

@@ -1,5 +1,10 @@
 ---
 mariadb:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: default-placement-manager  central RDBMS, single-node until multi-replica replication (galera / async) is in scope
   placement: manager
   bond: 1

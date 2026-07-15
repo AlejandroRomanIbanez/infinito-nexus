@@ -46,6 +46,11 @@ seaweedfs:
   shared: "{{ 'web-app-seaweedfs' in group_names }}"
   public: true
 snipe-it:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   version: v8.6.3-alpine
   custom: true
   name: snipe-it

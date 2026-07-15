@@ -23,6 +23,11 @@ css:
   enabled: "{{ 'web-svc-css' in group_names }}"
   shared: "{{ 'web-svc-css' in group_names }}"
 roulette-wheel:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: node
   version: 26-bookworm
   custom: true

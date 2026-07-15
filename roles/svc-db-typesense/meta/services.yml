@@ -1,5 +1,10 @@
 ---
 typesense:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: default-placement-manager  engine on-disk search index, node-local in swarm (fsync/lock corruption on NFS)
   placement: manager
   enabled: true

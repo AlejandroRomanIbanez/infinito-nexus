@@ -26,6 +26,11 @@ redis:
   backup:
     disabled: true
 mig:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: ghcr.io/kevinveenbirkenbach/infinito-mig
   version: latest
   name: mig

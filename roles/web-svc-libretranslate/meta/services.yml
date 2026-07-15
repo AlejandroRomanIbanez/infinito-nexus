@@ -1,6 +1,11 @@
 ---
 # nocheck: playwright-service-flag — self-provider
 libretranslate:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   bond: 1
   enabled: true
   shared: true

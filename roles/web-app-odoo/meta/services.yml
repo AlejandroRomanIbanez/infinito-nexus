@@ -31,6 +31,11 @@ postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 odoo:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: odoo
   version: "19.0"
   custom: true

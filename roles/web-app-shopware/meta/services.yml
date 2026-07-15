@@ -45,6 +45,11 @@ init:
   min_storage: 1GB
   pids_limit: 256
 shopware:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: composer
   version: "2.10"
   custom: true

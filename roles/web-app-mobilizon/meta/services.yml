@@ -30,6 +30,11 @@ postgres:
     - pg_trgm
     - unaccent
 mobilizon:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: docker.io/kaihuri/mobilizon
   name: mobilizon
   version: 5.2.4

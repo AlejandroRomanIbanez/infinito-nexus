@@ -28,6 +28,11 @@ postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 jira:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: atlassian/jira-software
   version: 11.3.8
   custom: true

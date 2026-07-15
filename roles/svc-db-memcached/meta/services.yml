@@ -1,5 +1,10 @@
 ---
 memcached:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: default-placement-manager  central cache engine: single shared in-memory instance pinned to one node, reached cross-stack over the shared overlay
   placement: manager
   bond: 1

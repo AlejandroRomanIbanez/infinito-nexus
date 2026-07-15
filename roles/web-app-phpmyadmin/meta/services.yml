@@ -17,6 +17,11 @@ mariadb:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
 phpmyadmin:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   version: 5.2.3
   name: phpmyadmin
   image: phpmyadmin/phpmyadmin

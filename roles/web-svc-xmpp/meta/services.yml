@@ -17,6 +17,11 @@ ldap:
   enabled: "{{ 'svc-db-openldap' in group_names }}"
   shared: "{{ 'svc-db-openldap' in group_names }}"
 xmpp:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: single-replica
   replicas: 1
   image: ejabberd/ecs

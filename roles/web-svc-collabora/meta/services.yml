@@ -12,6 +12,11 @@ redis:
   enabled: false
   shared: "{{ 'svc-db-redis' in group_names }}"
 collabora:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: single-replica
   replicas: 1
   bond: 1

@@ -15,7 +15,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from utils.roles.mapping import ROLE_FILE_META_SERVICES, ROLE_FILE_META_TESTS
+from utils.roles.mapping import ROLE_FILE_META_SERVICES
 from utils.roles.meta_lookup import (
     MetaServicesShapeError,
     get_role_lifecycle,
@@ -34,13 +34,6 @@ class _RoleFixtures:
         role_dir = self.root / role_name
         (role_dir / "meta").mkdir(parents=True, exist_ok=True)
         path = role_dir / ROLE_FILE_META_SERVICES
-        path.write_text(textwrap.dedent(body).lstrip("\n"), encoding="utf-8")
-        return role_dir
-
-    def write_tests(self, role_name: str, body: str) -> Path:
-        role_dir = self.root / role_name
-        (role_dir / "meta").mkdir(parents=True, exist_ok=True)
-        path = role_dir / ROLE_FILE_META_TESTS
         path.write_text(textwrap.dedent(body).lstrip("\n"), encoding="utf-8")
         return role_dir
 
@@ -223,13 +216,16 @@ class TestMetaLookup(unittest.TestCase):
             [],
         )
 
-    def test_skip_returns_modes(self) -> None:
-        role_dir = self.fx.write_tests(
+    def test_skip_returns_disabled_modes(self) -> None:
+        role_dir = self.fx.write(
             "svc-storage-nfs-client",
             """
-            skip:
-              - compose
-              - swarm
+            nfs-client:
+              modes:
+                compose:
+                  enabled: false
+                swarm:
+                  enabled: false
             """,
         )
         self.assertEqual(
@@ -237,7 +233,7 @@ class TestMetaLookup(unittest.TestCase):
             ["compose", "swarm"],
         )
 
-    def test_skip_absent_returns_empty(self) -> None:
+    def test_skip_absent_modes_returns_empty(self) -> None:
         role_dir = self.fx.write(
             "web-app-yourls",
             """
@@ -247,21 +243,26 @@ class TestMetaLookup(unittest.TestCase):
         )
         self.assertEqual(get_role_skip(role_dir, role_name="web-app-yourls"), [])
 
-    def test_skip_absent_key_returns_empty(self) -> None:
-        role_dir = self.fx.write_tests(
+    def test_partial_modes_default_enabled(self) -> None:
+        role_dir = self.fx.write(
             "web-app-yourls",
             """
-            cli:
-              timeout: 9000
+            yourls:
+              modes:
+                compose:
+                  enabled: true
             """,
         )
         self.assertEqual(get_role_skip(role_dir, role_name="web-app-yourls"), [])
 
-    def test_skip_non_list_raises(self) -> None:
-        role_dir = self.fx.write_tests(
+    def test_modes_enabled_non_bool_raises(self) -> None:
+        role_dir = self.fx.write(
             "web-app-broken",
             """
-            skip: compose
+            broken:
+              modes:
+                compose:
+                  enabled: maybe
             """,
         )
         with self.assertRaises(MetaServicesShapeError):

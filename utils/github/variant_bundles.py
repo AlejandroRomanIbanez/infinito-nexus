@@ -19,13 +19,8 @@ rounds in its bundle. ``variant_slug`` is a comma-free copy for artifact/job
 names (GitHub Actions expressions have no string-replace function).
 
 In swarm mode (``INFINITO_DEPLOY_MODE=swarm``) the split is one variant per
-runner (bundle size 1) and variants whose ``meta/variants.yml`` override
-disables every service are dropped: the all-off standalone path stays covered
-by compose, and swarm's overlay/placement risk lives in the all-enabled
-variant, so the extra swarm runner adds cost, not coverage. Surviving variants keep
-their ABSOLUTE index, so the emitted ``variant`` index still maps to the same
-``meta/variants.yml`` round the deploy planner resolves. Compose mode is
-unchanged.
+runner (bundle size 1); every variant deploys, each mapping 1:1 to its
+``meta/variants.yml`` round. Compose mode packs several variants per runner.
 """
 
 from __future__ import annotations
@@ -38,10 +33,7 @@ from typing import TYPE_CHECKING
 from humanfriendly import parse_size
 
 from utils import PROJECT_ROOT
-from utils.cache.applications import (
-    get_variant_overrides_only,
-    get_variants,
-)
+from utils.cache.applications import get_variants
 from utils.roles.applications.services.registry import (
     build_service_registry_from_applications,
     load_applications_from_roles_dir,
@@ -49,9 +41,6 @@ from utils.roles.applications.services.registry import (
 from utils.roles.applications.services.resources import (
     aggregate,
     collect_role_resources,
-)
-from utils.roles.applications.services.variant_status import (
-    deployable_variant_indices,
 )
 
 if TYPE_CHECKING:
@@ -174,7 +163,6 @@ def expand_apps(
     *,
     storages_per_app: Mapping[str, Sequence[int | None]] | None = None,
     max_storage_bytes: int | None = None,
-    deployable_indices_per_app: Mapping[str, Sequence[int]] | None = None,
     bundle_size_per_app: Mapping[str, int] | None = None,
 ) -> list[dict[str, str]]:
     entries: list[dict[str, str]] = []
@@ -184,11 +172,6 @@ def expand_apps(
             entries.append({"apps": app, "variant": "", "variant_slug": ""})
             continue
         indices = list(range(len(variant_list)))
-        if deployable_indices_per_app is not None:
-            allowed = set(deployable_indices_per_app.get(app, indices))
-            indices = [i for i in indices if i in allowed]
-        if not indices:
-            continue
         storages = (storages_per_app or {}).get(app)
         app_bundle_size = (bundle_size_per_app or {}).get(app) or bundle_size
         entries.extend(
@@ -282,18 +265,6 @@ def _swarm_mode() -> bool:
     return (os.environ.get("INFINITO_DEPLOY_MODE") or "").strip().lower() == "swarm"
 
 
-def _deployable_indices(
-    apps: Iterable[str],
-    overrides_per_app: Mapping[str, Sequence[Any]],
-) -> dict[str, list[int]]:
-    """Per app, the variant indices the swarm matrix may deploy, via the shared
-    ``deployable_variant_indices`` SPOT (drops all-off variants)."""
-    return {
-        app: deployable_variant_indices(list(overrides_per_app.get(app) or []))
-        for app in apps
-    }
-
-
 def main(argv: Sequence[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
     raw = argv[0] if argv else sys.stdin.read()
@@ -305,14 +276,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     variants_per_app = get_variants()
     if _swarm_mode():
-        entries = expand_apps(
-            apps,
-            variants_per_app,
-            1,
-            deployable_indices_per_app=_deployable_indices(
-                apps, get_variant_overrides_only()
-            ),
-        )
+        entries = expand_apps(apps, variants_per_app, 1)
     else:
         entries = expand_apps(
             apps,

@@ -45,6 +45,11 @@ javascript:
   enabled: "{{ lookup('config', 'web-app-jitsi', 'services.sso.enabled') | bool }}"
   shared: "{{ lookup('config', 'web-app-jitsi', 'services.sso.enabled') | bool }}"
 jitsi:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: jitsi/web
   version: "stable-9646"
   min_storage: 5GB

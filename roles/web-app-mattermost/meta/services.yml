@@ -30,6 +30,11 @@ postgres:
   shared: "{{ 'svc-db-postgres' in group_names }}"
 # nocheck: playwright-service-flag: shared provider entity; the app itself is covered by this role's own Playwright spec
 mattermost:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: true

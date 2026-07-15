@@ -30,6 +30,11 @@ prometheus:
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
 jellyfin:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   cpus: 2.0
   mem_reservation: 1g
   mem_limit: 3g

@@ -27,6 +27,11 @@ mariadb:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
 mediawiki:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: mediawiki
   version: "1.46"
   custom: true

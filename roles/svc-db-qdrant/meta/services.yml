@@ -1,5 +1,10 @@
 ---
 qdrant:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: default-placement-manager  central vector engine, on-disk state node-local in swarm (cannot live on NFS)
   placement: manager
   enabled: true

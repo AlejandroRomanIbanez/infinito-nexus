@@ -5,6 +5,11 @@ node:
   shared: true
   bond: 1
 cache:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: default-placement-manager  pull-through cache backs docker stack deploy; chicken-and-egg if scheduled on a worker that still needs to pull custom images from it
   placement: manager
   enabled: true

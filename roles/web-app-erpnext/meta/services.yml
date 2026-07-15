@@ -50,6 +50,11 @@ redis:
   shared: "{{ 'svc-db-redis' in group_names }}"
 # nocheck: playwright-service-flag - self-provider
 erpnext:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   bond: 1
   enabled: true
   shared: true

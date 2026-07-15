@@ -52,6 +52,11 @@ redis:
   pids_limit: 512
 # nocheck: playwright-service-flag — self-provider
 discourse:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   bond: 1
   shared: true
   enabled: true # nocheck: dynamic-flag

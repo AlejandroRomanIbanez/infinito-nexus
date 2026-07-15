@@ -1,5 +1,10 @@
 ---
 ssd-hdd:
+  modes:
+    compose:
+      enabled: false
+    swarm:
+      enabled: false
   lifecycle: beta
   min_storage: "50MB"
   cpus: "0.1"

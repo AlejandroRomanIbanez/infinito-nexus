@@ -4,6 +4,11 @@ nfs-server:
   shared: "{{ 'svc-storage-nfs-server' in group_names }}"
   bond: 1
 nfs-2-local:
+  modes:
+    compose:
+      enabled: false
+    swarm:
+      enabled: false
   bond: 1
   enabled: true
   shared: true

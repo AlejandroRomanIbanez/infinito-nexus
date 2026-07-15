@@ -4,6 +4,11 @@ nfs-server:
   shared: "{{ 'svc-storage-nfs-server' in group_names }}"
   bond: 1
 nfs-client:
+  modes:
+    compose:
+      enabled: false
+    swarm:
+      enabled: false
   name: nfs-client
   nfs_version: 4
   lifecycle: beta

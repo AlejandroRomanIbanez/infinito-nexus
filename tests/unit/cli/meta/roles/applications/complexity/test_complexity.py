@@ -344,7 +344,7 @@ class TestComposeSwarmColumns(unittest.TestCase):
             self.assertFalse(rows["r2"].compose)
             self.assertFalse(rows["r2"].swarm)
 
-    def test_swarm_is_per_variant_all_off_variant_is_false(self) -> None:
+    def test_swarm_runs_every_variant_including_all_off(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             roles_dir = Path(td) / "roles"
             roles_dir.mkdir()
@@ -360,7 +360,7 @@ class TestComposeSwarmColumns(unittest.TestCase):
                     if r.name == "r2"
                 }
             self.assertTrue(r2[0].swarm)
-            self.assertFalse(r2[1].swarm)
+            self.assertTrue(r2[1].swarm)
             self.assertTrue(r2[0].compose and r2[1].compose)
 
 

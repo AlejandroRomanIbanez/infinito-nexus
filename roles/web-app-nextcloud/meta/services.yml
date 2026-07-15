@@ -55,6 +55,11 @@ mariadb:
   mem_limit: 1.5g
   pids_limit: 512
 nextcloud:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   name: nextcloud
   image: nextcloud
   version: 33-fpm-alpine

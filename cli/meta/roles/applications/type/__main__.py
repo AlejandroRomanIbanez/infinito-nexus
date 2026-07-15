@@ -32,8 +32,9 @@ def main() -> None:
     parser.add_argument(
         "--skip-mode",
         choices=("compose", "swarm"),
-        help="Exclude roles whose meta/tests.yml skip list contains this "
-        "deployment mode (test-deploy discovery opt-out).",
+        help="Exclude roles whose services.yml primary entity sets "
+        "modes.<mode>.enabled: false for this deployment mode "
+        "(test-deploy discovery opt-out).",
     )
     parser.add_argument(
         "-f",

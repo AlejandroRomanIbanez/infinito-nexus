@@ -19,6 +19,11 @@ matomo:
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 sphinx:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: ghcr.io/kevinveenbirkenbach/infinito-sphinx
   version: v1.0.70
   min_storage: 1GB

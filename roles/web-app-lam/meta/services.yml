@@ -17,6 +17,11 @@ matomo:
   shared: "{{ 'web-app-matomo' in group_names }}"
 # nocheck: playwright-service-flag — self-provider
 lam:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: true # nocheck: dynamic-flag — LDAP IS the storage backend, never local

@@ -27,6 +27,11 @@ postgres:
   shared: "{{ 'svc-db-postgres' in group_names }}"
   enabled: true # nocheck: dynamic-flag
 decidim:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: ghcr.io/decidim/decidim
   version: 0.31.6
   min_storage: 10GB

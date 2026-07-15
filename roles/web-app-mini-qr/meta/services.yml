@@ -1,5 +1,10 @@
 ---
 mini-qr:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: ghcr.io/lyqht/mini-qr
   version: v0.26.3
   ports:

@@ -26,6 +26,11 @@ postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 fider:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: getfider/fider
   version: stable
   name: fider

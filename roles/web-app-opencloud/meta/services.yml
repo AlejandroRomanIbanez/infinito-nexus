@@ -27,6 +27,11 @@ email:
   enabled: "{{ 'web-app-mailu' in group_names }}"
   shared: "{{ 'web-app-mailu' in group_names }}"
 opencloud:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: single-replica
   replicas: 1
   name: opencloud

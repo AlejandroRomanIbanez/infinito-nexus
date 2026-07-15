@@ -29,6 +29,11 @@ email:
   shared: "{{ 'web-app-mailu' in group_names }}"
 # nocheck: playwright-service-flag — self-provider
 keycloak:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: true

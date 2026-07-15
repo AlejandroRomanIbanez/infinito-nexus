@@ -209,13 +209,9 @@ class TestMain(unittest.TestCase):
 
 
 class TestSwarmMode(unittest.TestCase):
-    ENABLED = {"services": {"a": {"enabled": True}}}  # noqa: RUF012
-    DISABLED = {"services": {"a": {"enabled": False}}}  # noqa: RUF012
-
-    def _run_swarm(self, apps_json, variants, overrides):
+    def _run_swarm(self, apps_json, variants):
         with (
             patch.object(vb, "get_variants", return_value=variants),
-            patch.object(vb, "get_variant_overrides_only", return_value=overrides),
             patch.dict("os.environ", {"INFINITO_DEPLOY_MODE": "swarm"}),
             patch("builtins.print") as mock_print,
         ):
@@ -227,7 +223,6 @@ class TestSwarmMode(unittest.TestCase):
         printed = self._run_swarm(
             '["web-app-five"]',
             {"web-app-five": [{}] * 5},
-            {"web-app-five": [{}] * 5},
         )
         self.assertEqual(
             printed,
@@ -237,38 +232,18 @@ class TestSwarmMode(unittest.TestCase):
             ],
         )
 
-    def test_skips_all_disabled_variant_keeping_absolute_index(self) -> None:
+    def test_every_variant_runs_including_all_off(self) -> None:
         printed = self._run_swarm(
             '["web-app-bbb"]',
             {"web-app-bbb": [{}, {}]},
-            {"web-app-bbb": [self.ENABLED, self.DISABLED]},
-        )
-        self.assertEqual(
-            printed,
-            [{"apps": "web-app-bbb", "variant": "0", "variant_slug": "0"}],
-        )
-
-    def test_non_consecutive_survivors_keep_absolute_indices(self) -> None:
-        printed = self._run_swarm(
-            '["web-app-x"]',
-            {"web-app-x": [{}, {}, {}]},
-            {"web-app-x": [self.ENABLED, self.DISABLED, self.ENABLED]},
         )
         self.assertEqual(
             printed,
             [
-                {"apps": "web-app-x", "variant": "0", "variant_slug": "0"},
-                {"apps": "web-app-x", "variant": "2", "variant_slug": "2"},
+                {"apps": "web-app-bbb", "variant": "0", "variant_slug": "0"},
+                {"apps": "web-app-bbb", "variant": "1", "variant_slug": "1"},
             ],
         )
-
-    def test_app_with_only_disabled_variants_is_dropped(self) -> None:
-        printed = self._run_swarm(
-            '["web-app-off"]',
-            {"web-app-off": [{}]},
-            {"web-app-off": [self.DISABLED]},
-        )
-        self.assertEqual(printed, [])
 
     def test_compose_mode_keeps_bundling_and_all_variants(self) -> None:
         with (

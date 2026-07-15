@@ -38,6 +38,11 @@ prometheus:
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
 postmarks:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: node
   version: 26-bookworm
   name: web-app-postmarks

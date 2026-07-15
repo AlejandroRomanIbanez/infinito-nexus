@@ -5,6 +5,11 @@ node:
   shared: true
   bond: 1
 docker:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: default-placement-manager  local registry that holds locally-built infinito images for docker stack deploy; chicken-and-egg if scheduled on a worker
   placement: manager
   enabled: true

@@ -58,6 +58,11 @@ redis:
   enabled: true
   shared: false
 kix:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: docker-registry.kixdesk.com/public/proxy
   version: stable
   min_storage: 10GB

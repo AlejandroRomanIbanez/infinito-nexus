@@ -1,5 +1,10 @@
 ---
 postgres:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: default-placement-manager  central RDBMS, single-node until multi-replica replication (streaming / logical) is in scope
   placement: manager
   bond: 1

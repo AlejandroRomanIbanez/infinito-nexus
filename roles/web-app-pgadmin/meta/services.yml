@@ -1,6 +1,11 @@
 ---
 # nocheck: seaweedfs-required — object storage not implemented for this role
 pgadmin:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: default-placement-manager  embedded sqlite config db; node-local in swarm
   placement: manager
   image: dpage/pgadmin4

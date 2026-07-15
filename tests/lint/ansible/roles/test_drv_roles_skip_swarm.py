@@ -2,10 +2,10 @@
 
 Hardware/driver roles configure the host (kernel modules, lid switch, vendor
 drivers); they are meaningless as swarm services and must not enter the swarm
-deploy matrix. Every ``roles/drv-*`` role therefore MUST list ``swarm`` in its
-``meta/tests.yml`` ``skip`` list (the discovery opt-out honored by
-``--skip-mode swarm``). Compose is intentionally NOT required here -- drivers
-still run in compose deploys.
+deploy matrix. Every ``roles/drv-*`` role therefore MUST set
+``modes.swarm.enabled: false`` on its ``meta/services.yml`` primary entity
+(the discovery opt-out honored by ``--skip-mode swarm``). Compose is
+intentionally NOT required here -- drivers still run in compose deploys.
 """
 
 from __future__ import annotations
@@ -31,11 +31,11 @@ class TestDrvRolesSkipSwarm(unittest.TestCase):
 
         if offenders:
             self.fail(
-                f"{len(offenders)} drv-* role(s) missing 'swarm' in their "
-                "meta/tests.yml skip list: " + ", ".join(offenders) + ". "
-                "Driver roles must not be swarm-deployed: add\n"
-                "skip:\n  - swarm\n"
-                "to each role's meta/tests.yml."
+                f"{len(offenders)} drv-* role(s) do not disable swarm in their "
+                "meta/services.yml modes: " + ", ".join(offenders) + ". "
+                "Driver roles must not be swarm-deployed: set\n"
+                "  modes:\n    swarm:\n      enabled: false\n"
+                "on each role's primary service entity."
             )
 
 

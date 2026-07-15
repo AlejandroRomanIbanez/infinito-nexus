@@ -1,5 +1,10 @@
 ---
 redis:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: default-placement-manager  central cache engine, node-local on-disk state (ACL file + optional AOF), single-node until redis replication is in scope
   placement: manager
   bond: 1

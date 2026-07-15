@@ -31,6 +31,11 @@ recaptcha:
   enabled: false
 # nocheck: playwright-service-flag — self-provider
 simpleicons:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   bond: 1
   enabled: true
   shared: true

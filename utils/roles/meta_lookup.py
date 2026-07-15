@@ -139,32 +139,66 @@ def get_role_lifecycle(role: PathLike, *, role_name: str | None = None) -> str |
     return str(raw).strip().lower() if isinstance(raw, str) else None
 
 
-def get_role_skip(role: PathLike, *, role_name: str | None = None) -> list[str]:
-    """Return the role's ``skip`` list: deployment modes the role is excluded
-    from in test-deploy discovery (e.g. ``[compose, swarm]``), or ``[]`` when
-    absent. Lives at ``meta/tests.yml.skip`` (the SPOT for per-role test
-    metadata)."""
+DEPLOY_MODES: tuple[str, ...] = ("compose", "swarm")
+
+
+def get_role_mode_enabled(
+    role: PathLike, *, mode: str, role_name: str | None = None
+) -> bool:
+    """Return whether the role opts into deploy ``mode`` (``compose`` |
+    ``swarm``).
+
+    The SPOT is ``meta/services.yml.<primary_entity>.modes.<mode>.enabled``.
+    A missing ``modes`` block, a missing ``<mode>`` entry, or a missing
+    ``enabled`` key all mean the role participates in that mode (default
+    ``True``)."""
+    if mode not in DEPLOY_MODES:
+        raise ValueError(f"Unknown deploy mode {mode!r}; expected one of {DEPLOY_MODES}.")
     role_dir, name = _resolve_role(role, role_name)
-    tests = _read_meta_tests(role_dir)
-    if tests is None:
-        return []
-    raw = tests.get("skip")
-    if raw is None:
-        return []
-    if not isinstance(raw, list):
+    services = _read_meta_services(role_dir)
+    primary = _primary_entry(name, services)
+    if primary is None:
+        return True
+    modes = primary.get("modes")
+    if modes is None:
+        return True
+    if not isinstance(modes, dict):
         raise MetaServicesShapeError(
-            f"Invalid skip type in meta/tests.yml for role '{name}': "
-            f"expected list, got {type(raw).__name__}."
+            f"Invalid modes type in meta/services.yml for role '{name}': "
+            f"expected mapping, got {type(modes).__name__}."
         )
-    out: list[str] = []
-    for item in raw:
-        if not isinstance(item, str) or not item.strip():
-            raise MetaServicesShapeError(
-                f"Invalid skip entry in meta/tests.yml for role "
-                f"'{name}': {item!r} (expected non-empty string)."
-            )
-        out.append(item.strip().lower())
-    return out
+    entry = modes.get(mode)
+    if entry is None:
+        return True
+    if not isinstance(entry, dict):
+        raise MetaServicesShapeError(
+            f"Invalid modes.{mode} type in meta/services.yml for role '{name}': "
+            f"expected mapping, got {type(entry).__name__}."
+        )
+    enabled = entry.get("enabled")
+    if enabled is None:
+        return True
+    if not isinstance(enabled, bool):
+        raise MetaServicesShapeError(
+            f"Invalid modes.{mode}.enabled in meta/services.yml for role "
+            f"'{name}': expected bool, got {type(enabled).__name__}."
+        )
+    return enabled
+
+
+def get_role_skip(role: PathLike, *, role_name: str | None = None) -> list[str]:
+    """Return the deploy modes the role is excluded from in test-deploy
+    discovery (e.g. ``[compose, swarm]``), or ``[]`` when it participates in
+    all of them.
+
+    Derived from ``meta/services.yml.<primary_entity>.modes.<mode>.enabled``:
+    a mode is skipped iff its ``enabled`` flag is ``false``."""
+    role_dir, name = _resolve_role(role, role_name)
+    return [
+        mode
+        for mode in DEPLOY_MODES
+        if not get_role_mode_enabled(role_dir, mode=mode, role_name=name)
+    ]
 
 
 def get_role_variant_bundle_size(

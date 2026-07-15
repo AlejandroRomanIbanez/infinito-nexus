@@ -48,6 +48,11 @@ prometheus:
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
 checkmk:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: default-placement-manager  stateful OMD site is node-local (OMD fcntl locks return EBADF on NFS); pin so the task never leaves the node holding its data
   placement: manager
   # nocheck: single-replica

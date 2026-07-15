@@ -20,6 +20,11 @@ postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 onlyoffice:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: default-placement-manager  embedded postgres/redis/rabbitmq engine state; node-local in swarm
   placement: manager
   bond: 1

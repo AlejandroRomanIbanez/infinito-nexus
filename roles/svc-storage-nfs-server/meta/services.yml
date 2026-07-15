@@ -1,5 +1,10 @@
 ---
 nfs-server:
+  modes:
+    compose:
+      enabled: false
+    swarm:
+      enabled: false
   name: nfs-server
   export_base: /srv/nfs
   # Exception: only ganesha is CI-tested; kernel nfsd loopback-deadlocks in the shared-kernel DinD labs (reclaim -> writeback -> same nfsd), so CI cannot cover it and kernel must stay a deliberate, untested per-inventory choice

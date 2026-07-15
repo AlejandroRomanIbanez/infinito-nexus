@@ -35,6 +35,11 @@ sso:
     allowed_groups:
       - "{{ lookup('rbac_group_path', application_id='web-app-fusiondirectory', role='administrator') }}"
 fusiondirectory:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: nfrastack/fusiondirectory
   version: "1.5"
   name: fusiondirectory

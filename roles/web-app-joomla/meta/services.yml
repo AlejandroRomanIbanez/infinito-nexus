@@ -33,6 +33,11 @@ mariadb:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
 joomla:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: joomla
   version: 6.1.2-php8.3-apache
   custom: true

@@ -52,6 +52,11 @@ redis:
   mem_limit: 1g
   pids_limit: 512
 opentalk:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: default-placement-manager  embedded rabbitmq engine state; node-local in swarm
   placement: manager
   name: opentalk

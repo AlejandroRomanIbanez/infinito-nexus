@@ -1,5 +1,10 @@
 ---
 secrets-2-local:
+  modes:
+    compose:
+      enabled: false
+    swarm:
+      enabled: false
   bond: 1
   enabled: true
   shared: true

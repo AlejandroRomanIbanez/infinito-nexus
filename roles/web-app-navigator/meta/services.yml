@@ -27,6 +27,11 @@ prometheus:
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
 navigator:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   ports:
     local:
       http: 8039

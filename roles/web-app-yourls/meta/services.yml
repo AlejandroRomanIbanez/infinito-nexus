@@ -18,6 +18,11 @@ mariadb:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
 yourls:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   version: 1.10.4-apache
   custom: true
   name: yourls

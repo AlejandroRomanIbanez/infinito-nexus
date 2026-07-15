@@ -28,6 +28,11 @@ prometheus:
   shared: "{{ 'web-app-prometheus' in group_names }}"
 # nocheck: playwright-service-flag — central object-store provider entity
 seaweedfs:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   # nocheck: default-placement-manager  /data IS the storage engine: leveldb2 filer LSM, master raft metadata, needle blob volumes; all NFS-unsafe, so the central provider stays node-local like the svc-db-* engines
   placement: manager
   # nocheck: single-replica

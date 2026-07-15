@@ -1,6 +1,11 @@
 ---
 # nocheck: dockerfile-custom
 runner:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   lifecycle: beta
   workload: node-local
   proxy:

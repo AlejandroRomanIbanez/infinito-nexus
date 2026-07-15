@@ -98,6 +98,11 @@ prometheus:
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
 magento:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   ports:
     local:
       sso: 16504
