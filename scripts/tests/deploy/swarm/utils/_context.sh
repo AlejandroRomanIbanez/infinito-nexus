@@ -46,17 +46,28 @@ fi
 
 HAS_SWARM_SERVICE="$(PYTHONPATH="${_REPO_ROOT}" "${PYTHON}" -c "
 import os, yaml
+svc = os.path.join('${ROLE_DIR}', 'meta', 'services.yml')
+data = {}
+if os.path.exists(svc):
+    data = yaml.safe_load(open(svc)) or {}
+    if not isinstance(data, dict):
+        data = {}
+entity = data.get('${ENTITY}')
+workload = entity.get('workload') if isinstance(entity, dict) else None
+if isinstance(workload, str):
+    workload = workload.strip().lower()
+if workload == 'node-local':
+    print('false')
+    raise SystemExit
+if workload == 'stack':
+    print('true')
+    raise SystemExit
 try:
     from utils.roles.meta_lookup import get_role_skip
     swarm_skipped = 'swarm' in get_role_skip('${APP_ID}')
 except Exception:
     swarm_skipped = False
-has_image = False
-svc = os.path.join('${ROLE_DIR}', 'meta', 'services.yml')
-if os.path.exists(svc):
-    data = yaml.safe_load(open(svc)) or {}
-    if isinstance(data, dict):
-        has_image = any(isinstance(v, dict) and 'image' in v for v in data.values())
+has_image = any(isinstance(v, dict) and 'image' in v for v in data.values())
 has_tpl = any(os.path.exists(os.path.join('${ROLE_DIR}', 'templates', t)) for t in ('compose.yml.j2', 'service.yml.j2'))
 print('false' if (swarm_skipped or not (has_image or has_tpl)) else 'true')
 ")"

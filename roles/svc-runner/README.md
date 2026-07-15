@@ -146,6 +146,71 @@ The role self-validates via the scripts in `files/test/`, discovered and run by 
 
 In short: `local.sh` proves the runner can build and deploy entirely on its own hardware; `external.sh` proves it can receive real jobs from GitHub.
 
+## Architecture
+
+Every runner instance is an ephemeral container that mounts its host's docker
+socket (DooD). For each CI job it starts a fresh Infinito DinD container with
+a unique subnet and volume, runs the job inside it, and tears it down; the
+runner then re-registers with GitHub as a fresh ephemeral runner.
+
+```mermaid
+flowchart LR
+    gh[GitHub Actions] -->|job| r1[runner-1]
+    gh -->|job| rn[runner-N]
+    subgraph host [host node]
+        r1 -->|/var/run/docker.sock| dockerd[(host dockerd)]
+        rn -->|/var/run/docker.sock| dockerd
+        dockerd --> dind1[DinD container<br/>job 1]
+        dockerd --> dindn[DinD container<br/>job N]
+    end
+```
+
+### Compose mode
+
+One host runs the whole fleet: the role builds the `infinito-runner` image
+locally, renders one compose project and starts `RUNNER_COUNT` instances.
+
+```mermaid
+flowchart TB
+    subgraph host [single host]
+        build[build infinito-runner image]
+        fleet[compose up:<br/>runner-1 .. runner-N]
+        build --> fleet
+    end
+```
+
+### Swarm mode
+
+The fleet is deployed on **every** cluster node, but not as a `docker stack`
+service (`workload: node-local` in `meta/services.yml`): each runner needs
+the docker socket and the registered identity of exactly its node. The image
+is built once on the manager and distributed through the registry dependency
+(`svc-registry-docker`), the only part that runs as a swarm service.
+
+```mermaid
+flowchart TB
+    subgraph cluster [swarm cluster]
+        subgraph mgr [manager]
+            build[build infinito-runner image]
+            reg[(registry<br/>swarm service)]
+            mfleet[node-local compose:<br/>runner-1 .. runner-N]
+        end
+        subgraph wrk [each worker]
+            wfleet[node-local compose:<br/>runner-1 .. runner-N]
+        end
+    end
+    build -->|push| reg
+    reg -->|pull| mfleet
+    reg -->|pull| wfleet
+```
+
+Because no stack service exists, the swarm test gates that poll
+`docker service ls` (`converge`, `seed`, `drain`, `assert`) skip themselves
+via the `workload: node-local` declaration
+(`scripts/tests/deploy/swarm/utils/_context.sh` maps `node-local` to
+`HAS_SWARM_SERVICE=false`); the deploy itself, the registry distribution
+chain and the CLI e2e suite run in full.
+
 ## Further Resources
 
 - [GitHub Actions self-hosted runner documentation](https://docs.github.com/en/actions/hosting-your-own-runners)
