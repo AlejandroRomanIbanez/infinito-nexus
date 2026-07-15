@@ -139,21 +139,27 @@ def get_role_lifecycle(role: PathLike, *, role_name: str | None = None) -> str |
     return str(raw).strip().lower() if isinstance(raw, str) else None
 
 
+MODES: tuple[str, ...] = ("compose", "swarm", "host")
+"""Every deploy mode a role's primary entity may toggle. ``compose``/``swarm``
+target stack roles (own container stack); ``host`` targets invokable roles that
+configure the host instead of shipping a stack."""
+
 DEPLOY_MODES: tuple[str, ...] = ("compose", "swarm")
+"""The stack deploy modes the CI test-deploy matrix (get_role_skip) covers."""
 
 
 def get_role_mode_enabled(
     role: PathLike, *, mode: str, role_name: str | None = None
 ) -> bool:
     """Return whether the role opts into deploy ``mode`` (``compose`` |
-    ``swarm``).
+    ``swarm`` | ``host``).
 
     The SPOT is ``meta/services.yml.<primary_entity>.modes.<mode>.enabled``.
     A missing ``modes`` block, a missing ``<mode>`` entry, or a missing
     ``enabled`` key all mean the role participates in that mode (default
     ``True``)."""
-    if mode not in DEPLOY_MODES:
-        raise ValueError(f"Unknown deploy mode {mode!r}; expected one of {DEPLOY_MODES}.")
+    if mode not in MODES:
+        raise ValueError(f"Unknown deploy mode {mode!r}; expected one of {MODES}.")
     role_dir, name = _resolve_role(role, role_name)
     services = _read_meta_services(role_dir)
     primary = _primary_entry(name, services)

@@ -1,6 +1,9 @@
 ---
 # nocheck: playwright-service-flag — self-provider
 css:
+  modes:
+    host:
+      enabled: true
   bond: 1
   enabled: true
   shared: true

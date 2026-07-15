@@ -5,6 +5,9 @@ node:
   shared: "{{ 'svc-swarm-node' in group_names }}"
   bond: 1
 manager:
+  modes:
+    host:
+      enabled: true
   name: swarm-manager
   lifecycle: beta
   min_storage: "1MB"

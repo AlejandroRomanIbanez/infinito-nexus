@@ -1,6 +1,8 @@
 ---
 nfs-server:
   modes:
+    host:
+      enabled: true
     compose:
       enabled: false
     swarm:

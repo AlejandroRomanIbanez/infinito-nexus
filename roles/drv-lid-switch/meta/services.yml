@@ -1,6 +1,8 @@
 ---
 lid-switch:
   modes:
+    host:
+      enabled: true
     compose:
       enabled: true
     swarm:

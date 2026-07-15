@@ -33,6 +33,7 @@ _SORT_KEYS = {
     "lifecycle": lambda r: r.lifecycle,
     "compose": lambda r: int(r.compose),
     "swarm": lambda r: int(r.swarm),
+    "host": lambda r: int(r.host),
     "stack": lambda r: int(r.stack),
 }
 
@@ -58,6 +59,7 @@ def _row_fields(r: ComplexityRow) -> dict[str, Any]:
         "random": r.random,
         "compose": r.compose,
         "swarm": r.swarm,
+        "host": r.host,
         "stack": r.stack,
     }
 
@@ -194,7 +196,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     p.add_argument(
         "--deploy-mode",
-        choices=("compose", "swarm"),
+        choices=("compose", "swarm", "host"),
         default="compose",
         help=(
             "Deploy mode the 'bundles'/'jobs' columns count CI runners for "
@@ -261,6 +263,16 @@ def build_parser() -> argparse.ArgumentParser:
             "resolved service, consumer and sibling role lists. 'string' "
             "prints only the role names, one per line (feed into `make "
             "roundtrip apps=...`)."
+        ),
+    )
+    p.add_argument(
+        "-s",
+        "--symbol",
+        action="store_true",
+        help=(
+            "Compact emoji view of the 'cli' table: emoji-only headers, "
+            "true/false as ✅/❌, and lifecycle stages as symbols. No effect on "
+            "the json/yaml/string formats."
         ),
     )
     p.add_argument(
@@ -406,7 +418,7 @@ def main(argv: list[str] | None = None) -> int:
     elif args.format == "string":
         rendered = render_string(rows)
     else:
-        rendered = render_table(rows)
+        rendered = render_table(rows, symbol=args.symbol)
     if rendered:
         print(rendered)
     return 0

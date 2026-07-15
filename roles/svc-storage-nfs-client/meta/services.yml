@@ -5,6 +5,8 @@ nfs-server:
   bond: 1
 nfs-client:
   modes:
+    host:
+      enabled: true
     compose:
       enabled: false
     swarm:

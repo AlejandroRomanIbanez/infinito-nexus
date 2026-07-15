@@ -47,6 +47,11 @@ alias i8lipa='m lint-packages'
 alias i8lipa2='m lint-playwright'
 alias i8lipo='m lint-python'
 alias i8lise='m lint-shellcheck'
+alias i8matis='i8matix -s' # variant with symbols
+alias i8matiso='clear && i8matis --sort "$INFINITO_DISCOVERY_SORT" --filter "compose == true"'
+alias i8mativ='i8matix --variant' # deploy matrix / complexity overview for variants
+alias i8mativas='i8mativ -s' # variant with symbols
+alias i8mativaso='clear && i8mativas --sort "$INFINITO_DISCOVERY_SORT" --filter "compose == true"'
 alias i8matix='infinito meta roles applications complexity' # deploy matrix / complexity overview
 alias i8me='m meta-list'
 alias i8memi='m meta-mig'
@@ -65,6 +70,7 @@ alias i8nicapu='m install-act-update'
 alias i8nifo='m install-force'
 alias i8niga='m install-agent'
 alias i8nila='m install-alias'
+alias i8nilas='i8nila && source ~/.bashrc' # Install aliases and source them
 alias i8nili='m install-lint'
 alias i8nilifo='m install-lint-force'
 alias i8nina='m install-ansible'
@@ -83,6 +89,7 @@ alias i8ro='m roundtrip'
 alias i8ru='m runner-ci-deploy'
 alias i8ruci='m runner-ci-disable'
 alias i8rucine='m runner-ci-enable'
+alias i8s='i8nilas'
 alias i8sa='m swarm-clean'
 alias i8sace='m swarm-clean-stale-nfs'
 alias i8sadi='m swarm-diagnostic'

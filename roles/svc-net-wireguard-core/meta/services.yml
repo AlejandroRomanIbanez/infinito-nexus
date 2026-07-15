@@ -1,5 +1,8 @@
 ---
 wireguard-core:
+  modes:
+    host:
+      enabled: true
   min_storage: 0GB
   lifecycle: alpha
   cpus: "0.1"

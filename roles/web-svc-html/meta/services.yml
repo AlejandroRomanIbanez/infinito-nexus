@@ -18,6 +18,9 @@ prometheus:
   # nocheck: prometheus-scrape
   scrape: false
 html:
+  modes:
+    host:
+      enabled: true
   shared: true
   enabled: false
   lifecycle: beta

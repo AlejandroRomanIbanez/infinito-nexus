@@ -1,5 +1,8 @@
 ---
 remote-2-local:
+  modes:
+    host:
+      enabled: true
   min_storage: 0GB
   backup_providers: []
   lifecycle: beta

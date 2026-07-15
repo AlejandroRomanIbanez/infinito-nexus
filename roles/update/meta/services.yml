@@ -1,3 +1,6 @@
 ---
 update:
+  modes:
+    host:
+      enabled: true
   lifecycle: beta

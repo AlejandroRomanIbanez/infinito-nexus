@@ -1,6 +1,8 @@
 ---
 ssd-hdd:
   modes:
+    host:
+      enabled: true
     compose:
       enabled: false
     swarm:

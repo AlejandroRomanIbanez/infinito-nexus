@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 
 from utils.cache.applications import get_variants
 from utils.github.variant_bundles import compose_bundle_counts
+from utils.roles.meta_lookup import get_role_mode_enabled
 from utils.roles.validation.invokable import list_invokables_by_type
 
 from .graph import (
@@ -68,6 +69,9 @@ class ComplexityRow(NamedTuple):
     swapfile) and pure service-injectors are False. ``swarm`` implies
     ``stack``: a role with no compose template of its own is never a swarm
     stack-deploy target, so ``swarm`` is forced False when ``stack`` is False.
+    ``host`` mirrors the primary entity's ``modes.host.enabled`` flag (default
+    True) for non-stack roles, and is forced False for a stack role: it marks
+    invokable roles that configure the host instead of shipping a stack.
     """
 
     name: str
@@ -93,6 +97,7 @@ class ComplexityRow(NamedTuple):
     lifecycle: str = ""
     compose: bool = False
     swarm: bool = False
+    host: bool = False
     stack: bool = False
 
 
@@ -186,7 +191,7 @@ def compute_complexity_rows(
         for role_dir in sorted(p for p in roles_dir.iterdir() if p.is_dir())
         if is_application_role(role_dir)
     ]
-    if deploy_mode == "swarm":
+    if deploy_mode in ("swarm", "host"):
         bundles = {name: len(variants.get(name) or []) or 1 for name in names}
     else:
         bundles = compose_bundle_counts(names, variants, roles_dir=roles_dir)
@@ -197,6 +202,9 @@ def compute_complexity_rows(
     for name in names:
         stack = role_has_stack(roles_dir / name)
         swarm = name in swarm_apps and stack
+        host = (not stack) and get_role_mode_enabled(
+            roles_dir / name, mode="host", role_name=name
+        )
         rows.append(
             _build_row(name, forward, reverse, max_level)._replace(
                 variants=len(variants.get(name) or []) or 1,
@@ -205,6 +213,7 @@ def compute_complexity_rows(
                 compose=name in compose_apps,
                 swarm=swarm,
                 stack=stack,
+                host=host,
             )
         )
     return _attach_siblings(rows)
@@ -250,6 +259,9 @@ def compute_variant_complexity_rows(
         compose = name in compose_apps
         swarm_role = name in swarm_apps
         stack = role_has_stack(role_dir)
+        host = (not stack) and get_role_mode_enabled(
+            role_dir, mode="host", role_name=name
+        )
         for index, variant_config in enumerate(variants.get(name) or []):
             providers = direct_dep_roles(
                 _variant_services_map(variant_config), registry, truth=truth
@@ -264,6 +276,7 @@ def compute_variant_complexity_rows(
                     compose=compose,
                     swarm=swarm_role and stack,
                     stack=stack,
+                    host=host,
                 )
             )
     return _attach_siblings(rows)

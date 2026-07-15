@@ -18,10 +18,10 @@ on:
         type: string
         default: ""
       modes:
-        description: "Deploy modes to run (space-separated: 'swarm compose'). Only listed modes run their deploy job."
+        description: "Deploy modes to run (space-separated: 'swarm compose host'). Only listed modes run their deploy job."
         required: false
         type: string
-        default: "swarm compose"
+        default: "swarm compose host"
       image_wait_attempts:
         description: "Polling attempts for waiting on prebuilt or mirrored images"
         required: false
@@ -212,6 +212,16 @@ jobs:
       whitelist: ${{ inputs.whitelist }}
       lifecycles: ${{ inputs.lifecycles }}
 
+  test-deploy-host:
+    if: ${{ contains(inputs.modes, 'host') }}
+    needs:
+      - images-mirror-missing
+    uses: ./.github/workflows/test-deploy-host.yml
+    with:
+      distros: ${{ inputs.distros }}
+      whitelist: ${{ inputs.whitelist }}
+      lifecycles: ${{ inputs.lifecycles }}
+
   test-deploy-swarm:
     if: ${{ contains(inputs.modes, 'swarm') }}
     needs:
@@ -260,6 +270,7 @@ jobs:
     name: 🏁 Finish pipeline
     needs:
       - test-deploy-compose
+      - test-deploy-host
       - test-deploy-swarm
       - test-runner-smoke
       - test-install-gate

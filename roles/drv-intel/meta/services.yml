@@ -1,6 +1,8 @@
 ---
 intel:
   modes:
+    host:
+      enabled: true
     compose:
       enabled: true
     swarm:

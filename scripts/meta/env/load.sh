@@ -6,6 +6,28 @@
 # Idempotent (INFINITO_ENV_LOADED). INFINITO_ENV_GENERATING short-circuits
 # re-entry from generator subshells (BASH_ENV would otherwise recurse).
 
+# zsh cannot run this loader's bash-isms (BASH_SOURCE, ${!indirect}, assoc-array
+# key expansion). When sourced from zsh, delegate to bash and import the
+# resulting INFINITO_*/PYTHON/VENV/PATH back into the current shell. The zsh-only
+# ${(%):-%x} (this file's path) is hidden behind eval so bash still parses fine.
+if [ -n "${ZSH_VERSION:-}" ]; then
+	_infinito_zsh_self=""
+	eval '_infinito_zsh_self=${(%):-%x}'
+	_infinito_zsh_root="$(cd "$(dirname "${_infinito_zsh_self}")/../../.." && pwd)"
+	while IFS= read -r _infinito_zsh_line; do
+		case "${_infinito_zsh_line}" in
+		INFINITO_*=* | PYTHON=* | VENV=* | PATH=*)
+			_infinito_zsh_key="${_infinito_zsh_line%%=*}"
+			_infinito_zsh_val="${_infinito_zsh_line#*=}"
+			export "${_infinito_zsh_key}=${_infinito_zsh_val}"
+			;;
+		esac
+	done < <(bash -c "source '${_infinito_zsh_root}/scripts/meta/env/load.sh' >/dev/null 2>&1; env")
+	unset _infinito_zsh_self _infinito_zsh_root _infinito_zsh_line \
+		_infinito_zsh_key _infinito_zsh_val
+	return 0
+fi
+
 _infinito_env_repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../.." && pwd)"
 _infinito_env_dotenv="${_infinito_env_repo_root}/.env"
 

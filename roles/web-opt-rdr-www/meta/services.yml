@@ -1,6 +1,8 @@
 ---
 rdr-www:
   modes:
+    host:
+      enabled: false
     compose:
       enabled: false
     swarm:

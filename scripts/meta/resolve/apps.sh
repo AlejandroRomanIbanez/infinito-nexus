@@ -10,7 +10,7 @@ set -euo pipefail
 # Whole role names are emitted; variant_bundles expands them into the matrix.
 #
 # Inputs via env (defaults live in default.env, the single source of truth):
-#   INFINITO_DEPLOY_MODE           compose|swarm (required; workflows set it)
+#   INFINITO_DEPLOY_MODE           compose|swarm|host (required; workflows set it)
 #   INFINITO_WHITELIST             optional space-separated app ids to keep
 #   INFINITO_MAX_JOBS              cumulative job cap
 #   INFINITO_DISCOVERY_SORT        complexity --sort spec (coverage-first)
@@ -51,11 +51,11 @@ run_meta_cli() {
 	esac
 }
 
-mode="${INFINITO_DEPLOY_MODE:?INFINITO_DEPLOY_MODE must be set to compose or swarm}"
+mode="${INFINITO_DEPLOY_MODE:?INFINITO_DEPLOY_MODE must be set to compose, swarm or host}"
 case "$mode" in
-compose | swarm) ;;
+compose | swarm | host) ;;
 *)
-	echo "apps.sh: INFINITO_DEPLOY_MODE must be compose or swarm, got '$mode'" >&2
+	echo "apps.sh: INFINITO_DEPLOY_MODE must be compose, swarm or host, got '$mode'" >&2
 	exit 2
 	;;
 esac

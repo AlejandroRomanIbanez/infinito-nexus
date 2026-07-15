@@ -1,6 +1,9 @@
 ---
 # nocheck: required-by-coverage
 node:
+  modes:
+    host:
+      enabled: true
   name: swarm
   lifecycle: beta
   bond: 1

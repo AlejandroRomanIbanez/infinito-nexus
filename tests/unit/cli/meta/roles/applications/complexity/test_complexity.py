@@ -17,6 +17,12 @@ from cli.meta.roles.applications.complexity.model import (
     compute_complexity_rows,
     compute_variant_complexity_rows,
 )
+from cli.meta.roles.applications.complexity.render import (
+    _bool_cell,
+    _dwidth,
+    _header,
+    _lifecycle_cell,
+)
 from utils.cache.yaml import load_yaml_str
 from utils.roles.mapping import (
     ROLE_FILE_META_SERVICES,
@@ -389,6 +395,40 @@ class TestStackColumn(unittest.TestCase):
             by_name = {r.name: r for r in compute_complexity_rows(roles_dir)}
             self.assertTrue(by_name["stack-app"].stack)
             self.assertFalse(by_name["host-app"].stack)
+
+    def test_host_column_gates_on_non_stack_and_modes(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            roles_dir = Path(td) / "roles"
+            roles_dir.mkdir()
+            self._build(roles_dir)
+            _mk_role(
+                roles_dir,
+                "host-off",
+                "host-off:\n  enabled: true\n  modes:\n    host:\n      enabled: false\n",
+            )
+
+            by_name = {r.name: r for r in compute_complexity_rows(roles_dir)}
+            self.assertTrue(by_name["host-app"].host)  # non-stack, default enabled
+            self.assertFalse(by_name["stack-app"].host)  # stack roles are never host
+            self.assertFalse(by_name["host-off"].host)  # modes.host.enabled: false
+
+    def test_symbol_cells_and_headers(self) -> None:
+        self.assertEqual(_lifecycle_cell("beta", symbol=True), "🌿")
+        self.assertEqual(_lifecycle_cell("unsupported", symbol=True), "🔴")
+        self.assertEqual(_lifecycle_cell("planned", symbol=True), "🗺️")
+        self.assertEqual(_bool_cell(True, symbol=True), "✅")
+        self.assertEqual(_bool_cell(False, symbol=True), "❌")
+        self.assertEqual(_header("compose", symbol=True), "🐳")
+        # default (no --symbol) view is unchanged
+        self.assertEqual(_bool_cell(True), "true")
+        self.assertEqual(_lifecycle_cell("beta"), "beta")
+        self.assertEqual(_header("compose", symbol=False), "compose")
+
+    def test_display_width_counts_emoji_as_two(self) -> None:
+        self.assertEqual(_dwidth("ab"), 2)  # plain ASCII
+        self.assertEqual(_dwidth("🐳"), 2)  # emoji = two cells
+        self.assertEqual(_dwidth("🛠️"), 2)  # emoji + variation selector (0-width)
+        self.assertEqual(_dwidth("✅"), 2)
 
     def test_stack_is_per_role_in_variant_mode(self) -> None:
         with tempfile.TemporaryDirectory() as td:
