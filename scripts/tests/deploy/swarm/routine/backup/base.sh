@@ -44,7 +44,7 @@ SECRETS_REPO="backup-secrets-to-local"
 USB_IMG="/var/lib/infinito-usb.img"
 USB_MAPPER="usbdrill"
 USB_PASS="drillpass"
-RESTORE_ROOT="/tmp/dr-device-restored"
+RESTORE_ROOT="/var/tmp/dr-device-restored"
 DEV_MOUNT="$(python3 -c "import sys, yaml; print(yaml.safe_load(open(sys.argv[1]))['applications']['svc-bkp-local-2-device']['services']['local-2-device']['mount'])" "${DRILL_EXTRAS}")"
 DEV_TARGET="$(python3 -c "import sys, yaml; print(yaml.safe_load(open(sys.argv[1]))['applications']['svc-bkp-local-2-device']['services']['local-2-device']['target'])" "${DRILL_EXTRAS}")"
 DEV_DEST="${DEV_MOUNT}${DEV_TARGET}"
@@ -101,11 +101,11 @@ fi
 
 echo "==> [3/9] locate the backup generation holding the marker"
 SRC_HOST=""
-MARKER_PATH="$(docker exec "${NFS_SERVER}" find "${DIR_BACKUPS}/${NFS_MID}/${NFS_REPO}" -type f -name "${DR_MARKER}" -path '*/files/*' 2>/dev/null | sort | tail -1 || true)"
+MARKER_PATH="$(docker exec "${NFS_SERVER}" find "${DIR_BACKUPS}/${NFS_MID}/${NFS_REPO}" -type f -name "${DR_MARKER}" -path "*/files/*/${PRIMARY_NFS_VOLUME}/${DR_MARKER}" 2>/dev/null | sort | tail -1 || true)"
 if [ -n "${MARKER_PATH}" ]; then
 	SRC_HOST="${NFS_SERVER}"
 else
-	MARKER_PATH="$(docker exec "${MGR}" find "${DIR_BACKUPS}/${MGR_MID}/${VOLUME_REPO}" -type f -name "${DR_MARKER}" -path '*/files/*' 2>/dev/null | sort | tail -1 || true)"
+	MARKER_PATH="$(docker exec "${MGR}" find "${DIR_BACKUPS}/${MGR_MID}/${VOLUME_REPO}" -type f -name "${DR_MARKER}" -path "*/${PRIMARY_NFS_VOLUME}/files/${DR_MARKER}" 2>/dev/null | sort | tail -1 || true)"
 	if [ -n "${MARKER_PATH}" ]; then
 		SRC_HOST="${MGR}"
 	fi
@@ -121,7 +121,7 @@ SRC_REL="$(dirname "${MARKER_REL}")"
 echo "    marker captured on ${SRC_HOST} at ${MARKER_REL}"
 VOL_MARKER_REL=""
 if [ "${SRC_HOST}" != "${MGR}" ]; then
-	_vol_marker="$(docker exec "${MGR}" find "${DIR_BACKUPS}/${MGR_MID}/${VOLUME_REPO}" -type f -name "${DR_MARKER}" -path '*/files/*' 2>/dev/null | sort | tail -1 || true)"
+	_vol_marker="$(docker exec "${MGR}" find "${DIR_BACKUPS}/${MGR_MID}/${VOLUME_REPO}" -type f -name "${DR_MARKER}" -path "*/${PRIMARY_NFS_VOLUME}/files/${DR_MARKER}" 2>/dev/null | sort | tail -1 || true)"
 	[ -n "${_vol_marker}" ] && VOL_MARKER_REL="${_vol_marker#"${DIR_BACKUPS}"/}"
 fi
 
@@ -161,7 +161,7 @@ docker exec "${MGR}" bash "${BKP_IN_NODE}/04_stack_rm_wait.sh" "${STACK_NAME}"
 
 echo "==> [7/9] recover device -> local root via the recover CLI (full LUKS open)"
 docker exec "${BACKUP_NODE}" sh -c \
-	"umount '${DEV_MOUNT}' 2>/dev/null || true; cryptsetup luksClose '${USB_MAPPER}' 2>/dev/null || true; rm -rf '${RESTORE_ROOT}'; mkdir -p '${RESTORE_ROOT}'"
+	"umount '${DEV_MOUNT}' 2>/dev/null || true; cryptsetup luksClose '${USB_MAPPER}' 2>/dev/null || true; rm -rf '${DIR_BACKUPS:?}' '${RESTORE_ROOT}'; mkdir -p '${RESTORE_ROOT}'"
 docker exec "${BACKUP_NODE}" sh -c \
 	"printf '%s' '${USB_PASS}' | PYTHONPATH='${NODE_SRC}' python3 -m cli.administration.recover device '${USB_IMG}:${DEV_TARGET#/}:${RESTORE_ROOT}' localhost"
 if ! docker exec "${BACKUP_NODE}" test -f "${RESTORE_ROOT}/${SRC_REL}/${DR_MARKER}"; then
@@ -169,9 +169,10 @@ if ! docker exec "${BACKUP_NODE}" test -f "${RESTORE_ROOT}/${SRC_REL}/${DR_MARKE
 	exit 1
 fi
 echo "    marker recovered from device into ${RESTORE_ROOT}"
+docker exec "${BACKUP_NODE}" rm -f "${USB_IMG}"
 
 echo "==> [8/9] recover local root -> live NFS export via the recover CLI"
-DR_RESTORE_STAGE="/tmp/dr-restore-src"
+DR_RESTORE_STAGE="/var/tmp/dr-restore-src"
 docker exec "${NFS_SERVER}" bash "${BKP_IN_NODE}/05_wipe_export.sh" \
 	"${NFS_VOL_DIR}" "${DR_MARKER}" "${DR_RESTORE_STAGE}"
 docker exec "${BACKUP_NODE}" tar -C "${RESTORE_ROOT}/${SRC_REL}" -cf - . |
@@ -211,10 +212,10 @@ if [ -n "${VOL_MARKER_REL}" ]; then
 	VOL_NAME_DIR="${VOL_SRC_REL%/files}"
 	VOL_NAME="${VOL_NAME_DIR##*/}"
 	VOL_GEN="${VOL_GEN_REL##*/}"
-	DR_VOL_STAGE="/tmp/dr-volume-restore"
-	docker exec "${MGR}" bash -c "rm -rf '${DR_VOL_STAGE}'; mkdir -p '${DR_VOL_STAGE}/${MGR_MID}'"
-	docker exec "${BACKUP_NODE}" tar -C "${RESTORE_ROOT}/${MGR_MID}" -cf - . |
-		docker exec -i "${MGR}" tar --numeric-owner -C "${DR_VOL_STAGE}/${MGR_MID}" -xf -
+	DR_VOL_STAGE="/var/tmp/dr-volume-restore"
+	docker exec "${MGR}" bash -c "rm -rf '${DR_VOL_STAGE}'; mkdir -p '${DR_VOL_STAGE}'"
+	docker exec "${BACKUP_NODE}" tar -C "${RESTORE_ROOT}" -cf - "${VOL_SRC_REL}" |
+		docker exec -i "${MGR}" tar --numeric-owner -C "${DR_VOL_STAGE}" -xf -
 	docker exec "${MGR}" sh -c \
 		"PYTHONPATH='${NODE_SRC}' python3 -m cli.administration.recover volume '${DR_VOL_STAGE}/${VOL_SRC_REL}' localhost --no-safety-backup"
 	echo "    volume '${VOL_NAME}' recovered from generation ${VOL_GEN} via the recover CLI"
@@ -226,7 +227,7 @@ if [ "${SECRETS_TRIGGERED}" -eq 1 ]; then
 	SEC_FILES="$(docker exec "${BACKUP_NODE}" bash -c \
 		"find '${RESTORE_ROOT}/${MGR_MID}/${SECRETS_REPO}' -type d -name files 2>/dev/null | sort | tail -1" || true)"
 	if [ -n "${SEC_FILES}" ]; then
-		DR_SEC_STAGE="/tmp/dr-secrets-restore"
+		DR_SEC_STAGE="/var/tmp/dr-secrets-restore"
 		docker exec "${MGR}" bash -c "rm -rf '${DR_SEC_STAGE}'; mkdir -p '${DR_SEC_STAGE}'"
 		docker exec "${BACKUP_NODE}" tar -C "${SEC_FILES}" -cf - . |
 			docker exec -i "${MGR}" tar --numeric-owner -C "${DR_SEC_STAGE}" -xf -

@@ -2,6 +2,10 @@
 data:
   type: volume
   name: n8n_data
+  nfs:
+    uid: "1000"
+    gid: "1000"
+    mode: "0770"
   mounts:
     - service: n8n
       target: /home/node/.n8n

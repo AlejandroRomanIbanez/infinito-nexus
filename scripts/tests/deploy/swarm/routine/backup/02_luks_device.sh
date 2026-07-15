@@ -27,7 +27,7 @@ USB_SIZE_MB="${6:-512}"
 losetup -ln 2>/dev/null | awk '/\(deleted\)/ {print $1}' | xargs -r -n1 losetup -d 2>/dev/null || true
 losetup -j "${USB_IMG}" 2>/dev/null | cut -d: -f1 | xargs -r -n1 losetup -d 2>/dev/null || true
 
-fallocate -l "${USB_SIZE_MB}M" "${USB_IMG}" 2>/dev/null || dd if=/dev/zero of="${USB_IMG}" bs=1M count="${USB_SIZE_MB}" status=none
+truncate -s "${USB_SIZE_MB}M" "${USB_IMG}"
 printf '%s' "${USB_PASS}" | cryptsetup luksFormat --type luks2 --batch-mode "${USB_IMG}" -
 printf '%s' "${USB_PASS}" | cryptsetup luksOpen "${USB_IMG}" "${USB_MAPPER}" -
 mkfs.ext4 -q "/dev/mapper/${USB_MAPPER}"
