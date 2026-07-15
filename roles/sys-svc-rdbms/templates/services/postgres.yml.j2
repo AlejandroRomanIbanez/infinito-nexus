@@ -12,7 +12,7 @@
       context: {{ lookup('database', application_id, 'build_dir') }}
       dockerfile: Dockerfile
 {% else %}
-    {{ lookup('container_image', 'svc-db-postgres', 'postgres', version=lookup('database', application_id, 'version')) }}
+    {{ lookup('container_image', 'svc-db-postgres', 'postgres', image=lookup('database', application_id, 'image'), version=lookup('database', application_id, 'version')) }}
 {% endif %}
     env_file:
       - {{ lookup('database', application_id, 'env') }}
