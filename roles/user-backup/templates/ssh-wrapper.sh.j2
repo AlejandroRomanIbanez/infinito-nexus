@@ -15,14 +15,18 @@ backup_types="{{ BACKUP_REPOSITORIES | join(' ') }}"
 for backup_type in $backup_types; do
 	get_version_directories="ls -d {{ DIR_BACKUPS }}/$hashed_machine_id/$backup_type/*"
 	last_version_directory="$($get_version_directories 2>/dev/null | tail -1)"
-	rsync_command="sudo rsync --server --sender -blogDtpre.iLsfxCIvu . $last_version_directory/"
 	case "$SSH_ORIGINAL_COMMAND" in
 		"$get_version_directories")
 			$get_version_directories
 			exit $?
 			;;
-		"$rsync_command")
-			$rsync_command
+		"sudo rsync --server --sender "*" . $last_version_directory/")
+			# Exception: rsync negotiates version-dependent server flags (3.4.x differs and adds --numeric-ids), so glob them instead of exact-matching a fixed string; allowlist-guard the chars so no shell metacharacter can be injected before running the client's path-constrained command.
+			if printf '%s' "$SSH_ORIGINAL_COMMAND" | grep -q '[^ A-Za-z0-9./_=+:-]'; then
+				echo "This command is not supported."
+				exit 1
+			fi
+			$SSH_ORIGINAL_COMMAND
 			exit $?
 			;;
 	esac

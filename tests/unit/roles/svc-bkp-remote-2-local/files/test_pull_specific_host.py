@@ -36,6 +36,7 @@ class PullSpecificHostTests(unittest.TestCase):
         self.hash64 = "a" * 64
         self.host = "1.2.3.4"
         self.remote = f"backup@{self.host}"
+        self.ssh = f'ssh {self.mod.SSH_OPTS} "{self.remote}"'
 
         self.backups_dir = os.environ["INFINITO_DIR_BACKUPS"]
         self.base = f"{self.backups_dir}/{self.hash64}/"
@@ -56,11 +57,11 @@ class PullSpecificHostTests(unittest.TestCase):
     ):
         cmd = command if isinstance(command, str) else " ".join(command)
 
-        if cmd.startswith(f'ssh "{self.remote}" sha256sum /etc/machine-id'):
+        if cmd.startswith(f"{self.ssh} sha256sum /etc/machine-id"):
             return self._completed(stdout=f"{self.hash64}  /etc/machine-id\n")
 
         if cmd.startswith(
-            f'ssh "{self.remote}" "find {self.base} -maxdepth 1 -type d -execdir basename {{}} ;"'
+            f'{self.ssh} "find {self.base} -maxdepth 1 -type d -execdir basename {{}} ;"'
         ):
             return self._completed(stdout=f"{self.hash64}\n{self.backup_type}\n")
 
@@ -68,7 +69,7 @@ class PullSpecificHostTests(unittest.TestCase):
             return self._completed(stdout=self.last_local)
 
         if cmd.startswith(
-            f'ssh "{self.remote}" "ls -d {self.backups_dir}/{self.hash64}/{self.backup_type}/*"'
+            f'{self.ssh} "ls -d {self.backups_dir}/{self.hash64}/{self.backup_type}/*"'
         ):
             return self._completed(stdout=f"{self.last_remote}\n")
 
@@ -80,13 +81,13 @@ class PullSpecificHostTests(unittest.TestCase):
         cmd = command if isinstance(command, str) else " ".join(command)
 
         if cmd.startswith(
-            f'ssh "{self.remote}" "find {self.base} -maxdepth 1 -type d -execdir basename {{}} ;"'
+            f'{self.ssh} "find {self.base} -maxdepth 1 -type d -execdir basename {{}} ;"'
         ):
             raise subprocess.CalledProcessError(
                 returncode=1, cmd=cmd, output="", stderr="find: error"
             )
 
-        if cmd.startswith(f'ssh "{self.remote}" sha256sum /etc/machine-id'):
+        if cmd.startswith(f"{self.ssh} sha256sum /etc/machine-id"):
             return self._completed(stdout=f"{self.hash64}  /etc/machine-id\n")
 
         return self._completed(stdout="")
@@ -96,11 +97,11 @@ class PullSpecificHostTests(unittest.TestCase):
     ):
         cmd = command if isinstance(command, str) else " ".join(command)
 
-        if cmd.startswith(f'ssh "{self.remote}" sha256sum /etc/machine-id'):
+        if cmd.startswith(f"{self.ssh} sha256sum /etc/machine-id"):
             return self._completed(stdout=f"{self.hash64}  /etc/machine-id\n")
 
         if cmd.startswith(
-            f'ssh "{self.remote}" "find {self.base} -maxdepth 1 -type d -execdir basename {{}} ;"'
+            f'{self.ssh} "find {self.base} -maxdepth 1 -type d -execdir basename {{}} ;"'
         ):
             return self._completed(stdout="")
 
@@ -114,11 +115,11 @@ class PullSpecificHostTests(unittest.TestCase):
         """
         cmd = command if isinstance(command, str) else " ".join(command)
 
-        if cmd.startswith(f'ssh "{self.remote}" sha256sum /etc/machine-id'):
+        if cmd.startswith(f"{self.ssh} sha256sum /etc/machine-id"):
             return self._completed(stdout=f"{self.hash64}  /etc/machine-id\n")
 
         if cmd.startswith(
-            f'ssh "{self.remote}" "find {self.base} -maxdepth 1 -type d -execdir basename {{}} ;"'
+            f'{self.ssh} "find {self.base} -maxdepth 1 -type d -execdir basename {{}} ;"'
         ):
             return self._completed(stdout=f"{self.hash64}\n{self.backup_type}\n")
 
@@ -126,7 +127,7 @@ class PullSpecificHostTests(unittest.TestCase):
             return self._completed(stdout=self.last_local)
 
         if cmd.startswith(
-            f'ssh "{self.remote}" "ls -d {self.backups_dir}/{self.hash64}/{self.backup_type}/*"'
+            f'{self.ssh} "ls -d {self.backups_dir}/{self.hash64}/{self.backup_type}/*"'
         ):
             return self._completed(stdout="")
 
