@@ -54,6 +54,37 @@ class TestExpandApps(unittest.TestCase):
             [{"apps": "web-app-unknown", "variant": "", "variant_slug": ""}],
         )
 
+    def test_per_app_bundle_size_override_wins(self) -> None:
+        self.assertEqual(
+            vb.expand_apps(
+                ["web-app-three"],
+                self.VARIANTS,
+                3,
+                bundle_size_per_app={"web-app-three": 1},
+            ),
+            [
+                {"apps": "web-app-three", "variant": "0", "variant_slug": "0"},
+                {"apps": "web-app-three", "variant": "1", "variant_slug": "1"},
+                {"apps": "web-app-three", "variant": "2", "variant_slug": "2"},
+            ],
+        )
+
+    def test_per_app_override_leaves_other_apps_bundled(self) -> None:
+        self.assertEqual(
+            vb.expand_apps(
+                ["web-app-three", "web-app-five"],
+                self.VARIANTS,
+                3,
+                bundle_size_per_app={"web-app-five": 2},
+            ),
+            [
+                {"apps": "web-app-three", "variant": "0,1,2", "variant_slug": "0-1-2"},
+                {"apps": "web-app-five", "variant": "0,1", "variant_slug": "0-1"},
+                {"apps": "web-app-five", "variant": "2,3", "variant_slug": "2-3"},
+                {"apps": "web-app-five", "variant": "4", "variant_slug": "4"},
+            ],
+        )
+
     def test_role_over_bundle_size_is_split(self) -> None:
         self.assertEqual(
             vb.expand_apps(["web-app-five"], self.VARIANTS, 3),

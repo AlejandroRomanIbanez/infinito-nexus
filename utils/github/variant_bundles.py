@@ -174,6 +174,7 @@ def expand_apps(
     storages_per_app: Mapping[str, Sequence[int | None]] | None = None,
     max_storage_bytes: int | None = None,
     deployable_indices_per_app: Mapping[str, Sequence[int]] | None = None,
+    bundle_size_per_app: Mapping[str, int] | None = None,
 ) -> list[dict[str, str]]:
     entries: list[dict[str, str]] = []
     for app in apps:
@@ -188,13 +189,31 @@ def expand_apps(
         if not indices:
             continue
         storages = (storages_per_app or {}).get(app)
+        app_bundle_size = (bundle_size_per_app or {}).get(app) or bundle_size
         entries.extend(
             _entry(app, ",".join(map(str, chunk)))
             for chunk in _pack_indices(
-                indices, bundle_size, storages, max_storage_bytes
+                indices, app_bundle_size, storages, max_storage_bytes
             )
         )
     return entries
+
+
+def app_bundle_sizes(apps: Iterable[str]) -> dict[str, int]:
+    """Per-app ``variant_bundle_size`` overrides from ``meta/tests.yml``
+    (runtime-heavy roles cap variants per compose job below the global
+    default); apps without the key are absent."""
+    from utils.roles.meta_lookup import get_role_variant_bundle_size
+
+    sizes: dict[str, int] = {}
+    for app in apps:
+        role_dir = ROLES_DIR / app
+        if not role_dir.is_dir():
+            continue
+        size = get_role_variant_bundle_size(role_dir, role_name=app)
+        if size is not None:
+            sizes[app] = size
+    return sizes
 
 
 def app_variant_storages(
@@ -244,11 +263,12 @@ def compose_bundle_counts(
     storages = app_variant_storages(apps, variants_per_app, roles_dir)
     bundle_size = resolve_bundle_size()
     max_storage = resolve_max_storage()
+    overrides = app_bundle_sizes(apps)
     return {
         app: len(
             bundle_indices(
                 variant_count(variants_per_app, app),
-                bundle_size,
+                overrides.get(app) or bundle_size,
                 storages.get(app),
                 max_storage,
             )
@@ -299,6 +319,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             resolve_bundle_size(),
             storages_per_app=app_variant_storages(apps, variants_per_app),
             max_storage_bytes=resolve_max_storage(),
+            bundle_size_per_app=app_bundle_sizes(apps),
         )
     print(json.dumps(entries))
     return 0
