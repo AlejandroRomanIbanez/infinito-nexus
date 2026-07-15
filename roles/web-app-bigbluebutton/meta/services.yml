@@ -29,6 +29,7 @@ bigbluebutton:
   bond: 1
   enabled: true
   shared: true
+  workload: node-local
   repository: https://github.com/bigbluebutton/docker.git
   ref: v3.0.23
   recording:

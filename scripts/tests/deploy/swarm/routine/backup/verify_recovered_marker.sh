@@ -2,7 +2,7 @@
 # Runs on the controller after the matrix update pass. Asserts the DR-drill
 # marker (seeded pre-backup) survived recovery plus the update-pass bring-up
 # onto the recovered NFS export. Skips when the sentinel is absent (the drill
-# recovered nothing: no NFS volume or no swarm service).
+# recovered nothing: the app declares no NFS-flagged volume).
 set -euo pipefail
 
 DR_VERIFY_ENV="/tmp/dr-drill-verify-${APP_ID:?APP_ID required (matrix sets it)}.env"

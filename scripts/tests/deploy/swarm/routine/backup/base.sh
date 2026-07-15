@@ -49,10 +49,6 @@ DEV_MOUNT="$(python3 -c "import sys, yaml; print(yaml.safe_load(open(sys.argv[1]
 DEV_TARGET="$(python3 -c "import sys, yaml; print(yaml.safe_load(open(sys.argv[1]))['applications']['svc-bkp-local-2-device']['services']['local-2-device']['target'])" "${DRILL_EXTRAS}")"
 DEV_DEST="${DEV_MOUNT}${DEV_TARGET}"
 
-if [ "${HAS_SWARM_SERVICE}" != true ]; then
-	echo "SKIP drill: ${APP_ID} deploys no swarm service"
-	exit 0
-fi
 if [ -z "${PRIMARY_NFS_VOLUME}" ]; then
 	echo "SKIP drill: ${APP_ID} declares no NFS-flagged volume — nothing to prove a restore against"
 	exit 0
@@ -157,7 +153,15 @@ fi
 echo "    marker present on encrypted USB"
 
 echo "==> [6/9] tear the stack down completely (full disaster) before recovery"
-docker exec "${MGR}" bash "${BKP_IN_NODE}/04_stack_rm_wait.sh" "${STACK_NAME}"
+if [ "${HAS_SWARM_SERVICE}" = true ]; then
+	docker exec "${MGR}" bash "${BKP_IN_NODE}/04_stack_rm_wait.sh" "${STACK_NAME}"
+else
+	for _node in "${MGR}" "${WRK1}" "${WRK2}"; do
+		docker exec "${_node}" sh -c \
+			"ids=\$(docker ps -q --filter label=com.docker.compose.project=${ENTITY}); [ -z \"\$ids\" ] || docker stop \$ids"
+	done
+	echo "    node-local workload: stopped compose project '${ENTITY}' on every node instead of a stack rm"
+fi
 
 echo "==> [7/9] recover device -> local root via the recover CLI (full LUKS open)"
 docker exec "${BACKUP_NODE}" sh -c \
