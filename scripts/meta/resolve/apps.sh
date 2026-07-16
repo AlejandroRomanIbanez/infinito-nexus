@@ -60,7 +60,7 @@ compose | swarm | host) ;;
 	;;
 esac
 
-filter="${mode} == true"
+filter="test_${mode} == true"
 if [[ -n "${INFINITO_WHITELIST// /}" ]]; then
 	wl_csv="$(printf '%s' "${INFINITO_WHITELIST}" | tr -s ' ' ',')"
 	wl_csv="${wl_csv#,}"

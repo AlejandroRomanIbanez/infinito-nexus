@@ -8,7 +8,11 @@ from typing import TYPE_CHECKING, Any, NamedTuple
 
 from utils.cache.applications import get_variants
 from utils.github.variant_bundles import compose_bundle_counts
-from utils.roles.meta_lookup import get_role_mode_enabled
+from utils.roles.meta_lookup import (
+    MetaServicesShapeError,
+    get_role_mode_enabled,
+    get_role_test_skips,
+)
 from utils.roles.validation.invokable import list_invokables_by_type
 
 from .graph import (
@@ -72,6 +76,10 @@ class ComplexityRow(NamedTuple):
     ``host`` mirrors the primary entity's ``modes.host.enabled`` flag (default
     True) for non-stack roles, and is forced False for a stack role: it marks
     invokable roles that configure the host instead of shipping a stack.
+    ``test_compose`` / ``test_swarm`` / ``test_host`` duplicate the mode
+    columns minus the role's ``meta/tests.yml`` ``skip`` list: ``modes``
+    states where a role RUNS, ``skip`` deactivates TESTING a mode, and CI
+    discovery filters on these ``test_*`` columns.
     """
 
     name: str
@@ -99,6 +107,9 @@ class ComplexityRow(NamedTuple):
     swarm: bool = False
     host: bool = False
     stack: bool = False
+    test_compose: bool = False
+    test_swarm: bool = False
+    test_host: bool = False
 
 
 def _base_hash(name: str, services: list[str]) -> str:
@@ -125,6 +136,15 @@ def _tested_apps(skip_mode: str, lifecycles: set[str]) -> set[str]:
     always reads the real ``roles/`` tree regardless of a test ``roles_dir``."""
     grouped = list_invokables_by_type(lifecycles=set(lifecycles), skip_mode=skip_mode)
     return {app for apps in grouped.values() for app in apps}
+
+
+def _role_test_skips(roles_dir: Path, name: str) -> list[str]:
+    """The role's ``meta/tests.yml`` ``skip`` list; never breaks row building
+    on a malformed meta file."""
+    try:
+        return get_role_test_skips(roles_dir / name, role_name=name)
+    except MetaServicesShapeError:
+        return []
 
 
 def _role_lifecycle(role_variants: Any) -> str:
@@ -202,21 +222,26 @@ def compute_complexity_rows(
     rows = []
     for name in names:
         stack = role_has_stack(roles_dir / name)
+        compose = name in compose_apps
         swarm = name in swarm_apps and stack
         host = (
             name in host_apps
             and not stack
             and get_role_mode_enabled(roles_dir / name, mode="host", role_name=name)
         )
+        skips = _role_test_skips(roles_dir, name)
         rows.append(
             _build_row(name, forward, reverse, max_level)._replace(
                 variants=len(variants.get(name) or []) or 1,
                 bundles=bundles.get(name, 1),
                 lifecycle=_role_lifecycle(variants.get(name)),
-                compose=name in compose_apps,
+                compose=compose,
                 swarm=swarm,
                 stack=stack,
                 host=host,
+                test_compose=compose and "compose" not in skips,
+                test_swarm=swarm and "swarm" not in skips,
+                test_host=host and "host" not in skips,
             )
         )
     return _attach_siblings(rows)
@@ -268,6 +293,7 @@ def compute_variant_complexity_rows(
             and not stack
             and get_role_mode_enabled(role_dir, mode="host", role_name=name)
         )
+        skips = _role_test_skips(roles_dir, name)
         for index, variant_config in enumerate(variants.get(name) or []):
             providers = direct_dep_roles(
                 _variant_services_map(variant_config), registry, truth=truth
@@ -283,6 +309,9 @@ def compute_variant_complexity_rows(
                     swarm=swarm_role and stack,
                     stack=stack,
                     host=host,
+                    test_compose=compose and "compose" not in skips,
+                    test_swarm=swarm_role and stack and "swarm" not in skips,
+                    test_host=host and "host" not in skips,
                 )
             )
     return _attach_siblings(rows)

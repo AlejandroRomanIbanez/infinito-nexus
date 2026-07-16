@@ -26,6 +26,7 @@ from cli.meta.roles.applications.complexity.render import (
 from utils.cache.yaml import load_yaml_str
 from utils.roles.mapping import (
     ROLE_FILE_META_SERVICES,
+    ROLE_FILE_META_TESTS,
     ROLE_FILE_META_VARIANTS,
     ROLE_FILE_TEMPL_COMPOSE,
     ROLE_FILE_VARS_MAIN,
@@ -416,6 +417,27 @@ class TestStackColumn(unittest.TestCase):
             self.assertFalse(by_name["stack-app"].host)  # stack roles are never host
             self.assertFalse(by_name["host-off"].host)  # modes.host.enabled: false
 
+    def test_tests_yml_skip_clears_test_columns_but_not_base(self) -> None:
+        """meta/tests.yml skip deactivates testing a mode (test_* columns)
+        while the base capability columns stay untouched."""
+        with tempfile.TemporaryDirectory() as td:
+            roles_dir = Path(td) / "roles"
+            roles_dir.mkdir()
+            self._build(roles_dir)
+            (roles_dir / "host-app" / ROLE_FILE_META_TESTS).write_text(
+                "---\nskip:\n  - host\n", encoding="utf-8"
+            )
+
+            with mock.patch(
+                "cli.meta.roles.applications.complexity.model._tested_apps",
+                return_value={"host-app", "stack-app"},
+            ):
+                by_name = {r.name: r for r in compute_complexity_rows(roles_dir)}
+            self.assertTrue(by_name["host-app"].host)
+            self.assertFalse(by_name["host-app"].test_host)
+            self.assertTrue(by_name["stack-app"].test_compose)
+            self.assertTrue(by_name["stack-app"].compose)
+
     def test_host_column_gates_on_lifecycle_envelope(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             roles_dir = Path(td) / "roles"
@@ -432,20 +454,46 @@ class TestStackColumn(unittest.TestCase):
     def test_symbol_cells_and_headers(self) -> None:
         self.assertEqual(_lifecycle_cell("beta", symbol=True), "🌿")
         self.assertEqual(_lifecycle_cell("unsupported", symbol=True), "🔴")
-        self.assertEqual(_lifecycle_cell("planned", symbol=True), "🗺️")
+        self.assertEqual(_lifecycle_cell("planned", symbol=True), "🧭")
         self.assertEqual(_bool_cell(True, symbol=True), "✅")
         self.assertEqual(_bool_cell(False, symbol=True), "❌")
         self.assertEqual(_header("compose", symbol=True), "🐳")
-        # default (no --symbol) view is unchanged
         self.assertEqual(_bool_cell(True), "true")
         self.assertEqual(_lifecycle_cell("beta"), "beta")
         self.assertEqual(_header("compose", symbol=False), "compose")
 
     def test_display_width_counts_emoji_as_two(self) -> None:
-        self.assertEqual(_dwidth("ab"), 2)  # plain ASCII
-        self.assertEqual(_dwidth("🐳"), 2)  # emoji = two cells
-        self.assertEqual(_dwidth("🛠️"), 2)  # emoji + variation selector (0-width)
+        """Plain ASCII is 1 cell per char, emoji are 2, and a variation
+        selector adds 0 on top of its base emoji."""
+        self.assertEqual(_dwidth("ab"), 2)
+        self.assertEqual(_dwidth("🐳"), 2)
+        self.assertEqual(_dwidth("🛠️"), 2)
         self.assertEqual(_dwidth("✅"), 2)
+
+    def test_all_table_symbols_have_unambiguous_terminal_width(self) -> None:
+        """Every table symbol must be a single East-Asian-Wide emoji without a
+        variation selector. VS16 sequences on narrow base chars (like the old
+        🖥️/➡️/⚖️) render 2 cells in terminals while wcwidth reports 1, which
+        shifts every header right of them off its column."""
+        import unicodedata
+
+        from cli.meta.roles.applications.complexity.render import (
+            _HEADER_SYMBOLS,
+            _LIFECYCLE_SYMBOLS,
+        )
+
+        symbols = {**_HEADER_SYMBOLS, **_LIFECYCLE_SYMBOLS, "true": "✅", "false": "❌"}
+        for name, sym in symbols.items():
+            with self.subTest(symbol=name):
+                self.assertEqual(
+                    unicodedata.east_asian_width(sym[0]),
+                    "W",
+                    f"{name}={sym!r}: base char is not East-Asian Wide",
+                )
+                self.assertFalse(
+                    any(0xFE00 <= ord(c) <= 0xFE0F for c in sym),
+                    f"{name}={sym!r}: contains a variation selector",
+                )
 
     def test_stack_is_per_role_in_variant_mode(self) -> None:
         with tempfile.TemporaryDirectory() as td:

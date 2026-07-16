@@ -207,6 +207,28 @@ def get_role_skip(role: PathLike, *, role_name: str | None = None) -> list[str]:
     ]
 
 
+def get_role_test_skips(role: PathLike, *, role_name: str | None = None) -> list[str]:
+    """Return the deploy modes deactivated for test-deploy discovery via
+    ``meta/tests.yml`` ``skip``, or ``[]`` when absent.
+
+    ``modes`` in ``meta/services.yml`` states where a role RUNS;
+    ``skip`` in ``meta/tests.yml`` deactivates TESTING a mode without
+    touching that capability."""
+    role_dir, name = _resolve_role(role, role_name)
+    tests = _read_meta_tests(role_dir)
+    if tests is None:
+        return []
+    raw = tests.get("skip")
+    if raw is None:
+        return []
+    if not isinstance(raw, list) or any(m not in MODES for m in raw):
+        raise MetaServicesShapeError(
+            f"Invalid skip in meta/tests.yml for role '{name}': {raw!r} "
+            f"(expected a list drawn from {MODES})."
+        )
+    return [str(m) for m in raw]
+
+
 def get_role_variant_bundle_size(
     role: PathLike, *, role_name: str | None = None
 ) -> int | None:

@@ -35,6 +35,9 @@ _SORT_KEYS = {
     "swarm": lambda r: int(r.swarm),
     "host": lambda r: int(r.host),
     "stack": lambda r: int(r.stack),
+    "test_compose": lambda r: int(r.test_compose),
+    "test_swarm": lambda r: int(r.test_swarm),
+    "test_host": lambda r: int(r.test_host),
 }
 
 
@@ -61,6 +64,9 @@ def _row_fields(r: ComplexityRow) -> dict[str, Any]:
         "swarm": r.swarm,
         "host": r.host,
         "stack": r.stack,
+        "test_compose": r.test_compose,
+        "test_swarm": r.test_swarm,
+        "test_host": r.test_host,
     }
 
 
