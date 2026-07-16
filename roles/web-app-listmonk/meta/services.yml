@@ -49,6 +49,7 @@ listmonk:
     - web-app-matomo
     - web-app-keycloak
     - web-app-stalwart
+    - web-app-mailu
   lifecycle: beta
 # nocheck: playwright-service-flag — object store, no Playwright surface
 minio:

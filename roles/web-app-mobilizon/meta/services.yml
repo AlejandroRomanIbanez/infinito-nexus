@@ -42,6 +42,7 @@ mobilizon:
     - web-app-matomo
     - web-app-keycloak
     - web-app-stalwart
+    - web-app-mailu
   lifecycle: beta
   cpus: "0.2"
   mem_reservation: 128m

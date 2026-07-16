@@ -58,6 +58,7 @@ suitecrm:
   run_after:
     - web-app-keycloak
     - web-app-stalwart
+    - web-app-mailu
     - web-app-matomo
   lifecycle: beta
 css:

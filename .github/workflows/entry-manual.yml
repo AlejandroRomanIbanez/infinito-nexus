@@ -18,6 +18,11 @@ on:
         required: false
         default: ""
         type: string
+      test_migration:
+        description: "Run the opt-in mail-provider migration scenario (Mailu → Stalwart)."
+        required: false
+        default: false
+        type: boolean
 
 permissions:
   contents: read
@@ -33,4 +38,5 @@ jobs:
       distros: ${{ inputs.distros }}
       whitelist: ${{ inputs.whitelist }}
       roles_only: ${{ (inputs.whitelist != '' && inputs.whitelist != '__ALL__') && 'true' || 'false' }}
+      test_migration: ${{ inputs.test_migration && 'true' || 'false' }}
     secrets: inherit

@@ -60,4 +60,5 @@ n8n:
     - web-app-keycloak
     - web-app-matomo
     - web-app-stalwart
+    - web-app-mailu
   lifecycle: alpha

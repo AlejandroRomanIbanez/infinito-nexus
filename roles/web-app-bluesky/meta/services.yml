@@ -120,6 +120,7 @@ bluesky:
     - web-app-matomo
     - web-app-keycloak
     - web-app-stalwart
+    - web-app-mailu
   lifecycle: beta
   min_storage: 1GB
   cpus: "0.5"

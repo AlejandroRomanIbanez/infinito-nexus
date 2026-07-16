@@ -32,6 +32,11 @@ on:
         required: false
         type: boolean
         default: false
+      test_migration:
+        description: "'true' runs the opt-in mail-provider migration scenario (Mailu → Stalwart)."
+        required: false
+        type: string
+        default: "false"
 
 concurrency:
   group: infinito-test-${{ github.ref }}
@@ -218,6 +223,16 @@ jobs:
       distros: ${{ inputs.distros }}
       whitelist: ${{ inputs.whitelist }}
 
+  # Opt-in (INFINITO_TEST_MIGRATION): the called workflow's job gates itself
+  # on the forwarded input or the GitHub repository variable.
+  test-deploy-migration:
+    needs:
+      - test-dns
+      - images-mirror-missing
+    uses: ./.github/workflows/test-deploy-migration.yml
+    with:
+      test_migration: ${{ inputs.test_migration }}
+
   test-runner-smoke:
     needs:
       - test-deploy-universal
@@ -274,6 +289,7 @@ jobs:
     needs:
       - test-deploy-server
       - test-deploy-universal
+      - test-deploy-migration
       - test-runner-smoke
       - test-deploy-workstation
       - test-install-gate

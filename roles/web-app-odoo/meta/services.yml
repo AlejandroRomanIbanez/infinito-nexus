@@ -50,6 +50,7 @@ odoo:
   run_after:
     - web-app-keycloak
     - web-app-stalwart
+    - web-app-mailu
   lifecycle: beta
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests

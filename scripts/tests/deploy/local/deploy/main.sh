@@ -5,8 +5,11 @@ set -euo pipefail
 #
 # Routing environment variables (set them via `make compose-deploy<short>=<value>`;
 # `make compose-deploy` maps the short Make variables to the INFINITO_* env vars):
-#   mode        initialize (default) | reinstall | update
-#                               Short Make alias: mode
+#   mode        initialize (default) | reinstall | update | migration
+#                               Short Make alias: mode. `migration` runs the
+#                               opt-in mail-provider migration scenario
+#                               (see apps/migration/selection.sh) and needs
+#                               INFINITO_TEST_MIGRATION=true.
 #   bundles            optional. Comma-separated bundle names. When
 #                               set, routes to bundles/fresh.sh (initialize
 #                               or reinstall) or bundles/update.sh (update).
@@ -31,12 +34,17 @@ MODE="${mode:-initialize}" # nocheck: deploy router knob; routes to apps/<verb>/
 PURGE="${purge:-false}"    # nocheck: deploy router knob; gates entity pre-purge
 
 case "${MODE}" in
-initialize | reinstall | update) ;;
+initialize | reinstall | update | migration) ;;
 *)
-	echo "ERROR: invalid mode='${MODE}' (must be initialize|reinstall|update)" >&2
+	echo "ERROR: invalid mode='${MODE}' (must be initialize|reinstall|update|migration)" >&2
 	exit 2
 	;;
 esac
+
+# Self-contained scenario: fixed app set, ignores apps/bundles routing.
+if [[ "${MODE}" == "migration" ]]; then
+	exec bash "${SCRIPT_DIR}/apps/migration/selection.sh"
+fi
 
 run_pre_purge() {
 	if [[ "${PURGE}" == "true" ]]; then

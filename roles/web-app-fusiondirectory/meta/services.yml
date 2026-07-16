@@ -46,6 +46,7 @@ fusiondirectory:
     - web-app-matomo
     - web-app-keycloak
     - web-app-stalwart
+    - web-app-mailu
     - svc-db-openldap
   lifecycle: beta
   min_storage: 5GB

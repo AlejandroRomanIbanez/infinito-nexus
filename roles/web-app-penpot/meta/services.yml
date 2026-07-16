@@ -63,6 +63,7 @@ penpot:
     - web-app-matomo
     - web-app-keycloak
     - web-app-stalwart
+    - web-app-mailu
   lifecycle: beta
 frontend:
   image: penpotapp/frontend

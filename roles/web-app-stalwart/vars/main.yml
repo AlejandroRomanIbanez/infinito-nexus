@@ -68,6 +68,9 @@ STALWART_WEBUI_CACHE_FILE: "/var/cache/infinito/core/cache/package/stalwart-webu
 STALWART_WEBUI_LOCAL_FILE: "{{ [ STALWART_CONFIG_DIR, 'webui.zip' ] | path_join }}"
 STALWART_WEBUI_CONTAINER_FILE: "/etc/stalwart/webui.zip"
 STALWART_WEBUI_LOCAL_URL: "file://{{ STALWART_WEBUI_CONTAINER_FILE }}"
+# Identity of the upstream WebAdmin Application record (validated against the
+# live JMAP x:Application/get response for the pinned Stalwart version).
+STALWART_WEBUI_APP_DESCRIPTION: "Stalwart Web Interface"
 
 # Volumes
 STALWART_DATA_VOLUME: "stalwart_data"

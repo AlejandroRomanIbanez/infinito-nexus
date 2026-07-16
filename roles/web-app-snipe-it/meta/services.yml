@@ -60,6 +60,7 @@ snipe-it:
     - web-app-matomo
     - web-app-keycloak
     - web-app-stalwart
+    - web-app-mailu
   lifecycle: beta
 sso:
   bond: 1

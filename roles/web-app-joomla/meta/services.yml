@@ -54,6 +54,7 @@ joomla:
     - web-app-matomo
     - web-app-keycloak
     - web-app-stalwart
+    - web-app-mailu
   lifecycle: beta
   cpus: "0.5"
   mem_reservation: 256m

@@ -64,8 +64,9 @@ postgres:
 # nocheck: dynamic-flag — role-local sub-component, always deployed with the stack
 # nocheck: playwright-service-flag — internal sub-component
 webmail:
+  bond: 1
   enabled: true
-  shared: false
+  shared: true
   image: roundcube/roundcubemail
   version: "1.7.2-apache"
   cpus: "0.3"

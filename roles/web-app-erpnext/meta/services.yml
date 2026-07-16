@@ -64,6 +64,7 @@ erpnext:
   run_after:
     - web-app-keycloak
     - web-app-stalwart
+    - web-app-mailu
   lifecycle: beta
   cpus: "2.0"
   mem_reservation: 2g

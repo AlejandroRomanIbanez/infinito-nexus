@@ -58,6 +58,7 @@ keycloak:
   run_after:
     - web-app-matomo
     - web-app-stalwart
+    - web-app-mailu
   lifecycle: beta
 # Per-consumer SSO-proxy sidecar. Rendered via tasks/sso_proxy.yml
 # whenever a consumer role's `services.sso.flavor == 'oauth2'`.

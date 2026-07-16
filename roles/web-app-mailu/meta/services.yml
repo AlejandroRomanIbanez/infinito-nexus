@@ -21,6 +21,9 @@ matomo:
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
 # Not MAIL_PROVIDER: a Mailu-active deploy must not pull stalwart into the closure.
+# nocheck: dynamic-flag — coexistence dep on the OTHER provider: `email` is a
+# covered key of this role, but the entry must gate on web-app-stalwart (never
+# self) so only a legacy-Mailu deploy pulls the active provider in.
 email:
   bond: 1
   enabled: "{{ 'web-app-stalwart' in group_names }}"
@@ -33,6 +36,10 @@ mailu:
   # The static `email` provider slot belongs to the default (web-app-stalwart);
   # the registry allows only one. Mailu is selected at runtime via MAIL_PROVIDER,
   # which routes lookup('email') + consumer mail flags here instead.
+  # `covers` makes the consumers' `services.email` declaration satisfy their
+  # `run_after: web-app-mailu` entry (consumers run after BOTH providers).
+  covers:
+    - email
   version: "2024.06"
   name: mailu
   min_storage: 20GB

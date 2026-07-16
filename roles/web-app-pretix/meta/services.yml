@@ -55,6 +55,7 @@ pretix:
     - web-app-matomo
     - web-app-keycloak
     - web-app-stalwart
+    - web-app-mailu
   lifecycle: beta
 # nocheck: playwright-service-flag — CSS consumer, no Playwright surface (provider: web-svc-css)
 css:

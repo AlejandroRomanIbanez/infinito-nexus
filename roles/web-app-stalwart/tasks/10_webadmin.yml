@@ -9,21 +9,22 @@
       {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
           'methodCalls': [['x:Application/get', {'ids': none}, 'c0']]} | to_json }}
 
-# v0.16 ships exactly one Application record (the WebAdmin). Assert that
-# instead of silently taking `first` of an unexpected set.
-- name: "Ensure exactly one WebUI Application record exists"
-  ansible.builtin.assert:
-    that:
-      - (stalwart_jmap.methodResponses[0][1].list | length) == 1
-    fail_msg: >-
-      Expected exactly one Stalwart Application record (the WebAdmin), got
-      {{ stalwart_jmap.methodResponses[0][1].list | length }}. The JMAP schema
-      changed — re-validate 10_webadmin.yml against this Stalwart version.
-    quiet: true
-
 - name: "Resolve the WebUI Application id"
   ansible.builtin.set_fact:
-    stalwart_webui_app_id: "{{ stalwart_jmap.methodResponses[0][1].list[0].id }}"
+    stalwart_webui_app_id: >-
+      {{ (stalwart_jmap.methodResponses[0][1].list
+          | selectattr('description', 'equalto', STALWART_WEBUI_APP_DESCRIPTION)
+          | map(attribute='id') | first) | default('') }}
+
+- name: "Ensure the WebUI Application record was found"
+  ansible.builtin.assert:
+    that:
+      - stalwart_webui_app_id | length > 0
+    fail_msg: >-
+      No Stalwart Application record with description
+      '{{ STALWART_WEBUI_APP_DESCRIPTION }}' found — the JMAP schema changed;
+      re-validate 10_webadmin.yml against this Stalwart version.
+    quiet: true
 
 - name: "Point the WebUI Application at the locally-staged bundle"
   include_tasks: jmap_call.yml

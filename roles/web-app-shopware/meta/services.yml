@@ -57,6 +57,7 @@ shopware:
   run_after:
     - web-app-keycloak
     - web-app-stalwart
+    - web-app-mailu
   lifecycle: beta
   cpus: "1.0"
   mem_reservation: 1g
