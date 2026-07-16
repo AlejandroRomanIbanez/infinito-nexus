@@ -69,7 +69,7 @@ n8n:
     - web-app-keycloak
     - web-app-matomo
     - web-app-mailu
-  lifecycle: alpha
+  lifecycle: beta
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
 container_backup: # nocheck: bond-baseline backup host joins outside the variant topology

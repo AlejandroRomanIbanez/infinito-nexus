@@ -28,7 +28,7 @@ docker:
       registry: 5000
     internal:
       registry: 5000
-  lifecycle: alpha
+  lifecycle: beta
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
 container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
