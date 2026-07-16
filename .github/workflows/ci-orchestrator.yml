@@ -215,6 +215,7 @@ jobs:
   test-deploy-host:
     if: ${{ contains(inputs.modes, 'host') }}
     needs:
+      - build-ci-images
       - images-mirror-missing
     uses: ./.github/workflows/test-deploy-host.yml
     with:

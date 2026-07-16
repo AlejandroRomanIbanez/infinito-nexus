@@ -51,7 +51,7 @@ env:
 
 jobs:
   discover:
-    name: 🍯 Lure (${{ inputs.distros }})
+    name: 🚢 Swarm (${{ inputs.distros }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
