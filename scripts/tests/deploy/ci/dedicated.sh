@@ -73,6 +73,12 @@ cleanup() {
 
 	local _rescue_host_dir="/tmp/rescue-diagnostics/${INFINITO_DISTRO}/${apps}"
 	mkdir -p "${_rescue_host_dir}"
+	echo ">>> Capturing rescue diagnostics inside ${INFINITO_CONTAINER} (recursive DiD snapshot) before teardown removes it"
+	docker exec \
+		-e "INFINITO_RESCUE_DIAGNOSTICS_DIR=${INFINITO_RESCUE_DIAGNOSTICS_DIR}" \
+		"${INFINITO_CONTAINER}" \
+		python3 /opt/src/infinito/utils/diagnostics/container.py \
+		"${apps}" "compose post-deploy failure" 2>/dev/null || true
 	echo ">>> Copying rescue diagnostics from ${INFINITO_CONTAINER} to ${_rescue_host_dir}"
 	# nocheck: container-cp - container-to-host extraction on the CI host itself
 	docker cp "${INFINITO_CONTAINER}:${INFINITO_RESCUE_DIAGNOSTICS_DIR}/." \
