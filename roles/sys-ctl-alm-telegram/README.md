@@ -8,6 +8,17 @@ This role installs and configures the necessary components for sending notificat
 
 Optimized for real-time alerts, this role is a key component of the overall [`sys-ctl-alm-compose` suite](../). It ensures that, upon failure of a critical service, a Telegram message is automatically sent to notify administrators and enable prompt troubleshooting.
 
+## Cosmos
+
+The diagram places Automated Telegram Alerts for Service Failures in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-alm-telegram 💻]
+        svc_telegram["telegram"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to provide a robust solution for automated Telegram notifications in a systemd environment. By integrating with Telegram’s Bot API and using customizable message templates, it delivers clear and timely alerts about service failures, thereby enhancing system observability and reliability.

@@ -11,6 +11,26 @@ This role installs the backup script and the systemd service that drives it on t
 The source path is the NFS export base resolved from the [svc-storage-nfs-server](../svc-storage-nfs-server/) services SPOT; deploy the role on the host that serves the export.
 Deploy [sys-ctl-cln-bkps](../sys-ctl-cln-bkps/) to keep the snapshot tree bounded and [user-backup](../user-backup/) so downstream hosts can pull the tree.
 
+## Cosmos
+
+The diagram places Backup NFS to Local in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_storage_nfs_server["svc-storage-nfs-server 💻"]
+    end
+    subgraph role [svc-bkp-nfs-2-local 💻]
+        svc_nfs_server["nfs-server"]
+        svc_nfs_2_local["nfs-2-local"]
+    end
+    subgraph dependents [Dependents]
+        dpt_svc_storage_nfs_server["svc-storage-nfs-server 💻"]
+    end
+    dep_svc_storage_nfs_server -.-> svc_nfs_server
+    svc_nfs_2_local -.-> dpt_svc_storage_nfs_server
+```
+
 ## Schema
 
 ```mermaid
@@ -32,6 +52,43 @@ flowchart TD
 - **Differential snapshots:** rsync `--link-dest` against the previous generation deduplicates unchanged files.
 - **Baudolo-compatible layout:** snapshots land in the same `<machine-hash>/<repo>/<generation>` tree as the container backups, so pull and cleanup tooling applies unchanged.
 - **Schedule-coordinated:** the systemd unit is part of the global manipulation group, so it never races backup/cleanup/repair jobs on the same host.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Backup NFS to Local onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-bkp-nfs-2-local full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Backup NFS to Local to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-bkp-nfs-2-local'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-bkp-nfs-2-local \
+  --diff \
+  -vv
+```
 
 ## Recover
 

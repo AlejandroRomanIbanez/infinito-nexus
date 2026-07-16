@@ -9,6 +9,17 @@ for a user selected via `user_key`.
 
 This role executes common tasks for user environment configuration.
 
+## Cosmos
+
+The diagram places User in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [user 💻]
+        svc_user["user"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

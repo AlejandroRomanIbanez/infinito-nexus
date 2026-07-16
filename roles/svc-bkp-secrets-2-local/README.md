@@ -20,6 +20,21 @@ self-signed mode). The generation joins the same backup tree the pull
 and device roles consume, so it flows to the backup host and the
 encrypted device automatically.
 
+## Cosmos
+
+The diagram places Backup Host Secrets to Local in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [svc-bkp-secrets-2-local 💻]
+        svc_secrets_2_local["secrets-2-local"]
+    end
+    subgraph dependents [Dependents]
+        dpt_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+    end
+    svc_secrets_2_local --> dpt_svc_bkp_volume_2_local
+```
+
 ## Schema
 
 ```mermaid
@@ -46,6 +61,43 @@ flowchart TD
 - **Chain-native:** the generation lands in the standard backup tree,
   so `svc-bkp-remote-2-local` pulls it and `svc-bkp-local-2-device`
   mirrors it onto the encrypted device without extra wiring.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Backup Host Secrets to Local onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-bkp-secrets-2-local full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Backup Host Secrets to Local to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-bkp-secrets-2-local'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-bkp-secrets-2-local \
+  --diff \
+  -vv
+```
 
 ## Recover
 

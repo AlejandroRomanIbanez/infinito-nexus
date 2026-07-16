@@ -13,6 +13,17 @@ Optimized for effective disk space management, this role:
 - Deploys a Python script that deletes old backup directories when disk usage is too high.
 - Configures a systemd service to run the cleanup script, with notifications via [sys-ctl-alm-compose](../sys-ctl-alm-compose/README.md).
 
+## Cosmos
+
+The diagram places Cleanup Backups Service in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-cln-bkps 💻]
+        svc_bkps["bkps"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to maintain optimal backup storage by automatically removing outdated backup versions when disk usage exceeds a specified threshold.

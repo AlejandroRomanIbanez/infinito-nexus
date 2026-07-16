@@ -8,6 +8,17 @@ Checks the health of all mounted Btrfs filesystems by inspecting device error co
 
 This role health-check for Btrfs filesystems, alerts on any device error counters.
 
+## Cosmos
+
+The diagram places sys-ctl-hlth-btrfs in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-hlth-btrfs 💻]
+        svc_btrfs["btrfs"]
+    end
+```
+
 ## Features
 
 - Iterates over every Btrfs filesystem.

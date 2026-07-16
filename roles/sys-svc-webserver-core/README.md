@@ -13,6 +13,17 @@ This Ansible role installs and configures **NGINX** as a core HTTP/stream server
 
 This role installs and configures Nginx HTTP and stream modules with performance-tuned defaults.
 
+## Cosmos
+
+The diagram places Webserver in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-webserver-core 💻]
+        svc_svc_webserver_core["svc-webserver-core"]
+    end
+```
+
 ## Features
 
 * **Package installation** of `NGINX` and `NGINX-mod-stream`.

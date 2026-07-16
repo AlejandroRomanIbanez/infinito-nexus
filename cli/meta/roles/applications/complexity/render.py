@@ -7,6 +7,7 @@ import unicodedata
 from typing import TYPE_CHECKING
 
 from utils.cache.yaml import dump_yaml_str
+from utils.symbol_glossary import to_emoji
 
 if TYPE_CHECKING:
     from .model import ComplexityRow
@@ -39,50 +40,52 @@ def _variant_cell(row: ComplexityRow) -> str:
     return "" if row.variant is None else str(row.variant)
 
 
-_LIFECYCLE_SYMBOLS: dict[str, str] = {
-    "planned": "🧭",
-    "pre-alpha": "🧪",
-    "alpha": "🐣",
-    "beta": "🌿",
-    "rc": "🚦",
-    "stable": "🟢",
-    "maintenance": "🔧",
-    "deprecated": "🚫",
-    "eol": "🪦",
-    "unsupported": "🔴",
-}
+_LIFECYCLE_STAGES = (
+    "planned",
+    "pre-alpha",
+    "alpha",
+    "beta",
+    "rc",
+    "stable",
+    "maintenance",
+    "deprecated",
+    "eol",
+    "unsupported",
+)
+_LIFECYCLE_SYMBOLS: dict[str, str] = {s: to_emoji(s) for s in _LIFECYCLE_STAGES}
 
-_HEADER_SYMBOLS: dict[str, str] = {
-    "row": "🔢",
-    "id": "🆔",
-    "name": "📛",
-    "lifecycle": "🌱",
-    "variant": "🎯",
-    "variants": "🔀",
-    "bundles": "📦",
-    "jobs": "👷",
-    "compose": "🐳",
-    "swarm": "🐝",
-    "stack": "🥞",
-    "host": "💻",
-    "test_compose": "🐋",
-    "test_swarm": "🍯",
-    "test_host": "🏠",
-    "embeds_direct": "⏩",
-    "embeds": "📥",
-    "consumers_direct": "⏪",
-    "consumers": "📤",
-    "weight": "📊",
-    "random": "🎲",
-    "base": "🧬",
-    "siblings": "👯",
-    "covered_by": "🔰",
-}
+_HEADER_NAMES = (
+    "row",
+    "id",
+    "name",
+    "lifecycle",
+    "variant",
+    "variants",
+    "bundles",
+    "jobs",
+    "compose",
+    "swarm",
+    "stack",
+    "host",
+    "test_compose",
+    "test_swarm",
+    "test_host",
+    "embeds_direct",
+    "embeds",
+    "consumers_direct",
+    "consumers",
+    "weight",
+    "random",
+    "base",
+    "siblings",
+    "covered_by",
+)
+_HEADER_SYMBOLS: dict[str, str] = {name: to_emoji(name) for name in _HEADER_NAMES}
 
 
 def _bool_cell(value: bool, *, symbol: bool = False) -> str:
     if symbol:
-        return "✅" if value else "❌"
+        return to_emoji("enabled") if value else to_emoji("disabled")
     return "true" if value else "false"
 
 

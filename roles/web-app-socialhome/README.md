@@ -8,6 +8,31 @@ Deploy **SocialHome**, a federated social network focused on content hubs and fe
 
 This role sets up a SocialHome application using Docker Compose with basic domain and port wiring. It follows your standard role layout and prepares the service to run behind your existing reverse proxy. The current version is a scaffold intended to be expanded with database/cache services and app-specific settings.
 
+## Cosmos
+
+The diagram places SocialHome in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_svc_logout["web-svc-logout 🐳🐝"]
+    end
+    subgraph role [web-app-socialhome]
+        svc_socialhome["socialhome"]
+        svc_prometheus["prometheus"]
+        svc_logout["logout"]
+        svc_dashboard["dashboard"]
+        svc_sso["sso ❌"]
+    end
+    dep_web_app_dashboard -.-> svc_dashboard
+    dep_web_app_keycloak --> svc_sso
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_svc_logout -.-> svc_logout
+```
+
 ## Features
 
 - **Dockerized Scaffold:** Baseline Docker Compose integration and role structure to get you started quickly.
@@ -15,6 +40,43 @@ This role sets up a SocialHome application using Docker Compose with basic domai
 - **Ready for Federation:** Intended to support ActivityPub-based federation once the application is fully wired.
 - **Extensible Configuration:** Room for adding database, cache, worker processes, and environment tuning.
 - **Desktop Integration Hooks:** This README ensures inclusion in the Web App Desktop overview.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy SocialHome onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-app-socialhome full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy SocialHome to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-app-socialhome'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-app-socialhome \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

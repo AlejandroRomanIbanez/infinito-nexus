@@ -13,6 +13,17 @@ The `sys-front-inj-logout` Ansible role automatically embeds a lightweight JavaS
 - **Dynamic content support**: Uses a `MutationObserver` to handle AJAX‑loaded or dynamically injected logout elements.  
 - **CSP integration**: Automatically appends the required script hash into your CSP policy via the role’s CSP helper.
 
+## Cosmos
+
+The diagram places sys-front-inj-logout in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-front-inj-logout 💻]
+        svc_logout["logout"]
+    end
+```
+
 ## Features
 
 - Seamless injection via NGINX `sub_filter` on `</head>`.  

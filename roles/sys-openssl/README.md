@@ -11,6 +11,17 @@ OpenSSL commands on the host system.
 
 This role ensures OpenSSL is installed once as a shared host dependency for roles that invoke the `openssl` CLI.
 
+## Cosmos
+
+The diagram places sys-openssl in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-openssl 💻]
+        svc_openssl["openssl"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

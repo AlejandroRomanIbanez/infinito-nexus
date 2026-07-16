@@ -16,6 +16,22 @@ svc-storage-nfs-server services.yml SPOT to confirm
 reachability and writability at deploy time. The actual docker volume
 mounts happen later, driven by the Docker engine at container start.
 
+## Cosmos
+
+The diagram places NFS Client in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_storage_nfs_server["svc-storage-nfs-server 💻"]
+    end
+    subgraph role [svc-storage-nfs-client 💻]
+        svc_nfs_server["nfs-server"]
+        svc_nfs_client["nfs-client"]
+    end
+    dep_svc_storage_nfs_server -.-> svc_nfs_server
+```
+
 ## Features
 
 - **Distro-aware packages:** Installs `nfs-common` on Debian/Ubuntu,
@@ -25,6 +41,43 @@ mounts happen later, driven by the Docker engine at container start.
   container boot.
 - **Strict assertion:** Missing `storage.nfs.server` or
   fails the deploy with a precise error.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy NFS Client onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-storage-nfs-client full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy NFS Client to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-storage-nfs-client'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-storage-nfs-client \
+  --diff \
+  -vv
+```
 
 ## Credits
 

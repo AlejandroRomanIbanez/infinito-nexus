@@ -8,9 +8,57 @@ Installs the qBittorrent torrent client via AUR on Arch Linux.
 
 This README is for the `desk-qbittorrent` role within the `infinito` repository. This role is specifically crafted for installing qBittorrent, a popular open-source torrent client, on personal computers.
 
+## Cosmos
+
+The diagram places QBittorrent in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [desk-qbittorrent 💻]
+        svc_qbittorrent["qbittorrent"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy QBittorrent onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=desk-qbittorrent full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy QBittorrent to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'desk-qbittorrent'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id desk-qbittorrent \
+  --diff \
+  -vv
+```
 
 ## Role Tasks
 

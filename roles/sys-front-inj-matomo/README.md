@@ -8,6 +8,17 @@ This Ansible role automates the integration of Matomo tracking code into NGINX-s
 
 This role injects Matomo analytics tracking code and noscript image tracker into Nginx-served HTML pages.
 
+## Cosmos
+
+The diagram places NGINX Matomo Tracking Role in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-front-inj-matomo 💻]
+        svc_matomo["matomo"]
+    end
+```
+
 ## Features
 
 - Automated insertion of Matomo tracking script into the `</head>` tag of HTML pages.

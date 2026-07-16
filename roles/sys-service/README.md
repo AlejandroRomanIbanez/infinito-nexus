@@ -14,6 +14,17 @@ It installs or removes unit files, configures runtime behavior, and ensures serv
 - Provides the shared `files/debug.sh` SPOT for reusable service-failure diagnostics.
 - Exposes `tasks/utils/debug.yml` as the canonical Ansible wrapper around that script.
 
+## Cosmos
+
+The diagram places sys-service in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-service 💻]
+        svc_service["service"]
+    end
+```
+
 ## Features
 
 - **Unit Cleanup:** Automated removal of old service units.

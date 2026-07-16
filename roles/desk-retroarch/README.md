@@ -8,6 +8,17 @@
 
 Designed for retro gaming enthusiasts, this role installs RetroArch along with its core assets and themes on Arch Linux systems. It ensures all UI styles are ready and provides a consistent emulator frontend interface.
 
+## Cosmos
+
+The diagram places RetroArch in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [desk-retroarch 💻]
+        svc_retroarch["retroarch"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to automate the deployment of a full-featured RetroArch environment, reducing manual setup and improving reproducibility across gaming setups.
@@ -16,6 +27,43 @@ The purpose of this role is to automate the deployment of a full-featured RetroA
 
 - **Installs RetroArch:** Including the main [RetroArch package](https://archlinux.org/packages/extra/x86_64/retroarch/) and theme assets.
 - **UI Assets Support:** Both [XMB](https://docs.libretro.com/) and [Ozone](https://docs.libretro.com/) menu styles supported out of the box.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy RetroArch onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=desk-retroarch full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy RetroArch to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'desk-retroarch'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id desk-retroarch \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

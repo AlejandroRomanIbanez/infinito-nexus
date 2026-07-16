@@ -8,6 +8,17 @@ LetsEncrypt TLS provider for sys-front-tls.
 
 This role letsEncrypt TLS provider for sys-front-tls. Ensures certificate presence.
 
+## Cosmos
+
+The diagram places sys-front-tls-letsencrypt in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-front-tls-letsencrypt 💻]
+        svc_tls_letsencrypt["tls-letsencrypt"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

@@ -15,6 +15,17 @@ Supported modes (resolved outside or passed in):
 - self_signed  -> generate and store a self-signed certificate (SAN aware)
 - off          -> no TLS, HTTP only
 
+## Cosmos
+
+The diagram places sys-front-tls in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-front-tls 💻]
+        svc_tls["tls"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

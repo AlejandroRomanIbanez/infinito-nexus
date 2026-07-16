@@ -33,6 +33,39 @@ Typical use cases:
 * BigBlueButton
 * Any WebRTC-based application
 
+## Cosmos
+
+The diagram places Coturn in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+        dep_svc_db_redis["svc-db-redis 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+    end
+    subgraph role [web-svc-coturn 🐳🐝]
+        svc_coturn["coturn"]
+        svc_gateway["gateway"]
+        svc_redis["redis"]
+        svc_prometheus["prometheus"]
+        svc_container_backup["container_backup"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_app_bigbluebutton["web-app-bigbluebutton 🐳🐝"]
+        dpt_web_app_matrix["web-app-matrix 🐳🐝"]
+        dpt_web_app_nextcloud["web-app-nextcloud 🐳🐝"]
+        dpt_web_app_opentalk["web-app-opentalk 🐳🐝"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+    dep_svc_db_redis -.-> svc_redis
+    dep_web_app_prometheus -.-> svc_prometheus
+    svc_coturn -.-> dpt_web_app_bigbluebutton
+    svc_coturn -.-> dpt_web_app_matrix
+    svc_coturn -.-> dpt_web_app_nextcloud
+    svc_coturn -.-> dpt_web_app_opentalk
+```
+
 ## Features
 
 * Stateless container deployment (no database or persistent volume required)  
@@ -40,6 +73,43 @@ Typical use cases:
 * TURN and STUN support over TCP and UDP  
 * Configurable relay port ranges for scaling  
 * Integration into Infinito.Nexus inventory/variable system
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Coturn onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-svc-coturn full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Coturn to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-svc-coturn'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-svc-coturn \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

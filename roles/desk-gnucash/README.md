@@ -8,9 +8,57 @@ Installs GnuCash finance management software on Pacman-based systems, ensuring t
 
 This Ansible role is responsible for installing GnuCash, a free and open-source financial management software, on systems utilizing the Pacman package manager. It's particularly useful for setting up GnuCash in a Linux environment with minimal manual intervention.
 
+## Cosmos
+
+The diagram places GnuCash in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [desk-gnucash 💻]
+        svc_gnucash["gnucash"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy GnuCash onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=desk-gnucash full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy GnuCash to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'desk-gnucash'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id desk-gnucash \
+  --diff \
+  -vv
+```
 
 ## Role: desk-gnucash
 

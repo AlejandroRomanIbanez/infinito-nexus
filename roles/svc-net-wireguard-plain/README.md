@@ -12,6 +12,17 @@ Optimized for client configurations, this role:
 - Uses a Jinja2 template to generate the `set-mtu.sh` script.
 - Ensures that the MTU is configured correctly before starting WireGuard with [wg-quick](https://www.wireguard.com/quickstart/).
 
+## Cosmos
+
+The diagram places Wireguard Client in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [svc-net-wireguard-plain 💻]
+        svc_wireguard_plain["wireguard-plain"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to configure WireGuard on a client by setting appropriate MTU values on network interfaces. This ensures a stable and optimized VPN connection.
@@ -22,6 +33,43 @@ The primary purpose of this role is to configure WireGuard on a client by settin
 - **Systemd Service Integration:** Creates and manages a systemd service to execute the MTU configuration script.
 - **Administration Support:** For client key creation and further setup, please refer to the [Administration](./Administration.md) file.
 - **Modular Design:** Easily integrates with other WireGuard roles or network configuration roles.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Wireguard Client onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-net-wireguard-plain full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Wireguard Client to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-net-wireguard-plain'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-net-wireguard-plain \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

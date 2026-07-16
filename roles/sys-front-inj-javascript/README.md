@@ -8,6 +8,17 @@ This Ansible role injects a custom JavaScript snippet into all HTML responses se
 
 This role injects a custom JavaScript snippet into Nginx-served HTML responses via sub_filter.
 
+## Cosmos
+
+The diagram places Global JavaScript Injector for NGINX in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-front-inj-javascript 💻]
+        svc_javascript["javascript"]
+    end
+```
+
 ## Features
 
 - **One-line Script Injection**  

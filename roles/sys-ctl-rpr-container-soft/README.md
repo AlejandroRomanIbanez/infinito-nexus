@@ -8,6 +8,17 @@ This Ansible role automatically restarts Docker Compose configurations with exit
 
 Tailored for Arch Linux, this role monitors containers for failure states and initiates a controlled restart of affected Compose configurations. If port conflicts prevent recovery, the role stops the affected stack, restarts Docker, and recreates the container environment.
 
+## Cosmos
+
+The diagram places Docker Healer in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-rpr-container-soft 💻]
+        svc_container_soft["container-soft"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to provide automated healing for Docker Compose environments, minimizing manual recovery effort and reducing downtime.

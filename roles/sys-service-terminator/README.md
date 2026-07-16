@@ -10,6 +10,17 @@ but should be started once everything they depend on is ready.
 
 This role runs a collected list of systemd services at the end of a play.
 
+## Cosmos
+
+The diagram places sys-service-terminator in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-service-terminator 💻]
+        svc_service_terminator["service-terminator"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

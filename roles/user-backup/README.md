@@ -8,6 +8,17 @@ This role sets up a dedicated backup user (`backup`) for performing secure backu
 
 The role is a critical component in a secure backup scheme. By isolating backup operations to a dedicated user, it minimizes the risk of unauthorized actions. The role configures the SSH environment so that only specific, allowed commands can be executed, and it sets up passwordless sudo rights for rsync, ensuring smooth and secure backup operations.
 
+## Cosmos
+
+The diagram places User for Backup Provider in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [user-backup 💻]
+        svc_backup["backup"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to enhance the security of your backup system by providing a dedicated user with strict command restrictions. This controlled environment limits the potential damage from a compromised backup account while still allowing efficient backup operations.

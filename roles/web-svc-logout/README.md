@@ -16,6 +16,57 @@ It solves the common challenge of logging a user out from all connected apps wit
 - Supplies a user-friendly logout conductor UI that requests logout on all configured domains and shows live status.
 - Designed to be used as the Front Channel Logout URL for Keycloak or other OpenID Connect providers, enabling a seamless, service-spanning logout experience.
 
+## Cosmos
+
+The diagram places Universal Logout in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+    end
+    subgraph role [web-svc-logout 🐳🐝]
+        svc_logout["logout"]
+        svc_matomo["matomo"]
+        svc_css["css"]
+        svc_javascript["javascript"]
+        svc_prometheus["prometheus"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_app_akaunting["web-app-akaunting 🐳🐝"]
+        dpt_web_app_baserow["web-app-baserow 🐳🐝"]
+        dpt_web_app_bigbluebutton["web-app-bigbluebutton 🐳🐝"]
+        dpt_web_app_bluesky["web-app-bluesky 🐳🐝"]
+        dpt_web_app_bookwyrm["web-app-bookwyrm 🐳🐝"]
+        dpt_web_app_checkmk["web-app-checkmk 🐳🐝"]
+        dpt_web_app_confluence["web-app-confluence 🐳🐝"]
+        dpt_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dpt_web_app_decidim["web-app-decidim 🐳🐝"]
+        dpt_web_app_discourse["web-app-discourse 🐳🐝"]
+        dpt_web_app_erpnext["web-app-erpnext 🐳🐝"]
+        dpt_web_app_espocrm["web-app-espocrm 🐳🐝"]
+        dpt_more["..."]
+    end
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_svc_css -.-> svc_css
+    svc_logout --> dpt_more
+    svc_logout -.-> dpt_web_app_akaunting
+    svc_logout -.-> dpt_web_app_baserow
+    svc_logout -.-> dpt_web_app_bigbluebutton
+    svc_logout -.-> dpt_web_app_bluesky
+    svc_logout -.-> dpt_web_app_bookwyrm
+    svc_logout -.-> dpt_web_app_checkmk
+    svc_logout -.-> dpt_web_app_confluence
+    svc_logout -.-> dpt_web_app_dashboard
+    svc_logout -.-> dpt_web_app_decidim
+    svc_logout -.-> dpt_web_app_discourse
+    svc_logout -.-> dpt_web_app_erpnext
+    svc_logout -.-> dpt_web_app_espocrm
+```
+
 ## Features
 
 - Automatic discovery of logout domains from applications with the `features.logout` flag enabled.
@@ -23,6 +74,43 @@ It solves the common challenge of logging a user out from all connected apps wit
 - Status page with live feedback on logout progress for each domain.
 - Built-in support for Docker Compose deployment and integration with the Infinito.Nexus ecosystem.
 - Includes security-conscious headers (CORS, CSP) for smooth cross-domain logout operations.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Universal Logout onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-svc-logout full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Universal Logout to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-svc-logout'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-svc-logout \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

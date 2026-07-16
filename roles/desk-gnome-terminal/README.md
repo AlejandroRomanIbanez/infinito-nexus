@@ -10,6 +10,17 @@ Learn more about GNOME Terminal on [Wikipedia](https://en.wikipedia.org/wiki/GNO
 
 This role installs GNOME Terminal on Arch Linux, providing a modern terminal emulator for the GNOME desktop environment.
 
+## Cosmos
+
+The diagram places GNOME Terminal in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [desk-gnome-terminal 💻]
+        svc_gnome_terminal["gnome-terminal"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to ensure that GNOME Terminal is installed and properly configured on Arch Linux systems, providing users with a robust and fully featured terminal emulator that integrates seamlessly with the GNOME desktop.
@@ -20,6 +31,43 @@ The purpose of this role is to ensure that GNOME Terminal is installed and prope
 - Ensures the terminal emulator is available system-wide.
 - Supports modern features and configuration options offered by GNOME Terminal.
 - Enhances the overall usability and productivity of the GNOME desktop environment.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy GNOME Terminal onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=desk-gnome-terminal full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy GNOME Terminal to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'desk-gnome-terminal'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id desk-gnome-terminal \
+  --diff \
+  -vv
+```
 
 ## Credits
 

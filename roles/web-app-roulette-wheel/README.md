@@ -8,12 +8,81 @@
 
 This role deploys and configures the Roulette Wheel application using Docker Compose. It pulls the latest source code from a Git repository, builds a Docker image from a configurable Node.js base, and starts the application on a user-defined local HTTP port.
 
+## Cosmos
+
+The diagram places Roulette Wheel in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dep_web_app_mailu["web-app-mailu 🐳🐝"]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+    end
+    subgraph role [web-app-roulette-wheel 🐳🐝]
+        svc_logout["logout ❌"]
+        svc_sso["sso ❌"]
+        svc_dashboard["dashboard"]
+        svc_matomo["matomo"]
+        svc_css["css"]
+        svc_roulette_wheel["roulette-wheel"]
+        svc_email["email ❌"]
+        svc_prometheus["prometheus"]
+    end
+    dep_web_app_dashboard -.-> svc_dashboard
+    dep_web_app_keycloak --> svc_sso
+    dep_web_app_mailu --> svc_email
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_svc_css -.-> svc_css
+```
+
 ## Features
 
 - **Dockerized Deployment:** Packages the application in a Docker container for consistent and isolated runtime.
 - **Automated Builds:** Uses an automated Docker build process with a dedicated `Dockerfile`.
 - **Configurable Ports:** Exposes the application through a customizable host port.
 - **Git Integration:** Ensures that the application source code is up-to-date by pulling from the specified Git repository.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Roulette Wheel onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-app-roulette-wheel full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Roulette Wheel to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-app-roulette-wheel'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-app-roulette-wheel \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

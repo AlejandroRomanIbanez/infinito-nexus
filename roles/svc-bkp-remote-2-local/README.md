@@ -10,6 +10,22 @@ The receiving side is the trust anchor: each retrieval is a discrete snapshot, h
 This role deploys the Python pull script that talks to each remote provider, installs the systemd service that drives it on the configured schedule (`SYS_SCHEDULE_BACKUP_REMOTE_TO_LOCAL`), and serialises the run against the rest of the manipulation group via `sys-lock`.
 The remote side must expose a chrooted SSH/SFTP endpoint that publishes its backup tree: deploy [user-backup](../user-backup/) for the chrooted pull account and [sys-ctl-cln-bkps](../sys-ctl-cln-bkps/) to keep the published tree bounded.
 
+## Cosmos
+
+The diagram places Backup Remote to Local in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_local_2_device["svc-bkp-local-2-device 💻"]
+    end
+    subgraph role [svc-bkp-remote-2-local 💻]
+        svc_remote_2_local["remote-2-local"]
+        svc_local_2_device["local-2-device"]
+    end
+    dep_svc_bkp_local_2_device -.-> svc_local_2_device
+```
+
 ## Schema
 
 ```mermaid
@@ -31,6 +47,43 @@ flowchart TD
 - **Retry-with-backoff:** transient SSH/rsync failures retry up to twelve times across a long window before surfacing as a hard failure.
 - **Snapshot-aware:** rsync `--link-dest` against the previous local snapshot deduplicates unchanged files.
 - **Schedule-coordinated:** the systemd unit is part of the global manipulation group, so it never races backup/cleanup/repair jobs on the same host.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Backup Remote to Local onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-bkp-remote-2-local full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Backup Remote to Local to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-bkp-remote-2-local'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-bkp-remote-2-local \
+  --diff \
+  -vv
+```
 
 ## Recover
 

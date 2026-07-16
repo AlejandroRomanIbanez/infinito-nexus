@@ -13,6 +13,17 @@ It is intended for CLI tools that should be available globally (e.g., maintenanc
 - Installs or upgrades a package specified by `package_name`.
 - Designed for non-interactive automation (CI/maintenance hosts).
 
+## Cosmos
+
+The diagram places sys-pip-install in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-pip-install 💻]
+        svc_pip_install["pip-install"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

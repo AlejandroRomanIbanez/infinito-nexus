@@ -8,6 +8,17 @@ This Ansible role installs and configures the Nextcloud desktop client on Arch L
 
 Targeting user environments on Arch Linux (e.g., Manjaro), this role sets up the official `nextcloud-client` and dynamically links key directories from the user's home folder to Nextcloud. This makes it easy to use the Nextcloud client without needing to manually configure folders.
 
+## Cosmos
+
+The diagram places Nextcloud Client ️ in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [desk-nextcloud 💻]
+        svc_nextcloud["nextcloud"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to automate the configuration of cloud-integrated user directories by ensuring that common folders like `Downloads`, `Music`, and `Workspaces` are transparently redirected into a centralized cloud structure. This makes it easier to maintain sys-bkp-friendly, cloud-ready setups for homelab and professional workflows.
@@ -18,6 +29,43 @@ The purpose of this role is to automate the configuration of cloud-integrated us
 - **Symbolic Linking of User Folders:** Maps home folders (e.g., `Documents`, `Videos`, `Workspaces`) into their Nextcloud equivalents.
 - **Dynamic Cloud Directory Resolution:** Builds the target cloud directory path from user and cloud variables.
 - **Dump Folder Mapping:** Links `InstantUpload` from the cloud to a `~/Dump` folder for quick camera/file access.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Nextcloud Client ️ onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=desk-nextcloud full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Nextcloud Client ️ to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'desk-nextcloud'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id desk-nextcloud \
+  --diff \
+  -vv
+```
 
 ## Credits
 

@@ -8,6 +8,50 @@ The Docker MariaDB Role offers an easy and efficient way to deploy a MariaDB ser
 
 This Ansible role facilitates the deployment of a MariaDB server using Docker. It is designed to ensure ease of installation and configuration, with the flexibility to adapt to different environments.
 
+## Cosmos
+
+The diagram places MariaDB in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+    end
+    subgraph role [svc-db-mariadb 🐳🐝]
+        svc_mariadb["mariadb"]
+        svc_container_backup["container_backup"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_app_akaunting["web-app-akaunting 🐳🐝"]
+        dpt_web_app_erpnext["web-app-erpnext 🐳🐝"]
+        dpt_web_app_espocrm["web-app-espocrm 🐳🐝"]
+        dpt_web_app_friendica["web-app-friendica 🐳🐝"]
+        dpt_web_app_gitea["web-app-gitea 🐳🐝"]
+        dpt_web_app_joomla["web-app-joomla 🐳🐝"]
+        dpt_web_app_mailu["web-app-mailu 🐳🐝"]
+        dpt_web_app_matomo["web-app-matomo 🐳🐝"]
+        dpt_web_app_mediawiki["web-app-mediawiki 🐳🐝"]
+        dpt_web_app_moodle["web-app-moodle 🐳🐝"]
+        dpt_web_app_nextcloud["web-app-nextcloud 🐳🐝"]
+        dpt_web_app_phpmyadmin["web-app-phpmyadmin 🐳🐝"]
+        dpt_more["..."]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+    svc_mariadb --> dpt_more
+    svc_mariadb -.-> dpt_web_app_akaunting
+    svc_mariadb -.-> dpt_web_app_erpnext
+    svc_mariadb -.-> dpt_web_app_espocrm
+    svc_mariadb -.-> dpt_web_app_friendica
+    svc_mariadb -.-> dpt_web_app_gitea
+    svc_mariadb -.-> dpt_web_app_joomla
+    svc_mariadb -.-> dpt_web_app_mailu
+    svc_mariadb -.-> dpt_web_app_matomo
+    svc_mariadb -.-> dpt_web_app_mediawiki
+    svc_mariadb -.-> dpt_web_app_moodle
+    svc_mariadb -.-> dpt_web_app_nextcloud
+    svc_mariadb -.-> dpt_web_app_phpmyadmin
+```
+
 ## Features
 
 - **Dockerized MariaDB**: Leverages Docker for MariaDB deployment, ensuring consistency across different environments.
@@ -15,6 +59,43 @@ This Ansible role facilitates the deployment of a MariaDB server using Docker. I
 - **Network Configuration**: Includes setup of a dedicated Docker network for MariaDB.
 - **Idempotent Design**: Ensures that repeat runs of the playbook do not result in unwanted changes.
 - **Security Focused**: Implements best practices for securing the MariaDB root password.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy MariaDB onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-db-mariadb full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy MariaDB to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-db-mariadb'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-db-mariadb \
+  --diff \
+  -vv
+```
 
 ## Prerequisites
 

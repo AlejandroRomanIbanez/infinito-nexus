@@ -8,6 +8,17 @@ Generic role to manage reverse DNS (PTR) for Hetzner Cloud resources (server, pr
 
 This role generic role to manage reverse DNS (PTR) for Hetzner Cloud resources (server, primary_ip, floating_ip, load_balancer).
 
+## Cosmos
+
+The diagram places Hetzner Reverse DNS in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-dns-hetzner-rdns 💻]
+        svc_hetzner_rdns["hetzner-rdns"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

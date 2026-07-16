@@ -8,6 +8,17 @@ This Ansible role ensures that [.profile](https://en.wikipedia.org/wiki/Bourne_s
 
 By standardizing `.profile` as the central source for environment configuration, this role ensures consistent shell behavior. It does **not** manage the contents of `.profile` itself; it only guarantees that it is sourced by supported shells.
 
+## Cosmos
+
+The diagram places Shell in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [dev-shell 💻]
+        svc_shell["shell"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to unify shell environment setup across Bash and Zsh. It minimizes duplication and confusion by encouraging the use of `.profile` for shared configuration such as environment variables and agent settings.

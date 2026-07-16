@@ -9,6 +9,17 @@ This role monitors the health status of Docker containers on the system. It dete
 The role installs a health check script along with a `systemd` service and timer to run these checks at scheduled intervals.  
 If unhealthy or failed containers are detected, the configured failure notifier (via `sys-ctl-alm-compose`) is triggered.
 
+## Cosmos
+
+The diagram places Docker Container Health Check in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-hlth-container 💻]
+        svc_container["container"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to ensure that Docker-based services remain operational. By automatically monitoring container health, it enables administrators to react quickly to failures, reducing downtime and preventing unnoticed service degradation.

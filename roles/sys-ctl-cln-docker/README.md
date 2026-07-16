@@ -18,6 +18,17 @@ Optimized for maintaining a clean and efficient Docker environment, this role:
   * `container system prune -a -f` to remove unused Docker resources.
 * Allows forced execution during maintenance runs (`MODE_CLEANUP`).
 
+## Cosmos
+
+The diagram places Cleanup Docker Resources in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-cln-docker 💻]
+        svc_docker["docker"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to prevent storage bloat caused by unused Docker images, volumes, and build artifacts.

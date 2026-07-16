@@ -8,6 +8,17 @@ This role installs a systemd service that sends notifications via both [sys-ctl-
 
 Optimized for prompt and comprehensive failure alerts, this role configures a unified notification service. It leverages the capabilities of both Telegram and Email notifications to ensure that administrators are quickly informed about service issues, enabling rapid troubleshooting.
 
+## Cosmos
+
+The diagram places Unified Service Failure Notifier in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-alm-compose 💻]
+        svc_compose["compose"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to provide a centralized mechanism for service failure notifications. By integrating with both the Telegram and Email notifier roles, it delivers reliable alerts through multiple channels, enhancing overall system observability and responsiveness.

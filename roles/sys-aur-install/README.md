@@ -8,6 +8,17 @@ Installs one or more AUR packages using `kewlfft.aur.aur` and the `yay` helper.
 
 This role wrapper role to install AUR packages via kewlfft.aur.aur using yay.
 
+## Cosmos
+
+The diagram places sys-aur-install in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-aur-install 💻]
+        svc_aur_install["aur-install"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

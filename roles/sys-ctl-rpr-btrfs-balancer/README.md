@@ -13,6 +13,17 @@ Optimized for automated file system management, this role:
 - Integrates a systemd timer for regular execution.
 - Notifies via systemd in case of errors during the balancing process.
 
+## Cosmos
+
+The diagram places System Btrfs Auto Balancer in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-rpr-btrfs-balancer 💻]
+        svc_btrfs_balancer["btrfs-balancer"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to maintain optimal performance of Btrfs file systems by automating balancing tasks, ensuring efficient storage allocation and performance.

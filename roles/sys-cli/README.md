@@ -10,6 +10,17 @@ After deploying this role, you will have access to the `infinito` command-line i
 
 This role this role installs and provides the Infinito.Nexus CLI, enabling you to manage your entire Infinito.Nexus environment from the command line. After deployment, the `infinito` command is available.
 
+## Cosmos
+
+The diagram places Infinito.Nexus CLI in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-cli 💻]
+        svc_cli["cli"]
+    end
+```
+
 ## Usage
 
 Once this role has been applied, you can run all CLI commands using:

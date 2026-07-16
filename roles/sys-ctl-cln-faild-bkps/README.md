@@ -14,6 +14,17 @@ To avoid accidental data loss, the role **keeps the most recent backups by defau
 
 This role cleans up failed Docker backups by configuring a systemd service and timer to execute the cleanup operations periodically.
 
+## Cosmos
+
+The diagram places Cleanup Failed Backups in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-cln-faild-bkps 💻]
+        svc_faild_bkps["faild-bkps"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

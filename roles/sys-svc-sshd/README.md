@@ -13,6 +13,17 @@ This Ansible role configures the OpenSSH daemon (`sshd`) by deploying a template
 
 Key variable: `SYS_SVC_SSHD_PASSWORD_AUTHENTICATION` (default: `false`) enables password authentication when explicitly required by controlled environments such as local E2E test targets.
 
+## Cosmos
+
+The diagram places sshd in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-sshd 💻]
+        svc_svc_sshd["svc-sshd"]
+    end
+```
+
 ## Features
 
 - **Templated Configuration:** Delivers a Jinja2-based `sshd_config` with variables for debug logging, PAM support, and password-auth overrides.

@@ -35,6 +35,17 @@ This role:
 
 ---
 
+## Cosmos
+
+The diagram places System Utility: Git Pull (Shallow & Pinned) in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-util-git-pull 💻]
+        svc_util_git_pull["util-git-pull"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to provide a **generic, reusable Git pull primitive**

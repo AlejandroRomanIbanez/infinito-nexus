@@ -12,6 +12,50 @@ Built for environments that demand reliability and ease of management, this role
 - Deploys a PostgreSQL container with secure configurations and automated healthchecks.
 - Automates tasks like database creation, user setup, and privilege assignments to streamline your workflows.
 
+## Cosmos
+
+The diagram places PostgreSQL in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+    end
+    subgraph role [svc-db-postgres 🐳🐝]
+        svc_postgres["postgres"]
+        svc_container_backup["container_backup"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_app_baserow["web-app-baserow 🐳🐝"]
+        dpt_web_app_bookwyrm["web-app-bookwyrm 🐳🐝"]
+        dpt_web_app_chess["web-app-chess 🐳🐝"]
+        dpt_web_app_confluence["web-app-confluence 🐳🐝"]
+        dpt_web_app_decidim["web-app-decidim 🐳🐝"]
+        dpt_web_app_discourse["web-app-discourse 🐳🐝"]
+        dpt_web_app_fider["web-app-fider 🐳🐝"]
+        dpt_web_app_flowise["web-app-flowise 🐳🐝"]
+        dpt_web_app_funkwhale["web-app-funkwhale 🐳🐝"]
+        dpt_web_app_gitlab["web-app-gitlab 🐳🐝"]
+        dpt_web_app_jira["web-app-jira 🐳🐝"]
+        dpt_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dpt_more["..."]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+    svc_postgres --> dpt_more
+    svc_postgres -.-> dpt_web_app_baserow
+    svc_postgres -.-> dpt_web_app_bookwyrm
+    svc_postgres -.-> dpt_web_app_chess
+    svc_postgres -.-> dpt_web_app_confluence
+    svc_postgres -.-> dpt_web_app_decidim
+    svc_postgres -.-> dpt_web_app_discourse
+    svc_postgres -.-> dpt_web_app_fider
+    svc_postgres -.-> dpt_web_app_flowise
+    svc_postgres -.-> dpt_web_app_funkwhale
+    svc_postgres -.-> dpt_web_app_gitlab
+    svc_postgres -.-> dpt_web_app_jira
+    svc_postgres -.-> dpt_web_app_keycloak
+```
+
 ## Purpose
 
 The purpose of this role is to provide an effortless way to deploy a PostgreSQL database via Docker. It minimizes manual interventions while ensuring that your database is configured securely and reliably for both production and development scenarios.
@@ -22,6 +66,43 @@ The purpose of this role is to provide an effortless way to deploy a PostgreSQL 
 - **Robust Administration:** Automatically creates databases, users, and assigns privileges.
 - **Enhanced Security:** The service is bound to `127.0.0.1:5432`, restricting access and enhancing security.
 - **Seamless Docker Integration:** Works harmoniously with Docker Compose and other roles in your infrastructure.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy PostgreSQL onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-db-postgres full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy PostgreSQL to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-db-postgres'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-db-postgres \
+  --diff \
+  -vv
+```
 
 ## Credits
 

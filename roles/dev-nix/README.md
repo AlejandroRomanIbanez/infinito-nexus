@@ -18,6 +18,17 @@ up-to-date Nix installation.
 
 This role installs the Nix package manager via pacman on Arch x86_64 or via the official installer with SHA256 verification.
 
+## Cosmos
+
+The diagram places dev-nix in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [dev-nix 💻]
+        svc_nix["nix"]
+    end
+```
+
 ## Installation Strategy
 
 The role automatically selects the appropriate installation method:

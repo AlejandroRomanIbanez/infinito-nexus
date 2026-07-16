@@ -16,6 +16,23 @@ deploy` and on reschedule, removing the need for out-of-band
 Storage lives in an NFS-backed volume so the registry contents survive
 container restarts and manager reschedules.
 
+## Cosmos
+
+The diagram places Docker Registry in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+    end
+    subgraph role [svc-registry-docker 🐳🐝]
+        svc_node["node"]
+        svc_docker["docker"]
+        svc_container_backup["container_backup"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+```
+
 ## Features
 
 - **Manager-pinned, stateful:** Single instance per cluster; bypasses swarm
@@ -25,6 +42,43 @@ container restarts and manager reschedules.
 - **Insecure HTTP (v1):** No TLS for the initial implementation; the registry
   is reachable only on the swarm overlay-network. Each swarm node trusts the
   manager's `<host>:5000` via `daemon.json.insecure-registries`.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Docker Registry onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-registry-docker full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Docker Registry to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-registry-docker'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-registry-docker \
+  --diff \
+  -vv
+```
 
 ## Credits
 

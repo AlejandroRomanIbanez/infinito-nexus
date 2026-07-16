@@ -21,6 +21,17 @@ The role is designed to be **distribution-agnostic** and works on:
 - Designed for CI, container, and build environments
 - Prevents disk pressure and runaway image sizes
 
+## Cosmos
+
+The diagram places sys-cleanup in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-cleanup 💻]
+        svc_cleanup["cleanup"]
+    end
+```
+
 ## Features
 
 - **Cross-Distro Support:** Automatically detects the available package manager.

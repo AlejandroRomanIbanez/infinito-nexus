@@ -12,6 +12,17 @@ Registration tokens are fetched from the GitHub API at container start time via 
 
 The `RUNNER_DISTRIBUTION` variable selects distro-specific package installation tasks (Debian, Ubuntu, Arch Linux, or Fedora/EL). The role is designed to be driven by the `make runner-ci-deploy` target; see the end-to-end guide below.
 
+## Cosmos
+
+The diagram places GitHub Actions CI Runner in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [svc-runner 🐳🐝]
+        svc_runner["runner"]
+    end
+```
+
 ## Features
 
 - **Self-hosted:** Run CI jobs on your own server without consuming GitHub-hosted runner minutes.
@@ -22,6 +33,43 @@ The `RUNNER_DISTRIBUTION` variable selects distro-specific package installation 
 - **Multi-distro:** Supports Debian, Ubuntu (`apt`), Arch Linux (`pacman`), and Fedora/EL (`dnf`) via distro-specific task files.
 - **Idempotent:** Re-running the deploy rebuilds the image and restarts containers cleanly without manual cleanup.
 - **CI workflow ready:** All deploy-test workflows route to GitHub-hosted runners by default; set `CI_SELF_HOSTED_RUNNER_COUNT` to overflow jobs to your runners.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy GitHub Actions CI Runner onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-runner full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy GitHub Actions CI Runner to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-runner'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-runner \
+  --diff \
+  -vv
+```
 
 ## End-to-end guide
 

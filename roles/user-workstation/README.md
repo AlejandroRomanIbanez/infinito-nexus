@@ -10,6 +10,17 @@ dotfiles and SSH `authorized_keys`.
 
 This role creates the workstation user selected via WORKSTATION_USER and configures the user environment.
 
+## Cosmos
+
+The diagram places Workstation User in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [user-workstation 💻]
+        svc_workstation["workstation"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

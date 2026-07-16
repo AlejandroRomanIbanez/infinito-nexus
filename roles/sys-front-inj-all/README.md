@@ -10,6 +10,17 @@ This role enhances your NGINX configuration by conditionally injecting global Ma
 
 This role core role for Nginx HTML injection of Matomo, theming, iFrame and JS snippets based on application feature flags.
 
+## Cosmos
+
+The diagram places NGINX Global Matomo & Theming Modifier Role in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-front-inj-all 💻]
+        svc_all["all"]
+    end
+```
+
 ## Features
 
 - **Global Matomo Tracking**  

@@ -8,6 +8,17 @@ This role builds on `sys-stk-backend` by adding a reverse-proxy frontend for HTT
 
 This role extends sys-stk-backend by adding an HTTP reverse proxy via sys-stk-front-proxy.
 
+## Cosmos
+
+The diagram places Database Docker with Web Proxy in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-stk-full 💻]
+        svc_full["full"]
+    end
+```
+
 ## Features
 
 - **Database Composition**  

@@ -8,6 +8,17 @@ Installs Docker and Docker Compose, and adds a user to the Docker group for non-
 
 This playbook, `desk-docker`, is part of a larger collection housed within the `infinito` repository. It is specifically tailored for setting up Docker and Docker Compose on personal computers (PCs) used for development purposes. The primary goal is to facilitate a development environment on individual workstations rather than configuring servers for hosting or distributing Docker images.
 
+## Cosmos
+
+The diagram places Workstation Docker in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [desk-docker 💻]
+        svc_docker["docker"]
+    end
+```
+
 ## Features
 
 The `main.yml` file in the `desk-docker` role consists of two primary tasks:
@@ -15,6 +26,43 @@ The `main.yml` file in the `desk-docker` role consists of two primary tasks:
 1. **Install Docker**: This task uses the `community.general.pacman` module to install `docker` and `docker-compose` on the system. It ensures that these packages are present on the PC.
 
 2. **User Group Configuration**: This task adds a specified user (denoted as `{{users.client.username}}`) to the Docker user group. This is crucial for allowing the specified user to interact with Docker without needing superuser permissions.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Workstation Docker onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=desk-docker full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Workstation Docker to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'desk-docker'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id desk-docker \
+  --diff \
+  -vv
+```
 
 ## Use Case
 

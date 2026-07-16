@@ -8,6 +8,36 @@ This Ansible role deploys and manages a containerized [Simple Icons](https://sim
 
 Ideal for developers and content creators, the role simplifies deploying a dedicated icon server. It automates container setup, configuration, and routing, ensuring reliable, quick access to icons. Easily integrate scalable icons into your projects without managing individual asset files.
 
+## Cosmos
+
+The diagram places Simple Icons in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_db_redis["svc-db-redis 🐳🐝"]
+        dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+    end
+    subgraph role [web-svc-simpleicons 🐳🐝]
+        svc_sso["sso ❌"]
+        svc_dashboard["dashboard ❌"]
+        svc_matomo["matomo ❌"]
+        svc_redis["redis"]
+        svc_css["css ❌"]
+        svc_recaptcha["recaptcha"]
+        svc_simpleicons["simpleicons"]
+        svc_prometheus["prometheus"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_app_dashboard["web-app-dashboard 🐳🐝"]
+    end
+    dep_svc_db_redis -.-> svc_redis
+    dep_web_app_keycloak --> svc_sso
+    dep_web_app_prometheus -.-> svc_prometheus
+    svc_sso -.-> dpt_web_app_dashboard
+```
+
 ## Purpose
 
 The Docker-SimpleIcons role streamlines the deployment and management of a simple, efficient icon server. It helps you:
@@ -25,6 +55,43 @@ The Docker-SimpleIcons role streamlines the deployment and management of a simpl
 - **Customizable Setup:** Configure icon sizes, formats, and routes effortlessly.
 - **Efficient Integration:** Works seamlessly with web server roles for robust domain routing.
 - **Automated Maintenance:** Simplifies updates and re-deployments via automated container management.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Simple Icons onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-svc-simpleicons full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Simple Icons to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-svc-simpleicons'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-svc-simpleicons \
+  --diff \
+  -vv
+```
 
 ## Credits
 

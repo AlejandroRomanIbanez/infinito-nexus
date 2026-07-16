@@ -40,7 +40,32 @@ This role deploys Nextcloud using Docker Compose …
 For administration details see [Administration.md](./Administration.md).
 ```
 
-### 4. Features (required) ✨
+### 4. Cosmos (required) 🌌
+
+A `## Cosmos` section MUST contain a single Mermaid `flowchart` that places the role in the Infinito.Nexus cosmos. Group the nodes with `subgraph`s into three families:
+
+- **Capabilities** — the containers/components this role deploys (from `meta/services.yml`).
+- **Dependencies** — the central services and sibling roles it consumes (the `enabled: "{{ '<role>' in group_names }}"` service flags, plus `run_after` and any `meta/main.yml` `dependencies`).
+- **Cosmos** — the outward reach: federation peers, external networks bridged in, upstream projects.
+
+Draw only what the role metadata declares; do not invent services. Mermaid node ids MUST NOT be reserved words (`call`, `end`, `click`, `class`, `graph`, `style`, `subgraph`).
+
+````markdown
+## Cosmos
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        postgres["svc-db-postgres"]
+    end
+    subgraph role [web-app-example]
+        app["App container"]
+    end
+    postgres --> app
+```
+````
+
+### 5. Features (required) ✨
 
 A bulleted list of the most important capabilities.
 Each item MUST start with a **bold** label followed by a colon and a short explanation.
@@ -52,12 +77,12 @@ Each item MUST start with a **bold** label followed by a colon and a short expla
 - **LDAP Integration:** Authenticate users via a central directory …
 ```
 
-### 5. Purpose (optional) 🎯
+### 6. Use Cases (optional) 🎯
 
-Use this section when the motivation for the role is not obvious from Description and Overview.
-Omit it for roles where the purpose is self-evident.
+Use this section for the concrete scenarios the role is a good fit for, when they are not obvious from Description and Overview.
+Omit it for roles where the use cases are self-evident.
 
-### 6. Developer Notes (optional) 🔧
+### 7. Developer Notes (optional) 🔧
 
 Link to role-local documentation files such as `Administration.md`, `Installation.md`, or `Development.md`.
 You MUST use file-name link text. Never use the full path.
@@ -68,7 +93,7 @@ You MUST use file-name link text. Never use the full path.
 See [Administration.md](./Administration.md) for live container inspection and LDAP configuration.
 ```
 
-### 7. Further Resources (optional) 🔗
+### 8. Further Resources (optional) 🔗
 
 A list of external links relevant to the software or the deployment.
 Link text MUST be a descriptive label or the domain name. Never use the full URL.
@@ -80,7 +105,7 @@ Link text MUST be a descriptive label or the domain name. Never use the full URL
 - [Nextcloud Admin Manual](https://docs.nextcloud.com/…)
 ```
 
-### 8. Credits (required) 🙏
+### 9. Credits (required) 🙏
 
 Always the last section. MUST follow this fixed format:
 

@@ -8,6 +8,17 @@ This Ansible role installs and configures Firefox on Arch Linux systems, enforci
 
 Tailored for Arch Linux, this role handles the installation of Firefox using the system’s package manager (`pacman`). It deploys a `policies.json` file to Firefox’s distribution directory, ensuring that critical extensions are automatically installed via Firefox Enterprise Policies.
 
+## Cosmos
+
+The diagram places Firefox in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [desk-firefox 💻]
+        svc_firefox["firefox"]
+    end
+```
+
 ## Purpose
 
 The role automates the provisioning of a secure Firefox environment, reducing manual configuration and ensuring consistency across deployments. It is ideal for environments where a standardized and secure browsing setup is required.
@@ -18,6 +29,43 @@ The role automates the provisioning of a secure Firefox environment, reducing ma
 - **Enforces Enterprise Policies:** Deploys a `policies.json` file that forces the installation of uBlock Origin and the KeePassXC Browser extension.
 - **Streamlined Configuration:** Automatically creates necessary directories and applies correct file permissions.
 - **Seamless Integration:** Easily integrates with other automation roles for a complete system setup.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Firefox onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=desk-firefox full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Firefox to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'desk-firefox'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id desk-firefox \
+  --diff \
+  -vv
+```
 
 ## Addons
 

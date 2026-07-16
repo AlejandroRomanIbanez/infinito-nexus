@@ -15,6 +15,17 @@ Optimized for secure system management, this role performs the following:
 - Deploys SSH `authorized_keys` from `lookup('users', 'administrator').authorized_keys`, leveraging [SSH](https://en.wikipedia.org/wiki/Secure_Shell) best practices.
 - Grants [sudo](https://en.wikipedia.org/wiki/Sudo) privileges to the administrator user with password authentication using a dedicated sudoers file.
 
+## Cosmos
+
+The diagram places Administrator User in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [user-administrator 💻]
+        svc_administrator["administrator"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to provide a secure and dedicated administrator account solely for running local administration tasks. This approach minimizes security risks associated with using the root account and enforces best practices in user privilege management.

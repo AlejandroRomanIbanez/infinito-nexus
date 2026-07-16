@@ -13,6 +13,17 @@ Optimized for both [Arch Linux](https://wiki.archlinux.org/index.php/WireGuard) 
 - Deploys a host-specific Wireguard configuration file to `/etc/wireguard/wg0.infinito.conf`.
 - Uses systemd handlers to restart the Wireguard service and reload sysctl settings.
 
+## Cosmos
+
+The diagram places Wireguard in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [svc-net-wireguard-core 💻]
+        svc_wireguard_core["wireguard-core"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to set up and manage a Wireguard VPN configuration on the host. By automating package installation and configuration file deployment, it ensures that the VPN service is enabled with optimal network settings for secure connectivity.
@@ -23,6 +34,43 @@ The primary purpose of this role is to set up and manage a Wireguard VPN configu
 - **Sysctl Configuration:** Deploys a sysctl configuration file to manage IPv4/IPv6 forwarding and related network parameters.
 - **Wireguard Configuration:** Copies a host-specific Wireguard configuration file to `/etc/wireguard/wg0.infinito.conf`.
 - **Service Management:** Provides handlers to restart the Wireguard service and reload sysctl settings.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Wireguard onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-net-wireguard-core full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Wireguard to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-net-wireguard-core'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-net-wireguard-core \
+  --diff \
+  -vv
+```
 
 ## Administration
 

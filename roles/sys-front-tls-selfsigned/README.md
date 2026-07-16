@@ -8,6 +8,17 @@ Self-signed TLS provider for sys-front-tls (SAN aware).
 
 This role self-signed TLS provider for sys-front-tls (SAN aware). Generates and stores self-signed certificates.
 
+## Cosmos
+
+The diagram places sys-front-tls-selfsigned in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-front-tls-selfsigned 💻]
+        svc_tls_selfsigned["tls-selfsigned"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

@@ -10,6 +10,17 @@
 - Integrates with `sys-ctl-alm-compose` to send failure notifications
 - Ensures idempotent execution with a `run_once_sys_ctl_cln_certs` flag
 
+## Cosmos
+
+The diagram places Certbot Reaper in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-cln-certs 💻]
+        svc_certs["certs"]
+    end
+```
+
 ## Features
 
 - **Certificate Cleanup Tool Installation**  

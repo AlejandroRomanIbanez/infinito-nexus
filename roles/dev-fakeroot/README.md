@@ -10,6 +10,17 @@ Learn more about fakeroot on the [Debian Wiki](https://wiki.debian.org/FakeRoot)
 
 This role automates the installation of fakeroot via the OS package manager, ensuring that users can simulate superuser operations without requiring elevated privileges.
 
+## Cosmos
+
+The diagram places Fakeroot in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [dev-fakeroot 💻]
+        svc_fakeroot["fakeroot"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to automate the installation of fakeroot so that users can simulate superuser operations without requiring elevated privileges. This is particularly useful in development environments and during package building processes.

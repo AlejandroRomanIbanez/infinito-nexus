@@ -8,6 +8,56 @@ Empower your organization with **XWiki**, an open-source enterprise wiki and kno
 
 This role deploys XWiki using Docker, automating the installation, configuration, and management of your XWiki server. It integrates with an relational database and a reverse proxy. The role supports advanced features such as global CSS injection, Matomo analytics, OIDC authentication, and centralized logout, making it a powerful and customizable solution within the Infinito.Nexus ecosystem.
 
+## Cosmos
+
+The diagram places XWiki in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+        dep_svc_db_openldap["svc-db-openldap 🐳🐝"]
+        dep_svc_db_postgres["svc-db-postgres 🐳🐝"]
+        dep_svc_db_redis["svc-db-redis 🐳🐝"]
+        dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dep_web_app_mailu["web-app-mailu 🐳🐝"]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+        dep_web_svc_logout["web-svc-logout 🐳🐝"]
+    end
+    subgraph role [web-app-xwiki 🐳🐝]
+        svc_sso["sso"]
+        svc_logout["logout"]
+        svc_ldap["ldap ❌"]
+        svc_dashboard["dashboard"]
+        svc_matomo["matomo"]
+        svc_email["email"]
+        svc_redis["redis"]
+        svc_postgres["postgres"]
+        svc_xwiki["xwiki"]
+        svc_css["css"]
+        svc_prometheus["prometheus"]
+        svc_container_backup["container_backup"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_app_nextcloud["web-app-nextcloud 🐳🐝"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+    dep_svc_db_openldap --> svc_ldap
+    dep_svc_db_postgres -.-> svc_postgres
+    dep_svc_db_redis -.-> svc_redis
+    dep_web_app_dashboard -.-> svc_dashboard
+    dep_web_app_keycloak -.-> svc_sso
+    dep_web_app_mailu -.-> svc_email
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_svc_css -.-> svc_css
+    dep_web_svc_logout -.-> svc_logout
+    svc_sso -.-> dpt_web_app_nextcloud
+```
+
 ## Features
 
 - **Enterprise Wiki Platform:** Create, edit, and organize pages with a powerful WYSIWYG editor and structured content support.  
@@ -17,6 +67,43 @@ This role deploys XWiki using Docker, automating the installation, configuration
 - **Office Integration:** Import, export, and collaborate on Office documents (Word, Excel, PDF).  
 - **Customization & Theming:** Adapt the look and feel of your wiki with skins, CSS, and scripting.  
 - **Integration Ready:** Connect with external systems such as Keycloak (OIDC), LDAP, or analytics tools like Matomo.  
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy XWiki onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-app-xwiki full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy XWiki to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-app-xwiki'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-app-xwiki \
+  --diff \
+  -vv
+```
 
 ## Addons
 

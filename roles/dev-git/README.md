@@ -8,6 +8,17 @@ This Ansible role installs Git on the target system using the Pacman package man
 
 Designed for Arch Linux systems, this role leverages the `pacman` module to install Git. It uses a fact (`run_once_dev_git`) to control task execution, ensuring that the Git installation is performed only once per run.
 
+## Cosmos
+
+The diagram places Git in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [dev-git 💻]
+        svc_git["git"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to automate the installation of Git in a consistent and idempotent manner. It is especially useful in environments where Git is a prerequisite for further automation or development tasks.

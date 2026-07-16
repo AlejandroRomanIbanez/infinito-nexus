@@ -8,9 +8,57 @@ This Ansible role configures NGINX to perform 301 redirects from one domain to a
 
 This role configures Nginx to perform 301 redirects based on a list of source→target domain mappings.
 
+## Cosmos
+
+The diagram places NGINX Redirect in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [web-opt-rdr-domains 💻]
+        svc_rdr_domains["rdr-domains"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy NGINX Redirect onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-opt-rdr-domains full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy NGINX Redirect to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-opt-rdr-domains'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-opt-rdr-domains \
+  --diff \
+  -vv
+```
 
 ## Credits
 

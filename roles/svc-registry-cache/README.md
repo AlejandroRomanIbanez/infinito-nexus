@@ -18,6 +18,23 @@ shared daemon.json template then emits a `registry-mirrors` block pointing at
 `http://<cache-host>:<cache-port>` plus an `insecure-registries` entry so
 plain-HTTP communication with the cache is permitted.
 
+## Cosmos
+
+The diagram places Docker Registry Cache in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+    end
+    subgraph role [svc-registry-cache 🐳🐝]
+        svc_node["node"]
+        svc_cache["cache"]
+        svc_container_backup["container_backup"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+```
+
 ## Features
 
 - Transparent Docker Hub mirror via `registry:2`'s built-in proxy mode.
@@ -29,6 +46,43 @@ plain-HTTP communication with the cache is permitted.
   over LAN. On a 3-node cluster pulling identical base images this is the
   difference between three full Hub downloads and one Hub download plus two
   LAN copies.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Docker Registry Cache onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-registry-cache full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Docker Registry Cache to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-registry-cache'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-registry-cache \
+  --diff \
+  -vv
+```
 
 ## Credits
 

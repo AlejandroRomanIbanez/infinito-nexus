@@ -11,6 +11,17 @@ This role wraps `community.general.cloudflare_dns` and applies records from a si
 structured variable (`cloudflare_records`). It supports async operations and
 can be used to provision all required records for a service in one task.
 
+## Cosmos
+
+The diagram places Cloudflare DNS Records in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-dns-cloudflare-records 💻]
+        svc_cloudflare_records["cloudflare-records"]
+    end
+```
+
 ## Features
 
 - Data-driven input for multiple record types

@@ -16,6 +16,28 @@ default to `rw,sync,no_subtree_check,root_squash,no_all_squash`. NFS
 server HA, Kerberos integration, and client-side mounting are out of
 scope; client mounts are handled by `svc-storage-nfs-client`.
 
+## Cosmos
+
+The diagram places NFS Server in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_nfs_2_local["svc-bkp-nfs-2-local 💻"]
+    end
+    subgraph role [svc-storage-nfs-server 💻]
+        svc_nfs_server["nfs-server"]
+        svc_nfs_backup["nfs_backup"]
+    end
+    subgraph dependents [Dependents]
+        dpt_svc_bkp_nfs_2_local["svc-bkp-nfs-2-local 💻"]
+        dpt_svc_storage_nfs_client["svc-storage-nfs-client 💻"]
+    end
+    dep_svc_bkp_nfs_2_local -.-> svc_nfs_backup
+    svc_nfs_server -.-> dpt_svc_bkp_nfs_2_local
+    svc_nfs_server -.-> dpt_svc_storage_nfs_client
+```
+
 ## Features
 
 - **Distro-aware install:** Installs `nfs-kernel-server` on Debian /
@@ -25,6 +47,43 @@ scope; client mounts are handled by `svc-storage-nfs-client`.
 - **Reload-on-change:** Re-running the role overwrites `/etc/exports`
   with the current allowed-IP set; the handler reloads via
   `exportfs -ra` only when the file changed.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy NFS Server onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-storage-nfs-server full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy NFS Server to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-storage-nfs-server'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-storage-nfs-server \
+  --diff \
+  -vv
+```
 
 ## Credits
 

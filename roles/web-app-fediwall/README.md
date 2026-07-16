@@ -12,6 +12,38 @@ This role bakes the upstream release artefact into a small `nginx:alpine` image 
 
 A wall's `config.servers` may be left empty to auto-fill with the active Mastodon-API-compatible Fediverse siblings (`web-app-mastodon`, `web-app-pixelfed`, `web-app-friendica`) that are present in the current host's `group_names`. Every other field of `wall-config.json` is read verbatim from the wall's `config` block.
 
+## Cosmos
+
+The diagram places Fediwall in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_web_app_friendica["web-app-friendica 🐳🐝"]
+        dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dep_web_app_mailu["web-app-mailu 🐳🐝"]
+        dep_web_app_mastodon["web-app-mastodon 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+    end
+    subgraph role [web-app-fediwall 🐳🐝]
+        svc_logout["logout ❌"]
+        svc_dashboard["dashboard"]
+        svc_matomo["matomo"]
+        svc_css["css"]
+        svc_email["email ❌"]
+        svc_sso["sso ❌"]
+        svc_prometheus["prometheus"]
+        svc_mastodon["mastodon"]
+        svc_friendica["friendica"]
+        svc_fediwall["fediwall"]
+    end
+    dep_web_app_friendica -.-> svc_friendica
+    dep_web_app_keycloak --> svc_sso
+    dep_web_app_mailu --> svc_email
+    dep_web_app_mastodon -.-> svc_mastodon
+    dep_web_svc_css -.-> svc_css
+```
+
 ## Features
 
 - **Follow hashtags, accounts, or trends** across multiple Mastodon-compatible servers.
@@ -20,6 +52,43 @@ A wall's `config.servers` may be left empty to auto-fill with the active Mastodo
 - **Privacy-friendly**: no server-side state, no tracking, all logic runs in the browser.
 - **Live customization**: viewers can override every setting through URL parameters and bookmark or share their personalized wall.
 - **Multi-wall**: declare multiple purpose-built walls (per event, hashtag, account set, …) under one deployment.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Fediwall onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-app-fediwall full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Fediwall to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-app-fediwall'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-app-fediwall \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

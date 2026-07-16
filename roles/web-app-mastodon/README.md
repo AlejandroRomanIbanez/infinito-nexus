@@ -8,6 +8,62 @@ Dive into a decentralized social experience with Mastodon, a vibrant platform th
 
 This role deploys Mastodon using Docker, streamlining the installation and configuration of a full-featured social networking platform. Mastodon is built to support federation across multiple instances, offering robust content moderation, real-time updates, and flexible API integrations. Its advanced architecture includes separate services for the web frontend, streaming API, and background job processing, ensuring high performance and scalability for large communities.
 
+## Cosmos
+
+The diagram places Mastodon in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+        dep_svc_db_postgres["svc-db-postgres 🐳🐝"]
+        dep_svc_db_redis["svc-db-redis 🐳🐝"]
+        dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dep_web_app_mailu["web-app-mailu 🐳🐝"]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_app_seaweedfs["web-app-seaweedfs 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+        dep_web_svc_logout["web-svc-logout 🐳🐝"]
+    end
+    subgraph role [web-app-mastodon 🐳🐝]
+        svc_sso["sso"]
+        svc_logout["logout"]
+        svc_dashboard["dashboard"]
+        svc_matomo["matomo"]
+        svc_email["email"]
+        svc_redis["redis"]
+        svc_postgres["postgres"]
+        svc_mastodon["mastodon"]
+        svc_streaming["streaming"]
+        svc_sidekiq["sidekiq"]
+        svc_migrate["migrate"]
+        svc_minio["minio ❌"]
+        svc_seaweedfs["seaweedfs"]
+        svc_css["css"]
+        svc_prometheus["prometheus"]
+        svc_container_backup["container_backup"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_app_fediwall["web-app-fediwall 🐳🐝"]
+        dpt_web_app_nextcloud["web-app-nextcloud 🐳🐝"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+    dep_svc_db_postgres -.-> svc_postgres
+    dep_svc_db_redis -.-> svc_redis
+    dep_web_app_dashboard -.-> svc_dashboard
+    dep_web_app_keycloak -.-> svc_sso
+    dep_web_app_mailu -.-> svc_email
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_app_seaweedfs -.-> svc_seaweedfs
+    dep_web_svc_css -.-> svc_css
+    dep_web_svc_logout -.-> svc_logout
+    svc_sso -.-> dpt_web_app_fediwall
+    svc_sso -.-> dpt_web_app_nextcloud
+```
+
 ## Features
 
 - **Decentralized Network:** Connect with users across multiple instances in a federated social media ecosystem.
@@ -16,6 +72,43 @@ This role deploys Mastodon using Docker, streamlining the installation and confi
 - **Scalable Architecture:** Benefit from a multi-service, Docker-based setup that supports high user loads and seamless background processing.
 - **Flexible Authentication:** Integrated support for OpenID Connect (OIDC) simplifies user login and enhances security.
 - **Customizable User Experience:** Configure themes, timeline settings, and notification options to tailor the social experience to your community.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Mastodon onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-app-mastodon full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Mastodon to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-app-mastodon'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-app-mastodon \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

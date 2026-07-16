@@ -16,6 +16,17 @@ This Ansible role ensures that the target host’s system hostname is set to the
 2. **Module**  
    - Leverages Ansible’s [`hostname`](https://docs.ansible.com/ansible/latest/collections/ansible/builtin/hostname_module.html) module.
 
+## Cosmos
+
+The diagram places Hostname in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-hostname 💻]
+        svc_hostname["hostname"]
+    end
+```
+
 ## Features
 
 - Simple and lightweight

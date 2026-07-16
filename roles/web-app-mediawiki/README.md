@@ -8,6 +8,46 @@ Empower your knowledge base with MediaWiki, a versatile and collaborative platfo
 
 This role deploys MediaWiki using Docker, automating the setup of your wiki instance along with its underlying MariaDB database. It handles generating the essential configuration file (LocalSettings.php) from a seeded template and integrates with an NGINX reverse proxy for secure, efficient web access.
 
+## Cosmos
+
+The diagram places MediaWiki in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+        dep_svc_db_mariadb["svc-db-mariadb 🐳🐝"]
+        dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dep_web_app_mailu["web-app-mailu 🐳🐝"]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+        dep_web_svc_logout["web-svc-logout 🐳🐝"]
+    end
+    subgraph role [web-app-mediawiki 🐳🐝]
+        svc_sso["sso"]
+        svc_logout["logout"]
+        svc_dashboard["dashboard"]
+        svc_matomo["matomo"]
+        svc_email["email"]
+        svc_mariadb["mariadb"]
+        svc_mediawiki["mediawiki"]
+        svc_css["css"]
+        svc_prometheus["prometheus"]
+        svc_container_backup["container_backup"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+    dep_svc_db_mariadb -.-> svc_mariadb
+    dep_web_app_dashboard -.-> svc_dashboard
+    dep_web_app_keycloak -.-> svc_sso
+    dep_web_app_mailu -.-> svc_email
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_svc_css -.-> svc_css
+    dep_web_svc_logout -.-> svc_logout
+```
+
 ## Features
 
 - **Collaborative Editing:** Enable multiple users to create and update content simultaneously through an intuitive interface.
@@ -15,6 +55,43 @@ This role deploys MediaWiki using Docker, automating the setup of your wiki inst
 - **Robust Content Management:** Organize, categorize, and retrieve information efficiently with powerful content management tools.
 - **Scalable Deployment:** Utilize Docker for a portable and scalable setup that adapts as your community grows.
 - **Secure and Reliable:** Benefit from secure access via an NGINX reverse proxy combined with a MariaDB backend for reliable data storage.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy MediaWiki onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-app-mediawiki full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy MediaWiki to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-app-mediawiki'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-app-mediawiki \
+  --diff \
+  -vv
+```
 
 ## Addons
 

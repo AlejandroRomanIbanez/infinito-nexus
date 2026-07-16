@@ -12,6 +12,21 @@ Built as one of the central engine roles described in `docs/architecture/central
 - Waits until the container is running and the engine answers the `version` handshake.
 - Ships an embedded sidecar snippet (`templates/service.yml.j2`) for the `shared: false` opt-out path.
 
+## Cosmos
+
+The diagram places Memcached in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [svc-db-memcached 🐳🐝]
+        svc_memcached["memcached"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_app_zammad["web-app-zammad 🐳🐝"]
+    end
+    svc_memcached -.-> dpt_web_app_zammad
+```
+
 ## Per-consumer isolation
 
 Memcached has no native auth or namespace. Consumer isolation is key-prefix only and is resolved by `lookup('engine', 'memcached', consumer_id)` at consume time, so `tasks/02_init.yml` is a no-op.
@@ -21,6 +36,43 @@ Memcached has no native auth or namespace. Consumer isolation is key-prefix only
 - **Automated provisioning:** Configured by Ansible without manual steps.
 - **Central or embedded:** Same `shared` toggle as the central databases.
 - **Readiness gating:** Bootstrap blocks until the engine accepts connections.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Memcached onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-db-memcached full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Memcached to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-db-memcached'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-db-memcached \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

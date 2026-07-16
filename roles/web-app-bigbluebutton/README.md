@@ -5,11 +5,79 @@
 This Ansible role deploys [BigBlueButton](https://bigbluebutton.org/) using Docker Compose. It includes support for Greenlight, OIDC, LDAP, TURN/STUN, health checks, and a modular `.env` setup. This role is ideal for educational institutions and teams requiring a self-hosted video conferencing solution.
 > 🔧 **Note**: The database layer should be decoupled in a future release to improve modularity and integration.
 >
+
 ## Overview
 
 This role provides a fully automated deployment of [BigBlueButton](https://bigbluebutton.org/) using Docker Compose on Arch Linux. It manages the entire lifecycle of the deployment, from cloning the upstream Docker repository and generating the `.env` configuration to customizing `compose.yml` for volume usage, WebSocket proxying, and optional LDAP/OIDC integration.
 The setup includes conditional Greenlight activation, WebRTC support via TURN/STUN, and various fixes for known container orchestration issues. The role is modular and integrates seamlessly with the Infinito.Nexus infrastructure, including reverse proxy configuration, domain management, and secrets templating.
 By default, BigBlueButton is deployed with best-practice hardening, modular secrets, and support for multiple authentication methods and scalable storage backends.
+
+## Cosmos
+
+The diagram places BigBlueButton in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+        dep_svc_db_openldap["svc-db-openldap 🐳🐝"]
+        dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dep_web_app_mailu["web-app-mailu 🐳🐝"]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_svc_collabora["web-svc-collabora 🐳🐝"]
+        dep_web_svc_coturn["web-svc-coturn 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+        dep_web_svc_logout["web-svc-logout 🐳🐝"]
+    end
+    subgraph role [web-app-bigbluebutton 🐳🐝]
+        svc_sso["sso"]
+        svc_logout["logout"]
+        svc_ldap["ldap"]
+        svc_dashboard["dashboard"]
+        svc_matomo["matomo"]
+        svc_email["email"]
+        svc_bigbluebutton["bigbluebutton"]
+        svc_postgres["postgres"]
+        svc_greenlight["greenlight"]
+        svc_coturn["coturn"]
+        svc_collabora["collabora"]
+        svc_css["css"]
+        svc_prometheus["prometheus"]
+        svc_bbb_web["bbb-web"]
+        svc_freeswitch["freeswitch"]
+        svc_nginx["nginx"]
+        svc_etherpad["etherpad"]
+        svc_bbb_pads["bbb-pads"]
+        svc_bbb_export_annotations["bbb-export-annotations"]
+        svc_webrtc_sfu["webrtc-sfu"]
+        svc_fsesl_akka["fsesl-akka"]
+        svc_apps_akka["apps-akka"]
+        svc_bbb_graphql_server["bbb-graphql-server"]
+        svc_bbb_graphql_actions["bbb-graphql-actions"]
+        svc_bbb_graphql_middleware["bbb-graphql-middleware"]
+        svc_periodic["periodic"]
+        svc_recordings["recordings"]
+        svc_bbb_webrtc_recorder["bbb-webrtc-recorder"]
+        svc_container_backup["container_backup"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_app_nextcloud["web-app-nextcloud 🐳🐝"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+    dep_svc_db_openldap --> svc_ldap
+    dep_web_app_dashboard -.-> svc_dashboard
+    dep_web_app_keycloak -.-> svc_sso
+    dep_web_app_mailu -.-> svc_email
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_svc_collabora -.-> svc_collabora
+    dep_web_svc_coturn -.-> svc_coturn
+    dep_web_svc_css -.-> svc_css
+    dep_web_svc_logout -.-> svc_logout
+    svc_sso -.-> dpt_web_app_nextcloud
+```
 
 ## Features
 
@@ -20,6 +88,43 @@ By default, BigBlueButton is deployed with best-practice hardening, modular secr
 - 🛠 Volume patching and Docker Compose customization
 - 📬 SMTP integration and Greenlight admin creation
 - 🧪 Workarounds for known Docker Compose or Etherpad issues
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy BigBlueButton onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-app-bigbluebutton full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy BigBlueButton to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-app-bigbluebutton'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-app-bigbluebutton \
+  --diff \
+  -vv
+```
 
 ## Single Sign-On (SSO)
 

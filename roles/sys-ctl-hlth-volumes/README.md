@@ -10,6 +10,17 @@ It can optionally exclude specific volumes from the check using a configurable w
 The role installs a script and a `systemd` service with a timer to periodically scan for leftover anonymous volumes.  
 This helps prevent wasted disk space and leftover resources from old deployments.
 
+## Cosmos
+
+The diagram places Docker Volumes Health Check in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-hlth-volumes 💻]
+        svc_volumes["volumes"]
+    end
+```
+
 ## Purpose
 
 The main purpose of this role is to keep Docker environments clean by identifying and reporting orphaned anonymous volumes.  

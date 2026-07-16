@@ -10,6 +10,17 @@ This Ansible role installs non-free GPU drivers on Arch Linux systems by invokin
 - Automatically detects your PCI graphics adapter and installs the recommended non-free driver  
 - Designed to be run once per host to provision proprietary GPU support
 
+## Cosmos
+
+The diagram places Proprietary Drivers in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [drv-non-free 💻]
+        svc_non_free["non-free"]
+    end
+```
+
 ## Features
 
 - **Automatic Hardware Detection**  
@@ -20,6 +31,43 @@ This Ansible role installs non-free GPU drivers on Arch Linux systems by invokin
 
 - **Simple Execution**  
   Single-task role with minimal overhead.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Proprietary Drivers onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=drv-non-free full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Proprietary Drivers to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'drv-non-free'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id drv-non-free \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

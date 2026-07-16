@@ -8,6 +8,17 @@ Keeps Docker Compose services updated with fresh Let’s Encrypt certificates vi
 
 Installs a small script and a systemd unit that copy certificates into your Compose project and trigger an NGINX hot-reload (fallback: restart) to minimize downtime.
 
+## Cosmos
+
+The diagram places Docker Compose Certificate Sync Service in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-mtn-cert-deploy 💻]
+        svc_cert_deploy["cert-deploy"]
+    end
+```
+
 ## Features
 
 - Automatic certificate sync into the Compose project

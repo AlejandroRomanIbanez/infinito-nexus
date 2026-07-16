@@ -13,6 +13,17 @@ Optimized for efficient storage management, this role:
 - Configures a systemd service to run the disk cleanup script.
 - Optionally integrates with backup cleanup if backup variables are defined.
 
+## Cosmos
+
+The diagram places Cleanup Disc Space in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-cln-disc-space 💻]
+        svc_disc_space["disc-space"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to ensure that disk space remains within safe limits by automating cleanup tasks, thereby improving system performance and stability.

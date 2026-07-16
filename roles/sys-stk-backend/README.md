@@ -8,6 +8,17 @@ This role combines the central RDBMS role (`sys-svc-rdbms`) with Docker Compose 
 
 This role combines Docker Compose with a central RDBMS role to automatically provision database containers with backup, user, and permission management.
 
+## Cosmos
+
+The diagram places Database Docker Composition in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-stk-backend 💻]
+        svc_backend["backend"]
+    end
+```
+
 ## Features
 
 - **Central RDBMS Integration**  

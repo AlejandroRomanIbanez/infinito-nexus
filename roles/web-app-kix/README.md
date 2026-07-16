@@ -8,6 +8,53 @@
 
 This role deploys KIX as an Infinito.Nexus web app behind the project's standard `sys-stk-front-proxy` and `web-app-keycloak`'s SSO-proxy sidecar chain. The upstream `kix-on-premise` proxy, backend, and frontend containers ship from `docker-registry.kixdesk.com/public/`. The backend initialises its schema (`scripts/database/kix-schema.xml`) against the central `svc-db-postgres` cluster, or against the embedded postgres sidecar when no central provider is in the inventory, with `pg_trgm` pre-activated via `services.postgres.extensions`; the cache is the role-local passwordless redis sidecar (the frontend ignores `REDIS_CACHE_PASSWORD`). Initial admin credentials are seeded via `INITIAL_ADMIN_PW` on first start (see `meta/schema.yml`).
 
+## Cosmos
+
+The diagram places KIX in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+        dep_svc_db_openldap["svc-db-openldap 🐳🐝"]
+        dep_svc_db_postgres["svc-db-postgres 🐳🐝"]
+        dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dep_web_app_mailu["web-app-mailu 🐳🐝"]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+        dep_web_svc_logout["web-svc-logout 🐳🐝"]
+    end
+    subgraph role [web-app-kix 🐳🐝]
+        svc_logout["logout"]
+        svc_dashboard["dashboard"]
+        svc_matomo["matomo"]
+        svc_email["email"]
+        svc_ldap["ldap"]
+        svc_sso["sso"]
+        svc_css["css"]
+        svc_prometheus["prometheus"]
+        svc_postgres["postgres"]
+        svc_redis["redis"]
+        svc_kix["kix"]
+        svc_proxy["proxy"]
+        svc_backend["backend"]
+        svc_frontend["frontend"]
+        svc_container_backup["container_backup"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+    dep_svc_db_openldap -.-> svc_ldap
+    dep_svc_db_postgres -.-> svc_postgres
+    dep_web_app_dashboard -.-> svc_dashboard
+    dep_web_app_keycloak -.-> svc_sso
+    dep_web_app_mailu -.-> svc_email
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_svc_css -.-> svc_css
+    dep_web_svc_logout -.-> svc_logout
+```
+
 ## Features
 
 - **TLS and HSTS:** KIX is reachable at `kix.<DOMAIN_PRIMARY>` via `sys-stk-front-proxy` with HSTS enabled.
@@ -18,6 +65,43 @@ This role deploys KIX as an Infinito.Nexus web app behind the project's standard
 - **Outbound mail:** KIX notification mail flows through the project's `sys-svc-mail-smtp` relay.
 - **Dashboard card:** `web-app-dashboard` surfaces a KIX tile pointing at the canonical URL.
 - **Universal logout:** The project logout endpoint terminates the KIX session alongside every other Infinito.Nexus app.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy KIX onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-app-kix full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy KIX to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-app-kix'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-app-kix \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

@@ -8,9 +8,57 @@ Installs neovim CLI text editor on Pacman‑based systems.
 
 This role automates the installation of neovim, a CLI text editor, on Pacman‑based systems. It uses the `community.general.pacman` module to ensure the editor is installed and up to date.
 
+## Cosmos
+
+The diagram places Neovim in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [desk-neovim 💻]
+        svc_neovim["neovim"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Neovim onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=desk-neovim full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Neovim to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'desk-neovim'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id desk-neovim \
+  --diff \
+  -vv
+```
 
 ## Requirements
 

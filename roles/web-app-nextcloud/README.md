@@ -8,6 +8,110 @@ Elevate your collaboration with Nextcloud, a vibrant self-hosted cloud solution 
 
 This role provisions a complete Nextcloud deployment using Docker Compose. It automates the setup of the Nextcloud application along with its underlying MariaDB database and configures the system for secure public access via an NGINX reverse proxy. The deployment includes automated configuration merging into `config.php`, health check routines, and integrated support for backup and recovery operations.
 
+## Cosmos
+
+The diagram places Nextcloud in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+        dep_svc_db_mariadb["svc-db-mariadb 🐳🐝"]
+        dep_svc_db_openldap["svc-db-openldap 🐳🐝"]
+        dep_svc_db_redis["svc-db-redis 🐳🐝"]
+        dep_web_app_bigbluebutton["web-app-bigbluebutton 🐳🐝"]
+        dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dep_web_app_discourse["web-app-discourse 🐳🐝"]
+        dep_web_app_flowise["web-app-flowise 🐳🐝"]
+        dep_web_app_gitlab["web-app-gitlab 🐳🐝"]
+        dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dep_web_app_mailu["web-app-mailu 🐳🐝"]
+        dep_web_app_mastodon["web-app-mastodon 🐳🐝"]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_matrix["web-app-matrix 🐳🐝"]
+        dep_web_app_mattermost["web-app-mattermost 🐳🐝"]
+        dep_web_app_openproject["web-app-openproject 🐳🐝"]
+        dep_web_app_openwebui["web-app-openwebui 🐳🐝"]
+        dep_web_app_peertube["web-app-peertube 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_app_seaweedfs["web-app-seaweedfs 🐳🐝"]
+        dep_web_app_xwiki["web-app-xwiki 🐳🐝"]
+        dep_web_app_zammad["web-app-zammad 🐳🐝"]
+        dep_web_svc_collabora["web-svc-collabora 🐳🐝"]
+        dep_web_svc_coturn["web-svc-coturn 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+        dep_web_svc_logout["web-svc-logout 🐳🐝"]
+        dep_web_svc_onlyoffice["web-svc-onlyoffice 🐳🐝"]
+    end
+    subgraph role [web-app-nextcloud 🐳🐝]
+        svc_sso["sso"]
+        svc_coturn["coturn"]
+        svc_logout["logout"]
+        svc_ldap["ldap"]
+        svc_dashboard["dashboard"]
+        svc_matomo["matomo"]
+        svc_email["email"]
+        svc_redis["redis"]
+        svc_mariadb["mariadb"]
+        svc_nextcloud["nextcloud"]
+        svc_proxy["proxy"]
+        svc_cron["cron"]
+        svc_talk["talk"]
+        svc_whiteboard["whiteboard"]
+        svc_onlyoffice["onlyoffice"]
+        svc_collabora["collabora"]
+        svc_bigbluebutton["bigbluebutton"]
+        svc_xwiki["xwiki"]
+        svc_minio["minio ❌"]
+        svc_seaweedfs["seaweedfs"]
+        svc_talk_recording["talk_recording"]
+        svc_css["css"]
+        svc_hcaptcha["hcaptcha"]
+        svc_prometheus["prometheus"]
+        svc_openproject["openproject"]
+        svc_gitlab["gitlab"]
+        svc_discourse["discourse"]
+        svc_mattermost["mattermost"]
+        svc_matrix["matrix"]
+        svc_zammad["zammad"]
+        svc_openwebui["openwebui"]
+        svc_flowise["flowise"]
+        svc_mastodon["mastodon"]
+        svc_peertube["peertube"]
+        svc_moodle["moodle ❌"]
+        svc_suitecrm["suitecrm ❌"]
+        svc_container_backup["container_backup"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+    dep_svc_db_mariadb -.-> svc_mariadb
+    dep_svc_db_openldap -.-> svc_ldap
+    dep_svc_db_redis -.-> svc_redis
+    dep_web_app_bigbluebutton -.-> svc_bigbluebutton
+    dep_web_app_dashboard -.-> svc_dashboard
+    dep_web_app_discourse -.-> svc_discourse
+    dep_web_app_flowise -.-> svc_flowise
+    dep_web_app_gitlab -.-> svc_gitlab
+    dep_web_app_keycloak -.-> svc_sso
+    dep_web_app_mailu -.-> svc_email
+    dep_web_app_mastodon -.-> svc_mastodon
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_matrix -.-> svc_matrix
+    dep_web_app_mattermost -.-> svc_mattermost
+    dep_web_app_openproject -.-> svc_openproject
+    dep_web_app_openwebui -.-> svc_openwebui
+    dep_web_app_peertube -.-> svc_peertube
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_app_seaweedfs -.-> svc_seaweedfs
+    dep_web_app_xwiki -.-> svc_xwiki
+    dep_web_app_zammad -.-> svc_zammad
+    dep_web_svc_collabora -.-> svc_collabora
+    dep_web_svc_coturn -.-> svc_coturn
+    dep_web_svc_coturn -.-> svc_talk
+    dep_web_svc_css -.-> svc_css
+    dep_web_svc_logout -.-> svc_logout
+    dep_web_svc_onlyoffice -.-> svc_onlyoffice
+```
+
 ## Features
 
 - **Fully Dockerized Deployment:** Simplifies installation using Docker Compose for the Nextcloud application and its MariaDB backend.
@@ -16,6 +120,43 @@ This role provisions a complete Nextcloud deployment using Docker Compose. It au
 - **Automated Configuration Management:** Uses additive configuration files to dynamically merge system settings into `config.php`.
 - **Integrated Backup & Recovery:** Provides built-in support for backup and restoration operations to safeguard your data.
 - **Extensible Plugin Framework:** Easily manage and configure hundreds of Nextcloud plugins using the OCC command line tool.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Nextcloud onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-app-nextcloud full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Nextcloud to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-app-nextcloud'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-app-nextcloud \
+  --diff \
+  -vv
+```
 
 ## Addons
 

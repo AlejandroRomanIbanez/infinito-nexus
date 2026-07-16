@@ -15,6 +15,17 @@ Optimized for portability and idempotency, this role performs the following task
 - Ensures the installation runs only once using a shared run-once mechanism
 - Serves as a reusable system-level SSH dependency for other roles
 
+## Cosmos
+
+The diagram places SSH Service (Client) in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-ssh 💻]
+        svc_svc_ssh["svc-ssh"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to guarantee that an SSH client is available on the system before executing any SSH-related operations, such as key generation, remote access, or automated provisioning.

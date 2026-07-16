@@ -12,6 +12,17 @@ The role performs the following tasks:
 - Creates an `aur_builder` user with a home directory and adds the user to the wheel group.
 - Grants the `aur_builder` user passwordless [sudo](https://en.wikipedia.org/wiki/Sudo) rights for running pacman.
 
+## Cosmos
+
+The diagram places System AUR Helper in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-aur 💻]
+        svc_aur["aur"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to streamline AUR package management on Arch Linux systems by ensuring that the required AUR helper is installed and properly configured.

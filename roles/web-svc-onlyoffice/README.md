@@ -12,6 +12,41 @@ It automates the setup of the Document Server container, NGINX reverse proxy con
 * **Docker Network Management:** Creates an isolated `/28` subnet for ONLYOFFICE and connects containers securely.
 * **Environment Configuration:** Generates a `.env` file containing domain, credentials, and JWT configuration for secure document editing.
 
+## Cosmos
+
+The diagram places OnlyOffice in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+        dep_svc_db_postgres["svc-db-postgres 🐳🐝"]
+        dep_svc_db_redis["svc-db-redis 🐳🐝"]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+    end
+    subgraph role [web-svc-onlyoffice 🐳🐝]
+        svc_matomo["matomo"]
+        svc_redis["redis"]
+        svc_postgres["postgres"]
+        svc_onlyoffice["onlyoffice"]
+        svc_css["css"]
+        svc_prometheus["prometheus"]
+        svc_container_backup["container_backup"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_app_nextcloud["web-app-nextcloud 🐳🐝"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+    dep_svc_db_postgres -.-> svc_postgres
+    dep_svc_db_redis -.-> svc_redis
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_svc_css -.-> svc_css
+    svc_matomo -.-> dpt_web_app_nextcloud
+```
+
 ## Features
 
 * Automatic creation of a dedicated Docker network for ONLYOFFICE.
@@ -20,6 +55,43 @@ It automates the setup of the Document Server container, NGINX reverse proxy con
 * Support for SSL/TLS termination at the proxy level.
 * Optional JWT signing for secure communication between Nextcloud and Document Server.
 * Integration hooks to restart NGINX and recreate Docker Compose stacks on changes.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy OnlyOffice onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-svc-onlyoffice full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy OnlyOffice to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-svc-onlyoffice'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-svc-onlyoffice \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

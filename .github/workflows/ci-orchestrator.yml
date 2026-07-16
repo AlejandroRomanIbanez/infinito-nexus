@@ -128,6 +128,8 @@ jobs:
     uses: ./.github/workflows/lint-shell.yml
   lint-markdown:
     uses: ./.github/workflows/lint-markdown.yml
+  lint-mermaid:
+    uses: ./.github/workflows/lint-mermaid.yml
   lint-makefile:
     uses: ./.github/workflows/lint-makefile.yml
   lint-packages:
@@ -144,6 +146,7 @@ jobs:
       - lint-docker
       - lint-shell
       - lint-markdown
+      - lint-mermaid
       - lint-makefile
       - lint-packages
       - lint-javascript

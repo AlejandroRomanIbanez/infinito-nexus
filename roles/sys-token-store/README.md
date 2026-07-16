@@ -15,6 +15,17 @@ It only **stores and propagates tokens that already exist** (e.g. created by boo
 
 This role stores and manages per-user application tokens in a local YAML store file (idempotent read/write helpers).
 
+## Cosmos
+
+The diagram places sys-token-store in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-token-store 💻]
+        svc_token_store["token-store"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

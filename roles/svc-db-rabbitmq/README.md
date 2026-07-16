@@ -14,6 +14,22 @@ The central stack (`templates/compose.yml.j2`) runs the `rabbitmq` image with:
 
 Per-consumer provisioning (`tasks/02_init.yml`) runs with `application_id=svc-db-rabbitmq` and `database_consumer_id=<consumer>`; it resolves the consumer's vhost name, username and password via `lookup('engine', 'rabbitmq', <consumer>, ...)` and reconciles an idempotent vhost, user and `set_permissions` grant scoped to that vhost. Existing vhosts and users are skipped, and the consumer password is realigned with the inventory on every deploy.
 
+## Cosmos
+
+The diagram places RabbitMQ in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+    end
+    subgraph role [svc-db-rabbitmq 🐳🐝]
+        svc_rabbitmq["rabbitmq"]
+        svc_container_backup["container_backup"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+```
+
 ## Features
 
 - **Central broker** one shared RabbitMQ stack consumed by many roles.
@@ -21,6 +37,43 @@ Per-consumer provisioning (`tasks/02_init.yml`) runs with `application_id=svc-db
 - **User isolation** one RabbitMQ user per consumer, granted full permissions only on its own vhost.
 - **Idempotent provisioning** vhosts, users and permissions reconciled on every deploy via `rabbitmqctl`.
 - **Built-in healthcheck** `rabbitmq-diagnostics ping`.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy RabbitMQ onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-db-rabbitmq full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy RabbitMQ to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-db-rabbitmq'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-db-rabbitmq \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

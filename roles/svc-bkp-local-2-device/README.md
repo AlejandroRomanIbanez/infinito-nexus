@@ -10,6 +10,21 @@ The transfer is hard-link deduplicated against the previous snapshot, so each pl
 This role asserts that the mount, source, and target configuration values are present, deploys the rsync-driver script, and installs a systemd mount unit plus a oneshot service.
 The oneshot service is triggered automatically when the configured mount path appears, so the only operator action is to physically plug the device in.
 
+## Cosmos
+
+The diagram places Backup Local to Device in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [svc-bkp-local-2-device 💻]
+        svc_local_2_device["local-2-device"]
+    end
+    subgraph dependents [Dependents]
+        dpt_svc_bkp_remote_2_local["svc-bkp-remote-2-local 💻"]
+    end
+    svc_local_2_device -.-> dpt_svc_bkp_remote_2_local
+```
+
 ## Schema
 
 ```mermaid
@@ -32,6 +47,43 @@ flowchart TD
 - **Snapshot-aware:** rsync `--link-dest` against the previous snapshot keeps storage growth proportional to actual change.
 - **Configuration-asserted:** missing mount/source/target values fail the deploy early, before any partial state lands.
 - **Idempotent:** repeated plug-ins re-use existing snapshots and only sync deltas.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Backup Local to Device onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-bkp-local-2-device full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Backup Local to Device to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-bkp-local-2-device'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-bkp-local-2-device \
+  --diff \
+  -vv
+```
 
 ## Recover
 

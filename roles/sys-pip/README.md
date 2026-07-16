@@ -11,6 +11,17 @@ Optimized for simplicity and idempotency, this role:
 - Installs the python-pip package using [pacman](https://wiki.archlinux.org/title/Pacman).
 - Sets a flag to ensure the installation tasks run only once.
 
+## Cosmos
+
+The diagram places Python-Pip in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-pip 💻]
+        svc_pip["pip"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to provide a reliable installation of the Python package manager, pip, ensuring that subsequent Python package installations can proceed without issues.

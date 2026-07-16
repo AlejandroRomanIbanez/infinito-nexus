@@ -10,6 +10,17 @@ Refer to the [Docker Compose documentation](https://docs.docker.com/compose/) an
 
 This role creates a flexible directory layout for managing Docker Compose projects across environments. It ensures directories are initialized, optionally reset, and kept clean using internal flags like `MODE_RESET` or `MODE_CLEANUP`.
 
+## Cosmos
+
+The diagram places Docker Compose in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-compose 💻]
+        svc_svc_compose["svc-compose"]
+    end
+```
+
 ## Purpose
 
 To offer a centralized, extensible system for managing containerized applications using Docker Compose within the Infinito.Nexus architecture. The role allows easy integration of services, secrets, configurations, and custom behaviors per application.

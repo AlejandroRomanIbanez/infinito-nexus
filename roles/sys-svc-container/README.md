@@ -11,6 +11,19 @@ The role ensures that Docker and Docker Compose are present, integrates essentia
 When enabled via `MODE_CLEANUP` or `MODE_RESET`, it will automatically prune unused Docker resources.  
 `MODE_RESET` additionally restarts the Docker service after cleanup.
 
+## Cosmos
+
+The diagram places Docker Server in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-container 💻]
+        svc_svc_container["svc-container"]
+        svc_busybox["busybox"]
+        svc_node["node"]
+    end
+```
+
 ## Features
 
 - **Automated Installation**  

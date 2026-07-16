@@ -10,6 +10,17 @@ Learn more about the CLI tool on its [GitHub page](https://github.com/kevinveenb
 
 This role configures GNOME Shell extensions and installs the CLI GNOME Extension Manager for managing extensions.
 
+## Cosmos
+
+The diagram places GNOME Extensions Manager in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [desk-gnome-extensions 💻]
+        svc_gnome_extensions["gnome-extensions"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to enhance and customize the GNOME desktop environment by managing shell extensions. It simplifies the process of installing and configuring extensions, thereby improving productivity and desktop functionality.
@@ -20,6 +31,43 @@ The purpose of this role is to enhance and customize the GNOME desktop environme
 - Installs the CLI GNOME Extension Manager using the package manager.
 - Executes extension configuration commands for streamlined management.
 - Provides an automated method for managing and updating GNOME extensions.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy GNOME Extensions Manager onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=desk-gnome-extensions full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy GNOME Extensions Manager to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'desk-gnome-extensions'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id desk-gnome-extensions \
+  --diff \
+  -vv
+```
 
 ## Addons
 

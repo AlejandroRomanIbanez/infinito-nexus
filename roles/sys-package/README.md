@@ -8,6 +8,17 @@ This role installs additional system packages defined directly in host or group 
 
 This role installs system packages defined via the inventory variable `SYS_PACKAGES`.
 
+## Cosmos
+
+The diagram places sys-package in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-package 💻]
+        svc_package["package"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

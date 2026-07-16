@@ -10,6 +10,17 @@ Learn more about GCC on [Wikipedia](https://en.wikipedia.org/wiki/GNU_Compiler_C
 
 Tailored for Arch Linux, this role installs GCC and optionally sets up additional development utilities. It ensures the package is installed via the system package manager and ready to compile code in a variety of programming languages.
 
+## Cosmos
+
+The diagram places GCC in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [dev-gcc 💻]
+        svc_gcc["gcc"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to automate the provisioning of a development-ready environment by ensuring the GCC toolchain is properly installed and available.

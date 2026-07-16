@@ -15,6 +15,17 @@ A higher-level orchestration wrapper, *sys-stk-front-proxy* ties together severa
 
 The result is a complete, reproducible domain rollout in a single playbook task.
 
+## Cosmos
+
+The diagram places NGINX Domain Setup in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-stk-front-proxy 💻]
+        svc_front_proxy["front-proxy"]
+    end
+```
+
 ## Purpose
 
 Provide **one-stop, idempotent domain provisioning** for NGINX-based homelabs or small production environments.

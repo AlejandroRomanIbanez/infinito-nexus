@@ -12,6 +12,17 @@ It ensures a clean state of the manager configuration and applies default timeou
 - Applies default timeout values for systemd manager behavior.  
 - Provides handler-based reload/reexec for systemd.  
 
+## Cosmos
+
+The diagram places sys-daemon in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-daemon 💻]
+        svc_daemon["daemon"]
+    end
+```
+
 ## Features
 
 - **Drop-in Purge:** Optionally remove `/etc/systemd/system.conf.d` contents.  

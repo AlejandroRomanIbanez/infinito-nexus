@@ -12,6 +12,22 @@ Built as a central engine (mirroring `svc-db-postgres`), this role:
 - Deploys an Unbound container at a static IP on that network.
 - Waits until the resolver answers before consumers are wired to it.
 
+## Cosmos
+
+The diagram places Unbound in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+    end
+    subgraph role [svc-dns-unbound 🐳🐝]
+        svc_unbound["unbound"]
+        svc_container_backup["container_backup"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+```
+
 ## Purpose
 
 The purpose of this role is to externalise the static-IP DNS resolver out of large multi-service stacks (such as mail) into a single-service stack. Keeping the static-IP allocation in a trivial 1-service / 1-network stack avoids the swarm VIP-allocation deadlock that a 13-service / 4-network stack triggers, and lets consumer roles stay stateless and unpinned.
@@ -22,6 +38,43 @@ The purpose of this role is to externalise the static-IP DNS resolver out of lar
 - **Static IP:** Exposes a fixed resolver address on its own network for `dns:` targeting.
 - **DinD-aware:** Forwards to public resolvers in nested-Docker/CI where iterative resolution via root-hints is unsupported.
 - **Seamless Docker Integration:** Works with Docker Compose and the central-engine deploy machinery.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Unbound onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-dns-unbound full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Unbound to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-dns-unbound'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-dns-unbound \
+  --diff \
+  -vv
+```
 
 ## Credits
 

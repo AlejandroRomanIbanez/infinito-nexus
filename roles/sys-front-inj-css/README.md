@@ -10,6 +10,17 @@ The role leverages [`colorscheme-generator`](https://github.com/kevinveenbirkenb
 This role deploys a centralized global stylesheet that overrides the default theming of web applications served via NGINX. It's optimized to run only once per deployment and generates a **cache-busting version number** based on file modification timestamps.  
 It includes support for **dark mode**, **custom fonts**, and **extensive Bootstrap and UI component overrides**.
 
+## Cosmos
+
+The diagram places Global CSS Injection for NGINX in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-front-inj-css 💻]
+        svc_css["css"]
+    end
+```
+
 ## Purpose
 
 The goal of this role is to provide a **single source of truth for theming** across your infrastructure.  

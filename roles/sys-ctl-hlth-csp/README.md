@@ -8,6 +8,18 @@ This Ansible role automates the validation of [Content Security Policy (CSP)](ht
 
 Designed for Archlinux systems, this role periodically checks whether web resources (JavaScript, fonts, images, etc.) are blocked by CSP headers. It integrates Python and Node.js tooling and installs a systemd service with timer support.
 
+## Cosmos
+
+The diagram places Health CSP Crawler in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-hlth-csp 💻]
+        svc_csp["csp"]
+        svc_csp_checker["csp-checker"]
+    end
+```
+
 ## Features
 
 - **CSP Resource Validation:** Uses Puppeteer to simulate browser requests and detect blocked resources.

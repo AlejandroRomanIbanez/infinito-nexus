@@ -12,6 +12,17 @@ Optimized for containerized environments, this role:
 - Configures a systemd service (and optionally a timer) to execute the restart script.
 - Handles both standard restarts and hard restarts for specific containers (e.g., for Mailu).
 
+## Cosmos
+
+The diagram places Docker Auto Restart in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-rpr-container-hard 💻]
+        svc_container_hard["container-hard"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to ensure that all Docker Compose services are restarted consistently, resolving issues that may arise from partial restarts. This helps maintain overall service stability and minimizes downtime.

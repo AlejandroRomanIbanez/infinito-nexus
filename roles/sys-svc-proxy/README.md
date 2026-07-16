@@ -10,6 +10,17 @@ It provides automatic TLS integration, WebSocket support, and a flexible templat
 Optimised for Arch Linux, the role installs NGINX, prepares opinionated configuration snippets and exposes a simple interface for other roles to drop in new virtual-hosts.  
 It plays well with **Let’s Encrypt**, **OAuth2 Proxy**, and your existing Docker stack.
 
+## Cosmos
+
+The diagram places NGINX Docker Reverse Proxy in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-proxy 💻]
+        svc_svc_proxy["svc-proxy"]
+    end
+```
+
 ## Purpose
 
 The goal of this role is to deliver a **hassle-free, production-ready reverse proxy** for self-hosted containers, suitable for homelabs and small-scale production workloads.

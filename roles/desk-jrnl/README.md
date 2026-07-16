@@ -8,9 +8,57 @@
 
 This role automates the installation of Jrnl using the `community.general.pacman` module for systems that support the Pacman package manager, ensuring that Jrnl is installed and up to date.
 
+## Cosmos
+
+The diagram places Jrnl in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [desk-jrnl 💻]
+        svc_jrnl["jrnl"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Jrnl onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=desk-jrnl full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Jrnl to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'desk-jrnl'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id desk-jrnl \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

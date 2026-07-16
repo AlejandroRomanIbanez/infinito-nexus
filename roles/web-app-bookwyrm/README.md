@@ -8,6 +8,54 @@
 
 BookWyrm provides a federated social network for books built on ActivityPub. Each instance can be private, invitation-only, or open for public registration. Users can import/export book lists, interact with others across the Fediverse, and maintain their own curated reading environment. As an admin, you can configure moderation tools, content rules, and federation policies to suit your community.
 
+## Cosmos
+
+The diagram places BookWyrm in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+        dep_svc_db_postgres["svc-db-postgres 🐳🐝"]
+        dep_svc_db_redis["svc-db-redis 🐳🐝"]
+        dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dep_web_app_mailu["web-app-mailu 🐳🐝"]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_app_seaweedfs["web-app-seaweedfs 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+        dep_web_svc_logout["web-svc-logout 🐳🐝"]
+    end
+    subgraph role [web-app-bookwyrm 🐳🐝]
+        svc_sso["sso"]
+        svc_logout["logout"]
+        svc_dashboard["dashboard"]
+        svc_matomo["matomo"]
+        svc_email["email"]
+        svc_postgres["postgres"]
+        svc_redis["redis"]
+        svc_bookwyrm["bookwyrm"]
+        svc_worker["worker"]
+        svc_minio["minio ❌"]
+        svc_seaweedfs["seaweedfs"]
+        svc_css["css"]
+        svc_prometheus["prometheus"]
+        svc_container_backup["container_backup"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+    dep_svc_db_postgres -.-> svc_postgres
+    dep_svc_db_redis -.-> svc_redis
+    dep_web_app_dashboard -.-> svc_dashboard
+    dep_web_app_keycloak -.-> svc_sso
+    dep_web_app_mailu -.-> svc_email
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_app_seaweedfs -.-> svc_seaweedfs
+    dep_web_svc_css -.-> svc_css
+    dep_web_svc_logout -.-> svc_logout
+```
+
 ## Features
 
 - **Federated Social Network:** Connects with other BookWyrm instances and ActivityPub platforms.
@@ -17,6 +65,43 @@ BookWyrm provides a federated social network for books built on ActivityPub. Eac
 - **Privacy & Moderation:** Fine-grained controls for content visibility, moderation, and federation settings.
 - **Community Building:** Host a private club, classroom library, or large public community for readers.
 - **Optional SSO Integration:** Can work with OIDC for unified login across platforms.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy BookWyrm onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-app-bookwyrm full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy BookWyrm to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-app-bookwyrm'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-app-bookwyrm \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

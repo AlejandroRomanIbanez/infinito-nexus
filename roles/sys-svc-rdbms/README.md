@@ -12,6 +12,17 @@ Tailored for environments that require a central data repository, this role:
 - Generates an environment file based on the chosen database engine.
 - Integrates seamlessly with Docker Compose to deploy a centralized database container (if enabled).
 
+## Cosmos
+
+The diagram places Central Database in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-rdbms 💻]
+        svc_svc_rdbms["svc-rdbms"]
+    end
+```
+
 ## Purpose
 
 The role's purpose is to automate the provisioning and configuration of a centralized database service. This not only reduces manual setup but also ensures consistent, reliable deployment across production and homelab environments.

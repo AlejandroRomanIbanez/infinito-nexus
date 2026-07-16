@@ -19,6 +19,17 @@ This Ansible role manages the system locale configuration by deploying `locale.g
    - Templates are only reapplied if changed  
    - `locale-gen` only re-runs when the template changes
 
+## Cosmos
+
+The diagram places Locales in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [dev-locales 💻]
+        svc_locales["locales"]
+    end
+```
+
 ## Features
 
 - Full control over uncommented locales in `locale.gen`

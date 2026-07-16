@@ -12,6 +12,17 @@ container builds rely on it.
 This role installs CA trust injection assets for compose (wrapper + inject
 script) and validates CA cert presence.
 
+## Cosmos
+
+The diagram places sys-svc-compose-ca in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-compose-ca 💻]
+        svc_svc_compose_ca["svc-compose-ca"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

@@ -8,6 +8,38 @@ Sphinx is a powerful documentation generator originally created for Python proje
 
 This Docker Compose deployment leverages Ansible to automatically pull your source repository, build the documentation using Sphinx, and serve the generated HTML through a lightweight HTTP server. The entire process is containerized, which guarantees a consistent and isolated environment regardless of the host system. By default it uses [Infinito.Nexus Sphinx](https://s.infinito.nexus/code-sphinx) to build the docs.
 
+## Cosmos
+
+The diagram places Sphinx in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dep_web_app_mailu["web-app-mailu 🐳🐝"]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+    end
+    subgraph role [web-app-sphinx 🐳🐝]
+        svc_logout["logout ❌"]
+        svc_sso["sso ❌"]
+        svc_dashboard["dashboard"]
+        svc_matomo["matomo"]
+        svc_sphinx["sphinx"]
+        svc_css["css"]
+        svc_email["email ❌"]
+        svc_prometheus["prometheus"]
+    end
+    dep_web_app_dashboard -.-> svc_dashboard
+    dep_web_app_keycloak --> svc_sso
+    dep_web_app_mailu --> svc_email
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_svc_css -.-> svc_css
+```
+
 ## Purpose
 
 By automating the Sphinx build process and containerized deployment, this role minimizes manual intervention and helps you ensure that your documentation is always up-to-date with the latest changes in your codebase. It is ideal for continuous integration environments and for projects that require frequent documentation updates.
@@ -31,6 +63,43 @@ By automating the Sphinx build process and containerized deployment, this role m
 
 - **Consistent Deployment Workflow:**  
   The entire process (from pulling the repository to serving the final output) is automated. This reduces human error and makes it easy to update or roll back documentation builds.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Sphinx onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-app-sphinx full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Sphinx to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-app-sphinx'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-app-sphinx \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

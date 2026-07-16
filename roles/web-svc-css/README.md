@@ -11,12 +11,95 @@ This role owns the `css` service flag and declares `web-svc-cdn` as the upstream
 Consumer roles gate CSS-dependent surfaces on `'web-svc-css' in group_names` via their own `meta/services.yml`.
 The role's canonical domain 301-redirects to the CDN's canonical domain so health probes against the CSS hostname return a valid response.
 
+## Cosmos
+
+The diagram places CSS Service in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+    end
+    subgraph role [web-svc-css 💻]
+        svc_css["css"]
+        svc_cdn["cdn"]
+        svc_matomo["matomo ❌"]
+        svc_prometheus["prometheus"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_app_akaunting["web-app-akaunting 🐳🐝"]
+        dpt_web_app_baserow["web-app-baserow 🐳🐝"]
+        dpt_web_app_bigbluebutton["web-app-bigbluebutton 🐳🐝"]
+        dpt_web_app_bluesky["web-app-bluesky 🐳🐝"]
+        dpt_web_app_bookwyrm["web-app-bookwyrm 🐳🐝"]
+        dpt_web_app_bridgy_fed["web-app-bridgy-fed 🐳🐝"]
+        dpt_web_app_checkmk["web-app-checkmk 🐳🐝"]
+        dpt_web_app_chess["web-app-chess 🐳🐝"]
+        dpt_web_app_confluence["web-app-confluence 🐳🐝"]
+        dpt_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dpt_web_app_decidim["web-app-decidim 🐳🐝"]
+        dpt_web_app_discourse["web-app-discourse 🐳🐝"]
+        dpt_more["..."]
+    end
+    dep_web_app_prometheus -.-> svc_prometheus
+    svc_css --> dpt_more
+    svc_css -.-> dpt_web_app_akaunting
+    svc_css -.-> dpt_web_app_baserow
+    svc_css -.-> dpt_web_app_bigbluebutton
+    svc_css -.-> dpt_web_app_bluesky
+    svc_css -.-> dpt_web_app_bookwyrm
+    svc_css -.-> dpt_web_app_bridgy_fed
+    svc_css -.-> dpt_web_app_checkmk
+    svc_css -.-> dpt_web_app_chess
+    svc_css -.-> dpt_web_app_confluence
+    svc_css -.-> dpt_web_app_dashboard
+    svc_css -.-> dpt_web_app_decidim
+    svc_css -.-> dpt_web_app_discourse
+```
+
 ## Features
 
 - **Service flag ownership:** Owns the `css` entry in the central service registry.
 - **CDN-backed delivery:** Declares `web-svc-cdn` as the upstream that serves the actual CSS bytes.
 - **Health-probe friendly:** Redirects the canonical CSS hostname to the CDN so HTTP probes return a valid response.
 - **Variant-matrix coverage:** Ships `meta/variants.yml` exercising both polarities of the `cdn` dependency.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy CSS Service onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-svc-css full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy CSS Service to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-svc-css'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-svc-css \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

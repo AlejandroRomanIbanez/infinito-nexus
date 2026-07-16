@@ -10,6 +10,17 @@ Provides compact filters and defaults to define CDN paths, turn them into public
 
 Defines a per-role CDN structure under `roles/<application_id>/<version>` plus shared and vendor areas. Exposes ready-to-use variables (`cdn`, `cdn_dirs`, `cdn_urls`) and ensures directories exist. Optionally links the current release to `latest`.
 
+## Cosmos
+
+The diagram places Content Delivery Network in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-cdn 💻]
+        svc_svc_cdn["svc-cdn"]
+    end
+```
+
 ## Features
 
 * Jinja filters: `cdn_paths`, `cdn_urls`, `cdn_dirs`

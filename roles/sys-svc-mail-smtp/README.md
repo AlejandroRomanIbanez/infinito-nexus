@@ -24,6 +24,17 @@ Typically, `sys-svc-mail` decides whether to:
 - Use Mailu (via `sys-svc-mail-msmtp`), **or**
 - Fall back to this role (`sys-svc-mail-smtp`) and send via `localhost`.
 
+## Cosmos
+
+The diagram places sys-svc-mail-smtp in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-mail-smtp 💻]
+        svc_svc_mail_smtp["svc-mail-smtp"]
+    end
+```
+
 ## Purpose
 
 The main goals of this role are:

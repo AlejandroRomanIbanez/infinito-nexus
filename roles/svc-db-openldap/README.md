@@ -8,6 +8,50 @@ Unleash the potential of centralized identity management with [OpenLDAP](https:/
 
 Deploy OpenLDAP in a Docker environment with support for TLS-secured communication via an NGINX stream proxy. OpenLDAP offers advanced directory management capabilities, including flexible schema definitions, dynamic configuration overlays, and comprehensive query support with LDAP search utilities.
 
+## Cosmos
+
+The diagram places OpenLDAP in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+    end
+    subgraph role [svc-db-openldap 🐳🐝]
+        svc_openldap["openldap"]
+        svc_container_backup["container_backup"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_app_akaunting["web-app-akaunting 🐳🐝"]
+        dpt_web_app_bigbluebutton["web-app-bigbluebutton 🐳🐝"]
+        dpt_web_app_bluesky["web-app-bluesky 🐳🐝"]
+        dpt_web_app_checkmk["web-app-checkmk 🐳🐝"]
+        dpt_web_app_discourse["web-app-discourse 🐳🐝"]
+        dpt_web_app_erpnext["web-app-erpnext 🐳🐝"]
+        dpt_web_app_espocrm["web-app-espocrm 🐳🐝"]
+        dpt_web_app_flowise["web-app-flowise 🐳🐝"]
+        dpt_web_app_friendica["web-app-friendica 🐳🐝"]
+        dpt_web_app_funkwhale["web-app-funkwhale 🐳🐝"]
+        dpt_web_app_fusiondirectory["web-app-fusiondirectory 🐳🐝"]
+        dpt_web_app_gitea["web-app-gitea 🐳🐝"]
+        dpt_more["..."]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+    svc_openldap --> dpt_more
+    svc_openldap --> dpt_web_app_akaunting
+    svc_openldap --> dpt_web_app_bigbluebutton
+    svc_openldap --> dpt_web_app_bluesky
+    svc_openldap -.-> dpt_web_app_checkmk
+    svc_openldap --> dpt_web_app_discourse
+    svc_openldap -.-> dpt_web_app_erpnext
+    svc_openldap -.-> dpt_web_app_espocrm
+    svc_openldap --> dpt_web_app_flowise
+    svc_openldap -.-> dpt_web_app_friendica
+    svc_openldap -.-> dpt_web_app_funkwhale
+    svc_openldap --> dpt_web_app_fusiondirectory
+    svc_openldap -.-> dpt_web_app_gitea
+```
+
 ## Features
 
 - **Centralized Identity Management:** Maintain a unified repository for all users and groups with robust organizational structures.
@@ -16,6 +60,43 @@ Deploy OpenLDAP in a Docker environment with support for TLS-secured communicati
 - **Dynamic Configuration:** Leverage runtime configuration overlays to adjust directory settings without downtime.
 - **Comprehensive Query Capabilities:** Utilize LDAP search tools to efficiently query and manage directory data.
 - **High Performance and Scalability:** Designed to handle large-scale deployments with rapid lookup and authentication response times.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy OpenLDAP onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-db-openldap full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy OpenLDAP to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-db-openldap'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-db-openldap \
+  --diff \
+  -vv
+```
 
 ## User Password Update Policy
 

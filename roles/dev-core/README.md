@@ -8,6 +8,17 @@
 
 This role builds upon core workstation and package management components to deliver a clean, editor-ready base for developers. It installs core tools and editors necessary to begin building, editing, and managing source code projects.
 
+## Cosmos
+
+The diagram places Development Utilities in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [dev-core 💻]
+        svc_core["core"]
+    end
+```
+
 ## Purpose
 
 To reduce setup time and ensure consistency across developer workstations, this role prepares a functional and extensible foundation for software engineering work.

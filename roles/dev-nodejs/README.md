@@ -8,6 +8,17 @@ This Ansible role installs Node.js on the target system using the native package
 
 Optimized for Archlinux and Debian-based systems, this role ensures the presence of Node.js for use in Node-based applications or scripts. It serves as a foundational role for projects that depend on Node.js runtimes or utilities like Puppeteer.
 
+## Cosmos
+
+The diagram places Node.js in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [dev-nodejs 💻]
+        svc_nodejs["nodejs"]
+    end
+```
+
 ## Features
 
 - **Node.js Installation:** Installs the latest Node.js version available via the system's package manager.

@@ -8,6 +8,46 @@
 
 This role deploys n8n Community Edition using the upstream `docker.n8n.io/n8nio/n8n` image backed by a PostgreSQL database (consumed from the central `svc-db-postgres` via `sys-stk-full`). Authentication is handled by an **oauth2-proxy** sidecar (Keycloak OIDC) in V1, or left to n8n's own user-management UI in V2. n8n Community Edition does not support LDAP — it is gated behind n8n's Enterprise license (`ldap.controller.ee.js` is not registered in CE) — so no LDAP variant is offered. Credentials stored inside n8n are encrypted at rest with a stable `N8N_ENCRYPTION_KEY`.
 
+## Cosmos
+
+The diagram places n8n in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+        dep_svc_db_postgres["svc-db-postgres 🐳🐝"]
+        dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dep_web_app_mailu["web-app-mailu 🐳🐝"]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+        dep_web_svc_logout["web-svc-logout 🐳🐝"]
+    end
+    subgraph role [web-app-n8n 🐳🐝]
+        svc_sso["sso"]
+        svc_email["email"]
+        svc_logout["logout"]
+        svc_dashboard["dashboard"]
+        svc_matomo["matomo"]
+        svc_prometheus["prometheus"]
+        svc_css["css"]
+        svc_postgres["postgres"]
+        svc_n8n["n8n"]
+        svc_container_backup["container_backup"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+    dep_svc_db_postgres -.-> svc_postgres
+    dep_web_app_dashboard -.-> svc_dashboard
+    dep_web_app_keycloak -.-> svc_sso
+    dep_web_app_mailu -.-> svc_email
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_svc_css -.-> svc_css
+    dep_web_svc_logout -.-> svc_logout
+```
+
 ## Features
 
 - **Visual workflow editor:** Drag-and-drop canvas with 400+ built-in integrations.
@@ -15,6 +55,43 @@ This role deploys n8n Community Edition using the upstream `docker.n8n.io/n8nio/
 - **SSO via oauth2-proxy with auto-provisioning:** V1 gates all access through the shared Keycloak OIDC client (oauth2-proxy edge). openresty forwards the authenticated identity to n8n as a trusted `Remote-Email` header (`templates/proxy.conf.j2`); an `EXTERNAL_HOOK_FILES` script (`files/hooks.js`, adapted from [PavelSozonov/n8n-community-sso](https://github.com/PavelSozonov/n8n-community-sso)) reads that header, auto-provisions a local n8n user on first sign-in, and issues n8n's own session cookie — so every Keycloak user lands directly in the workflow editor, with no second, n8n-local login step.
 - **Encrypted credential storage:** `N8N_ENCRYPTION_KEY` protects all saved credentials at rest; the key is stable across re-deploys.
 - **Postgres backend:** Workflow definitions, execution history, and user data persist in the central `svc-db-postgres`.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy n8n onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-app-n8n full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy n8n to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-app-n8n'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-app-n8n \
+  --diff \
+  -vv
+```
 
 ## Variant Matrix
 

@@ -8,9 +8,63 @@ Deploys a legal imprint (Impressum) page in Nginx from a Jinja2 template.
 
 This role deploys a legal imprint (Impressum) page in Nginx from a Jinja2 template.
 
+## Cosmos
+
+The diagram places NGINX Legal in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+    end
+    subgraph role [web-svc-legal]
+        svc_legal["legal ❌"]
+        svc_html["html"]
+        svc_prometheus["prometheus"]
+    end
+    dep_web_app_prometheus -.-> svc_prometheus
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy NGINX Legal onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-svc-legal full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy NGINX Legal to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-svc-legal'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-svc-legal \
+  --diff \
+  -vv
+```
 
 ## Credits
 

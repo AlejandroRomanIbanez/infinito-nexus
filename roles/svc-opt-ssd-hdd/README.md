@@ -13,6 +13,17 @@ The role performs the following tasks:
 - Manages container stopping and restarting during the migration process.
 - Creates symbolic links to preserve consistent file paths.
 
+## Cosmos
+
+The diagram places Storage Optimizer in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [svc-opt-ssd-hdd 💻]
+        svc_ssd_hdd["ssd-hdd"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to enhance system performance by ensuring that Docker volumes are stored on the most appropriate storage medium, optimizing both speed and capacity.
@@ -23,6 +34,43 @@ The primary purpose of this role is to enhance system performance by ensuring th
 - **Symbolic Link Creation:** Maintains consistent access paths after migration.
 - **Container Management:** Safely stops and starts containers during volume migration.
 - **Performance Optimization:** Improves overall system performance by leveraging appropriate storage media.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Storage Optimizer onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-opt-ssd-hdd full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Storage Optimizer to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-opt-ssd-hdd'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-opt-ssd-hdd \
+  --diff \
+  -vv
+```
 
 ## Credits
 

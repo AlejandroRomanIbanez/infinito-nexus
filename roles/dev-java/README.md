@@ -8,6 +8,17 @@ Installs OpenJDK 11 (`jdk11-openjdk`) on Pacman-based systems to provide a Java 
 
 This README file is for the Java role, which is part of the `infinito`. The role is specifically designed to automate the installation of Java on a system, focusing on the OpenJDK 11 version.
 
+## Cosmos
+
+The diagram places Java in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [dev-java 💻]
+        svc_java["java"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

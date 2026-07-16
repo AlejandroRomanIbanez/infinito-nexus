@@ -33,6 +33,18 @@ This role:
 - Runs Playwright in Docker with stable browser settings (`--ipc=host`, `--shm-size=1g`)
 - Stores per-role reports/artifacts under `TEST_E2E_PLAYWRIGHT_REPORTS_BASE_DIR/<application_id>`
 
+## Cosmos
+
+The diagram places Test: E2E Playwright Runner in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [test-e2e-playwright 💻]
+        svc_test_e2e_playwright["test-e2e-playwright"]
+        svc_playwright["playwright"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

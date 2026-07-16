@@ -18,6 +18,17 @@ This Ansible role manages the configuration of `systemd-journald` on target host
 3. **Monitoring**  
    You can follow logs in real time with `journalctl -f`.
 
+## Cosmos
+
+The diagram places Journalctl in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-journalctl 💻]
+        svc_svc_journalctl["svc-journalctl"]
+    end
+```
+
 ## Features
 
 - Customizable retention and runtime limits  
@@ -30,6 +41,7 @@ This Ansible role manages the configuration of `systemd-journald` on target host
 - hosts: all
   roles:
     - role: sys-svc-journalctl
+```
 
 ## Credits
 

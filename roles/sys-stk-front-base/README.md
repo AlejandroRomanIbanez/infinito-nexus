@@ -15,6 +15,17 @@
 
 This role front bootstrap for web apps: HTTPS base, optional Cloudflare setup, and handler wiring.
 
+## Cosmos
+
+The diagram places Front Base (HTTPS + Cloudflare + Handlers) in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-stk-front-base 💻]
+        svc_front_base["front-base"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

@@ -8,6 +8,17 @@ Base development toolchains provide the core build tools (compilers, linkers, ma
 
 This role installs distro-specific equivalents of core build tooling so systems are ready for compiling software from source. After deploying this role, all common build dependencies are available on the system.
 
+## Cosmos
+
+The diagram places Base Development Toolchain in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [dev-base-devel 💻]
+        svc_base_devel["base-devel"]
+    end
+```
+
 ## Features
 
 - Installs distro-specific base development packages:

@@ -16,6 +16,17 @@ This role will:
 
 All tasks are guarded by “run once” facts and `MODE_CLEANUP` flags to avoid unintended re-runs or stale files.
 
+## Cosmos
+
+The diagram places NGINX WWW Redirect in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [web-opt-rdr-www]
+        svc_rdr_www["rdr-www"]
+    end
+```
+
 ## Purpose
 
 Ensure that any request to `www.example.com` automatically and permanently redirects to `https://example.com`, improving user experience, SEO, and certificate management. 🎯
@@ -27,6 +38,43 @@ Ensure that any request to `www.example.com` automatically and permanently redir
 - **Wildcard Redirect**: Includes a templated wildcard server block for `www.*` domains (toggleable). ✨  
 - **Cleanup Mode**: Removes the wildcard config file when `CERTBOT_FLAVOR` is set to `dedicated` and `MODE_CLEANUP` is enabled. 🗑️
 - **Debug Output**: Optional `MODE_DEBUG` gives detailed variable dumps for troubleshooting. 🐛  
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy NGINX WWW Redirect onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-opt-rdr-www full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy NGINX WWW Redirect to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-opt-rdr-www'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-opt-rdr-www \
+  --diff \
+  -vv
+```
 
 ## Credits
 

@@ -8,10 +8,58 @@
 
 This role sets up dynamic keyboard color change on MSI laptops running Arch Linux. It requires an MSI laptop and the `msi-perkeyrgb` tool installed on the system.
 
+## Cosmos
+
+The diagram places MSI Keyboard Driver in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [svc-opt-keyboard-color 💻]
+        svc_keyboard_color["keyboard-color"]
+    end
+```
+
 ## Features
 
 - **Dynamic Color Control:** Enables per-key RGB color configuration via `msi-perkeyrgb`.
 - **Configurable Hardware ID:** Requires `vendor_and_product_id` to be set to the vendor and product ID of the MSI laptop.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy MSI Keyboard Driver onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-opt-keyboard-color full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy MSI Keyboard Driver to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-opt-keyboard-color'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-opt-keyboard-color \
+  --diff \
+  -vv
+```
 
 ## Credits
 

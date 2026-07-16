@@ -8,9 +8,57 @@ Installs Hunspell and configured language packs on Pacman-based systems for spel
 
 This README accompanies the Hunspell Playbook, located within the `infinito` repository. The playbook is focused on installing Hunspell, a widely-used spell checker, along with various language packages to enhance its functionality.
 
+## Cosmos
+
+The diagram places Hunspell in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [gen-hunspell 💻]
+        svc_hunspell["hunspell"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Hunspell onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=gen-hunspell full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Hunspell to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'gen-hunspell'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id gen-hunspell \
+  --diff \
+  -vv
+```
 
 ## Playbook Contents
 

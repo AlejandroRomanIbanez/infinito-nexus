@@ -16,6 +16,21 @@ worker. Membership is expressed via group membership only, never via
 duplicated lists in `group_vars`. Inventory node labels are pushed to
 the cluster after the join phase.
 
+## Cosmos
+
+The diagram places Docker Swarm in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [svc-swarm-node 💻]
+        svc_node["node"]
+    end
+    subgraph dependents [Dependents]
+        dpt_svc_swarm_manager["svc-swarm-manager 💻"]
+    end
+    svc_node -.-> dpt_svc_swarm_manager
+```
+
 ## Features
 
 - **Single-manager bootstrap:** Initialises the cluster on the manager
@@ -28,6 +43,43 @@ the cluster after the join phase.
   inventory are applied to the joining node.
 - **Mode-selection trigger:** Membership in `svc-swarm-node` resolves
   `DEPLOYMENT_MODE = swarm` for every web-app role on that host.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Docker Swarm onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-swarm-node full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Docker Swarm to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-swarm-node'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-swarm-node \
+  --diff \
+  -vv
+```
 
 ## Credits
 

@@ -13,10 +13,58 @@ Package name differs across distributions:
 - Fedora: `libva-intel-media-driver`
 - CentOS Stream 9: `libva-intel-hybrid-driver` (via EPEL)
 
+## Cosmos
+
+The diagram places Intel Driver in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [drv-intel 💻]
+        svc_intel["intel"]
+    end
+```
+
 ## Features
 
 - Idempotent installation of Intel media drivers  
 - Supports Arch, Debian, Ubuntu, Fedora, CentOS Stream  
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Intel Driver onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=drv-intel full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Intel Driver to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'drv-intel'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id drv-intel \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

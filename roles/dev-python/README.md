@@ -10,6 +10,17 @@ Learn more at the [Python Official Site](https://www.python.org/), the [Arch Wik
 
 This role provides the essential tooling for Python developers, enabling immediate use of `python` and `pip` from the command line. It supports both general-purpose scripting and advanced software engineering workflows.
 
+## Cosmos
+
+The diagram places Python Development Utilities in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [dev-python 💻]
+        svc_python["python"]
+    end
+```
+
 ## Purpose
 
 To simplify and standardize the provisioning of Python-ready environments for developers, students, data scientists, and automation engineers.

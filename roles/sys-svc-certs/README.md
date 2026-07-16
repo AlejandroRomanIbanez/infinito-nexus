@@ -16,6 +16,17 @@ Designed for Archlinux systems, this role handles issuing certificates per domai
 - **Optional Cleanup:** Deletes redundant domain certificates when wildcard certificates are used.
 - **Non-Interactive Operation:** Fully automated using `--non-interactive` and `--agree-tos`.
 
+## Cosmos
+
+The diagram places NGINX HTTPS Certificate Retrieval in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-certs 💻]
+        svc_svc_certs["svc-certs"]
+    end
+```
+
 ## Purpose
 
 The NGINX HTTPS Certificate Retrieval role ensures that your NGINX-served domains have valid, automatically issued SSL/TLS certificates, improving web security without manual intervention.

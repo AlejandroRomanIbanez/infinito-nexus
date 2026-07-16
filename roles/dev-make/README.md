@@ -10,6 +10,17 @@ Learn more about GNU Make on the [GNU Make Homepage](https://www.gnu.org/softwar
 
 This role ensures that GNU Make is installed on the target system. It is intended for environments where automated build processes or custom software compilation are required.
 
+## Cosmos
+
+The diagram places Make Installation in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [dev-make 💻]
+        svc_make["make"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to provide an automated, idempotent installation of GNU Make, ensuring that the tool is available system-wide for building software. It is ideal for developers and system administrators who require a reliable build system.

@@ -20,6 +20,50 @@ Per-consumer provisioning (`tasks/02_init.yml`) runs with `application_id=svc-db
 
 The embedded snippet (`templates/service.yml.j2`) keeps the previous single-host behaviour: an unauthenticated in-memory Redis attached to the consumer stack's default network.
 
+## Cosmos
+
+The diagram places Redis in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+    end
+    subgraph role [svc-db-redis 🐳🐝]
+        svc_redis["redis"]
+        svc_container_backup["container_backup"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_app_akaunting["web-app-akaunting 🐳🐝"]
+        dpt_web_app_baserow["web-app-baserow 🐳🐝"]
+        dpt_web_app_bookwyrm["web-app-bookwyrm 🐳🐝"]
+        dpt_web_app_decidim["web-app-decidim 🐳🐝"]
+        dpt_web_app_discourse["web-app-discourse 🐳🐝"]
+        dpt_web_app_erpnext["web-app-erpnext 🐳🐝"]
+        dpt_web_app_fider["web-app-fider 🐳🐝"]
+        dpt_web_app_flowise["web-app-flowise 🐳🐝"]
+        dpt_web_app_funkwhale["web-app-funkwhale 🐳🐝"]
+        dpt_web_app_gitea["web-app-gitea 🐳🐝"]
+        dpt_web_app_gitlab["web-app-gitlab 🐳🐝"]
+        dpt_web_app_magento["web-app-magento 🐳🐝"]
+        dpt_more["..."]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+    svc_redis --> dpt_more
+    svc_redis -.-> dpt_web_app_akaunting
+    svc_redis -.-> dpt_web_app_baserow
+    svc_redis -.-> dpt_web_app_bookwyrm
+    svc_redis -.-> dpt_web_app_decidim
+    svc_redis -.-> dpt_web_app_discourse
+    svc_redis -.-> dpt_web_app_erpnext
+    svc_redis -.-> dpt_web_app_fider
+    svc_redis -.-> dpt_web_app_flowise
+    svc_redis -.-> dpt_web_app_funkwhale
+    svc_redis -.-> dpt_web_app_gitea
+    svc_redis -.-> dpt_web_app_gitlab
+    svc_redis -.-> dpt_web_app_magento
+```
+
 ## Features
 
 - **Central or embedded** selected per consumer via `services.redis.shared`.
@@ -27,6 +71,43 @@ The embedded snippet (`templates/service.yml.j2`) keeps the previous single-host
 - **Idempotent provisioning** ACL users reconciled on every deploy via `ACL SETUSER`.
 - **Manager-pinned** central on-disk state stays node-local (never on NFS) in swarm.
 - **Built-in healthcheck** authenticated `redis-cli ping`.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Redis onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-db-redis full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Redis to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-db-redis'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-db-redis \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

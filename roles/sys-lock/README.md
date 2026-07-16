@@ -12,6 +12,17 @@ The role performs the following:
 - Implements retry logic with a configurable timeout.
 - Ensures that maintenance tasks are executed only when the system is in a safe state.
 
+## Cosmos
+
+The diagram places System Maintenance Lock in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-lock 💻]
+        svc_lock["lock"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to safeguard system stability during maintenance by preventing conflicts with running services. It ensures that maintenance operations proceed only when the environment is ready.

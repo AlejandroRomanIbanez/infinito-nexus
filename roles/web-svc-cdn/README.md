@@ -10,6 +10,27 @@ This role wraps Nginx as an internal Content Delivery Network that serves static
 This role deploys an Nginx-based CDN container behind the project's standard reverse proxy and exposes the canonical `cdn` service so that other roles can consume it through `services.cdn`.
 It also publishes the `css` and `javascript` aliases as canonical references back to `cdn` so dependent applications can opt into either alias without duplicating configuration.
 
+## Cosmos
+
+The diagram places Content Delivery Network in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+    end
+    subgraph role [web-svc-cdn 💻]
+        svc_dashboard["dashboard"]
+        svc_cdn["cdn"]
+        svc_matomo["matomo"]
+        svc_javascript["javascript"]
+        svc_prometheus["prometheus"]
+    end
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_prometheus -.-> svc_prometheus
+```
+
 ## Features
 
 - **Canonical CDN service:** Provides the primary `cdn` service entry consumed via `services.cdn` across the stack.
@@ -17,6 +38,43 @@ It also publishes the `css` and `javascript` aliases as canonical references bac
 - **TLS-aware delivery:** Runs behind the project's reverse proxy and inherits its certificate management.
 - **Container-managed:** Deploys via Docker Compose with project-standard healthchecks, restart policy, and resource limits.
 - **Matomo and Prometheus aware:** Toggles tracker and metrics integration based on the presence of the corresponding application roles.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Content Delivery Network onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-svc-cdn full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Content Delivery Network to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-svc-cdn'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-svc-cdn \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

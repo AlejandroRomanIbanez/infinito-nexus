@@ -26,6 +26,17 @@ This role provides a **unified mail setup** for your hosts:
 
 This makes `sys-svc-mail` the canonical entrypoint for “mail capabilities” on a node, abstracting away whether the actual delivery happens via Mailu or a local relay.
 
+## Cosmos
+
+The diagram places sys-svc-mail in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-mail 💻]
+        svc_svc_mail["svc-mail"]
+    end
+```
+
 ## Purpose
 
 The main purpose of this role is to:

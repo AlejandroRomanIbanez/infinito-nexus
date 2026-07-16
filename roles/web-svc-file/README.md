@@ -8,6 +8,32 @@ The NGINX File Server role sets up a simple and secure static file server using 
 
 Optimized for Archlinux, this role configures NGINX to act as a lightweight and efficient file server. It ensures that files are served securely, with optional directory browsing enabled, and proper MIME type handling for standard web clients.
 
+## Cosmos
+
+The diagram places NGINX File Server in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+    end
+    subgraph role [web-svc-file 💻]
+        svc_file["file"]
+        svc_matomo["matomo"]
+        svc_css["css"]
+        svc_prometheus["prometheus"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_svc_asset["web-svc-asset 💻"]
+    end
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_svc_css -.-> svc_css
+    svc_file -.-> dpt_web_svc_asset
+```
+
 ## Features
 
 - **Automatic SSL/TLS Certificate Management:** Integrates with Let's Encrypt for secure access.
@@ -15,6 +41,43 @@ Optimized for Archlinux, this role configures NGINX to act as a lightweight and 
 - **Directory Listings:** Enables browsing through served files with human-readable file sizes and timestamps.
 - **Static Content Hosting:** Serve any type of static files (documents, software, media, etc.).
 - **Well-Known Folder Support:** Allows serving validation files and other standardized resources easily.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy NGINX File Server onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-svc-file full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy NGINX File Server to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-svc-file'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-svc-file \
+  --diff \
+  -vv
+```
 
 ## Further Resources
 

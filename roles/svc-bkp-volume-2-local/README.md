@@ -10,6 +10,50 @@ File payloads are captured with rsync hard-link snapshots; databases register th
 This role installs the `baudolo` CLI, lays out the on-host backup tree, deploys the systemd service that drives the periodic run, and wires the cleanup-of-failed-backups dependency so partial snapshots are not retained.
 Database seeding for individual apps is contributed by the consumer roles via `tasks/04_seed-database-to-backup.yml`, which they include conditionally once `svc-bkp-volume-2-local` is in `group_names`.
 
+## Cosmos
+
+The diagram places Backup Container to Local in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_secrets_2_local["svc-bkp-secrets-2-local 💻"]
+    end
+    subgraph role [svc-bkp-volume-2-local 💻]
+        svc_volume_2_local["volume-2-local"]
+        svc_secrets_backup["secrets_backup"]
+    end
+    subgraph dependents [Dependents]
+        dpt_svc_ai_ollama["svc-ai-ollama 🐳🐝"]
+        dpt_svc_db_elasticsearch["svc-db-elasticsearch 🐳🐝"]
+        dpt_svc_db_mariadb["svc-db-mariadb 🐳🐝"]
+        dpt_svc_db_openldap["svc-db-openldap 🐳🐝"]
+        dpt_svc_db_postgres["svc-db-postgres 🐳🐝"]
+        dpt_svc_db_qdrant["svc-db-qdrant 🐳🐝"]
+        dpt_svc_db_rabbitmq["svc-db-rabbitmq 🐳🐝"]
+        dpt_svc_db_redis["svc-db-redis 🐳🐝"]
+        dpt_svc_db_typesense["svc-db-typesense 🐳🐝"]
+        dpt_svc_dns_unbound["svc-dns-unbound 🐳🐝"]
+        dpt_svc_prx_openresty["svc-prx-openresty 🐳🐝"]
+        dpt_svc_registry_cache["svc-registry-cache 🐳🐝"]
+        dpt_more["..."]
+    end
+    dep_svc_bkp_secrets_2_local --> svc_secrets_backup
+    svc_volume_2_local --> dpt_more
+    svc_volume_2_local -.-> dpt_svc_ai_ollama
+    svc_volume_2_local -.-> dpt_svc_db_elasticsearch
+    svc_volume_2_local -.-> dpt_svc_db_mariadb
+    svc_volume_2_local -.-> dpt_svc_db_openldap
+    svc_volume_2_local -.-> dpt_svc_db_postgres
+    svc_volume_2_local -.-> dpt_svc_db_qdrant
+    svc_volume_2_local -.-> dpt_svc_db_rabbitmq
+    svc_volume_2_local -.-> dpt_svc_db_redis
+    svc_volume_2_local -.-> dpt_svc_db_typesense
+    svc_volume_2_local -.-> dpt_svc_dns_unbound
+    svc_volume_2_local -.-> dpt_svc_prx_openresty
+    svc_volume_2_local -.-> dpt_svc_registry_cache
+```
+
 ## Schema
 
 ```mermaid
@@ -34,6 +78,43 @@ flowchart TD
 - **Live-aware:** containers tagged `no_stop_required` stay running during the dump; others stop briefly and resume.
 - **Systemd-driven:** a generated unit fires on the configured schedule (`SYS_SCHEDULE_BACKUP_CONTAINER_TO_LOCAL`), serialised against other backup/cleanup/repair groups by `sys-lock`.
 - **Self-cleaning:** failed backup attempts are torn down by `sys-ctl-cln-faild-bkps` so a broken run cannot poison the next.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Backup Container to Local onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-bkp-volume-2-local full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Backup Container to Local to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-bkp-volume-2-local'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-bkp-volume-2-local \
+  --diff \
+  -vv
+```
 
 ## NFS-backed volumes
 

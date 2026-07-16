@@ -12,6 +12,17 @@ roles through the loader's queue.
 Loader role providing the shared-service preload pass and helper tasks
 for queueing post-load role inclusions.
 
+## Cosmos
+
+The diagram places sys-service-loader in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-service-loader 💻]
+        svc_service_loader["service-loader"]
+    end
+```
+
 ## Features
 
 - **Automated provisioning:** Configured by Ansible without manual steps.

@@ -11,6 +11,17 @@ This Ansible role injects a small JavaScript snippet into your HTML responses th
 
 This role injects a JS snippet into HTML to notify parent windows of iframe location changes and force external links to new tabs.
 
+## Cosmos
+
+The diagram places iFrame Notifier for NGINX in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-front-inj-dashboard 💻]
+        svc_dashboard["dashboard"]
+    end
+```
+
 ## Features
 
 - **Location Change Notification**  

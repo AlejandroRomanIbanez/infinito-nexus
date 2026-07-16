@@ -25,6 +25,17 @@ message when a host runs a distribution that this role does not yet cover.
 | `Fedora` / `CentOS`             | `fedora.yml`      | `ansible.builtin.dnf`      |
 | anything else                   | `unsupported.yml` | `ansible.builtin.fail`     |
 
+## Cosmos
+
+The diagram places Package update in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [update 💻]
+        svc_update["update"]
+    end
+```
+
 ## Features
 
 - **Per-family dispatch:** Routes by `ansible_facts['distribution']` so the
@@ -37,6 +48,43 @@ message when a host runs a distribution that this role does not yet cover.
   `when: run_once_update is not defined` and writes the flag via
   `tasks/utils/once/flag.yml`, so repeated invocations within one play are
   no-ops.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Package update onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=update full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Package update to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'update'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id update \
+  --diff \
+  -vv
+```
 
 ## Developer Notes
 

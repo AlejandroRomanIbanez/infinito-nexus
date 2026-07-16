@@ -15,6 +15,17 @@ Optimized for Archlinux systems, this role installs the `certbot-NGINX` package,
 - **Systemd Integration:** Manages renewal operations reliably with `systemd` and `sys-ctl-alm-compose`.
 - **Quiet and Safe Operation:** Uses `--quiet` and `--agree-tos` flags to ensure non-interactive renewals.
 
+## Cosmos
+
+The diagram places NGINX Certbot Automation in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-mtn-cert-renew 💻]
+        svc_cert_renew["cert-renew"]
+    end
+```
+
 ## Purpose
 
 The NGINX Certbot Automation role ensures that Let's Encrypt SSL/TLS certificates stay valid without manual intervention. It enhances the security and reliability of web services by automating certificate lifecycle management.

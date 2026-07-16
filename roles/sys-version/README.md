@@ -9,6 +9,17 @@ and writes it as a system-wide environment variable into `/etc/environment` on t
 
 This role extracts the local pyproject.toml version and writes it as an environment variable in /etc/environment on the target host.
 
+## Cosmos
+
+The diagram places System Version ️ in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-version 💻]
+        svc_version["version"]
+    end
+```
+
 ## Features
 
 - Extracts `version = "..."` from `pyproject.toml` on the control node

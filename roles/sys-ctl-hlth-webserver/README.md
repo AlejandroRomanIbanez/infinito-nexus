@@ -8,6 +8,17 @@ This role verifies that each NGINX-served domain returns an expected HTTP status
 
 The role scans NGINX server block `.conf` files for domains, HEAD-requests each domain, compares the response against per-domain expected codes, and reports mismatches via `sys-ctl-alm-compose`. It is scheduled via a systemd timer for periodic health sweeps. Include this role and define `on_calendar_health_NGINX`. The role installs `requests` via `pip` automatically.
 
+## Cosmos
+
+The diagram places Webserver Health Check in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-hlth-webserver 💻]
+        svc_webserver["webserver"]
+    end
+```
+
 ## Features
 
 - **Domain Detection:** Scans NGINX server block `.conf` files for configured domains.

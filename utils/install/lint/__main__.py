@@ -20,6 +20,7 @@ from utils.install.lint import (
     eslint,
     markdownlint_cli2,
     mbake,
+    mermaid_cli,
     packages,
     playwright,
     ruff,
@@ -74,6 +75,10 @@ def _install_markdown_tools() -> None:
     markdownlint_cli2.ensure()
 
 
+def _install_mermaid_tools() -> None:
+    mermaid_cli.ensure()
+
+
 def _install_makefile_tools() -> None:
     mbake.ensure()
 
@@ -96,6 +101,7 @@ _GROUP_FN_NAMES = {
     "python": "_install_python_tools",
     "shellcheck": "_install_shellcheck_tools",
     "markdown": "_install_markdown_tools",
+    "mermaid": "_install_mermaid_tools",
     "makefile": "_install_makefile_tools",
     "javascript": "_install_javascript_tools",
     "playwright": "_install_playwright_tools",
@@ -109,6 +115,7 @@ def _install_all() -> None:
     _install_python_tools()
     _install_shellcheck_tools()
     _install_markdown_tools()
+    _install_mermaid_tools()
     _install_makefile_tools()
     _install_javascript_tools()
     _install_playwright_tools()
@@ -145,7 +152,7 @@ def _dispatch(group: str) -> None:
     if fn_name is None:
         raise RuntimeError(
             "Usage: python -m utils.install.lint "
-            "[all|action|ansible|python|shellcheck|markdown|makefile|javascript|playwright|packages]..."
+            "[all|action|ansible|python|shellcheck|markdown|mermaid|makefile|javascript|playwright|packages]..."
         )
     globals()[fn_name]()
 

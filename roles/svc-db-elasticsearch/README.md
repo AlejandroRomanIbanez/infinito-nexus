@@ -12,6 +12,22 @@ Built for environments that demand reliability and ease of management, this role
 - Deploys a single-node Elasticsearch container with minimal security and automated healthchecks.
 - Automates per-consumer provisioning (index-scoped role, user, and namespace) to streamline your workflows.
 
+## Cosmos
+
+The diagram places Elasticsearch in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
+    end
+    subgraph role [svc-db-elasticsearch 🐳🐝]
+        svc_elasticsearch["elasticsearch"]
+        svc_container_backup["container_backup"]
+    end
+    dep_svc_bkp_volume_2_local -.-> svc_container_backup
+```
+
 ## Purpose
 
 The purpose of this role is to provide an effortless way to deploy a central Elasticsearch engine via Docker so that application roles stay stateless, unpinned and NFS-shareable in swarm while the engine keeps its on-disk index state node-local. See [docs/architecture/central-engines.md](../../docs/architecture/central-engines.md).
@@ -22,6 +38,43 @@ The purpose of this role is to provide an effortless way to deploy a central Ela
 - **Per-Consumer Isolation:** Each consumer gets a role and user scoped to its own `<entity>-*` index namespace.
 - **Enhanced Security:** The service is bound to `127.0.0.1:9200`, restricting access and enhancing security.
 - **Seamless Docker Integration:** Works harmoniously with Docker Compose and other roles in your infrastructure.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Elasticsearch onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=svc-db-elasticsearch full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Elasticsearch to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'svc-db-elasticsearch'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id svc-db-elasticsearch \
+  --diff \
+  -vv
+```
 
 ## Credits
 

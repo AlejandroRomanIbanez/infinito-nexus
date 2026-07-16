@@ -25,6 +25,17 @@ All tasks are idempotent. Once your certificates are in place and your configura
 
 ---
 
+## Cosmos
+
+The diagram places Webserver HTTPS Provisioning in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-webserver-https 💻]
+        svc_svc_webserver_https["svc-webserver-https"]
+    end
+```
+
 ## Features
 
 - 🔒 **Automatic HTTPS Redirect**  

@@ -8,12 +8,114 @@ Step into a secure future with [Keycloak](https://www.keycloak.org/)! This open�
 
 This role deploys Keycloak in a Docker environment, integrating it with a PostgreSQL database and enabling operation behind a reverse proxy such as NGINX. It manages container orchestration and configuration via Docker Compose and environment variable templates, ensuring a secure and scalable identity management solution.
 
+## Cosmos
+
+The diagram places Keycloak in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_db_openldap["svc-db-openldap 🐳🐝"]
+        dep_svc_db_postgres["svc-db-postgres 🐳🐝"]
+        dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dep_web_app_mailu["web-app-mailu 🐳🐝"]
+        dep_web_app_matomo["web-app-matomo 🐳🐝"]
+        dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
+        dep_web_svc_css["web-svc-css 💻"]
+    end
+    subgraph role [web-app-keycloak 🐳🐝]
+        svc_logout["logout ❌"]
+        svc_ldap["ldap"]
+        svc_dashboard["dashboard"]
+        svc_matomo["matomo"]
+        svc_email["email"]
+        svc_keycloak["keycloak"]
+        svc_sso_proxy["sso_proxy"]
+        svc_postgres["postgres"]
+        svc_css["css"]
+        svc_recaptcha["recaptcha"]
+        svc_prometheus["prometheus"]
+    end
+    subgraph dependents [Dependents]
+        dpt_web_app_akaunting["web-app-akaunting 🐳🐝"]
+        dpt_web_app_baserow["web-app-baserow 🐳🐝"]
+        dpt_web_app_bigbluebutton["web-app-bigbluebutton 🐳🐝"]
+        dpt_web_app_bluesky["web-app-bluesky 🐳🐝"]
+        dpt_web_app_bookwyrm["web-app-bookwyrm 🐳🐝"]
+        dpt_web_app_bridgy_fed["web-app-bridgy-fed 🐳🐝"]
+        dpt_web_app_checkmk["web-app-checkmk 🐳🐝"]
+        dpt_web_app_chess["web-app-chess 🐳🐝"]
+        dpt_web_app_confluence["web-app-confluence 🐳🐝"]
+        dpt_web_app_dashboard["web-app-dashboard 🐳🐝"]
+        dpt_web_app_decidim["web-app-decidim 🐳🐝"]
+        dpt_web_app_discourse["web-app-discourse 🐳🐝"]
+        dpt_more["..."]
+    end
+    dep_svc_db_openldap -.-> svc_ldap
+    dep_svc_db_postgres -.-> svc_postgres
+    dep_web_app_dashboard -.-> svc_dashboard
+    dep_web_app_mailu -.-> svc_email
+    dep_web_app_matomo -.-> svc_matomo
+    dep_web_app_prometheus -.-> svc_prometheus
+    dep_web_svc_css -.-> svc_css
+    svc_keycloak --> dpt_more
+    svc_keycloak -.-> dpt_web_app_akaunting
+    svc_keycloak -.-> dpt_web_app_baserow
+    svc_keycloak -.-> dpt_web_app_bigbluebutton
+    svc_keycloak -.-> dpt_web_app_bluesky
+    svc_keycloak -.-> dpt_web_app_bookwyrm
+    svc_keycloak --> dpt_web_app_bridgy_fed
+    svc_keycloak -.-> dpt_web_app_checkmk
+    svc_keycloak --> dpt_web_app_chess
+    svc_keycloak --> dpt_web_app_confluence
+    svc_keycloak -.-> dpt_web_app_dashboard
+    svc_keycloak -.-> dpt_web_app_decidim
+    svc_keycloak -.-> dpt_web_app_discourse
+```
+
 ## Features
 
 - **Comprehensive Identity Management:** Manage users, roles, and permissions across your applications with robust SSO and user federation.
 - **Advanced Security Options:** Benefit from multi-factor authentication, configurable password policies, and secure session management.
 - **Standards Support:** Seamlessly integrate with SAML, OpenID Connect, and OAuth2 to support various authentication flows.
 - **Scalable and Customizable:** Easily tailor settings and scale your Keycloak instance to meet growing demands.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Keycloak onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=web-app-keycloak full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Keycloak to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'web-app-keycloak'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id web-app-keycloak \
+  --diff \
+  -vv
+```
 
 ## Developer Notes
 

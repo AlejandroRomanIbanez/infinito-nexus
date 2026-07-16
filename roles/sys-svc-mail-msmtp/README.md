@@ -8,6 +8,17 @@ This Ansible role installs and configures **msmtp** (plus optional sendmail comp
 
 The role installs **msmtp**, handles distro-specific package differences (including EPEL bootstrap on EL-family hosts when required), and deploys a pre-configured `msmtprc` file via Jinja2. For distros without a dedicated `msmtp-mta` package, it configures a direct `/usr/bin/sendmail` compatibility symlink to `msmtp`.
 
+## Cosmos
+
+The diagram places msmtp in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-mail-msmtp 💻]
+        svc_svc_mail_msmtp["svc-mail-msmtp"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to automate the setup of a lightweight SMTP client that acts as a sendmail replacement. By configuring msmtp, the role facilitates direct email sending using your SMTP server credentials, making it a simple yet effective solution for system notifications and other email-based communications.

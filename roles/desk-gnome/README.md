@@ -12,6 +12,17 @@ This role aggregates various GNOME desktop components to ensure a cohesive and f
 
 This role aggregates essential GNOME desktop roles (including caffeine, extensions, and terminal) for a complete GNOME environment on Linux.
 
+## Cosmos
+
+The diagram places GNOME Desktop in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [desk-gnome 💻]
+        svc_gnome["gnome"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to provide a complete GNOME desktop experience by orchestrating multiple sub-roles. This simplifies deployment and management by ensuring that all key components are installed and configured in a consistent, system-wide manner.
@@ -23,6 +34,43 @@ The purpose of this role is to provide a complete GNOME desktop experience by or
 - Manages GNOME Shell extensions and integrates the CLI GNOME Extension Manager.
 - Installs GNOME Terminal for a robust command-line interface.
 - Ensures a seamless and uniform GNOME environment on Arch Linux.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy GNOME Desktop onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=desk-gnome full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy GNOME Desktop to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'desk-gnome'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id desk-gnome \
+  --diff \
+  -vv
+```
 
 ## Addons
 

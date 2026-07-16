@@ -10,6 +10,17 @@ Learn more about LibreOffice on the [official website](https://www.libreoffice.o
 
 This role installs LibreOffice along with Liberation fonts and language packages on Arch Linux systems for a complete office suite experience.
 
+## Cosmos
+
+The diagram places LibreOffice in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [desk-libreoffice 💻]
+        svc_libreoffice["libreoffice"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to automate the installation and configuration of LibreOffice along with its language support on personal computers. This ensures that users have a consistent and fully functional office suite environment across their systems.
@@ -20,6 +31,43 @@ The purpose of this role is to automate the installation and configuration of Li
 - **Customizable Flavor:** Supports installation of different LibreOffice flavors by dynamically setting the package name.
 - **Language Support:** Iterates through a list of desired language packages to ensure comprehensive localization.
 - **Seamless Integration:** Designed to work within a larger system setup environment, integrating with dependencies such as Hunspell for spell checking.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy LibreOffice onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=desk-libreoffice full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy LibreOffice to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'desk-libreoffice'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id desk-libreoffice \
+  --diff \
+  -vv
+```
 
 ## Credits
 

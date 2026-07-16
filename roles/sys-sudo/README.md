@@ -8,6 +8,17 @@ This role installs the [sudo](https://en.wikipedia.org/wiki/Sudo) package and de
 
 Optimized for security and ease of administration, this role guarantees that sudo is installed and configured according to recommended practices. The provided sudoers file includes essential comments, host/user aliases, and defaults to help prevent misconfigurations.
 
+## Cosmos
+
+The diagram places Sudo in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-sudo 💻]
+        svc_sudo["sudo"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to ensure that the target system has a reliable sudo configuration. By installing the [sudo](https://en.wikipedia.org/wiki/Sudo) package and deploying a standard sudoers file, the role facilitates proper administrative access and minimizes potential security risks.

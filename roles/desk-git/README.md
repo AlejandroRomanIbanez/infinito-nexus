@@ -8,6 +8,17 @@ This role installs and configures Git on the target system using the Pacman pack
 
 This role installs Git and configures it using a custom git-configurator for personal computers.
 
+## Cosmos
+
+The diagram places Git in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [desk-git 💻]
+        svc_git["git"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to automate the installation and configuration of Git for personal computers. By leveraging a custom git-configurator, it sets up essential Git settings such as merge options, rebase preferences, user information, and GPG signing, ensuring a consistent environment for version control operations.
@@ -18,6 +29,43 @@ The purpose of this role is to automate the installation and configuration of Gi
 - **Custom Git Configuration:** Invokes the git-configurator tool to merge user-specific configuration options.
 - **Idempotent Task Execution:** Uses host-level run-once artifacts to ensure that configuration tasks are executed only once per host.
 - **Integration:** Works alongside the pkgmgr role to streamline overall system setup.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Git onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=desk-git full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Git to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'desk-git'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id desk-git \
+  --diff \
+  -vv
+```
 
 ## Credits
 

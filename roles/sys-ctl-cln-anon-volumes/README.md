@@ -8,6 +8,17 @@ This Ansible role installs and executes [`dockreap`](https://github.com/kevinvee
 
 The role installs `dockreap` using Python tooling and runs it with the `--no-confirmation` flag to ensure automatic, non-interactive cleanup.
 
+## Cosmos
+
+The diagram places Cleanup Docker Anonymous Volumes in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-cln-anon-volumes 💻]
+        svc_anon_volumes["anon-volumes"]
+    end
+```
+
 ## Purpose
 
 This role automates the removal of orphaned Docker volumes that consume unnecessary disk space. It is especially useful in backup, CI/CD, or maintenance routines.

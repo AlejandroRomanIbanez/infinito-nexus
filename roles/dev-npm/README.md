@@ -8,6 +8,17 @@ This Ansible role installs npm and optionally runs `npm ci` within a given proje
 
 Designed for use in Node-based projects, this role installs npm and can execute a clean install (`npm ci`) to ensure consistent dependency trees.
 
+## Cosmos
+
+The diagram places npm in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [dev-npm 💻]
+        svc_npm["npm"]
+    end
+```
+
 ## Features
 
 - **npm Installation:** Ensures the `npm` package manager is installed.

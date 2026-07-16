@@ -14,6 +14,17 @@ Optimized for secure system administration, this role performs the following tas
 - Ensures that the key generation and display tasks run only once to maintain idempotency.
 - Facilitates secure remote access using best practices for [SSH](https://en.wikipedia.org/wiki/Secure_Shell).
 
+## Cosmos
+
+The diagram places Root User in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [user-root 💻]
+        svc_root["root"]
+    end
+```
+
 ## Purpose
 
 The primary purpose of this role is to enhance the security of the system by ensuring that a valid SSH key is available for the [root user](https://en.wikipedia.org/wiki/Superuser). By automating the generation and output of the public key, it reduces manual intervention and helps maintain a secure configuration for administrative access.

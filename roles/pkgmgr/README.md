@@ -13,6 +13,17 @@ This role automates the deployment of Kevin's Package Manager by:
 
 It ensures that the Package Manager is ready to manage repositories, perform Git operations, and streamline software management tasks.
 
+## Cosmos
+
+The diagram places Kevins Package Manager in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [pkgmgr 💻]
+        svc_pkgmgr["pkgmgr"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to simplify the installation of Kevin's Package Manager, reducing manual steps and ensuring a consistent setup across environments. Ideal for developers and system administrators, it helps integrate repository management seamlessly into your automation workflows.

@@ -8,6 +8,17 @@ Monitors disk-space usage and alerts if any filesystem usage exceeds your define
 
 This role disk-space usage monitor; alerts when usage exceeds threshold.
 
+## Cosmos
+
+The diagram places sys-ctl-hlth-disc-space in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-ctl-hlth-disc-space 💻]
+        svc_disc_space["disc-space"]
+    end
+```
+
 ## Features
 
 - Uses `df` to gather current usage.

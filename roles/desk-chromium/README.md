@@ -8,6 +8,17 @@ This Ansible role installs and configures the Chromium browser along with essent
 
 Designed for various Linux distributions, this role manages the installation of the Chromium browser using the system’s package manager. It configures Chromium's managed policies to automatically deploy key browser extensions, ensuring that users always have a secure and consistent environment. This role integrates seamlessly with other system management roles for a holistic deployment.
 
+## Cosmos
+
+The diagram places Chromium in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [desk-chromium 💻]
+        svc_chromium["chromium"]
+    end
+```
+
 ## Purpose
 
 The purpose of this role is to automate the provisioning of a secure Chromium environment in a consistent and maintainable way. It reduces manual configuration steps and guarantees that critical browser extensions are enforced, making it ideal for both production and personal deployments.
@@ -19,6 +30,43 @@ The purpose of this role is to automate the provisioning of a secure Chromium en
 - **Enforces Browser Extensions:** Configures Chromium Enterprise Policies to force-install uBlock Origin and the KeePassXC browser extension.
 - **Cross-Platform Support:** Handles package variations for multiple Linux distributions.
 - **Seamless Integration:** Provides a stable and secure browsing setup as part of broader system automation workflows.
+
+## Quick Setup
+
+### Development
+
+Clone, set up the workstation, and deploy Chromium onto the local stack:
+
+```bash
+git clone https://github.com/infinito-nexus/core.git
+cd core
+make onboard
+make compose-deploy mode=reinstall apps=desk-chromium full_cycle=false
+```
+
+### Production
+
+Run the published image to provision the inventory and deploy Chromium to a managed server (the mounted volume persists the inventory between the two runs):
+
+```bash
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration inventory provision /etc/infinito.nexus/inventories/prod \
+  --inventory-file /etc/infinito.nexus/inventories/prod/devices.yml \
+  --host <your-server> \
+  --vars-file inventories/<env>/default.yml \
+  --include 'desk-chromium'
+
+docker run --rm -it \
+  -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
+  ghcr.io/infinito-nexus/core/debian \
+  infinito administration deploy dedicated /etc/infinito.nexus/inventories/prod/devices.yml \
+  --password-file /etc/infinito.nexus/inventories/prod/.password \
+  --id desk-chromium \
+  --diff \
+  -vv
+```
 
 ## Addons
 

@@ -13,6 +13,17 @@ Optimized for idempotent cleanup operations, this role:
 - Ensures cleanup tasks execute only once per playbook run.
 - Notifies NGINX to restart after removing configurations.
 
+## Cosmos
+
+The diagram places sys-svc-cln-domains in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+
+```mermaid
+flowchart LR
+    subgraph role [sys-svc-cln-domains 💻]
+        svc_svc_cln_domains["svc-cln-domains"]
+    end
+```
+
 ## Purpose
 
 Streamline the decommissioning of outdated or deprecated domains by automating the removal of NGINX server blocks and their SSL certificates.
