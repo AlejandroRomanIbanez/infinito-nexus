@@ -94,10 +94,10 @@ make runner-ci-disable OWNER=youruser
 
 ## CLI parameters
 
-The `make runner-ci-deploy` target invokes `python -m cli.deploy.runner`. You can also call it directly:
+The `make runner-ci-deploy` target invokes `python -m cli.administration.deploy.runner`. You can also call it directly:
 
 ```bash
-python -m cli.deploy.runner <hostname> \
+python -m cli.administration.deploy.runner <hostname> \
     --distribution <os> \
     --roles svc-runner \
     [--runner-count N] \

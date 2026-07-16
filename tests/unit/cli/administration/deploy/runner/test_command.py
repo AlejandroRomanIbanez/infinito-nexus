@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import unittest
 
-from cli.deploy.runner.command import (
+from cli.administration.deploy.runner.command import (
     DEFAULT_OUTPUT,
     DEFAULT_RUNNER_COUNT,
     RUNNER_ROLE,

@@ -508,7 +508,7 @@ roundtrip:
 runner-ci-deploy:
 	@: "$${HOST:?HOST must be set (e.g. make runner-ci-deploy HOST=runner.example.com DISTRO=debian)}"
 	@: "$${DISTRO:?DISTRO must be set (e.g. debian, archlinux)}"
-	@"$${PYTHON}" -m cli.deploy.runner "$${HOST}" \
+	@"$${PYTHON}" -m cli.administration.deploy.runner "$${HOST}" \
 		--roles svc-runner \
 		--distribution "$${DISTRO}" \
 		--runner-count "$${COUNT:-15}" \

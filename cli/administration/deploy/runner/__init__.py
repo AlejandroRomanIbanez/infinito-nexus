@@ -2,4 +2,4 @@ from __future__ import annotations
 
 from pathlib import Path
 
-PROJECT_ROOT: Path = Path(__file__).resolve().parents[3]
+PROJECT_ROOT: Path = Path(__file__).resolve().parents[4]
