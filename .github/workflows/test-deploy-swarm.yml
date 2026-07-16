@@ -3,6 +3,11 @@ name: "🐝 Test: Deploy (swarm)"
 on:
   workflow_call:
     inputs:
+      distros:
+        description: "Space-separated distro list (shown in the discover job name)"
+        required: false
+        type: string
+        default: "arch debian ubuntu fedora centos"
       whitelist:
         description: "Optional space-separated whitelist of app ids"
         required: false
@@ -15,6 +20,11 @@ on:
         default: ""
   workflow_dispatch:
     inputs:
+      distros:
+        description: "Space-separated distro list (shown in the discover job name)"
+        required: false
+        type: string
+        default: "arch debian ubuntu fedora centos"
       whitelist:
         description: "Optional space-separated whitelist of app ids"
         required: false
@@ -41,7 +51,7 @@ env:
 
 jobs:
   discover:
-    name: 🍯 Lure swarm
+    name: 🍯 Lure (${{ inputs.distros }})
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:

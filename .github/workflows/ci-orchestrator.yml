@@ -229,6 +229,7 @@ jobs:
       - images-mirror-missing
     uses: ./.github/workflows/test-deploy-swarm.yml
     with:
+      distros: ${{ inputs.distros }}
       whitelist: ${{ inputs.whitelist }}
       lifecycles: ${{ inputs.lifecycles }}
 
