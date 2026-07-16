@@ -88,7 +88,7 @@ jobs:
     name: 🐳 ${{ matrix.apps }}${{ matrix.variant && format(' {0}',matrix.variant) || '' }}
     if: needs.discover.outputs.apps != '' && needs.discover.outputs.apps != '[]'
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 345
     needs: discover
 
     strategy:

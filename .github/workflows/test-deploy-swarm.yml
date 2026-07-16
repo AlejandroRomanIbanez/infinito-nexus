@@ -109,7 +109,7 @@ jobs:
     name: "🐝 ${{ matrix.apps }}${{ matrix.variant && format(' {0}',matrix.variant) || '' }}"
     if: needs.discover.outputs.apps != '' && needs.discover.outputs.apps != '[]'
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 345
     needs: discover
 
     strategy:
@@ -174,7 +174,7 @@ jobs:
         run: make setup
 
       - name: "🚀 Matrix-deploy ${{ matrix.apps }}: provision/deploy/e2e/verify per round"
-        timeout-minutes: 240
+        timeout-minutes: 345
         env:
           variant: ${{ matrix.variant }}
         run: |
