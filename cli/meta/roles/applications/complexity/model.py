@@ -197,13 +197,16 @@ def compute_complexity_rows(
         bundles = compose_bundle_counts(names, variants, roles_dir=roles_dir)
     compose_apps = _tested_apps("compose", tested)
     swarm_apps = _tested_apps("swarm", tested)
+    host_apps = _tested_apps("host", tested)
 
     rows = []
     for name in names:
         stack = role_has_stack(roles_dir / name)
         swarm = name in swarm_apps and stack
-        host = (not stack) and get_role_mode_enabled(
-            roles_dir / name, mode="host", role_name=name
+        host = (
+            name in host_apps
+            and not stack
+            and get_role_mode_enabled(roles_dir / name, mode="host", role_name=name)
         )
         rows.append(
             _build_row(name, forward, reverse, max_level)._replace(
@@ -249,6 +252,7 @@ def compute_variant_complexity_rows(
     variants = get_variants(roles_dir=roles_dir)
     compose_apps = _tested_apps("compose", tested)
     swarm_apps = _tested_apps("swarm", tested)
+    host_apps = _tested_apps("host", tested)
 
     rows: list[ComplexityRow] = []
     for role_dir in sorted(p for p in roles_dir.iterdir() if p.is_dir()):
@@ -259,8 +263,10 @@ def compute_variant_complexity_rows(
         compose = name in compose_apps
         swarm_role = name in swarm_apps
         stack = role_has_stack(role_dir)
-        host = (not stack) and get_role_mode_enabled(
-            role_dir, mode="host", role_name=name
+        host = (
+            name in host_apps
+            and not stack
+            and get_role_mode_enabled(role_dir, mode="host", role_name=name)
         )
         for index, variant_config in enumerate(variants.get(name) or []):
             providers = direct_dep_roles(

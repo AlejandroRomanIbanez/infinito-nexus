@@ -407,10 +407,27 @@ class TestStackColumn(unittest.TestCase):
                 "host-off:\n  enabled: true\n  modes:\n    host:\n      enabled: false\n",
             )
 
-            by_name = {r.name: r for r in compute_complexity_rows(roles_dir)}
+            with mock.patch(
+                "cli.meta.roles.applications.complexity.model._tested_apps",
+                return_value={"host-app", "host-off", "stack-app"},
+            ):
+                by_name = {r.name: r for r in compute_complexity_rows(roles_dir)}
             self.assertTrue(by_name["host-app"].host)  # non-stack, default enabled
             self.assertFalse(by_name["stack-app"].host)  # stack roles are never host
             self.assertFalse(by_name["host-off"].host)  # modes.host.enabled: false
+
+    def test_host_column_gates_on_lifecycle_envelope(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            roles_dir = Path(td) / "roles"
+            roles_dir.mkdir()
+            self._build(roles_dir)
+
+            with mock.patch(
+                "cli.meta.roles.applications.complexity.model._tested_apps",
+                return_value=set(),
+            ):
+                by_name = {r.name: r for r in compute_complexity_rows(roles_dir)}
+            self.assertFalse(by_name["host-app"].host)  # outside lifecycle envelope
 
     def test_symbol_cells_and_headers(self) -> None:
         self.assertEqual(_lifecycle_cell("beta", symbol=True), "🌿")
