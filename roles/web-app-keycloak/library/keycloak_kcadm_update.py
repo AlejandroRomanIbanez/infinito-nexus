@@ -231,6 +231,90 @@ def send_update(module, object_kind, api, object_id, realm, kcadm_exec, payload)
     return run_kcadm(module, cmd, ignore_rc=True)
 
 
+def _named_id_map(module, cmd):
+    """Run a kcadm list command and return a {name: id} map (empty on noise)."""
+    _rc, out, _err = run_kcadm(module, cmd, ignore_rc=True)
+    try:
+        data = json_from_noisy_stdout(out)
+    except ValueError:
+        data = []
+    return {
+        item["name"]: item["id"]
+        for item in data or []
+        if isinstance(item, dict) and item.get("name") and item.get("id")
+    }
+
+
+def converge_client_scope_lists(module, object_id, desired, realm, kcadm_exec):
+    """Client PUT ignores default/optionalClientScopes (sub-resources with own
+    endpoints; verified against a live deploy) — converge them here: DELETE
+    unassigns, bodyless PUT assigns, removals first so a scope can move
+    between the two lists."""
+    plans = []
+    for field, kind in (
+        ("defaultClientScopes", "default-client-scopes"),
+        ("optionalClientScopes", "optional-client-scopes"),
+    ):
+        if field not in desired:
+            continue
+        wanted = {str(name) for name in (desired.get(field) or [])}
+        current = _named_id_map(
+            module,
+            f"{kcadm_exec} get clients/{object_id}/{kind} -r {realm} --format json",
+        )
+        plans.append((kind, wanted, current))
+
+    changed = False
+    for kind, wanted, current in plans:
+        for name in sorted(set(current) - wanted):
+            rc, out, err = run_kcadm(
+                module,
+                f"{kcadm_exec} delete clients/{object_id}/{kind}/{current[name]} -r {realm}",
+                ignore_rc=True,
+            )
+            if rc != 0:
+                module.fail_json(
+                    msg="Failed to unassign client scope",
+                    scope=name,
+                    scope_kind=kind,
+                    rc=rc,
+                    stdout=out,
+                    stderr=err,
+                )
+            changed = True
+
+    catalog = None
+    for kind, wanted, current in plans:
+        for name in sorted(wanted - set(current)):
+            if catalog is None:
+                catalog = _named_id_map(
+                    module, f"{kcadm_exec} get client-scopes -r {realm} --format json"
+                )
+            scope_id = catalog.get(name)
+            if not scope_id:
+                module.fail_json(
+                    msg="Desired client scope does not exist in the realm",
+                    scope=name,
+                    scope_kind=kind,
+                )
+            rc, out, err = run_kcadm(
+                module,
+                f"{kcadm_exec} update clients/{object_id}/{kind}/{scope_id} -r {realm}",
+                ignore_rc=True,
+            )
+            if rc != 0:
+                module.fail_json(
+                    msg="Failed to assign client scope",
+                    scope=name,
+                    scope_kind=kind,
+                    rc=rc,
+                    stdout=out,
+                    stderr=err,
+                )
+            changed = True
+    return changed
+
+
 def send_create(module, object_kind, api, realm, kcadm_exec, payload):
     payload_json = json.dumps(payload)
     if object_kind == "realm":
@@ -392,6 +476,9 @@ def run_module():
             stderr=err,
             payload=desired_obj,
         )
+
+    if object_kind == "client":
+        converge_client_scope_lists(module, object_id, desired, realm, kcadm_exec)
 
     result["changed"] = True
     result["result"] = desired_obj

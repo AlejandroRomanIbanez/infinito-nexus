@@ -31,6 +31,36 @@ store. Spam filtering is built into Stalwart; **antivirus** is provided by the
 `clamav` container (registered via `x:MtaMilter`, `services.clamav.enabled` —
 set it to `false` to run spam-only). Infected mail is rejected at DATA.
 
+```mermaid
+flowchart LR
+    subgraph edge["Front proxy (TLS)"]
+        MAIL_VHOST["mail.<domain> (WebAdmin)"]
+        WEBMAIL_VHOST["webmail.<domain> (Roundcube)"]
+    end
+
+    subgraph stack["web-app-stalwart compose stack"]
+        STALWART["stalwart<br/>SMTP/IMAP/JMAP/POP3/Sieve/DAV<br/>+ WebAdmin + REST API"]
+        WEBMAIL["webmail (Roundcube)"]
+        CLAMAV["clamav (DATA-stage milter)"]
+        PG[("postgres<br/>(shared platform DB)")]
+    end
+
+    KC["Keycloak<br/>OIDC directory + SSO"]
+    APPS["Platform apps<br/>(no-reply bot via msmtp)"]
+    WORLD(("Internet<br/>ports 25/465/587/143/993/..."))
+
+    MAIL_VHOST --> STALWART
+    WEBMAIL_VHOST --> WEBMAIL
+    WEBMAIL -- "IMAP 993 / SMTP 465<br/>XOAUTH2 (stalwart-webmail client)" --> STALWART
+    STALWART -- "milter" --> CLAMAV
+    STALWART --- PG
+    STALWART -- "OIDC directory<br/>(token validation)" --> KC
+    MAIL_VHOST -. "SPA login: PKCE<br/>(stalwart-webui client)" .-> KC
+    WEBMAIL_VHOST -. "OAuth login" .-> KC
+    APPS -- "STARTTLS :25, no AUTH<br/>(SSO relay, trusted networks)" --> STALWART
+    WORLD <-- "public mail ports<br/>(only when active MAIL_PROVIDER)" --> STALWART
+```
+
 ## SSO (Keycloak / OpenID Connect)
 
 When `web-app-keycloak` is present the role joins the shared Keycloak client and
