@@ -16,7 +16,7 @@
   delay: 5
   until: akaunting_swarm_drained.rc == 0
 
-- name: "▶️ Akaunting setup | Run one-shot install (--no-start: install then exit)"
+- name: "▶️ Akaunting setup | Run one-shot install"
   ansible.builtin.shell: |
     set -euo pipefail
     JOB={{ AKAUNTING_SETUP_JOB | quote }}
@@ -29,20 +29,19 @@
       --network {{ application_id | get_entity_name | quote }} \
       {% if lookup('database', application_id, 'shared') | bool %}--network {{ lookup('database', application_id, 'network') | quote }} {% endif %}\
       {{ AKAUNTING_IMAGE }}:{{ AKAUNTING_VERSION }} \
-      --no-start
+      {{ AKAUNTING_ENTRYPOINT }}
   changed_when: true
 
 - name: "⏳ Akaunting setup | Wait for install job to complete"
-  ansible.builtin.shell: |
-    container service ps {{ AKAUNTING_SETUP_JOB }} \
-      --no-trunc \
-      --format '{{ "{{.CurrentState}}" }}' \
-      | head -1 | grep -qE '^(Complete|Shutdown)'
+  ansible.builtin.script: "{{ lookup('path_absolute', 'roles/web-app-akaunting/files/install_job_state.sh') }}"
+  environment:
+    JOB: "{{ AKAUNTING_SETUP_JOB }}"
   register: akaunting_setup_done
   changed_when: false
   retries: 60
   delay: 5
-  until: akaunting_setup_done.rc == 0
+  until: akaunting_setup_done.rc != 1
+  failed_when: akaunting_setup_done.rc != 0
 
 - name: "🗑️ Akaunting setup | Remove one-shot install service"
   ansible.builtin.shell: >

@@ -17,6 +17,7 @@ AKAUNTING_ADMIN_PASSWORD: "{{ lookup('config', application_id, 'credentials.setu
 AKAUNTING_SETUP_MARKER: "{{ [ (AKAUNTING_VOLUME | docker_volume_path), '.akaunting_installed' ] | path_join }}"
 AKAUNTING_SERVICE: "{{ lookup('container_service', application_id, 'akaunting') }}"
 AKAUNTING_SETUP_JOB: "{{ AKAUNTING_SERVICE }}_setup"
+AKAUNTING_ENTRYPOINT: "/usr/local/bin/akaunting.sh"
 AKAUNTING_REPLICAS: "{{ groups[application_id] | length }}"
 AKAUNTING_APP_KEY: "{{ lookup('config', application_id, 'credentials.app_key') }}"
 AKAUNTING_CACHE_DRIVER: "{{ 'redis' if lookup('config',application_id, 'services.redis.enabled') else 'file' }}"
