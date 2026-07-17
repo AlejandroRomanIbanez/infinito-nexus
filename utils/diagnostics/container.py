@@ -114,11 +114,29 @@ def collect_host(out: Path, app_id: str, context: str, stamp: str) -> None:
 
 
 def collect_local_dumps(out: Path) -> None:
+    """Copy the in-play role dumps next to the snapshot.
+
+    ``out`` itself lives under the dump dir (both derive from
+    INFINITO_RESCUE_DIAGNOSTICS_DIR), so the walk must skip its own
+    output subtree or copytree recurses into the growing destination
+    until ENAMETOOLONG."""
     src = Path(_LOCAL_DUMPS_DIR)
     if not src.is_dir():
         return
+    out_resolved = out.resolve()
+
+    def _skip_own_output(dirpath: str, names: list[str]) -> list[str]:
+        skipped = []
+        for entry in names:
+            p = (Path(dirpath) / entry).resolve()
+            if p == out_resolved or out_resolved.is_relative_to(p):
+                skipped.append(entry)
+        return skipped
+
     with contextlib.suppress(OSError):
-        shutil.copytree(src, out / "local-dumps", dirs_exist_ok=True)
+        shutil.copytree(
+            src, out / "local-dumps", dirs_exist_ok=True, ignore=_skip_own_output
+        )
 
 
 def collect_runtime(out: Path, rt: str) -> tuple[list[str], list[str]]:

@@ -80,6 +80,23 @@ class CollectTests(unittest.TestCase):
                 "evidence",
             )
 
+    def test_collect_local_dumps_skips_own_output_subtree(self):
+        """out lives under the dump dir, so the copy must not descend into
+        its own growing destination (ENAMETOOLONG regression)."""
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+            src = Path(td) / "dumps"
+            out = src / "app" / "stamp"
+            out.mkdir(parents=True)
+            (src / "pg_hba.txt").write_text("evidence")
+            (out / "meta.txt").write_text("snapshot")
+            with mock.patch.object(mod, "_LOCAL_DUMPS_DIR", str(src)):
+                mod.collect_local_dumps(out)
+            dumps = out / "local-dumps"
+            self.assertTrue((dumps / "pg_hba.txt").is_file())
+            self.assertFalse((dumps / "app").exists())
+            self.assertFalse((dumps / "local-dumps").exists())
+
     def test_collect_local_dumps_tolerates_missing_dir(self):
         mod = _load()
         with tempfile.TemporaryDirectory() as td:
