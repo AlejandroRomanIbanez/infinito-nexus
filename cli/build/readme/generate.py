@@ -89,7 +89,9 @@ def _cosmos_legend() -> str:
         f"conditional (enabled only in matching deployments). Node markers "
         f"show the role's deploy modes ({to_emoji('host')} host, "
         f"{to_emoji('compose')} compose, {to_emoji('swarm')} swarm); "
-        f"{to_emoji('disabled')} marks a service that is explicitly turned off."
+        f"{to_emoji('disabled')} marks a service that is explicitly turned "
+        f"off, and {to_emoji('role_dependency')} an Ansible role dependency "
+        f"declared in `meta/main.yml`."
     )
 
 

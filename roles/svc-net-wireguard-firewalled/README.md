@@ -18,12 +18,16 @@ The diagram places WireGuard Client behind NAT in the Infinito.Nexus cosmos: the
 
 ```mermaid
 flowchart LR
+    subgraph deps [Dependencies]
+        dep_svc_net_wireguard_plain["svc-net-wireguard-plain 💻 ⚙️"]
+    end
     subgraph role [svc-net-wireguard-firewalled 💻]
         svc_wireguard_firewalled["wireguard-firewalled"]
     end
+    dep_svc_net_wireguard_plain -- "1:1" --> svc_wireguard_firewalled
 ```
 
-Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments). Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off.
+Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments). Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
 
 ## Purpose
 

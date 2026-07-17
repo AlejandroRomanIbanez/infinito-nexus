@@ -31,7 +31,7 @@ from pathlib import Path
 
 from utils.cache.yaml import load_yaml_any
 from utils.roles.deploy import role_deploy_modes
-from utils.roles.mapping import ROLE_FILE_META_SERVICES
+from utils.roles.mapping import ROLE_FILE_META_MAIN, ROLE_FILE_META_SERVICES
 from utils.symbol_glossary import to_emoji
 
 _GROUP_DEP_RE = re.compile(r"'([a-z0-9][a-z0-9-]*)'\s+in\s+group_names")
@@ -101,6 +101,28 @@ def _roles_meta(roles_root_str: str) -> dict[str, dict]:
         loaded = load_yaml_any(str(services_path), default_if_missing={})
         meta[role_dir.name] = loaded if isinstance(loaded, dict) else {}
     return meta
+
+
+@functools.lru_cache(maxsize=1)
+def _roles_ansible_deps(roles_root_str: str) -> dict[str, set[str]]:
+    """Every role's ``meta/main.yml`` ``dependencies`` (string or
+    ``{role: ...}`` entries), cached once."""
+    roles_root = Path(roles_root_str)
+    deps: dict[str, set[str]] = {}
+    for role_dir in sorted(roles_root.iterdir()):
+        main_path = role_dir / ROLE_FILE_META_MAIN
+        if not (role_dir.is_dir() and main_path.is_file()):
+            continue
+        loaded = load_yaml_any(str(main_path), default_if_missing={})
+        raw = loaded.get("dependencies") if isinstance(loaded, dict) else None
+        names: set[str] = set()
+        for entry in raw or []:
+            if isinstance(entry, str):
+                names.add(entry)
+            elif isinstance(entry, dict) and isinstance(entry.get("role"), str):
+                names.add(entry["role"])
+        deps[role_dir.name] = names
+    return deps
 
 
 def _consumption_kind(
@@ -177,6 +199,7 @@ def derive_cosmos_mermaid(role_dir: Path, role_name: str) -> str:
 
     provides_map = {name: _provides_of(svc) for name, svc in meta.items()}
     my_provides = _provides_of(services)
+    ansible_deps = _roles_ansible_deps(str(role_dir.parent))
 
     dep_edges: list[tuple[str, str, str]] = []
     dep_roles: set[str] = set()
@@ -192,6 +215,13 @@ def derive_cosmos_mermaid(role_dir: Path, role_name: str) -> str:
                 dep_roles.add(provider)
                 dep_edges.append((provider, key, _flag_kind(entry) or "fixed"))
 
+    gear_deps = {
+        dep
+        for dep in ansible_deps.get(role_name, set())
+        if dep != role_name and dep in meta
+    }
+    dep_roles |= gear_deps
+
     providing_services = [
         key
         for key, entry in services.items()
@@ -199,10 +229,14 @@ def derive_cosmos_mermaid(role_dir: Path, role_name: str) -> str:
     ]
     anchor = providing_services or (list(services)[:1] if services else [role_name])
     dpt_kind: dict[str, str] = {}
+    gear_dependents: set[str] = set()
     for other, other_services in meta.items():
         if other == role_name:
             continue
         kind = _consumption_kind(other_services, role_name, my_provides)
+        if role_name in ansible_deps.get(other, set()):
+            gear_dependents.add(other)
+            kind = kind or "fixed"
         if kind is not None:
             dpt_kind[other] = kind
 
@@ -211,11 +245,14 @@ def derive_cosmos_mermaid(role_dir: Path, role_name: str) -> str:
     shown = dependents[:_DEPENDENTS_CAP]
     overflow = len(dependents) - len(shown)
 
+    gear = to_emoji("role_dependency")
+
     lines = ["flowchart LR"]
     if dep_roles:
         lines.append("    subgraph deps [Dependencies]")
         lines.extend(
-            f'        dep_{_node_id(r)}["{_role_label(r, markers)}"]'
+            f'        dep_{_node_id(r)}["{_role_label(r, markers)}'
+            f'{f" {gear}" if r in gear_deps else ""}"]'
             for r in sorted(dep_roles)
         )
         lines.append("    end")
@@ -233,14 +270,22 @@ def derive_cosmos_mermaid(role_dir: Path, role_name: str) -> str:
     if dependents:
         lines.append("    subgraph dependents [Dependents]")
         lines.extend(
-            f'        dpt_{_node_id(r)}["{_role_label(r, markers)}"]' for r in shown
+            f'        dpt_{_node_id(r)}["{_role_label(r, markers)}'
+            f'{f" {gear}" if r in gear_dependents else ""}"]'
+            for r in shown
         )
         if overflow:
             lines.append('        dpt_more["..."]')
         lines.append("    end")
 
+    gear_edge_list = [
+        (f"dep_{_node_id(r)}", f"svc_{_node_id(s)}", "fixed")
+        for r in gear_deps
+        for s in anchor[:1]
+    ]
     dep_pairs = _merge_edges(
         [(f"dep_{_node_id(r)}", f"svc_{_node_id(k)}", kind) for r, k, kind in dep_edges]
+        + gear_edge_list
     )
     dpt_edge_list = [
         (f"svc_{_node_id(s)}", f"dpt_{_node_id(o)}", dpt_kind[o])

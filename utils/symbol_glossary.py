@@ -14,6 +14,7 @@ from __future__ import annotations
 SYMBOLS: dict[str, str] = {
     "enabled": "✅",
     "disabled": "❌",
+    "role_dependency": "⚙️",
     "compose": "🐳",
     "swarm": "🐝",
     "stack": "🥞",

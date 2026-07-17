@@ -14,12 +14,16 @@ The diagram places SSH Agent in the Infinito.Nexus cosmos: the components it dep
 
 ```mermaid
 flowchart LR
+    subgraph deps [Dependencies]
+        dep_desk_git["desk-git 💻 ⚙️"]
+    end
     subgraph role [desk-ssh 💻]
         svc_ssh["ssh"]
     end
+    dep_desk_git -- "1:1" --> svc_ssh
 ```
 
-Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments). Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off.
+Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments). Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
 
 ## Purpose
 

@@ -21,12 +21,16 @@ The diagram places NGINX Certbot Automation in the Infinito.Nexus cosmos: the co
 
 ```mermaid
 flowchart LR
+    subgraph deps [Dependencies]
+        dep_sys_ctl_cln_certs["sys-ctl-cln-certs 💻 ⚙️"]
+    end
     subgraph role [sys-ctl-mtn-cert-renew 💻]
         svc_cert_renew["cert-renew"]
     end
+    dep_sys_ctl_cln_certs -- "1:1" --> svc_cert_renew
 ```
 
-Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments). Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off.
+Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments). Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
 
 ## Purpose
 
