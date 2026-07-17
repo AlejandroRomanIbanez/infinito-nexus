@@ -27,7 +27,7 @@ flowchart LR
     subgraph deps [Dependencies]
         dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
     end
-    subgraph role [svc-registry-cache 🐳🐝]
+    subgraph role [svc-registry-cache 🐳]
         svc_node["node"]
         svc_cache["cache"]
         svc_container_backup["container_backup"]
