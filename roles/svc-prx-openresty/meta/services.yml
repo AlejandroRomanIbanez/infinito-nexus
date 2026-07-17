@@ -12,6 +12,8 @@ openresty:
   shared: true
   name: openresty
   min_storage: 1GB
+  backup:
+    disabled: true
   cpus: 0.5
   mem_reservation: 1g
   mem_limit: 2g
@@ -21,8 +23,8 @@ openresty:
   lifecycle: beta
   pids_limit: 256
 
-# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
-container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+# nocheck: dynamic-flag - proxy state is fully re-rendered by the deploy (configs, certs via binds), the backup consumer stays permanently off
+container_backup:
   bond: 1
-  enabled: "{{ 'svc-bkp-volume-2-local' in group_names }}"
+  enabled: false
   shared: true

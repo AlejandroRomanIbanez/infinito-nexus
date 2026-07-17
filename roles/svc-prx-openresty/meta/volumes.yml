@@ -1,3 +1,4 @@
+# nocheck: backup-service-flag proxy state is deploy-rendered (binds); the unmounted named volumes hold nothing and the consumer is permanently off
 ---
 www:
   type: volume
