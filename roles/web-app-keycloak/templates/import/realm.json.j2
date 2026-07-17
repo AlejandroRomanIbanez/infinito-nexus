@@ -800,6 +800,15 @@
   ],
   "clientScopes": [
     {
+      "name": "openid",
+      "description": "Marker scope so 'scope=openid' requests are valid and echoed back; some OIDC clients (e.g. Mattermost) require it. Carries no mappers.",
+      "protocol": "openid-connect",
+      "attributes": {
+        "include.in.token.scope": "true",
+        "display.on.consent.screen": "false"
+      }
+    },
+    {
       "name": "role_list",
       "description": "SAML role list",
       "protocol": "saml",
