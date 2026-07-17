@@ -4,7 +4,7 @@ lid-switch:
     host:
       enabled: true
     compose:
-      enabled: true
+      enabled: false
     swarm:
       enabled: false
   min_storage: 0GB

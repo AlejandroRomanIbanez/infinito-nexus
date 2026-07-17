@@ -5,7 +5,7 @@ import yaml
 from utils.cache import ROLES_DIR
 from utils.cache.yaml import load_yaml_any
 
-_METADATA_KEYS = frozenset({"title", "description", "icon", "invokable"})
+_METADATA_KEYS = frozenset({"title", "description", "icon", "invokable", "modes"})
 
 
 def _default_roles_file() -> str:

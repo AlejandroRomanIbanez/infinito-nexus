@@ -82,6 +82,9 @@ roles:
     description: "OS & package updates"
     icon: "fas fa-sync"
     stage: constructor
+    modes:
+      compose: false
+      swarm: false
     invokable: true
   drv:
     title: "Drivers"
@@ -89,6 +92,9 @@ roles:
     icon: "fas fa-microchip"
     stage: constructor
     run_after: [update]
+    modes:
+      compose: false
+      swarm: false
     invokable: true
   gen:
     title: "Generic"
@@ -158,6 +164,9 @@ roles:
       description: "Network setup (DNS, Let's Encrypt HTTP, WireGuard, etc.)"
       icon: "fas fa-globe"
       run_after: [gen]
+      modes:
+        compose: false
+        swarm: false
       invokable: true
     ai:
       title: "AI Services"
@@ -177,6 +186,9 @@ roles:
       description: "Container-registry services - local registry and pull-through cache."
       icon: "fas fa-box-archive"
       bootstrap: true
+      modes:
+        compose: true
+        swarm: true
       invokable: true
     storage:
       title: "Shared Storage"

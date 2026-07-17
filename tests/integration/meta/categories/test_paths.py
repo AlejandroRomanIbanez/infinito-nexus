@@ -31,6 +31,7 @@ class TestCategoryPaths(unittest.TestCase):
                     "stage",
                     "run_after",
                     "bootstrap",
+                    "modes",
                 ):
                     continue
                 expected.add(f"{top_key}-{sub_key}")

@@ -34,12 +34,16 @@ def _doc() -> dict:
     return load_yaml(f) if f else {}
 
 
+_META_DICT_KEYS = frozenset({"modes"})
+
+
 def _category_nodes(tree: dict, prefix: str = ""):
     """Yield ``(dash-joined-prefix, node)`` for every category node. Scalar
     meta keys (title/stage/invokable) and list keys (run_after) are skipped
-    because only sub-category values are dicts."""
+    because only sub-category values are dicts; dict-valued meta keys are
+    excluded via _META_DICT_KEYS."""
     for key, node in tree.items():
-        if not isinstance(node, dict):
+        if not isinstance(node, dict) or key in _META_DICT_KEYS:
             continue
         current = f"{prefix}-{key}" if prefix else key
         yield current, node
@@ -72,6 +76,19 @@ def role_stage(role: str) -> str:
     }
     match = _longest_prefix_match(role, stage_map)
     return stage_map[match] if match else DEFAULT_STAGE
+
+
+def role_modes_defaults(role: str) -> dict:
+    """Mode-enabled defaults a role's services must declare, from the deepest
+    categories.yml category carrying a ``modes`` mapping (parents apply when
+    no deeper category declares one). Empty when no category declares modes."""
+    modes_map = {
+        p: n["modes"]
+        for p, n in _category_nodes(_doc().get("roles", {}))
+        if isinstance(n.get("modes"), dict)
+    }
+    match = _longest_prefix_match(role, modes_map)
+    return dict(modes_map[match]) if match else {}
 
 
 def _category_order() -> dict[str, int]:
