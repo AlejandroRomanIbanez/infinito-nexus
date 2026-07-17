@@ -1,4 +1,4 @@
-# NGINX Redirect
+# Redirector
 
 ## Description
 
@@ -10,7 +10,7 @@ This role configures Nginx to perform 301 redirects based on a list of source→
 
 ## Cosmos
 
-The diagram places NGINX Redirect in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+The diagram places Redirector in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
 
 ```mermaid
 flowchart LR
@@ -29,7 +29,7 @@ Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (
 
 ### Development
 
-Clone, set up the workstation, and deploy NGINX Redirect onto the local stack:
+Clone, set up the workstation, and deploy Redirector onto the local stack:
 
 ```bash
 git clone https://github.com/infinito-nexus/core.git
@@ -40,7 +40,7 @@ make compose-deploy mode=reinstall apps=web-opt-rdr-domains full_cycle=false
 
 ### Production
 
-Run the published image to provision the inventory and deploy NGINX Redirect to a managed server (the mounted volume persists the inventory between the two runs):
+Run the published image to provision the inventory and deploy Redirector to a managed server (the mounted volume persists the inventory between the two runs):
 
 ```bash
 docker run --rm -it \

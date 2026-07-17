@@ -2,12 +2,7 @@
 # nocheck: info-media Self-written swarm/infrastructure glue role deploying a registry:2 pull-through Docker Hub cache; no consumer-facing upstream product website.
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: |
-    Cluster-internal Docker Hub pull-through cache. Worker nodes pull base
-    images from this mirror instead of going to registry-1.docker.io for
-    every node, eliminating duplicate network transfers and avoiding
-    Docker Hub rate limits. The role is single-host (manager) and runs as
-    compose; multi-host fan-out is out of scope.
+  description: Cluster-local pull-through cache for shared Docker Hub base-image pulls, cutting duplicate transfers and rate limits
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

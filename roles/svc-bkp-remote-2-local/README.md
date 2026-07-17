@@ -1,4 +1,4 @@
-# Backup Remote to Local
+# Backup Remote Server
 
 ## Description
 
@@ -12,7 +12,7 @@ The remote side must expose a chrooted SSH/SFTP endpoint that publishes its back
 
 ## Cosmos
 
-The diagram places Backup Remote to Local in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+The diagram places Backup Remote Server in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
 
 ```mermaid
 flowchart LR
@@ -56,7 +56,7 @@ flowchart TD
 
 ### Development
 
-Clone, set up the workstation, and deploy Backup Remote to Local onto the local stack:
+Clone, set up the workstation, and deploy Backup Remote Server onto the local stack:
 
 ```bash
 git clone https://github.com/infinito-nexus/core.git
@@ -67,7 +67,7 @@ make compose-deploy mode=reinstall apps=svc-bkp-remote-2-local full_cycle=false
 
 ### Production
 
-Run the published image to provision the inventory and deploy Backup Remote to Local to a managed server (the mounted volume persists the inventory between the two runs):
+Run the published image to provision the inventory and deploy Backup Remote Server to a managed server (the mounted volume persists the inventory between the two runs):
 
 ```bash
 docker run --rm -it \

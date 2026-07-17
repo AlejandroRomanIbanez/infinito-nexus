@@ -2,8 +2,7 @@
 # nocheck: info-media no official demo video
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: Central Redis engine running in a standalone Docker stack, with per-consumer ACL-user provisioning (key-prefix isolation). Doubles as the
-    embedded sidecar snippet when a consumer opts out of the central instance.
+  description: In-memory key-value cache and store, shared centrally with per-consumer ACL isolation or embedded as a sidecar
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

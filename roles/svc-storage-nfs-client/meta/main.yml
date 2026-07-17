@@ -2,11 +2,7 @@
 # nocheck: info-media Self-written storage-infra glue role that installs distro NFS client packages and probe-mounts an export; NFS is a generic protocol, not a named third-party product with a vendor site.
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: |
-    Install NFSv4 client packages on every swarm node and validate that
-    the export base (svc-storage-nfs-server services.yml SPOT) from
-    `svc-storage-nfs-server` is mountable. Failing to mount fails the
-    deploy with a precise error message.
+  description: Client-side NFS setup for mounting a remote server export on every swarm node, with a deploy-time reachability probe
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

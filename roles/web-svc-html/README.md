@@ -1,4 +1,4 @@
-# NGINX HTML Server
+# HTML Server
 
 ## Description
 
@@ -18,7 +18,7 @@ Optimized for Archlinux environments, this role provides a lightweight, reliable
 
 ## Cosmos
 
-The diagram places NGINX HTML Server in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+The diagram places HTML Server in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
 
 ```mermaid
 flowchart LR
@@ -55,7 +55,7 @@ The NGINX Static HTML Server role provides a simple and efficient method to publ
 
 ### Development
 
-Clone, set up the workstation, and deploy NGINX HTML Server onto the local stack:
+Clone, set up the workstation, and deploy HTML Server onto the local stack:
 
 ```bash
 git clone https://github.com/infinito-nexus/core.git
@@ -66,7 +66,7 @@ make compose-deploy mode=reinstall apps=web-svc-html full_cycle=false
 
 ### Production
 
-Run the published image to provision the inventory and deploy NGINX HTML Server to a managed server (the mounted volume persists the inventory between the two runs):
+Run the published image to provision the inventory and deploy HTML Server to a managed server (the mounted volume persists the inventory between the two runs):
 
 ```bash
 docker run --rm -it \

@@ -2,7 +2,7 @@
 # nocheck: info-media no official demo video
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: Installs CopyQ clipboard manager on Pacman-based systems and configures autostart for the current user.
+  description: Clipboard manager with editable history, custom actions, and scripting support
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

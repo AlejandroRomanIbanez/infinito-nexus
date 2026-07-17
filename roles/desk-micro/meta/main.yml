@@ -2,7 +2,7 @@
 # nocheck: info-media no official demo video
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: Installs micro CLI text editor on Pacman‑based systems.
+  description: Terminal-based text editor with modern keybindings and syntax highlighting for Pacman-based workstations
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

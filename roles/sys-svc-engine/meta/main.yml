@@ -1,9 +1,7 @@
 ---
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: Engine-agnostic consumer wiring for the central cache / queue / search / vector engines (redis, memcached, rabbitmq, elasticsearch, typesense,
-    qdrant). Delegates per-consumer provisioning (ACL user / vhost / index / scoped key) to the resolved svc-db-<engine> provider role's init entrypoint when
-    the engine is shared.
+  description: Engine-agnostic wiring layer for shared cache, queue, search, and vector engines with per-consumer provisioning
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

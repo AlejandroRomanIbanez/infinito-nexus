@@ -2,8 +2,7 @@
 # nocheck: info-media no official demo video
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: The Docker RabbitMQ Role offers an easy and efficient way to run a central RabbitMQ message broker inside a Docker container, with per-consumer
-    vhost and user isolation, making it ideal for production or local development.
+  description: Shared message broker for async messaging with per-consumer virtual host and user isolation
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

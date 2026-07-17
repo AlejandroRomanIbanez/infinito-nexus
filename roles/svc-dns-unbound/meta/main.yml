@@ -2,8 +2,7 @@
 # nocheck: info-media no official demo video
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: The Docker Unbound Role runs a central recursive/forwarding DNSSEC resolver inside a Docker container. It exposes a static-IP resolver on its own
-    network so consumer stacks can point their dns at it without embedding their own resolver.
+  description: Central recursive/forwarding DNSSEC resolver on a static IP for consumer stacks to target as their DNS
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

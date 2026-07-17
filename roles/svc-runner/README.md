@@ -1,4 +1,4 @@
-# GitHub Actions CI Runner
+# Self-Hosted Runner
 
 ## Description
 
@@ -14,7 +14,7 @@ The `RUNNER_DISTRIBUTION` variable selects distro-specific package installation 
 
 ## Cosmos
 
-The diagram places GitHub Actions CI Runner in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+The diagram places Self-Hosted Runner in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
 
 ```mermaid
 flowchart LR
@@ -40,7 +40,7 @@ Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (
 
 ### Development
 
-Clone, set up the workstation, and deploy GitHub Actions CI Runner onto the local stack:
+Clone, set up the workstation, and deploy Self-Hosted Runner onto the local stack:
 
 ```bash
 git clone https://github.com/infinito-nexus/core.git
@@ -51,7 +51,7 @@ make compose-deploy mode=reinstall apps=svc-runner full_cycle=false
 
 ### Production
 
-Run the published image to provision the inventory and deploy GitHub Actions CI Runner to a managed server (the mounted volume persists the inventory between the two runs):
+Run the published image to provision the inventory and deploy Self-Hosted Runner to a managed server (the mounted volume persists the inventory between the two runs):
 
 ```bash
 docker run --rm -it \

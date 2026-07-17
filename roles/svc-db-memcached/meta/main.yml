@@ -2,7 +2,7 @@
 # nocheck: info-media no official demo video
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: Central Memcached engine with per-consumer key-prefix isolation; doubles as an embedded sidecar.
+  description: Central in-memory caching engine with per-consumer key-prefix isolation, usable centrally or as an embedded sidecar
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

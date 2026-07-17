@@ -1,4 +1,4 @@
-# Backup Container to Local
+# Backup Docker Volumes
 
 ## Description
 
@@ -12,7 +12,7 @@ Database seeding for individual apps is contributed by the consumer roles via `t
 
 ## Cosmos
 
-The diagram places Backup Container to Local in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+The diagram places Backup Docker Volumes in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
 
 ```mermaid
 flowchart LR
@@ -36,7 +36,7 @@ flowchart LR
         dpt_svc_db_typesense["svc-db-typesense 🐳🐝"]
         dpt_svc_dns_unbound["svc-dns-unbound 🐳🐝"]
         dpt_svc_prx_openresty["svc-prx-openresty 🐳🐝"]
-        dpt_svc_registry_cache["svc-registry-cache 🐳🐝"]
+        dpt_svc_registry_cache["svc-registry-cache 🐳"]
         dpt_more["..."]
     end
     dep_svc_bkp_secrets_2_local -- "1:1" --> svc_secrets_backup
@@ -52,7 +52,7 @@ flowchart LR
     svc_volume_2_local -- "1:1" --> dpt_svc_db_redis
     svc_volume_2_local -. "0..1" .-> dpt_svc_db_typesense
     svc_volume_2_local -- "1:1" --> dpt_svc_dns_unbound
-    svc_volume_2_local -. "0..1" .-> dpt_svc_prx_openresty
+    svc_volume_2_local -- "1:1" --> dpt_svc_prx_openresty
     svc_volume_2_local -- "1:1" --> dpt_svc_registry_cache
 ```
 
@@ -87,7 +87,7 @@ flowchart TD
 
 ### Development
 
-Clone, set up the workstation, and deploy Backup Container to Local onto the local stack:
+Clone, set up the workstation, and deploy Backup Docker Volumes onto the local stack:
 
 ```bash
 git clone https://github.com/infinito-nexus/core.git
@@ -98,7 +98,7 @@ make compose-deploy mode=reinstall apps=svc-bkp-volume-2-local full_cycle=false
 
 ### Production
 
-Run the published image to provision the inventory and deploy Backup Container to Local to a managed server (the mounted volume persists the inventory between the two runs):
+Run the published image to provision the inventory and deploy Backup Docker Volumes to a managed server (the mounted volume persists the inventory between the two runs):
 
 ```bash
 docker run --rm -it \

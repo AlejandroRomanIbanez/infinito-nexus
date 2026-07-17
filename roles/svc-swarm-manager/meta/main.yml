@@ -2,13 +2,7 @@
 # nocheck: info-media Self-written marker/tag role with no tasks; just flags a host as the Docker Swarm manager for the inventory validator. Not a third-party product.
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: |
-    Tag role that marks a host as the swarm cluster manager. Has no
-    tasks of its own — the actual init+token-publish logic lives in
-    svc-swarm-node and is gated on `'svc-swarm-manager' in
-    group_names`. This role exists so the project's inventory
-    validator (`cli.administration.inventory.validate`) accepts the
-    group as a legitimate application_id.
+  description: Marker role tagging a host as the Docker Swarm manager node, with the init logic delegated to svc-swarm-node
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

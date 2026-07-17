@@ -1,4 +1,4 @@
-# NGINX WWW Redirect
+# World Wide Web
 
 ## Description
 
@@ -18,7 +18,7 @@ All tasks are guarded by “run once” facts and `MODE_CLEANUP` flags to avoid 
 
 ## Cosmos
 
-The diagram places NGINX WWW Redirect in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+The diagram places World Wide Web in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
 
 ```mermaid
 flowchart LR
@@ -45,7 +45,7 @@ Ensure that any request to `www.example.com` automatically and permanently redir
 
 ### Development
 
-Clone, set up the workstation, and deploy NGINX WWW Redirect onto the local stack:
+Clone, set up the workstation, and deploy World Wide Web onto the local stack:
 
 ```bash
 git clone https://github.com/infinito-nexus/core.git
@@ -56,7 +56,7 @@ make compose-deploy mode=reinstall apps=web-opt-rdr-www full_cycle=false
 
 ### Production
 
-Run the published image to provision the inventory and deploy NGINX WWW Redirect to a managed server (the mounted volume persists the inventory between the two runs):
+Run the published image to provision the inventory and deploy World Wide Web to a managed server (the mounted volume persists the inventory between the two runs):
 
 ```bash
 docker run --rm -it \

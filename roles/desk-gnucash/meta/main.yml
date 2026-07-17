@@ -2,7 +2,7 @@
 # nocheck: info-media no official demo video
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: Installs GnuCash finance management software on Pacman-based systems, ensuring the latest version is present.
+  description: Free and open-source desktop application for personal and small-business accounting and financial management
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

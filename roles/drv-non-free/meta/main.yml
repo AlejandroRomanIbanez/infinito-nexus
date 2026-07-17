@@ -2,7 +2,7 @@
 # nocheck: info-media self-written driver-config glue role running `mhwd -a pci nonfree 0300` on Arch-based systems; no consumer-facing upstream product website
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: Installs proprietary GPU drivers (`mhwd -a pci nonfree 0300`) on Arch-based systems.
+  description: Proprietary GPU driver installer for Arch-based systems via mhwd nonfree hardware detection
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

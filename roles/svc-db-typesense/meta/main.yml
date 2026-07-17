@@ -2,8 +2,7 @@
 # nocheck: info-media no official demo video
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: The Docker Typesense Role offers an easy and efficient way to run a central Typesense search engine inside a Docker container, with per-consumer
-    scoped API keys, making it ideal for production or local development.
+  description: Central Dockerized search engine shared by multiple apps with per-consumer scoped API keys
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

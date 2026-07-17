@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   author: Kevin Veen-Birkenbach
-  description: Central Qdrant vector-database engine for storing per-consumer embeddings.
+  description: Central vector database engine for storing and searching per-consumer embeddings shared across the stack
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

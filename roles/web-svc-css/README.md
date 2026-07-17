@@ -1,4 +1,4 @@
-# CSS Service
+# Corporate Design
 
 ## Description
 
@@ -13,7 +13,7 @@ The role's canonical domain 301-redirects to the CDN's canonical domain so healt
 
 ## Cosmos
 
-The diagram places CSS Service in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+The diagram places Corporate Design in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
 
 ```mermaid
 flowchart LR
@@ -70,7 +70,7 @@ Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (
 
 ### Development
 
-Clone, set up the workstation, and deploy CSS Service onto the local stack:
+Clone, set up the workstation, and deploy Corporate Design onto the local stack:
 
 ```bash
 git clone https://github.com/infinito-nexus/core.git
@@ -81,7 +81,7 @@ make compose-deploy mode=reinstall apps=web-svc-css full_cycle=false
 
 ### Production
 
-Run the published image to provision the inventory and deploy CSS Service to a managed server (the mounted volume persists the inventory between the two runs):
+Run the published image to provision the inventory and deploy Corporate Design to a managed server (the mounted volume persists the inventory between the two runs):
 
 ```bash
 docker run --rm -it \
