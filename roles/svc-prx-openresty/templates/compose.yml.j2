@@ -23,6 +23,8 @@
         published: 443
         protocol: tcp
         mode: host
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     {{ lookup('container_networks') | indent(4) }}
     {% else %}
     network_mode: "host"

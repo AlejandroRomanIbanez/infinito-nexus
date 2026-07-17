@@ -30,11 +30,16 @@ def resolve_upstream(
     deployment_mode: str,
     local_port: str = "",
     internal_port: str = "",
+    host_gateway: bool = False,
 ) -> str:
     """Upstream ``host:port``: compose ``127.0.0.1:<local>``; swarm
     ``<entity>:<internal>`` (shared-overlay alias) for the app frontend, or
     ``<entity>_<service_key>:<internal>`` for named sidecars (sso-proxy).
-    Missing swarm internal port hard-fails."""
+    A ``host_gateway`` app runs node-local under swarm and publishes its
+    local port to the host, so the overlay-attached proxy reaches it at
+    ``host.docker.internal:<local>`` via the host gateway (the caller sets
+    this off the real DEPLOYMENT_MODE, since such apps force a compose-style
+    render). Missing swarm internal port hard-fails."""
     entity = get_entity_name(application_id)
     if not entity:
         raise ValueError(
@@ -53,13 +58,15 @@ def resolve_upstream(
             )
         )
 
-    if deployment_mode != "swarm":
+    if host_gateway or deployment_mode != "swarm":
         port = _as_str(local_port) or _config_port("local")
         if not port:
             raise ValueError(
                 f"resolve_upstream: no local port for {application_id!r} "
                 f"(services.{entity}.ports.local.{port_kind})"
             )
+        if host_gateway:
+            return f"host.docker.internal:{port}"
         host = (
             _as_str(
                 get(
@@ -109,12 +116,17 @@ def render_proxy_pass(
     deployment_mode: str,
     tail: str = "request",
     location: str = "/",
+    host_gateway: bool = False,
 ) -> str:
-    """``proxy_pass`` directive; swarm prepends a ``set`` line (request-time DNS)."""
+    """``proxy_pass`` directive; swarm prepends a ``set`` line (request-time DNS).
+
+    A ``host_gateway`` upstream resolves through ``host.docker.internal`` in
+    ``/etc/hosts`` (host gateway), which the request-time ``resolver`` cannot
+    see, so it renders as a literal directive like compose."""
     if not authority:
         raise ValueError("render_proxy_pass: authority must be non-empty")
 
-    if deployment_mode == "swarm":
+    if deployment_mode == "swarm" and not host_gateway:
         return (
             f'set ${_UPSTREAM_VAR} "{authority}";\n'
             f"    proxy_pass http://${_UPSTREAM_VAR}{_swarm_tail(tail)};"

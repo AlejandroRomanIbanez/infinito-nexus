@@ -84,6 +84,34 @@ class TestResolveUpstream(unittest.TestCase):
                 _apps(), "web-app-noport", "application", "http", "compose"
             )
 
+    def test_host_gateway_uses_host_gateway_and_local_port(self):
+        out = resolve_upstream(
+            _apps(),
+            "web-app-baserow",
+            "baserow",
+            "http",
+            "swarm",
+            host_gateway=True,
+        )
+        self.assertEqual(out, "host.docker.internal:8017")
+
+    def test_host_gateway_wins_over_compose_forced_mode(self):
+        out = resolve_upstream(
+            _apps(),
+            "web-app-baserow",
+            "baserow",
+            "http",
+            "compose",
+            host_gateway=True,
+        )
+        self.assertEqual(out, "host.docker.internal:8017")
+
+    def test_compose_without_host_gateway_stays_loopback(self):
+        out = resolve_upstream(
+            _apps(), "web-app-baserow", "baserow", "http", "compose"
+        )
+        self.assertEqual(out, "127.0.0.1:8017")
+
 
 class TestRenderProxyPassSwarm(unittest.TestCase):
     def test_app_request_uri(self):
@@ -118,6 +146,13 @@ class TestRenderProxyPassSwarm(unittest.TestCase):
         a = render_proxy_pass("x_app:80", "swarm", tail="request", location="/sub")
         b = render_proxy_pass("x_app:80", "swarm", tail="request", location="/")
         self.assertEqual(a, b)
+
+    def test_host_gateway_renders_literal_not_resolver(self):
+        out = render_proxy_pass(
+            "host.docker.internal:8021", "swarm", tail="request", host_gateway=True
+        )
+        self.assertEqual(out, "proxy_pass http://host.docker.internal:8021/;")
+        self.assertNotIn("set $", out)
 
 
 class TestRenderProxyPassCompose(unittest.TestCase):
