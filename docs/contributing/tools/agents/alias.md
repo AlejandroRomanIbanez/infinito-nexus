@@ -15,11 +15,11 @@ The table MUST stay sorted ascending by shortcut and its shortcuts MUST NOT coll
 
 | Shortcut | Meaning |
 | --- | --- |
-| `ai8co` | Iterate on a role in compose mode via the `infinito-iteration-compose` skill. |
+| `ai8co` | Iterate on a role in compose mode via the `i8-iteration-compose` skill. |
 | `ai8ma` | Run `make autoformat`. |
-| `ai8pa` | Iterate on a role's Playwright spec via the `infinito-iteration-playwright` skill. |
+| `ai8pa` | Iterate on a role's Playwright spec via the `i8-iteration-playwright` skill. |
 | `ai8qu` | Run `make quality`. |
-| `ai8ro` | Cross-mode roundtrip validation via the `infinito-iteration-roundtrip` skill. |
-| `ai8ru` | Iterate on svc-runner or the CI runner infrastructure via the `infinito-iteration-runner` skill. |
-| `ai8wa` | Iterate on a role in swarm mode via the `infinito-iteration-swarm` skill. |
-| `ai8wo` | Iterate on a GitHub Actions workflow via the `infinito-iteration-workflow` skill. |
+| `ai8ro` | Cross-mode roundtrip validation via the `i8-iteration-roundtrip` skill. |
+| `ai8ru` | Iterate on svc-runner or the CI runner infrastructure via the `i8-iteration-runner` skill. |
+| `ai8wa` | Iterate on a role in swarm mode via the `i8-iteration-swarm` skill. |
+| `ai8wo` | Iterate on a GitHub Actions workflow via the `i8-iteration-workflow` skill. |

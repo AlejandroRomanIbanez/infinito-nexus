@@ -1,5 +1,5 @@
 ---
-name: infinito-iteration-runner
+name: i8-iteration-runner
 description: >
   Iterate on the Infinito.Nexus svc-runner role or the self-hosted CI runner
   infrastructure (registration, configuration, nested deploy). Use when working

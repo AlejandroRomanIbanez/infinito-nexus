@@ -1,5 +1,5 @@
 ---
-name: infinito-iteration-playwright
+name: i8-iteration-playwright
 description: >
   Inner-loop iteration on an Infinito.Nexus role-local playwright.spec.js against
   an already-running stack without redeploying (make compose-playwright /

@@ -1,5 +1,5 @@
 ---
-name: infinito-iteration-swarm
+name: i8-iteration-swarm
 description: >
   Iterate on an Infinito.Nexus swarm deploy of a role through Act and the swarm-*
   make targets. Use when iterating, debugging, or redeploying a role in swarm

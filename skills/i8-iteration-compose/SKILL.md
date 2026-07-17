@@ -1,5 +1,5 @@
 ---
-name: infinito-iteration-compose
+name: i8-iteration-compose
 description: >
   Iterate on an Infinito.Nexus role via the local compose deploy/test loop
   (make compose-deploy). Use when iterating, debugging, or redeploying a single

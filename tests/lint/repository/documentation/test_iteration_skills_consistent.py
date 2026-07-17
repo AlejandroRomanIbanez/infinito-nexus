@@ -2,7 +2,7 @@
 iteration procedure docs under ``docs/agents/action/iteration/`` stay in
 one-to-one correspondence.
 
-Each ``skills/infinito-iteration-<name>/SKILL.md`` is a thin wrapper whose
+Each ``skills/i8-iteration-<name>/SKILL.md`` is a thin wrapper whose
 only job is to route the agent to the matching
 ``docs/agents/action/iteration/<name>.md`` (the single source of truth).
 This test fails if a wrapper points at a missing doc, if an iteration doc
@@ -19,7 +19,7 @@ from utils.cache.files import read_text
 
 SKILLS_DIR = PROJECT_ROOT / "skills"
 ITERATION_DIR = PROJECT_ROOT / "docs" / "agents" / "action" / "iteration"
-PREFIX = "infinito-iteration-"
+PREFIX = "i8-iteration-"
 
 
 def _iteration_doc_names() -> set[str]:

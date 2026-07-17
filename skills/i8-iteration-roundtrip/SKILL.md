@@ -1,5 +1,5 @@
 ---
-name: infinito-iteration-roundtrip
+name: i8-iteration-roundtrip
 description: >
   Validate one or more Infinito.Nexus roles across both deploy modes in order
   (compose then swarm) as a cross-mode parity gate. Use for a breadth-first

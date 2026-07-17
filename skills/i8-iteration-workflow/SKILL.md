@@ -1,5 +1,5 @@
 ---
-name: infinito-iteration-workflow
+name: i8-iteration-workflow
 description: >
   Iterate on Infinito.Nexus GitHub Actions workflows locally through Act. Use
   when debugging or editing a CI workflow, running act, or when a make swarm-* or
