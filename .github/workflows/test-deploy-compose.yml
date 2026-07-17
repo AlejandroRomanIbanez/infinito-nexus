@@ -17,6 +17,11 @@ on:
         required: false
         type: string
         default: ""
+      blacklist:
+        description: "Optional space-separated app ids to drop from discovery"
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -32,6 +37,7 @@ env:
   INFINITO_APP_DISCOVERY_RUNNER: host
   INFINITO_DEPLOY_MODE: compose
   INFINITO_LIFECYCLES: ${{ inputs.lifecycles }}
+  INFINITO_BLACKLIST: ${{ inputs.blacklist }}
 jobs:
   discover:
     name: 🪼 Compose (${{ inputs.distros }})

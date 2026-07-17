@@ -22,6 +22,11 @@ on:
         required: false
         type: string
         default: "swarm compose host"
+      priority:
+        description: "Optional space-separated app ids for the priority line: deployed first in every mode; the regular line runs the remaining roles only after every priority job succeeded."
+        required: false
+        type: string
+        default: ""
       image_wait_attempts:
         description: "Polling attempts for waiting on prebuilt or mirrored images"
         required: false
@@ -204,38 +209,69 @@ jobs:
       image_wait_sleep_seconds: ${{ inputs.image_wait_sleep_seconds }}
     secrets: inherit
 
-  test-deploy-compose:
-    if: ${{ contains(inputs.modes, 'compose') }}
+  test-deploy-single-node-priority:
+    if: ${{ inputs.priority != '' && (contains(inputs.modes, 'compose') || contains(inputs.modes, 'host')) }}
     needs:
       - test-dns
       - images-mirror-missing
-    uses: ./.github/workflows/test-deploy-compose.yml
+    uses: ./.github/workflows/test-deploy-single-node.yml
     with:
       distros: ${{ inputs.distros }}
-      whitelist: ${{ inputs.whitelist }}
+      whitelist: ${{ inputs.priority }}
       lifecycles: ${{ inputs.lifecycles }}
+      modes: ${{ inputs.modes }}
 
-  test-deploy-host:
-    if: ${{ contains(inputs.modes, 'host') }}
-    needs:
-      - build-ci-images
-      - images-mirror-missing
-    uses: ./.github/workflows/test-deploy-host.yml
-    with:
-      distros: ${{ inputs.distros }}
-      whitelist: ${{ inputs.whitelist }}
-      lifecycles: ${{ inputs.lifecycles }}
-
-  test-deploy-swarm:
-    if: ${{ contains(inputs.modes, 'swarm') }}
+  test-deploy-swarm-priority:
+    if: ${{ inputs.priority != '' && contains(inputs.modes, 'swarm') }}
     needs:
       - build-ci-images
       - images-mirror-missing
     uses: ./.github/workflows/test-deploy-swarm.yml
     with:
       distros: ${{ inputs.distros }}
+      whitelist: ${{ inputs.priority }}
+      lifecycles: ${{ inputs.lifecycles }}
+
+  test-deploy-single-node:
+    if: >-
+      ${{ always()
+          && (contains(inputs.modes, 'compose') || contains(inputs.modes, 'host'))
+          && needs.test-dns.result == 'success'
+          && needs.images-mirror-missing.result == 'success'
+          && contains(fromJSON('["success","skipped"]'), needs.test-deploy-single-node-priority.result)
+          && contains(fromJSON('["success","skipped"]'), needs.test-deploy-swarm-priority.result) }}
+    needs:
+      - test-dns
+      - images-mirror-missing
+      - test-deploy-single-node-priority
+      - test-deploy-swarm-priority
+    uses: ./.github/workflows/test-deploy-single-node.yml
+    with:
+      distros: ${{ inputs.distros }}
       whitelist: ${{ inputs.whitelist }}
       lifecycles: ${{ inputs.lifecycles }}
+      modes: ${{ inputs.modes }}
+      blacklist: ${{ inputs.priority }}
+
+  test-deploy-swarm:
+    if: >-
+      ${{ always()
+          && contains(inputs.modes, 'swarm')
+          && needs.build-ci-images.result == 'success'
+          && needs.images-mirror-missing.result == 'success'
+          && contains(fromJSON('["success","skipped"]'), needs.test-deploy-single-node-priority.result)
+          && contains(fromJSON('["success","skipped"]'), needs.test-deploy-swarm-priority.result) }}
+    needs:
+      - build-ci-images
+      - images-mirror-missing
+      - test-deploy-single-node-priority
+      - test-deploy-swarm-priority
+    uses: ./.github/workflows/test-deploy-swarm.yml
+    with:
+      distros: ${{ inputs.distros }}
+      whitelist: ${{ inputs.whitelist }}
+      lifecycles: ${{ inputs.lifecycles }}
+      blacklist: ${{ inputs.priority }}
 
   test-runner-smoke:
     needs:
@@ -274,8 +310,9 @@ jobs:
   done:
     name: 🏁 Finish pipeline
     needs:
-      - test-deploy-compose
-      - test-deploy-host
+      - test-deploy-single-node-priority
+      - test-deploy-swarm-priority
+      - test-deploy-single-node
       - test-deploy-swarm
       - test-runner-smoke
       - test-install-gate

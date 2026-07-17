@@ -24,9 +24,14 @@ on:
         default: ""
         type: string
       modes:
-        description: "Deploy modes to test (space-separated: 'swarm compose'). Only the listed modes run their deploy job."
+        description: "Deploy modes to test (space-separated: 'swarm compose host'). Only the listed modes run their deploy job."
         required: false
-        default: "swarm compose"
+        default: "swarm compose host"
+        type: string
+      priority:
+        description: "Optional space-separated app ids for the priority line: deployed first in every mode; the regular line runs the remaining roles only after every priority job succeeded."
+        required: false
+        default: ""
         type: string
 
 permissions:
@@ -44,5 +49,6 @@ jobs:
       whitelist: ${{ inputs.whitelist }}
       lifecycles: ${{ inputs.lifecycles }}
       modes: ${{ inputs.modes }}
-      roles_only: ${{ (inputs.whitelist != '' && inputs.whitelist != '__ALL__') && 'true' || 'false' }}
+      priority: ${{ inputs.priority }}
+      roles_only: ${{ (inputs.priority != '' || (inputs.whitelist != '' && inputs.whitelist != '__ALL__')) && 'true' || 'false' }}
     secrets: inherit
