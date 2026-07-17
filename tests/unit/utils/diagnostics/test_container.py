@@ -107,6 +107,31 @@ class CollectTests(unittest.TestCase):
             self.assertTrue((out / "containers" / "web_1.log").is_file())
             self.assertTrue((out / "containers" / "web_1.inspect.json").is_file())
             self.assertTrue((out / "services" / "svc1.log").is_file())
+            self.assertFalse(
+                (out / "containers" / "web_1.pg_stat_activity.txt").is_file()
+            )
+
+    def test_collect_runtime_captures_pg_stat_activity_for_postgres(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+
+            def fake_run(cmd, **kw):
+                if cmd[-1] == "{{.Names}}" and "ps" in cmd:
+                    return _cp(cmd, stdout=b"postgres_postgres.1.abc\n")
+                if cmd[-1] == "{{.Name}}":
+                    return _cp(cmd, stdout=b"")
+                return _cp(cmd, stdout=b"data")
+
+            with mock.patch.object(mod, "run", side_effect=fake_run):
+                mod.collect_runtime(out, "docker")
+            base = out / "containers"
+            self.assertTrue(
+                (base / "postgres_postgres.1.abc.pg_stat_activity.txt").is_file()
+            )
+            self.assertTrue(
+                (base / "postgres_postgres.1.abc.pg_connections.txt").is_file()
+            )
 
 
 class RecurseTests(unittest.TestCase):

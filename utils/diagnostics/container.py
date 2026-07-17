@@ -140,6 +140,35 @@ def collect_runtime(out: Path, rt: str) -> tuple[list[str], list[str]]:
             f"{safe}.journal.txt",
             [rt, "exec", name, "journalctl", "-n", "1000", "--no-pager"],
         )
+        if "postgres" in name:
+            capture(
+                out / "containers",
+                f"{safe}.pg_stat_activity.txt",
+                [
+                    rt,
+                    "exec",
+                    name,
+                    "psql",
+                    "-U",
+                    "postgres",
+                    "-c",
+                    "SELECT pid, usename, datname, state, wait_event_type, backend_start, query_start, left(query, 120) AS query FROM pg_stat_activity ORDER BY backend_start;",
+                ],
+            )
+            capture(
+                out / "containers",
+                f"{safe}.pg_connections.txt",
+                [
+                    rt,
+                    "exec",
+                    name,
+                    "psql",
+                    "-U",
+                    "postgres",
+                    "-c",
+                    "SELECT usename, datname, state, count(*) FROM pg_stat_activity GROUP BY 1, 2, 3 ORDER BY 4 DESC;",
+                ],
+            )
     capture(out, "services.txt", [rt, "service", "ls"])
     services = list_lines([rt, "service", "ls", "--format", "{{.Name}}"])
     for svc in services:
