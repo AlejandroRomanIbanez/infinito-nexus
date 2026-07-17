@@ -25,8 +25,8 @@ unbound:
       unbound: 53
   lifecycle: beta
 
-# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
-container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+# nocheck: dynamic-flag - the resolver state volume is backup-disabled rebuildable cache, the backup consumer stays permanently off
+container_backup:
   bond: 1
-  enabled: "{{ 'svc-bkp-volume-2-local' in group_names }}"
+  enabled: false
   shared: true

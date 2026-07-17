@@ -1,3 +1,4 @@
+# nocheck: backup-service-flag resolver state is rebuildable cache; the volume is backup-disabled and the consumer permanently off
 ---
 data:
   type: volume
