@@ -4,11 +4,12 @@ Usage:
   python -m cli.build.readme.overview [--check] [--readme PATH] [--roles-dir DIR]
 
 The table lives in its own ``## Roles Overview 🧩`` section directly above
-``## Get Started 🚀`` in the root README.md and is fully regenerated on every
+``## Use it online 🚀`` in the root README.md and is fully regenerated on every
 run; every other section stays untouched. Rows are the invokable roles,
 sorted ascending by the Entity column.
 
-Rows are the invokable roles, sorted ascending by name.
+Rows are the invokable roles inside the tested envelope (lifecycle
+alpha/beta/rc/stable/maintenance), sorted ascending by name.
 
 Columns:
   Name             Role README H1 title, linked to the role directory.
@@ -41,7 +42,7 @@ from utils.roles.mapping import (
 from utils.roles.validation.invokable import _get_invokable_paths, _is_role_invokable
 
 SECTION_HEADING = "## Roles Overview 🧩"
-ANCHOR_HEADING = "## Get Started 🚀"
+ANCHOR_HEADING = "## Use it online 🚀"
 COLUMNS = (
     "Name",
     "Lifecycle",
@@ -53,6 +54,13 @@ COLUMNS = (
 )
 _VIDEO_EMOJI = "🎬"
 _INSTALL_EMOJI = "🛠️"
+_TESTED_ENVELOPE = frozenset({"alpha", "beta", "rc", "stable", "maintenance"})
+_INTRO = (
+    "Every invokable role in the tested envelope (lifecycle "
+    "alpha/beta/rc/stable/maintenance), with its upstream homepage, an "
+    "introduction video, the roles it integrates with, and a one-command "
+    "local install."
+)
 
 
 def _cell(text: str) -> str:
@@ -106,6 +114,11 @@ def build_table(roles_dir: Path) -> str:
         if p.is_dir() and _is_role_invokable(p.name, invokable_paths)
     )
     complexity = {row.name: row for row in compute_complexity_rows(roles_dir)}
+    roles = [
+        role
+        for role in roles
+        if getattr(complexity.get(role), "lifecycle", "") in _TESTED_ENVELOPE
+    ]
     titles = {role: _cell(_role_title(roles_dir, role)) for role in roles}
 
     rows = []
@@ -139,34 +152,39 @@ def build_table(roles_dir: Path) -> str:
 
 
 def replace_section(readme_text: str, table: str) -> str:
-    section = f"{SECTION_HEADING}\n\n{table}\n\n"
+    section = f"{SECTION_HEADING}\n\n{_INTRO}\n\n{table}\n\n"
     lines = readme_text.splitlines(keepends=True)
 
-    if any(line.rstrip("\n") == SECTION_HEADING for line in lines):
-        out: list[str] = []
-        in_section = False
-        for line in lines:
-            stripped = line.rstrip("\n")
-            if stripped == SECTION_HEADING:
-                in_section = True
-                out.append(section)
-                continue
-            if in_section and stripped.startswith("## "):
-                in_section = False
-            if not in_section:
-                out.append(line)
-        return "".join(out)
-
-    out = []
-    inserted = False
+    kept: list[str] = []
+    in_section = False
     for line in lines:
-        if not inserted and line.rstrip("\n") == ANCHOR_HEADING:
-            out.append(section)
-            inserted = True
-        out.append(line)
-    if not inserted:
+        stripped = line.rstrip("\n")
+        if stripped == SECTION_HEADING:
+            in_section = True
+            continue
+        if in_section:
+            if stripped.startswith("## "):
+                in_section = False
+            else:
+                continue
+        kept.append(line)
+
+    anchor = next(
+        (i for i, line in enumerate(kept) if line.rstrip("\n") == ANCHOR_HEADING),
+        None,
+    )
+    if anchor is None:
         raise ValueError(f"anchor heading {ANCHOR_HEADING!r} not found in README")
-    return "".join(out)
+    insert_at = next(
+        (
+            i
+            for i in range(anchor + 1, len(kept))
+            if kept[i].rstrip("\n").startswith("## ")
+        ),
+        len(kept),
+    )
+    kept.insert(insert_at, section)
+    return "".join(kept)
 
 
 def main(argv: list[str] | None = None) -> int:

@@ -24,10 +24,11 @@ More.
 
 
 class TestReplaceSection(unittest.TestCase):
-    def test_inserts_above_anchor(self) -> None:
+    def test_inserts_below_anchor_before_next_heading(self) -> None:
         result = replace_section(_README, "| a |")
-        self.assertLess(result.index(SECTION_HEADING), result.index(ANCHOR_HEADING))
-        self.assertIn(f"{SECTION_HEADING}\n\n| a |\n\n{ANCHOR_HEADING}", result)
+        self.assertGreater(result.index(SECTION_HEADING), result.index(ANCHOR_HEADING))
+        self.assertLess(result.index(SECTION_HEADING), result.index("## Guides 📚"))
+        self.assertIn("| a |", result)
 
     def test_replaces_existing_section_only(self) -> None:
         first = replace_section(_README, "| old |")
