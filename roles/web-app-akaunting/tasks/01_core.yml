@@ -6,10 +6,6 @@
     path: "{{ AKAUNTING_SETUP_MARKER }}"
   register: akaunting_marker_stat
 
-- name: "🤔 Akaunting | Decide if setup should be enabled"
-  ansible.builtin.set_fact:
-    akaunting_setup_enabled: "{{ not akaunting_marker_stat.stat.exists }}"
-
 - name: "🧩 For '{{ application_id }}': load docker, db and proxy"
   include_role:
     name: sys-stk-full
@@ -20,15 +16,14 @@
     compose_handlers_flush: true
 
 - when:
-    - akaunting_setup_enabled | bool
+    - not akaunting_marker_stat.stat.exists
     - IS_STACK_HOST | bool
   block:
-    - name: "▶️ Akaunting | First-run install one-shot (swarm)"
+    - name: "▶️ Akaunting | First-run install one-shot ({{ DEPLOYMENT_MODE }})"
       ansible.builtin.include_tasks:
-        file: 02_swarm.yml
+        file: "setup/{{ DEPLOYMENT_MODE }}.yml"
         apply:
           delegate_to: "{{ STACK_HOST }}"
-      when: DEPLOYMENT_MODE == 'swarm'
 
     - name: "📁 Akaunting | Create first-run marker to disable future setup"
       ansible.builtin.file:
