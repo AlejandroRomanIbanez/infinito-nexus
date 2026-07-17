@@ -22,8 +22,10 @@ flowchart LR
     subgraph dependents [Dependents]
         dpt_svc_bkp_remote_2_local["svc-bkp-remote-2-local 💻"]
     end
-    svc_local_2_device -.-> dpt_svc_bkp_remote_2_local
+    svc_local_2_device -. "0..1" .-> dpt_svc_bkp_remote_2_local
 ```
+
+Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments). Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
 
 ## Schema
 

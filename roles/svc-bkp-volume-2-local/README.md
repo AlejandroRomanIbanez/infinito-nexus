@@ -18,6 +18,7 @@ The diagram places Backup Container to Local in the Infinito.Nexus cosmos: the c
 flowchart LR
     subgraph deps [Dependencies]
         dep_svc_bkp_secrets_2_local["svc-bkp-secrets-2-local 💻"]
+        dep_sys_ctl_cln_faild_bkps["sys-ctl-cln-faild-bkps 💻 ⚙️"]
     end
     subgraph role [svc-bkp-volume-2-local 💻]
         svc_volume_2_local["volume-2-local"]
@@ -38,21 +39,24 @@ flowchart LR
         dpt_svc_registry_cache["svc-registry-cache 🐳🐝"]
         dpt_more["..."]
     end
-    dep_svc_bkp_secrets_2_local --> svc_secrets_backup
-    svc_volume_2_local --> dpt_more
-    svc_volume_2_local -.-> dpt_svc_ai_ollama
-    svc_volume_2_local -.-> dpt_svc_db_elasticsearch
-    svc_volume_2_local -.-> dpt_svc_db_mariadb
-    svc_volume_2_local -.-> dpt_svc_db_openldap
-    svc_volume_2_local -.-> dpt_svc_db_postgres
-    svc_volume_2_local -.-> dpt_svc_db_qdrant
-    svc_volume_2_local -.-> dpt_svc_db_rabbitmq
-    svc_volume_2_local -.-> dpt_svc_db_redis
-    svc_volume_2_local -.-> dpt_svc_db_typesense
-    svc_volume_2_local -.-> dpt_svc_dns_unbound
-    svc_volume_2_local -.-> dpt_svc_prx_openresty
-    svc_volume_2_local -.-> dpt_svc_registry_cache
+    dep_svc_bkp_secrets_2_local -- "1:1" --> svc_secrets_backup
+    dep_sys_ctl_cln_faild_bkps -- "1:1" --> svc_volume_2_local
+    svc_volume_2_local -- "1:1" --> dpt_more
+    svc_volume_2_local -. "0..1" .-> dpt_svc_ai_ollama
+    svc_volume_2_local -. "0..1" .-> dpt_svc_db_elasticsearch
+    svc_volume_2_local -. "0..1" .-> dpt_svc_db_mariadb
+    svc_volume_2_local -. "0..1" .-> dpt_svc_db_openldap
+    svc_volume_2_local -. "0..1" .-> dpt_svc_db_postgres
+    svc_volume_2_local -. "0..1" .-> dpt_svc_db_qdrant
+    svc_volume_2_local -. "0..1" .-> dpt_svc_db_rabbitmq
+    svc_volume_2_local -. "0..1" .-> dpt_svc_db_redis
+    svc_volume_2_local -. "0..1" .-> dpt_svc_db_typesense
+    svc_volume_2_local -. "0..1" .-> dpt_svc_dns_unbound
+    svc_volume_2_local -. "0..1" .-> dpt_svc_prx_openresty
+    svc_volume_2_local -. "0..1" .-> dpt_svc_registry_cache
 ```
+
+Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments). Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
 
 ## Schema
 

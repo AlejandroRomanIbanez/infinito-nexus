@@ -26,14 +26,20 @@ The diagram places Backup Host Secrets to Local in the Infinito.Nexus cosmos: th
 
 ```mermaid
 flowchart LR
+    subgraph deps [Dependencies]
+        dep_sys_ctl_cln_faild_bkps["sys-ctl-cln-faild-bkps 💻 ⚙️"]
+    end
     subgraph role [svc-bkp-secrets-2-local 💻]
         svc_secrets_2_local["secrets-2-local"]
     end
     subgraph dependents [Dependents]
         dpt_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
     end
-    svc_secrets_2_local --> dpt_svc_bkp_volume_2_local
+    dep_sys_ctl_cln_faild_bkps -- "1:1" --> svc_secrets_2_local
+    svc_secrets_2_local -- "1:1" --> dpt_svc_bkp_volume_2_local
 ```
+
+Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments). Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
 
 ## Schema
 
