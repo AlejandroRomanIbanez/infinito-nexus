@@ -19,6 +19,8 @@ cache:
   version: "3"
   name: cache-registry
   min_storage: 10GB
+  backup:
+    disabled: true
   cpus: "0.5"
   mem_reservation: 128m
   mem_limit: 512m
@@ -31,9 +33,8 @@ cache:
   proxy:
     remote_url: "https://registry-1.docker.io" # nocheck: url
   lifecycle: beta
-# nocheck: dynamic-flag
-# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
-container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+# nocheck: dynamic-flag - pull-through cache content is re-fetchable, the backup consumer stays permanently off
+container_backup:
   bond: 1
-  enabled: "{{ 'svc-bkp-volume-2-local' in group_names }}"
+  enabled: false
   shared: true

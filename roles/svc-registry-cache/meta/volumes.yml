@@ -1,3 +1,4 @@
+# nocheck: backup-service-flag pull-through cache content is re-fetchable; the volume is backup-disabled and the consumer permanently off
 ---
 data:
   type: volume

@@ -1,3 +1,4 @@
+# nocheck: backup-service-flag locally built images are rebuildable; the volume is backup-disabled and the consumer permanently off
 ---
 data:
   type: volume
