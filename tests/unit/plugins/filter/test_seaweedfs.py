@@ -50,9 +50,12 @@ class TestSeaweedfsSidecarScriptFilter(unittest.TestCase):
         self.assertIn("-actions Read,Write,List,Tagging", script)
 
     def test_keeps_server_in_foreground(self):
-        self.assertTrue(
-            seaweedfs_sidecar_script("app", 8333, "AK", "SK").endswith('wait "$pid"')
-        )
+        script = seaweedfs_sidecar_script("app", 8333, "AK", "SK")
+        self.assertIn("& exec /entrypoint.sh", script)
+        self.assertTrue(script.startswith("("))
+
+    def test_contains_no_shell_dollar(self):
+        self.assertNotIn("$", seaweedfs_sidecar_script("app", 8333, "AK", "SK"))
 
 
 if __name__ == "__main__":

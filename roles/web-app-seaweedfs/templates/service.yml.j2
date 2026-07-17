@@ -6,7 +6,7 @@
     {{ lookup('compose_restart', DOCKER_RESTART_POLICY) }}
     entrypoint: ["/bin/sh", "-c"]
 {% set _sidecar = _objstore.bucket | seaweedfs_sidecar_script(_objstore.port, _objstore.access_key, _objstore.secret_key) %}
-    command: {{ [(_sidecar | replace('$', '$$')) if DEPLOYMENT_MODE == 'swarm' else _sidecar] | to_json }}
+    command: {{ [_sidecar] | to_json }}
     volumes:
       - seaweedfs:/data
     networks:  # nocheck: networks-literal
