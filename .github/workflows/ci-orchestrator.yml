@@ -210,6 +210,7 @@ jobs:
     secrets: inherit
 
   test-deploy-single-node-priority:
+    name: ⭐ Priority · single-node
     if: ${{ inputs.priority != '' && (contains(inputs.modes, 'compose') || contains(inputs.modes, 'host')) }}
     needs:
       - test-dns
@@ -222,6 +223,7 @@ jobs:
       modes: ${{ inputs.modes }}
 
   test-deploy-swarm-priority:
+    name: ⭐ Priority · swarm
     if: ${{ inputs.priority != '' && contains(inputs.modes, 'swarm') }}
     needs:
       - build-ci-images
@@ -233,6 +235,7 @@ jobs:
       lifecycles: ${{ inputs.lifecycles }}
 
   test-deploy-single-node:
+    name: 🔁 Regular · single-node
     if: >-
       ${{ always()
           && (contains(inputs.modes, 'compose') || contains(inputs.modes, 'host'))
@@ -254,6 +257,7 @@ jobs:
       blacklist: ${{ inputs.priority }}
 
   test-deploy-swarm:
+    name: 🔁 Regular · swarm
     if: >-
       ${{ always()
           && contains(inputs.modes, 'swarm')
