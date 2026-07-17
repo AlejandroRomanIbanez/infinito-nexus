@@ -80,9 +80,9 @@ cleanup() {
 		python3 /opt/src/infinito/utils/diagnostics/container.py \
 		"${apps}" "compose post-deploy failure" 2>/dev/null || true
 	echo ">>> Copying rescue diagnostics from ${INFINITO_CONTAINER} to ${_rescue_host_dir}"
-	# nocheck: container-cp - container-to-host extraction on the CI host itself
-	docker cp "${INFINITO_CONTAINER}:${INFINITO_RESCUE_DIAGNOSTICS_DIR}/." \
-		"${_rescue_host_dir}" 2>/dev/null || true
+	docker exec "${INFINITO_CONTAINER}" \
+		tar -C "${INFINITO_RESCUE_DIAGNOSTICS_DIR}" -cf - . 2>/dev/null |
+		tar -C "${_rescue_host_dir}" -xf - 2>/dev/null || true
 
 	local _inv_parent
 	_inv_parent="$(dirname "${INFINITO_INVENTORY_DIR}")"
