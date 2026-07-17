@@ -40,9 +40,12 @@ def seaweedfs_sidecar_script(bucket, s3_port, access_key, secret_key):
     launched via ``/entrypoint.sh`` to keep its /data chown, privilege
     drop, and default server args.
 
-    The trap forwards TERM/INT to the server: without it ``sh`` is PID 1,
-    dies on ``docker stop`` without signalling the backgrounded weed, and
-    the store loses its graceful flush on every stop.
+    The script must stay free of every shell ``$``: the compose and swarm
+    render paths launder dollars differently (a ``$pid`` reached the
+    container as ``""`` and crash-looped the sidecar on a sh syntax error).
+    The bucket bootstrap therefore polls ``/status`` from a backgrounded
+    subshell while ``exec`` makes the server PID 1; the poll loop dies with
+    the container and readiness is gated by the consumer's bounded wait.
 
     The ``s3.configure`` grant is required since SeaweedFS 4.39: a server
     started without an ``-s3.config`` has zero identities, and ListBuckets
@@ -62,13 +65,10 @@ def seaweedfs_sidecar_script(bucket, s3_port, access_key, secret_key):
         f"-actions Read,Write,List,Tagging -apply"
     )
     return (
-        f"/entrypoint.sh {server} & pid=$!; "
-        f'trap \'kill -TERM "$pid" 2>/dev/null; wait "$pid"\' TERM INT; i=0; '
-        f"until wget -q -O /dev/null http://127.0.0.1:{s3_port}/status; do "
-        f'i=$((i+1)); [ "$i" -ge 150 ] && exit 1; kill -0 "$pid" || exit 1; sleep 2; done; '
+        f"(until wget -q -O /dev/null http://127.0.0.1:{s3_port}/status; do sleep 2; done; "
         f"echo 's3.bucket.create -name {bucket}' | /usr/bin/weed shell -master=localhost:9333 || true; "
-        f"echo '{grant}' | /usr/bin/weed shell -master=localhost:9333; "
-        f'wait "$pid"'
+        f"echo '{grant}' | /usr/bin/weed shell -master=localhost:9333) & "
+        f"exec /entrypoint.sh {server}"
     )
 
 
