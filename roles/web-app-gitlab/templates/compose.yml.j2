@@ -42,6 +42,7 @@
     {{ lookup('container_ports', ['gitlab', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     {{ lookup('container_depends_on', application_id, extra={
   GITLAB_WEBSERVICE_SERVICE_NAME: {'condition': 'service_started'},
+  GITLAB_SIDEKIQ_SERVICE_NAME: {'condition': 'service_started'},
 }) | indent(4) }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
@@ -60,6 +61,7 @@
     {% include 'roles/sys-svc-container/templates/healthcheck/tcp.yml.j2' %}
     {{ lookup('container_depends_on', application_id, extra={
   GITLAB_MIGRATIONS_SERVICE_NAME: {'condition': 'service_completed_successfully'},
+  GITLAB_WEBSERVICE_SERVICE_NAME: {'condition': 'service_started'},
 }) | indent(4) }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
