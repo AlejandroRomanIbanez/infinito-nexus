@@ -188,7 +188,7 @@ roles:
       bootstrap: true
       modes:
         compose: true
-        swarm: true
+        swarm: false
       invokable: true
     storage:
       title: "Shared Storage"

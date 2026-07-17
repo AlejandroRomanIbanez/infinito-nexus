@@ -9,7 +9,7 @@ cache:
     compose:
       enabled: true
     swarm:
-      enabled: true
+      enabled: false
   # nocheck: default-placement-manager  pull-through cache backs docker stack deploy; chicken-and-egg if scheduled on a worker that still needs to pull custom images from it
   placement: manager
   enabled: true
