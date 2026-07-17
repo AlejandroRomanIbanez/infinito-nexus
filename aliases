@@ -54,6 +54,7 @@ alias i8matiso='clear && i8matis --sort "$INFINITO_DISCOVERY_SORT" --filter "com
 alias i8mativ='i8matix --variant' # deploy matrix / complexity overview for variants
 alias i8mativas='i8mativ -s' # variant with symbols
 alias i8mativaso='clear && i8mativas --sort "$INFINITO_DISCOVERY_SORT" --filter "compose == true"' # clear + compose-deploy matrix (variants + symbols, discovery-sorted, filtered)
+alias i8matiw='i8matis --sort "desc weight"' # complexity matrix, symbols, heaviest roles first
 alias i8matix='infinito meta roles applications complexity' # deploy matrix / complexity overview
 alias i8me='m meta-list'
 alias i8memi='m meta-mig'
