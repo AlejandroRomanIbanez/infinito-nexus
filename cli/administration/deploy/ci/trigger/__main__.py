@@ -44,10 +44,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument(
         "--run",
         default=None,
-        metavar="URL",
+        metavar="URL|ID",
         help=(
-            "Run URL whose results determine the --failed apps. Default: the "
-            "latest deploy run on the current branch."
+            "Run URL or bare run id whose results determine the --failed apps "
+            "(a bare id resolves against the current branch's repo). Default: "
+            "the latest deploy run on the current branch."
         ),
     )
     args = p.parse_args(argv)
@@ -63,9 +64,12 @@ def main(argv: list[str] | None = None) -> int:
     elif args.failed is not None:
         scope = "docker" if args.failed == "compose" else args.failed
         if args.run:
-            jobs = runs.fetch_jobs(
-                runs.run_id_from_url(args.run), repo=runs.slug_from_url(args.run)
-            )
+            if args.run.isdigit():
+                jobs = runs.fetch_jobs(args.run, repo=repo)
+            else:
+                jobs = runs.fetch_jobs(
+                    runs.run_id_from_url(args.run), repo=runs.slug_from_url(args.run)
+                )
         else:
             run = runs.find_last_deploy_run(branch, repo=repo)
             if run is None:
