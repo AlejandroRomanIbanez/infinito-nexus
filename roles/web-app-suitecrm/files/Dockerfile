@@ -73,7 +73,7 @@ WORKDIR ${SUITECRM_APP_DIR}/public/legacy
 
 RUN set -eux; \
     if [ -f composer.json ]; then \
-      composer install --prefer-dist --no-interaction --optimize-autoloader --no-scripts; \
+      composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader --no-scripts; \
     fi
 
 WORKDIR ${SUITECRM_APP_DIR}
@@ -92,6 +92,14 @@ RUN set -eux; \
     php ./vendor/bin/pscss -s compressed \
       public/legacy/themes/suite8/css/Dawn/style.scss \
       > public/legacy/themes/suite8/css/Dawn/style.css
+
+RUN set -eux; \
+    composer install \
+      --no-dev \
+      --prefer-dist \
+      --no-interaction \
+      --optimize-autoloader \
+      --no-scripts
 
 RUN set -eux; \
     mkdir -p "${SUITECRM_LDAP_EXTENSION_DIR}"; \
