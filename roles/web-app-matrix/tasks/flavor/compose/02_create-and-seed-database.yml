@@ -30,9 +30,6 @@
     database_instance: "{{ lookup('database', _matrix_db_consumer_id, 'instance') }}"
     database_host: "{{ MATRIX_POSTGRES_HOST }}"
     database_port: "{{ MATRIX_POSTGRES_PORT }}"
-    database_name: "{{ database_name }}"
-    database_username: "{{ database_username }}"
-    database_password: "{{ database_password }}"
   when:
     - "'svc-bkp-volume-2-local' in group_names"
     - IS_STACK_HOST | bool
