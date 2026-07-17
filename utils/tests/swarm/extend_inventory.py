@@ -82,10 +82,14 @@ def main() -> int:
     app_id = os.environ["APP_ID"]
     inv_path = Path(os.environ.get("INV_PATH", "/tmp/inv/devices.yml"))  # noqa: S108 - ephemeral swarm-test inventory path, overridable via INV_PATH
 
+    closure = derive_includes(app_id)
     group_hosts = _host_topology(app_id) + _placement_dep_groups(app_id)
-    group_hosts.append(("svc-bkp-volume-2-local", _MANAGER))
-    group_hosts.append(("svc-bkp-secrets-2-local", _MANAGER))
-    group_hosts.append(("svc-bkp-nfs-2-local", _NFS_SERVER))
+    if "svc-bkp-volume-2-local" in closure:
+        group_hosts.append(("svc-bkp-volume-2-local", _MANAGER))
+    if "svc-bkp-secrets-2-local" in closure:
+        group_hosts.append(("svc-bkp-secrets-2-local", _MANAGER))
+    if "svc-bkp-nfs-2-local" in derive_includes("svc-storage-nfs-server"):
+        group_hosts.append(("svc-bkp-nfs-2-local", _NFS_SERVER))
 
     inv = load_yaml_any(str(inv_path), default_if_missing={})
     inv.setdefault("all", {}).setdefault("children", {})
