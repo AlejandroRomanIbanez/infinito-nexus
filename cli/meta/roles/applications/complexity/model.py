@@ -206,7 +206,7 @@ def _build_row(
         weight=weight,
         dna=_dna_hash(name, services),
         siblings=[],
-        random=random.randint(100000, 999999),  # noqa: S311
+        random=random.randint(100000, 999999),  # noqa: S311 - sort tie-breaker, not cryptographic
         variant=variant,
         integrated=any(provider != name for provider in services_direct),
     )

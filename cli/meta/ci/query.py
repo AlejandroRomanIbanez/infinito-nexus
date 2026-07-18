@@ -62,7 +62,7 @@ def _sort_spec(mode: str) -> str:
     (one representative per dna cluster stays ahead of the budget cut);
     host additionally sorts tested-elsewhere roles down so its slots go
     to roles no compose or swarm matrix already covers."""
-    spec = os.environ.get("INFINITO_DISCOVERY_SORT", "")
+    spec = os.environ["INFINITO_DISCOVERY_SORT"]
     if not spec.strip():
         for line in read_text(str(PROJECT_ROOT / "default.env")).splitlines():
             if line.startswith("INFINITO_DISCOVERY_SORT="):
@@ -79,8 +79,8 @@ def _sort_spec(mode: str) -> str:
 
 
 def max_jobs(mode: str) -> int:
-    raw = os.environ.get("INFINITO_MAX_JOBS", "auto").strip()
-    if raw == "auto" or not raw:
+    raw = os.environ["INFINITO_MAX_JOBS"].strip()
+    if raw in ("", "auto"):
         return slots.mode_slots()[mode]
     return int(raw)
 
@@ -108,7 +108,7 @@ def _query_argv(
     ]
     if expands_variants(mode):
         args.append("--variant")
-    envelope = lifecycles or os.environ.get("INFINITO_LIFECYCLES", "")
+    envelope = lifecycles or os.environ["INFINITO_LIFECYCLES"]
     if envelope.strip():
         args += ["--lifecycles", envelope]
     if capped:
@@ -161,8 +161,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--format", choices=("json",), dest="fmt")
     args = parser.parse_args(argv)
 
-    whitelist = os.environ.get("INFINITO_WHITELIST", "")
-    blacklist = os.environ.get("INFINITO_BLACKLIST", "")
+    whitelist = os.environ["INFINITO_WHITELIST"]
+    blacklist = os.environ["INFINITO_BLACKLIST"]
 
     if args.matrix:
         return subprocess.run(
