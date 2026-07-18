@@ -33,17 +33,15 @@ moodle_bootstrap_code_dir() {
   touch "${MOODLE_BOOTSTRAP_SENTINEL}"
 }
 
-if [ ! -f "${MOODLE_BOOTSTRAP_SENTINEL}" ]; then
-  mkdir -p "${MOODLE_CODE_DIR}"
-  exec 9>"${MOODLE_BOOTSTRAP_LOCK}"
-  flock 9
-  moodle_bootstrap_code_dir
-  flock -u 9
-  exec 9>&-
-fi
-
+mkdir -p "${MOODLE_CODE_DIR}"
 while [ ! -f "${MOODLE_BOOTSTRAP_SENTINEL}" ]; do
-  sleep 1
+  exec 9>>"${MOODLE_BOOTSTRAP_LOCK}"
+  if flock -w 30 9; then
+    moodle_bootstrap_code_dir
+  else
+    sleep 5
+  fi
+  exec 9>&-
 done
 
 if [ "$(id -u)" -eq 0 ] && [ "${1:-}" != "php-fpm" ]; then

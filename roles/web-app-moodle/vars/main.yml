@@ -1,6 +1,7 @@
 ---
 application_id: "web-app-moodle"
 entity_name: "{{ application_id | get_entity_name }}"
+swarm_stack_converge_retries: 600
 
 MOODLE_CODE_DIR: "/var/www/html"
 MOODLE_DATA_DIR: "/var/www/moodledata"
