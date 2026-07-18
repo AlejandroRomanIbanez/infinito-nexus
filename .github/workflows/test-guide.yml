@@ -1,4 +1,4 @@
-name: "📖 Test: README.md"
+name: "📖 Test: Guide"
 
 on:
   workflow_call:
@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   deploy:
-    name: 📖 README.md (${{ inputs.role }})
+    name: 📖 Guide (${{ inputs.role }})
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:

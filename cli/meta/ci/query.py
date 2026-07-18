@@ -4,7 +4,7 @@ Usage:
   python -m cli.meta.ci.query --mode compose|swarm|host [--matrix] [--format json]
 
 Both the production discovery (scripts/meta/resolve/apps.sh) and the
-deploy-plan table (cli.meta.ci.plan) resolve role lists through this
+plan table (cli.meta.ci.plan) resolve role lists through this
 module, so the plan shows exactly the query the run executes. One query
 per mode, sharing filter (mode + INFINITO_WHITELIST + INFINITO_BLACKLIST),
 INFINITO_DISCOVERY_SORT order, lifecycle envelope and the

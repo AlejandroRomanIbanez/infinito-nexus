@@ -1,4 +1,4 @@
-"""Render the deploy plan of a CI run, one section per deploy mode.
+"""Render the plan of a CI run, one section per deploy mode.
 
 Usage:
   python -m cli.meta.ci.plan --distros "debian" [--whitelist "..."]
@@ -130,7 +130,7 @@ def _cells(
 def render_markdown(
     sections: list[tuple[str, int, list[tuple[str, ...]]]],
 ) -> str:
-    lines = ["## Deploy plan 🧭"]
+    lines = ["## Plan 🗺️"]
     for mode, budget, cells in sections:
         lines += [
             "",
@@ -174,7 +174,7 @@ def render_cli(
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
-        description="Render the CI deploy plan, one section per deploy mode."
+        description="Render the CI plan, one section per deploy mode."
     )
     parser.add_argument("--distros", default="")
     parser.add_argument("--whitelist", default="")

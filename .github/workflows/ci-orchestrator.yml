@@ -120,8 +120,8 @@ jobs:
           fi
           echo "Fork prerequisites are ready."
 
-  deploy-plan:
-    name: 🧭 Deploy plan
+  plan:
+    name: 🗺️ Plan
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
@@ -147,7 +147,7 @@ jobs:
           INPUT_WHITELIST: ${{ inputs.whitelist }}
         run: ./scripts/github/resolve/effective_whitelist.sh
 
-      - name: 🧭 Render the deploy plan into the run summary
+      - name: 🗺️ Render the plan into the run summary
         shell: bash
         run: |
           source scripts/meta/env/load.sh
@@ -352,8 +352,8 @@ jobs:
       - code-quality-gate
     secrets: inherit
 
-  test-readme:
-    uses: ./.github/workflows/test-readme.yml
+  test-guide:
+    uses: ./.github/workflows/test-guide.yml
     needs:
       - images-mirror-missing
       - build-ci-images
@@ -369,7 +369,7 @@ jobs:
       - test-runner-smoke
       - test-install-gate
       - test-development
-      - test-readme
+      - test-guide
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:

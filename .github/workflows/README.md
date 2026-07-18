@@ -21,7 +21,7 @@ flowchart TB
     eman --> orch
 
     subgraph orchestrator["ci-orchestrator.yml jobs"]
-        deployplan["deploy-plan: run-summary table"]
+        plan["plan: run-summary table"]
         waitfork["wait-fork-prereq-run"] --> forkready["fork-prereqs-ready"]
 
         lintansible["lint-ansible.yml"] --> lintgate["lint-gate"]
@@ -72,8 +72,8 @@ flowchart TB
         qualitygate --> devenv["test-development: test-environment.yml"]
         mirror --> devenv
 
-        buildci --> testreadme["test-readme.yml"]
-        mirror --> testreadme
+        buildci --> testguide["test-guide.yml"]
+        mirror --> testguide
 
         snprio --> donegate["done"]
         swarmprio --> donegate
@@ -82,7 +82,7 @@ flowchart TB
         smoke --> donegate
         instgate --> donegate
         devenv --> donegate
-        testreadme --> donegate
+        testguide --> donegate
     end
 
     snprio --> singlenode["test-deploy-single-node.yml"]
@@ -125,7 +125,7 @@ flowchart TB
     relhighest -.->|"gh workflow run"| relver["release-version.yml"]
     relver --> imgbuildci["images-build-ci.yml"]
     manual["workflow_dispatch"] --> mirrorcleanup["images-mirror-cleanup.yml"]
-    manual --> deploywf["test-readme.yml: run a role README Production command"]
+    manual --> deploywf["test-guide.yml: run a role README Production command"]
 ```
 
 Also manually dispatchable: `images-mirror-all.yml`, `images-cleanup-ci.yml`,
