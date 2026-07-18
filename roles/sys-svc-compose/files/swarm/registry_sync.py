@@ -9,6 +9,9 @@ from pathlib import Path
 import yaml
 
 
+PULL_TIMEOUT = 1800
+
+
 def run(cmd: list[str], timeout: int = 600) -> int:
     print(f">>> {' '.join(cmd)}", file=sys.stderr)
     try:
@@ -60,7 +63,7 @@ def sync(*, compose_file: Path, prefix: str) -> int:
             upstream = image[len(prefix) :]
             if "build" in svc or manifest_exists(image) or upstream in locally_built:
                 continue
-            rc = run(["docker", "pull", upstream])
+            rc = run(["docker", "pull", upstream], timeout=PULL_TIMEOUT)
             if rc != 0:
                 raise RuntimeError(f"docker pull {upstream} failed (rc={rc})")
             rc = run(["docker", "tag", upstream, image])
@@ -85,7 +88,7 @@ def sync(*, compose_file: Path, prefix: str) -> int:
         changed = True
         if manifest_exists(new_image):
             continue
-        rc = run(["docker", "pull", image])
+        rc = run(["docker", "pull", image], timeout=PULL_TIMEOUT)
         if rc != 0:
             raise RuntimeError(f"docker pull {image} failed (rc={rc})")
         rc = run(["docker", "tag", image, new_image])
