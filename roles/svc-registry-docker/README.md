@@ -42,8 +42,9 @@ Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (
 - **NFS-backed storage:** `docker_registry_data` survives container/manager
   restarts when storage backend is NFS.
 - **Insecure HTTP (v1):** No TLS for the initial implementation; the registry
-  is reachable only on the swarm overlay-network. Each swarm node trusts the
-  manager's `<host>:5000` via `daemon.json.insecure-registries`.
+  runs on the manager's host network and binds only the address the manager
+  hostname resolves to, so no other interface listens. Each swarm node trusts
+  the manager's `<host>:5000` via `daemon.json.insecure-registries`.
 
 ## Quick Setup
 

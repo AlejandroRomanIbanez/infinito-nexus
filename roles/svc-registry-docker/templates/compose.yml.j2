@@ -5,16 +5,25 @@
     {{ lookup('compose_only', 'container_name', REGISTRY_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {% if DEPLOYMENT_MODE == 'swarm' %}
-    ports:
-      - target: {{ REGISTRY_CONTAINER_PORT }}
-        published: {{ REGISTRY_PORT }}
-        protocol: tcp
-        mode: host
+    environment:
+      REGISTRY_HTTP_ADDR: "{{ REGISTRY_BIND_IP }}:{{ REGISTRY_PORT }}"
     {% else %}
     {{ lookup('container_ports', ['docker', 'registry']) | indent(4) }}
     {% endif %}
     {{ lookup('container_volumes', application_id, entity_name) | indent(4) }}
+    {% if DEPLOYMENT_MODE == 'swarm' %}
+    networks: # nocheck: networks-literal
+      hostnet: {}
+    {% else %}
     {{ lookup('container_networks') | indent(4) }}
+    {% endif %}
 
 {{ lookup('compose_volumes', application_id) }}
+{% if DEPLOYMENT_MODE == 'swarm' %}
+networks: # nocheck: networks-literal
+  hostnet:
+    external: true
+    name: host
+{% else %}
 {{ lookup('compose_networks') }}
+{% endif %}
