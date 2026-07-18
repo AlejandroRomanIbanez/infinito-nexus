@@ -19,6 +19,12 @@ RUN rm -rf /var/lib/apt/lists/* \
  && rm -rf /var/lib/apt/lists/*
 {% endif %}
 
+COPY boot-entrypoint.sh /usr/local/bin/boot-entrypoint.sh
+RUN chmod +x /usr/local/bin/boot-entrypoint.sh
+
+ENTRYPOINT ["boot-entrypoint.sh"]
+CMD ["postgres"]
+
 HEALTHCHECK --interval=10s \
             --timeout=5s \
             --start-period=15m \
