@@ -65,35 +65,15 @@ _RESERVED_HOST_SUFFIXES = (
     ".test",
     ".tld",
 )
-# Codes that mean the server responded but access is auth-gated or method-gated.
-# These are not dead links; treat them as reachable.
-_OK_STATUS_CODES = {
-    401,  # Unauthorized: credentials required, server is alive.
-    403,  # Forbidden: server is alive, resource intentionally gated.
-    405,  # Method Not Allowed: server is alive, HEAD/GET rejected by design.
-    406,  # Not Acceptable: server is alive, probe Accept/UA rejected (elastic.co).
-    415,  # Unsupported Media Type: server is alive, probe content-type rejected.
-}
-# 4xx codes that mean the server is alive but the resource is not reliably
-# probeable. Emit a warning annotation instead of failing the test. All 5xx
-# responses are treated as warnings unconditionally (see _probe), since they
-# signal an upstream-side problem rather than a stale link in this repo.
-_WARNING_STATUS_CODES = {
-    418,  # I'm a teapot: playful/custom response; server is alive.
-    429,  # Too Many Requests: client rate-limited, transient.
-    451,  # Unavailable For Legal Reasons: jurisdiction-specific block.
-}
+_OK_STATUS_CODES = {401, 403, 405, 406, 415}
+_WARNING_STATUS_CODES = {418, 429, 451}
 _REQUEST_TIMEOUT_SECONDS = 10
-_USER_AGENT = "infinito-nexus-url-reachability-check"
+_USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+)
 _MAX_WORKERS = int(os.environ["INFINITO_WORKER_FETCH"])
-# Hard ceiling for the whole probe loop. After this elapses, any probe
-# still in flight is marked as a Timeout warning so the test never hangs
-# indefinitely on a slow / trickling server. 5h30m matches the longest
-# CI workflow timeout (so the deadline trips before CI kills the job
-# with no annotations).
 _GLOBAL_DEADLINE_SECONDS = 5 * 3600 + 30 * 60
-# Emit a "[done/total] elapsed=Ns" line every N completions so the
-# operator sees progress instead of staring at silence.
 _PROGRESS_INTERVAL = 50
 
 
@@ -271,11 +251,6 @@ def _probe_key(url: str) -> str:
 def _probe_url(url: str) -> ProbeOutcome:
     """Probe one URL and classify the result for external-test stability."""
     try:
-        # allow_redirects=False: each redirect would otherwise start its
-        # own _REQUEST_TIMEOUT_SECONDS clock, so a 5-deep chain could
-        # legitimately block 5×10s = 50s. We treat any 3xx as "server
-        # alive" anyway (status < 400 is OK), so following the chain
-        # adds no signal.
         response = requests.get(
             url,
             allow_redirects=False,
@@ -335,14 +310,7 @@ class TestUrlsReachable(unittest.TestCase):
             flush=True,
         )
 
-        # Manual executor lifecycle (no `with`-block) so we can shutdown
-        # with wait=False on the deadline path — otherwise the context
-        # manager would still wait for every in-flight thread.
         executor = concurrent.futures.ThreadPoolExecutor(max_workers=_MAX_WORKERS)
-        # Sort first for determinism, then shuffle so same-host URLs do
-        # not pile up at the front of the batch and self-DoS a single
-        # origin (and so retries don't always hit the slowest tail in
-        # the same order).
         submission_order = sorted(occurrences_by_url)
         random.shuffle(submission_order)
         future_to_url = {
