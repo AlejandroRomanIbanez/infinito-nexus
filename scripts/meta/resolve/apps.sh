@@ -2,11 +2,9 @@
 set -euo pipefail
 
 # Resolve the JSON list of application roles the CI matrix deploys for the
-# current INFINITO_DEPLOY_MODE, via the complexity report: it filters to the
-# mode's tested+invokable roles (the 'compose'/'swarm' column already bakes in
-# invokable + tested-lifecycle + per-mode skip), orders them coverage-first
-# (uncovered roles before ones a peer already embeds), and hard-caps the
-# cumulative per-mode job budget (--max-jobs over 'bundles', the runner count).
+# current INFINITO_DEPLOY_MODE. The query itself (filter, coverage-first
+# sort, lifecycle envelope, compose --unique, INFINITO_MAX_JOBS cap with
+# 'auto') lives in cli.meta.ci.query, shared with the deploy-plan table.
 # Whole role names are emitted; variant_bundles expands them into the matrix.
 #
 # Inputs via env (defaults live in default.env, the single source of truth):
@@ -62,46 +60,7 @@ compose | swarm | host) ;;
 	;;
 esac
 
-filter="test_${mode} == true"
-if [[ -n "${INFINITO_WHITELIST// /}" ]]; then
-	wl_csv="$(printf '%s' "${INFINITO_WHITELIST}" | tr -s ' ' ',')"
-	wl_csv="${wl_csv#,}"
-	wl_csv="${wl_csv%,}"
-	filter="${filter} and name %% {${wl_csv}}"
-fi
-if [[ -n "${INFINITO_BLACKLIST:-}" && -n "${INFINITO_BLACKLIST// /}" ]]; then
-	bl_csv="$(printf '%s' "${INFINITO_BLACKLIST}" | tr -s ' ' ',')"
-	bl_csv="${bl_csv#,}"
-	bl_csv="${bl_csv%,}"
-	filter="${filter} and not (name %% {${bl_csv}})"
-fi
-
-if [[ "${INFINITO_MAX_JOBS}" == "auto" ]]; then
-	INFINITO_MAX_JOBS="$(run_meta_cli -m cli.meta.ci.slots --mode "$mode")"
-fi
-
-unique_args=()
-if [[ "$mode" == "compose" ]]; then
-	unique_args=(--unique)
-fi
-
-lifecycles_args=()
-if [[ -n "${INFINITO_LIFECYCLES:-}" && -n "${INFINITO_LIFECYCLES// /}" ]]; then
-	lifecycles_args=(--lifecycles "${INFINITO_LIFECYCLES}")
-fi
-
-apps_json="$(
-	run_meta_cli \
-		-m cli.meta.roles.applications.complexity \
-		--deploy-mode "$mode" \
-		"${unique_args[@]}" \
-		"${lifecycles_args[@]}" \
-		--filter "$filter" \
-		--sort "${INFINITO_DISCOVERY_SORT}" \
-		--max-jobs "${INFINITO_MAX_JOBS}" \
-		--format string |
-		jq -R -s -c 'split("\n") | map(select(length>0))'
-)"
+apps_json="$(run_meta_cli -m cli.meta.ci.query --mode "$mode" --format json)"
 
 apps_json="$(printf '%s' "${apps_json}" | jq -c 'sort')"
 
