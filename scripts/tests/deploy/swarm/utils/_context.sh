@@ -102,6 +102,8 @@ else:
 for v in entries:
     if v.get('type') != 'volume':
         continue
+    if v.get('nfs') is False:
+        continue
     docker_name = v.get('docker_name') or v.get('name')
     if isinstance(docker_name, str):
         print(docker_name)
