@@ -7,7 +7,7 @@ from typing import IO
 
 from .model import RoleRuntime
 
-CSV_HEADER = ["round", "rounds_total", "pass", "pass_mode", "role", "seconds"]
+CSV_HEADER = ["round", "rounds_total", "pass", "pass_mode", "role", "seconds", "hosts"]
 
 
 def _to_row(r: RoleRuntime) -> list[str]:
@@ -18,6 +18,7 @@ def _to_row(r: RoleRuntime) -> list[str]:
         r.pass_mode,
         r.role,
         f"{r.seconds:.2f}",
+        r.hosts,
     ]
 
 
@@ -49,6 +50,7 @@ def read_csv(path: str | Path) -> list[RoleRuntime]:
                 rounds_total=row.get("rounds_total", ""),
                 pass_num=row.get("pass", ""),
                 pass_mode=row.get("pass_mode", ""),
+                hosts=row.get("hosts", "") or "",
             )
             for row in csv.DictReader(fh)
         ]

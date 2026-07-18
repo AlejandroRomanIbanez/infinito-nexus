@@ -20,11 +20,15 @@ total ------------------------------------------------------------------ 93.00s
 
 SEGMENTED_LOG = """\
 === matrix-deploy: round 1/2 inv=/x-0 variants={'web-app-keycloak': 0} apps=['web-app-keycloak'] PASS 1 (sync) ===
+TASK [web-app-keycloak : deploy] ***************
+ok: [mgr]
 web-app-keycloak ------------------------------------------------------- 40.00s
 total ------------------------------------------------------------------ 40.00s
 === matrix-deploy: round 1/2 inv=/x-0 variants={'web-app-keycloak': 0} apps=['web-app-keycloak'] PASS 2 (async) ===
 web-app-keycloak -------------------------------------------------------- 5.00s
 === matrix-deploy: round 2/2 inv=/x-1 variants={'web-app-keycloak': 1} apps=['web-app-keycloak'] PASS 1 (sync) ===
+TASK [web-app-keycloak : deploy] ***************
+skipping: [mgr]
 web-app-keycloak ------------------------------------------------------- 12.00s
 sys-svc-mail ----------------------------------------------------------- 30.00s
 """
@@ -43,10 +47,10 @@ class TestLogParse(unittest.TestCase):
         self.addCleanup(os.unlink, name)
         return name
 
-    def test_combined_aggregates_and_excludes_total_and_tasks(self):
+    def test_combined_aggregates_keeps_total_and_excludes_task_rows(self):
         records = logparse.parse_log(self._log(SAMPLE_LOG))
         as_dict = {r.role: r.seconds for r in records}
-        self.assertNotIn("total", as_dict)
+        self.assertAlmostEqual(as_dict["total"], 93.00)
         self.assertTrue(all(" : " not in r.role for r in records))
         self.assertAlmostEqual(as_dict["web-app-keycloak"], 54.90)
         self.assertFalse(records[0].segmented)
@@ -63,10 +67,19 @@ class TestLogParse(unittest.TestCase):
             labels,
             [
                 "Round 1/2 · PASS 1 (sync)",
+                "Round 1/2 · PASS 1 (sync)",
                 "Round 1/2 · PASS 2 (async)",
                 "Round 2/2 · PASS 1 (sync)",
                 "Round 2/2 · PASS 1 (sync)",
             ],
+        )
+        round1_pass1 = {
+            r.role: r.seconds
+            for r in records
+            if r.round == "1" and r.pass_num == "1"
+        }
+        self.assertEqual(
+            round1_pass1, {"web-app-keycloak": 40.0, "total": 40.0}
         )
         round2 = {r.role: r.seconds for r in records if r.round == "2"}
         self.assertEqual(round2, {"sys-svc-mail": 30.0, "web-app-keycloak": 12.0})
@@ -89,6 +102,66 @@ class TestLogParse(unittest.TestCase):
     def test_empty_log_returns_empty(self):
         self.assertEqual(logparse.parse_log(self._log("noise\n")), [])
 
+    def test_host_status_executed_skipped_failed_and_delegation(self):
+        log = (
+            "TASK [role-x : do a thing] ***************\n"
+            "ok: [mgr]\n"
+            "skipping: [wrk1]\n"
+            "changed: [wrk2 -> localhost]\n"
+            "TASK [role-y : probe] ***************\n"
+            "skipping: [mgr]\n"
+            "fatal: [wrk1]: FAILED! => {}\n"
+            "role-x ------------------------------------------------------- 5.00s\n"
+            "role-y ------------------------------------------------------- 2.00s\n"
+        )
+        by_role = {r.role: r for r in logparse.parse_log(self._log(log))}
+        self.assertEqual(
+            by_role["role-x"].host_map,
+            {"mgr": "executed", "wrk1": "skipped", "wrk2": "executed"},
+        )
+        self.assertEqual(
+            by_role["role-y"].host_map, {"mgr": "skipped", "wrk1": "failed"}
+        )
+
+    def test_ignored_failure_downgrades_to_executed(self):
+        log = (
+            "TASK [role-x : probe] ***************\n"
+            "fatal: [mgr]: FAILED! => {'msg': 'nope'}\n"
+            "...ignoring\n"
+            "role-x ------------------------------------------------------- 1.00s\n"
+        )
+        (record,) = logparse.parse_log(self._log(log))
+        self.assertEqual(record.host_map, {"mgr": "executed"})
+
+    def test_executed_wins_over_skipped_and_runner_timestamp_stripped(self):
+        log = (
+            "2026-07-18T19:00:56.9549782Z TASK [role-x : a] ***************\n"
+            "2026-07-18T19:00:57.0000000Z skipping: [mgr]\n"
+            "2026-07-18T19:00:58.0000000Z ok: [mgr]\n"
+            "2026-07-18T19:00:59.0000000Z role-x"
+            " ------------------------------------------------------- 1.00s\n"
+        )
+        (record,) = logparse.parse_log(self._log(log))
+        self.assertEqual(record.role, "role-x")
+        self.assertEqual(record.host_map, {"mgr": "executed"})
+
+    def test_only_roles_recap_sections_count(self):
+        log = (
+            "TASKS RECAP ********************\n"
+            "some playbook-level task ------------------------------- 9.00s\n"
+            "ROLES RECAP ********************\n"
+            "role-x ------------------------------------------------- 5.00s\n"
+            "ansible.builtin.set_fact ------------------------------- 2.00s\n"
+            "total --------------------------------------------------- 7.00s\n"
+            "PLAYBOOK RECAP *****************\n"
+        )
+        as_dict = {r.role: r.seconds for r in logparse.parse_log(self._log(log))}
+        self.assertNotIn("some playbook-level task", as_dict)
+        self.assertEqual(
+            as_dict,
+            {"role-x": 5.0, "ansible.builtin.set_fact": 2.0, "total": 7.0},
+        )
+
 
 class TestCsvIo(unittest.TestCase):
     def test_roundtrip(self):
@@ -102,7 +175,15 @@ class TestCsvIo(unittest.TestCase):
     def test_header(self):
         self.assertEqual(
             csvio.CSV_HEADER,
-            ["round", "rounds_total", "pass", "pass_mode", "role", "seconds"],
+            [
+                "round",
+                "rounds_total",
+                "pass",
+                "pass_mode",
+                "role",
+                "seconds",
+                "hosts",
+            ],
         )
 
 

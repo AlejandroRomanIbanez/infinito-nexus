@@ -140,11 +140,17 @@ def _deploy(
         "-e",
         f"VARIANT_INDEX={json.dumps(round_index)}",
     ]
+    pass_label = (
+        f"matrix-deploy: round {round_index + 1}/{total} "
+        f"variants=[{round_index}] apps=['{app_id}']"
+    )
     if update_pass:
         cmd += ["-e", "ASYNC_ENABLED=true"]
         label = f"update pass (round {round_index + 1}/{total})"
+        print(f"=== {pass_label} PASS 2 (async) ===", flush=True)
     else:
         label = f"deploy round {round_index + 1}/{total}"
+        print(f"=== {pass_label} PASS 1 (sync) ===", flush=True)
     return _run(env=env, cmd=cmd, label=label)
 
 

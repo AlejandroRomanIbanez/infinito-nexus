@@ -191,15 +191,39 @@ jobs:
 
       - name: "🚀 Matrix-deploy ${{ matrix.apps }}: provision/deploy/e2e/verify per round"
         timeout-minutes: 345
+        shell: bash
         env:
           variant: ${{ matrix.variant }}
         run: |
           source scripts/meta/env/load.sh
           if [ "$(id -u)" -eq 0 ]; then
-            python3 -m utils.tests.swarm.matrix
+            python3 -m utils.tests.swarm.matrix 2>&1 | tee "/tmp/ansible-${{ matrix.apps }}.log"
           else
-            sudo -E env "PATH=$PATH" "HOME=$HOME" "SWARM_NAME=${SWARM_NAME:-}" "variant=${variant:-}" "disable=${disable:-}" python3 -m utils.tests.swarm.matrix
+            sudo -E env "PATH=$PATH" "HOME=$HOME" "SWARM_NAME=${SWARM_NAME:-}" "variant=${variant:-}" "disable=${disable:-}" python3 -m utils.tests.swarm.matrix 2>&1 | tee "/tmp/ansible-${{ matrix.apps }}.log"
           fi
+
+      - name: "📊 Role runtimes"
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          log="/tmp/ansible-${{ matrix.apps }}.log"
+          if [ ! -f "${log}" ]; then
+            echo "No ansible log at ${log}; deploy never started."
+            exit 0
+          fi
+          python3 -m cli.meta.ci.roles.runtime "${log}" \
+            --format csv --output "/tmp/role-runtimes-${{ matrix.apps }}.csv"
+          python3 -m cli.meta.ci.roles.runtime "/tmp/role-runtimes-${{ matrix.apps }}.csv" \
+            --format markdown >> "$GITHUB_STEP_SUMMARY"
+
+      - name: "⬆️ Upload role runtimes CSV"
+        if: ${{ always() && !env.ACT }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: role-runtimes-swarm-${{ matrix.apps }}${{ matrix.variant_slug && format('-{0}', matrix.variant_slug) || '' }}
+          path: /tmp/role-runtimes-${{ matrix.apps }}.csv
+          if-no-files-found: ignore
 
       - name: "🌱 Seed content (pre-drain marker on NFS volume)"
         run: ${{ env.SCRIPTS }}/05_seed_content.sh
@@ -254,6 +278,21 @@ jobs:
         env:
           APP_ID: ${{ matrix.apps }}
         run: scripts/tests/deploy/swarm/utils/collect/playwright_reports.sh
+
+      - name: "🕸️ Swarm structure summary"
+        if: always()
+        shell: bash
+        run: scripts/tests/deploy/swarm/utils/collect/topology_summary.sh
+
+      - name: "📋 Playwright step summary"
+        if: always()
+        shell: bash
+        run: |
+          set -euo pipefail
+          python3 utils/github/playwright_summary.py \
+            /tmp/playwright-artifacts \
+            "${{ matrix.apps }}" \
+            >> "$GITHUB_STEP_SUMMARY"
 
       - name: "⬆️ Upload Playwright artifacts"
         if: ${{ always() && !env.ACT }}
