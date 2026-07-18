@@ -35,7 +35,7 @@ class TestSwarmRegistrySync(unittest.TestCase):
         list of docker argv lists the script issued."""
         calls: list[list[str]] = []
 
-        def fake_run(cmd: list[str]) -> int:
+        def fake_run(cmd: list[str], timeout: int = 600) -> int:
             calls.append(cmd)
             return 0
 

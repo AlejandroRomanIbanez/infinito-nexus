@@ -8,7 +8,6 @@ from pathlib import Path
 
 import yaml
 
-
 PULL_TIMEOUT = 1800
 
 
@@ -22,8 +21,11 @@ def run(cmd: list[str], timeout: int = 600) -> int:
 
 
 def manifest_exists(image: str) -> bool:
+    # Exception: manifest inspect ignores the daemon's insecure-registries
+    # list, so without --insecure every manifest on the plain-HTTP swarm
+    # registry reads as "no such manifest" and the push skip never triggers.
     rc = subprocess.run(
-        ["docker", "manifest", "inspect", image],
+        ["docker", "manifest", "inspect", "--insecure", image],
         check=False,
         stdout=subprocess.DEVNULL,
         stderr=subprocess.DEVNULL,
