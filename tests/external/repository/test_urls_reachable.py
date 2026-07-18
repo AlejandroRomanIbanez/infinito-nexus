@@ -8,9 +8,9 @@ local/example hosts are skipped. Per-line suppression uses the unified
 
 This is an external test because it performs live HTTP requests against the
 referenced third-party URLs. HTTP ``401`` (Unauthorized), ``403`` (Forbidden),
-``405`` (Method Not Allowed) and ``415`` (Unsupported Media Type) are treated
-as reachable (server is alive but auth-gated, method-restricted, or rejecting
-the probe's content-type). HTTP ``418`` (I'm a teapot), ``429`` (Too
+``405`` (Method Not Allowed), ``406`` (Not Acceptable) and ``415``
+(Unsupported Media Type) are treated as reachable (server is alive but
+auth-gated, method-restricted, or rejecting the probe's headers). HTTP ``418`` (I'm a teapot), ``429`` (Too
 Many Requests), ``451`` (Unavailable For Legal Reasons), every ``5xx`` server
 response, plus timeouts and connection errors (reset, aborted) emit warning
 annotations rather than failing the test, since these signal an upstream issue
@@ -71,6 +71,7 @@ _OK_STATUS_CODES = {
     401,  # Unauthorized: credentials required, server is alive.
     403,  # Forbidden: server is alive, resource intentionally gated.
     405,  # Method Not Allowed: server is alive, HEAD/GET rejected by design.
+    406,  # Not Acceptable: server is alive, probe Accept/UA rejected (elastic.co).
     415,  # Unsupported Media Type: server is alive, probe content-type rejected.
 }
 # 4xx codes that mean the server is alive but the resource is not reliably
@@ -444,7 +445,7 @@ class TestUrlsReachable(unittest.TestCase):
             f"Failing HTTP(S) URLs found ({len(failing_found)}):",
             "",
             "  Fix the URL, remove it, or adjust the reference.",
-            "  401/403/405 = server alive (auth/method). 418/429/451 + all 5xx = warning. Other 4xx = fail.",
+            "  401/403/405/406/415 = server alive (auth/method/headers). 418/429/451 + all 5xx = warning. Other 4xx = fail.",
             "",
         ]
         for _title, occurrence, message, count in sorted(
