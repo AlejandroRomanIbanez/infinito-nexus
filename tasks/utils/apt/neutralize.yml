@@ -1,6 +1,11 @@
 ---
-- name: "🧯 Neutralize apt-daily in the ephemeral deploy container"
-  when: DOCKER_IN_CONTAINER | bool
+- name: "📡 Detect a running systemd (sd_booted convention: /run/systemd/system)"
+  ansible.builtin.stat:
+    path: /run/systemd/system
+  register: apt_neutralize_systemd
+
+- name: "🧯 Neutralize apt-daily under a running systemd"
+  when: apt_neutralize_systemd.stat.exists
   block:
     - name: "🛑 Stop apt-daily timers"
       ansible.builtin.systemd:
@@ -34,14 +39,3 @@
         - apt-daily-upgrade.service
       loop_control:
         loop_var: apt_unit
-
-- name: "⏳ Wait for the dpkg lock"
-  ansible.builtin.command:
-    argv:
-      - apt-get
-      - -q
-      - -o
-      - DPkg::Lock::Timeout=600
-      - check
-  changed_when: false
-  timeout: "{{ lookup('timeout', 660) | int }}"

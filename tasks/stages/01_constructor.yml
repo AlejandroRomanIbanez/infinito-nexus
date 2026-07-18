@@ -10,7 +10,7 @@
     DOCKER_IN_CONTAINER: "{{ (systemd_detect_virt_container.rc | default(1) | int) == 0 }}"
 
 - name: "🔓 Get apt ready before the first apt task"
-  ansible.builtin.include_tasks: "./tasks/utils/apt_ready.yml"
+  ansible.builtin.include_tasks: "./tasks/utils/apt/ready.yml"
   when: ansible_facts['os_family'] == 'Debian'
 
 - name: 🔎 Check DNS resolution for test domain
