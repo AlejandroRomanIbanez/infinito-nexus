@@ -12,6 +12,9 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
 cd "${REPO_ROOT}"
 
+# shellcheck source=scripts/meta/env/load.sh
+source scripts/meta/env/load.sh
+
 if ! command -v mmdc >/dev/null 2>&1; then
 	echo "mmdc (@mermaid-js/mermaid-cli) not installed. Run 'make install-lint' first." >&2
 	exit 127
@@ -38,14 +41,33 @@ if [[ ${#md_files[@]} -eq 0 ]]; then
 	exit 0
 fi
 
-status=0
-for md in "${md_files[@]}"; do
-	[[ -n "${md}" ]] || continue
-	if ! output="$(mmdc --puppeteerConfigFile "${puppeteer_cfg}" -i "${md}" -o "${workdir}/out.md" 2>&1)"; then
-		status=1
-		printf '❌ %s\n' "${md}"
-		printf '%s\n' "${output}" | sed 's/^/    /'
+: "${INFINITO_WORKER_CPU:?INFINITO_WORKER_CPU must be set (provided by default.env via the env loader)}"
+jobs="${INFINITO_WORKER_CPU}"
+
+# shellcheck disable=SC2329  # invoked indirectly through xargs + bash -c
+render_one() {
+	local md="$1"
+	local slug
+	slug="$(printf '%s' "${md}" | tr '/.' '__')"
+	if ! mmdc --puppeteerConfigFile "${puppeteer_cfg}" -i "${md}" \
+		-o "${workdir}/${slug}.out.md" >"${workdir}/${slug}.log" 2>&1; then
+		printf '%s\n' "${md}" >"${workdir}/${slug}.fail"
 	fi
+}
+export -f render_one
+export workdir puppeteer_cfg
+
+# shellcheck disable=SC2016  # the single-quoted body expands inside the child bash
+printf '%s\n' "${md_files[@]}" |
+	xargs -P "${jobs}" -I {} bash -c 'render_one "$1"' _ {}
+
+status=0
+for fail in "${workdir}"/*.fail; do
+	[[ -e "${fail}" ]] || continue
+	status=1
+	md="$(cat "${fail}")"
+	printf '❌ %s\n' "${md}"
+	sed 's/^/    /' "${fail%.fail}.log"
 done
 
 if [[ "${status}" -eq 0 ]]; then
