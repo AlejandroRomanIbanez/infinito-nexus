@@ -8,15 +8,6 @@
     application_id: "svc-db-postgres"
     database_consumer_id: "svc-db-postgres"
 
-- name: "📋 Deploy boot-entrypoint.sh into the build context"
-  stack_host_copy:
-    src: "boot-entrypoint.sh"
-    dest: "{{ [ lookup('container', application_id, 'directories.instance'), 'boot-entrypoint.sh' ] | path_join }}"
-    mode: "0755"
-  notify:
-    - compose build
-    - compose up
-
 - name: 📦 Install 'psycopg2-binary'
   include_role:
     name: sys-pip-install
