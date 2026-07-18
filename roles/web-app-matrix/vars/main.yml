@@ -19,6 +19,8 @@ MATRIX_BASE_URL: "{{ lookup('tls', application_id, 'protocols.web') }}://{{ DOMA
 MATRIX_SYNAPSE_NAME: "{{ lookup('config', application_id, 'services.synapse.name') }}"
 MATRIX_SYNAPSE_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'synapse') }}"
 MATRIX_SYNAPSE_VOLUME: "{{ lookup('volume', application_id, 'synapse_data').name }}"
+MATRIX_SYNAPSE_UID: 991
+MATRIX_SYNAPSE_GID: 991
 MATRIX_MDAD_SERVICE: "matrix"
 MATRIX_MDAD_CONTAINER: "{{ application_id | get_entity_name }}"
 MATRIX_MDAD_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, MATRIX_MDAD_SERVICE) }}"

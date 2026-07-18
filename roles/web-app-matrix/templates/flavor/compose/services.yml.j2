@@ -44,6 +44,9 @@
     {{ lookup('compose_only', 'container_name', 'matrix-' ~ item.bridge_name) }}
     image: "dock.mau.dev/mautrix/{{ item.bridge_name }}:latest"  # nocheck: container-image-lookup
     {{ lookup('compose_restart') }}
+    environment:
+      UID: "{{ MATRIX_SYNAPSE_UID }}"
+      GID: "{{ MATRIX_SYNAPSE_GID }}"
     volumes: # nocheck: compose-inline-mount-section
       - ./mautrix/{{ item.bridge_name }}:/data
     healthcheck:
