@@ -273,13 +273,26 @@ class TestComplexityRows(unittest.TestCase):
             rows = compute_complexity_rows(roles_dir)
             row_map = {row.name: row for row in rows}
 
-            self.assertEqual(row_map["r1"].base, row_map["r2"].base)
-            self.assertNotEqual(row_map["r1"].base, row_map["r3"].base)
+            self.assertEqual(row_map["r1"].dna, row_map["r2"].dna)
+            self.assertNotEqual(row_map["r1"].dna, row_map["r3"].dna)
             self.assertEqual(row_map["r1"].siblings, ["r2"])
             self.assertEqual(row_map["r2"].siblings, ["r1"])
             self.assertEqual(row_map["r3"].siblings, [])
 
-    def test_unique_hides_same_base_roles(self) -> None:
+    def test_clone_marks_every_dna_sibling_but_the_heaviest(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            roles_dir = Path(td) / "roles"
+            roles_dir.mkdir()
+            self._build_mutual_roles(roles_dir)
+
+            row_map = {r.name: r for r in compute_complexity_rows(roles_dir)}
+            group = [row_map["r1"], row_map["r2"]]
+            original = max(group, key=lambda r: (r.weight, r.name))
+            for row in group:
+                self.assertEqual(row.clone, row.name != original.name)
+            self.assertFalse(row_map["r3"].clone)
+
+    def test_clone_filter_keeps_one_representative_per_dna(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             roles_dir = Path(td) / "roles"
             roles_dir.mkdir()
@@ -293,10 +306,19 @@ class TestComplexityRows(unittest.TestCase):
                 ),
                 redirect_stdout(buf),
             ):
-                rc = main(["--format", "string", "--sort", "name", "--unique"])
+                rc = main(
+                    [
+                        "--format",
+                        "string",
+                        "--sort",
+                        "name",
+                        "--filter",
+                        "clone == false",
+                    ]
+                )
 
             self.assertEqual(rc, 0)
-            self.assertEqual(buf.getvalue().split(), ["r1", "r3"])
+            self.assertEqual(len(buf.getvalue().split()), 2)
 
 
 class TestComposeSwarmColumns(unittest.TestCase):
@@ -369,6 +391,26 @@ class TestComposeSwarmColumns(unittest.TestCase):
             self.assertTrue(r2[0].swarm)
             self.assertTrue(r2[1].swarm)
             self.assertTrue(r2[0].compose and r2[1].compose)
+
+    def test_integrated_false_when_variant_disables_every_foreign_service(
+        self,
+    ) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            roles_dir = Path(td) / "roles"
+            roles_dir.mkdir()
+            self._build(roles_dir)
+
+            with mock.patch(
+                "cli.meta.roles.applications.complexity.model._tested_apps",
+                return_value={"r1", "r2"},
+            ):
+                r2 = {
+                    r.variant: r
+                    for r in compute_variant_complexity_rows(roles_dir)
+                    if r.name == "r2"
+                }
+            self.assertTrue(r2[0].integrated)
+            self.assertFalse(r2[1].integrated)
 
 
 class TestStackColumn(unittest.TestCase):
@@ -814,7 +856,7 @@ class TestVariantMode(unittest.TestCase):
 def _row(
     name: str,
     services: list[str],
-    base: str | None = None,
+    dna: str | None = None,
     variant: int | None = None,
 ) -> ComplexityRow:
     return ComplexityRow(
@@ -828,7 +870,7 @@ def _row(
         consumers_direct=0,
         consumed_by_direct=[],
         weight=len(services),
-        base=base or name,
+        dna=dna or name,
         siblings=[],
         variant=variant,
     )

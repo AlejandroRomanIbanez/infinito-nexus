@@ -3,8 +3,8 @@ set -euo pipefail
 
 # Iterate one or more roles through every deploy mode in order, stopping at the
 # first failure. Inputs (env):
-#   apps  - space-separated role ids; defaults to one role per base cluster
-#           (complexity --unique), most complex first, when unset
+#   apps  - space-separated role ids; defaults to one role per dna cluster
+#           (complexity clone == false), most complex first, when unset
 #   modes - mode sequence (default "compose swarm"; append "k8s" here once it exists)
 #   keep  - true keeps each validated swarm cluster instead of releasing it
 _repo_root="$(cd "$(dirname "$0")/../../.." && pwd)"
@@ -14,7 +14,7 @@ _repo_root="$(cd "$(dirname "$0")/../../.." && pwd)"
 
 if [ -z "${apps:-}" ]; then
 	apps="$("${PYTHON}" -m cli.meta.roles.applications.complexity \
-		--sort "desc weight" --unique --format string)"
+		--sort "desc weight" --filter "clone == false" --format string)"
 fi
 [ -n "${apps// /}" ] || {
 	echo "roundtrip: no roles to run" >&2

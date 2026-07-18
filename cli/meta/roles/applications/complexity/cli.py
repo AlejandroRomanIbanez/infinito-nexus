@@ -38,6 +38,9 @@ _SORT_KEYS = {
     "test_compose": lambda r: int(r.test_compose),
     "test_swarm": lambda r: int(r.test_swarm),
     "test_host": lambda r: int(r.test_host),
+    "integrated": lambda r: int(r.integrated),
+    "tested_elsewhere": lambda r: int(r.test_compose or r.test_swarm),
+    "clone": lambda r: int(r.clone),
 }
 
 
@@ -47,7 +50,8 @@ def _row_fields(r: ComplexityRow) -> dict[str, Any]:
     return {
         "name": r.name,
         "lifecycle": r.lifecycle,
-        "base": r.base,
+        "dna": r.dna,
+        "clone": r.clone,
         "embeds": r.embeds,
         "embeds_direct": r.embeds_direct,
         "consumers": r.consumers,
@@ -67,6 +71,7 @@ def _row_fields(r: ComplexityRow) -> dict[str, Any]:
         "test_compose": r.test_compose,
         "test_swarm": r.test_swarm,
         "test_host": r.test_host,
+        "integrated": r.integrated,
     }
 
 
@@ -240,16 +245,6 @@ def build_parser() -> argparse.ArgumentParser:
         ),
     )
     p.add_argument(
-        "--unique",
-        action="store_true",
-        help=(
-            "Collapse roles that share a 'base' (same name+services "
-            "cluster): keep the first per base in sort order and hide "
-            "the rest. Their 'siblings' column still names what was "
-            "hidden."
-        ),
-    )
-    p.add_argument(
         "--no-group-names",
         action="store_true",
         help=(
@@ -344,17 +339,6 @@ def _mark_covered(rows: list[ComplexityRow]) -> list[ComplexityRow]:
     return out
 
 
-def _unique_by_base(rows: list[ComplexityRow]) -> list[ComplexityRow]:
-    seen: set[str] = set()
-    kept: list[ComplexityRow] = []
-    for row in rows:
-        if row.base in seen:
-            continue
-        seen.add(row.base)
-        kept.append(row)
-    return kept
-
-
 def main(argv: list[str] | None = None) -> int:
     p = build_parser()
     args = p.parse_args(argv)
@@ -403,9 +387,6 @@ def main(argv: list[str] | None = None) -> int:
         except FilterError as exc:
             p.error(f"--filter: {exc}")
         rows = [r for r in rows if predicate(_row_fields(r))]
-
-    if args.unique:
-        rows = _unique_by_base(rows)
 
     numbered: list[ComplexityRow] = []
     running = 0

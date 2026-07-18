@@ -1,11 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Resolve the JSON list of application roles the CI matrix deploys for the
-# current INFINITO_DEPLOY_MODE. The query itself (filter, coverage-first
-# sort, lifecycle envelope, compose --unique, INFINITO_MAX_JOBS cap with
-# 'auto') lives in cli.meta.ci.query, shared with the deploy-plan table.
-# Whole role names are emitted; variant_bundles expands them into the matrix.
+# Resolve the JSON list the CI matrix deploys for the current
+# INFINITO_DEPLOY_MODE. The query itself (filter, coverage-first sort,
+# lifecycle envelope, INFINITO_MAX_JOBS cap with 'auto') lives in
+# cli.meta.ci.query, shared with the deploy-plan table. Compose and host
+# emit whole role names; swarm emits per-variant "role#variant" tokens.
+# variant_bundles maps the list onto matrix entries.
 #
 # Inputs via env (defaults live in default.env, the single source of truth):
 #   INFINITO_DEPLOY_MODE           compose|swarm|host (required; workflows set it)
@@ -67,7 +68,7 @@ apps_json="$(printf '%s' "${apps_json}" | jq -c 'sort')"
 if [[ -n "${GITHUB_ACTIONS:-}" && -z "${ACT:-}" ]]; then
 	required_storage="${INFINITO_REQUIRED_STORAGE}"
 
-	mapfile -t roles < <(printf '%s\n' "${apps_json}" | jq -r '.[]')
+	mapfile -t roles < <(printf '%s\n' "${apps_json}" | jq -r '.[] | split("#")[0]' | sort -u)
 	if [[ "${#roles[@]}" -gt 0 ]]; then
 		run_meta_cli \
 			-m cli.meta.roles.applications.sufficient_storage \
@@ -77,13 +78,19 @@ if [[ -n "${GITHUB_ACTIONS:-}" && -z "${ACT:-}" ]]; then
 			--format json \
 			>/dev/null || true
 
-		apps_json="$(
+		kept_roles="$(
 			run_meta_cli \
 				-m cli.meta.roles.applications.sufficient_storage \
 				--roles "${roles[@]}" \
 				--required-storage "${required_storage}" \
 				--format json |
 				json_compact_array
+		)"
+
+		apps_json="$(
+			printf '%s' "${apps_json}" |
+				jq -c --argjson keep "${kept_roles}" \
+					'map(select(. as $t | $keep | index($t | split("#")[0]) != null))'
 		)"
 	fi
 fi

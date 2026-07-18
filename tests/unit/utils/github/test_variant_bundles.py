@@ -245,6 +245,21 @@ class TestSwarmMode(unittest.TestCase):
             ],
         )
 
+    def test_variant_tokens_map_one_to_one_without_expansion(self) -> None:
+        printed = self._run_swarm(
+            '["web-app-five#3", "web-app-five#0", "web-app-bare"]',
+            {"web-app-five": [{}] * 5, "web-app-bare": [{}, {}]},
+        )
+        self.assertEqual(
+            printed,
+            [
+                {"apps": "web-app-five", "variant": "3", "variant_slug": "3"},
+                {"apps": "web-app-five", "variant": "0", "variant_slug": "0"},
+                {"apps": "web-app-bare", "variant": "0", "variant_slug": "0"},
+                {"apps": "web-app-bare", "variant": "1", "variant_slug": "1"},
+            ],
+        )
+
     def test_compose_mode_keeps_bundling_and_all_variants(self) -> None:
         with (
             patch.object(vb, "get_variants", return_value={"web-app-bbb": [{}, {}]}),

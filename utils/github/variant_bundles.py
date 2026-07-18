@@ -18,9 +18,10 @@ environment variable (consumed by ``--variant``), so a runner only iterates the
 rounds in its bundle. ``variant_slug`` is a comma-free copy for artifact/job
 names (GitHub Actions expressions have no string-replace function).
 
-In swarm mode (``INFINITO_DEPLOY_MODE=swarm``) the split is one variant per
-runner (bundle size 1); every variant deploys, each mapping 1:1 to its
-``meta/variants.yml`` round. Compose mode packs several variants per runner.
+In swarm mode (``INFINITO_DEPLOY_MODE=swarm``) the discovery already selects
+per variant (``role#variant`` tokens from cli.meta.ci.query); each token maps
+1:1 to a runner. A bare role name (no ``#``) still expands to one entry per
+variant. Compose mode packs several variants per runner.
 """
 
 from __future__ import annotations
@@ -276,7 +277,12 @@ def main(argv: Sequence[str] | None = None) -> int:
         )
     variants_per_app = get_variants()
     if _swarm_mode():
-        entries = expand_apps(apps, variants_per_app, 1)
+        entries = []
+        for app in apps:
+            if "#" in app:
+                entries.append(_entry(*app.split("#", 1)))
+            else:
+                entries.extend(expand_apps([app], variants_per_app, 1))
     else:
         entries = expand_apps(
             apps,

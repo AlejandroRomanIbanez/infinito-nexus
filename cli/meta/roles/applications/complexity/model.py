@@ -1,4 +1,4 @@
-"""The per-role complexity score, its ``base`` cluster key and ``siblings``."""
+"""The per-role complexity score, its ``dna`` cluster key and ``siblings``."""
 
 from __future__ import annotations
 
@@ -40,11 +40,15 @@ class ComplexityRow(NamedTuple):
     The transitive fields (``services`` / ``consumed_by`` and their
     counts) are the BFS closure capped at ``max_level``; the
     ``*_direct`` fields are always the one-hop neighbours. ``weight``
-    is the sum of the four numeric columns. ``base`` is a hash of the
+    is the sum of the four numeric columns. ``dna`` is a hash of the
     role's own name unioned with its embedded services (sorted), so two
-    roles covering the same service set share a base. ``siblings`` are
-    the other roles sharing that base. ``random`` is a per-row 6-digit
-    nonce. ``variant`` is the ``meta/variants.yml`` index this row was
+    roles covering the same service set share a dna. ``siblings`` are
+    the other roles sharing that dna; ``clone`` is True for every row of
+    a dna group except the heaviest one (ties broken by name), so
+    sorting clones last keeps one representative per service set ahead
+    of the budget cut. ``random`` is a per-row 6-digit
+    nonce, rolled fresh per invocation, so tie order deliberately varies
+    between runs. ``variant`` is the ``meta/variants.yml`` index this row was
     computed against, or ``None`` for a whole-role row. ``id`` and
     ``covered_by`` are set by the CLI after sorting: ``id`` is the row's
     numeric position in sort order (1-based), and ``covered_by`` is the
@@ -53,14 +57,15 @@ class ComplexityRow(NamedTuple):
     (no real ``id`` is 0). Two variants
     of the same role never cover each other. ``row`` is the 1-based line
     number in the final rendered output (assigned last, after
-    filter/unique), so it stays sequential even when sorting by
+    filtering), so it stays sequential even when sorting by
     ``covered_by`` scrambles ``id``. ``variants`` is the number of
     ``meta/variants.yml`` variants of the role in whole-role mode; under
     ``--variant`` each row already is a single variant, so it is ``1``.
     ``bundles`` is the number of CI jobs the row maps to in the target
-    ``deploy_mode``: compose packs variants into size/storage bundles
-    (``compose_bundle_counts`` SPOT), swarm runs one job per variant; under
-    ``--variant`` it is ``1`` per row (one variant = one bundle). ``jobs`` is the
+    ``deploy_mode``: compose and host pack variants into size/storage
+    bundles (``compose_bundle_counts`` SPOT), swarm runs one job per
+    variant; under ``--variant`` it is ``1`` per row (one variant = one
+    bundle). ``jobs`` is the
     running sum of ``bundles`` down the rendered rows. ``lifecycle`` is the
     role's ``meta/services.yml`` lifecycle stage (alpha/beta/pre/…).
     ``compose`` / ``swarm`` are True when the CI test-deploy matrix exercises
@@ -80,6 +85,9 @@ class ComplexityRow(NamedTuple):
     columns minus the role's ``meta/tests.yml`` ``skip`` list: ``modes``
     states where a role RUNS, ``skip`` deactivates TESTING a mode, and CI
     discovery filters on these ``test_*`` columns.
+    ``integrated`` is False when the row's direct service map keeps no
+    foreign provider enabled (the role deploys isolated): per variant on
+    variant rows, from the base ``meta/services.yml`` on whole-role rows.
     """
 
     name: str
@@ -92,7 +100,7 @@ class ComplexityRow(NamedTuple):
     consumers_direct: int
     consumed_by_direct: list[str]
     weight: int
-    base: str
+    dna: str
     siblings: list[str]
     random: int = 0
     variant: int | None = None
@@ -110,9 +118,11 @@ class ComplexityRow(NamedTuple):
     test_compose: bool = False
     test_swarm: bool = False
     test_host: bool = False
+    integrated: bool = True
+    clone: bool = False
 
 
-def _base_hash(name: str, services: list[str]) -> str:
+def _dna_hash(name: str, services: list[str]) -> str:
     members = sorted({name, *services})
     return hashlib.sha1(
         "\n".join(members).encode("utf-8"), usedforsecurity=False
@@ -120,11 +130,20 @@ def _base_hash(name: str, services: list[str]) -> str:
 
 
 def _attach_siblings(rows: list[ComplexityRow]) -> list[ComplexityRow]:
-    by_base: dict[str, list[str]] = {}
+    by_dna: dict[str, list[ComplexityRow]] = {}
     for row in rows:
-        by_base.setdefault(row.base, []).append(row.name)
+        by_dna.setdefault(row.dna, []).append(row)
+    originals = {
+        dna: max(group, key=lambda r: (r.weight, r.name)).name
+        for dna, group in by_dna.items()
+    }
     return [
-        row._replace(siblings=sorted(n for n in by_base[row.base] if n != row.name))
+        row._replace(
+            siblings=sorted(
+                r.name for r in by_dna[row.dna] if r.name != row.name
+            ),
+            clone=row.name != originals[row.dna],
+        )
         for row in rows
     ]
 
@@ -187,10 +206,11 @@ def _build_row(
         consumers_direct=len(consumers_direct),
         consumed_by_direct=consumers_direct,
         weight=weight,
-        base=_base_hash(name, services),
+        dna=_dna_hash(name, services),
         siblings=[],
-        random=random.randint(100000, 999999),  # noqa: S311 — display nonce, not crypto
+        random=random.randint(100000, 999999),  # noqa: S311
         variant=variant,
+        integrated=any(provider != name for provider in services_direct),
     )
 
 
@@ -211,7 +231,7 @@ def compute_complexity_rows(
         for role_dir in sorted(p for p in roles_dir.iterdir() if p.is_dir())
         if is_application_role(role_dir)
     ]
-    if deploy_mode in ("swarm", "host"):
+    if deploy_mode == "swarm":
         bundles = {name: len(variants.get(name) or []) or 1 for name in names}
     else:
         bundles = compose_bundle_counts(names, variants, roles_dir=roles_dir)

@@ -12,7 +12,7 @@ from utils.symbol_glossary import to_emoji
 if TYPE_CHECKING:
     from .model import ComplexityRow
 
-BASE_DISPLAY_LEN = 10
+DNA_DISPLAY_LEN = 10
 
 
 def _char_width(ch: str) -> int:
@@ -59,6 +59,7 @@ _HEADER_NAMES = (
     "name",
     "lifecycle",
     "variant",
+    "integrated",
     "variants",
     "bundles",
     "jobs",
@@ -75,7 +76,8 @@ _HEADER_NAMES = (
     "consumers",
     "weight",
     "random",
-    "base",
+    "dna",
+    "clone",
     "siblings",
     "covered_by",
 )
@@ -106,6 +108,7 @@ _COLUMN_DOC: dict[str, str] = {
     "name": "role id",
     "lifecycle": "maturity stage (see Lifecycle below)",
     "variant": "meta/variants.yml index of this row",
+    "integrated": "row's service map keeps at least one foreign service enabled",
     "variants": "number of variants the role has",
     "bundles": "CI jobs this row maps to in the deploy mode",
     "jobs": "running total of bundles down the rows",
@@ -122,8 +125,9 @@ _COLUMN_DOC: dict[str, str] = {
     "consumers": "roles that embed it transitively",
     "weight": "sum of the four count columns",
     "random": "per-row display nonce",
-    "base": "cluster key shared by same-service-set roles",
-    "siblings": "other roles sharing the base",
+    "dna": "cluster key shared by same-service-set roles",
+    "clone": "another role with the same dna carries more weight",
+    "siblings": "other roles sharing the dna",
     "covered_by": "id of an earlier row that already embeds it (0 = green)",
 }
 
@@ -178,7 +182,7 @@ def _symbol_legend(names: list[str], rows: list[ComplexityRow]) -> list[str]:
 
 
 def render_table(rows: list[ComplexityRow], *, symbol: bool = False) -> str:
-    """Counts only (plus the short ``base`` and the sibling count). Use
+    """Counts only (plus the short ``dna`` and the sibling count). Use
     ``--format json`` for the full role and sibling name lists. With
     ``symbol=True`` the headers are emoji-only (compact), the
     boolean/lifecycle cells render as emojis, and a legend is appended."""
@@ -195,6 +199,7 @@ def render_table(rows: list[ComplexityRow], *, symbol: bool = False) -> str:
             if any(r.variant is not None for r in rows)
             else []
         ),
+        ("integrated", ">", [_bool_cell(r.integrated, symbol=symbol) for r in rows]),
         ("variants", ">", [str(r.variants) for r in rows]),
         ("bundles", ">", [str(r.bundles) for r in rows]),
         ("jobs", ">", [str(r.jobs) for r in rows]),
@@ -215,7 +220,8 @@ def render_table(rows: list[ComplexityRow], *, symbol: bool = False) -> str:
         ("consumers", ">", [str(r.consumers) for r in rows]),
         ("weight", ">", [str(r.weight) for r in rows]),
         ("random", ">", [str(r.random) for r in rows]),
-        ("base", "<", [r.base[:BASE_DISPLAY_LEN] for r in rows]),
+        ("dna", "<", [r.dna[:DNA_DISPLAY_LEN] for r in rows]),
+        ("clone", ">", [_bool_cell(r.clone, symbol=symbol) for r in rows]),
         ("siblings", ">", [str(len(r.siblings)) for r in rows]),
         ("covered_by", ">", [str(r.covered_by) for r in rows]),
     ]
@@ -249,6 +255,7 @@ def _payload(rows: list[ComplexityRow]) -> list[dict]:
             "name": r.name,
             "lifecycle": r.lifecycle,
             "variant": r.variant,
+            "integrated": r.integrated,
             "variants": r.variants,
             "bundles": r.bundles,
             "jobs": r.jobs,
@@ -269,7 +276,8 @@ def _payload(rows: list[ComplexityRow]) -> list[dict]:
             "consumed_by": r.consumed_by,
             "weight": r.weight,
             "random": r.random,
-            "base": r.base,
+            "dna": r.dna,
+            "clone": r.clone,
             "siblings": r.siblings,
             "covered_by": r.covered_by,
         }
