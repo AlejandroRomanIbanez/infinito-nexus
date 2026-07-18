@@ -150,7 +150,8 @@ jobs:
       - name: 🧭 Render the deploy plan into the run summary
         shell: bash
         run: |
-          python3 -m cli.meta.ci.plan \
+          source scripts/meta/env/load.sh
+          "${PYTHON}" -m cli.meta.ci.plan \
             --distros "${{ inputs.distros }}" \
             --whitelist "${{ steps.resolve_wl.outputs.whitelist }}" \
             --priority "${{ inputs.priority }}" \
