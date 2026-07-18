@@ -143,6 +143,34 @@ A `mount --make-rshared /` runs once in the deploy container before the runner s
 
 Set `services.matrix.flavor: compose` to opt in. Tasks live under `tasks/flavor/compose/`, templates under `templates/flavor/compose/`. Existing volumes and credentials are reused, so in-place deploys need no migration.
 
+## Schema
+
+The swarm deploy chain across both flavors:
+
+```mermaid
+flowchart TD
+    subgraph node["swarm manager node"]
+        prx["openresty<br/>(443 host-published)"]
+        dnsm["node resolver<br/>*.domain → 127.0.0.1"]
+        subgraph runner["MDAD runner container (ansible flavor)<br/>privileged, nested docker"]
+            syn["synapse<br/>(host-netted in nested docker)"]
+        end
+        stack["matrix stack services (compose flavor)<br/>matrix_synapse, matrix_element, mautrix-*"]
+    end
+    kc["keycloak_keycloak<br/>+ one-shot realm import job"]
+
+    role["web-app-matrix tasks"] -- "renders compose.yml,<br/>notify: swarm deploy" --> flush["meta: flush_handlers<br/>(before registration wait)"]
+    flush -- "docker stack deploy" --> stack
+    stack -- "writes mautrix/*/registration.yaml" --> role
+    role -- "waits for registration files" --> stack
+
+    syn -- "OIDC discovery via<br/>--add-host issuer → subnet .1" --> prx
+    prx -- "vhost auth.*" --> kc
+    dnsm -. "127.0.0.1 only valid<br/>for host processes" .-> node
+
+    verify["CI verifier (03_wait_converge.sh)"] -- "workload: node-local →<br/>skip service poll" --> role
+```
+
 ## Bridge matrix
 
 Set per-bridge flags under `services.matrix.plugins.<bridge>: true|false` in `meta/services.yml`. Conservative defaults: `mautrix_{signal,telegram,twitter,slack}`, `appservice_irc`, `heisenbridge`, `discord`, `gitter`, `hookshot` ON; `whatsapp`/`facebook`/`instagram`/`googlechat`/`sms` OFF.
