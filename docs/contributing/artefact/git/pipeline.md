@@ -40,7 +40,7 @@ The `security-codeql` job runs the CodeQL scan (catalogued in the `Security and 
 
 ### 3. Linting 🧹
 
-All linting workflows listed in the `Security and linting` table of [workflows.md](../../tools/github/actions/workflows.md) run in parallel. All of them MUST pass `lint-gate` before the pipeline continues.
+The `lint` job runs [lint.yml](../../../../.github/workflows/lint.yml): `make lint` fans every lint check out in parallel, plus a hadolint SARIF job. It MUST pass before the pipeline continues.
 
 ### 4. CI Image Build 🐳
 
@@ -48,7 +48,7 @@ The `build-ci-images` stage uses [images-build-ci.yml](../../../../.github/workf
 
 ### 5. Code Tests 🧪
 
-All code-test workflows listed in the `Code tests` table of [workflows.md](../../tools/github/actions/workflows.md) run in parallel once the CI images are available. All of them MUST pass `test-code-gate`.
+The `test` job runs [test.yml](../../../../.github/workflows/test.yml): `make test` fans the unit, integration, lint and external suites out in parallel on the runner host. It MUST pass `code-quality-gate`.
 
 ### 6. Code Quality Gate 🚦
 

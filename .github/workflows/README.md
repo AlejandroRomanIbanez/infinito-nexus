@@ -24,25 +24,9 @@ flowchart TB
         plan["plan: run-summary table"]
         waitfork["wait-fork-prereq-run"] --> forkready["fork-prereqs-ready"]
 
-        lintansible["lint-ansible.yml"] --> lintgate["lint-gate"]
-        lintdocker["lint-docker.yml"] --> lintgate
-        lintpython["lint-python.yml"] --> lintgate
-        lintshell["lint-shell.yml"] --> lintgate
-        lintmarkdown["lint-markdown.yml"] --> lintgate
-        lintmermaid["lint-mermaid.yml"] --> lintgate
-        lintmakefile["lint-makefile.yml"] --> lintgate
-        lintpackages["lint-packages.yml"] --> lintgate
-        lintjavascript["lint-javascript.yml"] --> lintgate
-        lintplaywright["lint-playwright.yml"] --> lintgate
-
-        tcunit["test-code-unit.yml"] --> tcgate["test-code-gate"]
-        tcintegration["test-code-integration.yml"] --> tcgate
-        tclint["test-code-lint.yml"] --> tcgate
-        tcexternal["test-code-external.yml"] --> tcgate
-
-        codeql["security-codeql.yml"] --> qualitygate["code-quality-gate"]
-        lintgate --> qualitygate
-        tcgate --> qualitygate
+        lintwf["lint.yml: make lint + hadolint"] --> qualitygate["code-quality-gate"]
+        testwf["test.yml: make test"] --> qualitygate
+        codeql["security-codeql.yml"] --> qualitygate
 
         qualitygate --> buildci["build-ci-images: images-build-ci.yml"]
         buildci --> dns["test-dns.yml"]
@@ -130,5 +114,5 @@ flowchart TB
 
 Also manually dispatchable: `images-mirror-all.yml`, `images-cleanup-ci.yml`,
 `cleanup-stale.yml`, `update.yml`, `release-highest.yml`, `release-version.yml`,
-`test-code-external.yml`, `test-deploy-swarm.yml`, `test-dns.yml`,
+`lint.yml`, `test.yml`, `test-deploy-swarm.yml`, `test-dns.yml`,
 `test-environment.yml`, `test-runner-smoke.yml`.

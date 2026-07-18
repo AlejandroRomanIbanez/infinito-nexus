@@ -1,19 +1,19 @@
-name: "🧪 Test: Code (Lint)"
+name: "🧪 Test"
 
 on:
   workflow_call:
+  workflow_dispatch:
 
 permissions:
   contents: read
 
 jobs:
-  test-code-lint:
-    name: 🧪 Test lint
+  test:
+    name: 🧪 Test
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 45
     env:
       INFINITO_TEST_RUNNER: host
-
     steps:
       - name: ⬇️ Checkout repository
         uses: actions/checkout@v7.0.0
@@ -25,14 +25,14 @@ jobs:
           cache: pip
           cache-dependency-path: pyproject.toml
 
-      - name: ▶️ Run lint tests via make
+      - name: ▶️ Run the full test suite via make
         shell: bash
         run: |
           set -euo pipefail
-          make test-lint 2>&1 | tee /tmp/lint-output.txt
+          make test 2>&1 | tee /tmp/test-output.txt
 
       - name: 🔨 Build step summary from annotations
         if: always()
         working-directory: ${{ github.workspace }}
         run: |
-          python3 -m utils.annotations.summarize /tmp/lint-output.txt "Lint Annotation Summary"
+          python3 -m utils.annotations.summarize /tmp/test-output.txt "Test Annotation Summary"

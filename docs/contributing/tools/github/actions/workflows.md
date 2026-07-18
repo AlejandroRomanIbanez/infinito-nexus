@@ -42,11 +42,7 @@ Trigger column legend: **auto** = fires automatically (push, pull_request, sched
 | Workflow | Description | Trigger | Inputs |
 |---|---|---|---|
 | [security-codeql.yml](../../../../../.github/workflows/security-codeql.yml): `🔒 Scan: CodeQL (Advanced)` | CodeQL static analysis. Invoked by [ci-orchestrator.yml](../../../../../.github/workflows/ci-orchestrator.yml) so every CI run produces a single scan; additionally runs on a weekly cron so coverage does not drop when no pushes land on `main`. See [pipeline.md](../../../artefact/git/pipeline.md) for the gating behaviour. | reusable, auto (`schedule`: weekly Mon 00:00 UTC) | none |
-| [lint-ansible.yml](../../../../../.github/workflows/lint-ansible.yml): `🔍 Lint: Ansible` | Runs `make lint-ansible`. | reusable | none |
-| [lint-docker.yml](../../../../../.github/workflows/lint-docker.yml): `🔍 Lint: Dockerfiles` | hadolint on `Dockerfile` with SARIF upload. | reusable | none |
-| [lint-python.yml](../../../../../.github/workflows/lint-python.yml): `🔍 Lint: Python` | `ruff` over the Python sources. | reusable | none |
-| [lint-shell.yml](../../../../../.github/workflows/lint-shell.yml): `🔍 Lint: Shell Scripts` | `shellcheck` over every `*.sh` file. | reusable | none |
-| [lint-packages.yml](../../../../../.github/workflows/lint-packages.yml): `🔍 Lint: Packages` | Validates the generated distro packaging metadata (`debian/changelog` via `dpkg-parsechangelog`, the Fedora spec via `rpmspec`, the Arch `PKGBUILD` via `bash -n`) so a malformed changelog is caught before the package build. | reusable | none |
+| [lint.yml](../../../../../.github/workflows/lint.yml): `🧹 Lint` | Runs `make lint` (every lint check in parallel: action, ansible, javascript, makefile, markdown, mermaid, packages, playwright, python, shellcheck) plus a hadolint SARIF job on `Dockerfile`. | reusable, manual | none |
 
 ### CI images 🐳
 
@@ -67,10 +63,7 @@ Trigger column legend: **auto** = fires automatically (push, pull_request, sched
 
 | Workflow | Description | Trigger | Inputs |
 |---|---|---|---|
-| [test-code-unit.yml](../../../../../.github/workflows/test-code-unit.yml): `🧪 Test: Code (Units)` | Runs `make test-unit` in the CI container. | reusable | none |
-| [test-code-integration.yml](../../../../../.github/workflows/test-code-integration.yml): `🧪 Test: Code (Integration)` | Runs `make test-integration` in the CI container. | reusable | none |
-| [test-code-lint.yml](../../../../../.github/workflows/test-code-lint.yml): `🧪 Test: Code (Lint)` | Runs the project's own lint tests (not the external linters). | reusable | none |
-| [test-code-external.yml](../../../../../.github/workflows/test-code-external.yml): `🧪 Test: Code (External)` | Runs `make test-external` against external services. | reusable, manual | none |
+| [test.yml](../../../../../.github/workflows/test.yml): `🧪 Test` | Runs `make test` (unit, integration, lint and external tests in parallel) on the runner host. | reusable, manual | none |
 
 ### Infrastructure tests 🌐📦💻📥
 
