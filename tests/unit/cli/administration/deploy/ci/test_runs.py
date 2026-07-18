@@ -37,6 +37,31 @@ class TestParseRoleStatuses(unittest.TestCase):
             runs.parse_role_statuses(jobs), {"web-app-x": {"docker": "running"}}
         )
 
+    def test_green_variant_shard_never_masks_a_failed_sibling(self) -> None:
+        for shards in (
+            [("1", "failure"), ("0", "success")],
+            [("0", "success"), ("1", "failure")],
+        ):
+            with self.subTest(shards=shards):
+                jobs = [
+                    _job(deploy_job_name("swarm", "web-app-gitlab", variant), state)
+                    for variant, state in shards
+                ]
+                self.assertEqual(
+                    runs.parse_role_statuses(jobs),
+                    {"web-app-gitlab": {"swarm": "failure"}},
+                )
+
+    def test_cancelled_shard_dominates_success_but_not_failure(self) -> None:
+        jobs = [
+            _job(deploy_job_name("swarm", "web-app-x", "0"), "success"),
+            _job(deploy_job_name("swarm", "web-app-x", "1"), "cancelled"),
+            _job(deploy_job_name("swarm", "web-app-x", "2"), "failure"),
+        ]
+        self.assertEqual(
+            runs.parse_role_statuses(jobs), {"web-app-x": {"swarm": "failure"}}
+        )
+
 
 class TestAppOfJob(unittest.TestCase):
     def test_extracts_app_from_orchestrated_name(self) -> None:

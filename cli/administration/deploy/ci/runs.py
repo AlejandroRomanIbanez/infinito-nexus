@@ -72,24 +72,43 @@ def app_of_job(name: str) -> str | None:
     return match.group(2) if match else None
 
 
+_SEVERITY = {"success": 0, "running": 1, "failure": 3}
+
+
+def _severity(state: str) -> int:
+    return _SEVERITY.get(state, 2)
+
+
 def parse_role_statuses(jobs: list[dict]) -> dict[str, dict[str, str]]:
     """Map ``app id -> {"docker": state, "swarm": state}`` from gh job dicts.
 
     ``state`` is the raw effective outcome ('success' / 'failure' /
     'running' / 'cancelled' / ...). Modes without a job are simply absent.
+    A role's variant shards run as separate jobs per mode; the mode state
+    aggregates them worst-first, so one green shard can never mask a failed
+    sibling (gitlab swarm variant 1 red, variant 0 green -> swarm failure).
     """
     out: dict[str, dict[str, str]] = {}
     for app, mode, job in _iter_deploy_jobs(jobs):
-        out.setdefault(app, {})[mode] = _effective(job)
+        state = _effective(job)
+        modes = out.setdefault(app, {})
+        if mode not in modes or _severity(state) > _severity(modes[mode]):
+            modes[mode] = state
     return out
 
 
 def parse_role_urls(jobs: list[dict]) -> dict[str, dict[str, str]]:
-    """Map ``app id -> {"docker": url, "swarm": url}`` of the job html URLs."""
+    """Map ``app id -> {"docker": url, "swarm": url}`` of the job html URLs,
+    keeping the URL of the worst shard so links point at the failing job."""
     out: dict[str, dict[str, str]] = {}
+    worst: dict[tuple[str, str], int] = {}
     for app, mode, job in _iter_deploy_jobs(jobs):
         url = job.get("url")
-        if url:
+        if not url:
+            continue
+        severity = _severity(_effective(job))
+        if (app, mode) not in worst or severity > worst[(app, mode)]:
+            worst[(app, mode)] = severity
             out.setdefault(app, {})[mode] = url
     return out
 
