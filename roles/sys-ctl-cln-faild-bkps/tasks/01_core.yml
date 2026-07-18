@@ -17,6 +17,14 @@
     package_name: "{{ CLEANUP_FAILED_BACKUPS_PKG }}"
     global_install: true
 
+- name: "✅ Ensure backups root exists (cleanback hard-fails on a missing root before the first backup ran)"
+  ansible.builtin.file:
+    path: "{{ DIR_BACKUPS }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - include_role:
     name: sys-service
   vars:

@@ -7,6 +7,9 @@ IS_STACK_HOST: >-
   {{ DEPLOYMENT_MODE == 'compose'
      or inventory_hostname in (groups['svc-swarm-manager'] | default([])) }}
 
+IS_BACKUP_HOST: >-
+  {{ group_names | select('match', '^svc-bkp-') | list | length > 0 }}
+
 STACK_HOST: >-
   {{ (groups['svc-swarm-manager'] | default([]))[0] | default(inventory_hostname) }}
 

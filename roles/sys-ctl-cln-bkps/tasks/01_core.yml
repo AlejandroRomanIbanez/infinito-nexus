@@ -19,6 +19,14 @@
     package_state: present
     global_install: true
 
+- name: "✅ Ensure backups root exists (the cleanup script runs before the first backup on backup-provider hosts)"
+  ansible.builtin.file:
+    path: "{{ DIR_BACKUPS }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+
 - include_role:
     name: sys-service
   vars:
@@ -32,7 +40,6 @@
     system_service_copy_files: true
     system_service_force_linear_sync: false
 
-    # The following lines are set for better DiD Github Action Workflow debugging:
     system_service_tpl_timeout_start_sec: "{{ '120s' if ((DOCKER_IN_CONTAINER|bool) and (MODE_DEBUG|bool)) else omit }}"
     system_service_tpl_runtime: "{{ '300s' if ((DOCKER_IN_CONTAINER|bool) and (MODE_DEBUG|bool)) else omit }}"
 
