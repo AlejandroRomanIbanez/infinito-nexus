@@ -1,4 +1,4 @@
-name: "🏃 Test: Run"
+name: "📖 Test: README.md"
 
 on:
   workflow_call:
@@ -22,7 +22,7 @@ permissions:
 
 jobs:
   deploy:
-    name: 🏃 README Production run (${{ inputs.role }})
+    name: 📖 README.md (${{ inputs.role }})
     runs-on: ubuntu-latest
     timeout-minutes: 90
     steps:
@@ -37,14 +37,24 @@ jobs:
           test -s /tmp/deploy.sh
           cat /tmp/deploy.sh
 
-      - name: 🔧 Adapt for CI (localhost target, Docker socket instead of TTY)
+      - name: 🔧 Adapt for CI (localhost target, Docker socket + NET_ADMIN instead of TTY)
         shell: bash
         run: |
           set -euo pipefail
           sed -i 's/<your-server>/localhost/' /tmp/deploy.sh
-          sed -i 's#--rm -it #--rm -v /var/run/docker.sock:/var/run/docker.sock #' /tmp/deploy.sh
+          sed -i 's#--rm -it #--rm --cap-add NET_ADMIN -v /var/run/docker.sock:/var/run/docker.sock #' /tmp/deploy.sh
           grep -q 'HOST=localhost' /tmp/deploy.sh
           grep -q 'docker.sock' /tmp/deploy.sh
+          grep -q 'cap-add NET_ADMIN' /tmp/deploy.sh
+
+      - name: 🌱 Seed the run's CI image instead of the published default
+        shell: bash
+        run: |
+          set -euo pipefail
+          IMAGE="ghcr.io/$(scripts/meta/resolve/repository/owner.sh)/$(scripts/meta/resolve/repository/name.sh)/debian:ci-${{ github.sha }}"
+          sed -i "s#ghcr.io/infinito-nexus/core/debian#${IMAGE}#" /tmp/deploy.sh
+          grep -qF "$IMAGE" /tmp/deploy.sh
+          cat /tmp/deploy.sh
 
       - name: 🔑 Login to GHCR
         uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0

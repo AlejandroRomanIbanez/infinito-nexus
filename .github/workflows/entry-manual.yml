@@ -1,5 +1,5 @@
 name: "⚡ CI: Manual"
-run-name: "Manual CI triggered: ${{ inputs.distros }}; ${{ inputs.whitelist != '' && inputs.whitelist || 'diff-derived (origin/main)' }}"
+run-name: "Manual CI triggered: ${{ inputs.distros }}; ${{ inputs.priority != '' && format('{0} ⭐; ', inputs.priority) || '' }}${{ inputs.whitelist != '' && inputs.whitelist || 'diff-derived (origin/main)' }}"
 
 concurrency:
   group: global-ci-${{ github.repository }}-${{ github.ref_name }}

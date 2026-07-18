@@ -120,6 +120,44 @@ jobs:
           fi
           echo "Fork prerequisites are ready."
 
+  deploy-plan:
+    name: 🧭 Deploy plan
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: 🔧 Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+
+      - name: 📦 Install project (host venv)
+        shell: bash
+        run: make install
+
+      - name: 🔍 Resolve effective whitelist (diff vs origin/main)
+        id: resolve_wl
+        shell: bash
+        env:
+          INPUT_WHITELIST: ${{ inputs.whitelist }}
+        run: ./scripts/github/resolve/effective_whitelist.sh
+
+      - name: 🧭 Render the deploy plan into the run summary
+        shell: bash
+        run: |
+          python3 -m cli.meta.ci.plan \
+            --distros "${{ inputs.distros }}" \
+            --whitelist "${{ steps.resolve_wl.outputs.whitelist }}" \
+            --priority "${{ inputs.priority }}" \
+            --modes "${{ inputs.modes }}" \
+            --lifecycles "${{ inputs.lifecycles }}" \
+            >> "$GITHUB_STEP_SUMMARY"
+
   security-codeql:
     uses: ./.github/workflows/security-codeql.yml
 
@@ -313,11 +351,11 @@ jobs:
       - code-quality-gate
     secrets: inherit
 
-  test-run:
-    uses: ./.github/workflows/test-run.yml
+  test-readme:
+    uses: ./.github/workflows/test-readme.yml
     needs:
       - images-mirror-missing
-      - code-quality-gate
+      - build-ci-images
     secrets: inherit
 
   done:
@@ -330,7 +368,7 @@ jobs:
       - test-runner-smoke
       - test-install-gate
       - test-development
-      - test-run
+      - test-readme
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
