@@ -13,7 +13,8 @@ set -euo pipefail
 #   INFINITO_DEPLOY_MODE           compose|swarm|host (required; workflows set it)
 #   INFINITO_WHITELIST             optional space-separated app ids to keep
 #   INFINITO_BLACKLIST             optional space-separated app ids to drop
-#   INFINITO_MAX_JOBS              cumulative job cap
+#   INFINITO_MAX_JOBS              cumulative job cap; 'auto' derives it per
+#                                  mode from the CI chain via cli.meta.ci.slots
 #   INFINITO_DISCOVERY_SORT        complexity --sort spec (coverage-first)
 #   INFINITO_REQUIRED_STORAGE      per-runner CI storage budget
 #   INFINITO_APP_DISCOVERY_RUNNER  host|docker
@@ -73,6 +74,10 @@ if [[ -n "${INFINITO_BLACKLIST:-}" && -n "${INFINITO_BLACKLIST// /}" ]]; then
 	bl_csv="${bl_csv#,}"
 	bl_csv="${bl_csv%,}"
 	filter="${filter} and not (name %% {${bl_csv}})"
+fi
+
+if [[ "${INFINITO_MAX_JOBS}" == "auto" ]]; then
+	INFINITO_MAX_JOBS="$(run_meta_cli -m cli.meta.ci.slots --mode "$mode")"
 fi
 
 unique_args=()
