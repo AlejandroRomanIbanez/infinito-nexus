@@ -74,7 +74,8 @@ INVENTORY=inventories/prod
 infinito administration inventory provision "$INVENTORY" \
   --inventory-file "$INVENTORY/devices.yml" \
   --host localhost \
-  --include "$APP"
+  --include "$APP" \
+  --vars '{"users": {"administrator": {"authorized_keys": ["<your-ssh-public-key>"]}}}'
 infinito administration deploy dedicated "$INVENTORY/devices.yml" \
   --password-file "$INVENTORY/.password" \
   --diff -vv

@@ -9,6 +9,9 @@ awk '/^### Production$/{p=1} p && /^```bash$/{c=1; next} c && /^```$/{exit} c' \
 	"roles/${GUIDE_ROLE}/README.md" |
 	grep -vE '^git clone |^cd core$' >/tmp/host-deploy.sh
 test -s /tmp/host-deploy.sh
+
+sed -i "s#<your-ssh-public-key>#ssh-ed25519 AAAA_TEST_DUMMY_KEY github-ci-dummy@infinito#" /tmp/host-deploy.sh
+
 docker pull "${GUIDE_RUNTIME_IMAGE}"
 
 # Exception: boot systemd as PID 1 because the host role manages user

@@ -94,6 +94,7 @@ jobs:
           # bash-only control container; extract the `bash -c` payload verbatim.
           perl -0777 -ne "print \$1 if /bash -c '(.*)'/s" /tmp/deploy.sh > /tmp/payload.sh
           test -s /tmp/payload.sh
+          sed -i "s#<your-ssh-public-key>#ssh-ed25519 AAAA_TEST_DUMMY_KEY github-ci-dummy@infinito#" /tmp/payload.sh
           source scripts/meta/env/load.sh
           docker exec -i -e APP="$GUIDE_ROLE" -e HOST=localhost \
             "${INFINITO_CONTAINER}" bash -s < /tmp/payload.sh
