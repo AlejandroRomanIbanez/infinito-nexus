@@ -24,7 +24,8 @@ fi
 
 make setup
 bash "$(dirname "${BASH_SOURCE[0]}")/../../install/dev-extras.sh" || echo "dev extras install failed; running serial" >&2
-_suite_dir="tests/${INFINITO_TEST_TYPE}" # nocheck: makefile-supplied
+_suite_dir="tests/${INFINITO_TEST_TYPE}"                     # nocheck: makefile-supplied
+_junit_report="build/test-reports/${INFINITO_TEST_TYPE}.xml" # nocheck: makefile-supplied
 if "${PYTHON}" -c 'import pytest, xdist' >/dev/null 2>&1; then
 	# Exception: consider_namespace_packages + importlib import mode are
 	# required for hyphenated tests/unit/roles/<role>/ dirs; pytest's default
@@ -36,7 +37,7 @@ if "${PYTHON}" -c 'import pytest, xdist' >/dev/null 2>&1; then
 	mkdir -p build/test-reports
 	PYTHONDONTWRITEBYTECODE=1 "${PYTHON}" -m pytest "${_suite_dir}" -q -n auto -rP -p no:cacheprovider \
 		--import-mode=importlib \
-		--junitxml="build/test-reports/${INFINITO_TEST_TYPE}.xml" \
+		--junitxml="${_junit_report}" \
 		-o consider_namespace_packages=true \
 		-o "norecursedirs=.* *.egg dist node_modules venv" \
 		-o python_functions= \
