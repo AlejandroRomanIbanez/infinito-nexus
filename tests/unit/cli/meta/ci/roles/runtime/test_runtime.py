@@ -74,13 +74,9 @@ class TestLogParse(unittest.TestCase):
             ],
         )
         round1_pass1 = {
-            r.role: r.seconds
-            for r in records
-            if r.round == "1" and r.pass_num == "1"
+            r.role: r.seconds for r in records if r.round == "1" and r.pass_num == "1"
         }
-        self.assertEqual(
-            round1_pass1, {"web-app-keycloak": 40.0, "total": 40.0}
-        )
+        self.assertEqual(round1_pass1, {"web-app-keycloak": 40.0, "total": 40.0})
         round2 = {r.role: r.seconds for r in records if r.round == "2"}
         self.assertEqual(round2, {"sys-svc-mail": 30.0, "web-app-keycloak": 12.0})
 

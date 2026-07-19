@@ -28,9 +28,7 @@ class RoleRuntime:
 
     @property
     def host_map(self) -> dict[str, str]:
-        return dict(
-            pair.split("=", 1) for pair in self.hosts.split() if "=" in pair
-        )
+        return dict(pair.split("=", 1) for pair in self.hosts.split() if "=" in pair)
 
     @property
     def segmented(self) -> bool:

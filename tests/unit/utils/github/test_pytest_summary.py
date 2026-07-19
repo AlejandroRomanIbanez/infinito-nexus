@@ -35,12 +35,8 @@ class TestRenderReport(unittest.TestCase):
         out = self._render(_XML)
         self.assertIn("| `tests.unit.test_b.TestB::test_broken` | 0.40s |", out)
         self.assertIn("<summary>All 4 tests (slowest first)</summary>", out)
-        self.assertIn(
-            "| `tests.unit.test_a.TestA::test_slow` | 🟢 | 2.50s |", out
-        )
-        self.assertIn(
-            "| `tests.unit.test_b.TestB::test_off` | 🔵 | 0.00s |", out
-        )
+        self.assertIn("| `tests.unit.test_a.TestA::test_slow` | 🟢 | 2.50s |", out)
+        self.assertIn("| `tests.unit.test_b.TestB::test_off` | 🔵 | 0.00s |", out)
 
     def test_slowest_first_ordering(self) -> None:
         out = self._render(_XML)

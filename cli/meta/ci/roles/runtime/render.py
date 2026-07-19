@@ -76,13 +76,9 @@ def _md_table(rows: list[RoleRuntime], title: str) -> str:
         lines.append(f"| {idx} | role | `{r.role}` | {r.seconds:.2f}s |{cells}")
     parsed_sum = sum(r.seconds for r in task_rows + role_rows)
     for r in total_rows:
-        lines.append(
-            f"| | **total** | recap | **{r.seconds:.2f}s** |{empty_cells}"
-        )
+        lines.append(f"| | **total** | recap | **{r.seconds:.2f}s** |{empty_cells}")
         if abs(parsed_sum - r.seconds) > max(1.0, r.seconds * 0.01):
-            lines.append(
-                f"| | ⚠️ | parsed rows sum | {parsed_sum:.2f}s |{empty_cells}"
-            )
+            lines.append(f"| | ⚠️ | parsed rows sum | {parsed_sum:.2f}s |{empty_cells}")
     return "\n".join(lines) + "\n"
 
 
