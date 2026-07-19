@@ -17,6 +17,8 @@
   vars:
     domain: "{{ MATRIX_ELEMENT_DOMAIN }}"
     http_port: "{{ MATRIX_ELEMENT_PORT }}"
+    webserver_proxy_service_key: element
+    proxy_internal_port: "{{ MATRIX_ELEMENT_CONTAINER_PORT }}"
 
 - name: "📂 include role sys-stk-front-proxy for {{ MATRIX_SYNAPSE_DOMAIN }}"
   ansible.builtin.include_role:
@@ -24,6 +26,8 @@
   vars:
     domain: "{{ MATRIX_SYNAPSE_DOMAIN }}"
     http_port: "{{ MATRIX_SYNAPSE_PORT }}"
+    webserver_proxy_service_key: synapse
+    proxy_internal_port: "{{ MATRIX_SYNAPSE_CONTAINER_PORT }}"
 
 - name: 📁 create {{ MATRIX_SYNAPSE_DOMAIN }}.conf
   stack_host_template:
