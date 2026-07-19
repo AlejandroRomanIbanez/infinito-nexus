@@ -62,3 +62,10 @@ coturn:
   mounts:
     - service: coturn
       target: /var/lib/coturn
+ep_redis_publisher_patch:
+  type: bind
+  source: "{{ [lookup('container', 'web-app-bigbluebutton', 'directories.instance'), 'ep_redis_publisher_index.js'] | path_join }}"
+  read_only: true
+  mounts:
+    - service: etherpad
+      target: /opt/etherpad-lite/src/plugin_packages/.versions/ep_redis_publisher@0.0.3/index.js
