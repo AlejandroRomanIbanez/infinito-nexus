@@ -109,16 +109,12 @@ jobs:
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v7.0.0
       - name: ✅ Assert privileged prerequisites are ready
         shell: bash
-        run: |
-          set -euo pipefail
-          result="${{ needs.wait-fork-prereq-run.result }}"
-          if [[ "${result}" != "success" && "${result}" != "skipped" ]]; then
-            echo "Fork prerequisites are not ready. wait-fork-prereq-run=${result}" >&2
-            exit 1
-          fi
-          echo "Fork prerequisites are ready."
+        env:
+          RESULT: ${{ needs.wait-fork-prereq-run.result }}
+        run: ./scripts/github/gate/fork_prereqs.sh
 
   security-codeql:
     uses: ./.github/workflows/security-codeql.yml
@@ -129,19 +125,7 @@ jobs:
   test:
     uses: ./.github/workflows/test.yml
 
-  code-quality-gate:
-    name: 🚦 Gate Quality
-    needs:
-      - lint
-      - test
-      - security-codeql
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Quality Checks passed"
-
   build-ci-images:
-    needs:
-      - code-quality-gate
     uses: ./.github/workflows/images-build-ci.yml
     with:
       distros: "arch debian ubuntu fedora centos"
@@ -244,27 +228,14 @@ jobs:
 
   test-install-make:
     uses: ./.github/workflows/test-install-make.yml
-    needs:
-      - code-quality-gate
   test-install-pkgmgr:
     uses: ./.github/workflows/test-install-pkgmgr.yml
-    needs:
-      - code-quality-gate
-  test-install-gate:
-    name: 🚦 Gate installation
-    needs:
-      - test-install-make
-      - test-install-pkgmgr
-    runs-on: ubuntu-latest
-    steps:
-      - run: echo "Installation is possible via pkgmgr and make"
 
   test-development:
     if: ${{ inputs.roles_only != 'true' }}
     uses: ./.github/workflows/test-environment.yml
     needs:
       - images-mirror-missing
-      - code-quality-gate
     secrets: inherit
 
   test-guide:
@@ -277,14 +248,18 @@ jobs:
   done:
     name: 🏁 Finish pipeline
     needs:
+      - test-install-make
+      - test-install-pkgmgr
       - test-deploy-single-node-priority
       - test-deploy-swarm-priority
       - test-deploy-single-node
       - test-deploy-swarm
       - test-runner-smoke
-      - test-install-gate
       - test-development
       - test-guide
+      - lint
+      - test
+      - security-codeql
     if: ${{ always() }}
     runs-on: ubuntu-latest
     steps:
