@@ -82,7 +82,7 @@ sequenceDiagram
     B-->>M: device-recovered volume backup repository
     M->>D: replay dumps while all writers remain stopped
 
-    Note over M,N: matrix update redeploys; health, Playwright, file markers and DB before/after probes must pass
+    Note over M,N: matrix update redeploys, then health, Playwright, file markers and DB before/after probes must pass
 ```
 
 ## Data flow (what is proven)

@@ -3,7 +3,7 @@ set -euo pipefail
 
 : "${BKP_TEST_DATABASES_CSV:?}"
 
-MODE="${1:?usage: db_probe.sh seed TOKEN | verify PRE_TOKEN POST_TOKEN MANIFEST}"
+MODE="${1:?usage: probe.sh seed TOKEN | verify PRE_TOKEN POST_TOKEN MANIFEST}"
 PROBE_TABLE="infinito_backup_restore_probe"
 
 validate_token() {

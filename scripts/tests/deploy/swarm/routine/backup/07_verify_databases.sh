@@ -9,8 +9,10 @@ if [[ ! -f "${COMPLETE}" ]]; then
 	echo "FAIL: completed database restore handoff missing at ${COMPLETE}"
 	exit 1
 fi
+set -a
 # shellcheck disable=SC1091
 . "${TEST_DIR}/test.env"
+set +a
 # shellcheck disable=SC1090
 . "${COMPLETE}"
 
@@ -19,5 +21,5 @@ if [[ "${BKP_TEST_SWARM_DRILL}" != "true" ]]; then
 	exit 1
 fi
 
-bash "${TEST_DIR}/db_probe.sh" verify \
+bash "${TEST_DIR}/db/probe.sh" verify \
 	"${PROBE_PRE_TOKEN}" "${PROBE_POST_TOKEN}" "${MANIFEST}"

@@ -8,7 +8,6 @@ from pathlib import Path
 
 from utils import PROJECT_ROOT
 
-
 BACKUP_SCRIPTS = PROJECT_ROOT / "scripts/tests/deploy/swarm/routine/backup"
 ROLE_TEST_SCRIPTS = PROJECT_ROOT / "roles/svc-bkp-volume-2-local/files/test"
 
@@ -20,6 +19,7 @@ class TestDatabaseRestoreHandoff(unittest.TestCase):
         self.root = Path(self.tmp.name)
         self.test_dir = self.root / "role-test"
         self.test_dir.mkdir()
+        (self.test_dir / "db").mkdir()
         (self.test_dir / "test.env").write_text(
             "BKP_TEST_SWARM_DRILL=true\nBKP_TEST_DATABASES_CSV=/unused\n"
         )
@@ -34,11 +34,11 @@ class TestDatabaseRestoreHandoff(unittest.TestCase):
             "PROBE_PRE_TOKEN=before\n"
             "PROBE_POST_TOKEN=after\n"
         )
-        restore = self.test_dir / "db_restore.sh"
+        restore = self.test_dir / "db" / "restore.sh"
         restore.write_text(
             "#!/usr/bin/env bash\n"
             "set -euo pipefail\n"
-            ": \"${BKP_TEST_BACKUPS_DIR:?}\" \"${REPO_DIR:?}\"\n"
+            ': "${BKP_TEST_BACKUPS_DIR:?}" "${REPO_DIR:?}"\n'
             "printf 'postgres;postgres_data;app\\n' >\"${BKP_TEST_RESTORED_DATABASES_FILE}\"\n"
         )
         restore.chmod(0o755)
@@ -66,15 +66,15 @@ class TestDatabaseRestoreHandoff(unittest.TestCase):
         manifest = self.test_dir / "swarm-restore.manifest"
         manifest.write_text("postgres;postgres_data;app\n")
         verified = self.root / "probe-verified"
-        probe = self.test_dir / "db_probe.sh"
+        probe = self.test_dir / "db" / "probe.sh"
         probe.write_text(
             "#!/usr/bin/env bash\n"
             "set -euo pipefail\n"
-            "test \"$1\" = verify\n"
-            "test \"$2\" = before\n"
-            "test \"$3\" = after\n"
-            f"test \"$4\" = {manifest}\n"
-            "touch \"${PROBE_VERIFIED:?}\"\n"
+            'test "$1" = verify\n'
+            'test "$2" = before\n'
+            'test "$3" = after\n'
+            f'test "$4" = {manifest}\n'
+            'touch "${PROBE_VERIFIED:?}"\n'
         )
         probe.chmod(0o755)
         env = os.environ.copy()
@@ -107,8 +107,7 @@ class TestDatabaseRestoreProbe(unittest.TestCase):
             )
             manifest = root / "manifest"
             manifest.write_text(
-                "postgres;postgres_data;app_pg\n"
-                "mariadb;mariadb_data;app_my\n"
+                "postgres;postgres_data;app_pg\nmariadb;mariadb_data;app_my\n"
             )
             fake_bin = root / "bin"
             fake_bin.mkdir()
@@ -116,26 +115,26 @@ class TestDatabaseRestoreProbe(unittest.TestCase):
             container.write_text(
                 "#!/usr/bin/env bash\n"
                 "set -euo pipefail\n"
-                "case \"$1\" in\n"
+                'case "$1" in\n'
                 "  ps)\n"
-                "    case \"$*\" in\n"
+                '    case "$*" in\n'
                 "      *postgres_data*) printf 'postgres.1\\n' ;;\n"
                 "      *mariadb_data*) printf 'mariadb.1\\n' ;;\n"
                 "    esac\n"
                 "    ;;\n"
                 "  inspect)\n"
-                "    case \"${*: -1}\" in\n"
+                '    case "${*: -1}" in\n'
                 "      postgres.1) printf 'postgres_custom\\n' ;;\n"
                 "      mariadb.1) printf 'mariadb_custom\\n' ;;\n"
                 "    esac\n"
                 "    ;;\n"
                 "  exec)\n"
-                "    case \"$*\" in\n"
+                '    case "$*" in\n'
                 "      *SELECT*before*)\n"
                 "        test -f \"${DB_STATE:?}/seeded-${4}\" && printf '1\\n' || printf '0\\n'\n"
                 "        ;;\n"
                 "      *SELECT*after*) printf '0\\n' ;;\n"
-                "      *) touch \"${DB_STATE:?}/seeded-${4}\" ;;\n"
+                '      *) touch "${DB_STATE:?}/seeded-${4}" ;;\n'
                 "    esac\n"
                 "    ;;\n"
                 "esac\n"
@@ -147,7 +146,7 @@ class TestDatabaseRestoreProbe(unittest.TestCase):
             env["DB_STATE"] = str(root)
 
             subprocess.run(
-                ["bash", str(ROLE_TEST_SCRIPTS / "db_probe.sh"), "seed", "before"],
+                ["bash", str(ROLE_TEST_SCRIPTS / "db" / "probe.sh"), "seed", "before"],
                 check=True,
                 capture_output=True,
                 text=True,
@@ -159,7 +158,7 @@ class TestDatabaseRestoreProbe(unittest.TestCase):
             subprocess.run(
                 [
                     "bash",
-                    str(ROLE_TEST_SCRIPTS / "db_probe.sh"),
+                    str(ROLE_TEST_SCRIPTS / "db" / "probe.sh"),
                     "verify",
                     "before",
                     "after",
@@ -182,10 +181,10 @@ class TestDatabaseWriterQuiesce(unittest.TestCase):
             docker.write_text(
                 "#!/usr/bin/env bash\n"
                 "set -euo pipefail\n"
-                "case \"$1 $2\" in\n"
+                'case "$1 $2" in\n'
                 "  'stack ls') printf 'docker\\npostgres\\nwordpress\\n' ;;\n"
                 "  'stack services')\n"
-                "    case \"$3\" in\n"
+                '    case "$3" in\n'
                 "      docker) printf 'registry:2\\n' ;;\n"
                 "      postgres) printf 'localhost:5000/postgres_custom:17\\n' ;;\n"
                 "      wordpress) printf 'wordpress:latest\\n' ;;\n"
@@ -200,7 +199,7 @@ class TestDatabaseWriterQuiesce(unittest.TestCase):
                 "    printf 'wordpress-task\\twordpress:latest\\n'\n"
                 "    ;;\n"
                 "  'stop discourse')\n"
-                "    touch \"${DOCKER_STATE:?}/stopped-$2\" \"${DOCKER_STATE:?}/stopped-$3\"\n"
+                '    touch "${DOCKER_STATE:?}/stopped-$2" "${DOCKER_STATE:?}/stopped-$3"\n'
                 "    ;;\n"
                 "  *) printf 'unexpected docker call: %s\\n' \"$*\" >&2; exit 1 ;;\n"
                 "esac\n"

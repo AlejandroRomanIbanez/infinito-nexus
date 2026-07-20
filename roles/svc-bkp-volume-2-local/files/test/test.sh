@@ -68,7 +68,7 @@ if [[ "${ASYNC_ENABLED}" != "true" ]] && [[ "${SWARM_ACTIVE}" == "true" ]]; then
     PROBE_BASE="infinito_${MACHINE_HASH:0:12}_$(date +%s)_${BASHPID}"
     PROBE_PRE_TOKEN="${PROBE_BASE}_pre"
     PROBE_POST_TOKEN="${PROBE_BASE}_post"
-    bash "${DIR}/db_probe.sh" seed "${PROBE_PRE_TOKEN}"
+    bash "${DIR}/db/probe.sh" seed "${PROBE_PRE_TOKEN}"
 fi
 
 echo "Forcing a post-deploy backup run (the service-loader pre-state backup can predate the app volumes and be empty)"
@@ -132,7 +132,7 @@ if [[ "${SWARM_ACTIVE}" == "true" ]]; then
         exit 0
     fi
 
-    bash "${DIR}/db_probe.sh" seed "${PROBE_POST_TOKEN}"
+    bash "${DIR}/db/probe.sh" seed "${PROBE_POST_TOKEN}"
     umask 077
     {
         printf 'MACHINE_HASH=%q\n' "${MACHINE_HASH}"
@@ -147,5 +147,5 @@ if [[ "${SWARM_ACTIVE}" == "true" ]]; then
 fi
 
 bash "${DIR}/restore_cycle.sh"
-bash "${DIR}/db_restore.sh"
+bash "${DIR}/db/restore.sh"
 echo "SYNC PASS COMPLETE: backup verified and restore cycle succeeded"

@@ -11,8 +11,10 @@ if [[ ! -f "${PENDING}" ]]; then
 	echo "FAIL: database restore handoff missing at ${PENDING}"
 	exit 1
 fi
+set -a
 # shellcheck disable=SC1091
 . "${TEST_DIR}/test.env"
+set +a
 # shellcheck disable=SC1090
 . "${PENDING}"
 
@@ -32,7 +34,7 @@ if [[ ! -d "${REPO_DIR}/${NEWEST_GENERATION}" ]]; then
 	exit 1
 fi
 
-bash "${TEST_DIR}/db_restore.sh"
+bash "${TEST_DIR}/db/restore.sh"
 if [[ ! -s "${MANIFEST}" ]]; then
 	echo "FAIL: database restore completed without a restored-database manifest"
 	exit 1
