@@ -50,7 +50,6 @@ BUILDKIT_ENABLED: true # When falsy the compose wrapper forces the legacy builde
 ASYNC_ENABLED: "{{ not MODE_DEBUG | bool }}" # Activate async, deactivated for debugging
 ASYNC_TIME: "{{ 300 if ASYNC_ENABLED | bool else omit }}" # Run for max 5min
 ASYNC_POLL: "{{ 0 if ASYNC_ENABLED | bool else 10 }}" # Don't wait for task
-TEST_E2E_SWARM_DRILL: false # Gate for the orchestrated swarm CI DR drill; only it may replay database dumps on a live swarm
 
 APPLICATIONS_WHITELIST: [] # nocheck: unused-var
 
