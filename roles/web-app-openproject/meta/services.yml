@@ -135,6 +135,7 @@ openproject:
       http: 80
   proxy:
     service_key: web
+    internal_port: 8080
   run_after:
     - web-app-keycloak
   lifecycle: beta
