@@ -6,13 +6,12 @@
 - name: 🔍 Resolve expected OpenProject base URL for the integration
   set_fact:
     nextcloud_op_expected_url: "{{ lookup('tls', 'web-app-openproject', 'url.base') | trim }}"
-    nextcloud_op_web_container: "{{ lookup('config', 'web-app-openproject', 'services.web.name') }}"
     nextcloud_op_storage_name: "Nextcloud ({{ lookup('domain', 'web-app-nextcloud') }})"
   changed_when: false
 
 - name: 🔍 Probe whether the OpenProject partner container is running
-  command: >
-    container inspect -f '{% raw %}{{.State.Running}}{% endraw %}' {{ nextcloud_op_web_container }}
+  shell: >
+    container inspect -f '{% raw %}{{.State.Running}}{% endraw %}' {{ NEXTCLOUD_OPENPROJECT_CONTAINER_ADDRESS }}
   register: integration_openproject_partner_running
   changed_when: false
   failed_when: false
