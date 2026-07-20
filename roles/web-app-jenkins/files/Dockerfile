@@ -4,8 +4,8 @@ FROM ${JENKINS_IMAGE}:${JENKINS_VERSION}
 
 USER root
 RUN rm -rf /var/lib/apt/lists/* \
-    && apt-get update \
-    && apt-get install -y --no-install-recommends ca-certificates curl gnupg \
+    && apt-get -o Acquire::Retries=3 update \
+    && apt-get -o Acquire::Retries=3 install -y --no-install-recommends ca-certificates curl gnupg \
     && rm -rf /var/lib/apt/lists/*
 
 # The OIC plugin uses the JVM's own HTTPS stack to fetch Keycloak's
