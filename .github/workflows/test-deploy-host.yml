@@ -1,4 +1,4 @@
-name: "🖥️ Test: Deploy (host)"
+name: "💻 Test: Deploy (host)"
 
 on:
   workflow_call:
@@ -45,7 +45,7 @@ env:
   INFINITO_BLACKLIST: ${{ inputs.blacklist }}
 jobs:
   discover:
-    name: 🖥️ Host (${{ inputs.distros }})${{ inputs.marker }}
+    name: 💻 Host (${{ inputs.distros }})${{ inputs.marker }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -96,7 +96,7 @@ jobs:
         run: ./scripts/github/resolve/output_apps.sh
 
   host:
-    name: 🖥️${{ matrix.apps }}${{ matrix.variant && format(' {0}',matrix.variant) || '' }}
+    name: 💻 ${{ matrix.apps }}${{ matrix.variant && format(' {0}',matrix.variant) || '' }}
     if: needs.discover.outputs.apps != '' && needs.discover.outputs.apps != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 345

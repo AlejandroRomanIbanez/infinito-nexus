@@ -50,7 +50,7 @@ jobs:
       marker: ${{ inputs.marker }}
 
   host:
-    name: 🖥️ Host
+    name: 💻 Host
     if: ${{ contains(inputs.modes, 'host') }}
     uses: ./.github/workflows/test-deploy-host.yml
     with:
