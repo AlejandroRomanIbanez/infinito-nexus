@@ -69,8 +69,7 @@ class TestRender(unittest.TestCase):
         self.assertIn("### 🐳 compose (max jobs: 54)", out)
         self.assertIn("### 💻 host (max jobs: 10)", out)
         self.assertIn(
-            "| 🆔 Id | 📛 Name | 📊 Weight | 🎯 Variant "
-            "| 🐧 Distros | ✅ Triggered |",
+            "| 🆔 Id | 📛 Name | 📊 Weight | 🎯 Variant | 🐧 Distros | ✅ Triggered |",
             out,
         )
         self.assertIn("| 2 | web-app-b | 7 | 0 | debian | ❌ |", out)

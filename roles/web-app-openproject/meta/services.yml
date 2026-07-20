@@ -57,7 +57,7 @@ seeder:
   mem_limit: 512m
   pids_limit: 256
   min_storage: 1GB
-  # nocheck: single run-once seeder. Concurrent replicas race on one Postgres (duplicate-key) and never converge; the seeder migrates/seeds once then exits.
+  # nocheck: single-replica run-once seeder. Concurrent replicas race on one Postgres (duplicate-key) and never converge; the seeder migrates/seeds once then exits.
   replicas: 1
 cron:
   name: openproject-cron
