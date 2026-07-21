@@ -52,6 +52,13 @@ jobs:
       - if: ${{ !env.ACT }}
         uses: actions/checkout@v7.0.0
 
+      - name: 🐍 Install guide + compose deps (Act runner only)
+        if: ${{ env.ACT }}
+        shell: bash
+        run: |
+          pip install --quiet --break-system-packages pyyaml
+          apt-get update -qq && apt-get install -y -qq gettext-base jq
+
       - name: 🎲 Select the role, distro, and deploy mode
         shell: bash
         run: |
