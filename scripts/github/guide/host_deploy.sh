@@ -20,12 +20,13 @@ docker exec "${PREP}" sh -c '
 	set -e
 	if command -v apt-get >/dev/null 2>&1; then
 		apt-get update
-		DEBIAN_FRONTEND=noninteractive apt-get install -y systemd systemd-sysv
+		DEBIAN_FRONTEND=noninteractive apt-get install -y systemd systemd-sysv libnss-myhostname
 	elif command -v dnf >/dev/null 2>&1; then
 		dnf install -y systemd
 	elif command -v pacman >/dev/null 2>&1; then
 		pacman -Sy --noconfirm systemd
 	fi
+	grep -q myhostname /etc/nsswitch.conf || sed -i "s/^hosts:.*/& myhostname/" /etc/nsswitch.conf
 	[ -e /sbin/init ] || ln -sf /lib/systemd/systemd /sbin/init
 '
 BOOT_IMAGE="guide-boot:${GUIDE_ROLE}"
