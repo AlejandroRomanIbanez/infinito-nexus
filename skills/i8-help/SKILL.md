@@ -1,5 +1,5 @@
 ---
-name: i8-cheatsheet
+name: i8-help
 description: >
   Print every operator cheatsheet prompt of this repository. Use when the
   operator asks for the cheatsheet, the available workflow prompts, or which
