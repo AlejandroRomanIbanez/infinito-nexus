@@ -98,3 +98,20 @@ jobs:
           sed -i "s#<your-ssh-public-key>#ssh-ed25519 AAAA_TEST_DUMMY_KEY github-ci-dummy@infinito#" /tmp/run.sh
           source scripts/meta/env/load.sh
           docker exec -i "${INFINITO_CONTAINER}" bash -s < /tmp/run.sh
+
+      - name: 🩺 Collect rescue diagnostics (recursive DiD snapshot)
+        if: failure()
+        timeout-minutes: 25
+        shell: bash
+        run: |
+          INFINITO_RESCUE_DIAGNOSTICS_DIR="/tmp/rescue-diagnostics/${GUIDE_ROLE}" \
+            python3 utils/diagnostics/container.py \
+            "${GUIDE_ROLE}" "guide ${GUIDE_MODE} post-deploy failure" || true
+
+      - name: ⬆️ Upload rescue diagnostics
+        if: ${{ always() && !env.ACT }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: rescue-diagnostics-guide-${{ env.GUIDE_ROLE }}
+          path: /tmp/rescue-diagnostics/
+          if-no-files-found: ignore
