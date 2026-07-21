@@ -117,7 +117,7 @@ docker run --rm -it \
   -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
   -e APP="$APP" -e HOST="$HOST" -e TLS_MODE="$TLS_MODE" -e SSH_PUBLIC_KEY="$SSH_PUBLIC_KEY" \
   ghcr.io/infinito-nexus/core/debian bash -c '
-    INVENTORY=/etc/infinito.nexus/inventories/prod
+    INVENTORY=/etc/infinito.nexus/inventories/production
     infinito administration inventory provision "$INVENTORY" \
       --inventory-file "$INVENTORY/devices.yml" \
       --host "$HOST" \

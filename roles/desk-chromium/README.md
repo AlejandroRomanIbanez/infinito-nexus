@@ -60,7 +60,7 @@ source scripts/meta/env/load.sh
 APP=desk-chromium
 TLS_MODE=self_signed
 SSH_PUBLIC_KEY="<your-ssh-public-key>"
-INVENTORY=inventories/prod
+INVENTORY=inventories/production
 infinito administration inventory provision "$INVENTORY" \
   --inventory-file "$INVENTORY/devices.yml" \
   --host localhost \
