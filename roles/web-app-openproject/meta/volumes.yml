@@ -18,6 +18,7 @@ pgdata_dummy:
   # anonymous volumes for the unused embedded postgres data path.
   type: volume
   name: openproject_pgdata_dummy
+  # nocheck: nfs-false-data-loss  Reason: throwaway dummy, never read or written, re-provisioned on redeploy
   nfs: false
   mounts:
     - service: proxy
