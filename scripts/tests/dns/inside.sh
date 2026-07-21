@@ -3,7 +3,7 @@
 # Inputs via env (set on the container by parallel.sh):
 #   INFINITO_SRC_DIR      repo path baked into the image (from the image ENV).
 #   INFINITO_IMAGE        the CI image the inner dev stack should run.
-#   INFINITO_PULL_POLICY  compose pull policy for that image (default: always).
+#   INFINITO_PULL_POLICY  compose pull policy for that image.
 #   GHCR_USER, GHCR_TOKEN optional creds to pull INFINITO_IMAGE from GHCR.
 
 set -uo pipefail
@@ -39,8 +39,6 @@ fi
 if [[ -n "${GHCR_TOKEN:-}" ]]; then
 	echo "${GHCR_TOKEN}" | docker login ghcr.io -u "${GHCR_USER:?}" --password-stdin
 fi
-
-export INFINITO_PULL_POLICY="${INFINITO_PULL_POLICY:-always}"
 
 cd "${INFINITO_SRC_DIR:?}" || exit 1
 make compose-up
