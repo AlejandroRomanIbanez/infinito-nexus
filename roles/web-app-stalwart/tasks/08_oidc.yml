@@ -4,14 +4,14 @@
 # and disables password login — see the role README for the full rationale.
 
 # OIDC directory (Keycloak)
-- name: "List existing Stalwart directories"
+- name: "📖 List existing Stalwart directories"
   include_tasks: jmap_call.yml
   vars:
     stalwart_jmap_body: >-
       {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
           'methodCalls': [['x:Directory/get', {'ids': none}, 'c0']]} | to_json }}
 
-- name: "Resolve existing Keycloak OIDC directory id (if any)"
+- name: "🔍 Resolve existing Keycloak OIDC directory id (if any)"
   ansible.builtin.set_fact:
     stalwart_oidc_dir_id: >-
       {{ (stalwart_jmap.methodResponses[0][1].list
@@ -19,7 +19,7 @@
           | selectattr('issuerUrl', 'equalto', OIDC.CLIENT.ISSUER_URL)
           | map(attribute='id') | first) | default('') }}
 
-- name: "Create the Keycloak OIDC authentication directory"
+- name: "📁 Create the Keycloak OIDC authentication directory"
   include_tasks: jmap_call.yml
   vars:
     stalwart_jmap_body: >-
@@ -34,14 +34,14 @@
           }}}, 'c0']]} | to_json }}
   when: stalwart_oidc_dir_id | length == 0
 
-- name: "Capture the newly created OIDC directory id"
+- name: "📖 Capture the newly created OIDC directory id"
   ansible.builtin.set_fact:
     stalwart_oidc_dir_id: "{{ stalwart_jmap.methodResponses[0][1].created.kc.id }}"
   when: stalwart_oidc_dir_id | length == 0
 
 # Clear requireAudience: Keycloak tokens carry aud=account, so pinning it would
 # reject them as InvalidAudience. The username claim still identifies the user.
-- name: "Clear the OIDC directory's required audience"
+- name: "🧹 Clear the OIDC directory's required audience"
   include_tasks: jmap_call.yml
   vars:
     stalwart_jmap_body: >-
@@ -55,28 +55,28 @@
 # defaultUserRoleIds — leaving User accounts without ImapAuthenticate (mailbox login
 # then fails silently with an IMAP EOF). Seed the built-in roles like Stalwart's
 # own bootstrap does.
-- name: "List Stalwart built-in roles"
+- name: "📖 List Stalwart built-in roles"
   include_tasks: jmap_call.yml
   vars:
     stalwart_jmap_body: >-
       {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
           'methodCalls': [['x:Role/get', {'ids': none}, 'c0']]} | to_json }}
 
-- name: "Resolve built-in Stalwart role ids by description"
+- name: "🔍 Resolve built-in Stalwart role ids by description"
   ansible.builtin.set_fact:
     stalwart_role_user: "{{ stalwart_jmap.methodResponses[0][1].list | selectattr('description', 'equalto', 'User') | map(attribute='id') | first | default('') }}"
     stalwart_role_group: "{{ stalwart_jmap.methodResponses[0][1].list | selectattr('description', 'equalto', 'Group') | map(attribute='id') | first | default('') }}"
     stalwart_role_tenant: "{{ stalwart_jmap.methodResponses[0][1].list | selectattr('description', 'equalto', 'Tenant Administrator') | map(attribute='id') | first | default('') }}"
     stalwart_role_admin: "{{ stalwart_jmap.methodResponses[0][1].list | selectattr('description', 'equalto', 'System Administrator') | map(attribute='id') | first | default('') }}"
 
-- name: "Ensure the built-in Stalwart 'User' role exists (grants mailbox permissions)"
+- name: "✅ Ensure the built-in Stalwart 'User' role exists (grants mailbox permissions)"
   ansible.builtin.assert:
     that: stalwart_role_user | length > 0
     fail_msg: "Stalwart built-in 'User' role not found; cannot grant IMAP/SMTP mailbox permissions."
 
 # Map<Id> is JSON-encoded as {"<id>": true}; a whole-object set clears+replaces it.
 # defaults mirror crates/common/src/manager/defaults.rs (admin/tenant also get User).
-- name: "Assemble default role-id maps for the authentication singleton"
+- name: "🔧 Assemble default role-id maps for the authentication singleton"
   ansible.builtin.set_fact:
     stalwart_auth_defaults:
       directoryId: "{{ stalwart_oidc_dir_id }}"
@@ -86,18 +86,18 @@
       defaultAdminRoleIds: "{{ {stalwart_role_admin: true} | combine({stalwart_role_user: true}) if stalwart_role_admin | length > 0 else {stalwart_role_user: true} }}"
 
 # Point authentication at the OIDC directory
-- name: "Read the Stalwart authentication singleton"
+- name: "📖 Read the Stalwart authentication singleton"
   include_tasks: jmap_call.yml
   vars:
     stalwart_jmap_body: >-
       {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
           'methodCalls': [['x:Authentication/get', {'ids': none}, 'c0']]} | to_json }}
 
-- name: "Record whether the authentication singleton exists"
+- name: "🔧 Record whether the authentication singleton exists"
   ansible.builtin.set_fact:
     stalwart_auth_exists: "{{ (stalwart_jmap.methodResponses[0][1].list | length) > 0 }}"
 
-- name: "Create the authentication singleton (OIDC directory + default roles)"
+- name: "📁 Create the authentication singleton (OIDC directory + default roles)"
   include_tasks: jmap_call.yml
   vars:
     stalwart_jmap_body: >-
@@ -106,7 +106,7 @@
             stalwart_auth_defaults}}, 'c0']]} | to_json }}
   when: not (stalwart_auth_exists | bool)
 
-- name: "Point the authentication singleton at Keycloak + seed default roles"
+- name: "🔗 Point the authentication singleton at Keycloak + seed default roles"
   include_tasks: jmap_call.yml
   vars:
     stalwart_jmap_body: >-
@@ -118,23 +118,23 @@
 # Trusted-network relay: let the internal nets relay without SMTP AUTH (the
 # no-reply account has no password under OIDC). `remote_ip == '<cidr>'` is a
 # subnet match.
-- name: "Build the trusted-network relay expression"
+- name: "⚙️ Build the trusted-network relay expression"
   ansible.builtin.set_fact:
     stalwart_relay_expr: >-
       !is_empty(authenticated_as){% for net in STALWART_TRUSTED_NETWORKS %} || remote_ip == '{{ net }}'{% endfor %}
 
-- name: "Read the RCPT stage singleton"
+- name: "📖 Read the RCPT stage singleton"
   include_tasks: jmap_call.yml
   vars:
     stalwart_jmap_body: >-
       {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
           'methodCalls': [['x:MtaStageRcpt/get', {'ids': none}, 'c0']]} | to_json }}
 
-- name: "Record whether the RCPT stage singleton exists"
+- name: "🔧 Record whether the RCPT stage singleton exists"
   ansible.builtin.set_fact:
     stalwart_rcpt_exists: "{{ (stalwart_jmap.methodResponses[0][1].list | length) > 0 }}"
 
-- name: "Create the RCPT stage with trusted-network relay"
+- name: "📁 Create the RCPT stage with trusted-network relay"
   include_tasks: jmap_call.yml
   vars:
     stalwart_jmap_body: >-
@@ -143,7 +143,7 @@
             {'allowRelaying': {'else': stalwart_relay_expr | trim}}}}, 'c0']]} | to_json }}
   when: not (stalwart_rcpt_exists | bool)
 
-- name: "Update the RCPT stage with trusted-network relay"
+- name: "🔄 Update the RCPT stage with trusted-network relay"
   include_tasks: jmap_call.yml
   vars:
     stalwart_jmap_body: >-

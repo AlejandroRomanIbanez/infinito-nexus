@@ -1,5 +1,5 @@
 ---
-- name: "DNS (Cloudflare) for Stalwart"
+- name: "🔧 DNS (Cloudflare) for Stalwart"
   include_role:
     name: sys-dns-cloudflare-records
   when: DNS_PROVIDER | lower == 'cloudflare'
@@ -17,7 +17,7 @@
         proxied: false
       - type: CNAME
         zone: "{{ STALWART_DOMAIN_DNS_ZONE }}"
-        name: "autoconfig.{{ STALWART_DOMAIN_DNS_ZONE }}"
+        name: "🔧 autoconfig.{{ STALWART_DOMAIN_DNS_ZONE }}"
         solo: true
         value: "{{ STALWART_HOSTNAME }}"
       - { type: MX, zone: "{{ STALWART_DOMAIN_DNS_ZONE }}", name: "{{ STALWART_DOMAIN }}", solo: true, value: "{{ STALWART_HOSTNAME }}", priority: 10 }
@@ -105,7 +105,7 @@
         port: 443
         value: "{{ STALWART_HOSTNAME }}"
 
-- name: "rDNS (Hetzner Cloud) for Stalwart"
+- name: "🔧 rDNS (Hetzner Cloud) for Stalwart"
   include_role:
     name: sys-dns-hetzner-rdns
   when: HOSTING_PROVIDER | lower == 'hetzner'

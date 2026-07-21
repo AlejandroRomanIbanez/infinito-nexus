@@ -792,10 +792,10 @@
     },
     {% include "clients/default.json.j2" %}
 {% if KEYCLOAK_STALWART_WEBUI_ENABLED | bool %}
-    ,{% include "clients/stalwart_webui.json.j2" %}
+    ,{% include "clients/stalwart/webui.json.j2" %}
 {% endif %}
 {% if KEYCLOAK_STALWART_WEBMAIL_ENABLED | bool %}
-    ,{% include "clients/stalwart_webmail.json.j2" %}
+    ,{% include "clients/stalwart/webmail.json.j2" %}
 {% endif %}
   ],
   "clientScopes": [

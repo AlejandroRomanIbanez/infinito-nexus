@@ -10,12 +10,11 @@ database_password: "{{ lookup('config', application_id, 'credentials.database_pa
 STALWART_INSTANCE_DIR: "{{ lookup('container', application_id, 'directories.instance') }}"
 STALWART_VOLUMES_DIR: "{{ lookup('container', application_id, 'directories.volumes') }}"
 STALWART_CONFIG_DIR: "{{ [ STALWART_VOLUMES_DIR, 'etc' ] | path_join }}"
-STALWART_CERT_DIR: "{{ [ STALWART_VOLUMES_DIR, 'certs' ] | path_join }}"
 # JSON bootstrap (data store); everything else lives in the database.
 STALWART_CONFIG_FILE: "{{ [ STALWART_CONFIG_DIR, 'config.json' ] | path_join }}"
 
 # Stalwart's in-container HTTP listener (WebAdmin, management API, JMAP).
-container_port: 8080
+container_port: "{{ lookup('config', application_id, 'services.stalwart.ports.internal.http') }}"
 # Management endpoints on the internal HTTP listener (bypass the public proxy);
 # reached via `compose exec stalwart curl`, hence localhost.
 STALWART_LOCAL_BASE_URL: "http://localhost:{{ container_port }}"
@@ -29,27 +28,20 @@ STALWART_HOSTNAME: "{{ STALWART_EMAIL.host }}"
 STALWART_HOSTNAME_DNS_ZONE: "{{ STALWART_HOSTNAME | to_zone }}"
 
 # Docker
-STALWART_VERSION: "{{ lookup('config', application_id, 'services.stalwart.version') }}"
-STALWART_IMAGE: "{{ lookup('config', application_id, 'services.stalwart.image') }}"
 STALWART_CONTAINER: "{{ lookup('config', application_id, 'services.stalwart.name') }}"
-STALWART_WEBMAIL_IMAGE: "{{ lookup('config', application_id, 'services.webmail.image') }}"
-STALWART_WEBMAIL_VERSION: "{{ lookup('config', application_id, 'services.webmail.version') }}"
 
 # Antivirus (ClamAV milter scanned on the SMTP DATA stage)
 STALWART_ANTIVIRUS_ENABLED: "{{ lookup('config', application_id, 'services.clamav.enabled') | bool }}"
-STALWART_CLAMAV_IMAGE: "{{ lookup('config', application_id, 'services.clamav.image') }}"
-STALWART_CLAMAV_VERSION: "{{ lookup('config', application_id, 'services.clamav.version') }}"
 STALWART_CLAMAV_HOST: "clamav"
-STALWART_CLAMAV_MILTER_PORT: 7357
+STALWART_CLAMAV_MILTER_PORT: "{{ lookup('config', application_id, 'services.clamav.ports.internal.milter') }}"
 # Milter timeouts (ms): with fail-open (tempFailOnError:false), short timeouts let
 # Stalwart accept mail while clamd warms up instead of blocking the DATA stage.
 STALWART_CLAMAV_MILTER_TIMEOUT_CONNECT_MS: 5000
 STALWART_CLAMAV_MILTER_TIMEOUT_COMMAND_MS: 5000
 STALWART_CLAMAV_MILTER_TIMEOUT_DATA_MS: 15000
-STALWART_CLAMAV_VOLUME: "stalwart_clamav_data"
 STALWART_CLAMAV_MILTER_CONF: "{{ [ STALWART_CONFIG_DIR, 'clamav-milter.conf' ] | path_join }}"
 # webmail is the secondary canonical (lookup('domain') only exposes the primary).
-STALWART_WEBMAIL_DOMAIN: "{{ lookup('config', application_id, 'server.domains.canonical.webmail') }}"
+STALWART_WEBMAIL_DOMAIN: "{{ lookup('config', application_id, 'domains.canonical.webmail') }}"
 STALWART_WEBMAIL_HTTP_PORT: "{{ lookup('config', application_id, 'services.webmail.ports.local.http') }}"
 # Roundcube OAuth config include (rendered only when SSO is enabled).
 STALWART_WEBMAIL_CONFIG_DIR: "{{ [ STALWART_VOLUMES_DIR, 'webmail' ] | path_join }}"
@@ -72,15 +64,10 @@ STALWART_WEBUI_LOCAL_URL: "file://{{ STALWART_WEBUI_CONTAINER_FILE }}"
 # live JMAP x:Application/get response for the pinned Stalwart version).
 STALWART_WEBUI_APP_DESCRIPTION: "Stalwart Web Interface"
 
-# Volumes
-STALWART_DATA_VOLUME: "stalwart_data"
-# Named volume for the image's declared VOLUME /etc/stalwart (config bind mounts
-# overlay it) — prevents a per-deploy anonymous volume that sys-ctl-hlth-volumes flags.
-STALWART_CONFIG_VOLUME: "stalwart_config"
-STALWART_WEBMAIL_VOLUME: "stalwart_webmail_data"
 
 # Network
 STALWART_IP4_PUBLIC: "{{ DOCKER_PUBLIC_BIND_HOST }}"
+STALWART_ACTIVE_PROVIDER: "{{ MAIL_PROVIDER == application_id }}"
 
 # Credentials
 STALWART_ADMIN_USER: "admin"

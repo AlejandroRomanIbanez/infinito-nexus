@@ -2,21 +2,21 @@
 # The WebUI bundle (a JMAP "Application" record) is staged locally in 01_core;
 # point the record's resourceUrl at that file:// path and re-unpack.
 
-- name: "List Stalwart Application records"
+- name: "📖 List Stalwart Application records"
   include_tasks: jmap_call.yml
   vars:
     stalwart_jmap_body: >-
       {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
           'methodCalls': [['x:Application/get', {'ids': none}, 'c0']]} | to_json }}
 
-- name: "Resolve the WebUI Application id"
+- name: "🔍 Resolve the WebUI Application id"
   ansible.builtin.set_fact:
     stalwart_webui_app_id: >-
       {{ (stalwart_jmap.methodResponses[0][1].list
           | selectattr('description', 'equalto', STALWART_WEBUI_APP_DESCRIPTION)
           | map(attribute='id') | first) | default('') }}
 
-- name: "Ensure the WebUI Application record was found"
+- name: "✅ Ensure the WebUI Application record was found"
   ansible.builtin.assert:
     that:
       - stalwart_webui_app_id | length > 0
@@ -26,7 +26,7 @@
       re-validate 10_webadmin.yml against this Stalwart version.
     quiet: true
 
-- name: "Point the WebUI Application at the locally-staged bundle"
+- name: "🔗 Point the WebUI Application at the locally-staged bundle"
   include_tasks: jmap_call.yml
   vars:
     stalwart_jmap_body: >-
@@ -36,7 +36,7 @@
             'c0']]} | to_json }}
 
 # UpdateApps force-unpacks from resourceUrl (the /api/update/webadmin endpoint is gone).
-- name: "Unpack the WebUI bundle from the local file"
+- name: "📦 Unpack the WebUI bundle from the local file"
   include_tasks: jmap_call.yml
   vars:
     stalwart_jmap_body: >-
@@ -45,7 +45,7 @@
             {'create': {'a': {'@type': 'UpdateApps'}}},
             'c0']]} | to_json }}
 
-- name: "Verify the WebAdmin is served after unpack"
+- name: "🔧 Verify the WebAdmin is served after unpack"
   ansible.builtin.command:
     argv:
       - "{{ BIN_COMPOSE }}"

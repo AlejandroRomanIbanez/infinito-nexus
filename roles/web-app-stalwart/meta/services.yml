@@ -28,23 +28,60 @@ matomo:
   bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
+# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
+container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+  bond: 1
+  enabled: "{{ 'svc-bkp-volume-2-local' in group_names }}"
+  shared: true
 # nocheck: playwright-service-flag — self-provider
 stalwart:
   bond: 1
   enabled: true
   shared: true
   provides: email
+  modes:
+    compose:
+      enabled: true
+    # Not yet swarm-ported (BIN_COMPOSE exec/restart tasks, staged-file binds);
+    # flip to true once the role follows the mailu swarm pattern.
+    swarm:
+      enabled: false
+  # nocheck: default-placement-manager  mail edge at a known IP: MX A-record, PTR and SPF bind to the stack host IP (a floating task's egress IP breaks deliverability); the mail store is NFS-hostile and IS the app — same rationale as web-app-mailu
+  placement: manager
   image: stalwartlabs/stalwart
   version: "v0.16.12"
   # WebUI (WebAdmin) bundle pin, staged by the controller (tasks/10_webadmin.yml);
   # bump together with `version` above.
   webui_version: "v1.0.5"
   name: stalwart
+  # Embedded postgres: the backup drill must hard-stop the project before
+  # snapshotting, or the restored WAL is torn (postgres PANICs on restore).
+  backup:
+    project_hard_restart: true
   min_storage: 20GB
   domain: "{{ lookup('email').domain }}"
   ports:
     local:
       http: 8081
+    public:
+      smtp: 25
+      smtps: 465
+      submission: 587
+      pop3: 110
+      pop3s: 995
+      imap: 143
+      imaps: 993
+      sieve: 4190
+    internal:
+      http: 8080
+      smtp: 25
+      smtps: 465
+      submission: 587
+      pop3: 110
+      pop3s: 995
+      imap: 143
+      imaps: 993
+      sieve: 4190
   run_after:
     - web-app-matomo
   lifecycle: beta
@@ -76,6 +113,8 @@ webmail:
   ports:
     local:
       http: 8089
+    internal:
+      http: 80
 # nocheck: dynamic-flag — role-local sub-component, always deployed with the stack
 # nocheck: playwright-service-flag — antivirus milter, covered by role deploy test
 clamav:
@@ -83,6 +122,9 @@ clamav:
   shared: false
   image: clamav/clamav
   version: "1.5.3"
+  ports:
+    internal:
+      milter: 7357
   # clamd holds the full signature DB in memory.
   cpus: "1.0"
   mem_reservation: 1g

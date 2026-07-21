@@ -3,6 +3,8 @@
 // (config/*.php). Client secret comes from ROUNDCUBEMAIL_OAUTH_CLIENT_SECRET so
 // it stays out of this world-readable file. Login -> Keycloak, then XOAUTH2 to
 // Stalwart.
+// Rendered even without SSO (the bind source must exist); the body self-gates.
+{% if STALWART_SSO_ENABLED | bool %}
 
 // Reached only over TLS via the reverse proxy (which speaks HTTP to this
 // container); force https so generated URLs (incl. the OAuth redirect_uri, which
@@ -40,3 +42,4 @@ $config['smtp_conn_options'] = $stalwart_tls_conn_options;
 $config['smtp_host'] = 'ssl://stalwart:465';
 $config['smtp_user'] = '%u';
 $config['smtp_pass'] = '%p';
+{% endif %}

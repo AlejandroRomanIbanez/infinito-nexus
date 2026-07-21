@@ -3,7 +3,7 @@
 # brings the client to existing realms too (desired = the import's client
 # object, one SPOT). Own client because the WebAdmin SPA needs public+PKCE
 # and Stalwart's required audience mapper — the shared client is neither.
-- name: "Ensure the stalwart-webui public client"
+- name: "✅ Ensure the stalwart-webui public client"
   vars:
     kc_desired: >-
       {{

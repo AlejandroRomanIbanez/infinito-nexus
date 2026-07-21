@@ -1,49 +1,41 @@
 {% include 'roles/sys-svc-compose/templates/base.yml.j2' %}
 
-  stalwart:
-{% set service_name = 'stalwart' %}
-    image: "{{ STALWART_IMAGE }}:{{ STALWART_VERSION }}"
-    container_name: {{ STALWART_CONTAINER }}
+  {% set service_name = 'stalwart' %}
+  {{ service_name }}:
+    {{ lookup('compose_only', 'container_name', STALWART_CONTAINER) }}
+    {{ lookup('container_image', application_id, service_name) }}
     hostname: {{ STALWART_HOSTNAME }}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.stalwart.ports.local.http') }}:{{ container_port }}"
-{% if application_id == MAIL_PROVIDER %}
-      # Only the active MAIL_PROVIDER owns the public mail ports.
-      - "{{ STALWART_IP4_PUBLIC }}:25:25"
-      - "{{ STALWART_IP4_PUBLIC }}:465:465"
-      - "{{ STALWART_IP4_PUBLIC }}:587:587"
-      - "{{ STALWART_IP4_PUBLIC }}:110:110"
-      - "{{ STALWART_IP4_PUBLIC }}:995:995"
-      - "{{ STALWART_IP4_PUBLIC }}:143:143"
-      - "{{ STALWART_IP4_PUBLIC }}:993:993"
-      - "{{ STALWART_IP4_PUBLIC }}:4190:4190"
-{% endif %}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {% if STALWART_ACTIVE_PROVIDER | bool %}
+    {{ lookup('container_ports',
+              ['stalwart', 'http', DOCKER_BIND_HOST],
+              ['stalwart', 'smtp', STALWART_IP4_PUBLIC],
+              ['stalwart', 'smtps', STALWART_IP4_PUBLIC],
+              ['stalwart', 'submission', STALWART_IP4_PUBLIC],
+              ['stalwart', 'pop3', STALWART_IP4_PUBLIC],
+              ['stalwart', 'pop3s', STALWART_IP4_PUBLIC],
+              ['stalwart', 'imap', STALWART_IP4_PUBLIC],
+              ['stalwart', 'imaps', STALWART_IP4_PUBLIC],
+              ['stalwart', 'sieve', STALWART_IP4_PUBLIC]) | indent(4) }}
+    {% else %}
+    {# Only the active MAIL_PROVIDER owns the public mail ports; a legacy
+       instance keeps just its reverse-proxied http port. #}
+    {{ lookup('container_ports', ['stalwart', 'http', DOCKER_BIND_HOST]) | indent(4) }}
+    {% endif %}
     environment:
       # Pins the break-glass admin (instead of a random one) for API provisioning.
       STALWART_RECOVERY_ADMIN: "{{ STALWART_ADMIN_USER }}:{{ STALWART_ADMIN_PASSWORD }}"
-    volumes:
-      - "data:/var/lib/stalwart"
-      # Named volume for the image's VOLUME /etc/stalwart so Docker doesn't mint a
-      # fresh anonymous one each deploy (sys-ctl-hlth-volumes flags those).
-      - "config:/etc/stalwart"
-      # 0.16 JSON bootstrap (data store); the rest of the config lives in the DB.
-      - "{{ STALWART_CONFIG_FILE }}:/etc/stalwart/config.json:ro"
-      # WebUI (WebAdmin) bundle staged by the controller (see 10_webadmin.yml).
-      - "{{ STALWART_WEBUI_LOCAL_FILE }}:{{ STALWART_WEBUI_CONTAINER_FILE }}:ro"
-      # Platform TLS cert for the mail listeners (referenced via x:Certificate).
-      - "{{ STALWART_CERT_DIR }}:/etc/stalwart/certs:ro"
-{{ lookup('container_depends_on', application_id) }}
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
+    {{ lookup('container_depends_on', application_id) | indent(4) }}
+    {{ lookup('container_networks') | indent(4) }}
 
-  # Browser webmail pointed at Stalwart (reverse-proxied at webmail.<domain>).
-  webmail:
-{% set service_name = 'webmail' %}
-    container_name: {{ STALWART_CONTAINER }}_webmail
-    image: {{ STALWART_WEBMAIL_IMAGE }}:{{ STALWART_WEBMAIL_VERSION }}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    ports:
-      - "{{ DOCKER_BIND_HOST }}:{{ STALWART_WEBMAIL_HTTP_PORT }}:80"
+  {# Browser webmail pointed at Stalwart (reverse-proxied at webmail.<domain>). #}
+  {% set service_name = 'webmail' %}
+  {{ service_name }}:
+    {{ lookup('compose_only', 'container_name', STALWART_CONTAINER ~ '_webmail') }}
+    {{ lookup('container_image', application_id, service_name) }}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {{ lookup('container_ports', ['webmail', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     environment:
       ROUNDCUBEMAIL_DEFAULT_HOST: "ssl://stalwart"
       ROUNDCUBEMAIL_DEFAULT_PORT: "993"
@@ -51,37 +43,26 @@
       ROUNDCUBEMAIL_SMTP_SERVER: "ssl://stalwart"
       ROUNDCUBEMAIL_SMTP_PORT: "465"
       ROUNDCUBEMAIL_DB_TYPE: "sqlite"
-{% if STALWART_SSO_ENABLED | bool %}
+      {% if STALWART_SSO_ENABLED | bool %}
       # Keycloak SSO client secret (kept out of the oauth.inc.php include).
       ROUNDCUBEMAIL_OAUTH_CLIENT_SECRET: "{{ OIDC.CLIENT.SECRET }}"
-{% endif %}
-    volumes:
-      - "webmail_data:/var/www/html"
-{% if STALWART_SSO_ENABLED | bool %}
-      - "{{ STALWART_WEBMAIL_OAUTH_CONFIG }}:/var/roundcube/config/oauth.inc.php:ro"
-{% endif %}
-    depends_on:
-      - stalwart
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
-{% if STALWART_ANTIVIRUS_ENABLED | bool %}
+      {% endif %}
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
+    {{ lookup('depends_on', ['stalwart']) }}
+    {{ lookup('container_networks') | indent(4) }}
+  {% if STALWART_ANTIVIRUS_ENABLED | bool %}
 
-  # ClamAV attachment scanner — Stalwart calls it as an SMTP DATA-stage milter.
-  clamav:
-{% set service_name = 'clamav' %}
-    container_name: {{ STALWART_CONTAINER }}_clamav
-    image: {{ STALWART_CLAMAV_IMAGE }}:{{ STALWART_CLAMAV_VERSION }}
-{% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+  {# ClamAV attachment scanner — Stalwart calls it as an SMTP DATA-stage milter. #}
+  {% set service_name = 'clamav' %}
+  {{ service_name }}:
+    {{ lookup('compose_only', 'container_name', STALWART_CONTAINER ~ '_clamav') }}
+    {{ lookup('container_image', application_id, service_name) }}
+    {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     environment:
       CLAMAV_NO_MILTERD: "false"
-    volumes:
-      - "clamav_data:/var/lib/clamav"
-      - "{{ STALWART_CLAMAV_MILTER_CONF }}:/etc/clamav/clamav-milter.conf:ro"
-{% include 'roles/sys-svc-container/templates/networks.yml.j2' %}
-{% endif %}
+    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
+    {{ lookup('container_networks') | indent(4) }}
+  {% endif %}
 
-{% set _extra_volumes = {'data': {'name': STALWART_DATA_VOLUME}, 'config': {'name': STALWART_CONFIG_VOLUME}, 'webmail_data': {'name': STALWART_WEBMAIL_VOLUME}} %}
-{% if STALWART_ANTIVIRUS_ENABLED | bool %}
-{%   set _extra_volumes = _extra_volumes | combine({'clamav_data': {'name': STALWART_CLAMAV_VOLUME}}) %}
-{% endif %}
-{{ lookup('applications') | compose_volumes(application_id, extra_volumes=_extra_volumes) }}
-{% include 'roles/sys-svc-compose/templates/networks.yml.j2' %}
+{{ lookup('compose_volumes', application_id) }}
+{{ lookup('compose_networks') }}

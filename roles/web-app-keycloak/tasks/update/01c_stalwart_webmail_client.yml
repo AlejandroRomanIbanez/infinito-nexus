@@ -4,7 +4,7 @@
 # object, one SPOT). Own minimal-scope client because Roundcube sends the
 # access token as an XOAUTH2 SASL line that Stalwart caps at 4096 bytes —
 # a full-scope token overflows it and login fails.
-- name: "Ensure the stalwart-webmail confidential client"
+- name: "✅ Ensure the stalwart-webmail confidential client"
   vars:
     kc_desired: >-
       {{

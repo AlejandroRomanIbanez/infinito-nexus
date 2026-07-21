@@ -4,11 +4,11 @@
 # The flush runs after the loader finished, i.e. against the final Keycloak
 # (08_oidc_refresh still waits for the issuer and fails loudly if absent).
 
-- name: "Defer the OIDC refresh to the service-loader post-load flush"
+- name: "📥 Defer the OIDC refresh to the service-loader post-load flush"
   ansible.builtin.set_fact:
     mailu_oidc_restart_pending: true
 
-- name: "Queue the deferred refresh"
+- name: "📥 Queue the deferred refresh"
   include_role:
     name: sys-service-loader
     tasks_from: list_or_shoot.yml

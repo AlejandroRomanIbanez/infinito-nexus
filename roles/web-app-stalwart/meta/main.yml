@@ -1,8 +1,8 @@
 ---
+# nocheck: info-media no official demo video
 galaxy_info:
   author: Alejandro Roman Ibanez
-  description: Run a secure, all-in-one mail and collaboration server with Stalwart — SMTP, IMAP, JMAP, POP3, ManageSieve, CalDAV and CardDAV with built-in
-    spam filtering, delivered from a single hardened service.
+  description: All-in-one Stalwart mail server with SMTP, IMAP, JMAP, POP3, ManageSieve, CalDAV, CardDAV and built-in spam filtering
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach

@@ -68,7 +68,8 @@ fail() {
 }
 
 jmap() {
-	curl -fsS -u "${ADMIN_USER}:${ADMIN_PASS}" \
+	# nocheck: curl-timeout standalone bash harness — the Jinja curl filter is template-only
+	curl -fsS --connect-timeout 5 --max-time 60 -u "${ADMIN_USER}:${ADMIN_PASS}" \
 		-H "Content-Type: application/json" \
 		--data-binary "$1" "${JMAP_URL}"
 }
@@ -90,7 +91,8 @@ docker run -d --name "${CONTAINER}" \
 echo ">>> Waiting for Stalwart readiness"
 ready=0
 for _ in $(seq 1 30); do
-	if curl -fsS -o /dev/null "http://127.0.0.1:${JMAP_PORT}/healthz/ready" 2>/dev/null; then
+	# nocheck: curl-timeout standalone bash harness — the Jinja curl filter is template-only
+	if curl -fsS --connect-timeout 5 --max-time 30 -o /dev/null "http://127.0.0.1:${JMAP_PORT}/healthz/ready" 2>/dev/null; then
 		ready=1
 		break
 	fi
