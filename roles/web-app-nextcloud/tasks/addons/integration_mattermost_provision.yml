@@ -50,6 +50,17 @@
     nextcloud_mm_token_id: "{{ (nextcloud_mm_pat.stdout | from_json | first).id }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
+- name: "⏳ Wait until the Mattermost HTTP API serves (mmctl local mode skips it)"
+  uri_retry:
+    url: "{{ nextcloud_mm_local_url }}/api/v4/system/ping"
+    timeout: "{{ lookup('timeout', 10) | int }}"
+    status_code: 200
+  delegate_to: "{{ NEXTCLOUD_MM_HOST_NODE }}"
+  register: nextcloud_mm_http_ready
+  retries: 30
+  delay: 5
+  until: nextcloud_mm_http_ready is succeeded
+
 - name: 🔧 Provision Mattermost OAuth app for Nextcloud and capture creds (idempotent)
   ansible.builtin.command:
     argv:
@@ -66,6 +77,9 @@
   delegate_to: "{{ NEXTCLOUD_MM_HOST_NODE }}"
   register: nextcloud_mm_provision
   changed_when: false
+  retries: 5
+  delay: 5
+  until: nextcloud_mm_provision is succeeded
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
 - name: 🔎 Parse Mattermost OAuth client credentials
