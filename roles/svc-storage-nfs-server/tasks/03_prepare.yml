@@ -61,7 +61,7 @@
       `svc-swarm-node` member facts were gathered; in single-node/host mode
       the local host's own IP fallback should have applied.
 
-- name: "🧮 Default the NFS mount server to this host when unset (self-mount / single-node)"
+- name: "🧮 Default the NFS mount server to this host when unset"
   ansible.builtin.set_fact:
     storage: >-
       {{ storage | combine({'nfs': {'server': ansible_facts.default_ipv4.address | default('127.0.0.1')}}, recursive=True) }}
