@@ -49,5 +49,6 @@ if [[ -n "${GHCR_TOKEN:-}" ]]; then
 fi
 
 cd "${INFINITO_SRC_DIR:?}" || exit 1
+rm -f .env
 make compose-up
 exec scripts/tests/dns.sh
