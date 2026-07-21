@@ -20,6 +20,9 @@ fi
 
 bash "${INFINITO_SRC_DIR:?}/scripts/tests/dns/install-dockerd.sh"
 
+mkdir -p /etc/docker
+printf '{"storage-driver":"fuse-overlayfs","features":{"containerd-snapshotter":false}}\n' >/etc/docker/daemon.json
+
 systemctl enable --now docker
 
 ready=0
