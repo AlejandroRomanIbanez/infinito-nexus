@@ -7,6 +7,9 @@
     group: root
     mode: "0755"
 
+- name: "📂 Include CI/dev overlay backing for the export base"
+  ansible.builtin.include_tasks: 04_overlay_backing.yml
+
 - name: "📁 Pre-create cluster-shared state subdir under export base"
   ansible.builtin.file:
     path: "{{ STORAGE_NFS_STATE_PATH }}"
