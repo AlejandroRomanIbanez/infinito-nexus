@@ -33,7 +33,7 @@ act-workflow: install-act
 	@bash scripts/tests/deploy/act/workflow.sh
 
 .PHONY: alias
-# Print the agent conversation shortcuts from docs/contributing/tools/agents/alias.md.
+# Print the portable agent shortcuts and the operator's terminal aliases.
 alias:
 	@bash scripts/make/alias.sh
 
