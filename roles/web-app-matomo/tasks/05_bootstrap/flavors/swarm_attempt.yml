@@ -12,7 +12,7 @@
     - matomo_config_exists.rc | int != 0
     - ((matomo_bootstrap_swarm | default({})).rc | default(1)) | int != 0
 
-- name: "🧹 Matomo bootstrap | Swarm: reset the database so the retry takes the clean-install path"
+- name: "🧹 Matomo bootstrap | Swarm: reset the database before retry"
   ansible.builtin.shell: # nocheck: container-exec-resolver  MATOMO_LOCAL_CID resolved at delegate_to runtime; container_address would return a manager-only subshell
     cmd: "container exec -i --user root {{ MATOMO_LOCAL_CID | quote }} php"
     stdin: "{{ lookup('file', 'reset_database.php') }}"
