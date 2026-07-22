@@ -4,6 +4,7 @@ set -eu
 APP_DIR="/var/www/html"
 VOLUME_VERSION_FILE="$APP_DIR/VERSION"
 IMAGE_VERSION_FILE="/usr/src/friendica/VERSION"
+CONFIG_FILE="${FRIENDICA_CONFIG_FILE:?FRIENDICA_CONFIG_FILE env missing}"
 
 slot="${TASK_SLOT:-1}"
 case "$slot" in
@@ -13,9 +14,10 @@ esac
 if [ "$slot" -ne 1 ]; then
   image_version="$(cat "$IMAGE_VERSION_FILE")"
   while true; do
-    if [ -f "$VOLUME_VERSION_FILE" ]; then
+    if [ -f "$VOLUME_VERSION_FILE" ] && [ -f "$CONFIG_FILE" ]; then
       volume_version="$(cat "$VOLUME_VERSION_FILE" 2>/dev/null || echo '')"
-      if [ "$volume_version" = "$image_version" ]; then
+      if [ "$volume_version" = "$image_version" ] \
+        && flock -n "$APP_DIR/friendica-init-sync.lock" true 2>/dev/null; then
         break
       fi
     fi
