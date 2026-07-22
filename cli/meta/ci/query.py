@@ -46,7 +46,12 @@ def expands_variants(mode: str) -> bool:
     return mode == "swarm"
 
 
-def build_filter(mode: str, whitelist: str = "", blacklist: str = "") -> str:
+def build_filter(
+    mode: str,
+    whitelist: str = "",
+    blacklist: str = "",
+    covered: tuple[str, ...] = (),
+) -> str:
     parts = [f"test_{mode} == true"]
     include = ",".join(whitelist.split())
     if include:
@@ -54,7 +59,31 @@ def build_filter(mode: str, whitelist: str = "", blacklist: str = "") -> str:
     exclude = ",".join(blacklist.split())
     if exclude:
         parts.append(f"not (name %% {{{exclude}}})")
+    if covered:
+        parts.append(f"not (name %% {{{','.join(covered)}}})")
     return " and ".join(parts)
+
+
+def compose_covered(
+    mode: str, *, whitelist: str, blacklist: str, lifecycles: str
+) -> tuple[str, ...]:
+    """Roles the same run's compose line already triggers; the host line
+    drops them instead of redeploying them in a second single-node mode.
+    Active only when the caller signals a co-running compose line via
+    INFINITO_HOST_EXCLUDE_COMPOSE."""
+    if mode != "host":
+        return ()
+    flag = os.environ["INFINITO_HOST_EXCLUDE_COMPOSE"].strip().lower()
+    if flag not in ("1", "true", "yes"):
+        return ()
+    return tuple(
+        discover(
+            "compose",
+            whitelist=whitelist,
+            blacklist=blacklist,
+            lifecycles=lifecycles,
+        )
+    )
 
 
 def _sort_spec(mode: str) -> str:
@@ -97,6 +126,7 @@ def _query_argv(
     lifecycles: str,
     job_cap: int | None,
     fmt: list[str],
+    covered: tuple[str, ...] = (),
 ) -> list[str]:
     args = [
         sys.executable,
@@ -105,7 +135,7 @@ def _query_argv(
         "--deploy-mode",
         mode,
         "--filter",
-        build_filter(mode, whitelist, blacklist),
+        build_filter(mode, whitelist, blacklist, covered),
         "--sort",
         _sort_spec(mode),
         *fmt,
@@ -135,6 +165,9 @@ def discover(
         job_cap = max_jobs(mode, blacklist=blacklist, lifecycles=lifecycles)
         if job_cap == 0:
             return []
+    covered = compose_covered(
+        mode, whitelist=whitelist, blacklist=blacklist, lifecycles=lifecycles
+    )
     out = subprocess.run(
         _query_argv(
             mode,
@@ -143,6 +176,7 @@ def discover(
             lifecycles=lifecycles,
             job_cap=job_cap,
             fmt=["--format", "string"],
+            covered=covered,
         ),
         cwd=PROJECT_ROOT,
         capture_output=True,
@@ -182,6 +216,12 @@ def main(argv: list[str] | None = None) -> int:
                 lifecycles="",
                 job_cap=None,
                 fmt=["-s"],
+                covered=compose_covered(
+                    args.mode,
+                    whitelist=whitelist,
+                    blacklist=blacklist,
+                    lifecycles="",
+                ),
             ),
             cwd=PROJECT_ROOT,
             check=False,
