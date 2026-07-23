@@ -12,16 +12,19 @@ MAILU_DOMAIN: "{{ lookup('config', application_id, 'services.mailu.domain') }}"
 MAILU_DOMAIN_DNS_ZONE: "{{ MAILU_DOMAIN | to_zone }}"
 MAILU_EMAIL: "{{ lookup('email', application_id) }}"
 MAILU_HOSTNAME: "{{ MAILU_EMAIL.host }}"
-# The vhost this instance is actually served under: mail. when active
-# MAIL_PROVIDER, legacy-mail. otherwise (see meta/server.yml). MAILU_HOSTNAME
-# stays the mail identity (MX/SPF/PTR) and may belong to the active provider.
+# Exception: the vhost this instance is actually served under — mail. when
+# active MAIL_PROVIDER, legacy-mail. otherwise (see meta/server.yml).
+# MAILU_HOSTNAME stays the mail identity (MX/SPF/PTR) and may belong to the
+# active provider.
 MAILU_CANONICAL_HOST: "{{ lookup('domain', application_id) }}"
 MAILU_ACTIVE_PROVIDER: "{{ MAIL_PROVIDER == application_id }}"
-# Legacy instances terminate TLS at the proxy only: no public mail ports, no
-# own cert stack (the shared cert-deploy unit belongs to the active provider).
+# Exception: legacy instances terminate TLS at the proxy only — no public mail
+# ports, no own cert stack (the shared cert-deploy unit belongs to the active
+# provider).
 MAILU_TLS_FLAVOR: "{{ (MAILU_EMAIL.tls and MAILU_ACTIVE_PROVIDER | bool) | ternary('mail', 'notls') }}"
 MAILU_HOSTNAME_DNS_ZONE: "{{ MAILU_HOSTNAME | to_zone }}"
 MAILU_VERSION: "{{ lookup('config', application_id, 'services.mailu.version') }}"
+MAILU_PORTS: "{{ lookup('config', application_id, 'services.mailu.ports.internal') }}"
 MAILU_FRONT_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'front') }}"
 MAILU_ADMIN_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'admin') }}"
 MAILU_IMAP_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'imap') }}"
