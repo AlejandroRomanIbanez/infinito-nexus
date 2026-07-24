@@ -5,8 +5,14 @@ dashboard:
   enabled: false
 # nocheck: playwright-service-flag — self-provider
 cdn:
+  # nocheck: default-placement-manager  the one-shot npm-mirror build must write the served CDN root, a node-local host bind openresty (manager-pinned) reads
+  placement: manager
   modes:
     host:
+      enabled: true
+    compose:
+      enabled: true
+    swarm:
       enabled: true
   bond: 1
   enabled: true
@@ -18,6 +24,16 @@ cdn:
   pids_limit: 128
   min_storage: "1GB"
   lifecycle: beta
+# nocheck: playwright-service-flag — transient node image used only to build the npm asset mirror, never served
+build:
+  # nocheck: single-replica  one-shot npm-mirror build writing the shared served root; parallel replicas would race and duplicate work
+  replicas: 1
+  image: node
+  version: "26-bookworm"
+  cpus: "1.0"
+  mem_reservation: 128m
+  mem_limit: 256m
+  pids_limit: 256
 # nocheck: playwright-service-flag — CDN serves static assets, no HTML pages with tracking snippet
 matomo:
   bond: 1

@@ -1,15 +1,18 @@
 ---
 - include_tasks: utils/once/flag.yml
 
-- name: 📂 Include dependencies
-  include_role:
-    name: "{{ item }}"
-  loop:
-    - sys-stk-front-proxy
-    - dev-git
+- name: "🧩 Internal CDN flavor: stage frontend deps + deploy the build stack"
+  when: CDN_FLAVOR == 'internal'
+  block:
+    - name: "📦 Stage every deployed role's frontend dependencies for the CDN"
+      include_tasks: 01_assets.yml
+      when: IS_STACK_HOST | bool
 
-- name: "📦 Mirror every deployed role's frontend dependencies into the CDN"
-  include_tasks: 01_assets.yml
-  when:
-    - IS_STACK_HOST | bool
-    - CDN_FLAVOR == 'internal'
+    - name: "🧩 Deploy the CDN stack (one-shot npm-mirror build) + front proxy"
+      include_role:
+        name: sys-stk-full
+
+- name: "🧩 Front proxy only (external CDN flavor)"
+  include_role:
+    name: sys-stk-front-proxy
+  when: CDN_FLAVOR != 'internal'
