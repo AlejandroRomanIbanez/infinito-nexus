@@ -176,6 +176,11 @@ jobs:
         shell: bash
         run: ./scripts/github/runner/enlarge_swap.sh
 
+      - name: 📦 Relocate Docker data-root onto /mnt when roomier
+        if: ${{ !env.ACT }}
+        shell: bash
+        run: ./scripts/github/runner/relocate_docker_dataroot.sh
+
       - name: "🔍 Resolve SWARM_NAME (mandatory; default to the matrix app)"
         shell: bash
         run: echo "SWARM_NAME=${SWARM_NAME:-${{ matrix.apps }}}" >> "$GITHUB_ENV"
