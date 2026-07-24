@@ -65,8 +65,9 @@ def _collect_reachable_roles(
     roles_dir: str,
     seen: set[str],
     meta_deps_resolver: MetaDepsResolver,
+    blocked: frozenset[str],
 ) -> None:
-    if role in seen:
+    if role in blocked or role in seen:
         return
     seen.add(role)
 
@@ -78,6 +79,7 @@ def _collect_reachable_roles(
             roles_dir,
             seen,
             meta_deps_resolver,
+            blocked,
         )
 
     for dep_role in _service_dep_roles(role, applications, service_registry):
@@ -88,6 +90,7 @@ def _collect_reachable_roles(
             roles_dir,
             seen,
             meta_deps_resolver,
+            blocked,
         )
 
 
@@ -99,6 +102,7 @@ def applications_if_group_and_all_deps(
     roles_dir: str | None = None,
     service_registry: dict[str, Any] | None = None,
     meta_deps_resolver: MetaDepsResolver | None = None,
+    blocked: frozenset[str] | set[str] | None = None,
 ) -> dict[str, Any]:
     if not isinstance(applications, dict):
         raise TypeError("'applications' must be a mapping")
@@ -123,6 +127,7 @@ def applications_if_group_and_all_deps(
         raise ValueError("'service_registry' must be a mapping")
 
     meta_deps_resolver = meta_deps_resolver or meta_deps_from_disk
+    blocked_roles = frozenset(blocked or ())
 
     included: set[str] = set()
     for group in group_names:
@@ -133,6 +138,7 @@ def applications_if_group_and_all_deps(
             roles_dir,
             included,
             meta_deps_resolver,
+            blocked_roles,
         )
 
     return {
