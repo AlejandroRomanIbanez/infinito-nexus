@@ -1,6 +1,6 @@
 ---
 - name: "🧭 Resolve host path to config.ini.php"
-  ansible.builtin.include_tasks: utils/resolve_config_host.yml
+  ansible.builtin.include_tasks: utils/resolve/config_host.yml
 
 - name: "🔄 Update DB host"
   ansible.builtin.command:
