@@ -8,7 +8,7 @@
     - run_once_sys_ctl_mtn_cert_deploy is not defined
     - not (lookup('tls', application_id, 'enabled') | bool)
 
-- include_tasks: 01_core.yml
+- include_tasks: 00_core.yml
   when:
     - run_once_sys_ctl_mtn_cert_deploy is not defined
     - lookup('tls', application_id, 'enabled') | bool

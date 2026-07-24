@@ -23,7 +23,7 @@ const KC_MIRROR_BASE = "{{ _oidc_mirror_onion }}";
 {% else %}
 const KC_MIRROR_BASE = null;
 {% endif %}
-const KC_JS_ORIGIN_PATH = "cdn.jsdelivr.net/npm/keycloak-js@latest/dist/keycloak.min.js";
+const KC_JS_ASSET_URL = "{{ lookup('asset', application_id, 'keycloak-js', 'dist/keycloak.js') }}";
 
 const DEBUG = {{ MODE_DEBUG | string | lower }};
 // Keycloak's hidden session-status iframe is noisy on newer Chromium builds and
@@ -146,10 +146,10 @@ async function initAuthUI() {
   // Default UI state until we know better
   syncAuthMenuVisibility(false);
 
-  // Load keycloak.js (onion sessions via the deployment's mirror, clearnet via jsdelivr)
+  // Load keycloak.js (onion sessions rewrite the asset origin through the deployment's mirror)
   const kcJsUrl = (KC_MIRROR_BASE && window.location.hostname.endsWith(".onion"))
-    ? KC_MIRROR_BASE + "/" + KC_JS_ORIGIN_PATH
-    : "https://" + KC_JS_ORIGIN_PATH;
+    ? KC_MIRROR_BASE + "/" + KC_JS_ASSET_URL.replace(/^https:\/\//, "")
+    : KC_JS_ASSET_URL;
   try {
     await loadKeycloakAdapter(kcJsUrl);
   } catch (e) {

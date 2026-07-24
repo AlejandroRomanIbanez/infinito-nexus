@@ -21,7 +21,8 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
 # shellcheck source=/dev/null
-source <(grep -E '^INFINITO_(PLAYWRIGHT_REPORTS_BASE|RESCUE_DIAGNOSTICS)_DIR=' "${REPO_ROOT}/.env")
+source <(grep -E '^INFINITO_(PLAYWRIGHT_REPORTS_BASE_DIR|RESCUE_DIAGNOSTICS_DIR|RESCUE_DIAGNOSTICS_BASE)=' "${REPO_ROOT}/.env")
+: "${INFINITO_RESCUE_DIAGNOSTICS_BASE:?INFINITO_RESCUE_DIAGNOSTICS_BASE must be set}"
 
 apps=""
 
@@ -77,7 +78,7 @@ cleanup() {
 		docker cp "${INFINITO_CONTAINER}:${ANSIBLE_LOG_PATH}" "${ANSIBLE_LOG_PATH}" 2>/dev/null || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 	fi
 
-	local _rescue_host_dir="/tmp/rescue-diagnostics/${INFINITO_DISTRO}/${apps}"
+	local _rescue_host_dir="${INFINITO_RESCUE_DIAGNOSTICS_BASE}/${INFINITO_DISTRO}/${apps}"
 	mkdir -p "${_rescue_host_dir}"
 	echo ">>> Capturing rescue diagnostics inside ${INFINITO_CONTAINER} (recursive DiD snapshot) before teardown removes it"
 	docker exec \

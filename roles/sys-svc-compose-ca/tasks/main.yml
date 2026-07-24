@@ -8,7 +8,7 @@
     - run_once_sys_svc_compose_ca is not defined
     - not (_compose_ca_applicable | bool)
 
-- include_tasks: 01_core.yml
+- include_tasks: 00_core.yml
   when:
     - run_once_sys_svc_compose_ca is not defined
     - _compose_ca_applicable | bool
