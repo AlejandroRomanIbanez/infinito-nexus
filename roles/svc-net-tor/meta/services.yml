@@ -25,6 +25,7 @@ tor:
   name: tor
   node: ""
   use_entry_guards: true
+  flavor: public
   ports:
     local:
       socks: 9050

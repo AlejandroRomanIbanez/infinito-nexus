@@ -16,6 +16,10 @@ CookieAuthentication 1
 UseEntryGuards 0
 {% endif %}
 
+{% if TOR_FLAVOR == 'chutney' %}
+%include /run/tor/chutney-net.conf
+{% endif %}
+
 {% if TOR_EGRESS_ROUTER_ENABLED | bool %}
 AutomapHostsOnResolve 1
 AutomapHostsSuffixes .onion
