@@ -502,6 +502,16 @@ def _load_services_via_config(
     return services
 
 
+def _cache_frontend_ca_host() -> str:
+    """Runner-internal path to the package-cache frontend CA, or '' when the cache is inactive."""
+    path = os.environ.get(
+        "CA_TRUST_CERT_EXTRA_HOST", "/opt/package-frontend-ca.crt"
+    ).strip()
+    if path and Path(path).is_file() and Path(path).stat().st_size > 0:
+        return path
+    return ""
+
+
 def render_override(
     services: dict[str, Any],
     service_to_compose_cmd: dict[str, list[str]],
@@ -537,6 +547,7 @@ def render_override(
       We escape any $ in the command argv with $$ so container-side expansion works.
     """
     out_services: dict[str, Any] = {}
+    extra_ca_host = _cache_frontend_ca_host()
 
     image_meta = gather_image_meta(
         sorted(
@@ -563,16 +574,22 @@ def render_override(
         if php_ini_host and php_ini_container:
             volumes.append(f"{php_ini_host}:{php_ini_container}:ro")
 
+        environment: dict[str, str] = {
+            "CA_TRUST_CERT": ca_container,
+            "CA_TRUST_NAME": trust_name,
+            "SSL_CERT_FILE": ca_container,
+            "REQUESTS_CA_BUNDLE": ca_container,
+            "CURL_CA_BUNDLE": ca_container,
+            "NODE_EXTRA_CA_CERTS": ca_container,
+        }
+        if extra_ca_host:
+            extra_ca_container = str(Path(ca_container).parent / "ca-trust-extra.crt")
+            volumes.append(f"{extra_ca_host}:{extra_ca_container}:ro")
+            environment["CA_TRUST_CERT_EXTRA"] = extra_ca_container
+
         override_svc: dict[str, Any] = {
             "volumes": volumes,
-            "environment": {
-                "CA_TRUST_CERT": ca_container,
-                "CA_TRUST_NAME": trust_name,
-                "SSL_CERT_FILE": ca_container,
-                "REQUESTS_CA_BUNDLE": ca_container,
-                "CURL_CA_BUNDLE": ca_container,
-                "NODE_EXTRA_CA_CERTS": ca_container,
-            },
+            "environment": environment,
         }
 
         if not wrap:
