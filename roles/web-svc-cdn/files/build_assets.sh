@@ -11,6 +11,8 @@ set -eu
 : "${CDN_WEB_ROOT:?}"
 : "${ROLES_DIR:?}"
 
+mkdir -p "${CDN_WEB_ROOT}/npm"
+
 work="$(mktemp -d)"
 trap 'rm -rf "$work"' EXIT
 
