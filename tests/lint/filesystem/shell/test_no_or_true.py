@@ -29,7 +29,6 @@ from . import PROJECT_ROOT
 if TYPE_CHECKING:
     from pathlib import Path
 
-# ``... || true`` (also ``|| :``), optionally followed by a comment.
 _OR_TRUE_RE = re.compile(r"\|\|\s*(?:true|:)\s*(?:#|;|$)")
 _NOCHECK_RE = re.compile(r"#\s*nocheck\b")
 
@@ -97,14 +96,18 @@ class TestShellNoOrTrue(unittest.TestCase):
             for v in all_violations:
                 grouped.setdefault(v.file, []).append(v)
             lines = [
-                f"Unmarked `|| true` in .sh "
-                f"({len(all_violations)} violations across "
-                f"{len(grouped)} file(s)):",
+                (
+                    f"Unmarked `|| true` in .sh "
+                    f"({len(all_violations)} violations across "
+                    f"{len(grouped)} file(s)):"
+                ),
                 "",
-                "`cmd || true` discards cmd's exit code, so a future "
-                "regression passes silently. Catch the specific tolerated "
-                "error instead, or suppress per line with "
-                "`# nocheck: shell-or-true -- <reason>`.",
+                (
+                    "`cmd || true` discards cmd's exit code, so a future "
+                    "regression passes silently. Catch the specific tolerated "
+                    "error instead, or suppress per line with "
+                    "`# nocheck: shell-or-true -- <reason>`."
+                ),
                 "",
                 "Offenders:",
             ]

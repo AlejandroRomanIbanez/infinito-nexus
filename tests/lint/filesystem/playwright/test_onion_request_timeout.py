@@ -40,14 +40,10 @@ from . import PROJECT_ROOT
 if TYPE_CHECKING:
     from pathlib import Path
 
-# A standalone `request.<method>(` call. The negative lookbehind rejects
-# `page.request.get(` / `ctx.request.get(` (member access) so only the bare
-# `request` fixture is flagged.
 _CALL_RE = re.compile(
     r"(?<![.\w])request\.(?:get|post|put|patch|delete|head|fetch)\s*\("
 )
 _RESOLVE_RE = re.compile(r"\bresolveTimeout\s*\(")
-# `require("./timeouts")` / `require("../timeouts")` — the staged helper.
 _IMPORTS_TIMEOUTS = re.compile(r"""require\(\s*['"][^'"]*\btimeouts['"]\s*\)""")
 _NOCHECK_RE = re.compile(r"#\s*nocheck:\s*onion-request-timeout\b")
 
@@ -123,10 +119,6 @@ def _scan_file(path: Path) -> list[Violation]:
             )
         )
 
-    # A file that uses `resolveTimeout` must import it from the staged helper,
-    # or the spec crashes at runtime (a bad `require` path is invisible to a
-    # syntax check). `./timeouts` from a top-level spec, `../timeouts` from an
-    # `addons/` subdir.
     if _RESOLVE_RE.search(text) and not _IMPORTS_TIMEOUTS.search(text):
         line_no = 1
         for idx, raw in enumerate(lines, 1):
@@ -164,8 +156,10 @@ class TestOnionRequestTimeout(unittest.TestCase):
             for v in all_violations:
                 grouped.setdefault(v.file, []).append(v)
             header = [
-                f"Standalone Playwright `request.*()` without an onion-aware "
-                f"timeout ({len(all_violations)} across {len(grouped)} file(s)):",
+                (
+                    f"Standalone Playwright `request.*()` without an onion-aware "
+                    f"timeout ({len(all_violations)} across {len(grouped)} file(s)):"
+                ),
                 "",
                 "On an onion node the target is a `.onion` reached via Tor; the",
                 "default 30s APIRequestContext timeout is too short for a cold",
