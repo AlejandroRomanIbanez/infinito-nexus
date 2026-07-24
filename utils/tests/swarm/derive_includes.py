@@ -132,15 +132,17 @@ def derive_includes(app_id: str) -> list[str]:
     applications = _force_shared_db_view(
         _applications_for_active_variants(base_applications)
     )
+    disabled_roles = _disabled_provider_roles(service_registry) - {app_id}
     transitive = applications_if_group_and_all_deps(
         applications,
         [app_id],
         project_root=str(PROJECT_ROOT),
         roles_dir=str(_ROLES_DIR),
         service_registry=service_registry,
+        blocked=disabled_roles,
     )
     found = set(transitive) | set(_EXPLICIT_INCLUDES) | {app_id}
-    found -= _disabled_provider_roles(service_registry) - {app_id}
+    found -= disabled_roles
     return sorted(found)
 
 

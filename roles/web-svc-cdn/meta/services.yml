@@ -7,6 +7,7 @@ dashboard:
 cdn:
   # nocheck: default-placement-manager  the one-shot npm-mirror build must write the served CDN root, a node-local host bind openresty (manager-pinned) reads
   placement: manager
+  workload: node-local
   modes:
     host:
       enabled: true

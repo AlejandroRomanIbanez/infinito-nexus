@@ -45,7 +45,7 @@
       timeout: "{{ lookup('timeout', 600) | int }}"
 
     - name: "🐝 Matomo install | Swarm: re-resolve hosting node + container ID after restart"
-      include_tasks: utils/resolve_host_cid.yml
+      include_tasks: utils/resolve/host_cid.yml
 
 - name: "⏳ Matomo install | Wait for Matomo container to be healthy"
   ansible.builtin.shell: >

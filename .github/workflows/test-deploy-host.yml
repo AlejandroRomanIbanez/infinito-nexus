@@ -147,6 +147,11 @@ jobs:
         shell: bash
         run: ./scripts/github/runner/enlarge_swap.sh
 
+      - name: 📦 Relocate Docker data-root onto /mnt when roomier
+        if: ${{ !env.ACT }}
+        shell: bash
+        run: ./scripts/github/runner/relocate_docker_dataroot.sh
+
       - name: 🔍 Resolve repository owner
         shell: bash
         run: |
