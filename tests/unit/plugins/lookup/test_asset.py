@@ -79,6 +79,12 @@ class TestResolveHost(unittest.TestCase):
             host = asset_mod.resolve_host({}, None, None)
         self.assertEqual(host, "https://cdn.jsdelivr.net")
 
+    def test_internal_onion_domain_uses_http(self):
+        onion = "cdn." + "a" * 56 + ".onion"
+        with _patched_loader(flavor="internal", domain=onion):
+            host = asset_mod.resolve_host({"group_names": ["web-svc-cdn"]}, None, None)
+        self.assertEqual(host, f"http://{onion}")
+
 
 class TestLockedVersion(unittest.TestCase):
     """package-lock.json parsing incl. scoped packages and both error paths."""

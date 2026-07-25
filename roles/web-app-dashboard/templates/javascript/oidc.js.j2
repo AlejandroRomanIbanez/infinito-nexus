@@ -146,8 +146,7 @@ async function initAuthUI() {
   // Default UI state until we know better
   syncAuthMenuVisibility(false);
 
-  // Load keycloak.js (onion sessions rewrite the asset origin through the deployment's mirror)
-  const kcJsUrl = (KC_MIRROR_BASE && window.location.hostname.endsWith(".onion"))
+  const kcJsUrl = (KC_MIRROR_BASE && window.location.hostname.endsWith(".onion") && KC_JS_ASSET_URL.startsWith("https://"))
     ? KC_MIRROR_BASE + "/" + KC_JS_ASSET_URL.replace(/^https:\/\//, "")
     : KC_JS_ASSET_URL;
   try {
