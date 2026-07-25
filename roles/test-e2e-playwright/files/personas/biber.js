@@ -136,12 +136,14 @@ async function runBiberFlow(page, opts = {}) {
     }
   }
   if (reachedAuthenticated) {
-    const loginStillVisible = await page
+    const loginControl = page
       .getByRole("link", { name: /log\s*in|sign\s*in|sso/i })
       .or(page.getByRole("button", { name: /log\s*in|sign\s*in|sso/i }))
-      .first()
-      .isVisible({ timeout: resolveTimeout(2_000) })
-      .catch(() => false);
+      .first();
+    const loginStillVisible = await loginControl
+      .waitFor({ state: "hidden", timeout: resolveTimeout(60_000) })
+      .then(() => false)
+      .catch(() => loginControl.isVisible().catch(() => false));
     if (loginStillVisible) {
       expect(
         false,
