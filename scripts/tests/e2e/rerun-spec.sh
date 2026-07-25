@@ -42,7 +42,9 @@ fi
 	echo "TEST_E2E_PLAYWRIGHT_STAGE_BASE_DIR missing in roles/test-e2e-playwright/vars/main.yml (SPOT)" >&2
 	exit 2
 }
-reports_base="${INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR:?source scripts/meta/env/load.sh or run via make}"
+# shellcheck source=/dev/null
+source <(grep -E '^INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR=' "$repo_root/.env")
+reports_base="${INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR:?INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR missing in .env (SPOT)}"
 
 stage_dir="$stage_base/$role"
 reports_dir="$reports_base/$role"
@@ -123,10 +125,6 @@ else
 	proxy_host="host.docker.internal"
 fi
 
-# On an onion node the app is reached over http://<onion>; Chromium can only
-# resolve .onion through Tor, so mirror the deploy-time runner and route the
-# browser through the node SOCKS proxy. Detected from the rendered env so the
-# clearnet inner-loop stays direct. Override with PLAYWRIGHT_PROXY if set.
 proxy_env=()
 if grep -qiE '\.onion' "$env_file"; then
 	default_proxy="socks5://${proxy_host}:${INFINITO_TOR_SOCKS_PORT:?INFINITO_TOR_SOCKS_PORT unset (built by the env handler from svc-net-tor services.tor.ports.local.socks)}"
