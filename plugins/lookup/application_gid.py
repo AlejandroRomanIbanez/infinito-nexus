@@ -1,5 +1,5 @@
+import functools
 import os
-from functools import cache
 from pathlib import Path
 
 _APPLICATION_MARKER_FILES = (
@@ -12,12 +12,12 @@ _APPLICATION_MARKER_FILES = (
 )
 
 
-@cache
-def _discover_application_ids(roles_dir_abs: str) -> tuple[str, ...]:
+@functools.cache
+def _discover_sorted_application_ids(roles_dir_abs: str) -> tuple[str, ...]:
     """Sorted application role ids under *roles_dir_abs*, memoised per
     process (utils.cache philosophy: CLI/test invocations rescan at most
     once; a role added mid-process needs a fresh interpreter or
-    ``_discover_application_ids.cache_clear()``).
+    ``_discover_sorted_application_ids.cache_clear()``).
 
     An "application role" is identified by the presence of at least one
     project-owned ``meta/<topic>.yml`` marker file.
@@ -48,12 +48,16 @@ def compute_application_gid(application_id, roles_dir="roles", base_gid=10000):
     ``ansible.plugins.lookup.LookupBase`` and raises
     ``ModuleNotFoundError`` on ansible-less hosts.
 
+    An "application role" carries at least one project-owned
+    `meta/<topic>.yml` marker file (services, server, rbac, volumes,
+    schema, users).
+
     Raises ``ValueError`` (not ``AnsibleError``) for portability.
     """
     if not Path(roles_dir).is_dir():
         raise ValueError(f"Roles directory '{roles_dir}' not found")
 
-    sorted_ids = _discover_application_ids(str(Path(roles_dir).resolve()))
+    sorted_ids = _discover_sorted_application_ids(str(Path(roles_dir).resolve()))
 
     try:
         index = sorted_ids.index(application_id)
