@@ -31,22 +31,22 @@
             != TEST_E2E_PLAYWRIGHT_VERSION)
       }}
 
-- name: 🔧 Provision the shared Playwright install (image pull + npm install + stamp)
+- name: ⬇️ Pull the Playwright image once for every role of this run
+  ansible.builtin.command:
+    argv:
+      - container
+      - pull
+      - "{{ TEST_E2E_PLAYWRIGHT_IMAGE }}"
+  register: _playwright_shared_pull
+  changed_when: false
+  failed_when: false
+  retries: 3
+  delay: 5
+  until: _playwright_shared_pull.rc == 0
+
+- name: 🔧 Provision the shared Playwright install (npm install + stamp)
   when: _playwright_shared_install_needed | bool
   block:
-    - name: ⬇️ Pull Playwright image if missing (shared install pass)
-      ansible.builtin.command:
-        argv:
-          - container
-          - pull
-          - "{{ TEST_E2E_PLAYWRIGHT_IMAGE }}"
-      register: _playwright_shared_pull
-      changed_when: false
-      failed_when: false
-      retries: 3
-      delay: 5
-      until: _playwright_shared_pull.rc == 0
-
     - name: 📦 Install @playwright/test into the shared dir (once per host per version)
       ansible.builtin.command:
         argv:

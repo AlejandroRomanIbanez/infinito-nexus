@@ -114,19 +114,6 @@
     msg: "Missing central Playwright package.json template: {{ _playwright_default_package_template }}"
   when: not _default_package_stat.stat.exists
 
-- name: ⬇️ Pull Playwright image if missing
-  ansible.builtin.command:
-    argv:
-      - container
-      - pull
-      - "{{ TEST_E2E_PLAYWRIGHT_IMAGE }}"
-  register: _playwright_pull
-  changed_when: false
-  failed_when: false
-  retries: 3
-  delay: 5
-  until: _playwright_pull.rc == 0
-
 - name: 📄 Render package.json from template
   ansible.builtin.template: # nocheck: stack-host-template (per-host playwright stage dir, runs on every test host)
     src: "{{ _playwright_default_package_template }}"
@@ -171,57 +158,23 @@
   with_fileglob:
     - "{{ _playwright_files_dir }}/fixtures/*"
 
-- name: 📋 Copy shared service-gating helper into staging tests directory
+- name: 📋 Copy shared Playwright helpers into staging tests directory
   ansible.builtin.copy:
-    src: "{{ lookup('path_absolute', 'roles/test-e2e-playwright/files/service-gating.js') }}"
-    dest: "{{ _playwright_stage_tests_dir }}/service-gating.js"
+    src: "{{ lookup('path_absolute', 'roles/test-e2e-playwright/files', item) }}"
+    dest: "{{ _playwright_stage_tests_dir }}/{{ item }}"
     mode: "0644"
+  loop:
+    - service-gating.js
+    - onion-test.js
+    - addon-gating.js
+    - timeouts.js
 
-- name: 📋 Copy shared onion-test fixture into staging tests directory
+- name: 📋 Copy persona flows and helper modules into staging tests directory
   ansible.builtin.copy:
-    src: "{{ lookup('path_absolute', 'roles/test-e2e-playwright/files/onion-test.js') }}"
-    dest: "{{ _playwright_stage_tests_dir }}/onion-test.js"
+    src: "{{ lookup('path_absolute', 'roles/test-e2e-playwright/files/personas') }}/"
+    dest: "{{ _playwright_stage_tests_dir }}/personas/"
     mode: "0644"
-
-- name: 📋 Copy shared addon-gating helper into staging tests directory
-  ansible.builtin.copy:
-    src: "{{ lookup('path_absolute', 'roles/test-e2e-playwright/files/addon-gating.js') }}"
-    dest: "{{ _playwright_stage_tests_dir }}/addon-gating.js"
-    mode: "0644"
-
-- name: 📋 Copy shared timeouts helper into staging tests directory
-  ansible.builtin.copy:
-    src: "{{ lookup('path_absolute', 'roles/test-e2e-playwright/files/timeouts.js') }}"
-    dest: "{{ _playwright_stage_tests_dir }}/timeouts.js"
-    mode: "0644"
-
-- name: 📁 Create staging personas directory
-  ansible.builtin.file:
-    path: "{{ _playwright_stage_tests_dir }}/personas"
-    state: directory
-    mode: "0755"
-
-- name: 📁 Create staging personas/utils directory
-  ansible.builtin.file:
-    path: "{{ _playwright_stage_tests_dir }}/personas/utils"
-    state: directory
-    mode: "0755"
-
-- name: 📋 Copy persona-flow runners into staging personas directory
-  ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: "{{ _playwright_stage_tests_dir }}/personas/{{ item | basename }}"
-    mode: "0644"
-  with_fileglob:
-    - "{{ lookup('path_absolute', 'roles/test-e2e-playwright/files/personas/*.js') }}"
-
-- name: 📋 Copy persona helper modules into staging personas/utils directory
-  ansible.builtin.copy:
-    src: "{{ item }}"
-    dest: "{{ _playwright_stage_tests_dir }}/personas/utils/{{ item | basename }}"
-    mode: "0644"
-  with_fileglob:
-    - "{{ lookup('path_absolute', 'roles/test-e2e-playwright/files/personas/utils/*.js') }}"
+    directory_mode: "0755"
 
 - name: ✅ Ensure staging volume directory exists
   ansible.builtin.file:
@@ -253,8 +206,6 @@
     _wait_result.status | int < 500
   when:
     - TEST_E2E_PLAYWRIGHT_WAIT_ENABLED | bool
-    # .onion targets are only reachable via Tor; the HTTP readiness probe cannot
-    # resolve them, so skip it there and let the proxied Playwright run assert.
     - not (lookup('tls', application_id, 'url.base') is search('\.onion'))
 
 - name: ✅ Ensure reports dir exists
