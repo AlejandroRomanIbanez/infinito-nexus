@@ -4,3 +4,4 @@ yay_install_use: yay
 yay_install_become_user: aur_builder
 yay_install_upgrade: false
 yay_install_aur_only: false
+yay_install_extra_args: ""

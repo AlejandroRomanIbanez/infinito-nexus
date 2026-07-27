@@ -22,5 +22,6 @@
     name: "{{ (not (yay_install_upgrade | bool) and (yay_install_packages | length > 0)) | ternary(yay_install_packages, omit) }}"
     upgrade: "{{ (yay_install_upgrade | bool) | ternary(true, omit) }}"
     aur_only: "{{ yay_install_aur_only }}"
+    extra_args: "{{ (yay_install_extra_args | length > 0) | ternary(yay_install_extra_args, omit) }}"
   become: true
   become_user: "{{ yay_install_become_user }}"

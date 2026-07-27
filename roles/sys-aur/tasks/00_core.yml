@@ -90,3 +90,4 @@
     yay_install_use: "{{ AUR_HELPER }}"
     yay_install_upgrade: true
     yay_install_aur_only: true
+    yay_install_extra_args: ""
