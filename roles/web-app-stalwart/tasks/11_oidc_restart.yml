@@ -35,7 +35,7 @@
   changed_when: true
 
 - name: "⏳ Wait for Stalwart API after the OIDC restart"
-  include_tasks: 02_wait_for_api.yml
+  include_tasks: 01_wait_for_api.yml
 
 - name: "🧹 Clear the deferred OIDC restart flag"
   ansible.builtin.set_fact:

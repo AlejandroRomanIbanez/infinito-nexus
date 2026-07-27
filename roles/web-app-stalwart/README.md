@@ -136,7 +136,7 @@ When `web-app-keycloak` is present the role joins the shared Keycloak client and
 delegates **interactive** authentication to Keycloak:
 
 - **WebAdmin + IMAP/SMTP/JMAP** authenticate against an **OIDC directory**
-  (`tasks/08_oidc.yml`): Stalwart validates Keycloak-issued tokens, matching the
+  (`tasks/06_oidc.yml`): Stalwart validates Keycloak-issued tokens, matching the
   `preferred_username` claim to the provisioned account.
 - **Roundcube** logs users in over OAuth2 and talks to Stalwart with **XOAUTH2**
   (`templates/roundcube-oauth.inc.php.j2`).

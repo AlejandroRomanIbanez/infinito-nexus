@@ -6,7 +6,7 @@ set -eu
 
 VERBOSE="${VERBOSE:-1}"
 
-# SPOT: system CA bundle candidates, in preference order
+# Exception: SPOT — system CA bundle candidates, in preference order
 # (Debian/Ubuntu, RHEL/Fedora, Alpine/openssl default).
 SYS_CA_BUNDLE_CANDIDATES="/etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/cert.pem"
 
@@ -30,7 +30,6 @@ if [ ! -r "$CA_TRUST_CERT" ]; then
   exit 2
 fi
 
-# Sanitize trust name
 name="$(printf '%s' "$CA_TRUST_NAME" | tr -c 'A-Za-z0-9._-' '_' )"
 if [ -z "$name" ]; then
   echo "[with-ca-trust] ERROR: CA_TRUST_NAME resolved to empty after sanitization" >&2
@@ -41,9 +40,9 @@ log "Sanitized trust name: $name"
 
 installed=0
 
-# Env-based trust fallback. Build a COMBINED bundle (system CAs + our CA) so the
-# env vars don't break public-HTTPS validation; fall back to our CA only if no
-# system bundle is found.
+# Exception: env-based trust fallback builds a COMBINED bundle (system CAs +
+# our CA) so the env vars don't break public-HTTPS validation; falls back to
+# our CA only if no system bundle is found.
 ca_bundle="$CA_TRUST_CERT"
 combined="/tmp/with-ca-trust-combined.crt"
 # shellcheck disable=SC2086 # intentional word-splitting; paths contain no spaces
@@ -58,8 +57,18 @@ done
 export SSL_CERT_FILE="$ca_bundle"
 export REQUESTS_CA_BUNDLE="$ca_bundle"
 export CURL_CA_BUNDLE="$ca_bundle"
-# Node already ships public roots; it only needs our CA appended.
+# Exception: Node already ships public roots; it only needs our CA appended.
 export NODE_EXTRA_CA_CERTS="$CA_TRUST_CERT"
+
+if [ -n "${CA_TRUST_CERT_EXTRA:-}" ] && [ -r "${CA_TRUST_CERT_EXTRA}" ]; then
+  combined_extra="/tmp/infinito/ca-trust-combined.crt"
+  mkdir -p "$(dirname "$combined_extra")"
+  cat "$ca_bundle" "$CA_TRUST_CERT_EXTRA" > "$combined_extra"
+  export SSL_CERT_FILE="$combined_extra"
+  export REQUESTS_CA_BUNDLE="$combined_extra"
+  export CURL_CA_BUNDLE="$combined_extra"
+  export NODE_EXTRA_CA_CERTS="$combined_extra"
+fi
 
 install_anchor() {
   src="$1"
@@ -75,9 +84,6 @@ install_anchor() {
   return 1
 }
 
-#
-# Debian / Ubuntu style
-#
 if command -v update-ca-certificates >/dev/null 2>&1; then
   log "Detected update-ca-certificates"
   if install_anchor "$CA_TRUST_CERT" "/usr/local/share/ca-certificates/${name}.crt"; then
@@ -85,9 +91,6 @@ if command -v update-ca-certificates >/dev/null 2>&1; then
   fi
 fi
 
-#
-# RHEL / p11-kit style
-#
 if command -v update-ca-trust >/dev/null 2>&1; then
   log "Detected update-ca-trust"
   if install_anchor "$CA_TRUST_CERT" "/etc/pki/ca-trust/source/anchors/${name}.crt"; then
@@ -95,9 +98,6 @@ if command -v update-ca-trust >/dev/null 2>&1; then
   fi
 fi
 
-#
-# Arch / pure p11-kit style
-#
 if command -v trust >/dev/null 2>&1; then
   log "Detected trust"
   if install_anchor "$CA_TRUST_CERT" "/etc/ca-certificates/trust-source/anchors/${name}.crt"; then
@@ -105,18 +105,19 @@ if command -v trust >/dev/null 2>&1; then
   fi
 fi
 
-# ------------------------------------------------------------
-# Chromium / NSS trust (per-user DB)
-#
-# Puppeteer/Chromium often uses NSS trust DB and may ignore OS CA store.
-# Import the CA into the user's NSS DB if certutil is available.
-#
-# Requires:
-#   - Debian/Ubuntu: apt-get install libnss3-tools
-#   - Alpine: apk add nss-tools
-# ------------------------------------------------------------
+if [ -n "${CA_TRUST_CERT_EXTRA:-}" ] && [ -r "${CA_TRUST_CERT_EXTRA}" ]; then
+  if command -v update-ca-certificates >/dev/null 2>&1 && install_anchor "$CA_TRUST_CERT_EXTRA" "/usr/local/share/ca-certificates/${name}-extra.crt"; then
+    run update-ca-certificates || true
+  fi
+  if command -v update-ca-trust >/dev/null 2>&1 && install_anchor "$CA_TRUST_CERT_EXTRA" "/etc/pki/ca-trust/source/anchors/${name}-extra.crt"; then
+    run update-ca-trust extract || true
+  fi
+  if command -v trust >/dev/null 2>&1 && install_anchor "$CA_TRUST_CERT_EXTRA" "/etc/ca-certificates/trust-source/anchors/${name}-extra.crt"; then
+    run trust extract-compat || true
+  fi
+fi
+
 if command -v certutil >/dev/null 2>&1; then
-  # Prefer real HOME; fall back to a writable temp dir
   home_dir="${HOME:-}"
   if [ -z "$home_dir" ] || [ ! -d "$home_dir" ] || [ ! -w "$home_dir" ]; then
     home_dir="/tmp"
@@ -125,18 +126,14 @@ if command -v certutil >/dev/null 2>&1; then
   nss_db="${home_dir}/.pki/nssdb"
   log "Detected certutil; importing CA into NSS DB: ${nss_db}"
 
-  # Ensure directory exists
   run mkdir -p "$nss_db" 2>/dev/null || true
 
-  # Create NSS DB if missing (empty password)
   if [ ! -f "$nss_db/cert9.db" ]; then
     run certutil -N -d "sql:${nss_db}" --empty-password 2>/dev/null || true
   fi
 
-  # Remove existing cert entry (best-effort)
   run certutil -D -d "sql:${nss_db}" -n "$name" >/dev/null 2>&1 || true
 
-  # Import as trusted CA (C,, = trusted CA for SSL)
   run certutil -A -d "sql:${nss_db}" -n "$name" -t "C,," -i "$CA_TRUST_CERT" 2>/dev/null || true
 
   log "NSS trust import attempted (best-effort)"

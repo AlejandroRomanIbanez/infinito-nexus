@@ -341,10 +341,24 @@ def container_run(argv: list[str], debug: bool, with_ca: bool) -> int:
         "--entrypoint",
         wrapper_container,
     ]
+    extra_opts: list[str] = []
+    extra_host = os.environ.get(
+        "CA_TRUST_CERT_EXTRA_HOST", "/opt/package-frontend-ca.crt"
+    ).strip()
+    extra_path = Path(extra_host) if extra_host else None
+    if extra_path and extra_path.is_file() and extra_path.stat().st_size > 0:
+        extra_container = str(Path(ca_container).parent / "ca-trust-extra.crt")
+        extra_opts = [
+            "-v",
+            f"{extra_host}:{extra_container}:ro",
+            "-e",
+            f"CA_TRUST_CERT_EXTRA={extra_container}",
+        ]
 
     final_cmd: list[str] = ["docker", "run"]
     final_cmd.extend(run_opts)
     final_cmd.extend(inject_opts)
+    final_cmd.extend(extra_opts)
     final_cmd.append(image)
 
     if user_entrypoint:

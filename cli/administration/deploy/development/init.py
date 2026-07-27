@@ -15,6 +15,10 @@ from .inventory import (
     DevInventorySpec,
     build_dev_inventory,
     plan_dev_inventory_matrix,
+    prune_orphans_after_disable,
+)
+from .inventory import (
+    _build_services_overrides_for_round as build_services_overrides_for_round,
 )
 from .storage import detect_storage_constrained
 from .variant_select import add_variant_args, apply_variant_filter
@@ -74,10 +78,6 @@ def add_parser(sub: argparse._SubParsersAction) -> None:
 def handler(args: argparse.Namespace) -> int:
     compose = make_compose()
 
-    # `primary_apps` is the user-facing app list before transitive resolution.
-    # The variant-aware planner expands each round's full include set
-    # itself (services edges depend on variant-merged services maps), so
-    # init no longer pre-resolves run_after / service deps here.
     if args.apps:
         primary_apps = [
             x.strip() for x in args.apps.replace(",", " ").split() if x.strip()
@@ -88,13 +88,6 @@ def handler(args: argparse.Namespace) -> int:
     if not primary_apps:
         raise SystemExit("Primary app list is empty")
 
-    # `disable` removes provider roles from the inventory at
-    # `infinito administration inventory provision` time anyway, so do the same filter on
-    # the primary list here. Otherwise the variant-aware resolver would
-    # still pull a disabled provider in via service edges, only to have
-    # the inventory step strip it back out — leaving the round's
-    # include list inconsistent with what the inventory actually
-    # contains.
     raw_disabled = os.environ.get("disable", "").strip()
     disabled_app_ids: set[str] = set()
     if raw_disabled:
@@ -138,16 +131,37 @@ def handler(args: argparse.Namespace) -> int:
 
     runtime = os.environ.get("RUNTIME") or detect_runtime()
     services_disabled = os.environ.get("disable", "")
+    roles_dir = str(compose.repo_root / "roles")
+    built_includes: dict[str, tuple[str, ...]] = {}
     for _round_index, inv_dir, round_variants, include_R, _purge_set in plan:
-        round_include = tuple(
-            role for role in include_R if role not in disabled_app_ids
-        )
+        if disabled_app_ids:
+            round_overrides = build_services_overrides_for_round(
+                roles_dir=roles_dir,
+                round_index=_round_index,
+                primary_app_variants={
+                    a: round_variants[a] for a in primary_apps if a in round_variants
+                },
+            )
+            round_include, pruned = prune_orphans_after_disable(
+                include=include_R,
+                primary_apps=primary_apps,
+                disabled_app_ids=disabled_app_ids,
+                services_overrides=round_overrides,
+            )
+            if pruned:
+                print(
+                    f">>> `disable` orphan-pruned {len(pruned)} transitive dep(s) "
+                    f"at {inv_dir}: {','.join(pruned)}"
+                )
+        else:
+            round_include = include_R
         if not round_include:
             print(
                 f">>> Skipping inventory at {inv_dir}: include set is empty "
                 "after `disable` filter"
             )
             continue
+        built_includes[inv_dir] = round_include
         spec = DevInventorySpec(
             inventory_dir=inv_dir,
             include=round_include,
@@ -163,9 +177,10 @@ def handler(args: argparse.Namespace) -> int:
         _, inv_dir, round_variants, include_R, _purge_set = plan[0]
         non_zero = {a: i for a, i in round_variants.items() if i}
         suffix = f" variants={non_zero}" if non_zero else ""
+        shown = built_includes.get(inv_dir, include_R)
         print(
             f">>> Inventory initialized at {inv_dir} "
-            f"(include={','.join(include_R)} "
+            f"(include={','.join(shown)} "
             f"storage_constrained={storage_constrained}){suffix}"
         )
     else:
@@ -176,9 +191,10 @@ def handler(args: argparse.Namespace) -> int:
         )
         for round_index, inv_dir, round_variants, include_R, _purge_set in plan:
             non_zero = {a: i for a, i in round_variants.items() if i}
+            shown = built_includes.get(inv_dir, include_R)
             print(
                 f"    [round {round_index}] {inv_dir} "
-                f"include={','.join(include_R)}"
+                f"include={','.join(shown)}"
                 + (f"  variants={non_zero}" if non_zero else "")
             )
     return 0

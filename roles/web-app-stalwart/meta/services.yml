@@ -54,7 +54,7 @@ stalwart:
   image: stalwartlabs/stalwart
   version: "v0.16.12"
   # Warn: WebUI (WebAdmin) bundle pin, staged by the controller
-  # (tasks/10_webadmin.yml); bump together with `version` above.
+  # (tasks/02_webadmin.yml); bump together with `version` above.
   webui_version: "v1.0.5"
   name: stalwart
   # Exception: with an embedded postgres the whole project must come back up

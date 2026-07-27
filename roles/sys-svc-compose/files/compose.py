@@ -7,7 +7,8 @@ import shlex
 import sys
 from pathlib import Path
 
-# `utils.cache.yaml` is unavailable here: this file is copy-deployed.
+# Exception: `utils.cache.yaml` is unavailable here — this file is
+# copy-deployed.
 import yaml
 
 
@@ -77,9 +78,9 @@ def detect_compose_files(project_dir: Path) -> list[Path]:
     return files
 
 
-# Mirrors that speak HTTP by default in their distro's package-manager
-# config. Alpine 3.18+ defaults to HTTPS and would fail TLS verification
-# inside builds that lack the frontend CA, so it is excluded.
+# Exception: mirrors that speak HTTP by default in their distro's
+# package-manager config. Alpine 3.18+ defaults to HTTPS and would fail TLS
+# verification inside builds that lack the frontend CA, so it is excluded.
 _CACHE_HTTP_HOSTNAMES = (
     "deb.debian.org",
     "archive.ubuntu.com",
@@ -87,10 +88,21 @@ _CACHE_HTTP_HOSTNAMES = (
 )
 
 
+def _cache_frontend_ca_present() -> bool:
+    """True when the package-cache frontend CA exists non-empty, mirroring the ca.sh `-s` gate for an active cache profile."""
+    ca_file = (os.environ.get("INFINITO_CACHE_PACKAGE_FRONTEND_CA_FILE") or "").strip()
+    if not ca_file:
+        return False
+    ca_path = Path(ca_file)
+    return ca_path.is_file() and ca_path.stat().st_size > 0
+
+
 def generate_cache_override(project_dir: Path, base_compose: Path) -> Path | None:
-    """Emit transient build.extra_hosts override when cache profile active."""
+    """Emit transient build.extra_hosts override only when the package-cache frontend is provisioned (CA present)."""
     cache_ip = (os.environ.get("INFINITO_CACHE_PACKAGE_FRONTEND_IP") or "").strip()
     if not cache_ip or not base_compose.is_file():
+        return None
+    if not _cache_frontend_ca_present():
         return None
 
     with Path(base_compose).open() as f:
@@ -130,16 +142,18 @@ def resolve_files(project_dir: Path, files: list[str]) -> list[Path]:
     return out
 
 
-# Subcommands that parse service `env_file:` values. Compose's env parser
-# rejects $-bearing secrets, but the swarm dotenv keeps $ literal because
-# `docker stack deploy` does NOT parse env_file. build/config need no runtime
-# env, so they get env_file-stripped copies (and no --env-file) instead.
+# Exception: subcommands that parse service `env_file:` values. Compose's env
+# parser rejects $-bearing secrets, but the swarm dotenv keeps $ literal
+# because `docker stack deploy` does NOT parse env_file. build/config need no
+# runtime env, so they get env_file-stripped copies (and no --env-file)
+# instead.
 _ENV_PARSING_SUBCOMMANDS = {"build", "config"}
 
 
 def _subcommand(passthrough: list[str]) -> str:
-    # The docker compose subcommand is the first passthrough token (main()
-    # strips a leading `--`; the wrapper's own flags are parsed off earlier).
+    # Exception: the docker compose subcommand is the first passthrough token
+    # (main() strips a leading `--`; the wrapper's own flags are parsed off
+    # earlier).
     return passthrough[0] if passthrough else ""
 
 
@@ -277,8 +291,8 @@ def main() -> int:
     if args.debug:
         print(">>> " + " ".join(shlex.quote(x) for x in cmd), file=sys.stderr)
 
-    # execvp preserves signal handling under systemd. The argv list is
-    # built from this script's own argv plus `--env-file` / `--profile`
+    # Exception: execvp preserves signal handling under systemd. The argv list
+    # is built from this script's own argv plus `--env-file` / `--profile`
     # additions; no shell parses it.
     os.execvp(cmd[0], cmd)  # noqa: S606
     return 0

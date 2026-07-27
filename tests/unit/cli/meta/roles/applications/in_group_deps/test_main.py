@@ -98,6 +98,61 @@ class TestInGroupDepsResolver(unittest.TestCase):
             )
 
 
+class TestInGroupDepsBlocked(unittest.TestCase):
+    def _apps(self):
+        apps = dict(SAMPLE_APPS)
+        apps["web-svc-cdn"] = {
+            "services": {"matomo": {"enabled": True, "shared": True}}
+        }
+        return apps
+
+    def _run(self, group_names, *, applications, meta_deps_map=None, blocked=None):
+        return deps_mod.applications_if_group_and_all_deps(
+            applications,
+            group_names,
+            project_root="/unused",
+            roles_dir="/unused",
+            service_registry=SERVICE_REGISTRY,
+            meta_deps_resolver=_meta_deps_resolver(meta_deps_map),
+            blocked=blocked,
+        )
+
+    def test_blocked_role_and_its_orphaned_subtree_excluded(self) -> None:
+        result = self._run(
+            ["web-svc-cdn"],
+            applications=self._apps(),
+            meta_deps_map={"web-app-matomo": ["svc-db-mariadb"]},
+            blocked={"web-app-matomo"},
+        )
+        self.assertIn("web-svc-cdn", result)
+        self.assertNotIn("web-app-matomo", result)
+        self.assertNotIn("svc-db-mariadb", result)
+
+    def test_dep_with_alternate_path_survives_block(self) -> None:
+        apps = self._apps()
+        apps["web-svc-cdn"]["services"]["mariadb"] = {
+            "enabled": True,
+            "shared": True,
+        }
+        result = self._run(
+            ["web-svc-cdn"],
+            applications=apps,
+            meta_deps_map={"web-app-matomo": ["svc-db-mariadb"]},
+            blocked={"web-app-matomo"},
+        )
+        self.assertIn("svc-db-mariadb", result)
+        self.assertNotIn("web-app-matomo", result)
+
+    def test_no_block_is_default(self) -> None:
+        result = self._run(
+            ["web-svc-cdn"],
+            applications=self._apps(),
+            meta_deps_map={"web-app-matomo": ["svc-db-mariadb"]},
+        )
+        self.assertIn("web-app-matomo", result)
+        self.assertIn("svc-db-mariadb", result)
+
+
 class TestInGroupDepsCli(unittest.TestCase):
     def test_main_uses_shared_resolver(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -1,12 +1,13 @@
 ---
-- include_tasks: 01_core.yml
+- include_tasks: 00_core.yml
   when: run_once_web_app_mailu is not defined
   vars:
     application_id: "web-app-mailu"
 
-# Re-entry from the service-loader post-load flush (queued in 09_oidc_apply
-# when the OIDC issuer was not yet deployed — Keycloak loads after mail roles).
-- include_tasks: 08_oidc_refresh.yml
+# Exception: re-entry from the service-loader post-load flush (queued in
+# 09_oidc_apply when the OIDC issuer was not yet deployed — Keycloak loads
+# after mail roles).
+- include_tasks: 10_oidc_refresh.yml
   when:
     - run_once_web_app_mailu is defined
     - mailu_oidc_restart_pending | default(false) | bool

@@ -44,6 +44,7 @@ permissions:
   packages: write
   security-events: write
   actions: write
+  issues: write
 
 jobs:
   ci-orchestrator:

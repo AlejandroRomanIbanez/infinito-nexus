@@ -7,16 +7,14 @@ from unittest.mock import patch
 
 from utils.cache.files import read_text
 
+from . import PROJECT_ROOT
+
 
 def load_script_module():
     """
     Import the script under test from roles/sys-svc-compose/files/compose.py
     """
-    test_file = Path(__file__).resolve()
-    repo_root = test_file.parents[
-        5
-    ]  # .../tests/unit/roles/sys-svc-compose/files -> repo root
-    script_path = repo_root / "roles" / "sys-svc-compose" / "files" / "compose.py"
+    script_path = PROJECT_ROOT / "roles" / "sys-svc-compose" / "files" / "compose.py"
     if not script_path.exists():
         raise FileNotFoundError(f"compose.py not found at {script_path}")
     spec = spec_from_file_location("compose", str(script_path))
@@ -32,7 +30,8 @@ class TestInfinitoComposeWrapper(unittest.TestCase):
         cls.script = load_script_module()
 
     def setUp(self):
-        # Disable the wrapper's cache-override branch; tests use mocked is_file.
+        # Exception: disable the wrapper's cache-override branch; tests use
+        # mocked is_file.
         self._env_patch = patch.dict(
             os.environ, {"INFINITO_CACHE_PACKAGE_FRONTEND_IP": ""}, clear=False
         )
@@ -101,6 +100,26 @@ class TestInfinitoComposeWrapper(unittest.TestCase):
         finally:
             s.Path.is_file = old_is_file  # type: ignore[assignment]
 
+    def test_cache_override_requires_frontend_ca(self):
+        s = self.script
+        with tempfile.TemporaryDirectory() as td:
+            proj = Path(td)
+            base = proj / "compose.yml"
+            base.write_text("services:\n  app:\n    build: .\n", encoding="utf-8")
+            ca = proj / "ca.crt"
+            ca.write_text("CERT", encoding="utf-8")
+            env = {
+                "INFINITO_CACHE_PACKAGE_FRONTEND_IP": "172.30.0.4",
+                "INFINITO_CACHE_PACKAGE_FRONTEND_CA_FILE": str(ca),
+            }
+            with patch.dict(os.environ, env, clear=False):
+                out = s.generate_cache_override(proj, base)
+                self.assertIsNotNone(out)
+                self.assertIn("deb.debian.org:172.30.0.4", read_text(str(out)))
+            ca.unlink()
+            with patch.dict(os.environ, env, clear=False):
+                self.assertIsNone(s.generate_cache_override(proj, base))
+
     def test_build_cmd_contains_env_and_files(self):
         s = self.script
         base = Path("/proj")
@@ -120,7 +139,6 @@ class TestInfinitoComposeWrapper(unittest.TestCase):
                 return str(self) == "/proj/.env/env"
 
             s.Path.is_file = fake_is_file  # type: ignore[assignment]
-            # Signature changed to accept extra_files=None, but default keeps old call valid.
             cmd = s.build_cmd("myproj", base, ["up", "-d"])
 
             self.assertEqual(cmd[:4], ["docker", "compose", "-p", "myproj"])
@@ -180,18 +198,15 @@ class TestInfinitoComposeWrapper(unittest.TestCase):
                 extra_files=["compose-inits.yml"],
             )
 
-            # Ensure order: autodetected files appear before extra file
             idx_base = cmd.index("/proj/compose.yml")
             idx_override = cmd.index("/proj/compose.override.yml")
             idx_extra = cmd.index("/proj/compose-inits.yml")
             self.assertLess(idx_base, idx_extra)
             self.assertLess(idx_override, idx_extra)
 
-            # Basic sanity: env file still included
             self.assertIn("--env-file", cmd)
             self.assertIn("/proj/.env", cmd)
 
-            # Passthrough still ends command
             self.assertEqual(
                 cmd[-5:], ["run", "--rm", "manager", "migrate", "--noinput"]
             )
@@ -298,7 +313,7 @@ class TestInfinitoComposeWrapper(unittest.TestCase):
 
             def fake_execvp(prog, argv):
                 calls["exec"] = (prog, list(argv))
-                raise RuntimeError("execvp called")  # stop execution
+                raise RuntimeError("execvp called")
 
             s.Path.cwd = staticmethod(fake_cwd)  # type: ignore[assignment]
             s.Path.resolve = fake_resolve  # type: ignore[assignment]
@@ -481,7 +496,6 @@ class TestInfinitoComposeWrapper(unittest.TestCase):
             s.build_cmd = fake_build_cmd  # type: ignore[assignment]
             s.os.execvp = fake_execvp  # type: ignore[assignment]
 
-            # Everything after "--" must be passed through to compose, with the "--" removed
             s.sys.argv = ["compose.py", "--", "ps", "--services"]
 
             with self.assertRaises(RuntimeError):
@@ -683,7 +697,8 @@ class TestCaOverrideStaleDetection(unittest.TestCase):
             self.assertFalse(s.ca_override_is_stale(base, override))
 
     def test_fresh_when_override_is_strict_subset(self):
-        # Override may legitimately wrap only a subset; subset MUST NOT be flagged.
+        # Exception: an override may legitimately wrap only a subset; a subset
+        # MUST NOT be flagged.
         import tempfile
 
         s = self.script
