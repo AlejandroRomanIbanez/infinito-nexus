@@ -13,7 +13,8 @@ TOR_FLAVOR: "{{ lookup('config', application_id, 'services.tor.flavor', 'public'
 TOR_TRANS_PORT: "{{ lookup('config', application_id, 'services.tor.ports.local.trans') }}"
 TOR_DNS_PORT: "{{ lookup('config', application_id, 'services.tor.ports.local.dns') }}"
 TOR_DNSMASQ_CONF: "/etc/dnsmasq.d/tor-onion.conf"
-TOR_HS_BACKEND_HOST: "{{ ansible_facts['default_ipv4']['address'] if DEPLOYMENT_MODE == 'swarm' else '127.0.0.1' }}"
+TOR_CONTAINER_DNS_HOST: "{{ ansible_facts['docker0']['ipv4']['address'] | default('', true) if DEPLOYMENT_MODE == 'compose' else '' }}"
+TOR_HS_BACKEND_HOST: "{{ ansible_facts['default_ipv4']['address'] if DEPLOYMENT_MODE == 'swarm' else (TOR_CONTAINER_DNS_HOST | ternary(TOR_CONTAINER_DNS_HOST, '127.0.0.1')) }}"
 TOR_DNS_UPSTREAMS_FILE: "{{ [ DIR_VAR_LIB, application_id, 'dns-upstreams' ] | path_join }}"
 
 TOR_DATA_DIR: "{{ [ DIR_VAR_LIB, application_id, 'data' ] | path_join }}"

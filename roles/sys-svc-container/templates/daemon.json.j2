@@ -10,8 +10,8 @@
 {% set _ = _insecure.append(_cache_hosts[0] ~ ':' ~ _cache_port) %}
 {% endif %}
 {
-{% if (networks.internet.dns | default('') | length) > 0 %}
-  "dns": ["{{ networks.internet.dns }}"],
+{% if lookup('container_dns') %}
+  "dns": {{ lookup('container_dns') | to_json }},
 {% endif %}
   "dns-search": ["{{ DOMAIN_PRIMARY }}"],
   "dns-opts": ["ndots:0"],
