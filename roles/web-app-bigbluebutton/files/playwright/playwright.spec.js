@@ -1,5 +1,5 @@
 const { test, expect } = require("@playwright/test");
-const { resolveTimeout, isOnionTarget } = require("./timeouts");
+const { resolveTimeout, isOnionTarget, isSplitRealmOidc } = require("./timeouts");
 const { skipUnlessServiceEnabled } = require("./service-gating");
 
 const { assertCspResponseHeader, decodeDotenvQuotedValue, expectNoCspViolations, gotoOnion, installCspViolationObserver, normalizeBaseUrl, performKeycloakLoginForm, runGuestFlow } = require("./personas");
@@ -152,6 +152,7 @@ async function assertLoggedOut(page, bbbBaseUrl, personaLabel) {
 
 test("administrator: bigbluebutton OIDC login and logout", async ({ page }) => {
   test.skip(isOnionTarget(), "BigBlueButton is WebRTC (UDP/ICE); not served over Tor");
+  test.skip(isSplitRealmOidc(), "clearnet app with an onion OIDC issuer: unreachable from one browser");
   skipUnlessServiceEnabled("sso");
   const diagnostics = attachDiagnostics(page);
   await signInViaBbbOidc(page, adminUsername, adminPassword, "administrator");
@@ -162,6 +163,7 @@ test("administrator: bigbluebutton OIDC login and logout", async ({ page }) => {
 
 test("biber: bigbluebutton OIDC login and logout", async ({ page }) => {
   test.skip(isOnionTarget(), "BigBlueButton is WebRTC (UDP/ICE); not served over Tor");
+  test.skip(isSplitRealmOidc(), "clearnet app with an onion OIDC issuer: unreachable from one browser");
   skipUnlessServiceEnabled("sso");
   const diagnostics = attachDiagnostics(page);
   await signInViaBbbOidc(page, biberUsername, biberPassword, "biber");

@@ -16,6 +16,10 @@ function isOnionTarget() {
   return /\.onion$/i.test(_canonicalDomain());
 }
 
+function isSplitRealmOidc() {
+  return !isOnionTarget() && /\.onion(?::\d+)?(?:\/|$)/i.test(process.env.OIDC_ISSUER_URL || "");
+}
+
 function timeoutFactor() {
   const f = Number(process.env.PLAYWRIGHT_TIMEOUT_FACTOR);
   return Number.isFinite(f) && f > 0 ? f : 1;
@@ -37,6 +41,7 @@ function resolveTimeout(baseMs) {
 
 module.exports = {
   isOnionTarget,
+  isSplitRealmOidc,
   timeoutFactor,
   onionTimeoutMultiplier,
   resolveTimeout,
