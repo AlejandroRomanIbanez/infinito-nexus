@@ -345,6 +345,7 @@
       "WebFetch(domain:snipe-it.readme.io)",
       "WebFetch(domain:socialhome.network)",
       "WebFetch(domain:spec.matrix.org)",
+      "WebFetch(domain:src.fedoraproject.org)",
       "WebFetch(domain:stackoverflow.com)",
       "WebFetch(domain:storage.googleapis.com)",
       "WebFetch(domain:store.shopware.com)",
