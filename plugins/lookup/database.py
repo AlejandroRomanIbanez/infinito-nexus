@@ -166,13 +166,21 @@ class LookupModule(LookupBase):
             default=default_version,
         )
 
-        image = get(
+        default_image = get(
             applications,
             db_id,
             f"services.{dbtype}.image",
             strict=False,
             default=dbtype,
             skip_missing_app=True,
+        )
+
+        image = get(
+            applications,
+            consumer_id,
+            f"services.{dbtype}.image",
+            strict=False,
+            default=default_image,
         )
 
         env_dir = f"{path_instances}{get_entity_name(consumer_id)}/.env/"

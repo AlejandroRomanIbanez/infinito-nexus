@@ -8,12 +8,14 @@ sso:
   oidc:
     email_by_username: true
     enable_user_creation: true
-    # Under SSO, Stalwart disables password submission, so the no-reply bot
-    # relays without SMTP AUTH (see plugins/lookup/email.py). Mailu omits this.
+    # Exception: under SSO, Stalwart disables password submission, so the
+    # no-reply bot relays without SMTP AUTH (see plugins/lookup/email.py).
+    # Mailu omits this.
     submission_via_relay: true
-    # Keycloak client ids, self-declared here as the one SPOT: web-app-keycloak
-    # provisions the clients and this role's Roundcube config consumes them.
-    # webui_client_id is fixed by upstream (the WebAdmin SPA compiles it in).
+    # Exception: Keycloak client ids, self-declared here as the one SPOT —
+    # web-app-keycloak provisions the clients and this role's Roundcube config
+    # consumes them. webui_client_id is fixed by upstream (the WebAdmin SPA
+    # compiles it in).
     webui_client_id: stalwart-webui
     webmail_client_id: stalwart-webmail
 logout:
@@ -42,20 +44,21 @@ stalwart:
   modes:
     compose:
       enabled: true
-    # Not yet swarm-ported (BIN_COMPOSE exec/restart tasks, staged-file binds);
-    # flip to true once the role follows the mailu swarm pattern.
+    # Limitation: not yet swarm-ported (BIN_COMPOSE exec/restart tasks,
+    # staged-file binds); flip to true once the role follows the mailu
+    # swarm pattern.
     swarm:
       enabled: false
   # nocheck: default-placement-manager  mail edge at a known IP: MX A-record, PTR and SPF bind to the stack host IP (a floating task's egress IP breaks deliverability); the mail store is NFS-hostile and IS the app — same rationale as web-app-mailu
   placement: manager
   image: stalwartlabs/stalwart
   version: "v0.16.12"
-  # WebUI (WebAdmin) bundle pin, staged by the controller (tasks/10_webadmin.yml);
-  # bump together with `version` above.
+  # Warn: WebUI (WebAdmin) bundle pin, staged by the controller
+  # (tasks/10_webadmin.yml); bump together with `version` above.
   webui_version: "v1.0.5"
   name: stalwart
-  # Embedded postgres: the backup drill must hard-stop the project before
-  # snapshotting, or the restored WAL is torn (postgres PANICs on restore).
+  # Exception: with an embedded postgres the whole project must come back up
+  # through one coherent restart after baudolo's per-volume stop/start cycles.
   backup:
     project_hard_restart: true
   min_storage: 20GB
@@ -94,6 +97,13 @@ postgres:
   bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
+  # Exception: the dedicated sidecar pins plain postgres — the platform default
+  # (postgis/postgis) defeats baudolo's substring database detection
+  # ('postgres' not in 'postgis/…'), so the volume was live-file-snapshotted
+  # instead of sql-dumped and restored with a torn WAL (postgres PANIC).
+  # Central mode ignores the pin (svc-db-postgres provides the container).
+  image: postgres
+  version: "17"
   cpus: "0.8"
   mem_reservation: 1g
   mem_limit: 2g
@@ -125,7 +135,7 @@ clamav:
   ports:
     internal:
       milter: 7357
-  # clamd holds the full signature DB in memory.
+  # Exception: elevated memory — clamd holds the full signature DB in memory.
   cpus: "1.0"
   mem_reservation: 1g
   mem_limit: 3g
