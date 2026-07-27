@@ -32,10 +32,8 @@
   vars:
     SVC_STORAGE_NFS_CLIENT_PACKAGES:
       Debian: [nfs-common]
-      Ubuntu: [nfs-common]
       Archlinux: [nfs-utils]
       RedHat: [nfs-utils]
-      Fedora: [nfs-utils]
       Alpine: [nfs-utils]
 
 - name: "🔎 Read current mount source at controller {{ DIR_VAR_LIB }}"
