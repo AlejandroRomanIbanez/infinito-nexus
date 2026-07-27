@@ -1,36 +1,9 @@
 ---
-- name: "📦 Enable the CentOS Storage SIG repo that ships nfs-ganesha"
-  ansible.builtin.yum_repository:
-    name: "{{ SVC_STORAGE_NFS_SERVER_GANESHA_EL_REPO.name }}"
-    description: "{{ SVC_STORAGE_NFS_SERVER_GANESHA_EL_REPO.description }}"
-    baseurl: "{{ SVC_STORAGE_NFS_SERVER_GANESHA_EL_REPO.baseurl }}"
-    gpgkey: "{{ SVC_STORAGE_NFS_SERVER_GANESHA_EL_REPO.gpgkey }}"
-    gpgcheck: true
-  when:
-    - ansible_facts['os_family'] == 'RedHat'
-    - ansible_facts['distribution'] != 'Fedora'
-
-- name: "📦 Install userspace nfs-ganesha packages"
-  ansible.builtin.package:
-    name: "{{ SVC_STORAGE_NFS_SERVER_PACKAGES['ganesha'][ansible_facts['os_family']] }}"
-    state: present
-  when: ansible_facts['os_family'] != 'Archlinux'
-
-- name: "📦 Upgrade libntirpc from updates-testing (Fedora's stable pair is ABI-broken)"
-  ansible.builtin.dnf:
-    name: libntirpc
-    state: latest
-    enablerepo: updates-testing
-  when: ansible_facts['distribution'] == 'Fedora'
-
-- name: "📦 Build userspace nfs-ganesha from the AUR (Arch has no official package)"
-  ansible.builtin.include_role:
-    name: sys-aur-install
-  vars:
-    yay_install_packages: "{{ SVC_STORAGE_NFS_SERVER_PACKAGES['ganesha']['Archlinux'] }}"
-    yay_install_use: makepkg
-    yay_install_extra_args: "--skipinteg"
-  when: ansible_facts['os_family'] == 'Archlinux'
+- name: "📦 Install the userspace nfs-ganesha server"
+  package_install:
+    id:
+      - nfs-ganesha
+      - libntirpc
 
 - name: "📄 Install the nfs-ganesha unit the AUR package does not ship"
   ansible.builtin.copy:

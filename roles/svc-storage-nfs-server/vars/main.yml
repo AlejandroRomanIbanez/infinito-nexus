@@ -1,26 +1,6 @@
 ---
 application_id: "svc-storage-nfs-server"
 
-SVC_STORAGE_NFS_SERVER_PACKAGES:
-  kernel:
-    Debian:
-      - nfs-kernel-server
-    Archlinux:
-      - nfs-utils
-    RedHat:
-      - nfs-utils
-    Alpine:
-      - nfs-utils
-  ganesha:
-    Debian:
-      - nfs-ganesha
-      - nfs-ganesha-vfs
-    RedHat:
-      - nfs-ganesha
-      - nfs-ganesha-vfs
-    Archlinux:
-      - nfs-ganesha
-
 SVC_STORAGE_NFS_SERVER_SERVICE:
   kernel:
     Debian: nfs-server
@@ -31,12 +11,6 @@ SVC_STORAGE_NFS_SERVER_SERVICE:
     Debian: nfs-ganesha
     RedHat: nfs-ganesha
     Archlinux: nfs-ganesha
-
-SVC_STORAGE_NFS_SERVER_GANESHA_EL_REPO:
-  name: centos-nfs-ganesha11
-  description: CentOS Storage SIG nfs-ganesha 11
-  baseurl: https://mirror.stream.centos.org/SIGs/$releasever-stream/storage/$basearch/nfsganesha-11/
-  gpgkey: https://www.centos.org/keys/RPM-GPG-KEY-CentOS-SIG-Storage
 
 SVC_STORAGE_NFS_SERVER_STATE_EXPORT_OPTIONS: >-
   rw,sync,no_subtree_check,no_root_squash,no_all_squash
