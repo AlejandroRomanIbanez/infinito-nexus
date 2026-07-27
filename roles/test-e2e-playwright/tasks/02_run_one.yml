@@ -207,6 +207,7 @@
   when:
     - TEST_E2E_PLAYWRIGHT_WAIT_ENABLED | bool
     - not (lookup('tls', application_id, 'url.base') is search('\.onion'))
+    - lookup('config', application_id, 'services.frontend.enabled', true) | bool
 
 - name: ✅ Ensure reports dir exists
   ansible.builtin.file:
