@@ -82,7 +82,7 @@
       register: lab_registry_ca
 
     - name: wire the node docker daemon to the host registry cache
-      include_tasks: "{{ playbook_dir }}/registry_cache.yml" # nocheck: path-absolute - lab-only playbook, see the vars_files note above
+      include_tasks: registry_cache.yml
       when: lab_registry_ca.stat.exists
 
     - name: wipe stale NFS export state (as root in-node; the act runner cannot)
