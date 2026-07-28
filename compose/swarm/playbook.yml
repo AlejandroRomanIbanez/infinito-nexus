@@ -151,26 +151,19 @@
       timeout: 30
       when: lab_is_mgr or inventory_hostname in [lab_nfs, lab_backup]
 
-    - name: write the dnsmasq lab config
-      copy:
-        dest: /etc/dnsmasq.d/infinito.conf
-        content: |
-          bind-dynamic
-          no-resolv
-          server=/{{ lab_mgr }}/{{ lab_wrk1 }}/{{ lab_wrk2 }}/{{ lab_nfs }}/{{ NETWORK_DOCKER_EMBEDDED_DNS_RESOLVER }}
-          {% for resolver in NETWORK_PUBLIC_DNS_RESOLVERS %}
-          server={{ resolver }}
-          {% endfor %}
-          address=/{{ lab_domain }}/{{ lab_domain_target }}
+    - name: own the whole dnsmasq config (fedora and centos ship local-service, which implies bind-interfaces and dnsmasq refuses next to our bind-dynamic)
+      template: # nocheck: stack-host-template - lab node system config, every DNS node writes its own /etc/dnsmasq.conf and IS_STACK_HOST does not exist in this play
+        src: dnsmasq.conf.j2
+        dest: /etc/dnsmasq.conf
       timeout: 30
       when: lab_dns_node
 
-    - name: enable and restart dnsmasq
+    - name: enable and restart dnsmasq (arch is Type=dbus, so systemd waits its full 90s DefaultTimeoutStartSec before reporting)
       systemd:
         name: dnsmasq
         enabled: true
         state: restarted
-      timeout: 60
+      timeout: 120
       when: lab_dns_node
 
     - name: point resolv.conf at dnsmasq
