@@ -1,8 +1,8 @@
 ---
 - name: "📦 Egress router | Install dnsmasq (host split-DNS forwarder)"
-  ansible.builtin.package:
-    name: dnsmasq
-    state: present
+  become: true
+  package_install:
+    id: dnsmasq
 - name: "📁 Egress router | Ensure the dnsmasq drop-in directory exists"
   ansible.builtin.file:
     path: "{{ TOR_DNSMASQ_CONF | dirname }}"
