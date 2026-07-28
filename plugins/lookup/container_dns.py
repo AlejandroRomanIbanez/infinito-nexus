@@ -23,12 +23,11 @@ def resolve_container_dns(variables: dict[str, Any]) -> list[str]:
     bridge = ((facts.get("docker0") or {}).get("ipv4") or {}).get("address") or ""
     on_tor_node = _TOR_ROLE in (variables.get("group_names") or [])
 
-    clearnet = (
-        ((variables.get("networks") or {}).get("internet") or {}).get("dns") or ""
-    )
+    clearnet = ((variables.get("networks") or {}).get("internet") or {}).get(
+        "dns"
+    ) or ""
 
-    resolvers = [str(r) for r in (bridge if on_tor_node else "", clearnet) if r]
-    return resolvers
+    return [str(r) for r in (bridge if on_tor_node else "", clearnet) if r]
 
 
 class LookupModule(LookupBase):

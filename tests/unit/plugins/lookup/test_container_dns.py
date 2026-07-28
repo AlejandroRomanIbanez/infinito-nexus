@@ -32,14 +32,10 @@ class TestResolveContainerDns(unittest.TestCase):
     with the clearnet resolver kept as fallback."""
 
     def test_tor_node_prefers_the_bridge_resolver(self):
-        self.assertEqual(
-            resolve_container_dns(_vars()), ["172.17.0.1", "172.30.0.53"]
-        )
+        self.assertEqual(resolve_container_dns(_vars()), ["172.17.0.1", "172.30.0.53"])
 
     def test_without_tor_only_clearnet(self):
-        self.assertEqual(
-            resolve_container_dns(_vars(group_names=[])), ["172.30.0.53"]
-        )
+        self.assertEqual(resolve_container_dns(_vars(group_names=[])), ["172.30.0.53"])
 
     def test_without_bridge_only_clearnet(self):
         self.assertEqual(

@@ -15,10 +15,11 @@ def _render_dnsmasq(**overrides):
         "TOR_DNS_UPSTREAMS": ["127.0.0.11"],
     }
     variables.update(overrides)
-    env = Environment(loader=FileSystemLoader(str(PROJECT_ROOT)))
-    template = env.get_template(
-        "roles/svc-net-tor/templates/dnsmasq-tor-onion.conf.j2"
+    env = Environment(
+        loader=FileSystemLoader(str(PROJECT_ROOT)),
+        autoescape=False,  # noqa: S701 - dnsmasq config, html escaping would corrupt it
     )
+    template = env.get_template("roles/svc-net-tor/templates/dnsmasq-tor-onion.conf.j2")
     return template.render(**variables)
 
 
