@@ -45,7 +45,7 @@ The `.onion` is a **deploy-time input**: a CLI helper mints the v3 key offline d
 
 | # | Decision |
 |---|---|
-| 1 | Role `svc-net-tor`, container-service archetype ([`svc-ai-ollama`](../../roles/svc-ai-ollama/) pattern), `application_id: svc-net-tor`. Category `svc-net-*` per [`roles/categories.yml`](../../roles/categories.yml). |
+| 1 | Role `svc-net-tor`, container-service archetype ([`svc-ai-ollama`](../../roles/svc-ai-ollama/) pattern), `application_id: svc-net-tor`. Category `svc-net-*` per [`meta/categories.yml`](../../meta/categories.yml). |
 | 2 | **Full onion node**: `DOMAIN_PRIMARY` = node `.onion`; entire stack shifts together. No web/identity split, no domain-transform lookup. |
 | 3 | **One node key + per-app subdomains** (`<sub>.<NODE_ONION>.onion`), Host-header-routed. No per-app onions in MVP. |
 | 4 | **Tor = compose sidecar**, `network_mode: host`, keys on a named volume, restored from the vaulted mint **before** Tor starts. Backup via `svc-bkp-container-2-local`. |
