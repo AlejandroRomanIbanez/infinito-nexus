@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import io
+import os
 import shutil
 import tempfile
 import unittest
@@ -322,7 +323,6 @@ class TestOnionVhostVariant(NginxVhostsTestBase, unittest.TestCase):
             canonical=["matomo.infinito.example"],
         )
         onion = self._touch_vhost(f"matomo.{self.ONION}", "http")
-        # No onion identity written -> no node onion -> the onion vhost is ignored.
         found = set(
             iter_vhost_files_for_entity(
                 "matomo",
