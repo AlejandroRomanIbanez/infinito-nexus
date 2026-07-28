@@ -142,7 +142,7 @@ the cluster declaration (image, containers, network, DNS play) in
 
 | Stage | Script | Purpose |
 |---|---|---|
-| loop | `scripts/tests/deploy/distros.sh` | SPOT: run the drill once per distro under the shared time budget |
+| loop | `scripts/tests/deploy/distros.sh` | SPOT: run the drill once per distro in random order under the shared time budget, then table every outcome (✅ passed / ❌ failed / 🟦 skipped) into the job summary |
 | loop | `routine/00_one.sh` | the whole drill for one distro; collect + teardown run from its `EXIT` trap |
 | bring-up | `utils/topology/base.sh` | SPOT: node names + NFS export/state paths (sourced, not run) |
 | bring-up | `utils/topology/export.sh` | write the topology SPOT into `$GITHUB_ENV` |
