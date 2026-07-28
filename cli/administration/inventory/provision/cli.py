@@ -290,19 +290,12 @@ def main(argv: list[str] | None = None) -> int:
         print(f"[INFO] Applying mirror overrides from: {mirrors_file}")
         apply_mirror_overrides(host_vars_file=host_vars_file, mirrors_file=mirrors_file)
 
-    # Tor onion node: when svc-net-tor is deployed, mint (or reuse) the node's
-    # hidden-service identity and write its address into
-    # applications.svc-net-tor.services.tor.node. The `.onion-identity/` key files
-    # are the SPOT the svc-net-tor role copies into the daemon; this provisioner is
-    # the single place that sets services.tor.node from them — no env indirection.
     apply_tor_node_onion(
         host_vars_file=host_vars_file,
         application_ids=application_ids,
         base_dir=project_root,
     )
 
-    # Disable services listed in the `disable` env var (space- or comma-separated).
-    # Also removes the provider roles from the inventory.
     apply_services_disabled_from_env(
         host_vars_file=host_vars_file,
         inventory_file=inventory_file,

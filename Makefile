@@ -767,6 +767,26 @@ test-unit: install
 	INFINITO_COMPILE=0 \
 	bash scripts/tests/code/wrapper.sh
 
+.PHONY: worktree-down
+# Stop a branch worktree's stack, release the checkout and free its slot.
+# Usage: make worktree-down branch=<name> [base=<dir>] [force=true]
+# Param branch: branch the worktree was created for (required).
+# Param base: parent directory the worktree lives in (default /tmp).
+# Param force: true discards uncommitted changes in the worktree.
+worktree-down:
+	@test -n '$(branch)' || { echo 'usage: make worktree-down branch=<name> [base=<dir>] [force=true]'; exit 2; }
+	@bash scripts/system/worktree/down.sh '$(branch)' '$(or $(base),/tmp)' '$(or $(force),false)'
+
+.PHONY: worktree-up
+# Check a branch out into an isolated worktree with its own subnet, ports and container names.
+# Usage: make worktree-up branch=<name> [base=<dir>]
+# Note: the worktree shares the primary checkout's cache stack instead of starting its own.
+# Param branch: branch to check out (required).
+# Param base: parent directory for the worktree (default /tmp).
+worktree-up:
+	@test -n '$(branch)' || { echo 'usage: make worktree-up branch=<name> [base=<dir>]'; exit 2; }
+	@bash scripts/system/worktree/up.sh '$(branch)' '$(or $(base),/tmp)'
+
 .PHONY: wsl2-dns-setup
 # Set up DNS on WSL2.
 wsl2-dns-setup:
