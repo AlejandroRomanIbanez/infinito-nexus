@@ -17,6 +17,7 @@ from utils.cache.yaml import load_yaml_any
 from . import PROJECT_ROOT
 
 ROLE = PROJECT_ROOT / "roles" / "web-app-matomo"
+INSTALL_PATH = ROLE / "tasks" / "03_install_path.yml"
 RESET_STATE = ROLE / "tasks" / "utils" / "reset_state.yml"
 FLAVORS = ROLE / "tasks" / "04_bootstrap" / "flavors"
 ATTEMPT_FILES = {
@@ -60,9 +61,8 @@ def _find(tasks, predicate):
 
 
 def _reset_include(flavor):
-    tasks = _tasks(ATTEMPT_FILES[flavor])
     return _find(
-        tasks,
+        _tasks(ATTEMPT_FILES[flavor]),
         lambda t: (
             "reset_state.yml" in str(t.get("ansible.builtin.include_tasks") or {})
         ),
@@ -70,16 +70,15 @@ def _reset_include(flavor):
 
 
 def _reset_guard(flavor):
-    include = _reset_include(flavor)
-    when = include["when"]
+    when = _reset_include(flavor)["when"]
     return when if isinstance(when, list) else [when]
 
 
-def _state(flavor, *, attempt, previous_rc, config_rc, stack_host=True):
+def _state(flavor, *, attempt, previous_rc, installed, stack_host=True):
     context = {
         "IS_STACK_HOST": stack_host,
         "matomo_attempt_index": attempt,
-        "matomo_config_exists": {"rc": config_rc},
+        "matomo_install_state": {"stdout": "installed" if installed else "fresh"},
     }
     if previous_rc is not None:
         context[RESULT_VAR[flavor]] = {"rc": previous_rc}
@@ -90,35 +89,35 @@ class TestResetGateReachability(unittest.TestCase):
     def test_first_attempt_never_resets(self):
         for flavor in ATTEMPT_FILES:
             with self.subTest(flavor=flavor):
-                state = _state(flavor, attempt=0, previous_rc=None, config_rc=1)
+                state = _state(flavor, attempt=0, previous_rc=None, installed=False)
                 self.assertFalse(_eval(_reset_guard(flavor), state))
 
-    def test_retry_after_failure_on_fresh_install_resets(self):
+    def test_retry_after_a_failed_fresh_install_resets(self):
         for flavor in ATTEMPT_FILES:
             with self.subTest(flavor=flavor):
-                state = _state(flavor, attempt=1, previous_rc=3, config_rc=1)
+                state = _state(flavor, attempt=1, previous_rc=3, installed=False)
                 self.assertTrue(_eval(_reset_guard(flavor), state))
 
-    def test_existing_installation_is_never_reset(self):
+    def test_installation_present_before_the_play_is_never_reset(self):
         for flavor in ATTEMPT_FILES:
             with self.subTest(flavor=flavor):
-                state = _state(flavor, attempt=1, previous_rc=3, config_rc=0)
+                state = _state(flavor, attempt=1, previous_rc=3, installed=True)
                 self.assertFalse(_eval(_reset_guard(flavor), state))
 
     def test_retry_after_success_does_not_reset(self):
         for flavor in ATTEMPT_FILES:
             with self.subTest(flavor=flavor):
-                state = _state(flavor, attempt=1, previous_rc=0, config_rc=1)
+                state = _state(flavor, attempt=1, previous_rc=0, installed=False)
                 self.assertFalse(_eval(_reset_guard(flavor), state))
 
-    def test_the_installed_check_is_what_holds_the_gate_shut(self):
+    def test_the_install_state_check_is_what_holds_the_gate_shut(self):
         for flavor in ATTEMPT_FILES:
             with self.subTest(flavor=flavor):
-                state = _state(flavor, attempt=1, previous_rc=3, config_rc=0)
+                state = _state(flavor, attempt=1, previous_rc=3, installed=True)
                 without = [
                     expr
                     for expr in _reset_guard(flavor)
-                    if "matomo_config_exists" not in expr
+                    if "matomo_install_state" not in expr
                 ]
                 self.assertEqual(len(without), len(_reset_guard(flavor)) - 1)
                 self.assertTrue(_eval(without, state))
@@ -127,7 +126,7 @@ class TestResetGateReachability(unittest.TestCase):
         for flavor in ATTEMPT_FILES:
             with self.subTest(flavor=flavor):
                 state = _state(
-                    flavor, attempt=1, previous_rc=3, config_rc=1, stack_host=False
+                    flavor, attempt=1, previous_rc=3, installed=False, stack_host=False
                 )
                 self.assertFalse(_eval(_reset_guard(flavor), state))
 
@@ -142,8 +141,7 @@ class TestAttemptLoopWiring(unittest.TestCase):
                 )
                 guard = runner["when"]
                 guard = guard if isinstance(guard, list) else [guard]
-                context = {RESULT_VAR[flavor]: {"rc": 0}}
-                self.assertFalse(_eval(guard, context))
+                self.assertFalse(_eval(guard, {RESULT_VAR[flavor]: {"rc": 0}}))
                 self.assertTrue(_eval(guard, {RESULT_VAR[flavor]: {"rc": 3}}))
 
     def test_attempt_result_is_promoted_to_the_flavor_result_var(self):
@@ -156,34 +154,34 @@ class TestAttemptLoopWiring(unittest.TestCase):
                 )
 
 
+class TestInstallStateProbe(unittest.TestCase):
+    def setUp(self):
+        self.probe = _tasks(INSTALL_PATH)[0]
+
+    def test_an_unreachable_container_fails_instead_of_reading_as_fresh(self):
+        self.assertNotIn("failed_when", self.probe)
+        self.assertEqual(self.probe["register"], "matomo_install_state")
+
+    def test_the_probe_reports_a_marker_rather_than_an_exit_code(self):
+        command = self.probe["ansible.builtin.shell"]
+        self.assertIn("echo installed", command)
+        self.assertIn("echo fresh", command)
+
+
 class TestResetStateSafety(unittest.TestCase):
     def setUp(self):
         self.tasks = _tasks(RESET_STATE)
-        self.probe = self.tasks[0]
-        self.destructive = _find(self.tasks, lambda t: "block" in t)
 
-    def test_probe_failure_is_fatal_rather_than_treated_as_fresh(self):
-        self.assertNotIn("failed_when", self.probe)
-        self.assertEqual(self.probe["register"], "matomo_reset_probe")
-
-    def test_database_is_only_dropped_when_the_live_probe_reports_fresh(self):
-        self.assertIsNotNone(self.destructive)
-        self.assertEqual(
-            self.destructive["when"], "(matomo_reset_probe.stdout | trim) == 'fresh'"
-        )
-        env = _env()
-        guard = env.compile_expression(self.destructive["when"])
-        self.assertTrue(guard(matomo_reset_probe={"stdout": "fresh\n"}))
-        self.assertFalse(guard(matomo_reset_probe={"stdout": "installed\n"}))
-        self.assertFalse(guard(matomo_reset_probe={"stdout": ""}))
-
-    def test_the_drop_lives_behind_that_guard_and_nowhere_else(self):
-        guarded = self.destructive["block"]
-        self.assertTrue(any("reset_database.php" in str(task) for task in guarded))
-        for task in guarded:
+    def test_the_reset_carries_no_gate_of_its_own(self):
+        for task in self.tasks:
             self.assertNotIn("when", task)
-        for task in (t for t in self.tasks if t is not self.destructive):
-            self.assertNotIn("reset_database.php", str(task))
+
+    def test_the_drop_lives_in_the_shared_reset_only(self):
+        self.assertTrue(any("reset_database.php" in str(t) for t in self.tasks))
+        for flavor, path in ATTEMPT_FILES.items():
+            with self.subTest(flavor=flavor):
+                for task in _tasks(path):
+                    self.assertNotIn("reset_database.php", str(task))
 
 
 if __name__ == "__main__":
