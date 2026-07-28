@@ -13,7 +13,7 @@ exports.register = function (shared) {
       await expect(usernameInput).toBeVisible({ timeout: resolveTimeout(30_000) });
       await usernameInput.fill(shared.env.biberUsername);
       const passwordInput = page.locator(".toggle-sensitive-wrapper input[name='password'], .toggle-sensitive-wrapper input#password").first();
-      await expect(passwordInput).toBeAttached({ timeout: 30_000 });
+      await expect(passwordInput).toBeAttached({ timeout: resolveTimeout(30_000) });
       await expect(async () => {
         await passwordInput.fill(shared.env.biberPassword);
         await expect(passwordInput).toHaveValue(shared.env.biberPassword);
