@@ -65,7 +65,7 @@ build-cleanup:
 .PHONY: build-dependency
 # Pull the build dependency image.
 build-dependency:
-	@docker pull ghcr.io/kevinveenbirkenbach/pkgmgr-$${INFINITO_DISTRO}:stable
+	@docker pull "$${INFINITO_PARENT_IMAGE:?Run 'make dotenv' to generate the .env single source of truth}"
 
 .PHONY: build-missing
 # Build the local image if it is missing.

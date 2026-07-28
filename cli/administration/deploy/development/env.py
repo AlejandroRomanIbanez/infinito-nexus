@@ -2,7 +2,9 @@ from __future__ import annotations
 
 import os
 
-VALID_DISTROS: tuple[str, ...] = ("arch", "debian", "ubuntu", "fedora", "centos")
+from utils.distros import distro_names
+
+VALID_DISTROS: tuple[str, ...] = distro_names()
 
 
 def compose_file_args() -> list[str]:
@@ -23,7 +25,7 @@ def resolve_distro() -> str:
     if not distro:
         raise SystemExit(
             "INFINITO_DISTRO is not set. Run 'make dotenv' (or source scripts/meta/env/load.sh) "
-            "or export INFINITO_DISTRO=<arch|debian|ubuntu|fedora|centos> "
+            f"or export INFINITO_DISTRO=<{'|'.join(VALID_DISTROS)}> "
             "before invoking cli.administration.deploy.development."
         )
     if distro not in VALID_DISTROS:
