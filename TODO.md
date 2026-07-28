@@ -69,8 +69,8 @@ reachability). The items below are the ones that are NOT fixed yet.
   espocrm, keycloak-job, n8n) were red before the tor branch and stay out of
   scope for it; bookwyrm fails its oauth2 trusted-header session spec, fider
   its baseline. Fix separately from the onion work.
-- **test-development environment jobs** — all 5 distro jobs (fedora, manjaro,
-  centos, debian, ubuntu) hit the 4h30m workflow cap under runner congestion
+- **test-development environment jobs** — all 5 distro jobs
+  (arch, debian, ubuntu, fedora, centos) hit the 4h30m cap under congestion
   while still progressing (playwright image pull). Environmental, no code fix;
   note that onion e2e inherently lengthens the routine (×5 onion timeouts,
   circuit waits), so under congestion these jobs are the first to hit the cap.
