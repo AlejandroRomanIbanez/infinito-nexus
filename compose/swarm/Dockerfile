@@ -8,6 +8,10 @@
 # be weeks old, so a partial -Sy would hit unknown packager keys and would link
 # fresh binaries against the image's older libraries.
 #
+# udevd is masked because it claims the device-mapper nodes and leaves symlinks
+# to /dev/dm-N targets a tmpfs /dev never gets, while without it libdevmapper
+# creates them.
+#
 # /etc/shadow is 0000 on the RHEL-family parents, where the host's unix-chkpwd
 # AppArmor profile then denies the setuid helper CAP_DAC_READ_SEARCH and every
 # PAM account lookup fails; a hard 0600 instead of u+rw breaks debian's setgid
@@ -31,6 +35,7 @@ RUN set -eux; \
         echo "no supported package manager (apt/dnf/pacman)" >&2; exit 1; \
     fi; \
     systemctl mask systemd-resolved; \
+    systemctl mask systemd-udevd systemd-udevd-kernel.socket systemd-udevd-control.socket systemd-udevd-varlink.socket systemd-udev-trigger; \
     systemctl enable ssh 2>/dev/null || systemctl enable sshd; \
     chmod u+rw /etc/shadow; \
     if [ -e /etc/gshadow ]; then chmod u+rw /etc/gshadow; fi; \
