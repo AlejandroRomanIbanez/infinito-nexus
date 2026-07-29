@@ -783,6 +783,12 @@ worktree-down:
 	@test -n '$(branch)' || { echo 'usage: make worktree-down branch=<name> [base=<dir>] [force=true]'; exit 2; }
 	@bash scripts/system/worktree/down.sh '$(branch)' '$(or $(base),/tmp)' '$(or $(force),false)'
 
+.PHONY: worktree-prune
+# Drop registrations of worktrees whose directory is gone, freeing the branches they claim.
+# Usage: make worktree-prune
+worktree-prune:
+	@bash scripts/system/worktree/prune.sh
+
 .PHONY: worktree-up
 # Check a branch out into an isolated worktree with its own subnet, ports and container names.
 # Usage: make worktree-up branch=<name> [base=<dir>]
