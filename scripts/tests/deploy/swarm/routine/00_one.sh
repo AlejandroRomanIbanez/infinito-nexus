@@ -57,7 +57,13 @@ collect_and_teardown() {
 }
 trap collect_and_teardown EXIT
 
-INFINITO_IMAGE="$(bash "${REPO_ROOT}/scripts/meta/resolve/image/ci.sh")"
+INFINITO_IMAGE="$(bash "${REPO_ROOT}/scripts/meta/resolve/image/local.sh"):${INFINITO_IMAGE_TAG:?}"
+if docker image inspect "${INFINITO_IMAGE}" >/dev/null 2>&1; then
+	echo "==> node image: locally built ${INFINITO_IMAGE}"
+else
+	INFINITO_IMAGE="$(bash "${REPO_ROOT}/scripts/meta/resolve/image/ci.sh")"
+	echo "==> node image: published ${INFINITO_IMAGE:-<none, bootstrap will build it>}"
+fi
 export INFINITO_IMAGE
 
 bash "${SCRIPT_DIR}/01_bootstrap.sh"
