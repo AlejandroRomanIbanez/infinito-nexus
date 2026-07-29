@@ -710,7 +710,6 @@ system-purge:
 
 .PHONY: test
 # Run the full test pipeline.
-# Note: parallel execution with fail-fast.
 test: install
 	@bash scripts/make/parallel.sh \
 		test-external \
