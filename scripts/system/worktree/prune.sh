@@ -61,14 +61,12 @@ for entry in "${meta_dir}"/*; do
 	if [ -f "${entry}/gitdir" ]; then
 		gitdir="$(cat "${entry}/gitdir")"
 	fi
-	if [ -n "${gitdir}" ] && [ -e "${gitdir}" ]; then
-		continue
-	fi
 
 	if [ -n "${gitdir}" ]; then
-		base="$(dirname "$(dirname "${gitdir}")")"
-		if [ ! -d "${base}" ]; then
-			unverifiable+=("$(basename "${entry}") -> ${gitdir}")
+		checkout="$(dirname "${gitdir}")"
+		base="$(dirname "${checkout}")"
+		if [ -e "${checkout}" ] || [ ! -d "${base}" ] || [ ! -x "${base}" ]; then
+			unverifiable+=("$(basename "${entry}") -> ${checkout}")
 			continue
 		fi
 	fi
@@ -100,8 +98,8 @@ if [ "${#held[@]}" -gt 0 ]; then
 fi
 
 if [ "${#unverifiable[@]}" -gt 0 ]; then
-	echo ">>> Kept registered — their checkout base is not visible from here, so"
-	echo ">>> whether the checkout is gone cannot be decided:"
+	echo ">>> Kept registered — their checkout is still on disk (or its parent is not"
+	echo ">>> readable from here), so 'gone' cannot be established:"
 	printf '      %s\n' "${unverifiable[@]}"
-	echo ">>> Re-run outside the sandbox to prune them."
+	echo ">>> Release them with 'make worktree-down branch=<name>' instead."
 fi
