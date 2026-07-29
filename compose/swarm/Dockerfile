@@ -7,6 +7,11 @@
 # branch refreshes the keyring and does a full -Syu: the pinned parent image can
 # be weeks old, so a partial -Sy would hit unknown packager keys and would link
 # fresh binaries against the image's older libraries.
+#
+# /etc/shadow is 0000 on the RHEL-family parents, where the host's unix-chkpwd
+# AppArmor profile then denies the setuid helper CAP_DAC_READ_SEARCH and every
+# PAM account lookup fails; a hard 0600 instead of u+rw breaks debian's setgid
+# helper.
 ARG INFINITO_IMAGE
 FROM ${INFINITO_IMAGE}
 
@@ -27,6 +32,8 @@ RUN set -eux; \
     fi; \
     systemctl mask systemd-resolved; \
     systemctl enable ssh 2>/dev/null || systemctl enable sshd; \
+    chmod u+rw /etc/shadow; \
+    if [ -e /etc/gshadow ]; then chmod u+rw /etc/gshadow; fi; \
     mkdir -p /etc/systemd/journald.conf.d; \
     printf '[Journal]\nSystemMaxUse=256M\nRuntimeMaxUse=64M\n' > /etc/systemd/journald.conf.d/99-ci.conf; \
     rm -f /var/lib/dbus/machine-id; \
