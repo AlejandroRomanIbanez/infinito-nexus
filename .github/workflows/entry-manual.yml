@@ -36,21 +36,21 @@ on:
       workspace:
         description: "Run the workspace test (dev-runtime image matrix). 'auto' runs it on a global scope only."
         required: false
-        default: "false"
+        default: "auto"
         type: choice
         options:
-          - "false"
-          - "true"
           - "auto"
+          - "true"
+          - "false"
       instructions:
         description: "Run the instructions test (role README Production command). 'auto' runs it on a global scope only."
         required: false
-        default: "false"
+        default: "auto"
         type: choice
         options:
-          - "false"
-          - "true"
           - "auto"
+          - "true"
+          - "false"
 
 permissions:
   contents: read
