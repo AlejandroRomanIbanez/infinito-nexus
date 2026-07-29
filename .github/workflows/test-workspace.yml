@@ -25,7 +25,9 @@ jobs:
         id: matrix
         shell: bash
         run: |
-          echo "images=$(python3 -m cli.meta.ci.dev_runtime images)" | tee -a "$GITHUB_OUTPUT"
+          set -euo pipefail
+          images="$(python3 -m cli.meta.ci.dev_runtime images)"
+          echo "images=${images}" | tee -a "$GITHUB_OUTPUT"
 
   test-workspace:
     name: 🧑‍💻 Workspace (${{ matrix.dev_runtime_image }})
@@ -69,10 +71,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          distro="$(python3 -m cli.meta.ci.dev_runtime distro --image "${DEV_RUNTIME_IMAGE}")"
           {
             grep '^INFINITO_RESCUE_DIAGNOSTICS_BASE=' default.env
             echo "INFINITO_WORKSPACE_SLUG=$(printf '%s' "${DEV_RUNTIME_IMAGE}" | tr '/:' '--')"
-            echo "INFINITO_DISTRO=$(python3 -m cli.meta.ci.dev_runtime distro --image "${DEV_RUNTIME_IMAGE}")"
+            echo "INFINITO_DISTRO=${distro}"
           } >> "$GITHUB_ENV"
 
       - name: ▶️ Run workspace routine
