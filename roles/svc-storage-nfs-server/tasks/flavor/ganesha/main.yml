@@ -13,6 +13,7 @@
     group: root
     mode: "0644"
   when: ansible_facts['os_family'] == 'Archlinux'
+  notify: "Restart NFS ganesha"
 
 - name: "🔧 Mask the broken nfs-ganesha-config helper unit"
   ansible.builtin.systemd:
@@ -62,6 +63,11 @@
     owner: root
     group: root
     mode: "0644"
+  notify: "Restart NFS ganesha"
+
+- name: "🔄 Reload systemd so the drop-in is live before ganesha starts"
+  ansible.builtin.systemd:
+    daemon_reload: true
 
 # Exception: only safe while the export set stays NFSv4-only. ganesha registers
 # v4 with rpcbind best-effort, but NFSv3/MOUNT/NLM/RQUOTA registration is fatal
@@ -83,15 +89,20 @@
     state: stopped
   loop: "{{ _rpcbind_units.stdout_lines | map('regex_replace', '^([^ ]+).*$', '\\1') | list }}"
 
-- name: "🟢 Enable and start nfs-ganesha"
+- name: "🟢 Enable nfs-ganesha at boot"
   ansible.builtin.systemd:
     name: "{{ SVC_STORAGE_NFS_SERVER_SERVICE['ganesha'][ansible_facts['os_family']] }}"
     enabled: true
-    state: started
-    daemon_reload: true
 
-- name: "🚿 Flush handlers (ganesha restart applies the rendered export set)"
+# Exception: flushing after the start task instead boots ganesha twice --
+# once here, once from the queued handler a second later.
+- name: "🚿 Flush handlers so a pending config change restarts ganesha first"
   ansible.builtin.meta: flush_handlers
+
+- name: "🟢 Start nfs-ganesha"
+  ansible.builtin.systemd:
+    name: "{{ SVC_STORAGE_NFS_SERVER_SERVICE['ganesha'][ansible_facts['os_family']] }}"
+    state: started
 
 - name: "✅ Assert ganesha reached listen state"
   ansible.builtin.wait_for:
@@ -99,6 +110,7 @@
     host: 127.0.0.1
     timeout: "{{ lookup('timeout', 60) | int }}"
     msg: >-
-      nfs-ganesha never listened on 2049. It reports 'started' while still
-      inside nfs_Init_svc(), so the client would only fail 20 minutes later
-      with a connection refused on the controller mount.
+      Port 2049 never opened within the timeout. Check 'systemctl status
+      nfs-ganesha' and 'journalctl -u nfs-ganesha': a unit that stays active
+      but logs nothing after the export CLIENT warnings has wedged before
+      'NFS SERVER INITIALIZED' and systemd will not restart it.
