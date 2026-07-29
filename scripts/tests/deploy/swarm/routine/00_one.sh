@@ -45,13 +45,13 @@ collect_and_teardown() {
 	if [ "${rc}" -ne 0 ]; then
 		INFINITO_RESCUE_DIAGNOSTICS_DIR="${INFINITO_RESCUE_DIAGNOSTICS_BASE}/${INFINITO_DISTRO}/${APP_ID}" \
 			timeout 1500 python3 utils/diagnostics/container.py \
-			"${APP_ID}" "post-deploy failure" || true
-		timeout 900 bash "${SCRIPT_DIR}/../utils/collect/diagnostics.sh" || true
+			"${APP_ID}" "post-deploy failure" || true                               # nocheck: shell-or-true -- best-effort diagnostics + teardown in the EXIT trap
+		timeout 900 bash "${SCRIPT_DIR}/../utils/collect/diagnostics.sh" || true # nocheck: shell-or-true -- best-effort diagnostics + teardown in the EXIT trap
 	fi
 
-	timeout 900 bash "${SCRIPT_DIR}/../utils/collect/playwright_reports.sh" || true
-	bash "${SCRIPT_DIR}/../utils/collect/topology_summary.sh" || true
-	timeout 900 bash "${SCRIPT_DIR}/../utils/clean/teardown.sh" || true
+	timeout 900 bash "${SCRIPT_DIR}/../utils/collect/playwright_reports.sh" || true # nocheck: shell-or-true -- best-effort diagnostics + teardown in the EXIT trap
+	bash "${SCRIPT_DIR}/../utils/collect/topology_summary.sh" || true               # nocheck: shell-or-true -- best-effort diagnostics + teardown in the EXIT trap
+	timeout 900 bash "${SCRIPT_DIR}/../utils/clean/teardown.sh" || true             # nocheck: shell-or-true -- best-effort diagnostics + teardown in the EXIT trap
 
 	return "${rc}"
 }

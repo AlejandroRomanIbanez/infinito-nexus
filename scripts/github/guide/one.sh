@@ -45,10 +45,10 @@ release() {
 	if [ "${rc}" -ne 0 ]; then
 		INFINITO_RESCUE_DIAGNOSTICS_DIR="${INFINITO_RESCUE_DIAGNOSTICS_BASE}/${INFINITO_DISTRO}/${GUIDE_ROLE}" \
 			timeout 1500 python3 utils/diagnostics/container.py \
-			"${GUIDE_ROLE}" "guide compose post-deploy failure" || true
+			"${GUIDE_ROLE}" "guide compose post-deploy failure" || true # nocheck: shell-or-true -- best-effort diagnostics + teardown in the EXIT trap
 	fi
 
-	make compose-down || true
+	make compose-down || true # nocheck: shell-or-true -- best-effort diagnostics + teardown in the EXIT trap
 
 	return "${rc}"
 }
