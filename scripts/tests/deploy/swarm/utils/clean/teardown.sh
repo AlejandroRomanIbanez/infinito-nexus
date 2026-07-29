@@ -15,11 +15,9 @@ REPO_ROOT="$(cd "$(dirname "$0")/../../../../../.." && pwd)"
 DIR_VAR_LIB="$(python3 -c "import yaml,sys;print(yaml.safe_load(open(sys.argv[1]))['DIR_VAR_LIB'])" \
 	"${REPO_ROOT}/group_vars/all/05_paths.yml")"
 
-timeout 120 bash "$(dirname "$0")/../unmount_nfs_mounts.sh" "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}" || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
+timeout 120 bash "$(dirname "$0")/../unmount/nfs_mounts.sh" "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}" || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 
-if timeout 15 mountpoint -q "${DIR_VAR_LIB}" 2>/dev/null; then
-	timeout 30 umount -lf "${DIR_VAR_LIB}" || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
-fi
+bash "$(dirname "$0")/../unmount/host_state.sh" "${DIR_VAR_LIB}"
 
 timeout 30 docker exec "${NFS_SERVER}" systemctl stop nfs-ganesha 2>/dev/null || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 

@@ -101,7 +101,7 @@ roles:
 ```
 ````
 
-With the label set, the `detect-affected-roles` job in [entry-pull-request-change.yml](../../../../.github/workflows/entry-pull-request-change.yml) calls [pr_affected_roles.sh](../../../../scripts/github/resolve/pr_affected_roles.sh), which runs the [cli.meta.ci.subset_roles](../../../../cli/meta/ci/subset_roles.py) module. The module reads the first fenced block whose YAML carries a `roles:` key (the heading text is not matched) and emits that list as the `whitelist` output with `roles_only=true`, which flows into the deploy tests as precedence rung 2 above. Without the label, the diff-driven precedence applies.
+With the label set, the `detect-affected-roles` job in [entry-pull-request-change.yml](../../../../.github/workflows/entry-pull-request-change.yml) calls [pr_affected_roles.sh](../../../../scripts/github/resolve/pr_affected_roles.sh), which runs the [cli.meta.ci.subset_roles](../../../../cli/meta/ci/subset_roles.py) module. The module reads the first fenced block whose YAML carries a `roles:` key (the heading text is not matched) and emits that list as the `whitelist` output, which flows into the deploy tests as precedence rung 2 above. Without the label, the diff-driven precedence applies.
 
 The subset path fails the run when:
 
@@ -118,7 +118,7 @@ The install-test workflows listed in the `Infrastructure tests` table of [workfl
 
 ### 11. Development Environment 🛠️
 
-The `test-development` stage runs the development-environment workflow listed in the `Infrastructure tests` table of [workflows.md](../../tools/github/actions/workflows.md).
+The `test-workspace` stage runs the workspace workflow listed in the `Infrastructure tests` table of [workflows.md](../../tools/github/actions/workflows.md).
 
 ### 12. Done 🏁
 
@@ -127,8 +127,8 @@ The final `done` job aggregates all deploy, install, and development gates. CI i
 ## Concurrency 🔀
 
 - PR pipelines use `cancel-in-progress: true` so only the newest run per PR and event type is active.
-- The orchestrator uses `cancel-in-progress: false` to avoid interrupting long-running deploy tests mid-flight.
-- The push entry workflow (`entry-push-latest.yml`) defaults to `cancel-in-progress: true` but respects the repository variable `CI_CANCEL_IN_PROGRESS`.
+- The orchestrator and the push entry workflow (`entry-push-latest.yml`) default to `cancel-in-progress: true` and both respect the repository variable `CI_CANCEL_IN_PROGRESS`.
+- The manual entry workflow (`entry-manual.yml`) sets `cancel-in-progress: true` on its own group and passes `force_cancel_in_progress: true` into the orchestrator, so a manual run cancels on both levels regardless of `CI_CANCEL_IN_PROGRESS`.
 
 See [configuration.md](../../tools/github/actions/configuration.md) for all repository variables that control CI behaviour.
 

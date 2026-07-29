@@ -27,7 +27,7 @@ flowchart TB
         direction TB
         topo["🗺️ utils/topology/base + export<br/>SPOT node names + NFS paths → GITHUB_ENV"]:::infra
         cluster["🐝 01_bootstrap.sh<br/>host side: pre-clean, compose build + up<br/>all 5 nodes + lab network, sudo .deb build"]:::infra
-        boot["🧱 compose/swarm/playbook.yml (over docker connection)<br/>systemd wait, NFS-export wipe, IPs → GITHUB_ENV,<br/>lab DNS, repo + .deb install on every node"]:::infra
+        boot["🧱 compose/swarm/playbook.yml (over docker connection)<br/>systemd wait, NFS-export wipe,<br/>lab DNS, repo + .deb install on every node"]:::infra
         topo --> cluster --> boot
     end
 
@@ -142,11 +142,13 @@ the cluster declaration (image, containers, network, DNS play) in
 
 | Stage | Script | Purpose |
 |---|---|---|
+| loop | `scripts/tests/deploy/distros.sh` | SPOT: run the drill once per distro in random order under the shared time budget, then table every outcome (✅ passed / ❌ failed / 🟦 skipped) into the job summary |
+| loop | `routine/00_one.sh` | the whole drill for one distro; collect + teardown run from its `EXIT` trap |
 | bring-up | `utils/topology/base.sh` | SPOT: node names + NFS export/state paths (sourced, not run) |
 | bring-up | `utils/topology/export.sh` | write the topology SPOT into `$GITHUB_ENV` |
 | bring-up | `compose/swarm/compose.yml` + `compose/swarm/Dockerfile` | declare the 5 node containers, node image + lab network (compose SPOT) |
-| bring-up | `routine/01_bootstrap.sh` | one CI step, host side: pre-clean, `compose build` + one `compose up`, sudo `.deb` build, then the play |
-| bring-up | `compose/swarm/playbook.yml` | node side over docker connection: systemd wait, NFS-export wipe, IPs into `$GITHUB_ENV`, lab DNS, repo + `.deb` install |
+| bring-up | `routine/01_bootstrap.sh` | host side: pre-clean, `compose build` + one `compose up`, sudo `.deb` build, then the play |
+| bring-up | `compose/swarm/playbook.yml` | node side over docker connection: systemd wait, NFS-export wipe, lab DNS, repo + `.deb` install |
 | deploy | `routine/02_provision_inventory.sh` | provision the per-round inventory |
 | deploy | `routine/03_wait_converge.sh` | wait for every stack service to converge |
 | deploy | `routine/04_verify_reachable.sh` | probe the app is reachable in-cluster |
@@ -156,16 +158,19 @@ the cluster declaration (image, containers, network, DNS play) in
 | chaos | `routine/06_drain_worker.sh` | drain the app's worker + force reschedule |
 | chaos | `routine/07_assert_state.sh` | assert the marker + reachability survived |
 | teardown | `utils/collect/diagnostics.sh` | collect stack/service diagnostics on failure |
-| teardown | `utils/collect/playwright_reports.sh` | pull Playwright reports from the manager |
+| teardown | `utils/collect/playwright_reports.sh` | pull Playwright reports from the manager into `/tmp/playwright-artifacts/<distro>/<app>` |
+| teardown | `utils/collect/topology_summary.sh` | render the node list + service placement into `$GITHUB_STEP_SUMMARY` |
 | teardown | `utils/clean/teardown.sh` | kill the nodes + remove the lab network |
 | helper | `utils/_context.sh` | per-app facts (entity, service, NFS volume, probes) |
-| helper | `utils/unmount_nfs_mounts.sh` | best-effort NFS unmount before node removal |
+| helper | `utils/unmount/nfs_mounts.sh` | best-effort NFS unmount before node removal |
+| helper | `utils/unmount/host_state.sh` | release the host mount of the shared state so the next cycle cannot inherit it |
 | recovery | `utils/clean/all.sh` | reap leftover clusters across every cluster id |
 | recovery | `utils/clean/stale_nfs.sh` | recover stale in-namespace NFS mounts |
 
 The matrix orchestrator
 (`utils/tests/swarm/matrix.py`) drives the deploy stage
-per variant round; the workflow `.github/workflows/test-deploy-swarm.yml`
-drives the surrounding stages. Run one app locally with
+per variant round; `routine/00_one.sh` drives the surrounding stages for one
+distro, and the workflow `.github/workflows/test-deploy-swarm.yml` drives the
+distro loop. Run one app locally with
 `make swarm-zombie app=<id>` (keeps the cluster for inspection) or the
 whole matrix via `make roundtrip`.

@@ -2,6 +2,7 @@ import unittest
 from unittest import mock
 
 from ansible.errors import AnsibleActionFail
+from ansible.plugins.loader import become_loader, shell_loader
 
 from plugins.action.package_install import ActionModule
 from utils.packages.plan import GENERIC_PACKAGE, ModuleCall
@@ -88,9 +89,7 @@ class TestOwningRole(unittest.TestCase):
 
 class TestModuleName(unittest.TestCase):
     def _module_name(self, module, facts):
-        return _action({})._module_name(
-            ModuleCall(module, {}), {"ansible_facts": facts}
-        )
+        return _action({})._module_name(ModuleCall(module, {}), facts)
 
     def test_generic_package_becomes_the_hosts_package_manager(self):
         self.assertEqual(
@@ -108,44 +107,132 @@ class TestModuleName(unittest.TestCase):
             self._module_name(GENERIC_PACKAGE, {})
 
 
-class TestBecomeIsRestored(unittest.TestCase):
-    def _action(self):
+class TestBecomeEscalation(unittest.TestCase):
+    def setUp(self):
+        self.become = become_loader.get("sudo")
+        self.become.set_options(direct={"become_user": "root"})
+        self.shell = shell_loader.get("sh")
+        self.commands = []
+
+    def _action(self, become):
         action = _action({})
-        action._play_context = mock.Mock(become=False, become_user="root")
-        action._execute_module = mock.Mock(return_value={"changed": True})
+        action._connection = mock.Mock(become=become, transport="local")
+        action._execute_module = mock.Mock(side_effect=self._record)
         return action
 
-    def test_become_user_is_set_for_the_call(self):
-        action = self._action()
-        seen = {}
-        action._execute_module.side_effect = lambda **_kw: (
-            seen.update(
-                become=action._play_context.become,
-                become_user=action._play_context.become_user,
-            )
-            or {"changed": True}
-        )
-        action._execute(ModuleCall("m", {}, become_user="aur_builder"), {})
-        self.assertEqual(seen, {"become": True, "become_user": "aur_builder"})
+    def _record(self, **_kwargs):
+        self.commands.append(self.become.build_become_command("MODULE", self.shell))
+        return {"changed": True}
 
-    def test_become_is_restored_after_the_call(self):
-        action = self._action()
-        action._execute(ModuleCall("m", {}, become_user="aur_builder"), {})
-        self.assertFalse(action._play_context.become)
-        self.assertEqual(action._play_context.become_user, "root")
+    def test_the_build_user_call_is_wrapped(self):
+        action = self._action(self.become)
+        action._execute(ModuleCall("m", {}, become_user="aur_builder"), {}, {})
+        self.assertIn("-u aur_builder", self.commands[0])
 
-    def test_become_is_restored_after_a_failing_call(self):
-        action = self._action()
+    def test_a_plain_call_is_not_wrapped(self):
+        action = self._action(self.become)
+        action._execute(ModuleCall("m", {}), {}, {})
+        self.assertNotIn("-u aur_builder", self.commands[0])
+        self.assertIn("-u root", self.commands[0])
+
+    def test_the_become_user_is_restored(self):
+        action = self._action(self.become)
+        action._execute(ModuleCall("m", {}, become_user="aur_builder"), {}, {})
+        self.assertEqual(self.become.get_option("become_user"), "root")
+
+    def test_a_later_call_on_the_same_connection_is_unaffected(self):
+        action = self._action(self.become)
+        action._execute(ModuleCall("m", {}, become_user="aur_builder"), {}, {})
+        action._execute(ModuleCall("m", {}), {}, {})
+        self.assertIn("-u aur_builder", self.commands[0])
+        self.assertIn("-u root", self.commands[1])
+        self.assertNotIn("-u aur_builder", self.commands[1])
+
+    def test_the_become_user_is_restored_after_a_failing_call(self):
+        action = self._action(self.become)
         action._execute_module.side_effect = RuntimeError("boom")
         with self.assertRaises(RuntimeError):
-            action._execute(ModuleCall("m", {}, become_user="aur_builder"), {})
-        self.assertFalse(action._play_context.become)
-        self.assertEqual(action._play_context.become_user, "root")
+            action._execute(ModuleCall("m", {}, become_user="aur_builder"), {}, {})
+        self.assertEqual(self.become.get_option("become_user"), "root")
 
-    def test_a_call_without_become_user_leaves_the_context_alone(self):
-        action = self._action()
-        action._execute(ModuleCall("m", {}), {})
-        self.assertFalse(action._play_context.become)
+    def test_without_a_become_plugin_it_fails_loud(self):
+        action = self._action(None)
+        with self.assertRaises(AnsibleActionFail) as caught:
+            action._execute(ModuleCall("m", {}, become_user="aur_builder"), {}, {})
+        self.assertIn("aur_builder", str(caught.exception))
+
+
+class TestTargetFacts(unittest.TestCase):
+    """A delegated install must resolve against the delegation target.
+
+    task_vars carries the inventory host's facts even under delegate_to, so a
+    RedHat node delegating to a Debian controller used to resolve dnf and then
+    run it where only apt exists.
+    """
+
+    def _action(self, delegate_to, setup_result=None):
+        action = _action({"id": "nfs-client"})
+        action._task.delegate_to = delegate_to
+        action._execute_module = mock.Mock(return_value=setup_result or {})
+        return action
+
+    def test_without_delegation_the_inventory_facts_are_used(self):
+        action = self._action(None)
+        facts = action._target_facts({"ansible_facts": {"pkg_mgr": "apt"}})
+        self.assertEqual(facts, {"pkg_mgr": "apt"})
+        action._execute_module.assert_not_called()
+
+    def test_delegating_to_itself_is_not_delegation(self):
+        action = self._action("nfs-node")
+        facts = action._target_facts(
+            {"inventory_hostname": "nfs-node", "ansible_facts": {"pkg_mgr": "dnf"}}
+        )
+        self.assertEqual(facts, {"pkg_mgr": "dnf"})
+        action._execute_module.assert_not_called()
+
+    def test_a_delegated_task_asks_the_target(self):
+        action = self._action(
+            "localhost",
+            {
+                "ansible_facts": {
+                    "ansible_pkg_mgr": "apt",
+                    "ansible_os_family": "Debian",
+                }
+            },
+        )
+        facts = action._target_facts(
+            {
+                "inventory_hostname": "nfs-node",
+                "ansible_facts": {"pkg_mgr": "dnf", "os_family": "RedHat"},
+            }
+        )
+        self.assertEqual(
+            action._module_name(ModuleCall(GENERIC_PACKAGE, {}), facts), "apt"
+        )
+
+    def test_a_failing_setup_names_the_delegation_target(self):
+        action = self._action("localhost", {"failed": True, "msg": "no connection"})
+        with self.assertRaises(AnsibleActionFail) as caught:
+            action._target_facts({"inventory_hostname": "nfs-node"})
+        self.assertIn("localhost", str(caught.exception))
+
+
+class TestFactShapes(unittest.TestCase):
+    def test_bare_keys_from_task_vars(self):
+        distribution, os_family = _action({})._facts(
+            {"distribution": "Fedora", "os_family": "RedHat"}
+        )
+        self.assertEqual((distribution, os_family), ("fedora", "RedHat"))
+
+    def test_prefixed_keys_from_the_setup_module(self):
+        distribution, os_family = _action({})._facts(
+            {"ansible_distribution": "Ubuntu", "ansible_os_family": "Debian"}
+        )
+        self.assertEqual((distribution, os_family), ("ubuntu", "Debian"))
+
+    def test_missing_facts_fail_loud(self):
+        with self.assertRaises(AnsibleActionFail):
+            _action({})._facts({})
 
 
 class TestAggregate(unittest.TestCase):

@@ -31,7 +31,8 @@ if docker ps --format '{{.Names}}' | grep -qx 'infinito_nexus_debian'; then
 	fi
 fi
 
-bash "${SCRIPT_DIR}/../utils/unmount_nfs_mounts.sh" "${NFS_SERVER}" >/dev/null 2>&1 || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
+bash "${SCRIPT_DIR}/../utils/unmount/nfs_mounts.sh" "${NFS_SERVER}" >/dev/null 2>&1 || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
+bash "${SCRIPT_DIR}/../utils/unmount/host_state.sh" "${INFINITO_DIR_VAR_LIB:?}"
 for node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}" "${BACKUP_NODE}"; do
 	docker rm -f "${node}" >/dev/null 2>&1 || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 done
