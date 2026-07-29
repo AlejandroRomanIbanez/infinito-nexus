@@ -10,6 +10,10 @@
 # hence the mknod loop below. And it cannot load kernel modules, so those nodes
 # stay dead unless the host carries the loop driver: `make kernel-loop-load`.
 #
+# The device-mapper name is host-global too, so a preserved cluster
+# (INFINITO_KEEP_SWARM_NODES) leaves it behind and the next round aborts with
+# "Device <mapper> already exists" — hence the teardown before luksOpen.
+#
 # Arguments:
 #   $1 USB_IMG      loop image path to create
 #   $2 MOUNT_DIR    configured services.local-2-device.mount path
@@ -42,6 +46,13 @@ fi
 
 losetup -ln 2>/dev/null | awk '/\(deleted\)/ {print $1}' | xargs -r -n1 losetup -d 2>/dev/null || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 losetup -j "${USB_IMG}" 2>/dev/null | cut -d: -f1 | xargs -r -n1 losetup -d 2>/dev/null || true        # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
+
+if cryptsetup status "${USB_MAPPER}" >/dev/null 2>&1; then
+	if findmnt -rn -S "/dev/mapper/${USB_MAPPER}" >/dev/null; then
+		umount "/dev/mapper/${USB_MAPPER}"
+	fi
+	cryptsetup luksClose "${USB_MAPPER}"
+fi
 
 truncate -s "${USB_SIZE_MB}M" "${USB_IMG}"
 printf '%s' "${USB_PASS}" | cryptsetup luksFormat --type luks2 --batch-mode "${USB_IMG}" -
