@@ -66,7 +66,8 @@ dexec "${NFS_SERVER}" findmnt -R "${INFINITO_SWARM_NFS_EXPORT_BASE:?}" 2>&1
 dexec "${NFS_SERVER}" mountpoint "${INFINITO_SWARM_NFS_STATE_PATH:?}" 2>&1
 dexec "${NFS_SERVER}" cat /proc/fs/nfsd/exports 2>&1
 dexec "${NFS_SERVER}" cat /proc/fs/nfsd/versions 2>&1
-dexec "${NFS_SERVER}" sh -c "journalctl -u nfs-server -u nfs-ganesha --no-pager 2>&1 | tail -50"
+dexec "${NFS_SERVER}" sh -c "journalctl -u nfs-server -u nfs-ganesha -u rpcbind --no-pager 2>&1 | tail -50"
+dexec "${NFS_SERVER}" sh -c "command -v ss >/dev/null 2>&1 && { ss -lntp | grep -E ':(2049|111)' || echo '(ss ran: nothing listening on 2049/111)'; } || echo '(ss not installed on this node)'"
 
 sep "controller (this runner): NFS reachability of nfs-server"
 _nfs_ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' "${NFS_SERVER}")"
