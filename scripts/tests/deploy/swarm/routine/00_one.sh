@@ -64,7 +64,11 @@ if docker image inspect "${INFINITO_IMAGE}" >/dev/null 2>&1; then
 	echo "==> node image: locally built ${INFINITO_IMAGE}"
 else
 	INFINITO_IMAGE="$(bash "${REPO_ROOT}/scripts/meta/resolve/image/ci.sh")"
-	echo "==> node image: published ${INFINITO_IMAGE:-<none, bootstrap will build it>}"
+	if [ -n "${INFINITO_IMAGE}" ]; then
+		echo "==> node image: published ${INFINITO_IMAGE}"
+	else
+		echo "==> node image: unresolved, bootstrap will build it locally"
+	fi
 fi
 export INFINITO_IMAGE
 
