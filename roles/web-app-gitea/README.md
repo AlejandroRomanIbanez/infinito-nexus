@@ -112,7 +112,7 @@ docker run --rm -it \
 ## Further Resources
 
 - [Gitea Official Website](https://gitea.io/)
-- [Gitea LDAP integration](https://docs.gitea.com/usage/authentication)
+- [Gitea LDAP integration](https://docs.gitea.com/administration/authentication/)
 
 ## Credits
 
