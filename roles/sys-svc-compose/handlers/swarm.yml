@@ -148,6 +148,9 @@
   register: _swarm_force_recreate
   changed_when: true
   timeout: "{{ lookup('timeout', 1800) | int }}"
+  retries: 5
+  delay: 15
+  until: _swarm_force_recreate is succeeded
   listen:
     - container recreate
   run_once: true

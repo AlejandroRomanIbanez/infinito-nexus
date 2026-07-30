@@ -80,3 +80,24 @@
   changed_when: _peertube_oidc_registered.rc != 0
   delegate_to: "{{ PEERTUBE_HOST_NODE }}"
   notify: container recreate
+
+- name: "🚿 Flush the container recreation before verifying the OIDC registration"
+  meta: flush_handlers
+
+- name: "🧭 Re-resolve PeerTube host node + local container id after the recreation"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
+  vars:
+    resolve_service_key: "{{ entity_name }}"
+    resolve_output_prefix: PEERTUBE
+    resolve_compose_cid: "{{ PEERTUBE_CONTAINER }}"
+
+- name: "🛑 Fail if the running PeerTube has still not registered the OIDC plugin"
+  shell: |
+    # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
+    container exec {{ PEERTUBE_LOCAL_CID | quote }} test -d /data/plugins/data/{{ PEERTUBE_OIDC_PLUGIN }}
+  register: _peertube_oidc_verified
+  retries: 30
+  delay: 10
+  until: _peertube_oidc_verified.rc == 0
+  changed_when: false
+  delegate_to: "{{ PEERTUBE_HOST_NODE }}"
