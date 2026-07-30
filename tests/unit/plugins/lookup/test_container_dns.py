@@ -22,6 +22,7 @@ def _vars(**overrides):
         "ansible_facts": _BRIDGE,
         "group_names": ["svc-net-tor"],
         "networks": _CLEARNET,
+        "DEPLOYMENT_MODE": "compose",
     }
     variables.update(overrides)
     return variables
@@ -36,6 +37,16 @@ class TestResolveContainerDns(unittest.TestCase):
 
     def test_without_tor_only_clearnet(self):
         self.assertEqual(resolve_container_dns(_vars(group_names=[])), ["172.30.0.53"])
+
+    def test_swarm_node_skips_the_bridge_resolver(self):
+        self.assertEqual(
+            resolve_container_dns(_vars(DEPLOYMENT_MODE="swarm")), ["172.30.0.53"]
+        )
+
+    def test_swarm_node_without_clearnet_yields_empty_list(self):
+        self.assertEqual(
+            resolve_container_dns(_vars(DEPLOYMENT_MODE="swarm", networks={})), []
+        )
 
     def test_without_bridge_only_clearnet(self):
         self.assertEqual(

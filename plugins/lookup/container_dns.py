@@ -5,6 +5,7 @@ from typing import Any
 from ansible.plugins.lookup import LookupBase
 
 _TOR_ROLE = "svc-net-tor"
+_BRIDGE_MODE = "compose"
 
 
 def resolve_container_dns(variables: dict[str, Any]) -> list[str]:
@@ -16,18 +17,28 @@ def resolve_container_dns(variables: dict[str, Any]) -> list[str]:
     bridge address because docker discards loopback resolvers, and it is
     absent before docker itself is installed, hence the guard.
 
+    Only compose mode gets the bridge: TOR_CONTAINER_DNS_HOST creates the
+    matching dnsmasq listener there and nowhere else.
+
     The clearnet resolver stays as a second entry so that losing dnsmasq costs
     onion names rather than all name resolution.
     """
     facts = variables.get("ansible_facts") or {}
     bridge = ((facts.get("docker0") or {}).get("ipv4") or {}).get("address") or ""
     on_tor_node = _TOR_ROLE in (variables.get("group_names") or [])
+    bridge_reachable = (
+        str(variables.get("DEPLOYMENT_MODE") or "").strip() == _BRIDGE_MODE
+    )
 
     clearnet = ((variables.get("networks") or {}).get("internet") or {}).get(
         "dns"
     ) or ""
 
-    return [str(r) for r in (bridge if on_tor_node else "", clearnet) if r]
+    return [
+        str(r)
+        for r in (bridge if (on_tor_node and bridge_reachable) else "", clearnet)
+        if r
+    ]
 
 
 class LookupModule(LookupBase):
