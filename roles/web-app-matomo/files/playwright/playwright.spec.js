@@ -1,5 +1,4 @@
 const { test, expect } = require("@playwright/test");
-const { resolveTimeout } = require("./timeouts");
 
 const { appBaseUrl, canonicalDomain, attachDiagnostics, setupMatomoPage } = require("./_shared");
 const { assertCspMetaParity, assertCspResponseHeader, expectNoCspViolations, gotoOnion } = require("./personas");
