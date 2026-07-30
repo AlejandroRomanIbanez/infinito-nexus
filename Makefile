@@ -682,6 +682,8 @@ swarm-shell:
 	@test -n '$(name)' || { echo 'usage: make swarm-shell name=<cluster-id> [node=<container>]'; exit 2; }
 	@SWARM_NAME='$(name)' node='$(node)' bash scripts/tests/deploy/act/shell_node.sh
 
+SWARM_DISTROS = $(or $(distros),$${INFINITO_DISTRO:?})
+
 .PHONY: swarm-zombie
 # Run a swarm matrix-app test and leave the cluster alive afterwards for post-mortem inspection.
 # Param app: matrix application id (e.g. web-app-baserow).
@@ -697,11 +699,17 @@ swarm-zombie: install-act
 	@bash scripts/tests/deploy/act/down_act_outer.sh
 	@ACT_RM=false \
 	 ACT_BIND=true \
-	 ACT_ENV='INFINITO_KEEP_SWARM_NODES=true;INFINITO_APP_DISCOVERY_RUNNER=host;INFINITO_DEPLOY_MODE=swarm;disable=$(disable);SWARM_NAME=$(or $(name),$(app));INFINITO_SWARM_STEP_TIMEOUT_MINUTES=$(or $(step_timeout),690)' \
+	 ACT_ENV="INFINITO_KEEP_SWARM_NODES=true; \
+	 INFINITO_APP_DISCOVERY_RUNNER=host; \
+	 INFINITO_DEPLOY_MODE=swarm; \
+	 disable=$(disable); \
+	 SWARM_NAME=$(or $(name),$(app)); \
+	 INFINITO_SWARM_STEP_TIMEOUT_MINUTES=$(or $(step_timeout),690); \
+	 INFINITO_DISTROS=$(SWARM_DISTROS)" \
 	 ACT_WORKFLOW=.github/workflows/test-deploy-swarm.yml \
 	 ACT_JOB=swarm \
 	 ACT_MATRIX='apps:$(app);variant:$(or $(variant),0)' \
-	 ACT_INPUTS="whitelist=$(app) distros=$(or $(distros),$${INFINITO_DISTRO:?})" \
+	 ACT_INPUTS="whitelist=$(app) distros=$(SWARM_DISTROS)" \
 	 bash scripts/tests/deploy/act/workflow.sh
 
 .PHONY: system-purge
