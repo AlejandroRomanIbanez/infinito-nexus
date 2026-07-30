@@ -52,6 +52,7 @@ async function signInViaDashboardOidc(page, username, password, personaLabel) {
   const expectedOidcAuthUrl = `${oidcIssuerUrl}/protocol/openid-connect/auth`;
 
   await gotoOnion(page, `${peertubeBaseUrl}/login`);
+  await page.waitForLoadState("networkidle").catch(() => {});
 
   const oidcButtonPatterns = [
     oidcButtonText ? new RegExp(oidcButtonText.replace(/[.*+?^${}()|[\]\\]/g, "\\$&"), "i") : null,
@@ -61,28 +62,27 @@ async function signInViaDashboardOidc(page, username, password, personaLabel) {
     /sign\s*in\s+with\s+oidc/i
   ].filter(Boolean);
 
-  const oidcSignIn = page
-    .locator("a, button")
-    .filter({ hasText: oidcButtonPatterns[0] })
-    .first();
-
-  if ((await oidcSignIn.count().catch(() => 0)) > 0) {
-    await oidcSignIn.click({ timeout: resolveTimeout(30_000) });
-  } else {
-    for (const pattern of oidcButtonPatterns.slice(1)) {
-      const candidate = page.locator("a, button").filter({ hasText: pattern }).first();
-      if ((await candidate.count().catch(() => 0)) > 0) {
-        await candidate.click({ timeout: resolveTimeout(30_000) });
-        break;
-      }
-    }
-  }
-
   await expect
-    .poll(() => page.url(), {
-      timeout: resolveTimeout(60_000),
-      message: `${personaLabel}: expected redirect to Keycloak OIDC auth (${expectedOidcAuthUrl})`
-    })
+    .poll(
+      async () => {
+        if (page.url().includes(expectedOidcAuthUrl)) return page.url();
+        for (const pattern of oidcButtonPatterns) {
+          const candidate = page.locator("a, button").filter({ hasText: pattern }).first();
+          if ((await candidate.count().catch(() => 0)) > 0) {
+            await candidate
+              .waitFor({ state: "visible", timeout: resolveTimeout(30_000) })
+              .catch(() => {});
+            await candidate.click().catch(() => {});
+            break;
+          }
+        }
+        return page.url();
+      },
+      {
+        timeout: resolveTimeout(60_000),
+        message: `${personaLabel}: no OIDC sign-in button on ${peertubeBaseUrl}/login and no redirect to Keycloak; PeerTube has not registered the auth-openid-connect plugin`
+      }
+    )
     .toContain(expectedOidcAuthUrl);
 
   await performKeycloakLoginForm(page, username, password);
