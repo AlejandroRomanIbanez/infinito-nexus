@@ -641,6 +641,7 @@
         "~/.cache/pip",
         "~/.cache/pre-commit",
         "~/.docker/buildx",
+        "~/.local/share/worktrees",
         "~/.venvs"
       ],
       "denyRead": [
