@@ -19,6 +19,7 @@ from pathlib import Path
 from utils.cache.files import PROJECT_ROOT
 
 LIB = PROJECT_ROOT / "scripts" / "system" / "worktree" / "lib.sh"
+NEEDS_UNPRIVILEGED = "clearing the write bit does not restrain root"
 
 
 def _call(func: str, *args: str) -> subprocess.CompletedProcess:
@@ -26,6 +27,7 @@ def _call(func: str, *args: str) -> subprocess.CompletedProcess:
         ["bash", "-c", f'source "$1"; shift; {func} "$@"', "bash", str(LIB), *args],
         capture_output=True,
         text=True,
+        check=False,
     )
 
 
@@ -64,29 +66,32 @@ class TestWorktreeUnregister(unittest.TestCase):
             self.assertEqual(result.returncode, 0)
             self.assertFalse(entry.exists())
 
+    @unittest.skipIf(os.geteuid() == 0, NEEDS_UNPRIVILEGED)
     def test_pinned_directory_still_unregisters(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             entry = self._entry(tmp)
-            parent_mode = os.stat(tmp).st_mode
+            tmp_path = Path(tmp)
+            parent_mode = tmp_path.stat().st_mode
             (entry / "gitdir").unlink()
             (entry / "HEAD").unlink()
-            os.chmod(tmp, parent_mode & ~stat.S_IWUSR)
+            tmp_path.chmod(parent_mode & ~stat.S_IWUSR)
             try:
                 result = _call("worktree_unregister", str(entry))
             finally:
-                os.chmod(tmp, parent_mode)
+                tmp_path.chmod(parent_mode)
             self.assertEqual(result.returncode, 1)
             self.assertTrue(entry.exists())
 
+    @unittest.skipIf(os.geteuid() == 0, NEEDS_UNPRIVILEGED)
     def test_undeletable_pointers_report_still_registered(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             entry = self._entry(tmp)
-            mode = os.stat(entry).st_mode
-            os.chmod(entry, mode & ~stat.S_IWUSR)
+            mode = entry.stat().st_mode
+            entry.chmod(mode & ~stat.S_IWUSR)
             try:
                 result = _call("worktree_unregister", str(entry))
             finally:
-                os.chmod(entry, mode)
+                entry.chmod(mode)
             self.assertEqual(result.returncode, 2)
             self.assertTrue((entry / "gitdir").exists())
 
