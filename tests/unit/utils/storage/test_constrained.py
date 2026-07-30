@@ -7,13 +7,19 @@ _GIB = 1024**3
 
 class TestIsConstrained(unittest.TestCase):
     def test_need_above_free_is_constrained(self):
-        self.assertTrue(is_constrained(free_bytes=122 * _GIB, required_bytes=381 * _GIB))
+        self.assertTrue(
+            is_constrained(free_bytes=122 * _GIB, required_bytes=381 * _GIB)
+        )
 
     def test_need_equal_to_free_fits(self):
-        self.assertFalse(is_constrained(free_bytes=100 * _GIB, required_bytes=100 * _GIB))
+        self.assertFalse(
+            is_constrained(free_bytes=100 * _GIB, required_bytes=100 * _GIB)
+        )
 
     def test_need_below_free_fits(self):
-        self.assertFalse(is_constrained(free_bytes=300 * _GIB, required_bytes=113 * _GIB))
+        self.assertFalse(
+            is_constrained(free_bytes=300 * _GIB, required_bytes=113 * _GIB)
+        )
 
     def test_undeclared_need_never_constrains(self):
         self.assertFalse(is_constrained(free_bytes=1, required_bytes=0))
