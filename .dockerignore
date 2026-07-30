@@ -3,6 +3,7 @@
 # NEVER TOUCH THE .dockerignore, BECAUSE IT ANYHOW WILL BE OVERWRITTEN
 
 site.retry
+.cache
 *__pycache__
 compose.cache.override.yml
 venv
