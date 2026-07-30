@@ -74,9 +74,8 @@
   vars:
     TOR_DNS_UPSTREAMS: "{{ (_tor_dns_upstreams_raw.content | b64decode).split('\n') | map('trim') | reject('equalto', '') | list }}"
     TOR_DNSMASQ_OWNS_LISTENER: "{{ _tor_dnsmasq_foreign.matched == 0 and TOR_DNSMASQ_MAIN_DIRECTIVES | length == 0 }}"
-    TOR_DNSMASQ_MAIN_DIRECTIVES: "{{ (_tor_dnsmasq_main.content | b64decode).split('\n')
-      | map('trim') | reject('equalto', '')
-      | reject('match', '#') | reject('match', 'conf-dir=') | list }}"
+    TOR_DNSMASQ_MAIN_DIRECTIVES: "{{ (_tor_dnsmasq_main.content | b64decode).split('\n') | map('trim') | reject('equalto', '') | reject('match', '#') | reject('match',
+      'conf-dir=') | list }}"
   register: _tor_dnsmasq_conf
 - name: "🚀 Egress router | Enable + (re)start dnsmasq"
   ansible.builtin.systemd:
