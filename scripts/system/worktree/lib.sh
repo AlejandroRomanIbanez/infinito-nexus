@@ -37,7 +37,6 @@ worktree_default_base() {
 	printf '%s/.local/share/worktrees/%s/%s' "${HOME}" "${url%%[:/]*}" "${url#*[:/]}"
 }
 
-# Exception: the branch keeps its slashes; git already forbids a branch `feature` beside `feature/x`, so the nested dirs cannot collide.
 worktree_path() {
 	printf '%s/%s' "$2" "$1"
 }
