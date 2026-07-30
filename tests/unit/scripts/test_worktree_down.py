@@ -29,6 +29,7 @@ GIT_IDENTITY = {
     "GIT_COMMITTER_NAME": "test",
     "GIT_COMMITTER_EMAIL": "test@example.invalid",
 }
+NEEDS_UNPRIVILEGED = "clearing the write bit does not restrain root"
 
 
 class WorktreeDownFixture:
@@ -73,6 +74,7 @@ class WorktreeDownFixture:
             env=self.env,
             capture_output=True,
             text=True,
+            check=False,
         )
 
     def registered(self) -> bool:
@@ -115,30 +117,32 @@ class TestWorktreeDown(unittest.TestCase):
             self.assertIn("cannot read the git status", result.stderr)
             self.assertTrue(fixture.checkout.exists())
 
+    @unittest.skipIf(os.geteuid() == 0, NEEDS_UNPRIVILEGED)
     def test_pinned_metadata_dir_still_releases_the_branch(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             fixture = WorktreeDownFixture(tmp)
             meta_parent = fixture.meta_dir().parent
-            mode = os.stat(meta_parent).st_mode
-            os.chmod(meta_parent, mode & ~stat.S_IWUSR)
+            mode = meta_parent.stat().st_mode
+            meta_parent.chmod(mode & ~stat.S_IWUSR)
             try:
                 result = fixture.down()
             finally:
-                os.chmod(meta_parent, mode)
+                meta_parent.chmod(mode)
             self.assertEqual(result.returncode, 0, result.stderr)
             self.assertFalse(fixture.checkout.exists())
             self.assertFalse(fixture.registered())
 
+    @unittest.skipIf(os.geteuid() == 0, NEEDS_UNPRIVILEGED)
     def test_undeletable_pointers_fail_loudly(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
             fixture = WorktreeDownFixture(tmp)
             meta = fixture.meta_dir()
-            mode = os.stat(meta).st_mode
-            os.chmod(meta, mode & ~stat.S_IWUSR)
+            mode = meta.stat().st_mode
+            meta.chmod(mode & ~stat.S_IWUSR)
             try:
                 result = fixture.down()
             finally:
-                os.chmod(meta, mode)
+                meta.chmod(mode)
             self.assertNotEqual(result.returncode, 0)
             self.assertIn("still registers branch", result.stderr)
 
