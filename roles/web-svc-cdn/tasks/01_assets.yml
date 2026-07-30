@@ -1,4 +1,10 @@
 ---
+- name: "📁 Ensure the CDN volumes directory exists before staging into it"
+  ansible.builtin.file:
+    path: "{{ lookup('container', 'web-svc-cdn', 'directories.volumes') }}"
+    state: directory
+    mode: "0755"
+
 - name: "🔎 Find every role that declares frontend dependencies"
   ansible.builtin.find:
     paths: "{{ lookup('path_absolute', 'roles') }}"
