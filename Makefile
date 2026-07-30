@@ -269,7 +269,7 @@ dotenv-force:
 
 .PHONY: environment-bootstrap
 # Bootstrap the local development environment.
-environment-bootstrap: wsl2-systemd-check install-python-dev install-lint security-apparmor-teardown network-dns-setup network-ipv6-disable kernel-loop-load
+environment-bootstrap: wsl2-systemd-check install-python-dev install-lint security-apparmor-teardown network-dns-setup network-ipv6-disable
 
 .PHONY: environment-teardown
 # Tear down the local development environment.
@@ -374,7 +374,7 @@ install-venv: install-system-python
 
 .PHONY: kernel-loop-load
 # Load the kernel loop driver the swarm backup DR drill needs.
-# Note: node containers have no udev and cannot load modules, so the host must carry it.
+# Note: run this on the host; container environments have no modprobe.
 kernel-loop-load:
 	@sudo bash scripts/system/kernel/loop/load.sh
 
