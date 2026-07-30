@@ -91,6 +91,21 @@ class TestLogParse(unittest.TestCase):
             {r.role: r.seconds for r in records}, {"role-x": 5.0, "role-y": 7.0}
         )
 
+    def test_recap_sections_survive_the_log_prefix(self):
+        prefix = "2026-07-30 21:36:09,033 p=1234 u=root n=ansible INFO| "
+        log = "".join(
+            prefix + line + "\n"
+            for line in (
+                "TASKS RECAP " + "*" * 68,
+                "role-x : install " + "-" * 46 + " 12.00s",
+                "ROLES RECAP " + "*" * 68,
+                "role-x " + "-" * 56 + " 79.00s",
+                "PLAYBOOK RECAP " + "*" * 65,
+            )
+        )
+        records = logparse.parse_log(self._log(log))
+        self.assertEqual({r.role: r.seconds for r in records}, {"role-x": 79.0})
+
     def test_missing_log_raises(self):
         with self.assertRaises(FileNotFoundError):
             logparse.parse_log("/nonexistent/path.log")

@@ -72,12 +72,6 @@ cleanup() {
 	docker cp "${INFINITO_CONTAINER}:${INFINITO_PLAYWRIGHT_REPORTS_BASE_DIR}/." \
 		"${_playwright_host_dir}" 2>/dev/null || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 
-	if [[ -n "${ANSIBLE_LOG_PATH:-}" ]]; then
-		echo ">>> Copying Ansible log from ${INFINITO_CONTAINER}:${ANSIBLE_LOG_PATH} to ${ANSIBLE_LOG_PATH}"
-		# nocheck: container-cp - container-to-host extraction on the CI host itself
-		docker cp "${INFINITO_CONTAINER}:${ANSIBLE_LOG_PATH}" "${ANSIBLE_LOG_PATH}" 2>/dev/null || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
-	fi
-
 	local _rescue_host_dir="${INFINITO_RESCUE_DIAGNOSTICS_BASE}/${INFINITO_DISTRO}/${apps}"
 	mkdir -p "${_rescue_host_dir}"
 	echo ">>> Capturing rescue diagnostics inside ${INFINITO_CONTAINER} (recursive DiD snapshot) before teardown removes it"
@@ -115,13 +109,10 @@ cleanup() {
 		docker rm -f "${ids[@]}" >/dev/null 2>&1 || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 	fi
 
-	# 2) Remove networks (except default ones)
 	docker network prune -f >/dev/null 2>&1 || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 
-	# 3) Remove ALL volumes
 	docker volume prune -f >/dev/null 2>&1 || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 
-	# 4) Optional: leftover stopped containers (usually redundant after rm -f)
 	docker container prune -f >/dev/null 2>&1 || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 
 	if [[ "${INFINITO_PRESERVE_DOCKER_CACHE}" != "true" ]]; then
@@ -157,7 +148,6 @@ cleanup() {
 			sudo rm -rf "${INFINITO_DOCKER_VOLUME}" || true    # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 			sudo mkdir -vp "${INFINITO_DOCKER_VOLUME}" || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 
-			# Optional: keep it writable for the runner user
 			sudo chown -R "$(id -u):$(id -g)" "${INFINITO_DOCKER_VOLUME}" || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 
 			echo ">>> Post-clean ownership/permissions (best-effort)"
