@@ -60,10 +60,6 @@
     excludes: "{{ TOR_DNSMASQ_CONF | basename }}"
   register: _tor_dnsmasq_foreign
 
-- name: "📖 Egress router | Read the main dnsmasq config"
-  ansible.builtin.slurp:
-    src: /etc/dnsmasq.conf
-  register: _tor_dnsmasq_main
 - name: "📝 Egress router | Render dnsmasq .onion split-DNS drop-in"
   ansible.builtin.template: # nocheck: stack-host-template (per-host dnsmasq system config in /etc/dnsmasq.d)
     src: dnsmasq-tor-onion.conf.j2
@@ -73,9 +69,7 @@
     mode: "0644"
   vars:
     TOR_DNS_UPSTREAMS: "{{ (_tor_dns_upstreams_raw.content | b64decode).split('\n') | map('trim') | reject('equalto', '') | list }}"
-    TOR_DNSMASQ_OWNS_LISTENER: "{{ _tor_dnsmasq_foreign.matched == 0 and TOR_DNSMASQ_MAIN_DIRECTIVES | length == 0 }}"
-    TOR_DNSMASQ_MAIN_DIRECTIVES: "{{ (_tor_dnsmasq_main.content | b64decode).split('\n') | map('trim') | reject('equalto', '') | reject('match', '#') | reject('match',
-      'conf-dir=') | list }}"
+    TOR_DNSMASQ_OWNS_LISTENER: "{{ _tor_dnsmasq_foreign.matched == 0 and DEPLOYMENT_MODE == 'compose' }}"
   register: _tor_dnsmasq_conf
 - name: "🚀 Egress router | Enable + (re)start dnsmasq"
   ansible.builtin.systemd:
