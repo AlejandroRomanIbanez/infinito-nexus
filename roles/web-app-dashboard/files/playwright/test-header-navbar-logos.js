@@ -13,6 +13,13 @@ async function getCurrentImageSource(locator) {
 async function expectImageLoaded(locator, label, expectedUrl) {
   await expect(locator).toBeVisible({ timeout: resolveTimeout(60_000) });
 
+  await expect
+    .poll(() => locator.evaluate((img) => img.complete && img.naturalWidth > 0), {
+      timeout: resolveTimeout(60_000),
+      message: `${label} never finished decoding`,
+    })
+    .toBe(true);
+
   const loaded = await locator.evaluate((img) => ({
     source: img.currentSrc || img.src || "",
     naturalWidth: img.naturalWidth,
@@ -29,6 +36,7 @@ async function expectImageLoaded(locator, label, expectedUrl) {
 exports.register = function (shared) {
   test("dashboard loads role-core JavaScript modules and renders header/navbar logos", async ({ page }) => {
     shared.skipUnlessServiceEnabled("cdn");
+    shared.skipUnlessServiceEnabled("asset");
 
     const diagnostics = shared.attachDiagnostics(page);
     const documentResponse = await gotoOnion(page,"/");
