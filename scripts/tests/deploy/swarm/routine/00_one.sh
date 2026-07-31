@@ -101,3 +101,5 @@ timeout "$((INFINITO_SWARM_STEP_TIMEOUT_MINUTES * 60))" "${matrix_cmd[@]}"
 bash "${SCRIPT_DIR}/05_seed_content.sh"
 bash "${SCRIPT_DIR}/06_drain_worker.sh"
 bash "${SCRIPT_DIR}/07_assert_state.sh"
+
+echo "==> swarm drill complete: app=${APP_ID} distro=${INFINITO_DISTRO}"
