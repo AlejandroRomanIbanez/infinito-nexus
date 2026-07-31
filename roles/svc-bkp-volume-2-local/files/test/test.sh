@@ -25,6 +25,7 @@ fi
 
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+bash "${DIR}/subvolume_probe.sh"
 bash "${DIR}/snapshot_probe.sh"
 
 wait_service_terminated() {

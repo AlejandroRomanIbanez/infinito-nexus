@@ -45,7 +45,7 @@ flowchart TD
     TOOLS -->|yes| BUILD["truncate + mkfs.btrfs + losetup + mount<br>subvolume as the fake data root<br>docker stub on PATH"]
     BUILD --> M1["plain local volume<br>expect --snapshot btrfs --snapshot-subject &lt;root&gt;"]
     M1 --> M2["volume declaring Options type=nfs<br>expect no flags"]
-    M2 --> M3["nested subvolume below the root<br>expect no flags"]
+    M2 --> M3["subvolume outside the volume tree: expect flags<br>subvolume inside it: expect no flags"]
     M3 --> M4[".baudolo-* leftover of a killed run<br>expect flags, and the leftover gone"]
     M4 --> M5["plain directory as the root<br>auto: no flags, stated btrfs: exit 2"]
     M5 --> CLEAN["trap: umount, losetup -d, rm -rf"]

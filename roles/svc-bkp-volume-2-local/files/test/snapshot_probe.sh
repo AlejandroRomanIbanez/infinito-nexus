@@ -89,14 +89,22 @@ expect auto "--snapshot btrfs --snapshot-subject ${SUBJECT}" \
 VOL_OPTIONS='{"type":"nfs"}' expect auto "" \
     "a volume declaring its own backing store keeps the live copy"
 
-btrfs subvolume create "${SUBJECT}/nested" >/dev/null
-expect auto "" "a nested subvolume keeps the live copy, since a snapshot omits it"
-btrfs subvolume delete "${SUBJECT}/nested" >/dev/null
+btrfs subvolume create "${SUBJECT}/btrfs" >/dev/null
+expect auto "--snapshot btrfs --snapshot-subject ${SUBJECT}" \
+    "a subvolume outside the volume tree is ignored, as the storage driver carves those"
+btrfs subvolume delete "${SUBJECT}/btrfs" >/dev/null
 
-btrfs subvolume snapshot -r "${SUBJECT}" "${WORK}/mnt/.baudolo-stale" >/dev/null
+btrfs subvolume delete "${SUBJECT}/volumes/probe_vol" 2>/dev/null || rm -rf "${SUBJECT}/volumes/probe_vol"
+btrfs subvolume create "${SUBJECT}/volumes/probe_vol" >/dev/null
+mkdir -p "${SUBJECT}/volumes/probe_vol/_data"
+expect auto "" "a subvolume inside the volume tree keeps the live copy, since a snapshot omits it"
+btrfs subvolume delete "${SUBJECT}/volumes/probe_vol" >/dev/null
+mkdir -p "${SUBJECT}/volumes/probe_vol/_data"
+
+btrfs subvolume snapshot -r "${SUBJECT}" "${SUBJECT}/.baudolo-stale" >/dev/null
 expect auto "--snapshot btrfs --snapshot-subject ${SUBJECT}" \
     "a snapshot left by a killed run does not block the next one"
-if [[ -d "${WORK}/mnt/.baudolo-stale" ]]; then
+if [[ -d "${SUBJECT}/.baudolo-stale" ]]; then
     echo "FAIL: the stale snapshot survived the reap"
     exit 1
 fi

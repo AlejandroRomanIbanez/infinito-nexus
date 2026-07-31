@@ -20,6 +20,7 @@ def load_target_module():
         / "roles"
         / "svc-bkp-volume-2-local"
         / "files"
+        / "python"
         / "baudolo_snapshot.py"
     )
     if not script_path.is_file():
@@ -132,7 +133,7 @@ class TestDetect(TestCase):
         subject = SCRIPT.Subject("/mnt/with space", Path("/mnt/with space"))
         kind, reason = SCRIPT.detect(subject, mounts())
         self.assertIsNone(kind)
-        self.assertIn("auto enables btrfs only", reason)
+        self.assertIn("takes no snapshots", reason)
 
 
 class TestSnapshotFlags(TestCase):

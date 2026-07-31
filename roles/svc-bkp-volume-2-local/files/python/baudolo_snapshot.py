@@ -28,7 +28,8 @@ BTRFS_SUBVOLUME_INODE = 256
 BTRFS_STALE = ".baudolo-"
 ZFS_STALE = "@baudolo-"
 TIMEOUT = 30
-AUTO_KINDS = ("btrfs",)
+VOLUMES = "volumes"
+AUTO_KINDS = ("btrfs", "zfs")
 UNQUOTABLE = set(" \t\n'\"\\$`;&|<>()*?[]{}!#~")
 ESCAPES = (("\\040", " "), ("\\011", "\t"), ("\\012", "\n"), ("\\134", "\\"))
 
@@ -121,27 +122,33 @@ def docker_root() -> Subject | None:
     return Subject(reported, Path(reported).resolve()) if reported else None
 
 
+def as_volume(reported: str, name: str) -> Volume:
+    """Build a Volume from one ``docker volume inspect --format '{{json .}}'`` line."""
+    data = json.loads(reported)
+    return Volume(
+        data.get("Name") or name,
+        data.get("Driver") or "",
+        data.get("Options") or {},
+        data.get("Mountpoint") or "",
+    )
+
+
 def volumes() -> list[Volume] | None:
     """Return every docker volume, or None when the daemon cannot be asked."""
     names = run(["docker", "volume", "ls", "--quiet"])
     if names is None:
         return None
+    listed = names.split()
+    if not listed:
+        return []
+    batched = run(["docker", "volume", "inspect", "--format", "{{json .}}", *listed])
+    if batched is not None:
+        return [as_volume(line, "") for line in batched.splitlines() if line.strip()]
     found = []
-    for name in names.split():
-        # Exception: one inspect per volume. A batch call fails as a whole when
-        # any name disappears mid-probe, which would blame the wrong thing.
+    for name in listed:
         reported = run(["docker", "volume", "inspect", "--format", "{{json .}}", name])
-        if reported is None:
-            continue
-        data = json.loads(reported)
-        found.append(
-            Volume(
-                data.get("Name") or name,
-                data.get("Driver") or "",
-                data.get("Options") or {},
-                data.get("Mountpoint") or "",
-            )
-        )
+        if reported is not None:
+            found.append(as_volume(reported, name))
     return found
 
 
@@ -188,24 +195,48 @@ def btrfs_reason(subject: Subject, mounts: list[Mount]) -> str | None:
         return "the btrfs command is not installed"
     if subject.real.stat().st_ino != BTRFS_SUBVOLUME_INODE:
         return f"{subject.real} is a plain directory, not a btrfs subvolume root"
-    parent = subject.real.parent
-    subject_mount = mount_of(subject.real, mounts)
-    parent_mount = mount_of(parent, mounts)
-    if subject_mount is None or parent_mount is None:
-        return f"no mount covers {subject.real} or {parent}"
-    if parent_mount != subject_mount and parent_mount.source != subject_mount.source:
-        return f"{parent} is on another filesystem, so no snapshot fits beside {subject.real}"
-    if "ro" in parent_mount.options.split(",") or not os.access(parent, os.W_OK):
-        return f"{parent} is not writable"
-    # Exception: `btrfs subvolume list -o` scopes to the subvolume the argument
-    # LIVES IN, not to the argument. It only answers about children here because
-    # the inode-256 check above proved the argument is a subvolume root itself.
-    nested = run(["btrfs", "subvolume", "list", "-o", str(subject.real)])
-    if nested is None:
-        return f"the subvolumes below {subject.real} could not be listed"
-    if nested.strip():
-        return f"{subject.real} holds nested subvolumes, which a snapshot captures as empty"
+    if mount_of(subject.real, mounts) is None:
+        return f"no mount covers {subject.real}"
+    if not os.access(subject.real, os.W_OK):
+        return f"{subject.real} is not writable, so no snapshot can be carved inside it"
+    carved = nested_subvolume(subject)
+    if carved is not None:
+        return f"{carved} is a subvolume of its own, which a snapshot captures as empty"
     return None
+
+
+def volume_paths(subject: Subject) -> list[Path]:
+    """Return the directories a snapshot has to carry: every volume and its payload."""
+    volumes = subject.real / VOLUMES
+    if not volumes.is_dir():
+        return []
+    found = []
+    for volume in sorted(volumes.iterdir()):
+        if not volume.is_dir() or volume.is_symlink():
+            continue
+        found.append(volume)
+        found.extend(child for child in sorted(volume.iterdir()) if child.is_dir())
+    return found
+
+
+def nested_subvolume(subject: Subject) -> Path | None:
+    """Return the first volume directory that is a subvolume root of its own.
+
+    Only the volume tree is inspected, never the whole data root: the storage
+    driver carves a subvolume per image layer under <root>/btrfs, and those are
+    rebuilt from the registry rather than restored, so their absence from a
+    snapshot costs nothing. A subvolume inside the volume tree does cost
+    everything - it appears in the snapshot as an existing empty directory, so
+    the copy succeeds and the backup holds none of that volume's data.
+    """
+    return next(
+        (
+            path
+            for path in volume_paths(subject)
+            if path.stat().st_ino == BTRFS_SUBVOLUME_INODE
+        ),
+        None,
+    )
 
 
 def in_init_mount_namespace() -> bool:
@@ -225,9 +256,6 @@ def zfs_reason(subject: Subject, mounts: list[Mount]) -> str | None:
     listed = (
         run(["zfs", "list", "-H", "-o", "name,mountpoint", subject.stated]) or ""
     ).split()
-    # Exception: baudolo asks `zfs list` for the name alone, and zfs answers with
-    # the ENCLOSING dataset when the path is merely inside one; its snapshot then
-    # has no .zfs/snapshot/<name> below the subject.
     if len(listed) < 2 or Path(listed[1]) != subject.real:
         return f"{subject.stated} is not the mountpoint of a zfs dataset"
     dataset = listed[0]
@@ -236,8 +264,9 @@ def zfs_reason(subject: Subject, mounts: list[Mount]) -> str | None:
         return f"the snapdir property of {dataset} could not be read"
     if snapdir.strip() == "disabled":
         return f"{dataset} has snapdir disabled, so its snapshots cannot be read"
+    carried = subject.real / VOLUMES
     for mount in mounts:
-        if mount.fstype == "zfs" and subject.real in mount.point.parents:
+        if mount.fstype == "zfs" and carried in mount.point.parents:
             return f"the child dataset at {mount.point} would be empty in a snapshot of {dataset}"
     return None
 
@@ -257,8 +286,8 @@ def detect(subject: Subject, mounts: list[Mount]) -> tuple[str | None, str]:
         return None, f"no mount covers {subject.real}"
     if mount.fstype not in AUTO_KINDS:
         return None, (
-            f"{subject.real} is on {mount.fstype}; auto enables btrfs only, "
-            "set STORAGE_BACKUP_SNAPSHOT_MODE to zfs to state a zfs pool"
+            f"{subject.real} is on {mount.fstype}, which takes no snapshots; "
+            f"auto covers {', '.join(AUTO_KINDS)}"
         )
     reason = kind_reason(mount.fstype, subject, mounts)
     return (None, reason) if reason else (mount.fstype, "")
@@ -270,12 +299,12 @@ def reap(subject: Subject, kind: str) -> None:
     baudolo removes its snapshot in a ``finally``, which a SIGKILL, an OOM kill
     or a reboot skips. A read-only btrfs snapshot of the data root pins every
     block the live root later frees and `rm -rf` cannot remove it, so leftovers
-    accumulate until the disc-space cleanup starts deleting backup generations
-    to reclaim space they hold. Only one backup unit runs at a time, so nothing
-    reachable here belongs to a live run.
+    accumulate inside the data root until the disc-space cleanup starts deleting
+    backup generations to reclaim space they hold. Only one backup unit runs at
+    a time, so nothing reachable here belongs to a live run.
     """
     if kind == "btrfs":
-        for entry in sorted(subject.real.parent.iterdir()):
+        for entry in sorted(subject.real.iterdir()):
             if not entry.name.startswith(BTRFS_STALE) or not entry.is_dir():
                 continue
             report(f"removing the stale snapshot {entry} of an interrupted run")
