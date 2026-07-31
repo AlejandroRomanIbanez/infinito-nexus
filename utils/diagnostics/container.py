@@ -101,6 +101,16 @@ def collect_host(out: Path, app_id: str, context: str, stamp: str) -> None:
             ["journalctl", "-b", "-p", "warning", "--since", "-6h", "--no-pager"],
         ),
         ("systemctl.txt", ["systemctl", "list-units", "--all", "--no-pager"]),
+        ("resolv-conf.txt", ["cat", "/etc/resolv.conf"]),
+        ("daemon-json.txt", ["cat", "/etc/docker/daemon.json"]),
+        ("ip-addr.txt", ["ip", "-4", "addr"]),
+        ("sockets-udp.txt", ["ss", "-lunp"]),
+        ("sockets-tcp.txt", ["ss", "-lntp"]),
+        ("nat-rules.txt", ["iptables-save", "-t", "nat"]),
+        (
+            "resolve-probe.txt",
+            ["getent", "hosts", "deb.debian.org", "ghcr.io", "repo.packagist.org"],
+        ),
     ):
         capture(out, name, cmd)
     dmesg = run(["dmesg", "-T"]).stdout.decode(errors="replace")
