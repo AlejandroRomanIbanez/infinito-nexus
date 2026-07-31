@@ -67,6 +67,7 @@ NFS_MID="$(docker exec "${NFS_SERVER}" sha256sum /etc/machine-id | cut -c1-64)"
 echo "==> DR drill for ${APP_ID} (volume '${PRIMARY_NFS_VOLUME}')"
 
 TRIGGER_UNITS="${NODE_SRC}/scripts/tests/deploy/swarm/utils/trigger_units.sh"
+UNIT_DUMPS="${INFINITO_RESCUE_DIAGNOSTICS_DIR:?INFINITO_RESCUE_DIAGNOSTICS_DIR is not set - source scripts/meta/env/load.sh first}"
 
 echo "==> [1/9] seed markers (live NFS volume + manager secrets)"
 docker exec "${NFS_SERVER}" sh -c \
@@ -78,15 +79,15 @@ echo "==> [2/9] trigger the deployed backup units (volume + secrets on manager, 
 _triggered=0
 SECRETS_TRIGGERED=0
 _rc=0
-docker exec "${MGR}" bash "${TRIGGER_UNITS}" 'svc-bkp-volume-2-local*.service' || _rc=$?
+docker exec "${MGR}" bash "${TRIGGER_UNITS}" 'svc-bkp-volume-2-local*.service' "${UNIT_DUMPS}" || _rc=$?
 [ "${_rc}" -eq 0 ] && _triggered=1
 [ "${_rc}" -eq 1 ] && exit 1
 _rc=0
-docker exec "${MGR}" bash "${TRIGGER_UNITS}" 'svc-bkp-secrets-2-local*.service' || _rc=$?
+docker exec "${MGR}" bash "${TRIGGER_UNITS}" 'svc-bkp-secrets-2-local*.service' "${UNIT_DUMPS}" || _rc=$?
 [ "${_rc}" -eq 0 ] && SECRETS_TRIGGERED=1
 [ "${_rc}" -eq 1 ] && exit 1
 _rc=0
-docker exec "${NFS_SERVER}" bash "${TRIGGER_UNITS}" 'svc-bkp-nfs-2-local*.service' || _rc=$?
+docker exec "${NFS_SERVER}" bash "${TRIGGER_UNITS}" 'svc-bkp-nfs-2-local*.service' "${UNIT_DUMPS}" || _rc=$?
 [ "${_rc}" -eq 0 ] && _triggered=1
 [ "${_rc}" -eq 1 ] && exit 1
 if [ "${_triggered}" -eq 0 ]; then
@@ -122,7 +123,7 @@ fi
 
 echo "==> [4/9] pull to ${BACKUP_NODE} via the deployed remote-2-local unit (marker expected from ${SRC_HOST})"
 docker exec -i "${BACKUP_NODE}" bash "${BKP_IN_NODE}/01_ssh_trust.sh" <"${BACKUP_KEY_PATH}"
-if ! docker exec "${BACKUP_NODE}" bash "${TRIGGER_UNITS}" 'svc-bkp-remote-2-local*.service'; then
+if ! docker exec "${BACKUP_NODE}" bash "${TRIGGER_UNITS}" 'svc-bkp-remote-2-local*.service' "${UNIT_DUMPS}"; then
 	echo "FAILURE: remote-2-local unit missing or failed on ${BACKUP_NODE} (role not deployed?)"
 	exit 1
 fi
@@ -140,7 +141,7 @@ USB_SIZE_MB=$((USB_SIZE_MB * 2 + 256))
 echo "    sizing the loop image to ${USB_SIZE_MB}M (2x pulled tree + headroom, floor 2G)"
 docker exec "${BACKUP_NODE}" bash "${BKP_IN_NODE}/02_luks_device.sh" \
 	"${USB_IMG}" "${DEV_MOUNT}" "${DEV_DEST}" "${USB_MAPPER}" "${USB_PASS}" "${USB_SIZE_MB}"
-if ! docker exec "${BACKUP_NODE}" bash "${TRIGGER_UNITS}" 'svc-bkp-local-2-device*.service'; then
+if ! docker exec "${BACKUP_NODE}" bash "${TRIGGER_UNITS}" 'svc-bkp-local-2-device*.service' "${UNIT_DUMPS}"; then
 	echo "FAILURE: local-2-device unit missing or failed on ${BACKUP_NODE} (role not deployed?)"
 	exit 1
 fi
