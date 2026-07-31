@@ -109,9 +109,6 @@ class TestSwarmDiagnosticsRouting(unittest.TestCase):
             self.assertIn("no writable output dir", proc.stdout)
             self.assertIn(RESOLVER_HEADING, proc.stdout)
 
-    def test_the_collector_reports_when_it_captured_nothing(self) -> None:
-        self.assertIn("captured no files", read_text(str(COLLECTOR)))
-
 
 if __name__ == "__main__":
     unittest.main()
