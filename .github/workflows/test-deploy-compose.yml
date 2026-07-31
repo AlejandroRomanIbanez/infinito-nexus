@@ -156,7 +156,7 @@ jobs:
         shell: bash
         run: >-
           ./scripts/tests/deploy/utils/filesystem/resolve.sh "${{ inputs.filesystem }}"
-          "compose/${{ matrix.apps }}" "${{ inputs.distros }}"
+          "compose/${{ matrix.apps }}" "${{ inputs.distros }}" runner
 
       - name: 🗄️ Put the Docker data-root on it
         if: ${{ !env.ACT }}

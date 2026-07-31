@@ -162,7 +162,7 @@ jobs:
         shell: bash
         run: >-
           ./scripts/tests/deploy/utils/filesystem/resolve.sh "${{ inputs.filesystem }}"
-          "host/${{ matrix.apps }}" "${{ inputs.distros }}"
+          "host/${{ matrix.apps }}" "${{ inputs.distros }}" runner
 
       - name: 🗄️ Put the Docker data-root on it
         if: ${{ !env.ACT }}
