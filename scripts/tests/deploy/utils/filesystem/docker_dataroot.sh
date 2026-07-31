@@ -25,12 +25,31 @@ DAEMON=/etc/docker/daemon.json
 
 report() { echo "docker-dataroot-filesystem: $*"; }
 
+current_fstype() {
+	stat -f -c %T "${MOUNT}/docker" 2>/dev/null ||
+		stat -f -c %T /var/lib/docker 2>/dev/null ||
+		stat -f -c %T / 2>/dev/null ||
+		echo unknown
+}
+
+verdict() {
+	local status="$1" effective host
+	effective="$(current_fstype)"
+	host="$(hostname 2>/dev/null || echo unknown)"
+	report "status=${status} requested=${FSTYPE:-none} effective=${effective}"
+	[ -n "${GITHUB_STEP_SUMMARY:-}" ] || return 0
+	echo "- \`${host}\` docker data root: **${effective}** (requested \`${FSTYPE:-none}\`, ${status})" \
+		>>"${GITHUB_STEP_SUMMARY}"
+}
+
 decline() {
 	if [ "${REQUIRED}" = true ]; then
 		report "FAIL: ${FSTYPE} was stated but cannot be delivered: $*"
+		verdict required-but-unavailable
 		exit 1
 	fi
 	report "skipping ${FSTYPE}: $*"
+	verdict declined
 	exit 0
 }
 
@@ -38,10 +57,12 @@ case "${FSTYPE}" in
 ext4 | btrfs | zfs) ;;
 "")
 	report "no filesystem stated, leaving the data root where it is"
+	verdict unchanged
 	exit 0
 	;;
 *)
 	report "FAIL: unknown filesystem '${FSTYPE}'"
+	verdict unknown-filesystem
 	exit 1
 	;;
 esac
@@ -96,6 +117,7 @@ esac
 
 if mountpoint -q "${MOUNT}"; then
 	report "${MOUNT} is already prepared"
+	verdict already-prepared
 	exit 0
 fi
 
@@ -136,4 +158,4 @@ path.write_text(json.dumps(config, indent=2) + "\n")
 PYTHON
 
 systemctl start docker
-report "done; the data root is ${MOUNT}/docker on ${FSTYPE}"
+verdict applied

@@ -226,6 +226,11 @@ jobs:
           variant: ${{ matrix.variant }}
         run: ./scripts/tests/deploy/distros.sh "${{ env.SCRIPTS }}/00_one.sh" 2>&1 | tee "/tmp/ansible-${{ matrix.apps }}.log"
 
+      - name: "🗄️ Effective node filesystems"
+        if: always()
+        shell: bash
+        run: ./scripts/tests/deploy/utils/filesystem/report.sh "/tmp/ansible-${{ matrix.apps }}.log"
+
       - name: "📊 Role runtimes"
         if: always()
         shell: bash
