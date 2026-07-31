@@ -4,23 +4,41 @@
 # Arguments:
 #   $1 DIR    rescue directory to index; a missing directory is not an error
 #   $2 LIMIT  max paths to list, default 400
+#
+# Exit status: always 0.
 set -euo pipefail
+trap 'exit 0' EXIT
 
 DIR="${1:?usage: rescue_index.sh DIR [LIMIT]}"
 LIMIT="${2:-400}"
 
 [ -d "${DIR}" ] || exit 0
 
-FILES="$(find "${DIR}" -type f 2>/dev/null | wc -l)"
-SIZE="$(du -sh "${DIR}" 2>/dev/null | cut -f1)"
+if LISTING="$(find "${DIR}" -mindepth 1 -printf '%y %10s %P\n' 2>/dev/null | sort -k3)"; then
+	WALKED=true
+else
+	LISTING=""
+	WALKED=false
+fi
+if ! SIZE="$(du -sh "${DIR}" 2>/dev/null | cut -f1)"; then
+	SIZE="unknown size"
+fi
+
+ENTRIES=0
+[ -z "${LISTING}" ] || ENTRIES="$(printf '%s\n' "${LISTING}" | wc -l)"
+FILES="$(printf '%s\n' "${LISTING}" | awk '$1 == "f"' | wc -l)"
 
 echo "🩺 Rescue diagnostics: ${FILES} file(s), ${SIZE}, under ${DIR}"
 echo "   Download them from the 'rescue-diagnostics-*' artifact on this run's summary page."
 echo "   Paths below are relative to the artifact root; file contents are NOT printed here."
 
-find "${DIR}" -mindepth 1 -printf '%y %10s %P\n' 2>/dev/null | sort -k3 | sed -n "1,${LIMIT}p"
+if [ "${WALKED}" != true ]; then
+	echo "   The walk over ${DIR} failed; the counts above are incomplete and no paths are listed."
+	exit 0
+fi
 
-ENTRIES="$(find "${DIR}" -mindepth 1 2>/dev/null | wc -l)"
+[ -z "${LISTING}" ] || printf '%s\n' "${LISTING}" | sed -n "1,${LIMIT}p"
+
 if [ "${ENTRIES}" -gt "${LIMIT}" ]; then
 	echo "   ... $((ENTRIES - LIMIT)) further path(s) not listed; all of them are in the artifact."
 fi
