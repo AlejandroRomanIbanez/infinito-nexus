@@ -17,11 +17,10 @@ LIMIT="${2:-400}"
 if LISTING="$(find "${DIR}" -mindepth 1 -printf '%y %10s %P\n' 2>/dev/null | sort -k3)"; then
 	WALKED=true
 else
-	LISTING=""
 	WALKED=false
 fi
 if ! SIZE="$(du -sh "${DIR}" 2>/dev/null | cut -f1)"; then
-	SIZE="unknown size"
+	[ -n "${SIZE}" ] || SIZE="unknown size"
 fi
 
 ENTRIES=0
@@ -32,10 +31,8 @@ echo "🩺 Rescue diagnostics: ${FILES} file(s), ${SIZE}, under ${DIR}"
 echo "   Download them from the 'rescue-diagnostics-*' artifact on this run's summary page."
 echo "   Paths below are relative to the artifact root; file contents are NOT printed here."
 
-if [ "${WALKED}" != true ]; then
-	echo "   The walk over ${DIR} failed; the counts above are incomplete and no paths are listed."
-	exit 0
-fi
+[ "${WALKED}" = true ] ||
+	echo "   The walk over ${DIR} was cut short; what follows is only what could be read."
 
 [ -z "${LISTING}" ] || printf '%s\n' "${LISTING}" | sed -n "1,${LIMIT}p"
 

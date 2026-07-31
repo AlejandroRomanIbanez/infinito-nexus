@@ -2,10 +2,13 @@
 
 ``rescue_index.sh`` runs inside cleanup handlers and in a GitHub step under
 ``bash -e`` with no fallback, so its exit status decides whether the caller
-finishes tearing down. Both cases here fail against a version without the
-terminal ``exit 0``: a fatal usage error, and a ``find`` that rejects
-``-printf`` — the latter also has to stay distinguishable from an empty tree
-rather than reporting one.
+finishes tearing down: a fatal usage error and a ``find`` that rejects
+``-printf`` both have to leave the caller at rc 0, and the latter has to stay
+distinguishable from an empty tree rather than reporting one.
+
+The tree is indexed while a failed run is still being torn down, so a walk that
+dies partway is the normal case, not the exception. What ``find`` reached before
+it failed is the evidence the artifact is being read for, so it has to survive.
 """
 
 from __future__ import annotations
@@ -20,17 +23,27 @@ from utils.cache.files import PROJECT_ROOT
 
 INDEX = PROJECT_ROOT / "scripts" / "tests" / "deploy" / "utils" / "rescue_index.sh"
 FIND_WITHOUT_PRINTF = '#!/bin/sh\necho "find: unrecognized: -printf" >&2\nexit 1\n'
+FIND_CUT_SHORT = (
+    "#!/bin/sh\n"
+    "printf 'd         80 logs\\n'\n"
+    "printf 'f          9 logs/container.log\\n'\n"
+    "printf 'f         12 inspect.json\\n'\n"
+    'echo "find: \'logs/vanished\': No such file or directory" >&2\n'
+    "exit 1\n"
+)
 
 
 class TestRescueIndexContract(unittest.TestCase):
-    def _run(self, *args: str, stub_find: bool = False) -> subprocess.CompletedProcess:
+    def _run(
+        self, *args: str, stub_find: str | None = None
+    ) -> subprocess.CompletedProcess:
         env = dict(os.environ)
         with tempfile.TemporaryDirectory() as tmp:
-            if stub_find:
+            if stub_find is not None:
                 stub_bin = Path(tmp) / "bin"
                 stub_bin.mkdir()
                 find = stub_bin / "find"
-                find.write_text(FIND_WITHOUT_PRINTF)
+                find.write_text(stub_find)
                 find.chmod(0o755)
                 env["PATH"] = f"{stub_bin}:{env['PATH']}"
             return subprocess.run(
@@ -52,7 +65,7 @@ class TestRescueIndexContract(unittest.TestCase):
             (Path(populated) / "a").mkdir()
             (Path(populated) / "a" / "collected.log").write_text("evidence")
 
-            broken = self._run(populated, stub_find=True)
+            broken = self._run(populated, stub_find=FIND_WITHOUT_PRINTF)
             genuinely_empty = self._run(empty)
 
         self.assertEqual(broken.returncode, 0)
@@ -60,6 +73,15 @@ class TestRescueIndexContract(unittest.TestCase):
             broken.stdout.replace(populated, ""),
             genuinely_empty.stdout.replace(empty, ""),
         )
+
+    def test_a_walk_cut_short_still_lists_what_it_reached(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            result = self._run(td, stub_find=FIND_CUT_SHORT)
+
+        self.assertEqual(result.returncode, 0)
+        for reached in ("logs", "logs/container.log", "inspect.json"):
+            self.assertIn(reached, result.stdout)
+        self.assertIn("2 file(s)", result.stdout)
 
 
 if __name__ == "__main__":
