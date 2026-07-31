@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 import unittest
 
-from utils.cache.files import PROJECT_ROOT
+from utils.cache.files import PROJECT_ROOT, read_text
 
 DRILL = PROJECT_ROOT / "scripts" / "tests" / "deploy" / "swarm" / "routine" / "00_one.sh"
 GATE = PROJECT_ROOT / "scripts" / "tests" / "deploy" / "roundtrip.sh"
@@ -14,8 +14,8 @@ MARKER = "==> swarm drill complete: app="
 
 class TestRoundtripMarker(unittest.TestCase):
     def setUp(self) -> None:
-        self.drill = DRILL.read_text()
-        self.gate = GATE.read_text()
+        self.drill = read_text(str(DRILL))
+        self.gate = read_text(str(GATE))
 
     def test_the_drill_emits_the_marker(self) -> None:
         self.assertIn(MARKER, self.drill)
