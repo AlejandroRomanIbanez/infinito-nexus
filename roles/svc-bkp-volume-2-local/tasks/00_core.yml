@@ -42,6 +42,25 @@
     group: root
     mode: "0755"
 
+- name: ✅ Assert STORAGE_BACKUP_SNAPSHOT_MODE names a snapshot mode
+  ansible.builtin.assert:
+    that:
+      - BKP_VOLUME_2_LOCAL_SNAPSHOT_MODE in BKP_VOLUME_2_LOCAL_SNAPSHOT_MODES
+    fail_msg: >-
+      STORAGE_BACKUP_SNAPSHOT_MODE is '{{ STORAGE_BACKUP_SNAPSHOT_MODE }}', which resolves to
+      '{{ BKP_VOLUME_2_LOCAL_SNAPSHOT_MODE }}' and is not one of
+      {{ BKP_VOLUME_2_LOCAL_SNAPSHOT_MODES | join(', ') }}. Quote the value: YAML reads a bare
+      on/yes/true as a boolean.
+    quiet: true
+
+- name: "📁 create {{ BKP_VOLUME_2_LOCAL_SNAPSHOT_BIN }}"
+  ansible.builtin.copy:
+    src: baudolo_snapshot.py
+    dest: "{{ BKP_VOLUME_2_LOCAL_SNAPSHOT_BIN }}"
+    owner: root
+    group: root
+    mode: "0755"
+
 - name: "▶️ Execute system service setup for '{{ system_service_id }}'"
   include_role:
     name: sys-service
