@@ -8,7 +8,7 @@
 # it verbatim.
 #
 # Arguments:
-#   $1 STATED   ext4 | btrfs | zfs, or empty for a random pick
+#   $1 STATED   ext4 | btrfs | zfs; 'auto' or empty for a random pick
 #   $2 LABEL    matrix entry the pick belongs to, e.g. compose/web-app-gitea
 #   $3 DISTROS  space-separated distributions the entry deploys on
 #   $4 SCOPE    node   the pick must satisfy every entry in DISTROS
@@ -49,7 +49,7 @@ candidates() {
 	echo "${pool:-ext4}"
 }
 
-if [ -n "${STATED}" ]; then
+if [ -n "${STATED}" ] && [ "${STATED}" != auto ]; then
 	PICKED="${STATED}"
 	ORIGIN="stated"
 	REQUIRED=true

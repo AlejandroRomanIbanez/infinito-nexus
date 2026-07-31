@@ -34,12 +34,12 @@ on:
         default: ""
         type: string
       filesystem:
-        description: "Filesystem the docker data root runs on. Empty picks one at random per deploy mode; btrfs and zfs are what engage the backup snapshot mode."
+        description: "Filesystem the docker data root runs on. 'auto' picks one at random per deploy mode; btrfs and zfs are what engage the backup snapshot mode."
         required: false
-        default: ""
+        default: "auto"
         type: choice
         options:
-          - ""
+          - "auto"
           - "ext4"
           - "btrfs"
           - "zfs"
