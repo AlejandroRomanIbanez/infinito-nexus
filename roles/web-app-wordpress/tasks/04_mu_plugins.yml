@@ -6,7 +6,7 @@
   changed_when: false
 
 - name: "🔁 Iterate through declared WordPress mu-plugins"
-  include_tasks: utils/install_mu_plugin.yml
+  include_tasks: utils/install/mu_plugin.yml
   loop: "{{ WORDPRESS_MU_PLUGINS }}"
   loop_control:
     loop_var: wordpress_mu_plugin

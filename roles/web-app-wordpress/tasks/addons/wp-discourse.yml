@@ -21,7 +21,7 @@
   changed_when: false
 
 - name: "📦 Install WP Discourse plugin"
-  ansible.builtin.include_tasks: ../utils/install_plugin.yml
+  ansible.builtin.include_tasks: ../utils/install/plugin.yml
   vars:
     plugin_name: wp-discourse
   when: IS_STACK_HOST | bool

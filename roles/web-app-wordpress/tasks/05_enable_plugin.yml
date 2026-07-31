@@ -11,4 +11,4 @@
   when: plugin_task_file.stat.exists
 
 - name: "📦 Ensure WordPress plugin is installed and active"
-  ansible.builtin.include_tasks: utils/install_plugin.yml
+  ansible.builtin.include_tasks: utils/install/plugin.yml
