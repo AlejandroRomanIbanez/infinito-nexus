@@ -6,7 +6,7 @@ set +e
 set +o pipefail
 set +u
 
-OUT="${INFINITO_RESCUE_DIAGNOSTICS_DIR:-/tmp/rescue-diagnostics}/${APP_ID}-stack"
+OUT="${INFINITO_RESCUE_DIAGNOSTICS_DIR:?INFINITO_RESCUE_DIAGNOSTICS_DIR is not set - source scripts/meta/env/load.sh first}/${APP_ID}-stack"
 if ! mkdir -p "${OUT}" 2>/dev/null || [ ! -w "${OUT}" ]; then
 	OUT=""
 fi
