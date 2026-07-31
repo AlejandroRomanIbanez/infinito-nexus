@@ -7,7 +7,9 @@ import unittest
 
 from utils.cache.files import PROJECT_ROOT, read_text
 
-DRILL = PROJECT_ROOT / "scripts" / "tests" / "deploy" / "swarm" / "routine" / "00_one.sh"
+DRILL = (
+    PROJECT_ROOT / "scripts" / "tests" / "deploy" / "swarm" / "routine" / "00_one.sh"
+)
 GATE = PROJECT_ROOT / "scripts" / "tests" / "deploy" / "roundtrip.sh"
 MARKER = "==> swarm drill complete: app="
 

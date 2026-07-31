@@ -49,7 +49,9 @@ class LookupModule(LookupBase):
                 "subnet_gateway lookup: application_id is required in variables"
             )
 
-        config_lookup = lookup_loader.get("config", loader=self._loader, templar=templar)
+        config_lookup = lookup_loader.get(
+            "config", loader=self._loader, templar=templar
+        )
         subnet = config_lookup.run(
             [str(application_id), "networks.local.subnet"], variables=vars_
         )[0]

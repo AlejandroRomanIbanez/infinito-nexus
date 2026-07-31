@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import ipaddress
 
+
 def _octet_pattern(low: int, high: int) -> str:
     if low == high:
         return str(low)
@@ -39,7 +40,9 @@ def subnet_address_regex(subnet: str) -> str:
     return r"\.".join(
         _octet_pattern(low, high)
         for low, high in zip(
-            network.network_address.packed, network.broadcast_address.packed
+            network.network_address.packed,
+            network.broadcast_address.packed,
+            strict=True,
         )
     )
 
