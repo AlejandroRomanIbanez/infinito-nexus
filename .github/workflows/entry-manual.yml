@@ -33,6 +33,16 @@ on:
         required: false
         default: ""
         type: string
+      filesystem:
+        description: "Filesystem the docker data root runs on. Empty picks one at random per deploy mode; btrfs and zfs are what engage the backup snapshot mode."
+        required: false
+        default: ""
+        type: choice
+        options:
+          - ""
+          - "ext4"
+          - "btrfs"
+          - "zfs"
       workspace:
         description: "Run the workspace test (dev-runtime image matrix). 'auto' runs it on a global scope only."
         required: false
@@ -69,6 +79,7 @@ jobs:
       lifecycles: ${{ inputs.lifecycles }}
       modes: ${{ inputs.modes }}
       priority: ${{ inputs.priority }}
+      filesystem: ${{ inputs.filesystem }}
       workspace: ${{ inputs.workspace }}
       instructions: ${{ inputs.instructions }}
       force_cancel_in_progress: true
