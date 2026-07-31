@@ -45,6 +45,7 @@ from .infinito.running_on import act as running_on_act
 from .infinito.running_on import github as running_on_github
 from .infinito.swarm_nfs import export_base as swarm_nfs_export_base
 from .infinito.swarm_nfs import state_path as swarm_nfs_state_path
+from .infinito.variant_bundle import max_storage as variant_bundle_max_storage
 from .infinito.variant_bundle import size as variant_bundle_size
 from .infinito.worker import cpu as worker_cpu
 from .infinito.worker import fetch as worker_fetch
@@ -67,6 +68,7 @@ ORDERED_HANDLERS = [
     running_on_act,
     running_on_github,
     variant_bundle_size,
+    variant_bundle_max_storage,
     is_wsl2,
     ca_cert_host,
     outer_network_mtu,
