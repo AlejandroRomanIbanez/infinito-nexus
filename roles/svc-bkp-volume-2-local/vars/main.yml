@@ -5,6 +5,8 @@
 # - BKP_VOLUME_2_LOCAL_NO_STOP_REQUIRED: Exact deployed image refs where backup.no_stop_required is set (for --images-no-stop-required)
 # - BKP_VOLUME_2_LOCAL_DISABLED:         Exact deployed image refs where backup.disabled is set (for --images-no-backup-required)
 # - BKP_VOLUME_2_LOCAL_HARD_RESTART:     Compose project (entity) names where backup.project_hard_restart is set (for --hard-restart-projects)
+# - BKP_VOLUME_2_LOCAL_SNAPSHOT_BIN:     Launcher that appends --snapshot/--snapshot-subject per run when the mode allows it
+# - BKP_VOLUME_2_LOCAL_SNAPSHOT_MODE:    STORAGE_BACKUP_SNAPSHOT_MODE normalised; YAML reads a bare off/no/false as a boolean
 # baudolo matches --images-* exactly, so the refs carry the swarm registry prefix.
 # CLI-ready variables render these lists as argument strings.
 
@@ -12,6 +14,26 @@ application_id: svc-bkp-volume-2-local
 system_service_id: "{{ application_id }}"
 
 BKP_VOLUME_2_LOCAL_BAUDOLO_BIN: baudolo
+BKP_VOLUME_2_LOCAL_SNAPSHOT_BIN: "{{ [ DIR_BIN, 'baudolo-snapshot' ] | path_join }}"
+
+BKP_VOLUME_2_LOCAL_SNAPSHOT_MODES:
+  - auto
+  - never
+  - btrfs
+  - zfs
+
+BKP_VOLUME_2_LOCAL_SNAPSHOT_FALSEY:
+  - "false"
+  - "off"
+  - "no"
+  - "n"
+  - "0"
+  - "never"
+
+BKP_VOLUME_2_LOCAL_SNAPSHOT_MODE: >-
+  {{ 'never'
+     if (STORAGE_BACKUP_SNAPSHOT_MODE | string | lower) in BKP_VOLUME_2_LOCAL_SNAPSHOT_FALSEY
+     else (STORAGE_BACKUP_SNAPSHOT_MODE | string | lower) }}
 
 BKP_VOLUME_2_LOCAL_DB_ENABLED: >-
   {{
@@ -58,6 +80,9 @@ BKP_VOLUME_2_LOCAL_CLI_ARGS_LIST:
   - "{{ BKP_VOLUME_2_LOCAL_HARD_RESTART_CLI }}"
 
 BKP_VOLUME_2_LOCAL_EXEC: >-
+  {{ BKP_VOLUME_2_LOCAL_SNAPSHOT_BIN }}
+  --mode {{ BKP_VOLUME_2_LOCAL_SNAPSHOT_MODE }}
+  --
   {{ BKP_VOLUME_2_LOCAL_BAUDOLO_BIN }}
   --compose-dir {{ DIR_COMPOSITIONS }}
   --databases-csv {{ FILE_DATABASE_SECRETS }}
