@@ -25,7 +25,7 @@ while read -r unit; do
 		dump="${DUMPS}/${unit}.$(hostname).journal.txt"
 		journalctl -u "${unit}" --no-pager -o short-iso >"${dump}" 2>/dev/null || true
 		echo "FAILURE: ${unit} did not complete on $(hostname); full journal at ${dump}"
-		journalctl -u "${unit}" --no-pager -p warning -o cat -n 40 2>/dev/null || true
+		journalctl -u "${unit}" --no-pager -o cat -n 40 2>/dev/null || true
 		exit 1
 	fi
 done <<<"${units}"
