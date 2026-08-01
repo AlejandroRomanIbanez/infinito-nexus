@@ -15,7 +15,9 @@ class TestExternalFetchRetries(unittest.TestCase):
         return {call.module for call in plan if call.retry is not None}
 
     def test_the_aur_build_is_retried(self):
-        plan = build_plan(PackageSpec(("nfs-ganesha",), source=SOURCE_AUR), STATE_PRESENT)
+        plan = build_plan(
+            PackageSpec(("nfs-ganesha",), source=SOURCE_AUR), STATE_PRESENT
+        )
         self.assertEqual(self._retried(plan), {"kewlfft.aur.aur"})
 
     def test_the_build_command_is_retried(self):
