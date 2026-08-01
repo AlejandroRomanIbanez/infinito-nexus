@@ -148,7 +148,7 @@ done
 [ -n "${LOOP}" ] || decline "no loop device could be claimed after ${attempt} attempts"
 
 if [ "${FSTYPE}" = zfs ]; then
-	zpool create -f -m "${MOUNT}" "${POOL}" "${LOOP}"
+	zpool create -f -m "${MOUNT}" -O acltype=posixacl -O xattr=sa "${POOL}" "${LOOP}"
 	zfs create -o mountpoint="${MOUNT}/docker" "${POOL}/docker"
 else
 	"mkfs.${FSTYPE}" -q "${LOOP}"
