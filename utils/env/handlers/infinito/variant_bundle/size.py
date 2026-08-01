@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from utils.github.variant.bundle_limits import DEFAULT_BUNDLE_SIZE
+from utils.github.variant.limits import DEFAULT_BUNDLE_SIZE
 
 if TYPE_CHECKING:
     from utils.env.builder import BuildContext, EnvBuilder

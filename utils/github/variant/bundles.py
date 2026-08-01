@@ -31,14 +31,11 @@ import os
 import sys
 from typing import TYPE_CHECKING
 
-from humanfriendly import parse_size
+from humanfriendly import InvalidSize, parse_size
 
 from utils import PROJECT_ROOT
 from utils.cache.applications import get_variants
-from utils.github.variant.bundle_limits import (
-    DEFAULT_BUNDLE_SIZE,
-    DEFAULT_MAX_STORAGE,
-)
+from utils.github.variant.limits import DEFAULT_BUNDLE_SIZE, DEFAULT_MAX_STORAGE
 from utils.roles.applications.services.registry import (
     build_service_registry_from_applications,
     load_applications_from_roles_dir,
@@ -83,7 +80,7 @@ def resolve_max_storage(raw: str | None = None) -> int | None:
         return None
     try:
         return int(parse_size(value))
-    except Exception:
+    except InvalidSize:
         raise ValueError(
             f"INFINITO_VARIANT_BUNDLE_MAX_STORAGE must be a size like {DEFAULT_MAX_STORAGE!r}, "
             f"got {value!r}"
