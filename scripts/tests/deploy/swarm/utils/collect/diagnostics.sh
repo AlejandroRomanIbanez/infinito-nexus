@@ -98,6 +98,18 @@ for t in /proc/${pid}/task/*; do
   cat ${t}/stack 2>&1
 done'
 
+sep "ganesha-userstack" "nfs-server: ganesha userspace backtrace (the kernel stack only says futex; this says whose lock)"
+# shellcheck disable=SC2016
+dexec "${NFS_SERVER}" sh -c 'pid=$(systemctl show -p MainPID --value nfs-ganesha 2>/dev/null)
+[ "${pid:-0}" -gt 0 ] || { echo "(nfs-ganesha reports no main pid)"; exit 0; }
+if command -v eu-stack >/dev/null 2>&1; then
+  eu-stack -p "${pid}" 2>&1
+elif command -v gdb >/dev/null 2>&1; then
+  gdb -p "${pid}" -batch -ex "thread apply all bt" 2>&1
+else
+  echo "(neither eu-stack nor gdb is installed on this node)"
+fi'
+
 sep "controller-nfs" "controller (this runner): NFS reachability of nfs-server"
 _nfs_ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' "${NFS_SERVER}")"
 echo "nfs-server container IP(s): ${_nfs_ip}"
