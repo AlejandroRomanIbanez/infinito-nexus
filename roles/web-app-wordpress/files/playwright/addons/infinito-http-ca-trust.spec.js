@@ -26,8 +26,8 @@ test("addon infinito-http-ca-trust: the CA-trust mu-plugin is loaded by WordPres
 
     await expect(
       page.locator("#the-list"),
-      "the Must-Use plugins screen must list infinito-http-ca-trust.php — a mu-plugin that is absent from this screen was never copied into wp-content/mu-plugins"
-    ).toContainText("infinito-http-ca-trust.php", { timeout: 30_000 });
+      "the Must-Use plugins screen must list the CA-trust mu-plugin under the Plugin Name its header declares — one absent from this screen was never copied into wp-content/mu-plugins"
+    ).toContainText("Infinito.Nexus HTTP CA Trust", { timeout: 30_000 });
 
     const restResponse = await page.request.get(
       `${shared.env.wpBaseUrl}/wp-json/`,
