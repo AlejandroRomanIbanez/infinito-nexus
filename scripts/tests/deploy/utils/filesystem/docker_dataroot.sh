@@ -1,0 +1,161 @@
+#!/usr/bin/env bash
+# Put the docker data root on a stated filesystem, so CI exercises the code
+# paths that depend on it - above all the snapshot mode of
+# svc-bkp-volume-2-local, which only engages on btrfs or zfs.
+#
+# Runs on the machine whose daemon it reconfigures - the runner for compose and
+# host mode, each node container for swarm - and restarts that daemon, so it
+# must run before anything is pulled or started.
+#
+# Arguments:
+#   $1 FSTYPE    ext4 | btrfs | zfs; empty is a no-op
+#   $2 REQUIRED  true when the filesystem was stated: a host that cannot
+#                deliver it fails the run. false (default) declines and reports.
+#   $3 SIZE      loop image size, default 30G (sparse, so it costs what it holds)
+set -euo pipefail
+
+FSTYPE="${1:-}"
+REQUIRED="${2:-false}"
+SIZE="${3:-30G}"
+
+MOUNT=/mnt/docker-fs
+IMAGE=/var/tmp/docker-fs.img
+POOL=infinito_ci
+DAEMON=/etc/docker/daemon.json
+
+report() { echo "docker-dataroot-filesystem: $*"; }
+
+current_fstype() {
+	stat -f -c %T "${MOUNT}/docker" 2>/dev/null ||
+		stat -f -c %T /var/lib/docker 2>/dev/null ||
+		stat -f -c %T / 2>/dev/null ||
+		echo unknown
+}
+
+verdict() {
+	local status="$1" effective host
+	effective="$(current_fstype)"
+	host="$(hostname 2>/dev/null || echo unknown)"
+	report "status=${status} requested=${FSTYPE:-none} effective=${effective}"
+	[ -n "${GITHUB_STEP_SUMMARY:-}" ] || return 0
+	echo "- \`${host}\` docker data root: **${effective}** (requested \`${FSTYPE:-none}\`, ${status})" \
+		>>"${GITHUB_STEP_SUMMARY}"
+}
+
+decline() {
+	if [ "${REQUIRED}" = true ]; then
+		report "FAIL: ${FSTYPE} was stated but cannot be delivered: $*"
+		verdict required-but-unavailable
+		exit 1
+	fi
+	report "skipping ${FSTYPE}: $*"
+	verdict declined
+	exit 0
+}
+
+case "${FSTYPE}" in
+ext4 | btrfs | zfs) ;;
+"")
+	report "no filesystem stated, leaving the data root where it is"
+	verdict unchanged
+	exit 0
+	;;
+*)
+	report "FAIL: unknown filesystem '${FSTYPE}'"
+	verdict unknown-filesystem
+	exit 1
+	;;
+esac
+
+[ "$(id -u)" -eq 0 ] || decline "not running as root"
+
+install_packages() {
+	if command -v apt-get >/dev/null; then
+		DEBIAN_FRONTEND=noninteractive apt-get update -qq
+		DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends "$@"
+	elif command -v pacman >/dev/null; then
+		pacman -Sy --noconfirm --needed "$@"
+	elif command -v dnf >/dev/null; then
+		dnf -y install "$@"
+	else
+		return 1
+	fi
+}
+
+require_tool() {
+	local tool="$1" candidate
+	shift
+	command -v "${tool}" >/dev/null && return 0
+	for candidate in "$@"; do
+		report "installing ${candidate} for ${tool}"
+		install_packages "${candidate}" >/dev/null 2>&1 || continue
+		command -v "${tool}" >/dev/null && return 0
+	done
+	return 1
+}
+
+require_tool losetup util-linux || decline "losetup is unavailable"
+
+case "${FSTYPE}" in
+ext4)
+	require_tool mkfs.ext4 e2fsprogs || decline "mkfs.ext4 is unavailable"
+	;;
+btrfs)
+	require_tool mkfs.btrfs btrfs-progs || decline "btrfs-progs is unavailable"
+	;;
+zfs)
+	require_tool zpool zfsutils-linux zfs zfs-utils ||
+		decline "the zfs userland is unavailable on this distribution"
+	modprobe zfs 2>/dev/null || true # nocheck: shell-or-true -- the module may be built in or absent; the /dev/zfs check below decides
+	if [ ! -c /dev/zfs ]; then
+		zfs_major="$(awk '$2 == "zfs" {print $1}' /proc/devices | head -n1)"
+		[ -n "${zfs_major}" ] && mknod /dev/zfs c "${zfs_major}" 0
+	fi
+	[ -c /dev/zfs ] || decline "the zfs kernel module is not loaded on the host"
+	;;
+esac
+
+if mountpoint -q "${MOUNT}"; then
+	report "${MOUNT} is already prepared"
+	verdict already-prepared
+	exit 0
+fi
+
+report "putting the docker data root on ${FSTYPE}"
+systemctl stop docker.socket 2>/dev/null || true # nocheck: shell-or-true -- the socket unit is absent on distros that ship docker without it
+systemctl stop docker 2>/dev/null || true        # nocheck: shell-or-true -- docker is not running yet on a runner that never started it
+
+mkdir -p "${MOUNT}" "$(dirname "${IMAGE}")"
+rm -f "${IMAGE}"
+truncate -s "${SIZE}" "${IMAGE}"
+LOOP="$(losetup -f | awk '{print $1}')"
+[ -b "${LOOP}" ] || mknod "${LOOP}" b 7 "${LOOP#/dev/loop}"
+losetup "${LOOP}" "${IMAGE}"
+
+if [ "${FSTYPE}" = zfs ]; then
+	zpool create -f -m "${MOUNT}" "${POOL}" "${LOOP}"
+	zfs create -o mountpoint="${MOUNT}/docker" "${POOL}/docker"
+else
+	"mkfs.${FSTYPE}" -q "${LOOP}"
+	mount -t "${FSTYPE}" "${LOOP}" "${MOUNT}"
+	if [ "${FSTYPE}" = btrfs ]; then
+		btrfs subvolume create "${MOUNT}/docker" >/dev/null
+	else
+		mkdir -p "${MOUNT}/docker"
+	fi
+fi
+
+mkdir -p "$(dirname "${DAEMON}")"
+python3 - "${DAEMON}" "${MOUNT}/docker" <<'PYTHON'
+import json
+import pathlib
+import sys
+
+path, root = pathlib.Path(sys.argv[1]), sys.argv[2]
+config = json.loads(path.read_text()) if path.is_file() and path.read_text().strip() else {}
+config["data-root"] = root
+path.write_text(json.dumps(config, indent=2) + "\n")
+PYTHON
+
+systemctl start docker
+verdict applied

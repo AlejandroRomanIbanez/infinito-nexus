@@ -68,7 +68,7 @@ matrix_livekit_jwt_service_container_port: 8030
      ]) %}
 {% endif %}
 {% if MATRIX_OIDC_ENABLED and not MATRIX_OIDC_HOST_IS_ONION %}
-{%   set _ = _synapse_extra_args.append('--add-host=' ~ (OIDC.CLIENT.ISSUER_URL | urlsplit('hostname')) ~ ':' ~ (lookup('config', application_id, 'networks.local.subnet') | regex_replace('\\.0/\\d+$', '.1'))) %}
+{%   set _ = _synapse_extra_args.append('--add-host=' ~ (OIDC.CLIENT.ISSUER_URL | urlsplit('hostname')) ~ ':' ~ lookup('subnet_gateway')) %}
 {% endif %}
 {% if MATRIX_OIDC_ENABLED and MATRIX_OIDC_HOST_IS_ONION %}
 {%   set _ = _synapse_extra_args.append('--mount type=bind,src=/etc/hosts,dst=/etc/hosts,ro') %}

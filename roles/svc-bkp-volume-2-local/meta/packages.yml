@@ -1,0 +1,9 @@
+---
+btrfs-tools:
+  Archlinux:
+    - btrfs-progs
+  Debian:
+    - btrfs-progs
+  RedHat:
+    - btrfs-progs
+  centos: [] # nocheck: empty - centos stream carries neither a btrfs kernel module nor btrfs-progs, so the snapshot launcher declines there and the live copy runs

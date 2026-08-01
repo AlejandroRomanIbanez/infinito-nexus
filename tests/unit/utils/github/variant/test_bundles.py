@@ -1,4 +1,4 @@
-"""Unit tests for :mod:`utils.github.variant_bundles`."""
+"""Unit tests for :mod:`utils.github.variant.bundles`."""
 
 from __future__ import annotations
 
@@ -8,7 +8,7 @@ from unittest.mock import patch
 
 from humanfriendly import parse_size
 
-from utils.github import variant_bundles as vb
+from utils.github.variant import bundles as vb
 
 
 class TestChunkIndices(unittest.TestCase):

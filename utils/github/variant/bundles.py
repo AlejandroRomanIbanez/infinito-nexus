@@ -35,6 +35,10 @@ from humanfriendly import parse_size
 
 from utils import PROJECT_ROOT
 from utils.cache.applications import get_variants
+from utils.github.variant.bundle_limits import (
+    DEFAULT_BUNDLE_SIZE,
+    DEFAULT_MAX_STORAGE,
+)
 from utils.roles.applications.services.registry import (
     build_service_registry_from_applications,
     load_applications_from_roles_dir,
@@ -49,8 +53,6 @@ if TYPE_CHECKING:
     from pathlib import Path
     from typing import Any
 
-DEFAULT_BUNDLE_SIZE = 3
-DEFAULT_MAX_STORAGE = "350GB"
 ROLES_DIR = PROJECT_ROOT / "roles"
 
 
@@ -272,7 +274,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     apps = json.loads(raw) if raw.strip() else []
     if not isinstance(apps, list):
         raise SystemExit(
-            f"variant_bundles: expected a JSON array of app ids, got "
+            f"variant.bundles: expected a JSON array of app ids, got "
             f"{type(apps).__name__}"
         )
     variants_per_app = get_variants()
