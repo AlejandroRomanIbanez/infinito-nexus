@@ -1,7 +1,7 @@
 ---
 - name: "⏳ Matomo bootstrap | Swarm: wait for Matomo healthy before installer"
   ansible.builtin.shell: >
-    container inspect -f '{{ "{{" }}.State.Health.Status{{ "}}" }}'
+    container inspect --type container -f '{{ "{{" }}.State.Health.Status{{ "}}" }}'
     {{ MATOMO_LOCAL_CID | quote }}
   register: matomo_health_preboot
   changed_when: false

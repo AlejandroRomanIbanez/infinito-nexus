@@ -144,10 +144,6 @@ class TestContainerExecRequiresShellModule(unittest.TestCase):
             if not _is_scan_target(rel):
                 continue
             try:
-                # Surface YAML errors as test infrastructure issues, not
-                # silent skips: load_yaml_any is the project's preferred
-                # parser and would have failed earlier had the file been
-                # truly malformed.
                 load_yaml_any(path_str, default_if_missing=None)
             except Exception:
                 continue

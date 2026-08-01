@@ -1,6 +1,7 @@
-"""Enforce that every ``container exec`` / ``docker exec`` call resolves
-the target via the ``container_address`` lookup (directly or through a
-constant set with it). Covers the inline shell-string form and the
+"""Enforce that every ``container exec`` / ``docker exec`` and every
+``container inspect`` / ``docker inspect`` call resolves the target via
+the ``container_address`` lookup (directly or through a constant set
+with it). Covers the inline shell-string form and the
 ``command: argv: [container, exec, ...]`` list form, where the two
 verbs sit on separate lines and evade any same-line regex.
 
@@ -14,6 +15,18 @@ stack-host. The ``container_address`` lookup is the single SPOT that
 returns the bare name in compose mode and a runtime-evaluated subshell
 (``"$(/usr/bin/resolve-container-id mattermost)"``) in swarm mode, so
 the same task body works in both deployment modes.
+
+``inspect`` is covered for the same reason, and it fails less
+legibly: the bare name of a role's main service is also the name of
+its overlay network, so a swarm ``docker inspect <name>`` resolves the
+network and reports ``map has no entry for key "State"`` instead of a
+missing container. Pair this rule with ``container-inspect-type``,
+which pins ``--type container`` so that a surviving collision names
+itself.
+
+Typed subcommands (``container volume inspect``, ``container image
+inspect``, ``container service inspect``) address non-containers on
+purpose and never match this rule.
 
 Per-line opt-out
 ================
@@ -43,7 +56,7 @@ from . import PROJECT_ROOT
 
 _RULE = "container-exec-resolver"
 
-_EXEC_PROLOGUE = re.compile(r"\b(?:container|docker)\s+exec\b")
+_EXEC_PROLOGUE = re.compile(r"\b(?:container|docker)\s+(?P<verb>exec|inspect)\b")
 
 _VALUED_FLAGS = frozenset(
     {
@@ -55,8 +68,24 @@ _VALUED_FLAGS = frozenset(
         "--workdir",
         "--env-file",
         "--detach-keys",
+        "--type",
     }
 )
+
+_ARGV_INSPECT_VALUED_FLAGS = _VALUED_FLAGS | {"-f", "--format"}
+
+_RAW_MARKERS = re.compile(r"\{%-?\s*(?:end)?raw\s*-?%\}")
+
+_QUOTED_SPAN = re.compile(r"'[^']*'|\"[^\"]*\"")
+
+
+def _strip_format_noise(rest: str) -> str:
+    """Drop ``{% raw %}`` markers and quoted spans from an ``inspect``
+    tail. Go template format strings carry braces, spaces and nested
+    quotes that the flag walker cannot tokenise; removing them leaves
+    ``-f``/``--format`` as valueless flags followed by the target."""
+    return _QUOTED_SPAN.sub(" ", _RAW_MARKERS.sub("", rest))
+
 
 _JINJA_EXPR = re.compile(r"\{\{\s*(?P<expr>[^}]+?)\s*\}\}")
 
@@ -200,6 +229,8 @@ def _extract_target(rest: str) -> str | None:
 
 _ARGV_EXEC_BINARIES = frozenset({"container", "docker"})
 
+_ARGV_VERBS = frozenset({"exec", "inspect"})
+
 
 def _collect_argv_item_lists(node: yaml.Node, out: list[list[tuple[int, str]]]) -> None:
     """Append the ``(line_no, value)`` scalar items of every ``argv:``
@@ -230,17 +261,19 @@ def _collect_argv_item_lists(node: yaml.Node, out: list[list[tuple[int, str]]]) 
 
 def _argv_exec_target(items: list[tuple[int, str]]) -> tuple[int, str] | None:
     """Return ``(line_no, token)`` of the container target when *items*
-    spell ``(container|docker) exec [flags...] <target> ...``, else None."""
+    spell ``(container|docker) (exec|inspect) [flags...] <target> ...``,
+    else None."""
     if len(items) < 3:
         return None
-    if items[0][1] not in _ARGV_EXEC_BINARIES or items[1][1] != "exec":
+    if items[0][1] not in _ARGV_EXEC_BINARIES or items[1][1] not in _ARGV_VERBS:
         return None
+    valued = _ARGV_INSPECT_VALUED_FLAGS if items[1][1] == "inspect" else _VALUED_FLAGS
     idx = 2
     while idx < len(items):
         value = items[idx][1]
         if value.startswith("-"):
             flag = value.split("=", 1)[0]
-            idx += 2 if ("=" not in value and flag in _VALUED_FLAGS) else 1
+            idx += 2 if ("=" not in value and flag in valued) else 1
             continue
         return items[idx]
     return None
@@ -303,6 +336,8 @@ def _scan_line(
         return
     for match in _EXEC_PROLOGUE.finditer(line):
         rest = line[match.end() :]
+        if match.group("verb") == "inspect":
+            rest = _strip_format_noise(rest)
         target = _extract_target(rest)
         if not target:
             continue
@@ -340,11 +375,13 @@ class TestContainerExecUsesResolver(unittest.TestCase):
                 )
             )
             self.fail(
-                "Found `container exec` / `docker exec` calls that do "
-                "NOT route the target through the container_address "
-                "lookup. Bare service names break in Swarm mode because "
-                "docker stack deploy auto-suffixes container names with "
-                "the task ID.\n\n"
+                "Found `container exec` / `container inspect` calls "
+                "(or their `docker` equivalents) that do NOT route the "
+                "target through the container_address lookup. Bare "
+                "service names break in Swarm mode because docker stack "
+                "deploy auto-suffixes container names with the task ID, "
+                "and a bare `inspect` additionally collides with the "
+                "same-named overlay network.\n\n"
                 "Fix: define a variable in vars/main.yml whose value is "
                 "the lookup, then reference it:\n\n"
                 "    # roles/<role>/vars/main.yml\n"
