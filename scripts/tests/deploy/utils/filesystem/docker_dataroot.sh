@@ -20,7 +20,8 @@ SIZE="${3:-30G}"
 
 MOUNT=/mnt/docker-fs
 IMAGE=/var/tmp/docker-fs.img
-POOL=infinito_ci
+POOL_HOST="$(hostname 2>/dev/null || echo unknown)"
+POOL="infinito_ci_$(printf '%s' "${POOL_HOST}" | tr -dc 'A-Za-z0-9_.:-')"
 DAEMON=/etc/docker/daemon.json
 
 report() { echo "docker-dataroot-filesystem: $*"; }
