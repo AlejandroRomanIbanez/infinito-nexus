@@ -28,7 +28,7 @@ FIND_CUT_SHORT = (
     "printf 'd         80 logs\\n'\n"
     "printf 'f          9 logs/container.log\\n'\n"
     "printf 'f         12 inspect.json\\n'\n"
-    'echo "find: \'logs/vanished\': No such file or directory" >&2\n'
+    "echo \"find: 'logs/vanished': No such file or directory\" >&2\n"
     "exit 1\n"
 )
 

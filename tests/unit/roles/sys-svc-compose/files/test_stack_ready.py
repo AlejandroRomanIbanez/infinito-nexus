@@ -18,14 +18,7 @@ from pathlib import Path
 
 from utils.cache.files import PROJECT_ROOT
 
-GATE = (
-    PROJECT_ROOT
-    / "roles"
-    / "sys-svc-compose"
-    / "files"
-    / "swarm"
-    / "stack_ready.sh"
-)
+GATE = PROJECT_ROOT / "roles" / "sys-svc-compose" / "files" / "swarm" / "stack_ready.sh"
 STUB = """#!/usr/bin/env bash
 case "$1 $2" in
 "stack services") printf '%s' "${STACK_SERVICES}" ;;
