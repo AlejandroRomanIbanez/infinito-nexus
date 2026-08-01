@@ -53,12 +53,12 @@ class TestAddonsVendoredFiles(unittest.TestCase):
         orphans = []
         for role in sorted(ROLES_DIR.iterdir()):
             for subdir, suffix in VENDORED_DIRS.values():
-                for shipped in sorted((role / subdir).glob(f"*{suffix}")):
-                    if (role.name, subdir, shipped.stem) not in declared:
-                        orphans.append(
-                            f"{role.name}: {subdir}/{shipped.name} has no "
-                            f"meta/addons/{shipped.stem}.yml, so nothing installs it"
-                        )
+                orphans.extend(
+                    f"{role.name}: {subdir}/{shipped.name} has no "
+                    f"meta/addons/{shipped.stem}.yml, so nothing installs it"
+                    for shipped in sorted((role / subdir).glob(f"*{suffix}"))
+                    if (role.name, subdir, shipped.stem) not in declared
+                )
         if orphans:
             self.fail("\n".join(orphans))
 

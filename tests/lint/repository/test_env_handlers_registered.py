@@ -14,8 +14,9 @@ from __future__ import annotations
 
 import ast
 import unittest
+from pathlib import Path
 
-from utils.cache.files import read_text
+from utils.cache.files import iter_project_files, read_text
 
 from . import PROJECT_ROOT
 
@@ -45,8 +46,9 @@ def _registry():
 
 
 def _modules_with_apply():
-    for path in sorted(HANDLERS.rglob("*.py")):
-        if path.name == "__init__.py":
+    for path_str in iter_project_files(extensions=(".py",)):
+        path = Path(path_str)
+        if not path.is_relative_to(HANDLERS) or path.name == "__init__.py":
             continue
         tree = _parse(path)
         if any(

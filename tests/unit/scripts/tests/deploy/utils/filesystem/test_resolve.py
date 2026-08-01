@@ -46,8 +46,9 @@ class Resolved:
     def __init__(self, stdout: str, env: str):
         self.stdout = stdout
         self.env = dict(line.split("=", 1) for line in env.splitlines() if "=" in line)
-        self.picked = self.env["INFINITO_DOCKER_FILESYSTEM"]
-        self.required = self.env["INFINITO_DOCKER_FILESYSTEM_REQUIRED"]
+        key = "INFINITO_DOCKER_FILESYSTEM"  # nocheck: resolve.sh writes it per matrix entry into GITHUB_ENV
+        self.picked = self.env[key]
+        self.required = self.env[f"{key}_REQUIRED"]
         match = POOL.search(stdout)
         self.pool = match.group(1).split() if match else None
 
