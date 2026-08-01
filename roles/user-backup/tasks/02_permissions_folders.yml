@@ -24,7 +24,7 @@
   changed_when: false
   failed_when: false
 
-- name: "🔐 Apply POSIX ACLs for the backup user (fstype '{{ _backups_fstype.stdout | trim }}')"
+- name: "🔐 Apply POSIX ACLs on {{ _backups_fstype.stdout | trim }}"
   ansible.builtin.include_tasks: 02_permissions_folders/acl.yml
   when: _backups_acl_probe.rc == 0
 
