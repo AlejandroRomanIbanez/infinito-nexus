@@ -32,4 +32,11 @@ for _node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}" "${BACKUP_NODE}"; do
 	fi
 done
 timeout 30 docker network rm "${SWARM_LAB_NETWORK}" 2>/dev/null
+
+_orphans="$(losetup -ln 2>/dev/null | awk '/\(deleted\)|\(lost\)/ {print $1}')"
+if [ -n "${_orphans}" ]; then
+	echo "${_orphans}" | xargs -r -n1 losetup -d 2>/dev/null
+	echo ">>> released orphaned loop devices: $(echo "${_orphans}" | tr '\n' ' ')"
+fi
+
 exit 0

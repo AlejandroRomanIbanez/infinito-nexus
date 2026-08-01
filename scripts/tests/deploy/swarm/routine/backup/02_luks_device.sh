@@ -24,7 +24,7 @@ USB_MAPPER="${4:?}"
 USB_PASS="${5:?}"
 USB_SIZE_MB="${6:-512}"
 
-losetup -ln 2>/dev/null | awk '/\(deleted\)/ {print $1}' | xargs -r -n1 losetup -d 2>/dev/null || true
+losetup -ln 2>/dev/null | awk '/\(deleted\)|\(lost\)/ {print $1}' | xargs -r -n1 losetup -d 2>/dev/null || true
 losetup -j "${USB_IMG}" 2>/dev/null | cut -d: -f1 | xargs -r -n1 losetup -d 2>/dev/null || true
 
 truncate -s "${USB_SIZE_MB}M" "${USB_IMG}"
