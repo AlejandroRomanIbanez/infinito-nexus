@@ -76,6 +76,10 @@ install_packages() {
 	elif command -v pacman >/dev/null; then
 		pacman -Sy --noconfirm --needed "$@"
 	elif command -v dnf >/dev/null; then
+		if dnf -y install "$@"; then
+			return 0
+		fi
+		dnf -y install epel-release || return 1
 		dnf -y install "$@"
 	else
 		return 1

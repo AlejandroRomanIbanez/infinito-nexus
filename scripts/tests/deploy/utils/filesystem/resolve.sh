@@ -25,8 +25,7 @@ RUNNER_POOL="ext4 btrfs"
 
 supported_by() {
 	case "$1" in
-	centos) echo "ext4" ;;
-	arch | fedora) echo "ext4 btrfs" ;;
+	centos | arch | fedora) echo "ext4 btrfs" ;;
 	*) echo "ext4 btrfs zfs" ;;
 	esac
 }
