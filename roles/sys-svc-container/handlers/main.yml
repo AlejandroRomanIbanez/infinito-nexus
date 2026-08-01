@@ -13,10 +13,10 @@
   retries: 7
   delay: 20
   listen: container manager restart
-  run_once: true
   when:
     - DOCKER_IN_CONTAINER | bool
     - MODE_DEBUG | bool
+    - networks.internet.dns | length > 0
   environment:
     BUSYBOX_IMAGE: "{{ lookup('config', 'sys-svc-container', 'services.busybox.image') }}:{{ lookup('config', 'sys-svc-container', 'services.busybox.version') }}"
     NODE_IMAGE: "{{ lookup('config', 'sys-svc-container', 'services.node.image') }}:{{ lookup('config', 'sys-svc-container', 'services.node.version') }}"
