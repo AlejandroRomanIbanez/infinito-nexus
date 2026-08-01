@@ -128,9 +128,20 @@ systemctl stop docker 2>/dev/null || true
 mkdir -p "${MOUNT}" "$(dirname "${IMAGE}")"
 rm -f "${IMAGE}"
 truncate -s "${SIZE}" "${IMAGE}"
-LOOP="$(losetup -f | awk '{print $1}')"
-[ -b "${LOOP}" ] || mknod "${LOOP}" b 7 "${LOOP#/dev/loop}"
-losetup "${LOOP}" "${IMAGE}"
+LOOP=""
+attempt=0
+while [ -z "${LOOP}" ] && [ "${attempt}" -lt 16 ]; do
+	attempt=$((attempt + 1))
+	[ "${attempt}" -eq 1 ] || sleep 0.5
+	candidate=""
+	if candidate="$(losetup -f 2>/dev/null)" && [ -n "${candidate}" ] && [ ! -b "${candidate}" ]; then
+		mknod "${candidate}" b 7 "${candidate#/dev/loop}" 2>/dev/null || candidate=""
+	fi
+	if attached="$(losetup --find --show "${IMAGE}" 2>/dev/null)"; then
+		LOOP="${attached}"
+	fi
+done
+[ -n "${LOOP}" ] || decline "no loop device could be claimed after ${attempt} attempts"
 
 if [ "${FSTYPE}" = zfs ]; then
 	zpool create -f -m "${MOUNT}" "${POOL}" "${LOOP}"
@@ -157,5 +168,10 @@ config["data-root"] = root
 path.write_text(json.dumps(config, indent=2) + "\n")
 PYTHON
 
-systemctl start docker
-verdict applied
+if systemctl cat docker.service >/dev/null 2>&1; then
+	systemctl start docker
+	verdict applied
+else
+	report "docker.service is not installed yet; the data root takes effect when it is"
+	verdict applied-pending-docker
+fi
