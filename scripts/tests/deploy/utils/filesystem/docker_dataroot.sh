@@ -121,6 +121,9 @@ zfs)
 esac
 
 if mountpoint -q "${MOUNT}"; then
+	if [ "${FSTYPE}" = zfs ] && zpool list -H -o name "${POOL}" >/dev/null 2>&1; then
+		zfs set acltype=posixacl xattr=sa "${POOL}"
+	fi
 	report "${MOUNT} is already prepared"
 	verdict already-prepared
 	exit 0
