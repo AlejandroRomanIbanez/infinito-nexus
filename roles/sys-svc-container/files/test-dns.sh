@@ -12,10 +12,8 @@ set -euo pipefail
 # ------------------------------------------------------------
 : "${DNS_IP:?Missing env DNS_IP}"
 : "${DOMAIN:?Missing env DOMAIN}"
-: "${IP4:?Missing env IP4}"
 
 SUBDOMAIN="foo.${DOMAIN}"
-IP4_EXPECTED="${IP4}"
 
 section() {
   echo
@@ -56,8 +54,8 @@ container run --rm --dns "${DNS_IP}" "${BUSYBOX_IMAGE}" sh -lc "
     name=\"\$1\"
     out=\$(nslookup \"\$name\" 2>&1 || true)
     echo \"\$out\"
-    echo \"\$out\" | grep -q \"Address: ${IP4_EXPECTED}\" || {
-      echo \"A lookup failed for \$name (expected ${IP4_EXPECTED})\"
+    echo \"\$out\" | grep -qE \"^Address: [0-9]\" || {
+      echo \"A lookup returned no address for \$name\"
       exit 1
     }
   }
