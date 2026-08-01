@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from utils.github.variant_bundle_limits import DEFAULT_BUNDLE_SIZE
+
 if TYPE_CHECKING:
     from utils.env.builder import BuildContext, EnvBuilder
 
@@ -17,4 +19,4 @@ COMMENT = (
 
 
 def apply(eb: EnvBuilder, ctx: BuildContext) -> None:
-    eb.setdefault(KEY, "3", comment=COMMENT)
+    eb.setdefault(KEY, str(DEFAULT_BUNDLE_SIZE), comment=COMMENT)

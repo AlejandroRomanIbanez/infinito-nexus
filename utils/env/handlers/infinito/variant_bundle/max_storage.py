@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from utils.github.variant_bundles import DEFAULT_MAX_STORAGE
+from utils.github.variant_bundle_limits import DEFAULT_MAX_STORAGE
 
 if TYPE_CHECKING:
     from utils.env.builder import BuildContext, EnvBuilder
