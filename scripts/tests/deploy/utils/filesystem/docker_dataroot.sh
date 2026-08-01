@@ -43,6 +43,23 @@ verdict() {
 		>>"${GITHUB_STEP_SUMMARY}"
 }
 
+# Param: $1 loop device to detach
+# Param: $2 mount point it backs
+arm_autoclear() {
+	local loop="$1" mount="$2" armed=""
+	if ! losetup -d "${loop}"; then
+		report "WARNING: ${loop} refused the detach and will leak into the next round"
+		return 0
+	fi
+	if ! mountpoint -q "${mount}"; then
+		report "FAIL: detaching ${loop} tore down ${mount}"
+		exit 1
+	fi
+	armed="$(losetup -l -n -O AUTOCLEAR "${loop}" 2>/dev/null | tr -d '[:space:]')"
+	[ "${armed}" = 1 ] ||
+		report "WARNING: ${loop} did not arm autoclear (AUTOCLEAR='${armed}')"
+}
+
 decline() {
 	if [ "${REQUIRED}" = true ]; then
 		report "FAIL: ${FSTYPE} was stated but cannot be delivered: $*"
@@ -100,6 +117,7 @@ require_tool() {
 }
 
 require_tool losetup util-linux || decline "losetup is unavailable"
+require_tool mountpoint util-linux || decline "mountpoint is unavailable"
 
 case "${FSTYPE}" in
 ext4)
@@ -142,7 +160,9 @@ while [ -z "${LOOP}" ] && [ "${attempt}" -lt 16 ]; do
 	attempt=$((attempt + 1))
 	[ "${attempt}" -eq 1 ] || sleep 0.5
 	candidate=""
-	if candidate="$(losetup -f 2>/dev/null)" && [ -n "${candidate}" ] && [ ! -b "${candidate}" ]; then
+	candidate="$(losetup -f 2>/dev/null)" || candidate=""
+	candidate="${candidate%% *}"
+	if [ -n "${candidate}" ] && [ ! -b "${candidate}" ]; then
 		mknod "${candidate}" b 7 "${candidate#/dev/loop}" 2>/dev/null || candidate=""
 	fi
 	if attached="$(losetup --find --show "${IMAGE}" 2>/dev/null)"; then
@@ -157,6 +177,7 @@ if [ "${FSTYPE}" = zfs ]; then
 else
 	"mkfs.${FSTYPE}" -q "${LOOP}"
 	mount -t "${FSTYPE}" "${LOOP}" "${MOUNT}"
+	arm_autoclear "${LOOP}" "${MOUNT}"
 	if [ "${FSTYPE}" = btrfs ]; then
 		btrfs subvolume create "${MOUNT}/docker" >/dev/null
 	else

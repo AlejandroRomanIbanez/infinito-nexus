@@ -24,7 +24,7 @@ USB_MAPPER="${4:?}"
 USB_PASS="${5:?}"
 USB_SIZE_MB="${6:-512}"
 
-losetup -ln 2>/dev/null | awk '/\(deleted\)|\(lost\)/ {print $1}' | xargs -r -n1 losetup -d 2>/dev/null || true
+losetup -ln 2>/dev/null | awk '/\(deleted\)/ {print $1}' | xargs -r -n1 losetup -d 2>/dev/null || true
 losetup -j "${USB_IMG}" 2>/dev/null | cut -d: -f1 | xargs -r -n1 losetup -d 2>/dev/null || true
 
 truncate -s "${USB_SIZE_MB}M" "${USB_IMG}"
@@ -35,7 +35,9 @@ while [ -z "${probe}" ] && [ "${attempt}" -lt 16 ]; do
 	attempt=$((attempt + 1))
 	[ "${attempt}" -eq 1 ] || sleep 0.5
 	candidate=""
-	if candidate="$(losetup -f 2>/dev/null)" && [ -n "${candidate}" ] && [ ! -b "${candidate}" ]; then
+	candidate="$(losetup -f 2>/dev/null)" || candidate=""
+	candidate="${candidate%% *}"
+	if [ -n "${candidate}" ] && [ ! -b "${candidate}" ]; then
 		mknod "${candidate}" b 7 "${candidate#/dev/loop}" 2>/dev/null || candidate=""
 	fi
 	if attached="$(losetup --find --show "${USB_IMG}" 2>/dev/null)"; then
