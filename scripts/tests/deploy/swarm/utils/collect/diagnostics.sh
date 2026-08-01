@@ -125,7 +125,7 @@ for node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}"; do
 	dexec "${node}" cat /etc/docker/daemon.json
 	echo "--- listening udp/tcp sockets ---"
 	dexec "${node}" sh -c "ss -lunp 2>/dev/null; ss -lntp 2>/dev/null" || echo "(ss unavailable)"
-	echo "--- dnsmasq journal (names the address and errno of a bind that failed) ---"
+	echo "--- dnsmasq journal ---"
 	dexec "${node}" sh -c "journalctl -u dnsmasq --no-pager 2>&1" || echo "(journalctl unavailable)"
 	echo "--- addresses ---"
 	dexec "${node}" ip -4 addr show
