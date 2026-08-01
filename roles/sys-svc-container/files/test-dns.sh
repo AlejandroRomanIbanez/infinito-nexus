@@ -5,7 +5,7 @@ set -euo pipefail
 # Optional env overrides (with safe defaults)
 # ------------------------------------------------------------
 : "${BUSYBOX_IMAGE:?Missing Busybox image}"
-: "${NODE_IMAGE:?Missing Busybox image}"
+: "${NODE_IMAGE?Missing Node image; pass it empty to skip the getaddrinfo check}"
 
 # ------------------------------------------------------------
 # Required env (must already be present in the container)
@@ -85,21 +85,25 @@ ok "Inner container DNS works (A present; no SERVFAIL)"
 # ------------------------------------------------------------
 # Node / getaddrinfo test (this is what CSP checker uses)
 # ------------------------------------------------------------
-section "Docker-in-Docker DNS (node/getaddrinfo)"
+if [ -z "${NODE_IMAGE}" ]; then
+  section "Docker-in-Docker DNS (node/getaddrinfo): skipped, NODE_IMAGE is empty"
+else
+  section "Docker-in-Docker DNS (node/getaddrinfo)"
 
-container run --rm --dns "${DNS_IP}" "${NODE_IMAGE}" sh -lc "
-  set -e
-  node -e \"
-    const dns = require('dns');
-    dns.lookup('${DOMAIN}', { all: true }, (e, a) => {
-      console.log('err', e && e.code, e && e.message);
-      console.log('addrs', a);
-      process.exit(e ? 1 : 0);
-    });
-  \"
-"
+  container run --rm --dns "${DNS_IP}" "${NODE_IMAGE}" sh -lc "
+    set -e
+    node -e \"
+      const dns = require('dns');
+      dns.lookup('${DOMAIN}', { all: true }, (e, a) => {
+        console.log('err', e && e.code, e && e.message);
+        console.log('addrs', a);
+        process.exit(e ? 1 : 0);
+      });
+    \"
+  "
 
-ok "Node/getaddrinfo DNS works"
+  ok "Node/getaddrinfo DNS works"
+fi
 
 echo
 echo "============================================================"
