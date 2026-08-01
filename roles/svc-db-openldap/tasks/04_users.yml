@@ -151,7 +151,7 @@
     attributes:
       objectClass: "{{ LDAP.USER.OBJECTS.STRUCTURAL }}"
       mail: "{{ item.value.email }}"
-    state: "{{ 'exact' if MODE_CLEANUP else 'present' }}"
+    state: "{{ 'exact' if MODE_CLEANUP | bool else 'present' }}"
   async: "{{ ASYNC_TIME if ASYNC_ENABLED | bool else omit }}"
   poll: "{{ ASYNC_POLL if ASYNC_ENABLED | bool else omit }}"
   throttle: 1
