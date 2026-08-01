@@ -142,6 +142,15 @@ for node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}"; do
 	dexec "${node}" docker system df
 done
 
+sep "node-loop" "loop devices (one kernel pool, shared by the runner and every node; cryptsetup and the data roots both draw from it)"
+echo "=== runner host ==="
+losetup -a
+for node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}" "${BACKUP_NODE}"; do
+	echo "=== ${node} ==="
+	dexec "${node}" sh -c "losetup -a 2>&1" || echo "(losetup unavailable)"
+	dexec "${node}" sh -c "ls -l /dev/loop* 2>&1" || echo "(no loop nodes in /dev)"
+done
+
 if [ -n "${OUT}" ] && [ "$(find "${OUT}" -type f 2>/dev/null | wc -l)" -eq 0 ]; then
 	echo "stack diagnostics: captured no files under ${OUT}" >&9
 fi
