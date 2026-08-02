@@ -4,6 +4,7 @@ set -eu
 APP_DIR="/var/www/html"
 CONFIG_PHP="$APP_DIR/config/config.php"
 OCC="$APP_DIR/occ"
+INIT_LOCK="$APP_DIR/nextcloud-init-sync.lock"
 IMAGE_VERSION_PHP="/usr/src/nextcloud/version.php"
 
 slot="${TASK_SLOT:-1}"
@@ -17,7 +18,7 @@ if [ "$slot" -ne 1 ]; then
 
   while true; do
     status=''
-    if [ -f "$CONFIG_PHP" ] && [ -f "$OCC" ]; then
+    if ( exec 9>"$INIT_LOCK"; flock -n 9 ) && [ -f "$CONFIG_PHP" ] && [ -f "$OCC" ]; then
       status="$(su "$app_user" -s /bin/sh -c "php $OCC status" 2>/dev/null || true)"
     fi
 
