@@ -15,6 +15,7 @@ NEXTCLOUD_TRUSTED_PROXIES: "{{ networks.internet.values() | select }}"
 
 NEXTCLOUD_PLUGIN_ITEMS: "{{ lookup('config', application_id, 'addons') | dict2items }}"
 NEXTCLOUD_PLUGINS_ENABLED: "{{ lookup('config', application_id, 'services.nextcloud.plugins_enabled') }}"
+NEXTCLOUD_USER_LDAP_ENABLED: "{{ lookup('config', application_id, 'addons.user_ldap.enabled') }}"
 NEXTCLOUD_LDAP_CONFIG_PREFIX: "s01"
 
 NEXTCLOUD_HOST_CONF_ADD_PATH: "{{ [ lookup('container', application_id, 'directories.volumes'), 'infinito' ] | path_join }}"
@@ -24,6 +25,7 @@ NEXTCLOUD_CNODE_PLUGIN_TASKS_PATH: "{{ [role_path, 'tasks/addons/'] | path_join 
 
 NEXTCLOUD_DOCKER_WORK_DIRECTORY: "/var/www/html/"
 NEXTCLOUD_DOCKER_CONF_ADD_PATH: "/var/www/infinito/"
+NEXTCLOUD_DOCKER_CONF_LOADER_PATH: "{{ [ NEXTCLOUD_DOCKER_WORK_DIRECTORY, 'config/zzz-infinito.config.php'] | path_join }}"
 
 NEXTCLOUD_ADMINISTRATOR_PASSWORD: "{{ lookup('config', application_id, 'credentials.administrator_password') }}"
 NEXTCLOUD_ADMINISTRATOR_USERNAME: "{{ lookup('config', application_id, 'users.administrator.username') }}"
@@ -149,7 +151,7 @@ NEXTCLOUD_DOCKER_USER_ID: 82
 NEXTCLOUD_DOCKER_USER: "www-data"
 
 NEXTCLOUD_INTERNAL_OCC_COMMAND: "{{ [ NEXTCLOUD_DOCKER_WORK_DIRECTORY, 'occ'] | path_join }}"
-NEXTCLOUD_DOCKER_EXEC: "container exec -u {{ NEXTCLOUD_DOCKER_USER }} {{ NEXTCLOUD_CONTAINER_ADDRESS }}"
+NEXTCLOUD_DOCKER_EXEC: "container exec -u {{ NEXTCLOUD_DOCKER_USER }} {{ NEXTCLOUD_LOCAL_CID | quote }}" # nocheck: container-exec-resolver  NEXTCLOUD_LOCAL_CID resolved at delegate_to runtime; container_address would return a manager-only subshell
 NEXTCLOUD_DOCKER_EXEC_OCC: "{{ NEXTCLOUD_DOCKER_EXEC }} {{ NEXTCLOUD_INTERNAL_OCC_COMMAND }}"
 
 NEXTCLOUD_REDIS_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'redis') }}"
