@@ -95,7 +95,9 @@ class TestInventoryOverrideConsumer(unittest.TestCase):
         _reset_cache_for_tests()
         variables = _variables({}, [cls.OVERRIDDEN, PROVIDER])
         variables["applications"] = {
-            cls.OVERRIDDEN: {"services": {"seaweedfs": {"enabled": True, "shared": True}}}
+            cls.OVERRIDDEN: {
+                "services": {"seaweedfs": {"enabled": True, "shared": True}}
+            }
         }
         applications = ApplicationsLookup()
         applications._templar = Templar(loader=DataLoader())

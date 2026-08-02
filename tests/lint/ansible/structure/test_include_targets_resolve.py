@@ -101,8 +101,7 @@ class TestIncludeTargetsResolve(unittest.TestCase):
                     hits = _distinct_hits(target, roots)
                     if not hits:
                         searched = ", ".join(
-                            r.relative_to(PROJECT_ROOT).as_posix() or "."
-                            for r in roots
+                            r.relative_to(PROJECT_ROOT).as_posix() or "." for r in roots
                         )
                         findings.append(
                             f"{rel}: '{target}' resolves to no file "

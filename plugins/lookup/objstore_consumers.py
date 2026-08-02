@@ -57,9 +57,7 @@ class LookupModule(LookupBase):
         applications = lookup_loader.get(
             "applications", loader=self._loader, templar=templar
         ).run([], variables=vars_)[0]
-        objstore = lookup_loader.get(
-            "objstore", loader=self._loader, templar=templar
-        )
+        objstore = lookup_loader.get("objstore", loader=self._loader, templar=templar)
 
         consumers: list[str] = []
         for group in group_names:
