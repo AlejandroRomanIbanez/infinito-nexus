@@ -5,6 +5,7 @@ APP_DIR="/var/www/html"
 CONFIG_PHP="$APP_DIR/config/config.php"
 VOLUME_VERSION_PHP="$APP_DIR/version.php"
 IMAGE_VERSION_PHP="/usr/src/nextcloud/version.php"
+INIT_LOCK="$APP_DIR/nextcloud-init-sync.lock"
 
 slot="${TASK_SLOT:-1}"
 case "$slot" in
@@ -21,6 +22,11 @@ if [ "$slot" -ne 1 ]; then
       fi
     fi
     echo "Task slot ${slot}: waiting for slot 1 to finish Nextcloud init..."
+    sleep 10
+  done
+
+  while ! flock -n "$INIT_LOCK" true; do
+    echo "Task slot ${slot}: waiting for the init lock to clear..."
     sleep 10
   done
 fi
