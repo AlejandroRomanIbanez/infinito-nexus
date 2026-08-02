@@ -32,7 +32,7 @@
     sysctls:
       net.ipv6.conf.all.disable_ipv6: "{{ (not NETWORK_IPV6_ENABLED | bool) | int }}"
     healthcheck:
-      test: ["CMD", "su", "www-data", "-s", "/bin/sh", "-c", "php {{ NEXTCLOUD_INTERNAL_OCC_COMMAND }} status"]
+      test: ["CMD", "su", "{{ NEXTCLOUD_DOCKER_USER }}", "-s", "/bin/sh", "-c", "php {{ NEXTCLOUD_INTERNAL_OCC_COMMAND }} status"]
       interval: 1m
       timeout: 30s
       retries: 10
@@ -102,7 +102,7 @@
     sysctls:
       net.ipv6.conf.all.disable_ipv6: "{{ (not NETWORK_IPV6_ENABLED | bool) | int }}"
     healthcheck:
-      test: ["CMD", "su", "www-data", "-s", "/bin/sh", "-c", "php {{ NEXTCLOUD_INTERNAL_OCC_COMMAND }} status"]
+      test: ["CMD", "su", "{{ NEXTCLOUD_DOCKER_USER }}", "-s", "/bin/sh", "-c", "php {{ NEXTCLOUD_INTERNAL_OCC_COMMAND }} status"]
       interval: 1m
       timeout: 30s
       retries: 10
