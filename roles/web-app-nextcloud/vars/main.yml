@@ -25,6 +25,7 @@ NEXTCLOUD_CNODE_PLUGIN_TASKS_PATH: "{{ [role_path, 'tasks/addons/'] | path_join 
 
 NEXTCLOUD_DOCKER_WORK_DIRECTORY: "/var/www/html/"
 NEXTCLOUD_DOCKER_CONF_ADD_PATH: "/var/www/infinito/"
+NEXTCLOUD_DOCKER_CONF_LOADER_PATH: "{{ [ NEXTCLOUD_DOCKER_WORK_DIRECTORY, 'config/zzz-infinito.config.php'] | path_join }}"
 
 NEXTCLOUD_ADMINISTRATOR_PASSWORD: "{{ lookup('config', application_id, 'credentials.administrator_password') }}"
 NEXTCLOUD_ADMINISTRATOR_USERNAME: "{{ lookup('config', application_id, 'users.administrator.username') }}"

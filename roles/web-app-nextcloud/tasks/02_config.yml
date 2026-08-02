@@ -24,7 +24,7 @@
   ansible.builtin.shell:
     cmd: >- # nocheck: container-exec-resolver  NEXTCLOUD_LOCAL_CID resolved at delegate_to runtime; container_address would return a manager-only subshell
       container exec -i -u root {{ NEXTCLOUD_LOCAL_CID | quote }}
-      sh -c 'cat > /var/www/html/config/zzz-infinito.config.php
-      && chmod 0444 /var/www/html/config/zzz-infinito.config.php'
+      sh -c 'cat > {{ NEXTCLOUD_DOCKER_CONF_LOADER_PATH }}
+      && chmod 0444 {{ NEXTCLOUD_DOCKER_CONF_LOADER_PATH }}'
     stdin: "{{ lookup('template', 'include.php.j2') }}"
   changed_when: true
