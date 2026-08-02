@@ -1,7 +1,10 @@
 import unittest
 
 from plugins.filter.seaweedfs import (
+    MIN_FREE_SPACE_VOLUMES,
     VOLUME_GROW_BATCH,
+    VOLUME_SIZE_LIMIT_MB,
+    min_free_space,
     seaweedfs_command,
     seaweedfs_sidecar_script,
     volume_slots,
@@ -12,7 +15,9 @@ BASE = [
     "-dir=/data",
     "-ip=localhost",
     "-ip.bind=0.0.0.0",
+    f"-master.volumeSizeLimitMB={VOLUME_SIZE_LIMIT_MB}",
     f"-volume.max={volume_slots(1)}",
+    f"-volume.minFreeSpace={min_free_space()}",
     "-filer",
     "-s3",
 ]
@@ -46,6 +51,16 @@ class TestSeaweedfsCommandFilter(unittest.TestCase):
 
     def test_slots_accept_the_string_a_jinja_lookup_yields(self):
         self.assertEqual(volume_slots("54"), volume_slots(54))
+
+    def test_the_free_space_floor_clears_a_whole_allocation_unit(self):
+        floor_mb = int(min_free_space().removesuffix("MiB"))
+        self.assertGreaterEqual(floor_mb, VOLUME_SIZE_LIMIT_MB)
+        self.assertEqual(floor_mb, VOLUME_SIZE_LIMIT_MB * MIN_FREE_SPACE_VOLUMES)
+
+    def test_the_volume_size_limit_is_stated_not_inherited(self):
+        command = seaweedfs_command(collections=1)
+        self.assertIn(f"-master.volumeSizeLimitMB={VOLUME_SIZE_LIMIT_MB}", command)
+        self.assertIn(f"-volume.minFreeSpace={min_free_space()}", command)
 
 
 class TestSeaweedfsSidecarScriptFilter(unittest.TestCase):

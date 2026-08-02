@@ -1,6 +1,12 @@
 from __future__ import annotations
 
 VOLUME_GROW_BATCH = 7
+VOLUME_SIZE_LIMIT_MB = 1024
+MIN_FREE_SPACE_VOLUMES = 2
+
+
+def min_free_space():
+    return f"{VOLUME_SIZE_LIMIT_MB * MIN_FREE_SPACE_VOLUMES}MiB"
 
 
 def volume_slots(collections):
@@ -44,7 +50,9 @@ def seaweedfs_command(s3_config="", collections=None):
         "-dir=/data",
         "-ip=localhost",
         "-ip.bind=0.0.0.0",
+        f"-master.volumeSizeLimitMB={VOLUME_SIZE_LIMIT_MB}",
         f"-volume.max={volume_slots(collections)}",
+        f"-volume.minFreeSpace={min_free_space()}",
         "-filer",
         "-s3",
     ]
