@@ -7,9 +7,10 @@
     resolve_compose_cid: "{{ NEXTCLOUD_CONTAINER_ADDRESS }}"
 
 - name: 🔧 Setup config.php
-  include_tasks: 02_config.yml
-  apply:
-    delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"
+  include_tasks:
+    file: 02_config.yml
+    apply:
+      delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"
 
 - name: 🚿 Flush all handlers immediately so that occ can be used
   meta: flush_handlers
@@ -31,9 +32,10 @@
   when: lookup('engine', 'redis', application_id, 'local')
 
 - name: 🔄 Update\Upgrade Nextcloud
-  include_tasks: 03_upgrade.yml
-  apply:
-    delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"
+  include_tasks:
+    file: 03_upgrade.yml
+    apply:
+      delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"
 
 - name: 🔍 Re-resolve the hosting node after the upgrade restarts
   include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
@@ -43,17 +45,21 @@
     resolve_compose_cid: "{{ NEXTCLOUD_CONTAINER_ADDRESS }}"
 
 - name: 📂 Load system configuration steps
-  include_tasks: "{{ nextcloud_step }}"
+  include_tasks:
+    file: "{{ nextcloud_step }}"
+    apply:
+      delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"
   loop:
     - 04_admin.yml
     - 05_system_config.yml
   loop_control:
     loop_var: nextcloud_step
-  apply:
-    delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"
 
 - name: 🔧 Setup Nextcloud Plugins
-  include_tasks: 06_plugin.yml
+  include_tasks:
+    file: 06_plugin.yml
+    apply:
+      delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"
   loop: "{{ NEXTCLOUD_PLUGIN_ITEMS }}"
   loop_control:
     loop_var: plugin_item
@@ -61,10 +67,9 @@
     plugin_key: "{{ plugin_item.key }}"
     plugin_value: "{{ plugin_item.value }}"
   when: NEXTCLOUD_PLUGINS_ENABLED | bool
-  apply:
-    delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"
 
 - name: 🔧 Reconcile administrator identities after plugin setup
-  include_tasks: 07_admin_identities.yml
-  apply:
-    delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"
+  include_tasks:
+    file: 07_admin_identities.yml
+    apply:
+      delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"
