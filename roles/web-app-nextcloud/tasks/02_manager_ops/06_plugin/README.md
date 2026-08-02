@@ -14,7 +14,7 @@ When a plugin is marked `enabled: false`, `06_plugin.yml` runs `occ app:disable`
 
 ## Pipeline stages
 
-Each `tasks/plugin/<step>.yml` file owns exactly one OCC stage and one decision about whether to continue.
+Each `tasks/02_manager_ops/06_plugin/<step>.yml` file owns exactly one OCC stage and one decision about whether to continue.
 
 | File | Stage | OCC command | Continues to next stage when |
 |---|---|---|---|
@@ -22,7 +22,7 @@ Each `tasks/plugin/<step>.yml` file owns exactly one OCC stage and one decision 
 | [02_enable.yml](./02_enable.yml) | enable | `occ app:enable` | enable result is not flagged `incompatible` |
 | [03_configure.yml](./03_configure.yml) | configure | `occ config:app:set` plus optional hook | (terminal stage) |
 
-The classification of "runnable" and "incompatible" is computed by the Jinja filter `nextcloud_install_status` defined in [roles/web-app-nextcloud/filter_plugins/nextcloud_install.py](../../filter_plugins/nextcloud_install.py).
+The classification of "runnable" and "incompatible" is computed by the Jinja filter `nextcloud_install_status` defined in [roles/web-app-nextcloud/filter_plugins/nextcloud_install.py](../../../filter_plugins/nextcloud_install.py).
 The filter inspects `rc`, `stdout`, and `stderr` from the OCC call and returns flags that drive `until`, `failed_when`, and `when`.
 
 ## Version-compatibility tolerance
@@ -56,7 +56,7 @@ A new plugin requires no changes here when its addon spec and optional hook file
   Create `tasks/addons/<addon_id>.yml`.
   The hook runs after `config:app:set` and MAY perform plugin-specific provisioning such as LDAP wiring or REST calls against the live container.
 
-The hook is looked up via the path constant `NEXTCLOUD_CNODE_PLUGIN_TASKS_PATH` defined in [vars/main.yml](../../vars/main.yml).
+The hook is looked up via the path constant `NEXTCLOUD_CNODE_PLUGIN_TASKS_PATH` defined in [vars/main.yml](../../../vars/main.yml).
 Missing files MUST be tolerated; the corresponding step skips cleanly.
 
 ## Mutually exclusive plugins
@@ -67,5 +67,5 @@ This guarantees that mutually exclusive integrations such as the OIDC entry poin
 
 ## Entry point
 
-The pipeline is invoked from [06_plugin.yml](../06_plugin.yml), which in turn runs once per iteration of the `NEXTCLOUD_PLUGIN_ITEMS` loop in [main.yml](../main.yml).
+The pipeline is invoked from [06_plugin.yml](../06_plugin.yml), which in turn runs once per iteration of the `NEXTCLOUD_PLUGIN_ITEMS` loop in [02_manager_ops.yml](../../02_manager_ops.yml).
 The loop variable `plugin_item` is unpacked into `plugin_key` (the OCC app name) and `plugin_value` (its meta entry).

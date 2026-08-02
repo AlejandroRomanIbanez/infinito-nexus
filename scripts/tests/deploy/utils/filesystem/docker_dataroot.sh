@@ -20,7 +20,8 @@ SIZE="${3:-30G}"
 
 MOUNT=/mnt/docker-fs
 IMAGE=/var/tmp/docker-fs.img
-POOL=infinito_ci
+POOL_HOST="$(hostname 2>/dev/null || echo unknown)"
+POOL="infinito_ci_$(printf '%s' "${POOL_HOST}" | tr -dc 'A-Za-z0-9_.:-')"
 DAEMON=/etc/docker/daemon.json
 
 report() { echo "docker-dataroot-filesystem: $*"; }
@@ -40,6 +41,23 @@ verdict() {
 	[ -n "${GITHUB_STEP_SUMMARY:-}" ] || return 0
 	echo "- \`${host}\` docker data root: **${effective}** (requested \`${FSTYPE:-none}\`, ${status})" \
 		>>"${GITHUB_STEP_SUMMARY}"
+}
+
+# Param: $1 loop device to detach
+# Param: $2 mount point it backs
+arm_autoclear() {
+	local loop="$1" mount="$2" armed=""
+	if ! losetup -d "${loop}"; then
+		report "WARNING: ${loop} refused the detach and will leak into the next round"
+		return 0
+	fi
+	if ! mountpoint -q "${mount}"; then
+		report "FAIL: detaching ${loop} tore down ${mount}"
+		exit 1
+	fi
+	armed="$(losetup -l -n -O AUTOCLEAR "${loop}" 2>/dev/null | tr -d '[:space:]')"
+	[ "${armed}" = 1 ] ||
+		report "WARNING: ${loop} did not arm autoclear (AUTOCLEAR='${armed}')"
 }
 
 decline() {
@@ -76,6 +94,10 @@ install_packages() {
 	elif command -v pacman >/dev/null; then
 		pacman -Sy --noconfirm --needed "$@"
 	elif command -v dnf >/dev/null; then
+		if dnf -y install "$@"; then
+			return 0
+		fi
+		dnf -y install epel-release || return 1
 		dnf -y install "$@"
 	else
 		return 1
@@ -95,6 +117,7 @@ require_tool() {
 }
 
 require_tool losetup util-linux || decline "losetup is unavailable"
+require_tool mountpoint util-linux || decline "mountpoint is unavailable"
 
 case "${FSTYPE}" in
 ext4)
@@ -116,6 +139,9 @@ zfs)
 esac
 
 if mountpoint -q "${MOUNT}"; then
+	if [ "${FSTYPE}" = zfs ] && zpool list -H -o name "${POOL}" >/dev/null 2>&1; then
+		zfs set acltype=posixacl xattr=sa "${POOL}"
+	fi
 	report "${MOUNT} is already prepared"
 	verdict already-prepared
 	exit 0
@@ -128,16 +154,30 @@ systemctl stop docker 2>/dev/null || true        # nocheck: shell-or-true -- doc
 mkdir -p "${MOUNT}" "$(dirname "${IMAGE}")"
 rm -f "${IMAGE}"
 truncate -s "${SIZE}" "${IMAGE}"
-LOOP="$(losetup -f | awk '{print $1}')"
-[ -b "${LOOP}" ] || mknod "${LOOP}" b 7 "${LOOP#/dev/loop}"
-losetup "${LOOP}" "${IMAGE}"
+LOOP=""
+attempt=0
+while [ -z "${LOOP}" ] && [ "${attempt}" -lt 16 ]; do
+	attempt=$((attempt + 1))
+	[ "${attempt}" -eq 1 ] || sleep 0.5
+	candidate=""
+	candidate="$(losetup -f 2>/dev/null)" || candidate=""
+	candidate="${candidate%% *}"
+	if [ -n "${candidate}" ] && [ ! -b "${candidate}" ]; then
+		mknod "${candidate}" b 7 "${candidate#/dev/loop}" 2>/dev/null || candidate=""
+	fi
+	if attached="$(losetup --find --show "${IMAGE}" 2>/dev/null)"; then
+		LOOP="${attached}"
+	fi
+done
+[ -n "${LOOP}" ] || decline "no loop device could be claimed after ${attempt} attempts"
 
 if [ "${FSTYPE}" = zfs ]; then
-	zpool create -f -m "${MOUNT}" "${POOL}" "${LOOP}"
+	zpool create -f -m "${MOUNT}" -O acltype=posixacl -O xattr=sa "${POOL}" "${LOOP}"
 	zfs create -o mountpoint="${MOUNT}/docker" "${POOL}/docker"
 else
 	"mkfs.${FSTYPE}" -q "${LOOP}"
 	mount -t "${FSTYPE}" "${LOOP}" "${MOUNT}"
+	arm_autoclear "${LOOP}" "${MOUNT}"
 	if [ "${FSTYPE}" = btrfs ]; then
 		btrfs subvolume create "${MOUNT}/docker" >/dev/null
 	else
@@ -157,5 +197,10 @@ config["data-root"] = root
 path.write_text(json.dumps(config, indent=2) + "\n")
 PYTHON
 
-systemctl start docker
-verdict applied
+if systemctl cat docker.service >/dev/null 2>&1; then
+	systemctl start docker
+	verdict applied
+else
+	report "docker.service is not installed yet; the data root takes effect when it is"
+	verdict applied-pending-docker
+fi

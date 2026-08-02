@@ -2,7 +2,8 @@
 # Resolve which filesystem one matrix entry runs its docker data root on and
 # record the decision for the steps that follow.
 #
-# A random pick draws only from what the target can deliver; a stated one is
+# A random pick draws from what this kernel serves, measured here, narrowed to
+# what every distro of the entry carries a userland for. A stated pick is
 # honoured even where it is unsupported, and the applying step then fails. The
 # choice goes to the step summary, since reproducing a red run means re-stating
 # it verbatim.
@@ -11,8 +12,8 @@
 #   $1 STATED   ext4 | btrfs | zfs; 'auto' or empty for a random pick
 #   $2 LABEL    matrix entry the pick belongs to, e.g. compose/web-app-gitea
 #   $3 DISTROS  space-separated distributions the entry deploys on
-#   $4 SCOPE    node   the pick must satisfy every entry in DISTROS
-#               runner DISTROS is ignored; the runner's own pool applies
+#   $4 SCOPE    node   every distro in DISTROS must carry the userland too
+#               runner DISTROS is ignored; only the kernel decides
 set -euo pipefail
 
 STATED="${1:-}"
@@ -20,33 +21,58 @@ LABEL="${2:?usage: resolve.sh STATED LABEL DISTROS SCOPE}"
 DISTROS="${3:-}"
 SCOPE="${4:?usage: resolve.sh STATED LABEL DISTROS SCOPE}"
 
-NODE_POOL="ext4 btrfs zfs"
-RUNNER_POOL="ext4 btrfs"
+POOL="ext4 btrfs zfs"
 
-supported_by() {
+note() { echo "filesystem: $*" >&2; }
+
+kernel_serves() {
+	local fs="$1"
+	[ "${fs}" != zfs ] || [ ! -c /dev/zfs ] || return 0
+	if [ "${fs}" != zfs ] && grep -qw "${fs}" /proc/filesystems 2>/dev/null; then
+		return 0
+	fi
+	if ! command -v modinfo >/dev/null; then
+		note "${fs} left out: not loaded and modinfo is unavailable to ask for the module"
+		return 1
+	fi
+	modinfo "${fs}" >/dev/null 2>&1 && return 0
+	note "${fs} left out: this kernel carries no module for it"
+	return 1
+}
+
+userland_for() {
 	case "$1" in
-	centos) echo "ext4" ;;
-	arch | fedora) echo "ext4 btrfs" ;;
+	centos | arch | fedora) echo "ext4 btrfs" ;;
 	*) echo "ext4 btrfs zfs" ;;
 	esac
 }
 
-candidates() {
-	local pool="${NODE_POOL}" distro kept fs
-	[ "${SCOPE}" = node ] || {
-		echo "${RUNNER_POOL}"
-		return 0
-	}
+every_distro_carries() {
+	local fs="$1" distro
+	[ "${SCOPE}" = node ] || return 0
 	for distro in ${DISTROS}; do
-		kept=""
-		for fs in ${pool}; do
-			case " $(supported_by "${distro}") " in
-			*" ${fs} "*) kept="${kept} ${fs}" ;;
-			esac
-		done
-		pool="${kept# }"
+		case " $(userland_for "${distro}") " in
+		*" ${fs} "*) ;;
+		*) return 1 ;;
+		esac
 	done
-	echo "${pool:-ext4}"
+	return 0
+}
+
+candidates() {
+	local kept="" fs
+	for fs in ${POOL}; do
+		if ! kernel_serves "${fs}"; then
+			continue
+		fi
+		if ! every_distro_carries "${fs}"; then
+			note "${fs} left out: not every distro of this entry carries the userland"
+			continue
+		fi
+		kept="${kept} ${fs}"
+	done
+	kept="${kept# }"
+	echo "${kept:-ext4}"
 }
 
 if [ -n "${STATED}" ] && [ "${STATED}" != auto ]; then

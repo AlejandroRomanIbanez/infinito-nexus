@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 import unittest
@@ -51,6 +52,23 @@ class Resolved:
         self.required = self.env[f"{key}_REQUIRED"]
         match = POOL.search(stdout)
         self.pool = match.group(1).split() if match else None
+
+
+def kernel_serves(kind: str) -> bool:
+    """What the running kernel can mount, derived without asking resolve.sh."""
+    if kind == "zfs":
+        if Path("/dev/zfs").is_char_device():
+            return True
+    elif re.search(rf"^\s*{kind}$", read_text("/proc/filesystems"), re.MULTILINE):
+        return True
+    if shutil.which("modinfo") is None:
+        return False
+    return (
+        subprocess.run(
+            ["modinfo", kind], capture_output=True, text=True, check=False
+        ).returncode
+        == 0
+    )
 
 
 def resolve(stated: str, distros: str, scope: str) -> Resolved:
@@ -92,16 +110,22 @@ class TestFilesystemResolve(unittest.TestCase):
             drawn = resolve("", " ".join(ALL_DISTROS), scope)
             self.assertIn(drawn.picked, drawn.pool)
 
-    def test_the_node_pool_is_what_every_distro_can_serve(self) -> None:
-        singles = {d: set(resolve("", d, "node").pool) for d in ALL_DISTROS}
-        combined = set(resolve("", " ".join(ALL_DISTROS), "node").pool)
-        self.assertEqual(combined, set.intersection(*singles.values()))
+    def test_the_runner_pool_is_exactly_what_this_kernel_serves(self) -> None:
+        expected = [kind for kind in ("ext4", "btrfs", "zfs") if kernel_serves(kind)]
+        self.assertEqual(resolve("", " ".join(ALL_DISTROS), "runner").pool, expected)
 
-    def test_the_runner_pool_ignores_the_distro_list(self) -> None:
-        self.assertEqual(
-            resolve("", " ".join(ALL_DISTROS), "runner").pool,
-            resolve("", "centos", "runner").pool,
-        )
+    def test_a_kernel_that_cannot_serve_it_keeps_it_out_of_every_scope(self) -> None:
+        absent = [kind for kind in ("ext4", "btrfs", "zfs") if not kernel_serves(kind)]
+        if not absent:
+            self.skipTest("this kernel serves all three, nothing to exclude")
+        for scope in ("runner", "node"):
+            pool = resolve("", " ".join(ALL_DISTROS), scope).pool
+            self.assertTrue(set(absent).isdisjoint(pool))
+
+    def test_the_node_pool_also_drops_what_a_distro_cannot_install(self) -> None:
+        runner = set(resolve("", " ".join(ALL_DISTROS), "runner").pool)
+        node = set(resolve("", " ".join(ALL_DISTROS), "node").pool)
+        self.assertTrue(node.issubset(runner))
 
     def test_a_missing_scope_is_a_hard_error(self) -> None:
         proc = subprocess.run(

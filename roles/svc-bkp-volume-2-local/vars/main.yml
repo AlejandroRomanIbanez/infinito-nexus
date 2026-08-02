@@ -54,6 +54,9 @@ BKP_VOLUME_2_LOCAL_NO_STOP_REQUIRED: >-
 BKP_VOLUME_2_LOCAL_DISABLED: >-
   {{ lookup('backup_image', 'disabled') }}
 
+BKP_VOLUME_2_LOCAL_VOLUMES_DISABLED: >-
+  {{ lookup('backup_volume') }}
+
 BKP_VOLUME_2_LOCAL_HARD_RESTART: >-
   {{ lookup('backup_hard_restart_projects') }}
 
@@ -72,6 +75,11 @@ BKP_VOLUME_2_LOCAL_DISABLED_CLI: >-
     --images-no-backup-required {{ BKP_VOLUME_2_LOCAL_DISABLED | join(' ') }}
   {%- endif %}
 
+BKP_VOLUME_2_LOCAL_VOLUMES_DISABLED_CLI: >-
+  {% if BKP_VOLUME_2_LOCAL_VOLUMES_DISABLED | length > 0 -%}
+    --volumes-no-backup-required {{ BKP_VOLUME_2_LOCAL_VOLUMES_DISABLED | join(' ') }}
+  {%- endif %}
+
 BKP_VOLUME_2_LOCAL_HARD_RESTART_CLI: >-
   {% if DEPLOYMENT_MODE == 'compose' and BKP_VOLUME_2_LOCAL_HARD_RESTART | length > 0 -%}
     --hard-restart-projects {{ BKP_VOLUME_2_LOCAL_HARD_RESTART | join(' ') }}
@@ -81,6 +89,7 @@ BKP_VOLUME_2_LOCAL_CLI_ARGS_LIST:
   - "{{ BKP_VOLUME_2_LOCAL_DB_ROUTINE_CLI }}"
   - "{{ BKP_VOLUME_2_LOCAL_NO_STOP_REQUIRED_CLI }}"
   - "{{ BKP_VOLUME_2_LOCAL_DISABLED_CLI }}"
+  - "{{ BKP_VOLUME_2_LOCAL_VOLUMES_DISABLED_CLI }}"
   - "{{ BKP_VOLUME_2_LOCAL_HARD_RESTART_CLI }}"
 
 BKP_VOLUME_2_LOCAL_EXEC: >-

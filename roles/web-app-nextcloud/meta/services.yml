@@ -87,6 +87,7 @@ nextcloud:
       http: 8001
     internal:
       http: 80
+      fpm: 9000
     public:
       stun_turn: 3480
       stun_turn_tls: 5350

@@ -23,6 +23,7 @@ from utils.cache.files import PROJECT_ROOT
 
 INDEX = PROJECT_ROOT / "scripts" / "tests" / "deploy" / "utils" / "rescue_index.sh"
 FIND_WITHOUT_PRINTF = '#!/bin/sh\necho "find: unrecognized: -printf" >&2\nexit 1\n'
+GLYPHS = ("📁", "📄", "📜", "🧾")
 FIND_CUT_SHORT = (
     "#!/bin/sh\n"
     "printf 'd         80 logs\\n'\n"
@@ -79,9 +80,24 @@ class TestRescueIndexContract(unittest.TestCase):
             result = self._run(td, stub_find=FIND_CUT_SHORT)
 
         self.assertEqual(result.returncode, 0)
-        for reached in ("logs", "logs/container.log", "inspect.json"):
+        for reached in ("logs", "container.log", "inspect.json"):
             self.assertIn(reached, result.stdout)
         self.assertIn("2 file(s)", result.stdout)
+
+    def test_a_child_is_indented_under_its_parent(self) -> None:
+        with tempfile.TemporaryDirectory() as td:
+            result = self._run(td, stub_find=FIND_CUT_SHORT)
+
+        indent = {}
+        for line in result.stdout.splitlines():
+            entry = line.lstrip()
+            if entry[:1] not in GLYPHS:
+                continue
+            name = entry.split(None, 1)[1].split("  (")[0]
+            indent[name] = len(line) - len(entry)
+
+        self.assertLess(indent["logs/"], indent["container.log"])
+        self.assertEqual(indent["logs/"], indent["inspect.json"])
 
 
 if __name__ == "__main__":

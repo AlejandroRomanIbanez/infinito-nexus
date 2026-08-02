@@ -1,7 +1,4 @@
 ---
-- name: 🚿 Flush handlers so Nextcloud container is restarted and ready
-  meta: flush_handlers
-
 - name: "⏳ Wait until Nextcloud is reachable on its local HTTP port"
   wait_for:
     host: "{{ DOCKER_REACH_HOST }}"
@@ -20,12 +17,11 @@
     (occ_status.stdout | default('')) is search('installed: true')
   changed_when: false
 
-# nocheck: container-exec-resolver NEXTCLOUD_CONTAINER_ADDRESS is a swarm-mode subshell that only a shell can expand; command/argv would pass it literally
 - name: "📄 Install the infinito additional-config loader into config/"
   ansible.builtin.shell:
-    cmd: >-
-      container exec -i -u root {{ NEXTCLOUD_CONTAINER_ADDRESS }}
-      sh -c 'cat > /var/www/html/config/zzz-infinito.config.php
-      && chmod 0444 /var/www/html/config/zzz-infinito.config.php'
+    cmd: >- # nocheck: container-exec-resolver  NEXTCLOUD_LOCAL_CID resolved at delegate_to runtime; container_address would return a manager-only subshell
+      container exec -i -u root {{ NEXTCLOUD_LOCAL_CID | quote }}
+      sh -c 'cat > {{ NEXTCLOUD_DOCKER_CONF_LOADER_PATH }}
+      && chmod 0444 {{ NEXTCLOUD_DOCKER_CONF_LOADER_PATH }}'
     stdin: "{{ lookup('template', 'include.php.j2') }}"
   changed_when: true

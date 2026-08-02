@@ -11,7 +11,9 @@ PATTERN='status=[a-z-]+ requested=[a-z]+ effective=[A-Za-z0-9_./-]+'
 [ -f "${LOG}" ] || exit 0
 [ -n "${GITHUB_STEP_SUMMARY:-}" ] || exit 0
 
-VERDICTS="$(grep -ohE "${PATTERN}" "${LOG}" | sort | uniq -c | sort -rn)"
+if ! VERDICTS="$(grep -ohE "${PATTERN}" "${LOG}" | sort | uniq -c | sort -rn)"; then
+	exit 0
+fi
 [ -n "${VERDICTS}" ] || exit 0
 
 {

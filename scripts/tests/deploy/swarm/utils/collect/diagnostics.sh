@@ -98,6 +98,18 @@ for t in /proc/${pid}/task/*; do
   cat ${t}/stack 2>&1
 done'
 
+sep "ganesha-userstack" "nfs-server: ganesha userspace backtrace (the kernel stack only says futex; this says whose lock)"
+# shellcheck disable=SC2016
+dexec "${NFS_SERVER}" sh -c 'pid=$(systemctl show -p MainPID --value nfs-ganesha 2>/dev/null)
+[ "${pid:-0}" -gt 0 ] || { echo "(nfs-ganesha reports no main pid)"; exit 0; }
+if command -v eu-stack >/dev/null 2>&1; then
+  eu-stack -p "${pid}" 2>&1
+elif command -v gdb >/dev/null 2>&1; then
+  gdb -p "${pid}" -batch -ex "thread apply all bt" 2>&1
+else
+  echo "(neither eu-stack nor gdb is installed on this node)"
+fi'
+
 sep "controller-nfs" "controller (this runner): NFS reachability of nfs-server"
 _nfs_ip="$(docker inspect -f '{{range .NetworkSettings.Networks}}{{.IPAddress}} {{end}}' "${NFS_SERVER}")"
 echo "nfs-server container IP(s): ${_nfs_ip}"
@@ -125,6 +137,8 @@ for node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}"; do
 	dexec "${node}" cat /etc/docker/daemon.json
 	echo "--- listening udp/tcp sockets ---"
 	dexec "${node}" sh -c "ss -lunp 2>/dev/null; ss -lntp 2>/dev/null" || echo "(ss unavailable)"
+	echo "--- dnsmasq journal ---"
+	dexec "${node}" sh -c "journalctl -u dnsmasq --no-pager 2>&1" || echo "(journalctl unavailable)"
 	echo "--- addresses ---"
 	dexec "${node}" ip -4 addr show
 	echo "--- nat rules ---"
@@ -138,6 +152,15 @@ for node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}"; do
 	echo "=== ${node} ==="
 	dexec "${node}" df -h
 	dexec "${node}" docker system df
+done
+
+sep "node-loop" "loop devices (one kernel pool, shared by the runner and every node; cryptsetup and the data roots both draw from it)"
+echo "=== runner host ==="
+losetup -a
+for node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}" "${BACKUP_NODE}"; do
+	echo "=== ${node} ==="
+	dexec "${node}" sh -c "losetup -a 2>&1" || echo "(losetup unavailable)"
+	dexec "${node}" sh -c "ls -l /dev/loop* 2>&1" || echo "(no loop nodes in /dev)"
 done
 
 if [ -n "${OUT}" ] && [ "$(find "${OUT}" -type f 2>/dev/null | wc -l)" -eq 0 ]; then
