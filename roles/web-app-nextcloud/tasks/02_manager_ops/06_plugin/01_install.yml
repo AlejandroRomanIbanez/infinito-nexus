@@ -8,7 +8,6 @@
 
 - name: "🔴 Disable incompatible plugins for {{ plugin_key }} (batched shell, no async)"
   ansible.builtin.shell: |
-    # do not set -e here; allow per-line fallbacks
     {% for incompatible_plugin in (plugin_incompatible | default([])) %}
     {{ NEXTCLOUD_DOCKER_EXEC_OCC }} app:disable {{ incompatible_plugin }} || true
     {% endfor %}
@@ -29,9 +28,6 @@
   poll: "{{ ASYNC_POLL if ASYNC_ENABLED | bool else omit }}"
 
 - name: 📦 install {{ plugin_key }} nextcloud plugin
-  # Clear NC appstore-fetcher cooldown (300s) before each attempt so retries
-  # actually re-fetch the catalog instead of seeing cached empty after a first
-  # transient failure right after container start.
   ansible.builtin.shell: |
     {{ NEXTCLOUD_DOCKER_EXEC_OCC }} config:app:delete settings appstore-fetcher-lastFailure >/dev/null 2>&1 || true
     {{ NEXTCLOUD_DOCKER_EXEC_OCC }} app:install {{ plugin_key }}

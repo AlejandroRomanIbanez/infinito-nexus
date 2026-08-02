@@ -1,7 +1,4 @@
 ---
-- name: 🚿 Flush handlers so Nextcloud container is restarted and ready
-  meta: flush_handlers
-
 - name: "⏳ Wait until Nextcloud is reachable on its local HTTP port"
   wait_for:
     host: "{{ DOCKER_REACH_HOST }}"
