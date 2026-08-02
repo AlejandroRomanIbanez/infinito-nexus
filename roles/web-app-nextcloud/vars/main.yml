@@ -15,6 +15,7 @@ NEXTCLOUD_TRUSTED_PROXIES: "{{ networks.internet.values() | select }}"
 
 NEXTCLOUD_PLUGIN_ITEMS: "{{ lookup('config', application_id, 'addons') | dict2items }}"
 NEXTCLOUD_PLUGINS_ENABLED: "{{ lookup('config', application_id, 'services.nextcloud.plugins_enabled') }}"
+NEXTCLOUD_USER_LDAP_ENABLED: "{{ lookup('config', application_id, 'addons.user_ldap.enabled') }}"
 NEXTCLOUD_LDAP_CONFIG_PREFIX: "s01"
 
 NEXTCLOUD_HOST_CONF_ADD_PATH: "{{ [ lookup('container', application_id, 'directories.volumes'), 'infinito' ] | path_join }}"
