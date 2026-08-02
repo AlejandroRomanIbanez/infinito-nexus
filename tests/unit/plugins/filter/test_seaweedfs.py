@@ -1,12 +1,17 @@
 import unittest
 
-from plugins.filter.seaweedfs import seaweedfs_command, seaweedfs_sidecar_script
+from plugins.filter.seaweedfs import (
+    MAX_VOLUME_SLOTS,
+    seaweedfs_command,
+    seaweedfs_sidecar_script,
+)
 
 BASE = [
     "server",
     "-dir=/data",
     "-ip=localhost",
     "-ip.bind=0.0.0.0",
+    f"-volume.max={MAX_VOLUME_SLOTS}",
     "-filer",
     "-s3",
 ]
@@ -27,6 +32,10 @@ class TestSeaweedfsCommandFilter(unittest.TestCase):
 
     def test_ip_localhost_present(self):
         self.assertIn("-ip=localhost", seaweedfs_command())
+
+    def test_volume_slots_are_stated_so_the_entrypoint_does_not_autosize(self):
+        self.assertIn(f"-volume.max={MAX_VOLUME_SLOTS}", seaweedfs_command())
+        self.assertNotIn("-volume.max=0", seaweedfs_command())
 
 
 class TestSeaweedfsSidecarScriptFilter(unittest.TestCase):

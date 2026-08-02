@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+MAX_VOLUME_SLOTS = 64
+
 
 def seaweedfs_command(s3_config=""):
     """Build the SeaweedFS all-in-one ``server`` command.
@@ -20,6 +22,7 @@ def seaweedfs_command(s3_config=""):
         "-dir=/data",
         "-ip=localhost",
         "-ip.bind=0.0.0.0",
+        f"-volume.max={MAX_VOLUME_SLOTS}",
         "-filer",
         "-s3",
     ]
