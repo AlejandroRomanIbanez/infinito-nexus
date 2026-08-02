@@ -1,9 +1,25 @@
 ---
+- name: 🔍 Resolve the Nextcloud hosting node and container id
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
+  vars:
+    resolve_service_key: "{{ NEXTCLOUD_SERVICE }}"
+    resolve_output_prefix: NEXTCLOUD
+    resolve_compose_cid: "{{ NEXTCLOUD_CONTAINER_ADDRESS }}"
+
 - name: 🔧 Setup config.php
   include_tasks: 02_config.yml
+  apply:
+    delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"
 
 - name: 🚿 Flush all handlers immediately so that occ can be used
   meta: flush_handlers
+
+- name: 🔍 Re-resolve the hosting node after the handler flush
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
+  vars:
+    resolve_service_key: "{{ NEXTCLOUD_SERVICE }}"
+    resolve_output_prefix: NEXTCLOUD
+    resolve_compose_cid: "{{ NEXTCLOUD_CONTAINER_ADDRESS }}"
 
 - name: ⏳ Wait until Redis is ready (PONG)
   shell: "container exec {{ NEXTCLOUD_REDIS_CONTAINER_ADDRESS }} redis-cli ping"
@@ -16,6 +32,15 @@
 
 - name: 🔄 Update\Upgrade Nextcloud
   include_tasks: 03_upgrade.yml
+  apply:
+    delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"
+
+- name: 🔍 Re-resolve the hosting node after the upgrade restarts
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
+  vars:
+    resolve_service_key: "{{ NEXTCLOUD_SERVICE }}"
+    resolve_output_prefix: NEXTCLOUD
+    resolve_compose_cid: "{{ NEXTCLOUD_CONTAINER_ADDRESS }}"
 
 - name: 📂 Load system configuration steps
   include_tasks: "{{ nextcloud_step }}"
@@ -24,6 +49,8 @@
     - 05_system_config.yml
   loop_control:
     loop_var: nextcloud_step
+  apply:
+    delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"
 
 - name: 🔧 Setup Nextcloud Plugins
   include_tasks: 06_plugin.yml
@@ -34,6 +61,10 @@
     plugin_key: "{{ plugin_item.key }}"
     plugin_value: "{{ plugin_item.value }}"
   when: NEXTCLOUD_PLUGINS_ENABLED | bool
+  apply:
+    delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"
 
 - name: 🔧 Reconcile administrator identities after plugin setup
   include_tasks: 07_admin_identities.yml
+  apply:
+    delegate_to: "{{ NEXTCLOUD_HOST_NODE }}"

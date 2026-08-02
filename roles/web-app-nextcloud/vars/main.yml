@@ -150,7 +150,7 @@ NEXTCLOUD_DOCKER_USER_ID: 82
 NEXTCLOUD_DOCKER_USER: "www-data"
 
 NEXTCLOUD_INTERNAL_OCC_COMMAND: "{{ [ NEXTCLOUD_DOCKER_WORK_DIRECTORY, 'occ'] | path_join }}"
-NEXTCLOUD_DOCKER_EXEC: "container exec -u {{ NEXTCLOUD_DOCKER_USER }} {{ NEXTCLOUD_CONTAINER_ADDRESS }}"
+NEXTCLOUD_DOCKER_EXEC: "container exec -u {{ NEXTCLOUD_DOCKER_USER }} {{ NEXTCLOUD_LOCAL_CID | quote }}" # nocheck: container-exec-resolver  NEXTCLOUD_LOCAL_CID resolved at delegate_to runtime; container_address would return a manager-only subshell
 NEXTCLOUD_DOCKER_EXEC_OCC: "{{ NEXTCLOUD_DOCKER_EXEC }} {{ NEXTCLOUD_INTERNAL_OCC_COMMAND }}"
 
 NEXTCLOUD_REDIS_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'redis') }}"
