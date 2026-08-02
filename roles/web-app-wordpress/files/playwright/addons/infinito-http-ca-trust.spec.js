@@ -1,11 +1,13 @@
 const { test, expect } = require("@playwright/test");
 const { skipUnlessAddonEnabled } = require("../addon-gating");
+const { skipUnlessServiceEnabled } = require("../service-gating");
 const shared = require("../_shared");
 
 test("addon infinito-http-ca-trust: the CA-trust mu-plugin is loaded by WordPress and outbound HTTPS calls resolve", async ({
   browser,
 }) => {
   skipUnlessAddonEnabled("infinito-http-ca-trust");
+  skipUnlessServiceEnabled("sso");
   test.setTimeout(120_000);
 
   const context = await browser.newContext({ ignoreHTTPSErrors: true });
