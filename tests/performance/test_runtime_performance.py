@@ -60,7 +60,8 @@ def _simulate_ansible_variables(
 
 class TestRuntimeLookupPerformance(unittest.TestCase):
     ITERATIONS = 200
-    WARM_CALLS_BUDGET_SECONDS = 0.5
+    WARM_CALLS_CPU_BUDGET_SECONDS = 0.5
+    COLD_RENDER_CPU_BUDGET_SECONDS = 30.0
 
     def setUp(self) -> None:
         _reset_cache_for_tests()
@@ -89,63 +90,57 @@ class TestRuntimeLookupPerformance(unittest.TestCase):
         lookup._templar = Templar(loader=DataLoader())
         lookup.run([], variables=variables, roles_dir=str(ROLES_DIR))
 
-    def test_applications_lookup_caches_across_fresh_variables_dicts(self) -> None:
-        """Warm call populates the cache; subsequent calls with freshly-built
-        `variables` mappings AND freshly-copied applications/users dicts
-        (Ansible 2.19+ VariableManager behavior) must hit the cache and stay
-        under budget.
+    def test_applications_lookup_cold_budget_and_cache_speedup(self) -> None:
+        """The cold render must stay under budget, and subsequent calls with
+        freshly-built `variables` mappings AND freshly-copied
+        applications/users dicts (Ansible 2.19+ VariableManager behavior) must
+        hit the cache and stay under theirs.
 
         Using a single for-loop here is test-code-only and not production code
         generating files/tasks; the CLAUDE.md shell-loop ban does not apply.
         """
         warm = _simulate_ansible_variables(self.shared_applications, self.shared_users)
-        t0 = time.perf_counter()
+        t0 = time.process_time()
         self._call_applications(warm)
-        warm_elapsed = time.perf_counter() - t0
+        warm_elapsed = time.process_time() - t0
+
+        with self.subTest(budget="cold render"):
+            self.assertLess(
+                warm_elapsed,
+                self.COLD_RENDER_CPU_BUDGET_SECONDS,
+                f"Cold applications render took {warm_elapsed:.2f}s (CPU budget {self.COLD_RENDER_CPU_BUDGET_SECONDS}s).",
+            )
 
         import copy
 
-        t0 = time.perf_counter()
+        t0 = time.process_time()
         for _ in range(self.ITERATIONS):
             variables = _simulate_ansible_variables(
                 copy.deepcopy(self.shared_applications),
                 copy.deepcopy(self.shared_users),
             )
             self._call_applications(variables)
-        hot_elapsed = time.perf_counter() - t0
+        hot_elapsed = time.process_time() - t0
 
         avg_ms = hot_elapsed / self.ITERATIONS * 1000
         warm_over_hot_avg = (warm_elapsed * 1000) / max(avg_ms, 0.001)
 
-        self.assertLess(
-            hot_elapsed,
-            self.WARM_CALLS_BUDGET_SECONDS,
-            f"{self.ITERATIONS} cached lookups took {hot_elapsed:.2f}s "
-            f"(avg {avg_ms:.2f}ms). Budget: {self.WARM_CALLS_BUDGET_SECONDS}s. "
-            f"Warm-up: {warm_elapsed:.2f}s ({warm_over_hot_avg:.0f}x avg hot).",
-        )
-        self.assertGreater(
-            warm_over_hot_avg,
-            50.0,
-            f"Cache not providing meaningful speed-up: warm={warm_elapsed:.2f}s "
-            f"vs avg hot={avg_ms:.2f}ms (ratio {warm_over_hot_avg:.1f}x). "
-            "Expected cache hits to be >=50x faster than cold render.",
-        )
-
-    def test_applications_lookup_warmup_budget(self) -> None:
-        """First render on full roles/ dir must complete in reasonable time."""
-        variables = _simulate_ansible_variables(
-            self.shared_applications, self.shared_users
-        )
-        t0 = time.perf_counter()
-        self._call_applications(variables)
-        warm_elapsed = time.perf_counter() - t0
-
-        self.assertLess(
-            warm_elapsed,
-            60.0,
-            f"Cold applications render took {warm_elapsed:.2f}s (budget 60s).",
-        )
+        with self.subTest(budget="cached calls"):
+            self.assertLess(
+                hot_elapsed,
+                self.WARM_CALLS_CPU_BUDGET_SECONDS,
+                f"{self.ITERATIONS} cached lookups took {hot_elapsed:.2f}s "
+                f"(avg {avg_ms:.2f}ms). Budget: {self.WARM_CALLS_CPU_BUDGET_SECONDS}s. "
+                f"Warm-up: {warm_elapsed:.2f}s ({warm_over_hot_avg:.0f}x avg hot).",
+            )
+        with self.subTest(budget="cache speed-up"):
+            self.assertGreater(
+                warm_over_hot_avg,
+                50.0,
+                f"Cache not providing meaningful speed-up: warm={warm_elapsed:.2f}s "
+                f"vs avg hot={avg_ms:.2f}ms (ratio {warm_over_hot_avg:.1f}x). "
+                "Expected cache hits to be >=50x faster than cold render.",
+            )
 
     def test_applications_current_play_lookup_caches(self) -> None:
         """applications_current_play must also cache across per-task churn.
@@ -156,30 +151,30 @@ class TestRuntimeLookupPerformance(unittest.TestCase):
         walks the dep graph — expensive on a full roles/ tree.
         """
         warm = _simulate_ansible_variables(self.shared_applications, self.shared_users)
-        t0 = time.perf_counter()
+        t0 = time.process_time()
         self._call_applications_current_play(warm)
-        warm_elapsed = time.perf_counter() - t0
+        warm_elapsed = time.process_time() - t0
 
         import copy
 
-        t0 = time.perf_counter()
+        t0 = time.process_time()
         for _ in range(self.ITERATIONS):
             variables = _simulate_ansible_variables(
                 copy.deepcopy(self.shared_applications),
                 copy.deepcopy(self.shared_users),
             )
             self._call_applications_current_play(variables)
-        hot_elapsed = time.perf_counter() - t0
+        hot_elapsed = time.process_time() - t0
 
         avg_ms = hot_elapsed / self.ITERATIONS * 1000
         warm_over_hot_avg = (warm_elapsed * 1000) / max(avg_ms, 0.001)
 
         self.assertLess(
             hot_elapsed,
-            self.WARM_CALLS_BUDGET_SECONDS,
+            self.WARM_CALLS_CPU_BUDGET_SECONDS,
             f"{self.ITERATIONS} cached applications_current_play lookups took "
             f"{hot_elapsed:.2f}s (avg {avg_ms:.2f}ms). "
-            f"Budget: {self.WARM_CALLS_BUDGET_SECONDS}s.",
+            f"Budget: {self.WARM_CALLS_CPU_BUDGET_SECONDS}s.",
         )
         self.assertGreater(
             warm_over_hot_avg,
@@ -189,64 +184,59 @@ class TestRuntimeLookupPerformance(unittest.TestCase):
             f"(ratio {warm_over_hot_avg:.1f}x).",
         )
 
-    def test_domains_lookup_caches_across_fresh_variables_dicts(self) -> None:
-        """Warm call populates the domains cache; subsequent calls with freshly-
-        built `variables` mappings AND freshly-copied applications/users dicts
-        must hit the cache and stay under budget.
+    def test_domains_lookup_cold_budget_and_cache_speedup(self) -> None:
+        """The cold render of lookup('domains') must stay under budget, and
+        subsequent calls with freshly-built `variables` mappings AND freshly-
+        copied applications/users dicts must hit the cache and stay under
+        theirs.
 
-        Same guarantees as test_applications_lookup_caches_across_fresh_variables_dicts,
+        Same guarantees as test_applications_lookup_cold_budget_and_cache_speedup,
         but for lookup('domains'). Without caching, each call re-runs
         canonical_domains_map over the full roles/ tree.
         """
         warm = _simulate_ansible_variables(self.shared_applications, self.shared_users)
-        t0 = time.perf_counter()
+        t0 = time.process_time()
         self._call_domains(warm)
-        warm_elapsed = time.perf_counter() - t0
+        warm_elapsed = time.process_time() - t0
+
+        with self.subTest(budget="cold render"):
+            self.assertLess(
+                warm_elapsed,
+                self.COLD_RENDER_CPU_BUDGET_SECONDS,
+                f"Cold domains render took {warm_elapsed:.2f}s (CPU budget {self.COLD_RENDER_CPU_BUDGET_SECONDS}s).",
+            )
 
         import copy
 
-        t0 = time.perf_counter()
+        t0 = time.process_time()
         for _ in range(self.ITERATIONS):
             variables = _simulate_ansible_variables(
                 copy.deepcopy(self.shared_applications),
                 copy.deepcopy(self.shared_users),
             )
             self._call_domains(variables)
-        hot_elapsed = time.perf_counter() - t0
+        hot_elapsed = time.process_time() - t0
 
         avg_ms = hot_elapsed / self.ITERATIONS * 1000
         warm_over_hot_avg = (warm_elapsed * 1000) / max(avg_ms, 0.001)
 
-        self.assertLess(
-            hot_elapsed,
-            self.WARM_CALLS_BUDGET_SECONDS,
-            f"{self.ITERATIONS} cached domains lookups took {hot_elapsed:.2f}s "
-            f"(avg {avg_ms:.2f}ms). Budget: {self.WARM_CALLS_BUDGET_SECONDS}s. "
-            f"Warm-up: {warm_elapsed:.2f}s ({warm_over_hot_avg:.0f}x avg hot).",
-        )
-        self.assertGreater(
-            warm_over_hot_avg,
-            50.0,
-            f"Domains cache not providing meaningful speed-up: warm={warm_elapsed:.2f}s "
-            f"vs avg hot={avg_ms:.2f}ms (ratio {warm_over_hot_avg:.1f}x). "
-            "Expected cache hits to be >=50x faster than cold render.",
-        )
-
-    def test_domains_lookup_warmup_budget(self) -> None:
-        """First render of lookup('domains') on full roles/ dir must complete
-        in reasonable time."""
-        variables = _simulate_ansible_variables(
-            self.shared_applications, self.shared_users
-        )
-        t0 = time.perf_counter()
-        self._call_domains(variables)
-        warm_elapsed = time.perf_counter() - t0
-
-        self.assertLess(
-            warm_elapsed,
-            100.0,
-            f"Cold domains render took {warm_elapsed:.2f}s (budget 100s).",
-        )
+        with self.subTest(budget="cached calls"):
+            self.assertLess(
+                hot_elapsed,
+                self.WARM_CALLS_CPU_BUDGET_SECONDS,
+                f"{self.ITERATIONS} cached domains lookups took {hot_elapsed:.2f}s "
+                f"(avg {avg_ms:.2f}ms). Budget: {self.WARM_CALLS_CPU_BUDGET_SECONDS}s. "
+                f"Warm-up: {warm_elapsed:.2f}s ({warm_over_hot_avg:.0f}x avg hot).",
+            )
+        with self.subTest(budget="cache speed-up"):
+            self.assertGreater(
+                warm_over_hot_avg,
+                50.0,
+                f"Domains cache not providing meaningful speed-up: "
+                f"warm={warm_elapsed:.2f}s vs avg hot={avg_ms:.2f}ms "
+                f"(ratio {warm_over_hot_avg:.1f}x). Expected cache hits to be "
+                ">=50x faster than cold render.",
+            )
 
 
 if __name__ == "__main__":
