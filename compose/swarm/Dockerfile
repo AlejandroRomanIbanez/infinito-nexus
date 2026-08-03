@@ -24,6 +24,13 @@ RUN set -eux; \
     if command -v apt-get >/dev/null 2>&1; then \
         apt-get update -qq; \
         apt-get install -y -qq --no-install-recommends dnsmasq openssh-server cryptsetup e2fsprogs elfutils kmod; \
+        . /etc/os-release; \
+        if [ "${ID:-}" = debian ] && [ -n "${VERSION_CODENAME:-}" ]; then \
+            echo "deb http://deb.debian.org/debian ${VERSION_CODENAME} contrib" >/etc/apt/sources.list.d/contrib.list; \
+            apt-get update -qq || rm -f /etc/apt/sources.list.d/contrib.list; \
+        fi; \
+        apt-get install -y -qq --no-install-recommends zfsutils-linux || \
+            echo "zfsutils-linux unavailable; a zfs data-root pick will decline on this image" >&2; \
         rm -rf /var/lib/apt/lists/*; \
     elif command -v dnf >/dev/null 2>&1; then \
         dnf install -y dnsmasq openssh-server cryptsetup e2fsprogs elfutils kmod; \
