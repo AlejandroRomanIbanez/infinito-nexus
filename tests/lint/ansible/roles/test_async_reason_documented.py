@@ -30,8 +30,11 @@ Write it as ONE line directly above the ``async`` key:
 narration. There is no ``nocheck`` escape: the requirement is one sentence, and
 a task that cannot be given one has not earned its ``async``.
 
-``async`` and ``poll`` must also be switched off by the SAME condition: both
-keys carry ``omit`` on the off branch, or neither does.
+``async`` and ``poll`` must also be switched off by the SAME condition. The rule
+reads the gate each key states inline - the test of an ``if ... else omit`` or
+the left side of a ``| ternary(..., omit)`` - and requires the two to match. A
+key that names no gate matches another that names none, since both then inherit
+whatever the referenced variables do.
 """
 
 from __future__ import annotations
@@ -51,6 +54,8 @@ _POLL_RE = re.compile(r"^(\s*)poll:")
 _TASK_START_RE = re.compile(r"^\s*-\s")
 _REASON_RE = re.compile(r"#\s*rationale:\s*async;\s*\S")
 _OMIT_RE = re.compile(r"\bomit\b")
+_IF_ELSE_OMIT_RE = re.compile(r"if\s+(.+?)\s+else\s+omit")
+_TERNARY_OMIT_RE = re.compile(r"\{\{\s*(.+?)\s*\|\s*ternary\(")
 
 
 def _task_files():
@@ -61,6 +66,18 @@ def _task_files():
         if {"files", "meta", "templates"} & set(path.parts):
             continue
         yield path
+
+
+def _gate(line: str) -> str | None:
+    """The off-switch a key states inline, normalised, or None when it states none.
+
+    Args:
+        line: the ``async:`` or ``poll:`` line.
+    """
+    if not _OMIT_RE.search(line):
+        return None
+    match = _IF_ELSE_OMIT_RE.search(line) or _TERNARY_OMIT_RE.search(line)
+    return " ".join(match.group(1).split()) if match else "omit"
 
 
 def _enclosing_task(lines: list[str], index: int) -> list[str]:
@@ -125,7 +142,7 @@ class TestAsyncReasonDocumented(unittest.TestCase):
                 poll = next((e for e in block if _POLL_RE.match(e)), None)
                 if poll is None:
                     continue
-                if bool(_OMIT_RE.search(line)) == bool(_OMIT_RE.search(poll)):
+                if _gate(line) == _gate(poll):
                     continue
                 offenders.append(
                     f"{path.relative_to(PROJECT_ROOT)}:{i + 1}: "
