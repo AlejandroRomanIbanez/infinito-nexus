@@ -45,6 +45,7 @@ from utils.cache.files import iter_project_files_with_content
 from utils.cache.yaml import load_yaml
 from utils.docker.healthcheck import PROBES, known_flavors
 from utils.roles.entity.name import get_entity_name
+from utils.roles.mapping import ROLE_FILE_VARS_MAIN
 
 from . import PROJECT_ROOT
 
@@ -99,7 +100,7 @@ def _resolve_role_var(name: str, app: str) -> str | None:
         app: the application id owning the template.
     """
     role_vars = load_yaml(
-        PROJECT_ROOT / "roles" / app / "vars" / "main.yml", default_if_missing={}
+        PROJECT_ROOT / "roles" / app / ROLE_FILE_VARS_MAIN, default_if_missing={}
     )
     value = role_vars.get(name)
     return _resolve_expression(value, app) if isinstance(value, str) else None
