@@ -6,7 +6,8 @@
 set -euo pipefail
 
 LOG="${1:?usage: report.sh LOG}"
-PATTERN='status=[a-z-]+ requested=[a-z]+ effective=[A-Za-z0-9_./-]+'
+PATTERN='status=[a-z-]+ requested=[a-z0-9]+ effective=[A-Za-z0-9_./-]+'
+REASON_PATTERN="${PATTERN} reason=[^']*"
 
 [ -f "${LOG}" ] || exit 0
 [ -n "${GITHUB_STEP_SUMMARY:-}" ] || exit 0
@@ -16,6 +17,9 @@ if ! VERDICTS="$(grep -ohE "${PATTERN}" "${LOG}" | sort | uniq -c | sort -rn)"; 
 fi
 [ -n "${VERDICTS}" ] || exit 0
 
+REASONS="$(grep -ohE "${REASON_PATTERN}" "${LOG}" | sed -E 's/.* reason=//' | tr '|' '/' | sort -u)" ||
+	REASONS=""
+
 {
 	echo "#### Docker data root, as actually used"
 	echo
@@ -23,6 +27,7 @@ fi
 	echo "|---:|---|---|---|"
 	# shellcheck disable=SC2016
 	echo "${VERDICTS}" | sed -E \
-		's/^ *([0-9]+) status=([a-z-]+) requested=([a-z]+) effective=(.+)$/| \1 | `\4` | `\3` | \2 |/'
+		's/^ *([0-9]+) status=([a-z-]+) requested=([a-z0-9]+) effective=(.+)$/| \1 | `\4` | `\3` | \2 |/'
 	echo
+	[ -z "${REASONS}" ] || printf '%s\n\n' "$(echo "${REASONS}" | sed -E 's/^/- /')"
 } >>"${GITHUB_STEP_SUMMARY}"

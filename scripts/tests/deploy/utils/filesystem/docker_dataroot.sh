@@ -40,7 +40,7 @@ verdict() {
 	reason="$(printf '%s' "${2:-}" | tr '\n' ' ')"
 	effective="$(current_fstype)"
 	host="$(hostname 2>/dev/null || echo unknown)"
-	report "status=${status} requested=${FSTYPE:-none} effective=${effective}"
+	report "status=${status} requested=${FSTYPE:-none} effective=${effective}${reason:+ reason=${reason}}"
 	[ -n "${GITHUB_STEP_SUMMARY:-}" ] || return 0
 	echo "- \`${host}\` docker data root: **${effective}** (requested \`${FSTYPE:-none}\`, ${status})${reason:+ - ${reason}}" \
 		>>"${GITHUB_STEP_SUMMARY}"
