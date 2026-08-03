@@ -49,7 +49,6 @@ __all__ = [
 ]
 
 
-
 def _suppress_default(application_id: str) -> bool:
     return application_id.startswith(("svc-db-", "svc-ai-"))
 

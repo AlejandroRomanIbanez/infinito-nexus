@@ -139,4 +139,3 @@ def _compute_attachments(
             )
 
     return attachments, default_aliases
-

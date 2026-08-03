@@ -54,9 +54,7 @@ class TestContainerNetworksLookup(unittest.TestCase):
                 "utils.networks.lookup_context.build_service_registry_from_applications",
                 return_value={},
             ),
-            mock.patch(
-                "utils.networks.lookup_context.lookup_loader"
-            ) as loader_mock,
+            mock.patch("utils.networks.lookup_context.lookup_loader") as loader_mock,
             mock.patch(
                 "plugins.lookup.container_networks.render_container_networks",
                 return_value="RENDERED",
@@ -80,9 +78,7 @@ class TestContainerNetworksLookup(unittest.TestCase):
                 "utils.networks.lookup_context.build_service_registry_from_applications",
                 return_value={},
             ),
-            mock.patch(
-                "utils.networks.lookup_context.lookup_loader"
-            ) as loader_mock,
+            mock.patch("utils.networks.lookup_context.lookup_loader") as loader_mock,
             mock.patch(
                 "plugins.lookup.container_networks.render_container_networks",
                 return_value="RENDERED",
@@ -123,9 +119,7 @@ class TestContainerNetworksLookup(unittest.TestCase):
                 "utils.networks.lookup_context.build_service_registry_from_applications",
                 return_value={},
             ),
-            mock.patch(
-                "utils.networks.lookup_context.lookup_loader"
-            ) as loader_mock,
+            mock.patch("utils.networks.lookup_context.lookup_loader") as loader_mock,
             mock.patch(
                 "plugins.lookup.container_networks.render_container_networks",
                 side_effect=_exercise,
