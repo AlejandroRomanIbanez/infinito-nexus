@@ -30,6 +30,11 @@ email:
   shared: "{{ 'web-app-mailu' in group_names }}"
 # nocheck: playwright-service-flag — self-provider
 keycloak:
+  healthcheck:
+    flavor: http_status
+    path: health/ready
+    port_key: management
+    start_period: 180s
   modes:
     compose:
       enabled: true
