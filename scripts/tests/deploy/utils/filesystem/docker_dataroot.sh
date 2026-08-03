@@ -152,9 +152,18 @@ if mountpoint -q "${MOUNT}"; then
 	exit 0
 fi
 
+restore_docker() {
+	[ "${DOCKER_STOPPED:-false}" = true ] || return 0
+	systemctl cat docker.service >/dev/null 2>&1 || return 0
+	systemctl start docker ||
+		report "WARNING: docker did not come back up after the ${FSTYPE} setup"
+}
+
 report "putting the docker data root on ${FSTYPE}"
 systemctl stop docker.socket 2>/dev/null || true
 systemctl stop docker 2>/dev/null || true
+DOCKER_STOPPED=true
+trap restore_docker EXIT
 
 mkdir -p "${MOUNT}" "$(dirname "${IMAGE}")"
 rm -f "${IMAGE}"
@@ -209,6 +218,7 @@ PYTHON
 
 if systemctl cat docker.service >/dev/null 2>&1; then
 	systemctl start docker
+	DOCKER_STOPPED=false
 	verdict applied
 else
 	report "docker.service is not installed yet; the data root takes effect when it is"
