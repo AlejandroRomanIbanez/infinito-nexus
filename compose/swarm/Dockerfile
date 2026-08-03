@@ -37,6 +37,7 @@ RUN set -eux; \
     fi; \
     systemctl mask systemd-resolved; \
     systemctl mask systemd-udevd systemd-udevd-kernel.socket systemd-udevd-control.socket systemd-udevd-varlink.socket systemd-udev-trigger; \
+    systemctl mask modprobe@.service; \
     systemctl enable ssh 2>/dev/null || systemctl enable sshd; \
     chmod u+rw /etc/shadow; \
     if [ -e /etc/gshadow ]; then chmod u+rw /etc/gshadow; fi; \
