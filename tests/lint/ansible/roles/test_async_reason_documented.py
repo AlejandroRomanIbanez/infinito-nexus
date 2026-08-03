@@ -35,6 +35,9 @@ from __future__ import annotations
 
 import re
 import unittest
+from pathlib import Path
+
+from utils.cache.files import iter_project_files, read_text
 
 from . import PROJECT_ROOT
 
@@ -46,7 +49,10 @@ _REASON_RE = re.compile(r"#\s*rationale:\s*async;\s*\S")
 
 
 def _task_files():
-    for path in sorted(ROLES_DIR.rglob("*.yml")):
+    for candidate in sorted(iter_project_files(extensions=(".yml",))):
+        path = Path(candidate)
+        if ROLES_DIR not in path.parents:
+            continue
         if {"files", "meta", "templates"} & set(path.parts):
             continue
         yield path
@@ -73,7 +79,7 @@ class TestAsyncReasonDocumented(unittest.TestCase):
         offenders: list[str] = []
 
         for path in _task_files():
-            lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+            lines = read_text(str(path)).splitlines()
             for i, line in enumerate(lines):
                 if not _ASYNC_RE.match(line):
                     continue
@@ -88,7 +94,9 @@ class TestAsyncReasonDocumented(unittest.TestCase):
                     ),
                     "<unnamed>",
                 )
-                offenders.append(f"{path.relative_to(PROJECT_ROOT)}:{i + 1}: {name[:60]}")
+                offenders.append(
+                    f"{path.relative_to(PROJECT_ROOT)}:{i + 1}: {name[:60]}"
+                )
 
         self.assertEqual(
             [],
