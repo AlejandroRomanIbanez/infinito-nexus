@@ -199,7 +199,7 @@ def _backup_restore_drill(*, app_id: str, inv_dir: str, extras_path: str) -> int
     env["APP_ID"] = app_id
     env["INFINITO_INVENTORY_DIR"] = inv_dir
     env["DRILL_EXTRAS"] = extras_path
-    env["INFINITO_DISK_FLOOR_MB"] = str(DISK_FLOOR_MB)
+    env["DISK_FLOOR_MB"] = str(DISK_FLOOR_MB)
     return _run(
         ["bash", str(_SWARM_SCRIPTS / "backup" / "base.sh")],
         env=env,
