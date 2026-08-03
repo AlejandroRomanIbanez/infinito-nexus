@@ -5,11 +5,8 @@
 
 - name: 🔴 disable {{ plugin_key }} nextcloud plugin
   shell: "{{ NEXTCLOUD_DOCKER_EXEC_OCC }} app:disable {{ plugin_key }}"
-  register: disable_result
-  changed_when: >
-    not ASYNC_ENABLED and
-    ((disable_result.stdout | default('') ~ disable_result.stderr | default('')) is search('disabled'))
-    and (((disable_result.stdout | default('') ~ disable_result.stderr | default('')) is not search('already disabled')))
+  changed_when: false
   when: not (plugin_value.enabled | bool)
+  # rationale: async; caller includes this file per plugin so the disables overlap, nothing reads the state
   async: "{{ ASYNC_TIME if ASYNC_ENABLED | bool else omit }}"
   poll: "{{ ASYNC_POLL if ASYNC_ENABLED | bool else omit }}"

@@ -24,8 +24,6 @@
         is not search('already disabled'))
     )
   failed_when: false
-  async: "{{ ASYNC_TIME if ASYNC_ENABLED | bool else omit }}"
-  poll: "{{ ASYNC_POLL if ASYNC_ENABLED | bool else omit }}"
 
 - name: 📦 install {{ plugin_key }} nextcloud plugin
   ansible.builtin.shell: |
