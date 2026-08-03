@@ -157,8 +157,7 @@ class TestAsyncReasonDocumented(unittest.TestCase):
             "ansible's built-in 15s poll, which collects the job and then runs "
             "async_status mode=cleanup - deleting the job file a later reap "
             "still expects to read, so a successful command reports as a "
-            "failed async job.\n"
-            + "\n".join(f"  {o}" for o in offenders),
+            "failed async job.\n" + "\n".join(f"  {o}" for o in offenders),
         )
 
 
