@@ -37,6 +37,7 @@ DR_TOKEN="${SWARM_NAME}-${APP_ID}-dr-drill"
 DR_VERIFY_ENV="/tmp/dr-drill-verify-${APP_ID}.env"
 rm -f "${DR_VERIFY_ENV}"
 SECRETS_DIR="${INFINITO_DIR_SECRETS:?INFINITO_DIR_SECRETS is not set - regenerate .env via make dotenv}"
+DISK_FLOOR_MB="${INFINITO_DISK_FLOOR_MB:?INFINITO_DISK_FLOOR_MB is not set - utils.tests.swarm.matrix exports its watchdog floor}"
 VOLUME_REPO="backup-docker-to-local"
 NFS_REPO="backup-nfs-to-local"
 SECRETS_REPO="backup-secrets-to-local"
@@ -166,8 +167,9 @@ if [ "${DEVICE_FREE_MB}" -lt "${PULLED_MB}" ]; then
 	drill_device_teardown
 	exit 1
 fi
-if [ "${FREE_MB}" -lt "${PULLED_MB}" ]; then
-	echo "FAILURE: the drill still has to allocate one more copy of the ${PULLED_MB}M pulled tree (the sync into the sparse image, later the restore root); ${FREE_MB}M free on ${BACKUP_NODE}:${DIR_BACKUPS}"
+NEEDED_MB=$((PULLED_MB + DISK_FLOOR_MB))
+if [ "${FREE_MB}" -lt "${NEEDED_MB}" ]; then
+	echo "FAILURE: the sync holds the ${PULLED_MB}M pulled tree and its device copy at once (the restore root repeats that peak later), so ${NEEDED_MB}M must be free to stay above the ${DISK_FLOOR_MB}M watchdog floor; ${FREE_MB}M free on ${BACKUP_NODE}:${DIR_BACKUPS}"
 	drill_device_teardown
 	exit 1
 fi
