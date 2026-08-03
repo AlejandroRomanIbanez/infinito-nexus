@@ -29,6 +29,9 @@ Write it as ONE line directly above the ``async`` key:
 ``rationale:`` is a marker the comment lint accepts, so this does not count as
 narration. There is no ``nocheck`` escape: the requirement is one sentence, and
 a task that cannot be given one has not earned its ``async``.
+
+``async`` and ``poll`` must also be switched off by the SAME condition: both
+keys carry ``omit`` on the off branch, or neither does.
 """
 
 from __future__ import annotations
@@ -44,8 +47,10 @@ from . import PROJECT_ROOT
 ROLES_DIR = PROJECT_ROOT / "roles"
 
 _ASYNC_RE = re.compile(r"^(\s*)async:")
+_POLL_RE = re.compile(r"^(\s*)poll:")
 _TASK_START_RE = re.compile(r"^\s*-\s")
 _REASON_RE = re.compile(r"#\s*rationale:\s*async;\s*\S")
+_OMIT_RE = re.compile(r"\bomit\b")
 
 
 def _task_files():
@@ -105,6 +110,37 @@ class TestAsyncReasonDocumented(unittest.TestCase):
             "It has to hold in swarm (delegated commands run long and cross nodes) "
             "and stay playwright compatible (the e2e run starts when the play ends, "
             "so a command still writing in the background surfaces as a flaky spec).\n"
+            + "\n".join(f"  {o}" for o in offenders),
+        )
+
+    def test_async_and_poll_are_gated_by_the_same_condition(self):
+        offenders: list[str] = []
+
+        for path in _task_files():
+            lines = read_text(str(path)).splitlines()
+            for i, line in enumerate(lines):
+                if not _ASYNC_RE.match(line):
+                    continue
+                block = _enclosing_task(lines, i)
+                poll = next((e for e in block if _POLL_RE.match(e)), None)
+                if poll is None:
+                    continue
+                if bool(_OMIT_RE.search(line)) == bool(_OMIT_RE.search(poll)):
+                    continue
+                offenders.append(
+                    f"{path.relative_to(PROJECT_ROOT)}:{i + 1}: "
+                    f"{line.strip()} / {poll.strip()}"
+                )
+
+        self.assertEqual(
+            [],
+            offenders,
+            "async and poll must be switched off together.\n"
+            "Gating only poll leaves the task on the async_wrapper path with "
+            "ansible's built-in 15s poll, which collects the job and then runs "
+            "async_status mode=cleanup - deleting the job file a later reap "
+            "still expects to read, so a successful command reports as a "
+            "failed async job.\n"
             + "\n".join(f"  {o}" for o in offenders),
         )
 
