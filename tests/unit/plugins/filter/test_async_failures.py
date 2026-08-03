@@ -11,26 +11,51 @@ class TestAsyncFailures(unittest.TestCase):
     def test_non_zero_rc_is_a_failure(self):
         self.assertEqual(
             ["j1: boom"],
-            async_failures([{"finished": 1, "rc": 7, "stderr": "boom", "ansible_job_id": "j1"}], []),
+            async_failures(
+                [{"finished": 1, "rc": 7, "stderr": "boom", "ansible_job_id": "j1"}], []
+            ),
         )
 
     def test_module_failure_is_reported_with_its_msg(self):
         self.assertEqual(
             ["j2: invalid token"],
-            async_failures([{"finished": 1, "failed": True, "msg": "invalid token", "ansible_job_id": "j2"}], []),
+            async_failures(
+                [
+                    {
+                        "finished": 1,
+                        "failed": True,
+                        "msg": "invalid token",
+                        "ansible_job_id": "j2",
+                    }
+                ],
+                [],
+            ),
         )
 
     def test_unfinished_job_is_a_failure(self):
-        self.assertEqual(["j3: job did not finish"],
-                         async_failures([{"finished": 0, "ansible_job_id": "j3"}], []))
+        self.assertEqual(
+            ["j3: job did not finish"],
+            async_failures([{"finished": 0, "ansible_job_id": "j3"}], []),
+        )
 
     def test_tolerated_module_msg_is_skipped(self):
-        result = {"finished": 1, "failed": True, "msg": "An identical record already exists"}
-        self.assertEqual([], async_failures([result], ["An identical record already exists"]))
+        result = {
+            "finished": 1,
+            "failed": True,
+            "msg": "An identical record already exists",
+        }
+        self.assertEqual(
+            [], async_failures([result], ["An identical record already exists"])
+        )
 
     def test_tolerated_phrase_is_found_in_stdout_not_only_msg(self):
         """A command puts its no-op wording in stdout while msg stays generic."""
-        result = {"finished": 1, "rc": 3, "msg": "non-zero return code", "stdout": "up to date"}
+        result = {
+            "finished": 1,
+            "rc": 3,
+            "msg": "non-zero return code",
+            "stdout": "up to date",
+        }
         self.assertEqual([], async_failures([result], ["up to date"]))
         self.assertEqual(1, len(async_failures([result], [])))
 
@@ -38,7 +63,12 @@ class TestAsyncFailures(unittest.TestCase):
         results = [
             {"finished": 1, "rc": 0},
             {"finished": 1, "rc": 1, "stderr": "first", "item": {"item": "llama3"}},
-            {"finished": 1, "failed": True, "msg": "second", "item": {"item": {"key": "mistral"}}},
+            {
+                "finished": 1,
+                "failed": True,
+                "msg": "second",
+                "item": {"item": {"key": "mistral"}},
+            },
             {"finished": 0, "ansible_job_id": "j9"},
         ]
         self.assertEqual(
