@@ -35,9 +35,7 @@ class DynamicTerminatorTests(unittest.TestCase):
 
     def test_diff_fallback_ends_the_distros(self) -> None:
         title = "🕹️ 🐧 arch 🔀 diff (origin/main)"
-        self.assertEqual(
-            run_name.value_from_title(title, "distros", EMOJI_TPL), "arch"
-        )
+        self.assertEqual(run_name.value_from_title(title, "distros", EMOJI_TPL), "arch")
 
     def test_a_foreign_title_yields_nothing(self) -> None:
         self.assertEqual(

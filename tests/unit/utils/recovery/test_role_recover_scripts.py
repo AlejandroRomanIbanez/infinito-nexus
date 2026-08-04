@@ -77,15 +77,18 @@ class VolumeRecoverTests(unittest.TestCase):
             mount = Path(td) / "mount"
             mount.mkdir()
             options = '{"device":":/export/x","o":"addr=10.0.0.1","type":"nfs"}'
-            with mock.patch.object(
-                mod.subprocess,
-                "run",
-                side_effect=[
-                    mock.Mock(stdout=f"{mount}\n"),
-                    mock.Mock(stdout=f"{options}\n"),
-                    mock.Mock(returncode=1),
-                ],
-            ) as run, self.assertRaisesRegex(SystemExit, "not mounted"):
+            with (
+                mock.patch.object(
+                    mod.subprocess,
+                    "run",
+                    side_effect=[
+                        mock.Mock(stdout=f"{mount}\n"),
+                        mock.Mock(stdout=f"{options}\n"),
+                        mock.Mock(returncode=1),
+                    ],
+                ) as run,
+                self.assertRaisesRegex(SystemExit, "not mounted"),
+            ):
                 mod.VolumeRecovery(str(source), "myvol", service_backup=False)
             self.assertEqual(
                 run.call_args_list[2].args[0], ["mountpoint", "-q", str(mount)]
@@ -117,15 +120,18 @@ class VolumeRecoverTests(unittest.TestCase):
             source = Path(td) / "source"
             source.mkdir()
             options = '{"device":":/export/x","type":"nfs"}'
-            with mock.patch.object(
-                mod.subprocess,
-                "run",
-                side_effect=[
-                    mock.Mock(stdout="/var/lib/docker/volumes/x/_data\n"),
-                    mock.Mock(stdout=f"{options}\n"),
-                    mock.Mock(returncode=1),
-                ],
-            ) as run, self.assertRaisesRegex(SystemExit, "not mounted"):
+            with (
+                mock.patch.object(
+                    mod.subprocess,
+                    "run",
+                    side_effect=[
+                        mock.Mock(stdout="/var/lib/docker/volumes/x/_data\n"),
+                        mock.Mock(stdout=f"{options}\n"),
+                        mock.Mock(returncode=1),
+                    ],
+                ) as run,
+                self.assertRaisesRegex(SystemExit, "not mounted"),
+            ):
                 mod.VolumeRecovery(
                     str(source),
                     "myvol",

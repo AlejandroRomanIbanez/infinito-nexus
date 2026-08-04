@@ -52,7 +52,9 @@ def _split(tpl: str) -> tuple[list[str], list[str]]:
     return literals, expressions
 
 
-def _openings_after(literals: list[str], expressions: list[str], index: int) -> list[str]:
+def _openings_after(
+    literals: list[str], expressions: list[str], index: int
+) -> list[str]:
     """Literal texts any later segment can start with.
 
     Args:
@@ -143,7 +145,10 @@ def value_from_title(title: str, input_name: str, tpl: str | None = None) -> str
     else:
         cuts = [
             found
-            for found in (rest.find(opening) for opening in _openings_after(literals, expressions, index))
+            for found in (
+                rest.find(opening)
+                for opening in _openings_after(literals, expressions, index)
+            )
             if found != -1
         ]
         if cuts:
