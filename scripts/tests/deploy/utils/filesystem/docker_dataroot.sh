@@ -11,12 +11,12 @@
 #   $1 FSTYPE    ext4 | btrfs | zfs; empty is a no-op
 #   $2 REQUIRED  true when the filesystem was stated: a host that cannot
 #                deliver it fails the run. false (default) declines and reports.
-#   $3 SIZE      loop image size, default 30G (sparse, so it costs what it holds)
+#   $3 SIZE      loop image size, e.g. 30G (sparse, so it costs what it holds)
 set -euo pipefail
 
 FSTYPE="${1:-}"
 REQUIRED="${2:-false}"
-SIZE="${3:-30G}"
+SIZE="${3:?SIZE is required - state the loop image size (e.g. 30G) at the call site}"
 
 MOUNT=/mnt/docker-fs
 IMAGE=/var/tmp/docker-fs.img

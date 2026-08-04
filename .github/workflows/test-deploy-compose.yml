@@ -163,7 +163,7 @@ jobs:
         shell: bash
         run: >-
           sudo -E ./scripts/tests/deploy/utils/filesystem/docker_dataroot.sh
-          "${INFINITO_DOCKER_FILESYSTEM}" "${INFINITO_DOCKER_FILESYSTEM_REQUIRED}"
+          "${INFINITO_DOCKER_FILESYSTEM}" "${INFINITO_DOCKER_FILESYSTEM_REQUIRED}" 30G
 
       - name: 🔍 Resolve repository owner
         shell: bash
