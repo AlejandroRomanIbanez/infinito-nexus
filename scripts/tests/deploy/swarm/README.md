@@ -11,7 +11,8 @@ bridge (`192.168.244.0/24`, MTU 1400): three swarm nodes (1 manager +
 2 workers), a non-swarm NFSv4 server serving the shared volume storage,
 and a non-swarm backup host for the DR drill. The node image
 ([`compose/swarm/Dockerfile`](../../../../compose/swarm/Dockerfile))
-bakes python3 + dnsmasq; the containers and the lab network are declared
+bakes python3 + dnsmasq and masks the zfs boot units the parent image's
+userland enables; the containers and the lab network are declared
 in [`compose/swarm/compose.yml`](../../../../compose/swarm/compose.yml) (project
 `${SWARM_NAME}`, backup host behind the `drill` profile) and started by
 one `docker compose up` in `routine/01_bootstrap.sh`. Lab DNS is provisioned

@@ -23,6 +23,7 @@ IMAGE=/var/tmp/docker-fs.img
 POOL_HOST="$(hostname 2>/dev/null || echo unknown)"
 POOL="infinito_ci_$(printf '%s' "${POOL_HOST}" | tr -dc 'A-Za-z0-9_.:-')"
 DAEMON=/etc/docker/daemon.json
+MISC_MAJOR=10
 
 report() { echo "docker-dataroot-filesystem: $*"; }
 
@@ -61,6 +62,28 @@ arm_autoclear() {
 	armed="$(losetup -l -n -O AUTOCLEAR "${loop}" 2>/dev/null | tr -d '[:space:]')"
 	[ "${armed}" = 1 ] ||
 		report "WARNING: ${loop} did not arm autoclear (AUTOCLEAR='${armed}')"
+}
+
+# Param: $1 pool whose leftovers from an earlier bring-up have to go
+#
+# Pools live in the kernel, which the lab nodes share with the runner and with
+# every later distro of the same sweep, while the container teardown only removes
+# containers. A pool of this name is therefore still imported when the next
+# iteration starts, and `zpool create` refuses the name rather than reusing it.
+# Its vdev is a loop device backed by an image the dead container already
+# unlinked, so that space stays claimed until the loop is detached as well.
+reclaim_stale_pool() {
+	local pool="$1" vdev
+	zpool list -H -o name "${pool}" >/dev/null 2>&1 || return 0
+	vdev="$(zpool list -vHP "${pool}" | awk 'NR == 2 {print $1}')"
+	report "destroying ${pool}, left imported on this kernel by an earlier bring-up"
+	zpool destroy -f "${pool}"
+	if [ -b "${vdev}" ]; then
+		losetup -d "${vdev}"
+		report "detached its vdev ${vdev}"
+	else
+		report "WARNING: its vdev '${vdev}' is no block device; that loop stays attached"
+	fi
 }
 
 decline() {
@@ -135,11 +158,16 @@ zfs)
 	if ! modprobe_out="$(modprobe zfs 2>&1)"; then
 		report "modprobe zfs failed: ${modprobe_out}"
 	fi
+	zfs_minor="$(awk '$2 == "zfs" {print $1}' /proc/misc)"
+	[ -n "${zfs_minor}" ] ||
+		decline "the zfs kernel module is not loaded on the host: ${modprobe_out}"
 	if [ ! -c /dev/zfs ]; then
-		zfs_major="$(awk '$2 == "zfs" {print $1}' /proc/devices | head -n1)"
-		[ -n "${zfs_major}" ] && mknod /dev/zfs c "${zfs_major}" 0
+		report "the module is loaded but this /dev predates it; creating the node from /proc/misc"
+		mknod /dev/zfs c "${MISC_MAJOR}" "${zfs_minor}"
 	fi
-	[ -c /dev/zfs ] || decline "the zfs kernel module is not loaded on the host: ${modprobe_out}"
+	[ -c /dev/zfs ] ||
+		decline "zfs holds misc minor ${zfs_minor} but /dev/zfs could not be created"
+	reclaim_stale_pool "${POOL}"
 	;;
 esac
 

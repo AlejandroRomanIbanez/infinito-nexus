@@ -10,7 +10,9 @@ one is not, a stated pick overrides the pool, and a pick is always drawn from a
 pool the target can serve.
 
 The pool contents are policy, not contract, and are deliberately not asserted -
-the per-distro expectation is derived from the resolver's own answers.
+the expectation is derived from the resolver's own answers. What is asserted is
+that the pool depends on neither the distro set nor the scope, because every
+distro image carries all three userlands.
 """
 
 from __future__ import annotations
@@ -122,10 +124,15 @@ class TestFilesystemResolve(unittest.TestCase):
             pool = resolve("", " ".join(ALL_DISTROS), scope).pool
             self.assertTrue(set(absent).isdisjoint(pool))
 
-    def test_the_node_pool_also_drops_what_a_distro_cannot_install(self) -> None:
-        runner = set(resolve("", " ".join(ALL_DISTROS), "runner").pool)
-        node = set(resolve("", " ".join(ALL_DISTROS), "node").pool)
-        self.assertTrue(node.issubset(runner))
+    def test_the_distro_set_does_not_narrow_the_pool(self) -> None:
+        every = resolve("", " ".join(ALL_DISTROS), "node").pool
+        for distro in ALL_DISTROS:
+            self.assertEqual(resolve("", distro, "node").pool, every)
+
+    def test_both_scopes_draw_from_the_same_pool(self) -> None:
+        runner = resolve("", " ".join(ALL_DISTROS), "runner").pool
+        node = resolve("", " ".join(ALL_DISTROS), "node").pool
+        self.assertEqual(node, runner)
 
     def test_a_missing_scope_is_a_hard_error(self) -> None:
         proc = subprocess.run(

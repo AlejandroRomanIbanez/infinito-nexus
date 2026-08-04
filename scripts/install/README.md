@@ -6,6 +6,7 @@ This directory contains scripts that install and bootstrap host-side tooling use
 - 🐧 Install ad-hoc APT packages for CI and workflow jobs via `apt.sh`
 - 📦 Build and install distro package metadata via `package.sh` (Arch/Debian/Ubuntu/Fedora)
 - 🏖️ Install OS-level Claude Code sandbox dependencies (`bubblewrap`, `socat`) via `sandbox.sh`, covering Debian, Ubuntu, Fedora, CentOS/RHEL/Rocky/Alma, and Arch; also exposed as `make install-agent`
+- 🧊 Install the OpenZFS userland via `zfs.sh` (apt on Debian/Ubuntu, the AUR PKGBUILD on Arch, the zfsonlinux repository on Fedora/CentOS); the kernel module comes from the host
 - 🐍 Bootstrap virtual environments and editable project dependencies
 - 🛠️ Keep host preparation separate from lint, build, and test execution
 

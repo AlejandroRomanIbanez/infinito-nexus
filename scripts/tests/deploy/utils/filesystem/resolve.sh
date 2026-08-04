@@ -2,18 +2,21 @@
 # Resolve which filesystem one matrix entry runs its docker data root on and
 # record the decision for the steps that follow.
 #
-# A random pick draws from what this kernel serves, measured here, narrowed to
-# what every distro of the entry carries a userland for. A stated pick is
-# honoured even where it is unsupported, and the applying step then fails. The
-# choice goes to the step summary, since reproducing a red run means re-stating
-# it verbatim.
+# A random pick draws from what this kernel serves, measured here. Every distro
+# image carries the userland for all three, the zfs one baked by
+# scripts/install/zfs.sh, so the pool depends on the kernel alone. A stated pick
+# is honoured even where it is unsupported, and the applying step then fails.
+# The choice goes to the step summary, since reproducing a red run means
+# re-stating it verbatim.
 #
 # Arguments:
 #   $1 STATED   ext4 | btrfs | zfs; 'auto' or empty for a random pick
 #   $2 LABEL    matrix entry the pick belongs to, e.g. compose/web-app-gitea
-#   $3 DISTROS  space-separated distributions the entry deploys on
-#   $4 SCOPE    node   every distro in DISTROS must carry the userland too
-#               runner DISTROS is ignored; only the kernel decides
+#   $3 DISTROS  space-separated distributions the entry deploys on, recorded
+#               with the decision so a red run can be restated verbatim
+#   $4 SCOPE    runner | node; names where the pick gets applied. The kernel
+#               measured here is the runner's either way, because the node
+#               containers share it.
 set -euo pipefail
 
 STATED="${1:-}"
@@ -44,33 +47,10 @@ kernel_serves() {
 	return 1
 }
 
-userland_for() {
-	case "$1" in
-	centos | arch | fedora) echo "ext4 btrfs" ;;
-	*) echo "ext4 btrfs zfs" ;;
-	esac
-}
-
-every_distro_carries() {
-	local fs="$1" distro
-	[ "${SCOPE}" = node ] || return 0
-	for distro in ${DISTROS}; do
-		case " $(userland_for "${distro}") " in
-		*" ${fs} "*) ;;
-		*) return 1 ;;
-		esac
-	done
-	return 0
-}
-
 candidates() {
 	local kept="" fs
 	for fs in ${POOL}; do
 		if ! kernel_serves "${fs}"; then
-			continue
-		fi
-		if ! every_distro_carries "${fs}"; then
-			note "${fs} left out: not every distro of this entry carries the userland"
 			continue
 		fi
 		kept="${kept} ${fs}"
@@ -91,7 +71,7 @@ else
 	REQUIRED=false
 fi
 
-echo "filesystem for ${LABEL}: ${PICKED} (${ORIGIN})"
+echo "filesystem for ${LABEL} on '${DISTROS}': ${PICKED} (${ORIGIN})"
 
 if [ -n "${GITHUB_ENV:-}" ]; then
 	{
