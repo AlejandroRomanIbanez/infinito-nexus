@@ -64,6 +64,20 @@ arm_autoclear() {
 		report "WARNING: ${loop} did not arm autoclear (AUTOCLEAR='${armed}')"
 }
 
+# Make /dev/zfs usable, reporting 1 when the module is not loaded at all.
+#
+# A node container's /dev is populated once at creation, and udevd is masked, so
+# a module loaded afterwards leaves no device node behind. /dev/zfs is a misc
+# device, which means it appears in /proc/misc and never in /proc/devices.
+zfs_device_ready() {
+	local minor
+	[ ! -c /dev/zfs ] || return 0
+	minor="$(awk '$2 == "zfs" {print $1}' /proc/misc)"
+	[ -n "${minor}" ] || return 1
+	report "the module is loaded but this /dev predates it; creating the node from /proc/misc"
+	mknod /dev/zfs c "${MISC_MAJOR}" "${minor}"
+}
+
 # Param: $1 pool whose leftovers from an earlier bring-up have to go
 #
 # Pools live in the kernel, which the lab nodes share with the runner and with
@@ -84,6 +98,43 @@ reclaim_stale_pool() {
 	else
 		report "WARNING: its vdev '${vdev}' is no block device; that loop stays attached"
 	fi
+}
+
+# Param: $1 filesystem the caller asked for
+#
+# stat reports ext4 as ext2/ext3, so the requested name and the reported one are
+# compared through this table rather than directly.
+prepared_matches() {
+	case "$1:$(current_fstype)" in
+	ext4:ext2/ext3 | btrfs:btrfs | zfs:zfs) return 0 ;;
+	*) return 1 ;;
+	esac
+}
+
+# Give the prepared data root up so a different filesystem can take its place.
+#
+# The pick is drawn per distro iteration, so on a host that survives the sweep -
+# the runner in compose and host mode - the second distro usually asks for
+# something else. Docker has to stop before its data root can be dismantled, and
+# the loop device only releases the backing image once the mount above it is
+# gone. Everything docker cached on the old root goes with it; that is the price
+# of covering more than one filesystem per entry.
+release_prepared() {
+	local loop
+	report "replacing the prepared $(current_fstype) data root with ${FSTYPE}"
+	systemctl stop docker.socket 2>/dev/null || true
+	systemctl stop docker 2>/dev/null || true
+	DOCKER_STOPPED=true
+	if zpool list -H -o name "${POOL}" >/dev/null 2>&1; then
+		reclaim_stale_pool "${POOL}"
+	else
+		umount "${MOUNT}"
+	fi
+	loop="$(losetup -j "${IMAGE}" -O NAME -n | head -n1)"
+	if [ -n "${loop}" ] && [ -b "${loop}" ]; then
+		losetup -d "${loop}"
+	fi
+	rm -f "${IMAGE}"
 }
 
 decline() {
@@ -158,27 +209,10 @@ zfs)
 	if ! modprobe_out="$(modprobe zfs 2>&1)"; then
 		report "modprobe zfs failed: ${modprobe_out}"
 	fi
-	zfs_minor="$(awk '$2 == "zfs" {print $1}' /proc/misc)"
-	[ -n "${zfs_minor}" ] ||
+	zfs_device_ready ||
 		decline "the zfs kernel module is not loaded on the host: ${modprobe_out}"
-	if [ ! -c /dev/zfs ]; then
-		report "the module is loaded but this /dev predates it; creating the node from /proc/misc"
-		mknod /dev/zfs c "${MISC_MAJOR}" "${zfs_minor}"
-	fi
-	[ -c /dev/zfs ] ||
-		decline "zfs holds misc minor ${zfs_minor} but /dev/zfs could not be created"
-	reclaim_stale_pool "${POOL}"
 	;;
 esac
-
-if mountpoint -q "${MOUNT}"; then
-	if [ "${FSTYPE}" = zfs ] && zpool list -H -o name "${POOL}" >/dev/null 2>&1; then
-		zfs set acltype=posixacl xattr=sa "${POOL}"
-	fi
-	report "${MOUNT} is already prepared"
-	verdict already-prepared
-	exit 0
-fi
 
 restore_docker() {
 	[ "${DOCKER_STOPPED:-false}" = true ] || return 0
@@ -187,11 +221,28 @@ restore_docker() {
 		report "WARNING: docker did not come back up after the ${FSTYPE} setup"
 }
 
+trap restore_docker EXIT
+
+if mountpoint -q "${MOUNT}"; then
+	if prepared_matches "${FSTYPE}"; then
+		if [ "${FSTYPE}" = zfs ] && zpool list -H -o name "${POOL}" >/dev/null 2>&1; then
+			zfs set acltype=posixacl xattr=sa "${POOL}"
+		fi
+		report "${MOUNT} already carries ${FSTYPE}"
+		verdict already-prepared
+		exit 0
+	fi
+	release_prepared
+fi
+
+if command -v zpool >/dev/null 2>&1 && zfs_device_ready; then
+	reclaim_stale_pool "${POOL}"
+fi
+
 report "putting the docker data root on ${FSTYPE}"
 systemctl stop docker.socket 2>/dev/null || true
 systemctl stop docker 2>/dev/null || true
 DOCKER_STOPPED=true
-trap restore_docker EXIT
 
 mkdir -p "${MOUNT}" "$(dirname "${IMAGE}")"
 rm -f "${IMAGE}"

@@ -1,11 +1,20 @@
 #!/usr/bin/env bash
-# Bake the OpenZFS userland into the distro image. The kernel module always
-# comes from the host - dockerd's zfs graphdriver only needs the `zfs` binary on
-# PATH and an openable /dev/zfs, so a pool the host prepared is unusable without
-# these packages inside the container.
+# Bake the userlands for every filesystem the docker data root can run on into
+# the distro image: ext4, btrfs and zfs. The kernel side always comes from the
+# host, but the tools have to sit in the image - dockerd resolves `zfs` on PATH
+# and opens /dev/zfs before it accepts a data root, and mkfs.ext4 / mkfs.btrfs
+# on the host are equally useless to a container that cannot call them. A pick
+# the kernel could serve still fails when the image lacks the userland.
 #
-# Three trip-wires this script exists to route around:
+# The three differ sharply in what that costs:
 #
+#   * ext4 and btrfs are ordinary packages everywhere except the EL family,
+#     where RHEL dropped btrfs and btrfs-progs exists only in EPEL. A plain
+#     `dnf install btrfs-progs` there fails the whole transaction and takes
+#     e2fsprogs down with it, so EPEL goes in first. The split is by distro
+#     rather than by a failed first attempt, because on Fedora there is no
+#     epel-release to fall back to: routing a transient failure there would
+#     turn it into a fatal one and hide the cause behind an EPEL message.
 #   * The OpenZFS `zfs` RPM carries an ungated `Requires: %{name}-kmod`, so a
 #     plain `dnf install zfs` resolves through zfs-dkms and drags in
 #     kernel-devel, kernel-debug-core and a DKMS build against a kernel the
@@ -36,7 +45,7 @@ AUR_BUILDER=pkgbuild
 ZFS_RELEASE_FEDORA="3-1 3-0 2-8"
 ZFS_RELEASE_EL="3-0 2-8 2-3"
 
-log() { echo "[zfs] $*"; }
+log() { echo "[filesystem] $*"; }
 
 # Param: $@ command to run, retried on failure with a widening backoff
 retry() {
@@ -63,12 +72,13 @@ install_apt() {
 	fi
 
 	retry apt-get "${apt_opts[@]}" update
-	retry apt-get "${apt_opts[@]}" install -y --no-install-recommends zfsutils-linux
+	retry apt-get "${apt_opts[@]}" install -y --no-install-recommends \
+		e2fsprogs btrfs-progs zfsutils-linux
 	rm -rf /var/lib/apt/lists/*
 }
 
 install_pacman() {
-	retry pacman -Sy --noconfirm --needed base-devel git
+	retry pacman -Sy --noconfirm --needed base-devel git e2fsprogs btrfs-progs
 
 	if ! id "${AUR_BUILDER}" >/dev/null 2>&1; then
 		useradd -m -s /bin/bash "${AUR_BUILDER}"
@@ -83,7 +93,7 @@ install_pacman() {
 	install -d -o "${AUR_BUILDER}" -g "${AUR_BUILDER}" "${build_root}"
 
 	retry su "${AUR_BUILDER}" -c \
-		"git clone --depth 1 https://aur.archlinux.org/zfs-utils.git '${build_root}'"
+		"git clone --depth 1 https://aur.archlinux.org/zfs-utils.git '${build_root}'" # nocheck: url - AUR serves this path to git clients only; a plain GET is a 404 by design
 	su "${AUR_BUILDER}" -c \
 		"cd '${build_root}' && makepkg --syncdeps --noconfirm --cleanbuild --skippgpcheck"
 
@@ -97,6 +107,18 @@ install_pacman() {
 
 	pacman -U --noconfirm "${pkg}"
 	rm -rf "${build_root}" /var/cache/pacman/pkg
+}
+
+install_dnf_native() {
+	case "${ID:-}" in
+	fedora)
+		retry dnf install -y e2fsprogs btrfs-progs
+		return
+		;;
+	esac
+	log "adding EPEL, the only place the EL family carries btrfs-progs"
+	retry dnf install -y epel-release
+	retry dnf install -y e2fsprogs btrfs-progs
 }
 
 # Param: $1 path segment of the zfsonlinux repository, `fedora` or `epel`
@@ -117,6 +139,8 @@ release_install() {
 }
 
 install_dnf() {
+	install_dnf_native
+
 	case "${ID:-}" in
 	fedora) retry release_install fedora "${ZFS_RELEASE_FEDORA}" ;;
 	*) retry release_install epel "${ZFS_RELEASE_EL}" ;;
@@ -171,7 +195,7 @@ SPEC
 
 verify() {
 	local tool
-	for tool in zfs zpool; do
+	for tool in mkfs.ext4 mkfs.btrfs zfs zpool; do
 		if ! command -v "${tool}" >/dev/null 2>&1; then
 			log "ERROR: ${tool} is missing after the install"
 			return 1
@@ -189,7 +213,7 @@ verify() {
 		return 1
 	fi
 
-	log "installed $(command -v zfs) and $(command -v zpool); all libraries resolved"
+	log "installed mkfs.ext4, mkfs.btrfs and $(command -v zpool); all libraries resolved"
 }
 
 main() {

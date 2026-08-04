@@ -1,13 +1,13 @@
 """Contract of the docker data-root filesystem resolver.
 
-``resolve.sh`` hands its decision to the next workflow step through
-``GITHUB_ENV``, and that step passes it positionally to ``docker_dataroot.sh``.
-A key renamed on either side is silent: the applying script receives an empty
-string, reports "no filesystem stated", exits 0, and the run goes green with the
-feature switched off. Checked here by executing the resolver: the keys it emits
-are the keys the workflows read, a stated pick is marked required while a drawn
-one is not, a stated pick overrides the pool, and a pick is always drawn from a
-pool the target can serve.
+``resolve.sh`` hands its decision over a file in the ``GITHUB_ENV`` format, and
+the per-distro caller passes it positionally to ``docker_dataroot.sh``. A key
+renamed on either side is silent: the applying script receives an empty string,
+reports "no filesystem stated", exits 0, and the run goes green with the feature
+switched off. Checked here by executing the resolver: the keys it emits are the
+keys its consumers read, naming kinds narrows the draw to them and marks it
+required while an empty allow-list does not, and a pick always comes out of the
+pool that was reported.
 
 The pool contents are policy, not contract, and are deliberately not asserted -
 the expectation is derived from the resolver's own answers. What is asserted is
@@ -36,11 +36,11 @@ RESOLVE = (
     / "filesystem"
     / "resolve.sh"
 )
-WORKFLOWS = [
-    PROJECT_ROOT / ".github" / "workflows" / f"test-deploy-{mode}.yml"
-    for mode in ("compose", "host", "swarm")
+CONSUMERS = [
+    PROJECT_ROOT / "scripts" / "tests" / "deploy" / "ci" / "one.sh",
+    PROJECT_ROOT / "compose" / "swarm" / "playbook.yml",
 ]
-CONSUMED = re.compile(r"\$\{(INFINITO_DOCKER_FILESYSTEM[A-Z_]*)\}")
+CONSUMED = re.compile(r"INFINITO_DOCKER_FILESYSTEM(?:_REQUIRED)?\b")
 POOL = re.compile(r"random out of '([^']*)'")
 ALL_DISTROS = ("arch", "debian", "ubuntu", "fedora", "centos")
 
@@ -49,7 +49,7 @@ class Resolved:
     def __init__(self, stdout: str, env: str):
         self.stdout = stdout
         self.env = dict(line.split("=", 1) for line in env.splitlines() if "=" in line)
-        key = "INFINITO_DOCKER_FILESYSTEM"  # nocheck: resolve.sh writes it per matrix entry into GITHUB_ENV
+        key = "INFINITO_DOCKER_FILESYSTEM"  # nocheck: resolve.sh writes it per distro iteration in the GITHUB_ENV format
         self.picked = self.env[key]
         self.required = self.env[f"{key}_REQUIRED"]
         match = POOL.search(stdout)
@@ -92,20 +92,37 @@ def resolve(stated: str, distros: str, scope: str) -> Resolved:
 
 
 class TestFilesystemResolve(unittest.TestCase):
-    def test_the_emitted_keys_are_the_keys_the_workflows_read(self) -> None:
+    def test_the_emitted_keys_are_the_keys_its_consumers_read(self) -> None:
         consumed = set()
-        for workflow in WORKFLOWS:
-            consumed |= set(CONSUMED.findall(read_text(str(workflow))))
+        for consumer in CONSUMERS:
+            consumed |= set(CONSUMED.findall(read_text(str(consumer))))
         self.assertEqual(consumed, set(resolve("", "debian", "runner").env))
 
-    def test_a_stated_pick_is_required_and_a_drawn_one_is_not(self) -> None:
+    def test_naming_kinds_makes_the_pick_required_and_an_empty_list_does_not(
+        self,
+    ) -> None:
         self.assertEqual(resolve("zfs", "debian", "runner").required, "true")
         self.assertEqual(resolve("", "debian", "runner").required, "false")
 
-    def test_a_stated_pick_overrides_the_pool(self) -> None:
-        stated = resolve("zfs", " ".join(ALL_DISTROS), "runner")
-        self.assertEqual(stated.picked, "zfs")
-        self.assertIsNone(stated.pool)
+    def test_naming_one_kind_pins_the_pick_to_it(self) -> None:
+        named = resolve("zfs", " ".join(ALL_DISTROS), "runner")
+        self.assertEqual(named.picked, "zfs")
+        self.assertEqual(named.pool, ["zfs"])
+
+    def test_naming_several_kinds_keeps_the_draw_inside_them(self) -> None:
+        named = resolve("ext4 btrfs", " ".join(ALL_DISTROS), "runner")
+        self.assertTrue(set(named.pool).issubset({"ext4", "btrfs"}))
+        self.assertIn(named.picked, named.pool)
+
+    def test_a_kind_the_project_does_not_know_is_a_hard_error(self) -> None:
+        proc = subprocess.run(
+            ["bash", str(RESOLVE), "reiserfs", "unit/test", "debian", "runner"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertNotEqual(proc.returncode, 0)
+        self.assertIn("reiserfs", proc.stderr)
 
     def test_a_drawn_pick_comes_from_the_reported_pool(self) -> None:
         for scope in ("runner", "node"):
