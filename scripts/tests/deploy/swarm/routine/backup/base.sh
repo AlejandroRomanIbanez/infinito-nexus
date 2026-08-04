@@ -250,14 +250,19 @@ if [ -n "${VOL_MARKER_REL}" ]; then
 	VOL_NAME_DIR="${VOL_SRC_REL%/files}"
 	VOL_NAME="${VOL_NAME_DIR##*/}"
 	VOL_GEN="${VOL_GEN_REL##*/}"
-	DR_VOL_STAGE="/var/tmp/dr-volume-restore"
-	docker exec "${MGR}" bash -c "rm -rf '${DR_VOL_STAGE}'; mkdir -p '${DR_VOL_STAGE}'"
-	docker exec "${BACKUP_NODE}" tar -C "${RESTORE_ROOT}" -cf - "${VOL_SRC_REL}" |
-		docker exec -i "${MGR}" tar --numeric-owner -C "${DR_VOL_STAGE}" -xf -
-	docker exec "${MGR}" sh -c \
-		"PYTHONPATH='${NODE_SRC}' python3 -m cli.administration.recover volume '${DR_VOL_STAGE}/${VOL_SRC_REL}' localhost --no-safety-backup"
-	echo "    volume '${VOL_NAME}' recovered from generation ${VOL_GEN} via the recover CLI"
-	docker exec "${MGR}" rm -rf "${DR_VOL_STAGE:?}"
+	VOL_OPTIONS="$(docker exec "${MGR}" docker volume inspect --format '{{json .Options}}' "${VOL_NAME}")"
+	if [ "${VOL_OPTIONS}" != null ] && [ "${VOL_OPTIONS}" != '{}' ]; then
+		echo "    volume recover skipped: '${VOL_NAME}' declares its own backing store ${VOL_OPTIONS}, which is unmounted while the stack is down - a restore would land on the node disk and be shadowed on redeploy; the [8/9] export restore already carried its data"
+	else
+		DR_VOL_STAGE="/var/tmp/dr-volume-restore"
+		docker exec "${MGR}" bash -c "rm -rf '${DR_VOL_STAGE}'; mkdir -p '${DR_VOL_STAGE}'"
+		docker exec "${BACKUP_NODE}" tar -C "${RESTORE_ROOT}" -cf - "${VOL_SRC_REL}" |
+			docker exec -i "${MGR}" tar --numeric-owner -C "${DR_VOL_STAGE}" -xf -
+		docker exec "${MGR}" sh -c \
+			"PYTHONPATH='${NODE_SRC}' python3 -m cli.administration.recover volume '${DR_VOL_STAGE}/${VOL_SRC_REL}' localhost --no-safety-backup"
+		echo "    volume '${VOL_NAME}' recovered from generation ${VOL_GEN} via the recover CLI"
+		docker exec "${MGR}" rm -rf "${DR_VOL_STAGE:?}"
+	fi
 else
 	echo "    volume recover skipped: the volume-2-local backup on ${MGR} did not capture the NFS-backed marker (chain already proven via the nfs repo)"
 fi
