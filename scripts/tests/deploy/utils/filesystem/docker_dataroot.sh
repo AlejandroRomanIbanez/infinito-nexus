@@ -12,16 +12,21 @@
 #   $2 REQUIRED  true when the filesystem was stated: a host that cannot
 #                deliver it fails the run. false (default) declines and reports.
 #   $3 SIZE      loop image size, e.g. 30G (sparse, so it costs what it holds)
+#   $4 IDENTITY  what this machine is called in the zfs pool namespace, which
+#                the lab nodes share with the runner. Stated by the caller
+#                rather than read from `hostname`, which returns non-zero in the
+#                node containers; its `unknown` fallback collapses every node
+#                onto one pool name, and they then race for a single pool.
 set -euo pipefail
 
 FSTYPE="${1:-}"
 REQUIRED="${2:-false}"
 SIZE="${3:?SIZE is required - state the loop image size (e.g. 30G) at the call site}"
+IDENTITY="${4:?IDENTITY is required - state what this machine is called at the call site}"
 
 MOUNT=/mnt/docker-fs
 IMAGE=/var/tmp/docker-fs.img
-POOL_HOST="$(hostname 2>/dev/null || echo unknown)"
-POOL="infinito_ci_$(printf '%s' "${POOL_HOST}" | tr -dc 'A-Za-z0-9_.:-')"
+POOL="infinito_ci_$(printf '%s' "${IDENTITY}" | tr -dc 'A-Za-z0-9_.:-')"
 DAEMON=/etc/docker/daemon.json
 MISC_MAJOR=10
 
@@ -37,13 +42,12 @@ current_fstype() {
 # Param: $1 status word recorded for this host
 # Param: $2 reason behind the status, empty when it needs none
 verdict() {
-	local status="$1" reason effective host
+	local status="$1" reason effective
 	reason="$(printf '%s' "${2:-}" | tr '\n' ' ')"
 	effective="$(current_fstype)"
-	host="$(hostname 2>/dev/null || echo unknown)"
 	report "status=${status} requested=${FSTYPE:-none} effective=${effective}${reason:+ reason=${reason}}"
 	[ -n "${GITHUB_STEP_SUMMARY:-}" ] || return 0
-	echo "- \`${host}\` docker data root: **${effective}** (requested \`${FSTYPE:-none}\`, ${status})${reason:+ - ${reason}}" \
+	echo "- \`${IDENTITY}\` docker data root: **${effective}** (requested \`${FSTYPE:-none}\`, ${status})${reason:+ - ${reason}}" \
 		>>"${GITHUB_STEP_SUMMARY}"
 }
 
@@ -86,12 +90,19 @@ zfs_device_ready() {
 # iteration starts, and `zpool create` refuses the name rather than reusing it.
 # Its vdev is a loop device backed by an image the dead container already
 # unlinked, so that space stays claimed until the loop is detached as well.
+#
+# A pool that refuses the destroy is by definition not a leftover: something
+# still holds it. That case declines through the usual contract instead of
+# ending the run, so a reclaim can never be more destructive than the state it
+# was written to clean up.
 reclaim_stale_pool() {
-	local pool="$1" vdev
+	local pool="$1" vdev destroy_out
 	zpool list -H -o name "${pool}" >/dev/null 2>&1 || return 0
 	vdev="$(zpool list -vHP "${pool}" | awk 'NR == 2 {print $1}')"
 	report "destroying ${pool}, left imported on this kernel by an earlier bring-up"
-	zpool destroy -f "${pool}"
+	if ! destroy_out="$(zpool destroy -f "${pool}" 2>&1)"; then
+		decline "${pool} is held elsewhere and is therefore not stale: ${destroy_out}"
+	fi
 	if [ -b "${vdev}" ]; then
 		losetup -d "${vdev}"
 		report "detached its vdev ${vdev}"

@@ -20,7 +20,8 @@ REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
 filesystem_pick "${INFINITO_DEPLOY_MODE}/${apps}/${INFINITO_DISTRO}" runner
 if [ -n "${INFINITO_DOCKER_FILESYSTEM:-}" ]; then
 	sudo -E "${REPO_ROOT}/scripts/tests/deploy/utils/filesystem/docker_dataroot.sh" \
-		"${INFINITO_DOCKER_FILESYSTEM}" "${INFINITO_DOCKER_FILESYSTEM_REQUIRED}" 30G
+		"${INFINITO_DOCKER_FILESYSTEM}" "${INFINITO_DOCKER_FILESYSTEM_REQUIRED}" 30G \
+		"${INFINITO_DEPLOY_MODE}-runner"
 fi
 
 INFINITO_IMAGE="$(bash "${REPO_ROOT}/scripts/meta/resolve/image/ci.sh")"

@@ -85,7 +85,7 @@
     - name: put the node docker data root on the stated filesystem (before anything is pulled)
       script: >-
         {{ lab_repo_root }}/scripts/tests/deploy/utils/filesystem/docker_dataroot.sh
-        {{ lab_filesystem }} {{ lab_filesystem_required }} {{ lab_dataroot_size }}
+        {{ lab_filesystem }} {{ lab_filesystem_required }} {{ lab_dataroot_size }} {{ inventory_hostname }}
       timeout: 600
       when: lab_filesystem | length > 0
       changed_when: true
