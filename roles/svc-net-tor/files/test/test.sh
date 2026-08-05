@@ -8,8 +8,7 @@
 #
 # Domains are auto-discovered from the deployed OpenResty vhosts
 # (<servers>/{http,https}/<domain>.conf); pass explicit domains as arguments to
-# override. Run against the live stack, e.g.:
-#   make compose-exec cmd="bash /opt/src/infinito/roles/svc-net-tor/test.sh"
+# override.
 #
 # Env overrides:
 #   TOR_SOCKS         SOCKS proxy for .onion (required env; pass
@@ -27,7 +26,6 @@ RETRIES="${RETRIES:-20}"
 SLEEP_SECONDS="${SLEEP_SECONDS:-15}"
 
 discover_domains() {
-	# vhost config files are named <domain>.conf under http/ and https/.
 	find "${NGINX_SERVERS_DIR}/http" "${NGINX_SERVERS_DIR}/https" \
 		-maxdepth 1 -type f -name '*.conf' 2>/dev/null |
 		sed -E 's#.*/##; s#\.conf$##' | sort -u
