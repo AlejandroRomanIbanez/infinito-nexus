@@ -6,12 +6,12 @@ mirror:
   bond: 1
   enabled: true
   shared: true
-tor:
+tor: # nocheck: category-modes
   modes:
     compose:
-      enabled: false
+      enabled: true
     swarm:
-      enabled: false
+      enabled: true
   # nocheck: default-placement-manager  node onion ingress: host-published SOCKS/DNS/Trans ports and the HiddenService loopback forward must live on the stack host
   placement: manager
   bond: 1

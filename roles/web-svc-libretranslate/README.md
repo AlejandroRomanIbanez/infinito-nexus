@@ -31,7 +31,7 @@ The diagram places LibreTranslate in the Infinito.Nexus cosmos: the components i
 flowchart LR
     subgraph deps [Dependencies]
         dep_svc_db_redis["svc-db-redis 🐳🐝"]
-        dep_svc_net_tor["svc-net-tor"]
+        dep_svc_net_tor["svc-net-tor 🐳🐝"]
         dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
         dep_web_app_matomo["web-app-matomo 🐳🐝"]
         dep_web_app_prometheus["web-app-prometheus 🐳🐝"]

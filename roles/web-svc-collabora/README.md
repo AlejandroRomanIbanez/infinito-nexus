@@ -19,7 +19,7 @@ The diagram places Collabora in the Infinito.Nexus cosmos: the components it dep
 flowchart LR
     subgraph deps [Dependencies]
         dep_svc_db_redis["svc-db-redis 🐳🐝"]
-        dep_svc_net_tor["svc-net-tor"]
+        dep_svc_net_tor["svc-net-tor 🐳🐝"]
         dep_web_app_matomo["web-app-matomo 🐳🐝"]
         dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
     end

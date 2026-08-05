@@ -15,7 +15,7 @@ The diagram places Bridgy Fed in the Infinito.Nexus cosmos: the components it de
 ```mermaid
 flowchart LR
     subgraph deps [Dependencies]
-        dep_svc_net_tor["svc-net-tor"]
+        dep_svc_net_tor["svc-net-tor 🐳🐝"]
         dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
         dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
         dep_web_app_mailu["web-app-mailu 🐳🐝"]

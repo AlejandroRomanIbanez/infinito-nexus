@@ -18,7 +18,7 @@ The diagram places Corporate Design in the Infinito.Nexus cosmos: the components
 ```mermaid
 flowchart LR
     subgraph deps [Dependencies]
-        dep_svc_net_tor["svc-net-tor"]
+        dep_svc_net_tor["svc-net-tor 🐳🐝"]
         dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
     end
     subgraph role [web-svc-css 💻]

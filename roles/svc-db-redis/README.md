@@ -28,7 +28,7 @@ The diagram places Redis in the Infinito.Nexus cosmos: the components it deploys
 flowchart LR
     subgraph deps [Dependencies]
         dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
-        dep_svc_net_tor["svc-net-tor"]
+        dep_svc_net_tor["svc-net-tor 🐳🐝"]
     end
     subgraph role [svc-db-redis 🐳🐝]
         svc_redis["redis"]

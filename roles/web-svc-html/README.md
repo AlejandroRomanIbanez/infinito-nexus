@@ -23,7 +23,7 @@ The diagram places HTML Server in the Infinito.Nexus cosmos: the components it d
 ```mermaid
 flowchart LR
     subgraph deps [Dependencies]
-        dep_svc_net_tor["svc-net-tor"]
+        dep_svc_net_tor["svc-net-tor 🐳🐝"]
         dep_web_app_matomo["web-app-matomo 🐳🐝"]
         dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
         dep_web_svc_css["web-svc-css 💻"]

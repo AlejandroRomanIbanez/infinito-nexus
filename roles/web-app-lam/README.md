@@ -16,7 +16,7 @@ The diagram places LAM in the Infinito.Nexus cosmos: the components it deploys (
 flowchart LR
     subgraph deps [Dependencies]
         dep_svc_db_openldap["svc-db-openldap 🐳🐝"]
-        dep_svc_net_tor["svc-net-tor"]
+        dep_svc_net_tor["svc-net-tor 🐳🐝"]
         dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
         dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
         dep_web_app_matomo["web-app-matomo 🐳🐝"]

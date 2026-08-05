@@ -16,7 +16,7 @@ The diagram places Tor Onion Service in the Infinito.Nexus cosmos: the component
 
 ```mermaid
 flowchart LR
-    subgraph role [svc-net-tor]
+    subgraph role [svc-net-tor 🐳🐝]
         svc_mirror["mirror"]
         svc_tor["tor"]
     end

@@ -23,7 +23,7 @@ The diagram places World Wide Web in the Infinito.Nexus cosmos: the components i
 ```mermaid
 flowchart LR
     subgraph deps [Dependencies]
-        dep_svc_net_tor["svc-net-tor"]
+        dep_svc_net_tor["svc-net-tor 🐳🐝"]
     end
     subgraph role [web-opt-rdr-www]
         svc_rdr_www["rdr-www"]
