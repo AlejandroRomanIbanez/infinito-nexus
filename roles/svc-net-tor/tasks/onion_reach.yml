@@ -7,23 +7,3 @@
   delay: 5
   until: _tor_self_reach.rc == 0
   changed_when: false
-
-- name: "🔎 Probe the node onion over the real Tor network (non-fatal)"
-  ansible.builtin.script:
-    cmd: >-
-      {{ role_path }}/files/onion_self_reach.py external
-      {{ TOR_NODE_ONION }} {{ lookup('tor_socks', '127.0.0.1') }}
-  register: _tor_self_reach_ext
-  retries: 90
-  delay: 5
-  until: _tor_self_reach_ext.rc == 0
-  failed_when: false
-  changed_when: false
-
-- name: "⚠️ Warn when the node onion is not yet reachable over Tor"
-  ansible.builtin.debug:
-    msg: >-
-      Node onion not reachable over the real Tor network yet
-      ({{ _tor_self_reach_ext.stderr | default('') | trim }}). Descriptor
-      publication is async; Playwright / real users retry on a fresh circuit.
-  when: _tor_self_reach_ext.rc | default(0) != 0
