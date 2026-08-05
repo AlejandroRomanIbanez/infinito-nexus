@@ -7,6 +7,13 @@ MAGENTO_USER: "app"
 MAGENTO_DOMAIN: "{{ lookup('domain',application_id) }}"
 MAGENTO_URL: "{{ lookup('tls', application_id, 'url.base') }}"
 
+MAGENTO_PHP_HOST: "php"
+MAGENTO_PHP_PORT: "{{ lookup('config', application_id, 'services.php.ports.internal.fpm') }}"
+MAGENTO_NGINX_PORT: "{{ lookup('config', application_id, 'services.magento.ports.internal.http') }}"
+
+MAGENTO_NGINX_CONF_PATH: "{{ [ lookup('container', application_id, 'directories.volumes'), 'nginx-default.conf' ] | path_join }}"
+MAGENTO_PHP_FPM_CONF_PATH: "{{ [ lookup('container', application_id, 'directories.volumes'), 'php-fpm.conf' ] | path_join }}"
+
 MAGENTO_SEARCH_CONTAINER: "{{ lookup('config', application_id, 'services.search.name') }}"
 
 MAGENTO_PHP_CONTAINER: "{{ lookup('config', application_id, 'services.php.name') }}"
