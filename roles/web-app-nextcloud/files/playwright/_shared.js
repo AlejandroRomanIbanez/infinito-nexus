@@ -53,6 +53,34 @@ async function waitForFirstVisible(page, locators, timeout = resolveTimeout(60_0
   throw new Error("Timed out waiting for one of the expected Nextcloud selectors to become visible");
 }
 
+const serverErrorByPage = new WeakMap();
+
+function trackServerErrors(page) {
+  if (serverErrorByPage.has(page)) {
+    return;
+  }
+
+  serverErrorByPage.set(page, null);
+  page.on("response", (response) => {
+    const request = response.request();
+
+    if (request.resourceType() !== "document") {
+      return;
+    }
+
+    if (request.frame() !== page.mainFrame()) {
+      return;
+    }
+
+    serverErrorByPage.set(
+      page,
+      response.status() >= 500
+        ? { status: response.status(), url: response.url() }
+        : null
+    );
+  });
+}
+
 async function waitForVisibleCandidate(
   page,
   candidates,
@@ -61,11 +89,21 @@ async function waitForVisibleCandidate(
 ) {
   const deadline = Date.now() + timeout;
 
+  trackServerErrors(page);
+
   while (Date.now() < deadline) {
     const visibleCandidate = await findFirstVisibleCandidate(candidates);
 
     if (visibleCandidate) {
       return visibleCandidate;
+    }
+
+    const serverError = serverErrorByPage.get(page);
+
+    if (serverError) {
+      throw new Error(
+        `${errorMessage} — the page itself failed: HTTP ${serverError.status} for ${serverError.url}`
+      );
     }
 
     await page.waitForTimeout(resolveTimeout(500));

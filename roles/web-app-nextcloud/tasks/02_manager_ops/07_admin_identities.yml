@@ -14,9 +14,7 @@
         {{ NEXTCLOUD_DOCKER_EXEC_OCC }} ldap:search {{ NEXTCLOUD_ADMINISTRATOR_USERNAME }}
       register: nextcloud_admin_ldap_search
       changed_when: false
-      failed_when: >
-        not ASYNC_ENABLED and
-        (nextcloud_admin_ldap_search.rc != 0)
+      failed_when: nextcloud_admin_ldap_search.rc != 0
       when:
         - nextcloud_admin_ldap_namespace is defined
         - nextcloud_admin_ldap_namespace.rc == 0
@@ -43,10 +41,8 @@
   loop: "{{ nextcloud_administrator_identities }}"
   register: nextcloud_admin_group_membership
   changed_when: >
-    not ASYNC_ENABLED and
     'Added user' in (nextcloud_admin_group_membership.stdout | default(''))
   failed_when: >
-    not ASYNC_ENABLED and
     (nextcloud_admin_group_membership.rc != 0) and
     ('is already a member of' not in (
       (nextcloud_admin_group_membership.stderr | default('')) ~

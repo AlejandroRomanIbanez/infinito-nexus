@@ -1,7 +1,7 @@
 ---
-- name: "📁 Ensure the CDN volumes directory exists before staging into it"
+- name: "📁 Ensure the CDN staging tree exists on the CDN host"
   ansible.builtin.file:
-    path: "{{ lookup('container', 'web-svc-cdn', 'directories.volumes') }}"
+    path: "{{ CDN_ASSET_STAGE }}"
     state: directory
     mode: "0755"
 
