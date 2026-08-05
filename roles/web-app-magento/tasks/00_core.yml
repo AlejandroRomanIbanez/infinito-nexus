@@ -1,4 +1,16 @@
 ---
+- name: "📄 Render the container config overrides for {{ application_id }}"
+  ansible.builtin.include_tasks:
+    file: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml') }}"
+  vars:
+    role_templates:
+      - src: "nginx-default.conf.j2"
+        dest: "{{ MAGENTO_NGINX_CONF_PATH }}"
+        mode: "0444"
+      - src: "php-fpm.conf.j2"
+        dest: "{{ MAGENTO_PHP_FPM_CONF_PATH }}"
+        mode: "0444"
+
 - name: "🧩 load docker, db/redis/proxy for {{ application_id }}"
   include_role:
     name: sys-stk-full

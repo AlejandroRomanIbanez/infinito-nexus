@@ -17,6 +17,7 @@
       mkdir -p /tmp/composer/cache
       cd /var/www/html
       composer create-project --no-interaction --no-progress --repository-url=https://repo.magento.com/ magento/project-community-edition=2.4.8 .
+      cp nginx.conf.sample nginx.conf
       mkdir -p var pub/static pub/media app/etc
       chmod -R 775 var pub/static pub/media app/etc
     '
@@ -58,3 +59,18 @@
     (magento_install.stdout is defined and
      ('Magento installation complete' in magento_install.stdout
       or 'successfully installed' in magento_install.stdout))
+
+- name: "🔄 Restart nginx so it picks up Magento's vhost (compose)"
+  ansible.builtin.command: "container restart {{ MAGENTO_NGINX_CONTAINER | quote }}"
+  register: magento_nginx_restart_compose
+  changed_when: magento_nginx_restart_compose.rc == 0
+  when: DEPLOYMENT_MODE == 'compose'
+
+- name: "🔄 Restart nginx so it picks up Magento's vhost (swarm)"
+  ansible.builtin.command: >-
+    container service update --force
+    {{ lookup('container_service', application_id, 'nginx') | quote }}
+  register: magento_nginx_restart_swarm
+  changed_when: magento_nginx_restart_swarm.rc == 0
+  timeout: "{{ lookup('timeout', 600) | int }}"
+  when: DEPLOYMENT_MODE == 'swarm'
