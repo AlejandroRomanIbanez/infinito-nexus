@@ -12,26 +12,34 @@ test.beforeEach(async ({ page }) => {
   await page.context().clearCookies();
 });
 
-test("Socialhome front page is served under canonical domain with TLS", async ({ page }) => {
+test("Social Home front page is served under canonical domain with TLS", async ({ page }) => {
   const response = await page.goto(`${appBaseUrl}/`);
-  expect(response, "Expected Socialhome response").toBeTruthy();
-  expect(response.status(), "Expected Socialhome front page status < 400").toBeLessThan(400);
+  expect(response, "Expected Social Home response").toBeTruthy();
+  expect(response.status(), "Expected Social Home front page status < 400").toBeLessThan(400);
   expect(
     response.url().includes(canonicalDomain),
-    `Expected canonical domain "${canonicalDomain}" to back the Socialhome URL`
+    `Expected canonical domain "${canonicalDomain}" to back the Social Home URL`
   ).toBe(true);
   const headers = response.headers();
-  expect(headers["strict-transport-security"], "Socialhome must emit HSTS").toBeTruthy();
+  expect(headers["strict-transport-security"], "Social Home must emit HSTS").toBeTruthy();
 });
 
-test("Socialhome returns HTML content under canonical domain", async ({ request }) => {
+test("Social Home returns HTML content under canonical domain", async ({ request }) => {
   const response = await request.get(`${appBaseUrl}/`);
-  expect(response.status(), "Expected Socialhome front page status < 400").toBeLessThan(400);
+  expect(response.status(), "Expected Social Home front page status < 400").toBeLessThan(400);
   const contentType = response.headers()["content-type"] || "";
   expect(
     contentType.includes("text/html"),
     `Expected HTML content-type, got "${contentType}"`
   ).toBe(true);
+});
+
+test("Social Home reports subsystem health on /healthz", async ({ request }) => {
+  const response = await request.get(`${appBaseUrl}/healthz`);
+  expect(response.status(), "Expected /healthz to report healthy").toBe(200);
+  const body = await response.json();
+  expect(body.status, "Expected /healthz status ok").toBe("ok");
+  expect(body.subsystems.db, "Expected the SQLite subsystem to answer SELECT 1").toBe("ok");
 });
 
 // Persona scenarios.
@@ -49,15 +57,14 @@ test("biber: app → universal logout", async ({ page }) => {
 test("administrator: app → universal logout", async ({ page }) => {
   await runAdminFlow(page, {
     adminInteraction: async (interactivePage) => {
-      // web-app-socialhome admin-only interaction: open a management surface.
       const link = interactivePage
-        .getByRole("link", { name: /^(stream|profile|admin|federation)$/i })
+        .getByRole("link", { name: /^(feed|spaces|calendar|federation|admin)$/i })
         .first();
       if (await link.isVisible({ timeout: 10_000 }).catch(() => false)) {
         await link.click().catch(() => {});
         await interactivePage.waitForLoadState("domcontentloaded", { timeout: 30_000 }).catch(() => {});
         await expect(interactivePage.locator("body")).toContainText(
-          /stream|profile|federation|content|socialhome/i,
+          /feed|spaces|calendar|federation|admin/i,
           { timeout: 30_000 },
         );
       }

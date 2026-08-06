@@ -1,14 +1,38 @@
 ---
 socialhome:
+  healthcheck:
+    flavor: http_status
+    path: healthz
   modes:
     host:
       enabled: false
-  lifecycle: pre-alpha
+    compose:
+      enabled: true
+    # Exception: the orchestrator chains swarm -> compose -> host under
+    # mode_fail_fast, so a red swarm job here skips 92 unrelated jobs. Flip to
+    # true once compose has been green once.
+    swarm:
+      enabled: false
+  # nocheck: default-placement-manager  embedded sqlite in a node-local volume; no clustered storage
+  placement: manager
+  image: ghcr.io/social-home-io/socialhome
+  version: "2026.6.16"
+  ports:
+    local:
+      http: 8089
+    internal:
+      http: 8099
+  lifecycle: alpha
   min_storage: "5GB"
   cpus: "0.5"
   mem_reservation: "256m"
   mem_limit: "1g"
   pids_limit: 512
+# nocheck: playwright-service-flag — TURN/STUN server, no Playwright surface (provider: web-svc-coturn)
+coturn:
+  bond: 1
+  enabled: "{{ 'web-svc-coturn' in group_names }}"
+  shared: "{{ 'web-svc-coturn' in group_names }}"
 prometheus:
   bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
@@ -27,3 +51,8 @@ dashboard:
 sso:
   enabled: false
   shared: false
+# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
+container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+  bond: 1
+  enabled: "{{ 'svc-bkp-volume-2-local' in group_names }}"
+  shared: true
