@@ -109,14 +109,19 @@ class TestFingerprintMapping(unittest.TestCase):
         b = {"x": 2}
         self.assertNotEqual(_fingerprint_mapping(a), _fingerprint_mapping(b))
 
-    def test_id_cache_short_circuits_recompute(self):
+    def test_in_place_mutation_changes_the_fingerprint(self):
         obj = {"x": 1}
         first = _fingerprint_mapping(obj)
         obj["x"] = 999
-        cached = _fingerprint_mapping(obj)
-        self.assertEqual(first, cached)
-        _reset_cache_for_tests()
         self.assertNotEqual(first, _fingerprint_mapping(obj))
+
+    def test_recycled_address_does_not_reuse_a_digest(self):
+        digests = []
+        for i in range(200):
+            transient = {"x": i}
+            digests.append(_fingerprint_mapping(transient))
+            del transient
+        self.assertEqual(len(set(digests)), 200)
 
 
 class TestStableVariablesSignature(unittest.TestCase):
