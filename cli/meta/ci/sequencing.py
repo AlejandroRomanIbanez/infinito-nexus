@@ -36,6 +36,7 @@ import sys
 from cli.meta.ci.query import MODES, discover, expands_variants
 from utils.cache.applications import get_variants
 from utils.github.variant.bundles import compose_bundle_counts
+from utils.roles.display import display_names
 
 CHOICES = ("auto", "serial", "parallel")
 
@@ -80,6 +81,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--lifecycles", default="")
     parser.add_argument("--choice", default="auto", choices=CHOICES)
     args = parser.parse_args(argv)
+
+    codec = display_names()
+    args.whitelist = codec.decode_list(args.whitelist)
+    args.blacklist = codec.decode_list(args.blacklist)
 
     if args.lifecycles.strip():
         os.environ["INFINITO_LIFECYCLES"] = args.lifecycles

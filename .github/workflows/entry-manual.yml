@@ -1,5 +1,5 @@
 name: "🕹️ Manual"
-run-name: "🕹️ ${{ inputs.mode_fail_fast && '🛑 ' || '' }}${{ inputs.sequencing != 'auto' && format('🚦{0} ', inputs.sequencing == 'serial' && '序' || '并') || '' }}${{ inputs.workspace != 'auto' && format('🧑‍💻{0} ', inputs.workspace == 'true' && '是' || '否') || '' }}${{ inputs.instructions != 'auto' && format('📖{0} ', inputs.instructions == 'true' && '是' || '否') || '' }}${{ inputs.filesystem != '' && format('🗄️{0} ', inputs.filesystem) || '' }}${{ inputs.distros != '' && format('🐧{0} ', inputs.distros) || '' }}${{ inputs.lifecycles != '' && format('♻️{0} ', inputs.lifecycles) || '' }}${{ inputs.modes != 'swarm compose host' && format('🚀{0} ', inputs.modes) || '' }}${{ inputs.priority != '' && format('⭐{0} ', inputs.priority) || '' }}${{ inputs.whitelist != '' && format('🎯{0}', inputs.whitelist) || '🔀 diff (origin/main)' }}"
+run-name: "🕹️ ${{ inputs.mode_fail_fast && '🛑 ' || '' }}${{ inputs.sequencing != 'auto' && format('🐛{0} ', inputs.sequencing == 'serial' && '序' || '并') || '' }}${{ inputs.workspace != 'auto' && format('🧑‍💻{0} ', inputs.workspace == 'true' && '是' || '否') || '' }}${{ inputs.instructions != 'auto' && format('📖{0} ', inputs.instructions == 'true' && '是' || '否') || '' }}${{ inputs.filesystem != '' && format('🗄️{0} ', inputs.filesystem) || '' }}${{ inputs.distros != '' && format('🐧{0} ', inputs.distros) || '' }}${{ inputs.lifecycles != '' && format('♻️{0} ', inputs.lifecycles) || '' }}${{ inputs.modes != 'swarm compose host' && format('🚀{0} ', inputs.modes) || '' }}${{ inputs.priority != '' && format('⭐{0} ', inputs.priority) || '' }}${{ inputs.whitelist != '' && format('🎯{0}', inputs.whitelist) || '🔀 diff (origin/main)' }}"
 
 concurrency:
   group: global-ci-${{ github.repository }}-${{ github.ref_name }}
@@ -39,7 +39,7 @@ on:
         default: ""
         type: string
       sequencing:
-        description: "🚦 Deploy-mode order per line. 'serial': swarm, then compose, then host. 'parallel': all at once. 'auto': serial above 65 jobs per line."
+        description: "🐛 Deploy-mode order per line. 'serial': swarm, then compose, then host. 'parallel': all at once. 'auto': serial above 65 jobs per line."
         required: false
         default: "auto"
         type: choice

@@ -27,7 +27,7 @@ on:
         type: string
         default: ""
       sequencing:
-        description: "🚦 Deploy-mode order per line. 'serial': swarm, then compose, then host. 'parallel': all at once. 'auto': serial above the job threshold."
+        description: "🐛 Deploy-mode order per line. 'serial': swarm, then compose, then host. 'parallel': all at once. 'auto': serial above the job threshold."
         required: false
         type: string
         default: "auto"
@@ -173,7 +173,7 @@ jobs:
     secrets: inherit
 
   sequencing:
-    name: 🚦 Sequencing
+    name: 🐛 Sequencing
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -492,7 +492,7 @@ jobs:
     secrets: inherit
 
   report-main-failures:
-    name: 🐛 Report main role failures
+    name: 🐞 Report main role failures
     needs:
       - test-deploy-single-node-priority
       - test-deploy-compose-priority
@@ -510,7 +510,7 @@ jobs:
       contents: read
     steps:
       - uses: actions/checkout@v7.0.0
-      - name: 🐛 Open or append issues for failed roles
+      - name: 🐞 Open or append issues for failed roles
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: python3 -m cli.meta.ci.report_failures --run-id "${{ github.run_id }}" --repo "${{ github.repository }}"
