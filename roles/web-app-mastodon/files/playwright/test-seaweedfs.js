@@ -25,6 +25,10 @@ test.use({ ignoreHTTPSErrors: true });
 
 test("seaweedfs: a saved Mastodon avatar is stored in the SeaweedFS bucket", async ({ page, browser }) => {
   skipUnlessServiceEnabled("seaweedfs");
+  test.skip(
+    (process.env.PERSONA_ADMINISTRATOR_BLOCKED || "").toLowerCase() === "true",
+    "administrator persona is blocked by the role contract (PERSONA_ADMINISTRATOR_BLOCKED=true); this scenario drives the same admin journey.",
+  );
   test.setTimeout(300_000);
 
   const appBaseUrl = normalizeUrl(process.env.APP_BASE_URL);

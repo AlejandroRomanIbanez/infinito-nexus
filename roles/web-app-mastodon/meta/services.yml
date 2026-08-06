@@ -109,7 +109,6 @@ minio:
   enabled: false # nocheck: dynamic-flag
   shared: false # nocheck: dynamic-flag
   public: true
-# nocheck: playwright-service-flag — object store, no Playwright surface
 seaweedfs:
   bond: 1
   enabled: "{{ 'web-app-seaweedfs' in group_names }}"
