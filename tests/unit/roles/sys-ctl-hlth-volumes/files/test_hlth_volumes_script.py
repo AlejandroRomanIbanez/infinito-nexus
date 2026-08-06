@@ -76,6 +76,7 @@ class TestHlthVolumesScript(unittest.TestCase):
                 env=env,
                 capture_output=True,
                 text=True,
+                check=False,
             )
             return done.returncode, done.stdout
 
