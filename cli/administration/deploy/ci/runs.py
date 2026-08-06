@@ -55,7 +55,7 @@ MODE_GLYPHS = {
 }
 _GLYPH_MODE = {glyph: mode for mode, glyph in MODE_GLYPHS.items()}
 
-_JOB_RE = re.compile(rf"({'|'.join(map(re.escape, MODE_GLYPHS.values()))})\s+(.+?)\s*$")
+_JOB_RE = re.compile(rf"({'|'.join(map(re.escape, MODE_GLYPHS.values()))})\s*(.+?)\s*$")
 
 
 def _effective(job: dict) -> str:

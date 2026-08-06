@@ -10,9 +10,9 @@ class TestRoleDisplayName(unittest.TestCase):
     def setUpClass(cls):
         cls.codec = display_names()
 
-    def test_encode_joins_category_labels_and_the_readme_heading(self):
+    def test_encode_runs_the_category_labels_together_before_the_heading(self):
         self.assertEqual(
-            "·".join([*self.codec.category_labels(APP), self.codec.title(APP)]),
+            f"{''.join(self.codec.category_labels(APP))}·{self.codec.title(APP)}",
             self.codec.encode(APP),
         )
 
@@ -29,7 +29,7 @@ class TestRoleDisplayName(unittest.TestCase):
             self.codec.encode(long_heading),
         )
         self.assertEqual(
-            "系统·控制·告警·compose", self.codec.encode("sys-ctl-alm-compose")
+            "系统控制告警·compose", self.codec.encode("sys-ctl-alm-compose")
         )
 
     def test_the_id_section_drops_what_the_categories_already_say(self):

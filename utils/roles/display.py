@@ -2,13 +2,14 @@
 
 A role id is the machine handle (``web-app-nextcloud``); the display name is
 what a human reads off a GitHub Actions job or run title
-(``网络·应用·Nextcloud``). It is the role's category path rendered as the
-``hanzi`` labels ``meta/categories.yml`` declares, followed by the role's own
-``README.md`` heading, joined by ``·``.
+(``网络应用·Nextcloud``). The category path renders as the ``hanzi`` labels
+``meta/categories.yml`` declares, run together into one block, then a ``·``,
+then the role's own ``README.md`` heading or the part of the id the categories
+do not already carry.
 
-The separator is ``·`` all the way through, including before the title: the
-``whitelist`` and ``priority`` workflow inputs are space-separated lists, so a
-display name holding a space would make a two-role list unparseable.
+The name never holds a space: the ``whitelist`` and ``priority`` workflow
+inputs are space-separated lists, so a display name with a space in it would
+make a two-role list unparseable.
 
 :meth:`RoleDisplayName.decode` accepts a raw role id unchanged, so every
 consumer can decode unconditionally and a human dispatching a run by hand
@@ -54,10 +55,10 @@ class RoleDisplayName:
     def title(self, app_id: str) -> str:
         """The role's ``README.md`` heading as one separator-joined fragment.
 
-        Whitespace inside the heading becomes a ``·`` like every other join,
-        so a display name never holds a space and stays one token in the
-        space-separated ``whitelist`` and ``priority`` inputs. Variation
-        selectors left behind by an emoji in the heading are dropped.
+        Whitespace inside the heading becomes a ``·`` so a display name never
+        holds a space and stays one token in the space-separated ``whitelist``
+        and ``priority`` inputs. Variation selectors left behind by an emoji in
+        the heading are dropped.
 
         Args:
             app_id: role id, e.g. ``'web-app-nextcloud'``.
@@ -115,11 +116,12 @@ class RoleDisplayName:
         if (self.roles_dir / app_id).is_dir():
             fragment = self.id_fragment(app_id)
             title = self.title(app_id)
+            if len(title) <= len(fragment):
+                fragment = title
             name = SEPARATOR.join(
-                [
-                    *self.category_labels(app_id),
-                    title if len(title) <= len(fragment) else fragment,
-                ]
+                part
+                for part in ("".join(self.category_labels(app_id)), fragment)
+                if part
             )
         return f"{name} {variant}" if variant else name
 
