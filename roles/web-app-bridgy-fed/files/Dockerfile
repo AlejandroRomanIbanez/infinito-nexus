@@ -1,5 +1,13 @@
-# Runtime image for Bridgy Fed (Flask) with a build step that clones upstream
-ARG PY_BASE="python:3.12-bookworm"
+# Runtime image for Bridgy Fed (Flask), built from a clone of upstream.
+#
+# Both stages carry /usr/local over rather than reinstalling, so the
+# python-version-specific site-packages path never has to be hardcoded, and
+# gunicorn is present at runtime instead of the entrypoint dying with
+# `gunicorn: not found` in a restart loop.
+#
+# Upstream serves oauth_dropins assets from /app/oauth_dropins_static and ships
+# no such directory, so the package's own static tree is linked in.
+ARG PY_BASE
 FROM ${PY_BASE} AS build
 
 ARG BRIDGY_REPO_URL

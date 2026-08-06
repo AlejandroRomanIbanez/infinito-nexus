@@ -1,6 +1,10 @@
-# Runtime image for Postmarks (Node.js bookmarking app) with a build
-# step that clones upstream from GitHub.
-ARG NODE_BASE="node:26-bookworm"
+# Runtime image for Postmarks (Node.js bookmarking app), built from a clone of
+# upstream.
+#
+# The build stage patches in a trusted-header SSO bridge, gated at runtime on
+# PROXY_HEADER_SSO, and the final stage carries the whole application directory
+# over so no packages are refetched at start.
+ARG NODE_BASE
 FROM ${NODE_BASE} AS build
 
 ARG POSTMARKS_REPO_URL
