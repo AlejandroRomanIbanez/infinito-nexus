@@ -16,7 +16,6 @@
       mkdir -p /tmp/composer/cache
       cd /var/www/html
       composer create-project --no-interaction --no-progress --no-install --repository-url={{ MAGENTO_COMPOSER_REPOSITORY }} {{ MAGENTO_COMPOSER_SPEC }} .
-      cp nginx.conf.sample nginx.conf
       mkdir -p var pub/static pub/media app/etc
       chmod -R 775 var pub/static pub/media app/etc
     '
@@ -30,7 +29,7 @@
     -e COMPOSER_CACHE_DIR=/tmp/composer/cache
     --user {{ MAGENTO_USER }}
     -w /var/www/html
-    {{ MAGENTO_PHP_CONTAINER_ADDRESS }} composer install --no-interaction --no-progress
+    {{ MAGENTO_PHP_CONTAINER_ADDRESS }} composer install --no-interaction --no-progress --no-dev
   args:
     creates: "{{ [ magento_volume_mountpoint.stdout | trim, 'html/bin/magento' ] | path_join }}"
   register: magento_composer_install
@@ -38,11 +37,22 @@
   delay: 5
   until: magento_composer_install is succeeded
 
+# Exception: magento2-base ships nginx.conf.sample, so it only exists after
+# composer install -- inside the bootstrap the file is not there yet and the
+# bootstrap's own creates: guard would make the miss permanent.
+- name: "📄 Publish Magento's nginx vhost into the volume"
+  ansible.builtin.shell: >-
+    container exec --user {{ MAGENTO_USER }} -w /var/www/html
+    {{ MAGENTO_PHP_CONTAINER_ADDRESS }} cp nginx.conf.sample nginx.conf
+  args:
+    creates: "{{ [ magento_volume_mountpoint.stdout | trim, 'html/nginx.conf' ] | path_join }}"
+  register: magento_nginx_conf
+
 - name: "▶️ Run Magento setup:install (in container)"
   shell: >
     container exec --user {{ MAGENTO_USER }} {{ MAGENTO_PHP_CONTAINER_ADDRESS }} bash -lc "
     cd /var/www/html && bin/magento setup:install \
-      --base-url='{{ MAGENTO_URL }}/' \
+      --base-url='{{ MAGENTO_URL }}' \
       --db-host=\"\$MYSQL_HOST\" \
       --db-name=\"\$MYSQL_DATABASE\" \
       --db-user=\"\$MYSQL_USER\" \
@@ -78,7 +88,9 @@
   ansible.builtin.command: "container restart {{ MAGENTO_NGINX_CONTAINER | quote }}"
   register: magento_nginx_restart_compose
   changed_when: magento_nginx_restart_compose.rc == 0
-  when: DEPLOYMENT_MODE == 'compose'
+  when:
+    - DEPLOYMENT_MODE == 'compose'
+    - magento_nginx_conf is changed
 
 - name: "🔄 Restart nginx so it picks up Magento's vhost (swarm)"
   ansible.builtin.command: >-
@@ -87,4 +99,6 @@
   register: magento_nginx_restart_swarm
   changed_when: magento_nginx_restart_swarm.rc == 0
   timeout: "{{ lookup('timeout', 600) | int }}"
-  when: DEPLOYMENT_MODE == 'swarm'
+  when:
+    - DEPLOYMENT_MODE == 'swarm'
+    - magento_nginx_conf is changed

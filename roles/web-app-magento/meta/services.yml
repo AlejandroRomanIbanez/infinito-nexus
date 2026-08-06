@@ -100,6 +100,8 @@ prometheus:
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
 magento:
+  # nocheck: default-placement-manager  01_setup.yml bootstraps through `container exec` from IS_STACK_HOST, which can only reach a container the manager itself runs
+  placement: manager
   composer:
     repository: https://mirror.mage-os.org/
     package: magento/project-community-edition
