@@ -10,9 +10,8 @@ from __future__ import annotations
 
 import re
 
+from tests.utils import PROJECT_ROOT
 from utils.cache.files import read_text
-
-from .. import PROJECT_ROOT
 
 WORKFLOWS = PROJECT_ROOT / ".github" / "workflows"
 
