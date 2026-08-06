@@ -180,11 +180,20 @@ def display_names() -> RoleDisplayName:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    """Decode one space-separated list of display names into role ids."""
+    """Translate one space-separated list between role ids and display names.
+
+    Args:
+        argv: ``['<display names>']`` to decode, ``['--encode', '<role ids>']``
+            to encode.
+    """
     argv = list(sys.argv[1:] if argv is None else argv)
+    codec = display_names()
+    if len(argv) == 2 and argv[0] == "--encode":
+        print(codec.encode_list(argv[1]))
+        return 0
     if len(argv) != 1:
-        raise SystemExit("usage: python -m utils.roles.display '<display names>'")
-    print(display_names().decode_list(argv[0]))
+        raise SystemExit("usage: python -m utils.roles.display [--encode] '<list>'")
+    print(codec.decode_list(argv[0]))
     return 0
 
 
