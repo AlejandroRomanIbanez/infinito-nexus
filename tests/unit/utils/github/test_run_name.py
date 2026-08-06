@@ -12,7 +12,7 @@ from utils.github import run_name
 TPL = (
     "🕹️ "
     "${{ inputs.sequencing != 'auto'"
-    " && format('🚦{0} ', inputs.sequencing == 'serial' && '序' || '并') || '' }}"
+    " && format('🐛{0} ', inputs.sequencing == 'serial' && '序' || '并') || '' }}"
     "${{ inputs.mode_fail_fast && '🛑 ' || '' }}"
     "${{ inputs.workspace != 'auto'"
     " && format('🧑{0} ', inputs.workspace == 'true' && '是' || '否') || '' }}"
@@ -28,7 +28,7 @@ class SegmentTests(unittest.TestCase):
         self.assertEqual(
             run_name.heads(TPL),
             {
-                "sequencing": "🚦",
+                "sequencing": "🐛",
                 "workspace": "🧑",
                 "distros": "🐧",
                 "priority": "⭐",
