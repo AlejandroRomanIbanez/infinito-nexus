@@ -7,9 +7,11 @@
       - src: "nginx-default.conf.j2"
         dest: "{{ MAGENTO_NGINX_CONF_PATH }}"
         mode: "0444"
+        notify: []
       - src: "php-fpm.conf.j2"
         dest: "{{ MAGENTO_PHP_FPM_CONF_PATH }}"
         mode: "0444"
+        notify: []
 
 - name: "🧩 load docker, db/redis/proxy for {{ application_id }}"
   include_role:

@@ -100,6 +100,10 @@ prometheus:
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
 magento:
+  composer:
+    repository: https://mirror.mage-os.org/
+    package: magento/project-community-edition
+    version: 2.4.8
   modes:
     compose:
       enabled: true

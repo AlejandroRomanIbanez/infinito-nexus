@@ -21,5 +21,7 @@ MAGENTO_PHP_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, '
 
 MAGENTO_NGINX_CONTAINER: "{{ lookup('config', application_id, 'services.nginx.name') }}"
 
-MAGENTO_REPO_PUBLIC_KEY: "{{ lookup('config', application_id, 'credentials.adobe_public_key') }}"
-MAGENTO_REPO_PRIVATE_KEY: "{{ lookup('config', application_id, 'credentials.adobe_private_key') }}"
+MAGENTO_COMPOSER_REPOSITORY: "{{ lookup('config', application_id, 'services.magento.composer.repository') }}"
+MAGENTO_COMPOSER_PACKAGE: "{{ lookup('config', application_id, 'services.magento.composer.package') }}"
+MAGENTO_COMPOSER_VERSION: "{{ lookup('config', application_id, 'services.magento.composer.version') }}"
+MAGENTO_COMPOSER_SPEC: "{{ MAGENTO_COMPOSER_PACKAGE }}={{ MAGENTO_COMPOSER_VERSION }}"
