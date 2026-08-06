@@ -104,3 +104,16 @@ assert_http_status() {
 	fi
 	echo "[OK] ${url} returned HTTP ${actual}"
 }
+
+# Print every group-conditional service key, comma-separated for `disable=`.
+# Usage: variable_services [keep_key ...]
+# Param keep_key: service keys the deploy under test needs, kept enabled.
+variable_services() {
+	local out
+	out="$(cd "${REPO_ROOT}" && "${PYTHON}" -m cli.meta.roles.applications.dynamic_services --exclude "$@")"
+	[ -n "${out}" ] || {
+		echo "[FAIL] variable_services resolved to an empty disable set" >&2
+		exit 1
+	}
+	printf '%s' "${out}"
+}

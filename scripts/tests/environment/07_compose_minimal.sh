@@ -12,7 +12,7 @@ echo "Snapshotting cache counters before the deploy."
 CACHE_BEFORE="$(cache_snapshot)"
 
 echo "Deploying dashboard with all variable (group-conditional) services disabled to speed up the deploy and verify disable= suppresses them from the inventory."
-make compose-deploy mode=reinstall apps="${DASHBOARD_APP}" disable="sso,asset,simpleicons,logout,matomo,css,prometheus"
+make compose-deploy mode=reinstall apps="${DASHBOARD_APP}" disable="$(variable_services dashboard javascript)"
 inspect
 
 echo "Actively probing both caches to confirm pull-through works end-to-end."

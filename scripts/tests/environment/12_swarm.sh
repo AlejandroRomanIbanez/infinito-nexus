@@ -15,7 +15,7 @@ docker image inspect "${node_image}" >/dev/null 2>&1 || {
 }
 
 echo "Deploying the MariaDB database role ${MARIADB_APP} on a throwaway swarm cluster."
-make swarm-zombie app="${MARIADB_APP}"
+make swarm-zombie app="${MARIADB_APP}" disable="$(variable_services mariadb)"
 
 echo "Releasing the swarm cluster."
 make swarm-down name="${MARIADB_APP}"
