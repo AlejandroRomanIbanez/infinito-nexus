@@ -38,6 +38,20 @@ on:
         required: false
         default: ""
         type: string
+      sequencing:
+        description: "🚦 Deploy-mode order per line. 'serial': swarm, then compose, then host. 'parallel': all at once. 'auto': serial above 65 jobs per line."
+        required: false
+        default: "auto"
+        type: choice
+        options:
+          - "auto"
+          - "serial"
+          - "parallel"
+      mode_fail_fast:
+        description: "🛑 Stop a serial line at its first failed mode. Off: keep deploying the remaining modes."
+        required: false
+        default: true
+        type: boolean
       workspace:
         description: "🧑‍💻 Run the workspace test (dev-runtime image matrix). 'auto' runs it on a global scope only."
         required: false
@@ -74,6 +88,8 @@ jobs:
       lifecycles: ${{ inputs.lifecycles }}
       modes: ${{ inputs.modes }}
       priority: ${{ inputs.priority }}
+      sequencing: ${{ inputs.sequencing }}
+      mode_fail_fast: ${{ inputs.mode_fail_fast }}
       filesystem: ${{ inputs.filesystem }}
       workspace: ${{ inputs.workspace }}
       instructions: ${{ inputs.instructions }}
