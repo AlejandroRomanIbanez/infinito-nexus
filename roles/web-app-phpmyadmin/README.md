@@ -97,6 +97,10 @@ docker run --rm -it \
       --diff -vv'
 ```
 
+## Persona contract opt-outs
+
+phpMyAdmin signs in as the MariaDB `root` account wired through `PMA_USER` / `PMA_PASSWORD` ([`templates/env.j2`](./templates/env.j2), [`vars/main.yml`](./vars/main.yml)); the Keycloak `administrator` username is not a MariaDB user, so in the `services.sso.enabled: false` matrix variants the `administrator` persona has no native login to drive and [`templates/playwright.env.j2`](./templates/playwright.env.j2) renders `PERSONA_ADMINISTRATOR_BLOCKED=true`. [`meta/services.yml`](./meta/services.yml) admits only the `web-app-phpmyadmin` administrator RBAC group to the oauth2-proxy (`sso.oauth2.allowed_groups`) and `biber` carries an empty role list, so `PERSONA_BIBER_BLOCKED=true` holds in every variant. The `guest` persona and the baseline assertions run unconditionally.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

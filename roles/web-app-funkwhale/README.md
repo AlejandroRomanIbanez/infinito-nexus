@@ -110,6 +110,10 @@ docker run --rm -it \
       --diff -vv'
 ```
 
+## Persona contract opt-outs
+
+The entire auth chain of this role is the oauth2-proxy in front of the `front` container ([`meta/services.yml`](./meta/services.yml), `sso.flavor: oauth2`); [`tasks/main.yml`](./tasks/main.yml) provisions no Funkwhale account for either persona. In the `services.sso.enabled: false` matrix variants the proxy is gone and no sign-in is left to drive, so [`templates/playwright.env.j2`](./templates/playwright.env.j2) renders `PERSONA_BIBER_BLOCKED=true` and `PERSONA_ADMINISTRATOR_BLOCKED=true`. The `guest` persona and the baseline assertions run unconditionally.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

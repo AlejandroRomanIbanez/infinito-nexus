@@ -112,6 +112,10 @@ docker run --rm -it \
 - [pgAdmin Official Homepage](https://www.pgadmin.org/)
 - [pgAdmin Documentation](https://www.pgadmin.org/docs/)
 
+## Persona contract opt-outs
+
+pgAdmin's own login id is the account e-mail `PGADMIN_DEFAULT_EMAIL` ([`templates/env.j2`](./templates/env.j2), [`vars/main.yml`](./vars/main.yml)), not the Keycloak `administrator` username, so the `administrator` persona has no in-app credential once it is through the oauth2-proxy. [`meta/services.yml`](./meta/services.yml) additionally admits only the `web-app-pgadmin` administrator RBAC group to that proxy (`sso.oauth2.allowed_groups`), and `biber` carries an empty role list, so it is denied before pgAdmin is reached. [`templates/playwright.env.j2`](./templates/playwright.env.j2) therefore declares `PERSONA_BIBER_BLOCKED=true` and `PERSONA_ADMINISTRATOR_BLOCKED=true`; the `guest` persona and the baseline assertions run unconditionally.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

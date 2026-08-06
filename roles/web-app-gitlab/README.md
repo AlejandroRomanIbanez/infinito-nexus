@@ -138,6 +138,10 @@ On each version bump of `services.webservice.version`:
 - [Cloud Native GitLab (CNG) images](https://gitlab.com/gitlab-org/build/CNG)
 - [GitLab Helm charts documentation](https://docs.gitlab.com/charts/)
 
+## Persona contract opt-outs
+
+`GITLAB_ROOT_PASSWORD` ([`templates/env.j2`](./templates/env.j2), from `GITLAB_INIT_ROOT_PASSWORD` in [`vars/main.yml`](./vars/main.yml)) belongs to GitLab's built-in `root` account, not to the Keycloak `administrator` username the persona signs in with, and no GitLab account is provisioned for `biber` at all — the OmniAuth sign-in is the only path that would create one. In the `services.sso.enabled: false` matrix variants that path is removed, so [`templates/playwright.env.j2`](./templates/playwright.env.j2) renders `PERSONA_BIBER_BLOCKED=true` and `PERSONA_ADMINISTRATOR_BLOCKED=true`. The `guest` persona and the baseline assertions run unconditionally.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

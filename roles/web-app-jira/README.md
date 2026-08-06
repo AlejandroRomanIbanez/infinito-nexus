@@ -103,6 +103,10 @@ docker run --rm -it \
 
 * Docker Hub (official image): [atlassian/jira-software](https://hub.docker.com/r/atlassian/jira-software)
 
+## Persona contract opt-outs
+
+[`meta/services.yml`](./meta/services.yml) pins `sso.enabled` to `false` and [`tasks/main.yml`](./tasks/main.yml) provisions no Jira account — account creation belongs to the licensed first-run setup wizard. Neither the `biber` nor the `administrator` persona has credentials to sign in with, so [`templates/playwright.env.j2`](./templates/playwright.env.j2) declares `PERSONA_BIBER_BLOCKED=true` and `PERSONA_ADMINISTRATOR_BLOCKED=true`. The `guest` persona and the baseline reachability assertions run unconditionally.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

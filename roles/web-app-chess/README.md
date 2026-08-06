@@ -99,6 +99,10 @@ docker run --rm -it \
 - [castling.club GitHub Repository](https://github.com/stephank/castling.club)  
 - [ActivityPub Specification (W3C)](https://www.w3.org/TR/activitypub/)  
 
+## Persona contract opt-outs
+
+[`meta/services.yml`](./meta/services.yml) pins `sso.enabled` and `logout.enabled` to `false`, and the role seeds no chess account — [`templates/env.j2`](./templates/env.j2) renders only the `APP_ADMIN_URL` / `APP_ADMIN_EMAIL` contact pair. Neither the `biber` nor the `administrator` persona has a login surface here, so [`templates/playwright.env.j2`](./templates/playwright.env.j2) declares `PERSONA_BIBER_BLOCKED=true` and `PERSONA_ADMINISTRATOR_BLOCKED=true`. The `guest` persona and the baseline reachability assertions run unconditionally.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

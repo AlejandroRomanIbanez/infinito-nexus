@@ -120,6 +120,10 @@ docker run --rm -it \
 * [Shopware Developer Documentation](https://developer.shopware.com/)
 * [Shopware Store (Plugins)](https://store.shopware.com/en/)
 
+## Persona contract opt-outs
+
+[`tasks/01_admin.yml`](./tasks/01_admin.yml) provisions only the administrator in Shopware's user table; `biber` reaches the backend solely through the oauth2-proxy declared in [`meta/services.yml`](./meta/services.yml). In the `services.sso.enabled: false` matrix variants that proxy is absent and `biber` has no native account, so [`templates/playwright.env.j2`](./templates/playwright.env.j2) renders `PERSONA_BIBER_BLOCKED=true`. The `administrator` and `guest` personas run in every variant.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

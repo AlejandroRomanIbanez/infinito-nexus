@@ -93,6 +93,10 @@ docker run --rm -it \
 
 - [LDAP Account Manager Official Website](https://www.ldap-account-manager.org/)
 
+## Persona contract opt-outs
+
+[`meta/services.yml`](./meta/services.yml) admits only the `web-app-lam` administrator RBAC group to the oauth2-proxy (`sso.oauth2.allowed_groups`), and `biber` carries an empty role list in the development inventory. The proxy denies `biber` before LAM is ever reached, so [`templates/playwright.env.j2`](./templates/playwright.env.j2) declares `PERSONA_BIBER_BLOCKED=true`. The `administrator` and `guest` personas run in every variant.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.
