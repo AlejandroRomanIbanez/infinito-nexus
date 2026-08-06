@@ -97,6 +97,12 @@ This role does NOT configure OIDC against `web-app-keycloak`, LDAP against `svc-
 - [Bridgy Fed Documentation](https://bridgy-fed.readthedocs.io/)
 - [Bridgy Fed Source on GitHub](https://github.com/snarfed/bridgy-fed)
 
+## Persona contract opt-outs
+
+Both authenticated Playwright personas are blocked. `meta/services.yml` pins `sso.enabled: false` and `logout.enabled: false`: Bridgy Fed has no local user table, no in-app authorisation tier, and no logout button, and placing it behind the SSO-proxy sidecar would break inbound federation traffic.
+
+There is consequently no auth chain for the persona helpers to drive and no admin surface to assert against. The opt-out is permanent, not a rollout gap.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

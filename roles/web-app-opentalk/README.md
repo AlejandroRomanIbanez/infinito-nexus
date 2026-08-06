@@ -125,6 +125,10 @@ See [IAM.md](docs/IAM.md) for the OIDC and Keycloak admin Web API setup, and [LD
 - [OpenTalk documentation](https://docs.opentalk.eu/)
 - [OpenTalk setup template](https://gitlab.opencode.de/opentalk/ot-setup)
 
+## Persona contract opt-outs
+
+The shared `biber` and `administrator` persona helpers are declared blocked in [templates/playwright.env.j2](./templates/playwright.env.j2). The OpenTalk frontend is a public-client OIDC single-page app — the container env carries nothing but the issuer and the client id, there is no server-side session and no HTML login form — so the role drives it with its own redirect-racing helper keyed on `LOGIN_*` / `BIBER_*` instead of the `ADMIN_*` pair the shared helper expects, and the browser-side session leaves the contract's in-app logout leg without a target. Both personas' Keycloak → dashboard chain is covered by [files/playwright/test-sso-login.js](./files/playwright/test-sso-login.js).
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

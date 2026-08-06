@@ -109,6 +109,12 @@ Jellyfin has **no native OIDC/LDAP**; auth is plugin-based with an important cli
 - [LDAP plugin](https://github.com/jellyfin/jellyfin-plugin-ldapauth)
 - [SSO/OIDC plugin](https://github.com/9p4/jellyfin-plugin-sso)
 
+## Persona contract opt-outs
+
+The shared `biber` persona journey is opted out via `PERSONA_BIBER_BLOCKED` in `templates/playwright.env.j2`.
+A Jellyfin account binds to exactly one authentication provider, so biber's login is owned by the per-addon specs that know which provider is live: `files/playwright/addons/sso-authentication.spec.js` for OIDC and `addons/ldap-authentication.spec.js` for the LDAP-only matrix variant.
+The generic persona cannot pick between them and would duplicate or contradict that coverage; `playwright.spec.js` keeps the `guest` scenario and the native administrator login.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

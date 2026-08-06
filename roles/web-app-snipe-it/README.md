@@ -134,6 +134,11 @@ docker run --rm -it \
 - [Mattermost SSO Integration Guide](https://docs.mattermost.com/onboard/sso-saml-keycloak.html)
 - [Additional GitHub Issues and Discussions](https://github.com/snipe/snipe-it/issues)
 
+## Persona contract opt-outs
+
+Snipe-IT is entered through a trusted-header bridge: the oauth2-proxy authenticates against Keycloak and Snipe-IT's `loginViaRemoteUser()` mints a native session for the matching `users.username` row (see [`files/apply/sso_config.php`](./files/apply/sso_config.php)). The gate declares no `allowed_groups`, so `biber` passes the proxy — but the role provisions only the administrator account ([`tasks/03_admin.yml`](./tasks/03_admin.yml)), so the header carries a username Snipe-IT does not know and the visitor falls back to the native login form.
+[`templates/playwright.env.j2`](./templates/playwright.env.j2) therefore declares `PERSONA_BIBER_BLOCKED=true`, while the `administrator` persona stays live (`PERSONA_ADMINISTRATOR_BLOCKED=false`) and exercises the full bridge end to end.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

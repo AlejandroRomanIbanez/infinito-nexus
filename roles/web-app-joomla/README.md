@@ -132,6 +132,12 @@ Until the biber path is added:
 - [Joomla Official Website](https://www.joomla.org/)
 - [Joomla Documentation](https://docs.joomla.org/)
 
+## Persona contract opt-outs
+
+The shared `biber` and `administrator` persona journeys are opted out via `PERSONA_BIBER_BLOCKED` / `PERSONA_ADMINISTRATOR_BLOCKED` in `templates/playwright.env.j2`.
+Joomla's site template ships no login/logout module, and `plg_system_keycloak` exposes sign-out only as the route `index.php?option=keycloak&task=logout` (`files/joomla-oidc-plugin/plg_system_keycloak/src/Extension/Keycloak.php`, `handleLogout`) rather than as a rendered control, so the persona's mandatory in-app logout click has no target and navigating a logout URL directly is forbidden by the contract.
+The OIDC handshake itself, the LDAP variant and the `/administrator?fallback=local` hatch are covered by `files/playwright/test-oidc-login.js`, `test-ldap-login.js` and `test-oidc-fallback.js`.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

@@ -193,6 +193,10 @@ A detailed documentation for the use and administration of Nextcloud on Infinito
 - [OIDC Login Plugin (pulsejet)](https://github.com/pulsejet/nextcloud-oidc-login)
 - [Sociallogin Plugin (Official)](https://apps.nextcloud.com/apps/sociallogin)
 
+## Persona contract opt-outs
+
+The shared `biber` and `administrator` persona helpers are declared blocked in [templates/playwright.env.j2](./templates/playwright.env.j2). Nextcloud presents three different login surfaces depending on the variant (native, `oidc_login`, `sociallogin`), the native administrator authenticates with the role-local `credentials.administrator_password` rather than the Keycloak secret, and the `#firstrunwizard` modal intercepts the user-menu click the generic logout depends on. Both personas are therefore driven by the role's own login specs — `test-login-admin-native.js`, `test-login-admin-oidc.js`, `test-login-biber-oidc.js` and `test-login-biber-ldap.js` under [files/playwright](./files/playwright/) — which carry the flavor switch, the modal dismissal and the login retry the shared helper lacks.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

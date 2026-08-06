@@ -121,6 +121,12 @@ docker run --rm -it \
 * LiteLLM: [litellm.ai](https://www.litellm.ai)
 * Ollama: [ollama.com](https://ollama.com)
 
+## Persona contract opt-outs
+
+The shared `biber` and `administrator` persona journeys are opted out via `PERSONA_BIBER_BLOCKED` / `PERSONA_ADMINISTRATOR_BLOCKED` in `templates/playwright.env.j2`.
+Flowise has no in-app OIDC adapter: SSO is an oauth2-proxy sidecar (`services.sso.flavor: oauth2`), and behind that gate Flowise still presents its own sign-in form for the single instance account seeded from `FLOWISE_USERNAME` / `FLOWISE_PASSWORD` in `templates/env.j2`.
+`biber` has no Flowise identity at all, and the shared helpers only drive Keycloak forms while `services.sso` is enabled, so neither persona can reach an authenticated Flowise surface; the OIDC gate itself is covered by `files/playwright/test-oidc-login.js`.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

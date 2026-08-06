@@ -125,6 +125,11 @@ docker run --rm -it \
 
 *This role is licensed under the [Infinito.Nexus Community License (Non-Commercial)](https://s.infinito.nexus/license).*
 
+## Persona contract opt-outs
+
+[`meta/services.yml`](./meta/services.yml) declares no `sso` service, so this role is never registered as a Keycloak client. Its only HTTP surface is the anonymous logout conductor and the `/logout` endpoints proxied by [`templates/logout-proxy.conf.j2`](./templates/logout-proxy.conf.j2) — there is no login form, no account and no session to end.
+[`templates/playwright.env.j2`](./templates/playwright.env.j2) therefore declares `PERSONA_BIBER_BLOCKED=true` and `PERSONA_ADMINISTRATOR_BLOCKED=true`. The service's real coverage is per consumer: [`files/playwright/playwright.spec.js`](./files/playwright/playwright.spec.js) parameterises the injected logout JS over `roles_with_service('logout')`.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

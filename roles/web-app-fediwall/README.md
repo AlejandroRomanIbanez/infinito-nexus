@@ -98,6 +98,12 @@ docker run --rm -it \
 - [Fediwall GitHub Repository](https://github.com/defnull/fediwall)
 - [Public demo: fediwall.social](https://fediwall.social/)
 
+## Persona contract opt-outs
+
+Both authenticated Playwright personas are blocked. Fediwall is a read-only public wall: `meta/services.yml` pins `sso.enabled: false` and `logout.enabled: false`, and the container is a plain nginx image serving the pre-built upstream tarball. There is no account model, no login form and no logout control.
+
+Wall content is baked at deploy time from `services.fediwall.walls`, so administration happens in Ansible rather than in an in-app admin panel. The persona-facing coverage this role does carry lives in the cross-fediverse scenarios that post on a Mastodon or Friendica sibling and assert the post appears on the wall.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

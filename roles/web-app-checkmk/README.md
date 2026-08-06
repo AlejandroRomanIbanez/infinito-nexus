@@ -116,6 +116,12 @@ docker run --rm -it \
 - [HTTP header authentication (Werk #7819)](https://checkmk.com/werk/7819)
 - [Checkmk GitHub Repository](https://github.com/Checkmk/checkmk)
 
+## Persona contract opt-outs
+
+Both authenticated Playwright personas are blocked while `services.sso.enabled` is false. Without SSO, `files/configure-sso.sh` skips the `auth_by_http_header` snippet, so the OMD site falls back to its own login form.
+
+The only account that form accepts is Checkmk's built-in `cmkadmin`, whose password comes from `credentials.cmk_password` (`CMK_PASSWORD` in the container env) — a site-local secret unrelated to the Keycloak credentials the personas use. No Checkmk user is provisioned for a non-admin identity at all. With SSO enabled both personas run through the header-auth chain.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

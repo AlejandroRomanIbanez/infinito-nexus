@@ -110,6 +110,10 @@ docker run --rm -it \
 * [Official Pixelfed website](https://pixelfed.org/)
 * [Pixelfed GitHub repository](https://github.com/pixelfed/pixelfed)
 
+## Persona contract opt-outs
+
+The shared `biber` and `administrator` persona helpers are declared blocked in [templates/playwright.env.j2](./templates/playwright.env.j2). Pixelfed's login id is the account e-mail rather than the Keycloak username, and the artisan-bootstrapped administrator name is reserved, so pixelfed's first-time OIDC registration cannot mint it either. `biber` additionally needs his Keycloak e-mail rewritten to a resolvable domain through the Keycloak admin API before the first OIDC login, because pixelfed's `dns,spoof` validator rejects `.example` addresses. Both setups live in [files/playwright/_shared.js](./files/playwright/_shared.js) and drive the dedicated login specs in [files/playwright](./files/playwright/).
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

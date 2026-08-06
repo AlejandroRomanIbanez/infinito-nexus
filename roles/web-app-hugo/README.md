@@ -122,6 +122,12 @@ V1 supports **exactly one canonical domain** per role deploy. The play asserts t
 - [Hugo documentation source: gohugoio/hugoDocs](https://github.com/gohugoio/hugoDocs)
 - [hugomods/hugo Docker images](https://hub.docker.com/r/hugomods/hugo)
 
+## Persona contract opt-outs
+
+The shared `biber` and `administrator` persona journeys are opted out via `PERSONA_BIBER_BLOCKED` / `PERSONA_ADMINISTRATOR_BLOCKED` in `templates/playwright.env.j2`.
+web-app-hugo serves a statically built site: `services.sso` is hard-disabled in `meta/services.yml`, the container is a Hugo build baked into nginx (`templates/compose.yml.j2`), and the Playwright env file renders no `ADMIN_*` / `BIBER_*` credentials.
+There is no session, no admin surface and no logout control to drive, so the `guest` persona plus the reachability, CSP and rendered-HTML assertions are the complete contract for this role.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

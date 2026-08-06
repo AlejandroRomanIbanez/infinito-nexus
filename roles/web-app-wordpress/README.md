@@ -163,6 +163,11 @@ The front-page CSP + canonical-domain baseline is ungated and always runs.
 - [WordPress Plugin Repository](https://wordpress.org/plugins/)
 - [WP Discourse Plugin](https://wordpress.org/plugins/wp-discourse/)
 
+## Persona contract opt-outs
+
+WordPress's canonical surface is the public blog front page. The OIDC round-trip fires on `/wp-login.php`, which the `daggerhart-openid-connect-generic` addon auto-redirects to Keycloak (`login_type: auto`, see [`meta/addons/daggerhart-openid-connect-generic.yml`](./meta/addons/daggerhart-openid-connect-generic.yml)); the shared personas enter at the site root and never visit that path.
+[`templates/playwright.env.j2`](./templates/playwright.env.j2) therefore declares `PERSONA_BIBER_BLOCKED=true` and `PERSONA_ADMINISTRATOR_BLOCKED=true`. The journeys themselves are not dropped: `test-admin-oidc-login.js` drives the admin login, logout and landing assertion, and `test-rbac-roles.js` drives the Keycloak-group-to-WordPress-role mapping over the same entry point.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

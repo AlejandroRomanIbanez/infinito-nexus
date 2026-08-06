@@ -126,6 +126,12 @@ docker run --rm -it \
 
 - [Matomo Official Website](https://matomo.org/)
 
+## Persona contract opt-outs
+
+This role declares `PERSONA_ADMINISTRATOR_BLOCKED` and `PERSONA_BIBER_BLOCKED` in `templates/playwright.env.j2`. `meta/services.yml` pins `sso.enabled: false` — Matomo holds no Keycloak client, so the OIDC round-trip the shared helper waits for never happens; the administrator signs in on Matomo's native `index.php?module=Login` form against the local superuser configured in `vars/main.yml`. Biber is blocked for a different reason: the role provisions exactly one Matomo account, that same superuser, and has no per-user provisioning, so biber has no Matomo identity at all.
+
+The administrator journey is covered bespoke in `files/playwright/auth.spec.js`, which drives the native form and the `module=Login&action=logout` sign-out. The same file owns the deny-probe proving biber cannot reach the admin surface — the provider-side assertion the persona helpers deliberately no longer duplicate. The path back to the generic personas is a Keycloak client for Matomo plus group-driven user provisioning.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

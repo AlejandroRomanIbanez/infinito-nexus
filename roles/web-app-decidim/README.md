@@ -130,6 +130,14 @@ Key settings in `meta/services.yml` and `meta/server.yml`:
 - [Decidim Docker image](https://ghcr.io/decidim/decidim)
 - [omniauth_openid_connect](https://github.com/omniauth/omniauth_openid_connect)
 
+## Persona contract opt-outs
+
+Both authenticated Playwright personas are blocked, and both are covered by bespoke tests in `files/playwright/playwright.spec.js` instead.
+
+The `administrator` persona is blocked because Decidim's admin is a Devise account seeded by `files/ruby/ensure_admin_user.rb` and Devise signs in by e-mail address. The role's Playwright env therefore exposes `ADMIN_EMAIL` and no `ADMIN_USERNAME`, which is the variable the shared admin helper reads.
+
+The `biber` persona logs in through OIDC without trouble; what it cannot do is log out. Decidim's sign-out is a `data-method` link inside the account dropdown, so the role's own tests navigate to `/users/sign_out` directly rather than clicking a button the shared helper could find.
+
 ## Credits
 
 Implemented by **[Prageeth Panicker](https://github.com/pragepani)**.

@@ -107,6 +107,10 @@ RBAC is not feasible beyond the group gate: Postmarks has no in-app authorisatio
 - [Postmarks (GitHub)](https://github.com/ckolderup/postmarks)
 - [ActivityPub (W3C Recommendation)](https://www.w3.org/TR/activitypub/)
 
+## Persona contract opt-outs
+
+The persona flags are declared in [templates/playwright.env.j2](./templates/playwright.env.j2). `administrator` is blocked only in the `sso: false` variants: as described above, Postmarks' sole native credential is the single shared `ADMIN_KEY` password form, which is not the Keycloak administrator secret the persona types, so without the trusted-header bridge there is no admin login to drive. `biber` is blocked in every variant — the oauth2-proxy admits only the application's administrator RBAC group and the bridge re-checks `X-Forwarded-Groups`, so `biber` is denied before Postmarks is reached, and with SSO off the only credential left belongs to no user account.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

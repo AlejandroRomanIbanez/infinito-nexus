@@ -153,6 +153,12 @@ docker run --rm -it \
 - [Mailu GitHub repository](https://github.com/Mailu/Mailu)
 - [Gist by marienfressinaud](https://gist.github.com/marienfressinaud/f284a59b18aad395eb0de2d22836ae6b)
 
+## Persona contract opt-outs
+
+This role declares `PERSONA_ADMINISTRATOR_BLOCKED` and `PERSONA_BIBER_BLOCKED` in `templates/playwright.env.j2`. Mailu's OIDC fork interposes its own `/sso/login` page that carries a local login form next to an `openid-connect/auth` link, while the authenticated Roundcube surface carries an `openid-connect/logout` link; the shared helper matches login controls by accessible name and cannot tell the two apart, so it clicks logout. The administrator persona is blocked for a second, independent reason: Mailu's admin surface is a separate Flask app mounted at `WEB_ADMIN=/admin` (`templates/env.j2`), not the `/webmail/` surface the OIDC callback lands on.
+
+Both journeys are covered bespoke in `files/playwright/playwright.spec.js`, which targets the `openid-connect/auth` href explicitly, opens `/admin`, and signs out at `/admin/ui/logout`; a second scenario drives the biber-to-administrator mail round-trip across two browser contexts. The path back to the generic personas is a distinguishable login control on Mailu's SSO page.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

@@ -99,6 +99,12 @@ docker run --rm -it \
 
 - [FusionDirectory Official Website](https://www.fusiondirectory.org/)
 
+## Persona contract opt-outs
+
+The shared `biber` and `administrator` persona journeys are opted out via `PERSONA_BIBER_BLOCKED` / `PERSONA_ADMINISTRATOR_BLOCKED` in `templates/playwright.env.j2`.
+The oauth2-proxy sidecar only gates the vhost — FusionDirectory keeps its own LDAP-bind login behind it, which the role's OIDC scenario in `files/playwright/playwright.spec.js` asserts by expecting a "Sign in" button to still be visible after the Keycloak round-trip.
+`tasks/main.yml` provisions no FusionDirectory account, so the Keycloak identity maps to no directory session the shared helpers could carry through to an in-app logout.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.
