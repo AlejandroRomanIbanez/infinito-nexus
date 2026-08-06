@@ -15,6 +15,7 @@ edge, a fail-fast guard pointing at the wrong predecessor.
 from __future__ import annotations
 
 import unittest
+from itertools import pairwise
 
 from tests.utils import PROJECT_ROOT
 from utils.cache.yaml import load_yaml
@@ -71,11 +72,9 @@ class TestLayoutsAreMutuallyExclusive(unittest.TestCase):
 class TestSerialChain(unittest.TestCase):
     def test_each_mode_waits_for_its_predecessor(self) -> None:
         for line, suffix in LINES.items():
-            for predecessor, successor in zip(CHAIN, CHAIN[1:], strict=False):
+            for predecessor, successor in pairwise(CHAIN):
                 with self.subTest(line=line, job=successor):
-                    self.assertIn(
-                        f"{predecessor}{suffix}", _needs(successor, suffix)
-                    )
+                    self.assertIn(f"{predecessor}{suffix}", _needs(successor, suffix))
 
     def test_swarm_leads_and_waits_for_no_decision(self) -> None:
         """It runs first in either layout, so making it wait for the
@@ -86,13 +85,11 @@ class TestSerialChain(unittest.TestCase):
 
     def test_fail_fast_guards_the_immediate_predecessor(self) -> None:
         for line, suffix in LINES.items():
-            for predecessor, successor in zip(CHAIN, CHAIN[1:], strict=False):
+            for predecessor, successor in pairwise(CHAIN):
                 with self.subTest(line=line, job=successor):
                     condition = _condition(successor, suffix)
                     self.assertIn("inputs.mode_fail_fast", condition)
-                    self.assertIn(
-                        f"needs.{predecessor}{suffix}.result", condition
-                    )
+                    self.assertIn(f"needs.{predecessor}{suffix}.result", condition)
 
 
 class TestRegularLineWaitsForPriority(unittest.TestCase):
