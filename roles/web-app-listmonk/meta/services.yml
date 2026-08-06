@@ -1,4 +1,5 @@
 ---
+# nocheck: seaweedfs-playwright — the S3 upload backend serves the admin Media view only, and no persona scenario opens it, so nothing observes a bucket write
 asset:
   bond: 1
   enabled: "{{ 'web-svc-asset' in group_names }}"

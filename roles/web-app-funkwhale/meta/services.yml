@@ -1,4 +1,5 @@
 ---
+# nocheck: seaweedfs-playwright — Funkwhale writes to the bucket only through the audio-library import flow, which needs a persona-owned library and a real track upload the role does not provision; PROXY_MEDIA=true serves every read back through the API, so the bucket has no persona-reachable surface
 funkwhale:
   modes:
     compose:

@@ -33,6 +33,7 @@ mariadb:
   bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
+# nocheck: playwright-service-flag: shared provider entity; the app itself is covered by this role's own Playwright spec
 suitecrm:
   healthcheck:
     flavor: curl

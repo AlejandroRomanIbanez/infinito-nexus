@@ -1,5 +1,5 @@
 ---
-# nocheck: seaweedfs-playwright — Magento remote storage is wired into bin/magento setup:install at first boot; the role ships no templates/playwright.env.j2 (not Playwright-enabled) so the gated upload scenario cannot run here
+# nocheck: seaweedfs-playwright — Magento remote storage is wired into bin/magento setup:install at first boot and read back through the same PHP process, so the bucket has no persona-reachable upload surface
 logout:
   bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
@@ -121,7 +121,7 @@ magento:
     service_key: nginx
   run_after:
     - web-app-keycloak
-  lifecycle: pre-alpha
+  lifecycle: alpha
   min_storage: 10GB
   cpus: "1.0"
   mem_reservation: 1g

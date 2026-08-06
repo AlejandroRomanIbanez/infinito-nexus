@@ -1,5 +1,5 @@
 ---
-# nocheck: seaweedfs-playwright - Shopware ships no templates/playwright.env.j2; the object-store upload is covered by the Flysystem amazon-s3 public/private/theme/sitemap config, not a Playwright surface
+# nocheck: seaweedfs-playwright - the object store is reached only through the Flysystem amazon-s3 public/private/theme/sitemap adapters; Shopware exposes no object-browser surface to script
 logout:
   bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"

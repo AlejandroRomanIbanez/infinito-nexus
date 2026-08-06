@@ -1,5 +1,5 @@
 ---
-# nocheck: seaweedfs-playwright — GitLab ships no templates/playwright.env.j2 and object storage is server-side consolidated storage with no isolated upload surface
+# nocheck: seaweedfs-playwright — object storage is server-side consolidated storage for LFS, artifacts and uploads, with no isolated upload surface to drive
 sso:
   bond: 1
   enabled: "{{ 'web-app-keycloak' in group_names }}"
@@ -37,6 +37,7 @@ postgres:
   bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
+# nocheck: playwright-service-flag — self-provider
 gitlab:
   modes:
     compose:
