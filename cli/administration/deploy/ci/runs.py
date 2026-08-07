@@ -10,9 +10,11 @@ Deploy jobs are matched by the compose/swarm/host glyph (from the symbol
 glossary, the single source of truth) their test-deploy-{compose,swarm,host}.yml
 matrix titles them with -- NOT the words "Compose"/"Swarm"/"Host", which no
 real job carries (matching those made ``--failed swarm`` silently find
-nothing). The orchestrator prepends a
-"caller / " prefix and GitHub appends a " <variant>" shard suffix (e.g.
-" 0,1"); both are tolerated.
+nothing). What follows the glyph is the role's display name
+(``utils.roles.display``), decoded back to the role id; a bare role id from a
+run that predates the display names decodes just as well. The orchestrator
+prepends a "caller / " prefix and the shard suffix (e.g. " 0,1") rides along
+in the display name; both are tolerated.
 """
 
 from __future__ import annotations
@@ -24,6 +26,7 @@ import sys
 
 from utils.distros import distro_names
 from utils.github import run_name
+from utils.roles.display import display_names
 from utils.symbol_glossary import to_emoji
 
 PASS = "✅"  # noqa: S105  emoji glyph, not a credential
@@ -52,10 +55,7 @@ MODE_GLYPHS = {
 }
 _GLYPH_MODE = {glyph: mode for mode, glyph in MODE_GLYPHS.items()}
 
-_JOB_RE = re.compile(
-    rf"({'|'.join(map(re.escape, MODE_GLYPHS.values()))})"
-    r"\s+([a-z0-9]+(?:-[a-z0-9]+)+)(?:\s+[\d,]+)?\s*$"
-)
+_JOB_RE = re.compile(rf"({'|'.join(map(re.escape, MODE_GLYPHS.values()))})\s*(.+?)\s*$")
 
 
 def _effective(job: dict) -> str:
@@ -79,17 +79,20 @@ def cell(state: str) -> str:
 
 def _iter_deploy_jobs(jobs: list[dict]):
     """Yield ``(app, mode, job)`` for every compose/swarm deploy job."""
+    codec = display_names()
     for job in jobs:
         match = _JOB_RE.search(str(job.get("name", "")))
         if not match:
             continue
-        yield match.group(2), _GLYPH_MODE[match.group(1)], job
+        app = codec.decode(match.group(2))
+        if app is not None:
+            yield app, _GLYPH_MODE[match.group(1)], job
 
 
 def app_of_job(name: str) -> str | None:
     """The role id a deploy job ``name`` encodes, or None if it is not one."""
     match = _JOB_RE.search(name)
-    return match.group(2) if match else None
+    return display_names().decode(match.group(2)) if match else None
 
 
 _SEVERITY = {"success": 0, "running": 1, "failure": 3}
@@ -256,7 +259,11 @@ def untriggered_priority(title: str, statuses: dict[str, dict[str, str]]) -> lis
     neither green nor red, it simply never ran. Carrying it into the retrigger
     is the only way it ever gets deployed.
     """
-    named = run_name.value_from_title(title, "priority").split()
+    codec = display_names()
+    named = [
+        codec.decode(name) or name
+        for name in run_name.value_from_title(title, "priority").split()
+    ]
     return sorted(role for role in named if role not in statuses)
 
 
@@ -342,12 +349,18 @@ def dispatch_workflow(
     repo: str | None = None,
 ) -> None:
     """Dispatch *workflow*, carrying *config* (see :func:`config_from_title`)
-    over verbatim. An input left out keeps the workflow's own default."""
+    over verbatim. An input left out keeps the workflow's own default.
+
+    The role selections go out as display names (``utils.roles.display``), so
+    the run title reads them back the way the deploy jobs are titled. The
+    workflow decodes them again before any consumer sees a role id.
+    """
+    codec = display_names()
     args = ["workflow", "run", workflow, "--ref", ref]
     if whitelist:
-        args += ["-f", f"whitelist={whitelist}"]
+        args += ["-f", f"whitelist={codec.encode_list(whitelist)}"]
     if priority:
-        args += ["-f", f"priority={priority}"]
+        args += ["-f", f"priority={codec.encode_list(priority)}"]
     args += [
         arg
         for name, value in (config or {}).items()

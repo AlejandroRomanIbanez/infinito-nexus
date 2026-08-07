@@ -39,6 +39,8 @@ postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 semaphore:
+  # nocheck: single-replica OSS semaphore is single-instance (HA node registry, schedule dedup and orphan cleaner are pro_impl stubs returning nil); every replica also re-runs `semaphore setup` + db.Migrate on start, and the migration loser deletes the winner's ledger row, poisoning the schema permanently
+  replicas: 1
   healthcheck:
     flavor: wget
     path: api/ping
