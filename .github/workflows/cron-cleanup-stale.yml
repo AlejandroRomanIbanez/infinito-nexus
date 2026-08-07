@@ -1,4 +1,4 @@
-name: "🧹 Cleanup: Stale Repository Data"
+name: "⏰ Cleanup: Stale Repository Data"
 
 on:
   schedule:

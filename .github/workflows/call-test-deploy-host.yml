@@ -1,4 +1,4 @@
-name: "📦 Test: Deploy (compose)"
+name: "💻 Test: Deploy (host)"
 
 on:
   workflow_call:
@@ -32,6 +32,11 @@ on:
         required: false
         type: string
         default: ""
+      exclude_compose_covered:
+        description: "Drop roles the same run's compose line already deploys"
+        required: false
+        type: string
+        default: "false"
 
 permissions:
   contents: read
@@ -45,13 +50,14 @@ env:
   INFINITO_GHCR_MIRROR_PREFIX: mirror
   INFINITO_PLAYWRIGHT_KEEP: ${{ vars.INFINITO_PLAYWRIGHT_KEEP }}
   INFINITO_APP_DISCOVERY_RUNNER: host
-  INFINITO_DEPLOY_MODE: compose
+  INFINITO_DEPLOY_MODE: host
   INFINITO_DOCKER_FILESYSTEM_ALLOWED: ${{ inputs.filesystem }}
   INFINITO_LIFECYCLES: ${{ inputs.lifecycles }}
   INFINITO_BLACKLIST: ${{ inputs.blacklist }}
+  INFINITO_HOST_EXCLUDE_COMPOSE: ${{ inputs.exclude_compose_covered }}
 jobs:
   discover:
-    name: 🪼 Compose (${{ inputs.distros }})${{ inputs.marker }}
+    name: 💻 Host (${{ inputs.distros }})${{ inputs.marker }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
@@ -94,7 +100,7 @@ jobs:
           INPUT_WHITELIST: ${{ inputs.whitelist }}
         run: ./scripts/github/resolve/effective_whitelist.sh
 
-      - name: 🔍 Discover apps
+      - name: 🔍 Discover host roles
         id: discover
         shell: bash
         env:
@@ -109,16 +115,21 @@ jobs:
             --distros "${{ inputs.distros }}" \
             --whitelist "${{ steps.resolve_wl.outputs.whitelist }}" \
             --priority "${{ inputs.blacklist }}" \
-            --modes "compose" \
+            --modes "host" \
             --lifecycles "${{ inputs.lifecycles }}" \
             >> "$GITHUB_STEP_SUMMARY"
 
-  compose:
-    name: 🐳${{ matrix.label }}
+  host:
+    name: 💻${{ matrix.label }}
     if: needs.discover.outputs.apps != '' && needs.discover.outputs.apps != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 355
     needs: discover
+
+    concurrency:
+      group: "infinito-deploy-host-${{ matrix.apps }}#${{ matrix.variant_slug }}"
+      cancel-in-progress: false
+      queue: max
 
     strategy:
       fail-fast: false
@@ -162,7 +173,7 @@ jobs:
         shell: bash
         run: ./scripts/install/apt.sh jq
 
-      - name: 🚀 Deploy app
+      - name: 🚀 Deploy host role
         timeout-minutes: 350
         shell: bash
         env:
@@ -195,7 +206,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: role-runtimes-${{ matrix.apps }}
+          name: role-runtimes-host-${{ matrix.apps }}
           path: /tmp/role-runtimes-${{ matrix.apps }}.csv
           if-no-files-found: ignore
 
@@ -209,7 +220,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: rescue-diagnostics-compose-${{ matrix.apps }}${{ matrix.variant_slug && format('-{0}', matrix.variant_slug) || '' }}
+          name: rescue-diagnostics-host-${{ matrix.apps }}${{ matrix.variant_slug && format('-{0}', matrix.variant_slug) || '' }}
           path: ${{ env.INFINITO_RESCUE_DIAGNOSTICS_BASE }}/
           if-no-files-found: ignore
 
@@ -224,24 +235,6 @@ jobs:
         if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@v7
         with:
-          name: inventory-compose-${{ matrix.apps }}
+          name: inventory-host-${{ matrix.apps }}
           path: /tmp/inventory-compose-${{ matrix.apps }}.zip
-          if-no-files-found: ignore
-
-      - name: 📋 Playwright step summary
-        if: always()
-        shell: bash
-        run: |
-          set -euo pipefail
-          python3 utils/github/playwright_summary.py \
-            /tmp/playwright-artifacts \
-            "${{ matrix.apps }}" \
-            >> "$GITHUB_STEP_SUMMARY"
-
-      - name: ⬆️ Upload Playwright artifacts
-        if: always()
-        uses: actions/upload-artifact@v7.0.1
-        with:
-          name: playwright-compose-${{ matrix.apps }}${{ matrix.variant_slug && format('-{0}', matrix.variant_slug) || '' }}
-          path: /tmp/playwright-artifacts/
           if-no-files-found: ignore
