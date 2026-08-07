@@ -54,9 +54,11 @@ def missing_references() -> list[str]:
             continue
         rel = path.relative_to(PROJECT_ROOT).as_posix()
         for number, line in enumerate(lines, 1):
-            for name in _REFERENCE_RE.findall(line):
-                if name not in known:
-                    offenders.append(f"{rel}:{number}: {name}")
+            offenders.extend(
+                f"{rel}:{number}: {name}"
+                for name in _REFERENCE_RE.findall(line)
+                if name not in known
+            )
     return offenders
 
 
