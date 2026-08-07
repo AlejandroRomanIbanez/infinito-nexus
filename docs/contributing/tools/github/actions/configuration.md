@@ -13,9 +13,9 @@ Repository variables are set under **Settings → Secrets and variables → Acti
 | `CI_RUN_ON_MAIN` | [entry-push-latest.yml](../../../../../.github/workflows/entry-push-latest.yml) | Pushes to `main` skip CI | `true` to run CI on `main` pushes too |
 | `CI_ENABLE_AUTO_UPDATES` | [cron-update.yml](../../../../../.github/workflows/cron-update.yml), [entry-pr-open-dependabot-close.yml](../../../../../.github/workflows/entry-pr-open-dependabot-close.yml) | Update jobs skipped; Dependabot PRs auto-closed | `true` to allow update PRs (workflow-driven and Dependabot) |
 | `INFINITO_PLAYWRIGHT_KEEP` | [call-test-deploy-compose.yml](../../../../../.github/workflows/call-test-deploy-compose.yml) | Playwright keeps trace, screenshot and video only when a test fails | `true` to keep them for every test (passing runs included) |
-| `CI_RERUN_INTERVAL_MINUTES` | [rerun-cancelled.yml](../../../../../.github/workflows/cron-rerun-cancelled.yml) | Sweeps for cancelled runs every full hour | Minutes between two sweeps, rounded up to whole hours |
-| `CI_RERUN_MAX_ATTEMPTS` | [rerun-cancelled.yml](../../../../../.github/workflows/cron-rerun-cancelled.yml) | Revives a run however often it is cancelled | Attempt count at which a run is left alone; `0` for no ceiling |
-| `CI_RERUN_MAX_AGE_HOURS` | [rerun-cancelled.yml](../../../../../.github/workflows/cron-rerun-cancelled.yml) | Ignores runs untouched for more than 24 hours | Age in hours beyond which a cancelled run is left alone |
+| `CI_RERUN_INTERVAL_MINUTES` | [cron-rerun-cancelled.yml](../../../../../.github/workflows/cron-rerun-cancelled.yml) | Sweeps for cancelled runs every full hour | Minutes between two sweeps, rounded up to whole hours |
+| `CI_RERUN_MAX_ATTEMPTS` | [cron-rerun-cancelled.yml](../../../../../.github/workflows/cron-rerun-cancelled.yml) | Revives a run however often it is cancelled | Attempt count at which a run is left alone; `0` for no ceiling |
+| `CI_RERUN_MAX_AGE_HOURS` | [cron-rerun-cancelled.yml](../../../../../.github/workflows/cron-rerun-cancelled.yml) | Ignores runs untouched for more than 24 hours | Age in hours beyond which a cancelled run is left alone |
 
 ## `CI_CANCEL_IN_PROGRESS` 🛑
 
@@ -189,7 +189,7 @@ INFINITO_PLAYWRIGHT_KEEP: ${{ vars.INFINITO_PLAYWRIGHT_KEEP }}
 
 ## `CI_RERUN_*` 🔁
 
-Three variables tune [rerun-cancelled.yml](../../../../../.github/workflows/cron-rerun-cancelled.yml), the sweep that restarts the failed jobs of a branch whose latest run was cancelled.
+Three variables tune [cron-rerun-cancelled.yml](../../../../../.github/workflows/cron-rerun-cancelled.yml), the sweep that restarts the failed jobs of a branch whose latest run was cancelled.
 
 | Variable | Unset | Effect when set |
 |---|---|---|
