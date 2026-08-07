@@ -1,6 +1,6 @@
-"""Trigger the manual CI run (entry-manual.yml) for the current branch.
+"""Trigger the manual CI run (entry-manual-steer.yml) for the current branch.
 
-entry-manual.yml reads the "__ALL__" whitelist sentinel as "force a full
+entry-manual-steer.yml reads the "__ALL__" whitelist sentinel as "force a full
 deploy across all roles".
 """
 
@@ -11,7 +11,7 @@ import sys
 
 from cli.administration.deploy.ci import runs
 
-_WORKFLOW = "entry-manual.yml"
+_WORKFLOW = "entry-manual-steer.yml"
 _ALL = "__ALL__"
 
 

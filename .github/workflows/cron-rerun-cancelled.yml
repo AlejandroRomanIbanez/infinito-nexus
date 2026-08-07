@@ -1,4 +1,4 @@
-name: "🔁 Rerun: Cancelled Branch Runs"
+name: "⏰ Rerun: Cancelled Branch Runs"
 
 concurrency:
   group: rerun-cancelled
