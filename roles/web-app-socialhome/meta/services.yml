@@ -23,6 +23,7 @@ socialhome:
     internal:
       http: 8099
   lifecycle: alpha
+  # nocheck: min-storage-headroom  Reason: the SQLite database plus the household media volume, whose cap SH_MAX_STORAGE_BYTES sets to 4 GiB
   min_storage: "5GB"
   cpus: "0.5"
   mem_reservation: "256m"
