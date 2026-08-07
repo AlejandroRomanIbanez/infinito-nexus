@@ -8,11 +8,8 @@ socialhome:
       enabled: false
     compose:
       enabled: true
-    # Exception: the orchestrator chains swarm -> compose -> host under
-    # mode_fail_fast, so a red swarm job here skips 92 unrelated jobs. Flip to
-    # true once compose has been green once.
     swarm:
-      enabled: false
+      enabled: true
   # nocheck: default-placement-manager  embedded sqlite in a node-local volume; no clustered storage
   placement: manager
   image: ghcr.io/social-home-io/socialhome
