@@ -63,7 +63,7 @@ class TestTriggerMain(unittest.TestCase):
         rc, calls = self._run([])
         self.assertEqual(rc, 0)
         self.assertEqual(
-            calls, [("entry-manual.yml", "feature/x", "__ALL__", "", {}, "o/r")]
+            calls, [("entry-manual-steer.yml", "feature/x", "__ALL__", "", {}, "o/r")]
         )
 
     def test_apps_explicit_list(self) -> None:

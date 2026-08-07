@@ -224,8 +224,8 @@ class TestConfigFromTitle(unittest.TestCase):
     """A retrigger has to reproduce the source run's configuration.
 
     The REST API answers ``inputs: null`` for a finished workflow_dispatch, so
-    the run title entry-manual.yml builds is the only record of it. Guessing
-    wrong is silent: entry-manual.yml defaults to debian alone, so a failure
+    the run title entry-manual-steer.yml builds is the only record of it. Guessing
+    wrong is silent: entry-manual-steer.yml defaults to debian alone, so a failure
     that only reproduces on centos comes back green.
     """
 
