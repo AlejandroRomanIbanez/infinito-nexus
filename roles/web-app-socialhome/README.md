@@ -26,7 +26,7 @@ flowchart LR
         dep_web_svc_coturn["web-svc-coturn 🐳🐝"]
         dep_web_svc_logout["web-svc-logout 🐳🐝"]
     end
-    subgraph role [web-app-socialhome 🐳🐝]
+    subgraph role [web-app-socialhome 🐳]
         svc_socialhome["socialhome"]
         svc_coturn["coturn"]
         svc_prometheus["prometheus"]
