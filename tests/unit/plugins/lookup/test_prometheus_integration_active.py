@@ -84,7 +84,6 @@ class TestPrometheusIntegrationActivePrometheusVhost(unittest.TestCase):
         self.assertTrue(result)
 
     def test_true_for_prometheus_vhost_even_without_service_dep(self):
-        # web-app-prometheus doesn't need its own service dep — it IS the host.
         apps = {"web-app-prometheus": {}}
         result = _run(apps, "web-app-prometheus", ["web-app-prometheus"])
         self.assertTrue(result)

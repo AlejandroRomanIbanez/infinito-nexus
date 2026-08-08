@@ -19,8 +19,6 @@ from . import PROJECT_ROOT
 
 
 def _load_module(rel_path: str, name: str):
-    # Mirror test_sso_oidc_plugin.py's defensive sys.modules eviction so
-    # sibling tests cannot leak a stubbed config module into this load.
     for key in (
         "utils.roles.applications.config",
         "utils.roles.applications",
@@ -88,8 +86,6 @@ class SsoLookupTests(unittest.TestCase):
             )
             return lk.run(terms, variables={"applications": applications})
 
-    # --- term parsing ----------------------------------------------------
-
     def test_zero_terms_raises(self):
         with self.assertRaises(AnsibleError):
             self._run(_apps(), [])
@@ -107,10 +103,7 @@ class SsoLookupTests(unittest.TestCase):
             self._run(_apps(enabled=True), ["web-app-x", "bogus_key"])
         self.assertIn("unknown want_path", str(ctx.exception))
 
-    # --- want-path resolution -------------------------------------------
-
     def test_default_returns_full_dict(self):
-        # No want-path → entire resolver dict.
         result = self._run(_apps(enabled=True, flavor="oauth2"), ["web-app-x"])
         self.assertEqual(len(result), 1)
         payload = result[0]
@@ -182,12 +175,10 @@ class SsoLookupTests(unittest.TestCase):
         self.assertEqual(result, [groups])
 
     def test_missing_app_returns_defaults(self):
-        # No app entry → resolver gives defaults; want='is_enabled' → False.
         result = self._run({}, ["web-app-x", "is_enabled"])
         self.assertEqual(result, [False])
 
     def test_empty_want_path_treated_as_all(self):
-        # Whitespace-only want collapses to 'all' per the docstring.
         result = self._run(_apps(enabled=True), ["web-app-x", "  "])
         self.assertEqual(len(result), 1)
         self.assertIsInstance(result[0], dict)

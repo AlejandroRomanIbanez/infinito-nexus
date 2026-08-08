@@ -91,7 +91,6 @@ class BuildCmdPostgresTests(unittest.TestCase):
         self.assertEqual(cmd[cmd.index("-U") + 1], "peertube")
         self.assertEqual(cmd[cmd.index("-d") + 1], "peertube")
         self.assertIn("ON_ERROR_STOP=1", cmd)
-        # Password must NEVER appear in argv (only via env passthrough).
         self.assertNotIn("s3cret", cmd)
 
     def test_postgres_expect_rows_adds_tuples_only_flag(self):
@@ -142,7 +141,6 @@ class ParseRowsTests(unittest.TestCase):
         self.assertEqual(_DB_MOD._parse_rows("", db_type="postgres"), [])
 
     def test_blank_line_is_skipped_no_spurious_row(self):
-        # `SELECT to_regclass('public.nope')` returns NULL → blank line under -tA.
         self.assertEqual(_DB_MOD._parse_rows("\n", db_type="postgres"), [])
 
 
@@ -163,7 +161,6 @@ class IsReadOnlyTests(unittest.TestCase):
         self.assertFalse(_DB_MOD._is_read_only("UPDATE u SET x = 1;"))
 
     def test_with_cte_is_treated_as_read_only(self):
-        # WITH is a CTE prefix — most commonly used in SELECT chains; safe default.
         self.assertTrue(_DB_MOD._is_read_only("WITH x AS (SELECT 1) SELECT * FROM x;"))
 
 
@@ -205,7 +202,6 @@ class EscapeValueTests(unittest.TestCase):
         self.assertEqual(_DB_MOD._escape_value("alice", "postgres"), "'alice'")
 
     def test_postgres_string_doubles_inner_single_quotes(self):
-        # canonical postgres-style escape; no E-prefix, standard_conforming_strings on.
         self.assertEqual(_DB_MOD._escape_value("O'Reilly", "postgres"), "'O''Reilly'")
 
     def test_mariadb_bool_becomes_one_or_zero(self):
@@ -255,12 +251,9 @@ class SubstituteNamedArgsTests(unittest.TestCase):
     def test_quote_inside_value_does_not_break_out_of_string(self):
         sql = "SELECT %(s)s;"
         out = _DB_MOD._substitute_named_args(sql, {"s": "a'b"}, "postgres")
-        # Inner ' must be doubled, breaking the trivial SQL-injection vector.
         self.assertEqual(out, "SELECT 'a''b';")
 
     def test_byte_sequence_not_a_placeholder_passes_through(self):
-        # `%(stuff inside string literal` is not a valid identifier-style
-        # placeholder — the regex requires a Python identifier in parens.
         sql = "SELECT 'a %( percent thing' AS s;"
         self.assertEqual(_DB_MOD._substitute_named_args(sql, {}, "postgres"), sql)
 

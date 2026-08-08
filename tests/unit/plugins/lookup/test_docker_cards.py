@@ -8,7 +8,6 @@ from pathlib import Path
 from ansible.errors import AnsibleError
 from jinja2 import Environment, StrictUndefined, select_autoescape
 
-# Adjust the PYTHONPATH to include the lookup_plugins folder from the web-app-dashboard role.
 sys.path.insert(
     0,
     str(
@@ -65,11 +64,9 @@ class DummyTemplar:
         if value is None:
             return value
 
-        # Keep non-strings untouched
         if not isinstance(value, str):
             return value
 
-        # Only render if it looks like a Jinja template
         if "{{" in value and "}}" in value:
             tmpl = self._env.from_string(value)
             return tmpl.render(**self._vars)
@@ -89,7 +86,6 @@ class DummyTlsResolveLookup:
     def run(self, terms, variables=None, **kwargs):
         variables = variables or {}
 
-        # NEW API: want-path is positional (2nd term)
         if not terms or len(terms) not in (1, 2):
             raise AnsibleError(
                 "dummy tls: terms must be [app_id] or [app_id, want_path]"
@@ -107,7 +103,6 @@ class DummyTlsResolveLookup:
         if app_id not in domains:
             raise AnsibleError(f"dummy tls: app_id '{app_id}' not in domains")
 
-        # normalize domain mapping value (string / dict / list)
         domain_val = domains[app_id]
         if isinstance(domain_val, list):
             domain = domain_val[0] if domain_val else ""
@@ -132,10 +127,8 @@ class DummyTlsResolveLookup:
 
 class TestDockerCardsLookup(unittest.TestCase):
     def setUp(self):
-        # Create a temporary directory to simulate the roles directory.
         self.test_roles_dir = tempfile.mkdtemp(prefix="test_roles_")
 
-        # Create a sample role "web-app-dashboard" under that directory.
         self.role_name = "web-app-dashboard"
         self.role_dir = str(Path(self.test_roles_dir) / self.role_name)
         Path(str(Path(self.role_dir) / "meta")).mkdir(parents=True)
@@ -145,14 +138,10 @@ class TestDockerCardsLookup(unittest.TestCase):
         with Path(vars_main).open("w", encoding="utf-8") as f:
             f.write("application_id: portfolio\n")
 
-        # Create a sample README.md with a H1 line for the title.
         readme_path = str(Path(self.role_dir) / "README.md")
         with Path(readme_path).open("w", encoding="utf-8") as f:
             f.write("# Portfolio Application\nThis is a sample portfolio role.")
 
-        # Create a sample meta/main.yml in the meta folder. Per
-        # the icon class lives in meta/info.yml (file-root convention),
-        # not under galaxy_info.
         meta_main_path = str(Path(self.role_dir) / ROLE_FILE_META_MAIN)
         meta_yaml = """
 galaxy_info:
@@ -190,18 +179,14 @@ logo:
         docker_cards_module.lookup_loader.get = _patched_get
 
     def tearDown(self):
-        # Restore patched lookup_loader
         docker_cards_module.lookup_loader.get = self._orig_lookup_get
 
-        # Remove the temporary roles directory after the test.
         shutil.rmtree(self.test_roles_dir)
 
     def _base_fake_variables(self):
-        # include TLS vars (even if our stub doesn't need all of them)
         return {
             "domains": {"portfolio": "myportfolio.com"},
             "applications": {
-                # Per the materialised payload moved to services.<X>.
                 "portfolio": {"services": {"dashboard": {"enabled": True}}}
             },
             "group_names": ["portfolio"],
@@ -212,7 +197,6 @@ logo:
         }
 
     def _run_lookup(self, lookup_module, fake_variables):
-        # Provide deterministic templating behavior for unit tests.
         lookup_module._templar = DummyTemplar(fake_variables)
         lookup_module._loader = mock.MagicMock()
         return lookup_module.run([self.test_roles_dir], variables=fake_variables)
@@ -281,7 +265,7 @@ logo:
     def test_lookup_when_group_excludes_application_id(self):
         lookup_module = LookupModule()
         fake_variables = self._base_fake_variables()
-        fake_variables["group_names"] = []  # Not including "portfolio"
+        fake_variables["group_names"] = []
 
         result = self._run_lookup(lookup_module, fake_variables)
 

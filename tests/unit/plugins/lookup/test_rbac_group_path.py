@@ -59,7 +59,6 @@ class TestRbacGroupPathLookup(unittest.TestCase):
             }
         }
 
-    # --- non-tenant apps -----------------------------------------------------
 
     def test_non_tenant_app_declared_role(self):
         result = self.lookup.run(
@@ -80,9 +79,6 @@ class TestRbacGroupPathLookup(unittest.TestCase):
         self.assertEqual(result, ["roles/web-app-gitea/editor"])
 
     def test_non_tenant_app_implicit_administrator_always_valid(self):
-        # Even if an app does not explicitly declare administrator in its
-        # rbac.roles, the auto-add rule provides it; the lookup MUST accept
-        # that without failing.
         apps = {
             "web-app-gitea": {
                 "rbac": {
@@ -111,7 +107,6 @@ class TestRbacGroupPathLookup(unittest.TestCase):
             )
         self.assertIn("global", str(cm.exception))
 
-    # --- tenant-aware apps ---------------------------------------------------
 
     def test_tenant_aware_per_tenant_role_requires_tenant(self):
         with self.assertRaises(AnsibleError) as cm:
@@ -163,7 +158,6 @@ class TestRbacGroupPathLookup(unittest.TestCase):
         )
         self.assertEqual(result, ["roles/web-app-wordpress/blog.example/editor"])
 
-    # --- failure modes -------------------------------------------------------
 
     def test_unknown_role_fails(self):
         with self.assertRaises(AnsibleError) as cm:
@@ -213,9 +207,6 @@ class TestRbacGroupPathLookup(unittest.TestCase):
 
 
 class TestRbacGroupPathReadsMergedApplications(unittest.TestCase):
-    """Regression guard: meta/rbac.yml roles must remain visible after
-    10cb02461 switched payload.py to get_variant_overrides_only."""
-
     def test_falls_back_to_merged_when_variables_lack_rbac(self):
         lookup = LookupModule()
         lookup._loader = mock.MagicMock()

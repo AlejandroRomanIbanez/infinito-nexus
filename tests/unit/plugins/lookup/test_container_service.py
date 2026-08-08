@@ -89,11 +89,6 @@ class TestContainerServiceLookup(unittest.TestCase):
         self.assertEqual(out, ["mattermost_mattermost"])
 
     def test_swarm_mode_ignores_services_name_field(self):
-        # docker stack deploy names services <stack>_<compose-key>. The
-        # compose `name:` field maps to `container_name` (compose-only)
-        # and is silently ignored by swarm, so the lookup must derive the
-        # swarm-addressable name from the service KEY, not from
-        # `services.<key>.name`.
         apps = _apps(service_name="custom-mm-name")
         out = _run(
             "web-app-mattermost",

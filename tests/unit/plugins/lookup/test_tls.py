@@ -5,7 +5,6 @@ from unittest.mock import patch
 
 from ansible.errors import AnsibleError
 
-# Make "ansible.module_utils.tls_common" importable during plain unit tests.
 import utils.tls_common as _tls_common
 from plugins.lookup.tls import LookupModule
 
