@@ -10,11 +10,9 @@ from . import PROJECT_ROOT
 
 
 def _load_module(rel_path: str, name: str):
-    # Evict any stubbed utils.roles.applications.config injected by sibling tests
-    # (notably tests/unit/roles/web-app-keycloak/filter_plugins/test_redirect_uris.py,
-    # whose setUpClass registers a stub `get()` with an incompatible signature
-    # into sys.modules and never cleans up). Force the plugin to import the
-    # real module from the repo.
+    """Import ``rel_path`` fresh, evicting sibling-test stubs of
+    ``utils.roles.applications.config`` from ``sys.modules`` first.
+    """
     for key in (
         "utils.roles.applications.config",
         "utils.roles.applications",
@@ -43,17 +41,12 @@ def _apps(*, oidc_enabled=True, ldap_enabled=None, flavor=None, include_app=True
     """
     if not include_app:
         return {}
-    # `flavor=` here parameterises the Nextcloud-specific sub-flavor that
-    # is now services.sso.oidc.plugin (was renamed from the legacy path
-    # per the SSO flavor migration).
     sso_block: dict = {"enabled": oidc_enabled}
     if flavor is not None:
         sso_block["oidc"] = {"plugin": flavor}
     services_block: dict = {"sso": sso_block}
     if ldap_enabled is not None:
         services_block["ldap"] = {"enabled": ldap_enabled}
-    # Per the materialised payload moved from
-    # `applications.<app>.compose.services.<X>` to `applications.<app>.services.<X>`.
     return {
         "web-app-nextcloud": {
             "services": services_block,
@@ -70,8 +63,6 @@ class OidcFlavorLookupTests(unittest.TestCase):
         )
 
     def setUp(self):
-        # Stub the applications lookup so tests inject the merged view directly
-        # instead of round-tripping through the filesystem role config scan.
         self._patcher = mock.patch.object(self.mod, "lookup_loader")
         self._loader_mock = self._patcher.start()
         self._stub_payload = None
@@ -107,18 +98,12 @@ class OidcFlavorLookupTests(unittest.TestCase):
         )
 
     def test_missing_application_returns_empty(self):
-        # No nextcloud entry -> services.sso.enabled defaults False ->
-        # short-circuit to "" (no OIDC plugin should be active).
         self.assertEqual(
             self._run({"some-other-app": {}}),
             [""],
         )
 
     def test_oidc_disabled_returns_empty(self):
-        # With services.sso.enabled=false, no OIDC plugin must be selected,
-        # otherwise Nextcloud still hands off to Keycloak with a redirect_uri
-        # the client no longer whitelists. Regression test for variant-1
-        # nextcloud Playwright failures ("Invalid parameter: redirect_uri").
         self.assertEqual(
             self._run(_apps(oidc_enabled=False)),
             [""],
