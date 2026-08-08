@@ -83,17 +83,30 @@ async function performKeycloakLogin(page, username, password, canonicalDomain) {
 // roles trap the substring match and redirect the persona to the dashboard
 // flow instead of the role's own auth chain.
 async function clickOidcLoginLink(page, strictLink, looseLink) {
-  const strictVisible = await strictLink
-    .waitFor({ state: "visible", timeout: 20_000 })
+  const oidcLink = page
+    .locator(
+      "a[href*='openid_connect' i], a[href*='openid-connect' i], a[href*='/auth/auth/' i], form[action*='openid' i] button, a[data-testid*='oidc' i], button[data-testid*='oidc' i]",
+    )
+    .first();
+  const oidcVisible = await oidcLink
+    .waitFor({ state: "visible", timeout: 5_000 })
     .then(() => true)
     .catch(() => false);
-  const loginLink = strictVisible ? strictLink : looseLink;
-  if (!strictVisible) {
-    const looseVisible = await loginLink
-      .waitFor({ state: "visible", timeout: 5_000 })
+
+  let loginLink = oidcLink;
+  if (!oidcVisible) {
+    const strictVisible = await strictLink
+      .waitFor({ state: "visible", timeout: 20_000 })
       .then(() => true)
       .catch(() => false);
-    if (!looseVisible) return false;
+    loginLink = strictVisible ? strictLink : looseLink;
+    if (!strictVisible) {
+      const looseVisible = await loginLink
+        .waitFor({ state: "visible", timeout: 5_000 })
+        .then(() => true)
+        .catch(() => false);
+      if (!looseVisible) return false;
+    }
   }
 
   await page
