@@ -25,9 +25,12 @@
  *      framework-specific patterns (Bootstrap `data-bs-toggle="dropdown"`,
  *      `.dropdown-toggle`, ARIA `aria-haspopup="menu"`, etc.).
  *
- * No further fallback. If no trigger surfaces a logout control, the
- * test fails — the role's authenticated surface MUST expose an in-app
- * logout.
+ *   3. If neither surfaces one, follow a same-origin settings /
+ *      preferences link and repeat steps 1 and 2 there.
+ *
+ * No further fallback. If none of the three surfaces a logout control,
+ * the test fails — the role MUST expose an in-app logout somewhere a
+ * user can click to.
  */
 
 const { expect } = require("@playwright/test");
@@ -102,23 +105,12 @@ async function waitForAnyLogoutCandidate(page, timeoutMs = 30_000) {
   return false;
 }
 
-async function inAppLogout(page) {
-  await page.waitForLoadState("domcontentloaded", { timeout: 30_000 }).catch(() => {});
-
-  await waitForAnyLogoutCandidate(page);
-
-  if (await tryLogoutFrom(page)) {
-    await page.waitForLoadState("domcontentloaded", { timeout: 30_000 }).catch(() => {});
-    return;
-  }
-
-  const menuTriggers = menuTriggerCandidatesOn(page);
-
+async function tryLogoutViaMenus(page) {
   // Try every visible trigger — the first match is not necessarily the
   // one wrapping the logout entry (Bootstrap navbars often render
   // multiple dropdown toggles).
   const tried = new Set();
-  for (const triggerLoc of menuTriggers) {
+  for (const triggerLoc of menuTriggerCandidatesOn(page)) {
     const count = await triggerLoc.count().catch(() => 0);
     for (let i = 0; i < count; i++) {
       const trigger = triggerLoc.nth(i);
@@ -131,12 +123,50 @@ async function inAppLogout(page) {
       await page.waitForTimeout(1_500);
       if (await tryLogoutFrom(page)) {
         await page.waitForLoadState("domcontentloaded", { timeout: 30_000 }).catch(() => {});
-        return;
+        return true;
       }
       // Close again before trying the next trigger so overlay menus do
       // not stack and hide each other.
       await trigger.click({ timeout: 2_000 }).catch(() => {});
     }
+  }
+  return false;
+}
+
+async function openAccountSettings(page) {
+  const links = page.locator(
+    "a[href^='/'][href*='setting' i], a[href^='/'][href*='preference' i], a[href^='/'][href*='einstellung' i]",
+  );
+  const count = await links.count().catch(() => 0);
+  for (let i = 0; i < count; i++) {
+    const link = links.nth(i);
+    if (!(await link.isVisible({ timeout: 1_000 }).catch(() => false))) continue;
+    await link.click({ timeout: 5_000 }).catch(() => {});
+    await page.waitForLoadState("domcontentloaded", { timeout: 30_000 }).catch(() => {});
+    return true;
+  }
+  return false;
+}
+
+async function inAppLogout(page) {
+  await page.waitForLoadState("domcontentloaded", { timeout: 30_000 }).catch(() => {});
+
+  await waitForAnyLogoutCandidate(page);
+
+  if (await tryLogoutFrom(page)) {
+    await page.waitForLoadState("domcontentloaded", { timeout: 30_000 }).catch(() => {});
+    return;
+  }
+
+  if (await tryLogoutViaMenus(page)) return;
+
+  if (await openAccountSettings(page)) {
+    await waitForAnyLogoutCandidate(page, 5_000);
+    if (await tryLogoutFrom(page)) {
+      await page.waitForLoadState("domcontentloaded", { timeout: 30_000 }).catch(() => {});
+      return;
+    }
+    if (await tryLogoutViaMenus(page)) return;
   }
 
   expect.soft(false, "no in-app logout control reachable on the current authenticated surface").toBe(true);
