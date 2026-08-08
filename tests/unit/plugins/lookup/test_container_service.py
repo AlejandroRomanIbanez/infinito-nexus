@@ -7,8 +7,8 @@ service name in `<stack>_<service_key>` form in swarm mode.
 from __future__ import annotations
 
 import unittest
+import unittest.mock as mock
 from typing import Any
-from unittest import mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError

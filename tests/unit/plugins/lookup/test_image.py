@@ -11,8 +11,8 @@ the image name as ``<entity_name>_custom`` for locally-built images.
 from __future__ import annotations
 
 import unittest
+import unittest.mock as mock
 from typing import Any
-from unittest import mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError

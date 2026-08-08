@@ -3,8 +3,8 @@ from __future__ import annotations
 import os
 import sys
 import unittest
+import unittest.mock as mock
 from typing import Any
-from unittest import mock
 
 from ansible.errors import AnsibleFilterError
 

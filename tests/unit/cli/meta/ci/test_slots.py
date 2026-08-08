@@ -3,9 +3,9 @@ from __future__ import annotations
 
 import textwrap
 import unittest
+import unittest.mock as mock
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from unittest import mock
 
 from cli.meta.ci import slots
 

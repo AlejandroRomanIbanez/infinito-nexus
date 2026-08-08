@@ -13,8 +13,8 @@ from __future__ import annotations
 import importlib.util
 import sys
 import unittest
+import unittest.mock as mock
 from typing import TYPE_CHECKING
-from unittest import mock
 
 from . import PROJECT_ROOT
 

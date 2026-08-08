@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import io
 import unittest
+import unittest.mock as mock
 from contextlib import redirect_stdout
-from unittest import mock
 
 from cli.administration.deploy.ci import runs
 from cli.administration.deploy.ci.status import __main__ as status

@@ -11,7 +11,7 @@ from __future__ import annotations
 import importlib.util
 import os
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from ansible.errors import AnsibleError
 

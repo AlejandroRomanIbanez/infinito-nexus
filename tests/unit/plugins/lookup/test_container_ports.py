@@ -1,6 +1,6 @@
 import unittest
+import unittest.mock as mock
 from typing import ClassVar
-from unittest import mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError

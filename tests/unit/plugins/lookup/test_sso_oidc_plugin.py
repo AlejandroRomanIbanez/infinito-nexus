@@ -2,7 +2,7 @@ import importlib
 import importlib.util
 import sys
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from ansible.errors import AnsibleError
 

@@ -12,7 +12,7 @@ tests.unit.utils.networks.test_render and the integration snapshot test.
 from __future__ import annotations
 
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from ansible.errors import AnsibleError
 

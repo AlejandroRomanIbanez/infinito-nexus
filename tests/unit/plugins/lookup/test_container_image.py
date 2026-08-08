@@ -8,7 +8,7 @@ line. Resolution semantics are pinned by test_image.py.
 from __future__ import annotations
 
 import unittest
-from unittest import mock
+import unittest.mock as mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError

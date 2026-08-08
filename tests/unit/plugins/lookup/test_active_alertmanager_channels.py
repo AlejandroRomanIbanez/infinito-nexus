@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from plugins.lookup.active_alertmanager_channels import LookupModule
 
