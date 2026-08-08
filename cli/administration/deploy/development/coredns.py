@@ -143,6 +143,7 @@ class CoreDNSCorefileRenderer:
         if size == 0:
             raise RuntimeError(f"Rendered Corefile is empty: {tmp_file}")
 
+        tmp_file.chmod(0o644)
         tmp_file.replace(out_file)
         self._log(f"Rendered successfully ({size} bytes)")
 
