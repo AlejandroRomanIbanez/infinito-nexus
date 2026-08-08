@@ -59,7 +59,6 @@ class TestRbacGroupPathLookup(unittest.TestCase):
             }
         }
 
-
     def test_non_tenant_app_declared_role(self):
         result = self.lookup.run(
             [],
@@ -106,7 +105,6 @@ class TestRbacGroupPathLookup(unittest.TestCase):
                 tenant="blog.example",
             )
         self.assertIn("global", str(cm.exception))
-
 
     def test_tenant_aware_per_tenant_role_requires_tenant(self):
         with self.assertRaises(AnsibleError) as cm:
@@ -157,7 +155,6 @@ class TestRbacGroupPathLookup(unittest.TestCase):
             tenant="Blog.EXAMPLE",
         )
         self.assertEqual(result, ["roles/web-app-wordpress/blog.example/editor"])
-
 
     def test_unknown_role_fails(self):
         with self.assertRaises(AnsibleError) as cm:

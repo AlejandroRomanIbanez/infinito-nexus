@@ -72,11 +72,9 @@ class SsoProxyConsumersLookupTests(unittest.TestCase):
         lk._loader = mock.MagicMock()
         return lk.run(terms or [], variables={"applications": applications})
 
-
     def test_positional_terms_raise(self):
         with self.assertRaises(AnsibleError):
             self._run({}, ["extra-arg"])
-
 
     def test_empty_applications_returns_empty_list(self):
         result = self._run({})
