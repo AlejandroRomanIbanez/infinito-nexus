@@ -33,7 +33,7 @@
 const { expect } = require("@playwright/test");
 
 const LOGOUT_NAME_RE = /log\s*out|sign\s*out|sign-out|abmelden/i;
-const ACCOUNT_MENU_NAME_RE = /(account|profile|user.?menu|^menu$|sign\s*in|signed\s*in)/i;
+const ACCOUNT_MENU_NAME_RE = /(account|profile|user.?menu|^menu$|signed\s*in)/i;
 
 async function clickFirstVisible(loc, { timeout = 5_000 } = {}) {
   const count = await loc.count().catch(() => 0);
@@ -76,7 +76,7 @@ function menuTriggerCandidatesOn(scope) {
     scope.getByRole("button", { name: ACCOUNT_MENU_NAME_RE }),
     scope.getByRole("link", { name: ACCOUNT_MENU_NAME_RE }),
     scope.locator(
-      "[data-bs-toggle='dropdown'], .dropdown-toggle, [aria-haspopup='menu'], [aria-haspopup='true'], [data-region='user-menu-toggle'], .user-menu-toggle, .usermenu, [aria-label*='user menu' i], [aria-label*='account' i], [data-testid*='user' i]",
+      "[data-bs-toggle='dropdown'], .dropdown-toggle, [aria-haspopup='menu'], [aria-haspopup='true'], [data-region='user-menu-toggle'], .user-menu-toggle, .usermenu, [aria-label*='user menu' i], [aria-label*='account' i], [data-testid*='user' i]:not(input):not(textarea):not(select)",
     ),
   ];
 }
