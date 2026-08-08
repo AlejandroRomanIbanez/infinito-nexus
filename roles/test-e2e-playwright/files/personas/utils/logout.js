@@ -36,7 +36,7 @@
 const { expect } = require("@playwright/test");
 
 const LOGOUT_NAME_RE = /log\s*out|sign\s*out|sign-out|abmelden/i;
-const ACCOUNT_MENU_NAME_RE = /(account|profile|user.?menu|^menu$|signed\s*in)/i;
+const ACCOUNT_MENU_NAME_RE = /(account|\bprofile\b|user.?menu|^menu$|signed\s*in)/i;
 
 async function clickFirstVisible(loc, { timeout = 5_000 } = {}) {
   const count = await loc.count().catch(() => 0);

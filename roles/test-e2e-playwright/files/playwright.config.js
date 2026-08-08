@@ -26,6 +26,7 @@ module.exports = defineConfig({
   ],
   use: {
     baseURL,
+    actionTimeout: 15_000,
     trace: keepAll ? "on" : "retain-on-failure",
     screenshot: keepAll ? "on" : "only-on-failure",
     video: keepAll ? "on" : "retain-on-failure"
