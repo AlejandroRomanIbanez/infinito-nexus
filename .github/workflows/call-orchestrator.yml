@@ -77,11 +77,9 @@ concurrency:
   cancel-in-progress: ${{ inputs.force_cancel_in_progress || vars.CI_CANCEL_IN_PROGRESS != 'false' }}
 
 permissions:
-  actions: write
+  actions: read
   contents: read
-  packages: write
-  security-events: write
-  issues: write
+  packages: read
 
 jobs:
   wait-fork-prereq-run:
@@ -142,6 +140,10 @@ jobs:
         run: ./scripts/github/gate/fork_prereqs.sh
 
   security-codeql:
+    permissions:
+      contents: read
+      packages: read
+      security-events: write
     uses: ./.github/workflows/cron-security-codeql.yml
 
   lint:
@@ -151,6 +153,9 @@ jobs:
     uses: ./.github/workflows/call-test.yml
 
   build-ci-images:
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/call-images-build-ci.yml
     with:
       distros: "arch debian ubuntu fedora centos"
@@ -165,6 +170,9 @@ jobs:
       distros: "arch debian ubuntu fedora centos"
   
   images-mirror-missing:
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/call-images-mirror-missing.yml
     with:
       concurrency_channel: ci-orchestrator-mirror-consumer

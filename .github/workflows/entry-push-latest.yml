@@ -16,16 +16,14 @@ on:
       - "alert-autofix-*"
 
 permissions:
-  contents: write
-  packages: write
-  actions: write
-  security-events: write
-  issues: write
+  contents: read
 
 jobs:
   sync-main:
     name: 🔄 Sync main
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: ⬇️ Checkout repository
         uses: actions/checkout@v7.0.0
@@ -44,6 +42,9 @@ jobs:
     name: 🧭 Decide CI policy
     needs: sync-main
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
     outputs:
       should_run: ${{ steps.decide.outputs.should_run }}
       skip_reason: ${{ steps.decide.outputs.skip_reason }}
@@ -129,6 +130,12 @@ jobs:
       - run-policy
       - pick-distro
       - resolve-priority
+    permissions:
+      actions: read
+      contents: read
+      packages: write
+      security-events: write
+      issues: write
     uses: ./.github/workflows/call-orchestrator.yml
     with:
       distros: ${{ needs.pick-distro.outputs.distros }}
@@ -172,6 +179,9 @@ jobs:
       - pick-distro
       - release-guard
     if: needs.run-policy.outputs.should_run == 'true' && needs.release-guard.outputs.allowed == 'true'
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/call-release-version.yml
     with:
       tag: ${{ needs.pick-distro.outputs.version_tag }}
