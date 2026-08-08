@@ -28,8 +28,10 @@ docker)
 
 	if ! docker compose ps -q infinito 2>/dev/null | grep -q .; then
 		echo ">>> 'infinito' container not running; starting the stack via 'make compose-up'..."
-		flock "${REPO_ROOT}/.compose-up.lock" \
-			bash -c 'docker compose ps -q infinito 2>/dev/null | grep -q . || exec "${MAKE:-make}" compose-up'
+		exec {lockfd}>"${REPO_ROOT}/.compose-up.lock"
+		flock "${lockfd}"
+		docker compose ps -q infinito 2>/dev/null | grep -q . || "${MAKE:-make}" compose-up
+		exec {lockfd}>&-
 	fi
 
 	exec_env_args=(
