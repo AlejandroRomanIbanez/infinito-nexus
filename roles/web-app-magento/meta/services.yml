@@ -14,7 +14,7 @@ sso:
   oauth2:
     origin:
       host: nginx
-      port: "8080"
+      port: "{{ lookup('config', 'web-app-magento', 'services.magento.ports.internal.http') }}"
 dashboard:
   bond: 1
   enabled: "{{ 'web-app-dashboard' in group_names }}"
@@ -29,22 +29,25 @@ email:
   shared: "{{ 'web-app-mailu' in group_names }}"
 php:
   image: markoshust/magento-php
-  version: 8.5-fpm
+  version: 8.4-fpm
   name: magento-php
+  ports:
+    internal:
+      fpm: 9000
   backup:
     no_stop_required: true
-  min_storage: 5GB
+  min_storage: 660MB
   cpus: "0.5"
   mem_reservation: 256m
   mem_limit: 1g
   pids_limit: 512
 nginx:
   image: markoshust/magento-nginx
-  version: latest
+  version: "1.28"
   name: magento-nginx
   backup:
     no_stop_required: true
-  min_storage: 5GB
+  min_storage: 235MB
   cpus: "0.5"
   mem_reservation: 256m
   mem_limit: 1g
@@ -57,9 +60,11 @@ mariadb:
 # nocheck: shared
 # nocheck: dynamic-flag
 redis:
+  bond: 1
   backup:
     disabled: true
   enabled: true
+  shared: "{{ 'svc-db-redis' in group_names }}"
   cpus: "0.5"
   mem_reservation: 128m
   mem_limit: 512m
@@ -67,11 +72,16 @@ redis:
 # nocheck: shared
 # nocheck: dynamic-flag
 search:
+  healthcheck:
+    flavor: tcp
+  ports:
+    internal:
+      http: 9200
   enabled: true
   image: opensearchproject/opensearch
-  version: latest
+  version: 3.7.0
   name: magento-opensearch
-  min_storage: 10GB
+  min_storage: 1332MB
   cpus: "1.0"
   mem_reservation: 1g
   mem_limit: 2g
@@ -90,15 +100,34 @@ prometheus:
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
 magento:
+  composer:
+    repository: https://mirror.mage-os.org/
+    package: magento/project-community-edition
+    version: 2.4.8
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   ports:
     local:
       sso: 16504
       http: 8052
+    internal:
+      http: 8000
+  proxy:
+    service_key: nginx
   run_after:
     - web-app-keycloak
-  lifecycle: unsupported
+  lifecycle: pre-alpha
   min_storage: 10GB
   cpus: "1.0"
   mem_reservation: 1g
   mem_limit: 2g
   pids_limit: 1024
+# nocheck: dynamic-flag
+# nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer
+container_backup: # nocheck: bond-baseline backup host joins outside the variant topology
+  bond: 1
+  enabled: "{{ 'svc-bkp-volume-2-local' in group_names }}"
+  shared: true

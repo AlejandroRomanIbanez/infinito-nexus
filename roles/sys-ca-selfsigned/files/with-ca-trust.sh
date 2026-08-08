@@ -26,7 +26,6 @@ if [ ! -r "$CA_TRUST_CERT" ]; then
   exit 2
 fi
 
-# Sanitize trust name
 name="$(printf '%s' "$CA_TRUST_NAME" | tr -c 'A-Za-z0-9._-' '_' )"
 if [ -z "$name" ]; then
   echo "[with-ca-trust] ERROR: CA_TRUST_NAME resolved to empty after sanitization" >&2
@@ -37,12 +36,22 @@ log "Sanitized trust name: $name"
 
 installed=0
 
-# Always provide env-based trust hints as a fallback (works for many TLS stacks)
 export SSL_CERT_FILE="$CA_TRUST_CERT"
 export REQUESTS_CA_BUNDLE="$CA_TRUST_CERT"
 export CURL_CA_BUNDLE="$CA_TRUST_CERT"
-# Optional (harmless if unused; helps Node-based tools if any)
 export NODE_EXTRA_CA_CERTS="$CA_TRUST_CERT"
+
+if [ -n "${CA_TRUST_CERT_EXTRA:-}" ] && [ -r "${CA_TRUST_CERT_EXTRA}" ]; then
+  combined="/tmp/ca-trust-combined.crt"
+  if cat "$CA_TRUST_CERT" "$CA_TRUST_CERT_EXTRA" > "$combined" 2>/dev/null; then
+    export SSL_CERT_FILE="$combined"
+    export REQUESTS_CA_BUNDLE="$combined"
+    export CURL_CA_BUNDLE="$combined"
+    export NODE_EXTRA_CA_CERTS="$combined"
+  else
+    log "WARN: cannot write $combined; keeping single-CA trust env"
+  fi
+fi
 
 install_anchor() {
   src="$1"
@@ -58,9 +67,6 @@ install_anchor() {
   return 1
 }
 
-#
-# Debian / Ubuntu style
-#
 if command -v update-ca-certificates >/dev/null 2>&1; then
   log "Detected update-ca-certificates"
   if install_anchor "$CA_TRUST_CERT" "/usr/local/share/ca-certificates/${name}.crt"; then
@@ -68,9 +74,6 @@ if command -v update-ca-certificates >/dev/null 2>&1; then
   fi
 fi
 
-#
-# RHEL / p11-kit style
-#
 if command -v update-ca-trust >/dev/null 2>&1; then
   log "Detected update-ca-trust"
   if install_anchor "$CA_TRUST_CERT" "/etc/pki/ca-trust/source/anchors/${name}.crt"; then
@@ -78,9 +81,6 @@ if command -v update-ca-trust >/dev/null 2>&1; then
   fi
 fi
 
-#
-# Arch / pure p11-kit style
-#
 if command -v trust >/dev/null 2>&1; then
   log "Detected trust"
   if install_anchor "$CA_TRUST_CERT" "/etc/ca-certificates/trust-source/anchors/${name}.crt"; then
@@ -88,18 +88,19 @@ if command -v trust >/dev/null 2>&1; then
   fi
 fi
 
-# ------------------------------------------------------------
-# Chromium / NSS trust (per-user DB)
-#
-# Puppeteer/Chromium often uses NSS trust DB and may ignore OS CA store.
-# Import the CA into the user's NSS DB if certutil is available.
-#
-# Requires:
-#   - Debian/Ubuntu: apt-get install libnss3-tools
-#   - Alpine: apk add nss-tools
-# ------------------------------------------------------------
+if [ -n "${CA_TRUST_CERT_EXTRA:-}" ] && [ -r "${CA_TRUST_CERT_EXTRA}" ]; then
+  if command -v update-ca-certificates >/dev/null 2>&1 && install_anchor "$CA_TRUST_CERT_EXTRA" "/usr/local/share/ca-certificates/${name}-extra.crt"; then
+    run update-ca-certificates || true
+  fi
+  if command -v update-ca-trust >/dev/null 2>&1 && install_anchor "$CA_TRUST_CERT_EXTRA" "/etc/pki/ca-trust/source/anchors/${name}-extra.crt"; then
+    run update-ca-trust extract || true
+  fi
+  if command -v trust >/dev/null 2>&1 && install_anchor "$CA_TRUST_CERT_EXTRA" "/etc/ca-certificates/trust-source/anchors/${name}-extra.crt"; then
+    run trust extract-compat || true
+  fi
+fi
+
 if command -v certutil >/dev/null 2>&1; then
-  # Prefer real HOME; fall back to a writable temp dir
   home_dir="${HOME:-}"
   if [ -z "$home_dir" ] || [ ! -d "$home_dir" ] || [ ! -w "$home_dir" ]; then
     home_dir="/tmp"
@@ -108,18 +109,14 @@ if command -v certutil >/dev/null 2>&1; then
   nss_db="${home_dir}/.pki/nssdb"
   log "Detected certutil; importing CA into NSS DB: ${nss_db}"
 
-  # Ensure directory exists
   run mkdir -p "$nss_db" 2>/dev/null || true
 
-  # Create NSS DB if missing (empty password)
   if [ ! -f "$nss_db/cert9.db" ]; then
     run certutil -N -d "sql:${nss_db}" --empty-password 2>/dev/null || true
   fi
 
-  # Remove existing cert entry (best-effort)
   run certutil -D -d "sql:${nss_db}" -n "$name" >/dev/null 2>&1 || true
 
-  # Import as trusted CA (C,, = trusted CA for SSL)
   run certutil -A -d "sql:${nss_db}" -n "$name" -t "C,," -i "$CA_TRUST_CERT" 2>/dev/null || true
 
   log "NSS trust import attempted (best-effort)"

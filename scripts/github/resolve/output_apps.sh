@@ -2,7 +2,6 @@
 #
 # Resolve the app list and write it to GITHUB_OUTPUT.
 # Inputs via env (forwarded to scripts/meta/resolve/apps.sh):
-#   INFINITO_DEPLOY_TYPE  — required (server|workstation|universal)
 #   INFINITO_WHITELIST — optional space-separated allowlist
 set -euo pipefail
 
@@ -16,7 +15,7 @@ source "${REPO_ROOT}/scripts/meta/env/python.sh"
 apps="$(./scripts/meta/resolve/apps.sh)"
 [[ -n "$apps" ]] || apps='[]'
 
-matrix="$(printf '%s' "$apps" | "${PYTHON}" -m utils.github.variant_bundles)"
+matrix="$(printf '%s' "$apps" | "${PYTHON}" -m utils.github.variant.bundles)"
 [[ -n "$matrix" ]] || matrix='[]'
 
 echo "apps=$matrix" >>"$GITHUB_OUTPUT"

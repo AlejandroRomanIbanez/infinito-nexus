@@ -1,0 +1,18 @@
+---
+application_id: "svc-storage-nfs-server"
+
+SVC_STORAGE_NFS_SERVER_SERVICE:
+  kernel:
+    Debian: nfs-server
+    Archlinux: nfs-server.service
+    RedHat: nfs-server
+    Alpine: nfs
+  ganesha:
+    Debian: nfs-ganesha
+    RedHat: nfs-ganesha
+    Archlinux: nfs-ganesha
+
+SVC_STORAGE_NFS_SERVER_STATE_EXPORT_OPTIONS: >-
+  rw,sync,no_subtree_check,no_root_squash,no_all_squash
+SVC_STORAGE_NFS_SERVER_STATE_ALLOWED_CIDRS:
+  - "*"

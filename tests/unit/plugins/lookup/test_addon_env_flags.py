@@ -1,9 +1,21 @@
 import unittest
+from unittest import mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError
 
 from plugins.lookup.addon_env_flags import LookupModule, env_key
+
+
+def _applications_loader(apps):
+    def _get(name, *a, **k):
+        if name == "applications":
+            return mock.MagicMock(run=lambda *_a, **_k: [apps])
+        return mock.MagicMock(run=lambda *_a, **_k: [None])
+
+    loader_mock = mock.MagicMock()
+    loader_mock.get.side_effect = _get
+    return loader_mock
 
 
 class TestEnvKey(unittest.TestCase):
@@ -28,6 +40,7 @@ class TestEnvKey(unittest.TestCase):
 class TestAddonEnvFlagsLookup(unittest.TestCase):
     def setUp(self):
         self.lookup = LookupModule()
+        self.lookup._loader = mock.MagicMock()
         self.addons = {
             "collectives": {"enabled": True, "required": True},
             "contacts": {"enabled": True, "required": True},
@@ -39,8 +52,8 @@ class TestAddonEnvFlagsLookup(unittest.TestCase):
         }
         self._patchers = [
             patch(
-                "plugins.lookup.addon_env_flags.get_merged_applications",
-                return_value={},
+                "plugins.lookup.addon_env_flags.lookup_loader",
+                _applications_loader({}),
             ),
             patch("plugins.lookup.addon_env_flags.get", return_value=self.addons),
             patch(
@@ -93,10 +106,11 @@ class TestAddonEnvFlagsLookup(unittest.TestCase):
 class TestNoAddons(unittest.TestCase):
     def test_empty_addons_yields_empty_string(self):
         lookup = LookupModule()
+        lookup._loader = mock.MagicMock()
         with (
             patch(
-                "plugins.lookup.addon_env_flags.get_merged_applications",
-                return_value={},
+                "plugins.lookup.addon_env_flags.lookup_loader",
+                _applications_loader({}),
             ),
             patch("plugins.lookup.addon_env_flags.get", return_value={}),
             patch(
@@ -114,6 +128,7 @@ class TestBridgeDeploymentGating(unittest.TestCase):
 
     def setUp(self):
         self.lookup = LookupModule()
+        self.lookup._loader = mock.MagicMock()
         self.addons = {
             "gl_bridge": {"enabled": True, "required": True, "bridges": ["gitlab"]},
             "masto_bridge": {
@@ -135,8 +150,8 @@ class TestBridgeDeploymentGating(unittest.TestCase):
         }
         self._patchers = [
             patch(
-                "plugins.lookup.addon_env_flags.get_merged_applications",
-                return_value={},
+                "plugins.lookup.addon_env_flags.lookup_loader",
+                _applications_loader({}),
             ),
             patch("plugins.lookup.addon_env_flags.get", return_value=self.addons),
             patch(
@@ -187,6 +202,55 @@ class TestBridgeDeploymentGating(unittest.TestCase):
         )
         self.assertEqual(f["GL_BRIDGE_ADDON_ENABLED"], "true")
         self.assertEqual(f["MASTO_BRIDGE_ADDON_ENABLED"], "false")
+
+
+class TestBridgeResolvesProviderKey(unittest.TestCase):
+    """A bridge may name the service key a role registers, not only its entity.
+    'sso' is provided by web-app-keycloak, whose id ends in neither '-sso' nor
+    'sso', so the entity-suffix rule alone can never match it."""
+
+    def setUp(self):
+        self.lookup = LookupModule()
+        self.lookup._loader = mock.MagicMock()
+        self.applications = {
+            "web-app-keycloak": {
+                "services": {
+                    "keycloak": {"enabled": True, "shared": True, "provides": "sso"}
+                }
+            },
+            "web-app-wordpress": {"services": {}},
+        }
+        self.addons = {
+            "ca_trust": {"enabled": True, "required": True, "bridges": ["sso"]},
+        }
+        self._patchers = [
+            patch(
+                "plugins.lookup.addon_env_flags.lookup_loader",
+                _applications_loader(self.applications),
+            ),
+            patch("plugins.lookup.addon_env_flags.get", return_value=self.addons),
+            patch(
+                "plugins.lookup.addon_env_flags._render_with_templar",
+                side_effect=lambda v, **k: v,
+            ),
+        ]
+        for p in self._patchers:
+            p.start()
+        self.addCleanup(lambda: [p.stop() for p in self._patchers])
+
+    def _flag(self, apps):
+        out = self.lookup.run(
+            ["web-app-wordpress"], variables={"TEST_E2E_PLAYWRIGHT_APPS": apps}
+        )[0]
+        return dict(line.split("=", 1) for line in out.splitlines())[
+            "CA_TRUST_ADDON_ENABLED"
+        ]
+
+    def test_provider_role_deployed_keeps_true(self):
+        self.assertEqual(self._flag(["web-app-keycloak", "web-app-wordpress"]), "true")
+
+    def test_provider_role_absent_gates_false(self):
+        self.assertEqual(self._flag(["web-app-wordpress"]), "false")
 
 
 if __name__ == "__main__":

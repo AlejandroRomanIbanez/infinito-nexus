@@ -27,13 +27,21 @@ matomo:
   shared: "{{ 'web-app-matomo' in group_names }}"
 # nocheck: playwright-service-flag — self-provider
 dashboard:
+  healthcheck:
+    flavor: tcp
+    start_period: 10m
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   bond: 1
   enabled: true
   shared: true
   name: dashboard
   image: ghcr.io/kevinveenbirkenbach/port-ui
   version: 2.0.0
-  min_storage: 1GB
+  min_storage: 549MB
   cpus: "0.3"
   mem_reservation: 256m
   mem_limit: 512m
@@ -41,6 +49,10 @@ dashboard:
   ports:
     local:
       http: 8029
+    internal:
+      http: 5000
+  proxy:
+    service_key: dashboard
   run_after:
     - web-app-matomo
   lifecycle: beta

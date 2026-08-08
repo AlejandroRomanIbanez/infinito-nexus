@@ -1,12 +1,19 @@
 ---
 mini-qr:
+  modes:
+    compose:
+      enabled: true
+    swarm:
+      enabled: true
   image: ghcr.io/lyqht/mini-qr
-  version: latest
+  version: v0.26.3
   ports:
+    internal:
+      http: 8080
     local:
       http: 8059
   lifecycle: beta
-  min_storage: 1GB
+  min_storage: 304MB
   cpus: "0.2"
   mem_reservation: 128m
   mem_limit: 256m
@@ -34,6 +41,7 @@ redis:
   backup:
     disabled: true
   enabled: false
+  shared: "{{ 'svc-db-redis' in group_names }}"
 css:
   bond: 1
   enabled: "{{ 'web-svc-css' in group_names }}"
