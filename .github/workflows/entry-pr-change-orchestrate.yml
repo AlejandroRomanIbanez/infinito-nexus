@@ -23,10 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  actions: write
   contents: read
-  packages: write
-  security-events: write
 
 jobs:
   detect-pr-scope:
@@ -69,17 +66,26 @@ jobs:
     if: ${{ github.event_name == 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository }}
     runs-on: ubuntu-latest
     steps:
+      - name: ⬇️ Checkout the base branch for its tooling
+        uses: actions/checkout@v7.0.0
+        with:
+          path: .base-tooling
+          persist-credentials: false
+
       - name: ⬇️ Checkout PR head
         uses: actions/checkout@v7.0.0
         with:
           ref: ${{ github.event.pull_request.head.sha }}
           fetch-depth: 0
+          path: pr-head
+          persist-credentials: false
 
       - name: ✅ Assert the base branch is fully merged into the PR head
+        working-directory: pr-head
         env:
           INFINITO_MAIN_REMOTE: origin
           INFINITO_MAIN_BRANCH: ${{ github.event.pull_request.base.ref }}
-        run: bash scripts/git/assert/main_merged.sh
+        run: bash "${GITHUB_WORKSPACE}/.base-tooling/scripts/git/assert/main_merged.sh"
 
   pr-scope-gate:
     name: 🚦 Gate PR scope
@@ -134,7 +140,7 @@ jobs:
       - detect-affected-roles
     if: ${{ github.event_name == 'pull_request' && needs.detect-pr-scope.outputs.run_ci_orchestrator == 'true' }}
     permissions:
-      actions: write
+      actions: read
       contents: read
       packages: write
       security-events: write
@@ -168,6 +174,9 @@ jobs:
 
   build-ci-images-fork:
     needs: prepare-fork-merge-ref
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/call-images-build-ci.yml
     with:
       distros: "arch debian ubuntu fedora centos"
@@ -179,6 +188,9 @@ jobs:
 
   images-mirror-missing-fork:
     needs: prepare-fork-merge-ref
+    permissions:
+      contents: read
+      packages: write
     uses: ./.github/workflows/call-images-mirror-missing.yml
     with:
       repo_root: _pr_source
