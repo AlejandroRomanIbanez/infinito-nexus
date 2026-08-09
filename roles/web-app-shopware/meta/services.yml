@@ -56,7 +56,7 @@ shopware:
   min_storage: 278MB
   package:
     name: shopware/production
-    version: 6.7.8.2
+    version: 6.7.13.0
   title: "{{ ORGANIZATION }} Shop"
   proxy:
     service_key: web
