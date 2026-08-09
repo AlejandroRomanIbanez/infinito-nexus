@@ -24,7 +24,6 @@
     {% if with_volumes %}
     {% set _extra_volumes = [] %}
     {% if MASTODON_HTTP_ONLY_ENABLED | bool %}
-    {% set _ = _extra_volumes.append(MASTODON_FORCE_SSL_OVERRIDE_FILE ~ ':' ~ MASTODON_CONTAINER_FORCE_SSL_OVERRIDE_PATH ~ ':ro') %}
     {% set _ = _extra_volumes.append(MASTODON_OIDC_HTTP_DISCOVERY_FILE ~ ':' ~ MASTODON_CONTAINER_OIDC_HTTP_DISCOVERY_PATH ~ ':ro') %}
     {% endif %}
     {{ lookup('container_volumes', application_id, service_name, extra_volumes=_extra_volumes) | indent(4) }}
