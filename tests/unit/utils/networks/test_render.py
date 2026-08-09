@@ -11,6 +11,7 @@ regressions surface with a precise failure rather than a snapshot diff.
 from __future__ import annotations
 
 import unittest
+from typing import ClassVar
 
 from utils.networks.render import (
     _coerce_bool,
@@ -209,7 +210,7 @@ class TestIsConsumer(unittest.TestCase):
 
 
 class TestIsConsumerOnionSso(unittest.TestCase):
-    ENTRY = {
+    ENTRY: ClassVar[dict] = {
         "role": "svc-net-tor",
         "overlay": {
             "consumer": {

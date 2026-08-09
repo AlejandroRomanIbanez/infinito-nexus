@@ -8,13 +8,16 @@ from __future__ import annotations
 
 import re
 import unittest
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from plugins.lookup.tor_ports import collect_exposed_ports
 from plugins.lookup.tor_reachable import is_reachable
 from utils import PROJECT_ROOT
 from utils.cache.applications import get_merged_applications, get_variants
 from utils.cache.files import read_text
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 ROLES_DIR = PROJECT_ROOT / "roles"
 
@@ -57,7 +60,9 @@ class TestDbTorTransportGate(unittest.TestCase):
 
         for role in self.templates:
             configs = [("base", base[role])]
-            configs += [(f"variant {i}", v) for i, v in enumerate(variants.get(role) or [])]
+            configs += [
+                (f"variant {i}", v) for i, v in enumerate(variants.get(role) or [])
+            ]
 
             for label, config in configs:
                 with self.subTest(role=role, config=label):

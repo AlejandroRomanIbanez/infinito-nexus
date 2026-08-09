@@ -28,7 +28,9 @@ class TestResolveProxyUrl(unittest.TestCase):
                 )
 
     def test_port_comes_from_the_single_source_of_truth(self):
-        apps = {"svc-net-tor": {"services": {"tor": {"ports": {"local": {"socks": 9150}}}}}}
+        apps = {
+            "svc-net-tor": {"services": {"tor": {"ports": {"local": {"socks": 9150}}}}}
+        }
         self.assertEqual(resolve_proxy_url(apps, "swarm"), "socks5h://tor:9150")
 
     def test_missing_port_raises(self):
