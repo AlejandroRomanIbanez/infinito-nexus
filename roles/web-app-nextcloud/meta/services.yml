@@ -71,6 +71,10 @@ nextcloud:
   mem_reservation: 2g
   mem_limit: 3g
   pids_limit: 512
+  # danger: lifts Nextcloud's SSRF guard for EVERY outbound client -- federated shares,
+  # external storage, webcal, previews -- and Nextcloud offers no per-host allowlist.
+  allow_local_remote_servers:
+    enabled: "{{ ((ENVIRONMENT | lower) == 'development') | lower }}"
   default_quota: "1000000000"
   legacy_login_mask:
     enabled: "{{ not (lookup('config', 'web-app-nextcloud', 'services.sso.enabled') | bool) }}"
