@@ -9,19 +9,46 @@ the ``update-repository-refs`` CI job bumps.
 
 from __future__ import annotations
 
+import subprocess
+import sys
 import unittest
 import unittest.mock as mock
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from utils import PROJECT_ROOT
+from utils.cache.files import read_text
+from utils.cache.yaml import load_yaml_any
 from utils.install.lint import actionlint, hadolint, shfmt
-from utils.install.lint.pinned import pinned_release, resolve_release
+from utils.install.lint.pinned import _parse_pins, pinned_release, resolve_release
+from utils.roles.mapping import ROLE_FILE_META_SERVICES
 
 _INSTALLERS = (
     (actionlint, "actionlint", "ACTIONLINT_VERSION"),
     (hadolint, "hadolint", "HADOLINT_VERSION"),
     (shfmt, "shfmt", "SHFMT_VERSION"),
 )
+
+_PINS = PROJECT_ROOT / "roles" / "sys-lint" / ROLE_FILE_META_SERVICES
+
+_BOOTSTRAP_PROBE = """
+import sys
+
+
+class _NoPyYAML:
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "yaml" or fullname.startswith("yaml."):
+            raise ImportError("PyYAML is absent during the lint bootstrap")
+        return None
+
+
+sys.meta_path.insert(0, _NoPyYAML())
+
+from utils.install.lint import actionlint, hadolint, shfmt
+
+for module, tool in ((actionlint, "actionlint"), (hadolint, "hadolint"), (shfmt, "shfmt")):
+    print(tool, *module.resolve_release(tool))
+"""
 
 
 class TestPinnedRelease(unittest.TestCase):
@@ -89,6 +116,28 @@ class TestInstallersUseThePins(unittest.TestCase):
             with self.subTest(tool=tool):
                 self.assertFalse(hasattr(module, "resolve_latest_tag"))
                 self.assertFalse(hasattr(module, "_LATEST_URL"))
+
+
+class TestBootstrapNeedsNoPyYAML(unittest.TestCase):
+    """Every ``lint-*`` target depends on ``install-lint``, which runs before
+    the Python dependencies exist. Importing PyYAML from the pin reader broke
+    the whole lint stage with ``ModuleNotFoundError: No module named 'yaml'``.
+    """
+
+    def test_the_installers_import_and_resolve_without_pyyaml(self) -> None:
+        result = subprocess.run(
+            [sys.executable, "-c", _BOOTSTRAP_PROBE],
+            cwd=str(PROJECT_ROOT),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for _module, tool, _env in _INSTALLERS:
+            self.assertIn(tool, result.stdout)
+
+    def test_the_hand_parser_agrees_with_pyyaml(self) -> None:
+        self.assertEqual(_parse_pins(read_text(str(_PINS))), load_yaml_any(str(_PINS)))
 
 
 if __name__ == "__main__":  # pragma: no cover

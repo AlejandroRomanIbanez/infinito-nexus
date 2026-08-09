@@ -10,6 +10,14 @@ current.
 The installers therefore never ask GitHub which version is current: that made
 every install non-reproducible and turned a DNS hiccup into a hard
 `make install-lint` failure.
+
+The pins are parsed by hand instead of through ``utils.cache.yaml`` because
+every ``lint-*`` target depends on ``install-lint``, which bootstraps the
+toolchain on a bare interpreter -- PyYAML is not installed yet at that point,
+and importing it here fails the whole lint stage with ``ModuleNotFoundError``.
+``_parse_pins`` therefore only understands the two-level shape this one file
+uses; ``tests/unit/utils/install/lint/test_pinned_versions.py`` cross-checks it
+against PyYAML so the two readings cannot drift apart.
 """
 
 from __future__ import annotations
@@ -19,13 +27,38 @@ import re
 from typing import TYPE_CHECKING
 
 from utils import PROJECT_ROOT
-from utils.cache.yaml import load_yaml_any
+from utils.cache.files import read_text
 from utils.roles.mapping import ROLE_FILE_META_SERVICES
 
 if TYPE_CHECKING:
     from pathlib import Path
 
 _SLUG_RE = re.compile(r"github\.com[/:](?P<slug>[^/]+/[^/]+?)(?:\.git)?/?$")
+
+
+def _parse_pins(text: str) -> dict[str, dict[str, str]]:
+    """The ``{tool: {field: value}}`` mapping *text* declares.
+
+    Args:
+        text: the contents of a ``meta/services.yml`` holding release pins.
+
+    Returns:
+        one entry per unindented ``tool:`` key, each holding the indented
+        ``field: value`` lines below it.
+    """
+    pins: dict[str, dict[str, str]] = {}
+    entry: dict[str, str] | None = None
+    for line in text.splitlines():
+        stripped = line.strip()
+        if not stripped or stripped.startswith(("#", "---")):
+            continue
+        key, _, value = stripped.partition(":")
+        if line[:1].isspace():
+            if entry is not None:
+                entry[key.strip()] = value.strip()
+        else:
+            entry = pins.setdefault(key.strip(), {})
+    return pins
 
 
 def pinned_release(tool: str, roles_dir: Path | None = None) -> tuple[str, str]:
@@ -45,24 +78,23 @@ def pinned_release(tool: str, roles_dir: Path | None = None) -> tuple[str, str]:
     """
     root = roles_dir if roles_dir is not None else PROJECT_ROOT / "roles"
     path = root / "sys-lint" / ROLE_FILE_META_SERVICES
-    data = load_yaml_any(str(path), default_if_missing=None)
-    if data is None:
-        raise RuntimeError(f"No release pin for {tool}: {path} is missing or empty.")
+    if not path.is_file():
+        raise RuntimeError(f"No release pin for {tool}: {path} is missing.")
 
-    entry = data.get(tool) if isinstance(data, dict) else None
-    repository = entry.get("repository") if isinstance(entry, dict) else None
-    ref = entry.get("ref") if isinstance(entry, dict) else None
-    if not isinstance(ref, str) or not ref.strip():
+    entry = _parse_pins(read_text(str(path))).get(tool, {})
+    repository = entry.get("repository", "")
+    ref = entry.get("ref", "")
+    if not ref:
         raise RuntimeError(f"No release pin for {tool}: {path} declares no ref.")
-    if not isinstance(repository, str) or not repository.strip():
+    if not repository:
         raise RuntimeError(f"No release pin for {tool}: {path} declares no repository.")
 
-    match = _SLUG_RE.search(repository.strip())
+    match = _SLUG_RE.search(repository)
     if not match:
         raise RuntimeError(
             f"Cannot derive a GitHub slug for {tool} from {repository!r} in {path}."
         )
-    return match["slug"], ref.strip().lstrip("v")
+    return match["slug"], ref.lstrip("v")
 
 
 def resolve_release(tool: str, roles_dir: Path | None = None) -> tuple[str, str]:
