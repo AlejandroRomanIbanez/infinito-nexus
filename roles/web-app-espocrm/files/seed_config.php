@@ -128,7 +128,18 @@ if ($changed) {
     if ($debug) {
         seed_debug("Changes detected, saving configuration …");
     }
-    $writer->save();
+    try {
+        $writer->save();
+    } catch (\Throwable $exc) {
+        fwrite(STDERR, sprintf(
+            "[seed] save failed: %s: %s (%s:%d)" . PHP_EOL,
+            get_class($exc),
+            $exc->getMessage(),
+            $exc->getFile(),
+            $exc->getLine()
+        ));
+        exit(1);
+    }
     echo "CHANGED\n";
 } else {
     if ($debug) {

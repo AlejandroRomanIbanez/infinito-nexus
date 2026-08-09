@@ -89,8 +89,8 @@ if [ "$_have_lock" = "1" ]; then
     log "Running image entrypoint init via $ORIG_ENTRYPOINT"
     _init_rc=0
     _init_trace="/tmp/espocrm-init-trace.log"
-    bash -x "$ORIG_ENTRYPOINT" /bin/true 2>"$_init_trace" || _init_rc=$?
-    grep -E '^(info|warning|error):' "$_init_trace" >&2 || true
+    bash -x "$ORIG_ENTRYPOINT" apache2 -v 2>"$_init_trace" >/dev/null || _init_rc=$?
+    grep -E '^(info|warning|error):' "$_init_trace" >&2 || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
     if [ "$_init_rc" -ne 0 ]; then
       log "ERROR: image entrypoint init failed (rc=$_init_rc); last trace lines:"
       tail -n 40 "$_init_trace" >&2 || true
@@ -110,6 +110,11 @@ if [ "$_have_lock" = "1" ]; then
 
   if [ ! -f "${APP_DIR}/bootstrap.php" ]; then
     log "ERROR: ${APP_DIR}/bootstrap.php is missing after the image entrypoint ran."
+    exit 1
+  fi
+
+  if [ ! -f "${APP_DIR}/data/config.php" ]; then
+    log "ERROR: ${APP_DIR}/data/config.php is missing after the image entrypoint ran; its install action did not execute."
     exit 1
   fi
 
