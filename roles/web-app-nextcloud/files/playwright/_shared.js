@@ -26,7 +26,7 @@ function getNextcloudShellCandidates(target) {
   return [
     {
       kind: "shell",
-      locator: target.locator("#app-content-vue, #app-navigation-vue, #app-content, #app-dashboard")
+      locator: target.locator("#app-content-vue, #app-navigation-vue, #app-dashboard")
     },
     {
       kind: "shell",
