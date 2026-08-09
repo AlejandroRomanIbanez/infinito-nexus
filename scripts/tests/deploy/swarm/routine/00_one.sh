@@ -18,6 +18,8 @@ set -euo pipefail
 #   INFINITO_RESCUE_DIAGNOSTICS_BASE    host dir the rescue snapshots land under
 #   INFINITO_SWARM_STEP_TIMEOUT_MINUTES deploy-step ceiling
 #   variant                             optional matrix variant pin
+#   disable                             optional provider keys to render disabled,
+#                                       minus SWARM_REQUIRED_SERVICES
 #
 # Exports:
 #   MGR/WRK1/WRK2/NFS_SERVER/BACKUP_NODE and their *_IP peers, from the topology SPOT
@@ -40,6 +42,25 @@ export SWARM_DRILL_ENV
 : "${INFINITO_IMAGE_TAG:?INFINITO_IMAGE_TAG is required (source scripts/meta/env/load.sh before invoking this script)}"
 : "${INFINITO_RESCUE_DIAGNOSTICS_BASE:?INFINITO_RESCUE_DIAGNOSTICS_BASE is required}"
 : "${INFINITO_SWARM_STEP_TIMEOUT_MINUTES:?INFINITO_SWARM_STEP_TIMEOUT_MINUTES is required}"
+
+SWARM_REQUIRED_SERVICES="node nfs-server container_backup nfs_backup"
+if [ -n "${disable:-}" ]; then
+	_keep="" _drop=""
+	IFS=', ' read -r -a _keys <<<"${disable}"
+	for _key in "${_keys[@]}"; do
+		[ -n "${_key}" ] || continue
+		case " ${SWARM_REQUIRED_SERVICES} " in
+		*" ${_key} "*) _drop="${_drop}${_drop:+,}${_key}" ;;
+		*) _keep="${_keep}${_keep:+,}${_key}" ;;
+		esac
+	done
+	if [ -n "${_drop}" ]; then
+		echo "==> disable: keeping '${_drop}' enabled -- the swarm drill needs them"
+	fi
+	disable="${_keep}"
+	export disable
+	unset _keep _drop _key _keys
+fi
 
 collect_and_teardown() {
 	rc=$?
