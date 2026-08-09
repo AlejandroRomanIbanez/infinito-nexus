@@ -56,7 +56,8 @@ nginx:
 mariadb:
   shared: false
   enabled: true
-  version: "11.4"
+  image: mariadb
+  version: "11.4" # nocheck: docker-version — deliberate pin, predates this change; the bot must not move a database major under Magento without a compatibility check
 # nocheck: shared
 # nocheck: dynamic-flag
 redis:
