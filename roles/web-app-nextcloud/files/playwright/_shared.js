@@ -204,6 +204,8 @@ async function loginToStandaloneNextcloud(adminPage, username = loginUsername, p
   const signInButton = adminPage.getByRole("button", { name: nextcloudCredentialSubmitPattern });
   const standaloneShellCandidates = getNextcloudShellCandidates(adminPage);
 
+  trackServerErrors(adminPage);
+
   await adminPage.goto(loginUrl, {
     waitUntil: "commit",
     timeout: resolveTimeout(60_000)
