@@ -11,7 +11,7 @@
 #                container over TCP (forces password auth).
 #
 # Env (rendered into test.env from templates/test.env.j2):
-#   TOR_ENABLED     true|false        (services.tor.enabled, variant-aware)
+#   TOR_ENABLED     true|false        (lookup('tor_reachable', application_id))
 #   TOR_SOCKS       SOCKS proxy       (set in test.env.j2)
 #   ONION_HOST      node onion host   (svc-net-tor services.tor.node)
 #   DB_PORT         onion-forwarded database port
