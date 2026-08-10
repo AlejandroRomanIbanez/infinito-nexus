@@ -63,7 +63,9 @@ if [ -n "${disable:-}" ]; then
 fi
 
 collect_and_teardown() {
-	rc=$?
+	rc=${1:-$?}
+	[ -n "${_teardown_done:-}" ] && return 0
+	_teardown_done=1
 
 	if [ "${rc}" -ne 0 ]; then
 		rescue_dir="${INFINITO_RESCUE_DIAGNOSTICS_BASE}/${INFINITO_DISTRO}/${APP_ID}"
@@ -82,6 +84,7 @@ collect_and_teardown() {
 	return "${rc}"
 }
 trap collect_and_teardown EXIT
+trap 'collect_and_teardown 143' TERM
 
 # shellcheck source=scripts/tests/deploy/utils/filesystem/pick.sh
 . "${REPO_ROOT}/scripts/tests/deploy/utils/filesystem/pick.sh"
