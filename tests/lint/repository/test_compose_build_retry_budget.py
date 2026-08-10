@@ -87,8 +87,8 @@ class TestComposeBuildRetryBudget(unittest.TestCase):
         for name, (path, var) in BUILDS.items():
             task = _by_name(path, name)
             worst = (
-                task["retries"] * _timeout(task)
-                + (task["retries"] - 1) * task["delay"]
+                (1 + task["retries"]) * _timeout(task)
+                + task["retries"] * task["delay"]
                 + sum(_timeout(f) for f in _fallbacks(path, var))
             )
             self.assertLess(worst, budget, f"{name} outgrows the sweep budget")
