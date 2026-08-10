@@ -34,6 +34,9 @@ BUILDS = {
 }
 TIMEOUT_LOOKUP = re.compile(r"lookup\('timeout',\s*(\d+)\s*\)")
 
+ROLE = PROJECT_ROOT / "roles" / "sys-svc-compose"
+GATE = "swarm/stack_ready.sh"
+
 
 def _tasks(path):
     return load_yaml_any(str(path), default_if_missing=[]) or []
@@ -93,6 +96,28 @@ class TestComposeBuildRetryBudget(unittest.TestCase):
             )
             self.assertLess(worst, budget, f"{name} outgrows the sweep budget")
             self.assertLess(worst, cap, f"{name} outgrows the deploy step cap")
+
+    def test_every_convergence_gate_waits_the_same_budget(self) -> None:
+        """Both callers poll the same script for the same stack, so a budget that
+        fits one fits the other. They drifted once -- the handler was raised to
+        600 while post_deploy kept a hardcoded 150 -- and the shorter one then
+        killed a healthy-but-slow stack on its own."""
+        budgets = {}
+        for path in sorted(ROLE.rglob("*.yml")):
+            for task in _tasks(path):
+                if not isinstance(task, dict):
+                    continue
+                if GATE in str(task.get("ansible.builtin.script", "")):
+                    budgets[f"{path.relative_to(PROJECT_ROOT)}:{task.get('name')}"] = (
+                        str(task.get("retries")),
+                        str(task.get("delay")),
+                    )
+        self.assertGreaterEqual(len(budgets), 2, f"gate callers not found: {budgets}")
+        self.assertEqual(
+            len(set(budgets.values())),
+            1,
+            f"convergence gate callers disagree on their budget: {budgets}",
+        )
 
     def test_the_registry_exclusion_has_a_single_source(self) -> None:
         self.assertEqual(read_text(str(SWARM)).count("svc-registry-docker"), 1)
