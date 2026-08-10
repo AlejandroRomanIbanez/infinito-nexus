@@ -38,6 +38,12 @@ for (const persona of PERSONAS) {
     await page.goto(`${appBaseUrl}/login`, { waitUntil: "domcontentloaded" });
 
     if (ssoEnabled) {
+      await expect
+        .poll(() => page.url(), {
+          timeout: 60_000,
+          message: "the oauth2 ACL protects /login, so the proxy must hand the persona to Keycloak",
+        })
+        .not.toContain(canonicalDomain);
       await performKeycloakLoginForm(page, persona.username, persona.password);
       await expect
         .poll(() => page.url(), {
@@ -47,14 +53,15 @@ for (const persona of PERSONAS) {
         .toContain(canonicalDomain);
     }
 
-    const password = page.locator("input[type='password']:visible").first();
+    const loginForm = page.locator("form:has(input[type='password'])").first();
+    const password = loginForm.locator("input[type='password']").first();
     await expect(
       password,
       "Funkwhale serves its own sign-in form on /login; the proxy only gates the route, it does not create an application session",
     ).toBeVisible({ timeout: 60_000 });
 
-    await page
-      .locator("input[type='text']:visible, input[type='email']:visible")
+    await loginForm
+      .locator("input[type='text'], input[type='email']")
       .first()
       .fill(persona.username);
     await password.fill(persona.password);
