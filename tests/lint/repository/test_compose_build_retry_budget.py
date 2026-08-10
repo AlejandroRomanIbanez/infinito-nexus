@@ -14,8 +14,9 @@ from __future__ import annotations
 
 import re
 import unittest
+from pathlib import Path
 
-from utils.cache.files import read_text
+from utils.cache.files import iter_project_files, read_text
 from utils.cache.yaml import load_yaml_any
 from utils.env.parser import parse_static_env
 
@@ -103,12 +104,15 @@ class TestComposeBuildRetryBudget(unittest.TestCase):
         600 while post_deploy kept a hardcoded 150 -- and the shorter one then
         killed a healthy-but-slow stack on its own."""
         budgets = {}
-        for path in sorted(ROLE.rglob("*.yml")):
+        for path in sorted(iter_project_files(extensions=(".yml",))):
+            if not path.startswith(str(ROLE)):
+                continue
             for task in _tasks(path):
                 if not isinstance(task, dict):
                     continue
                 if GATE in str(task.get("ansible.builtin.script", "")):
-                    budgets[f"{path.relative_to(PROJECT_ROOT)}:{task.get('name')}"] = (
+                    rel = Path(path).relative_to(PROJECT_ROOT)
+                    budgets[f"{rel}:{task.get('name')}"] = (
                         str(task.get("retries")),
                         str(task.get("delay")),
                     )
