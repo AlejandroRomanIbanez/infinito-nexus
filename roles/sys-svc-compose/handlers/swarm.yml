@@ -9,7 +9,7 @@
 - name: "swarm: pre-deploy build of local images"
   ansible.builtin.shell: |
     set -euo pipefail
-    compose build
+    timeout -k 60 {{ lookup('timeout', 3600) | int }} compose build
   args:
     chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
     executable: /bin/bash
@@ -28,7 +28,7 @@
 - name: "swarm: rebuild without cache once the spaced retries are exhausted"
   ansible.builtin.shell: |
     set -euo pipefail
-    compose build --no-cache --pull
+    timeout -k 60 {{ lookup('timeout', 3600) | int }} compose build --no-cache --pull
   args:
     chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
     executable: /bin/bash
