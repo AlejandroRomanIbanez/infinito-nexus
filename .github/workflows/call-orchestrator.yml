@@ -56,6 +56,11 @@ on:
         required: false
         type: string
         default: "auto"
+      workspace_track:
+        description: "Which workspace track each distro runs: 'rotate' splits them across compose and swarm and flips with the run number, 'compose'/'swarm' pin every distro."
+        required: false
+        type: string
+        default: "rotate"
       instructions:
         description: "Run the instructions test (role README Production command). 'auto' runs it on a global scope only, 'true'/'false' force it."
         required: false
@@ -477,6 +482,8 @@ jobs:
   test-workspace:
     if: ${{ inputs.workspace == 'true' || (inputs.workspace == 'auto' && (inputs.whitelist == '' || inputs.whitelist == '__ALL__')) }}
     uses: ./.github/workflows/call-test-workspace.yml
+    with:
+      workspace_track: ${{ inputs.workspace_track }}
     needs:
       - images-mirror-missing
       - lint

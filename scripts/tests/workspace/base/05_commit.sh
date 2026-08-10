@@ -3,8 +3,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=scripts/tests/environment/utils/common.sh
-source "${SCRIPT_DIR}/utils/common.sh"
+# shellcheck source=scripts/tests/workspace/utils/common.sh
+source "${SCRIPT_DIR}/../utils/common.sh"
 
 cd "${REPO_ROOT}"
 
@@ -74,7 +74,6 @@ trap 'cleanup "$?"' EXIT
 
 git checkout -b "${TEST_BRANCH}"
 
-# --- Step 1: Create a failing unit test and verify the hook blocks the commit.
 echo "Creating a unit test that fails intentionally."
 cat >tests/unit/test_pre_commit_hook_failure.py <<'EOF'
 import unittest
@@ -93,17 +92,14 @@ if git commit -m "test: failing unit test (should be blocked)"; then
 fi
 echo "[OK] Commit correctly blocked by pre-commit hook."
 
-# --- Step 2: Commit with --no-verify to bypass the hook.
 echo "Committing the failing unit test with --no-verify to bypass the hook."
 git commit --no-verify -m "test: failing unit test committed with --no-verify"
 echo "[OK] Commit with --no-verify succeeded."
 
-# --- Step 3: Revert the bypass commit.
 echo "Reverting the --no-verify commit."
 git revert --no-edit HEAD
 echo "[OK] Revert succeeded."
 
-# --- Step 4: Create a passing unit test and commit without --no-verify.
 echo "Creating a clean unit test that passes."
 cat >tests/unit/test_pre_commit_hook_success.py <<'EOF'
 import unittest

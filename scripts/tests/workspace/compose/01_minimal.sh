@@ -3,10 +3,10 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=scripts/tests/environment/utils/common.sh
-source "${SCRIPT_DIR}/utils/common.sh"
-# shellcheck source=scripts/tests/environment/utils/cache.sh
-source "${SCRIPT_DIR}/utils/cache.sh"
+# shellcheck source=scripts/tests/workspace/utils/common.sh
+source "${SCRIPT_DIR}/../utils/common.sh"
+# shellcheck source=scripts/tests/workspace/utils/cache.sh
+source "${SCRIPT_DIR}/../utils/cache.sh"
 
 echo "Snapshotting cache counters before the deploy."
 CACHE_BEFORE="$(cache_snapshot)"

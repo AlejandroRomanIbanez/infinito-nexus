@@ -7,21 +7,14 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=scripts/tests/environment/utils/common.sh
-source "${SCRIPT_DIR}/utils/common.sh"
+# shellcheck source=scripts/tests/workspace/utils/common.sh
+source "${SCRIPT_DIR}/../utils/common.sh"
 
 cd "${REPO_ROOT}"
 
 log_file="$(mktemp -t infinito-console-smoke.XXXXXX)"
 trap 'rm -f "${log_file}"' EXIT
 
-# Feed a navigation sequence covering every entry point:
-#   - bare-category cd  : administration / meta
-#   - infinito alone    : jumps to root
-#   - infinito <path>   : absolute jump even from a nested cwd
-#   - / and ..          : root and up-one
-#   - /abs/path         : absolute path nav with slashes
-#   - ../rel/path       : relative path nav with leading dotdot
 printf '%s\n' \
 	'ls' \
 	'administration' \

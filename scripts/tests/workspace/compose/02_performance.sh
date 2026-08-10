@@ -3,8 +3,8 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-# shellcheck source=scripts/tests/environment/utils/common.sh
-source "${SCRIPT_DIR}/utils/common.sh"
+# shellcheck source=scripts/tests/workspace/utils/common.sh
+source "${SCRIPT_DIR}/../utils/common.sh"
 
 echo "Deploying matomo (full cycle: deploy + update pass) so it becomes reachable via its dedicated inventory entry."
 make compose-deploy mode=reinstall apps="${MATOMO_APP}" full_cycle=true

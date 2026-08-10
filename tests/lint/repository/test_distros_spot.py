@@ -107,7 +107,7 @@ class TestDistrosSpot(unittest.TestCase):
         compares what it writes to ``GITHUB_OUTPUT`` against the SPOT."""
         jobs = load_yaml_any(str(WORKSPACE_WORKFLOW), default_if_missing={})["jobs"]
         consumer = jobs["test-workspace"]
-        axis = consumer["strategy"]["matrix"]["dev_runtime_image"]
+        axis = consumer["strategy"]["matrix"]["include"]
         ref = _MATRIX_REF_RE.match(str(axis))
         self.assertIsNotNone(
             ref,
@@ -151,10 +151,15 @@ class TestDistrosSpot(unittest.TestCase):
             step_key,
             f"the resolver writes {key!r}, {resolver_id!r} publishes {step_key!r}.",
         )
+        entries = json.loads(value)
         self.assertEqual(
-            tuple(json.loads(value)),
+            tuple(entry["image"] for entry in entries),
             dev_runtime_images(),
             f"the {resolver_id!r} job's resolver drifted from {FILE_META_DISTROS}.",
+        )
+        self.assertTrue(
+            all(entry["track"] for entry in entries),
+            f"every {resolver_id!r} entry must carry a workspace track: {entries}",
         )
 
     def _sources(self, pattern: str):

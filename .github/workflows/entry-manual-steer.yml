@@ -61,6 +61,15 @@ on:
           - "auto"
           - "true"
           - "false"
+      workspace_track:
+        description: "🧑‍💻 Which workspace track each distro runs. 'rotate' splits them across compose and swarm and flips with the run number, so two runs cover both everywhere."
+        required: false
+        default: "rotate"
+        type: choice
+        options:
+          - "rotate"
+          - "compose"
+          - "swarm"
       instructions:
         description: "📖 Run the instructions test (role README Production command). 'auto' runs it on a global scope only."
         required: false
@@ -107,6 +116,7 @@ jobs:
       mode_fail_fast: ${{ inputs.mode_fail_fast }}
       filesystem: ${{ inputs.filesystem }}
       workspace: ${{ inputs.workspace }}
+      workspace_track: ${{ inputs.workspace_track }}
       instructions: ${{ inputs.instructions }}
       force_cancel_in_progress: true
     secrets: inherit
