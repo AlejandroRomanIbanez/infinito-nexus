@@ -123,7 +123,7 @@ jobs:
             '
 
       - name: 🩺 Capture rescue diagnostics
-        if: failure()
+        if: failure() || cancelled()
         timeout-minutes: 15
         shell: bash
         run: |

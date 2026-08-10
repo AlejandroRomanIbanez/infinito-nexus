@@ -211,7 +211,7 @@ jobs:
           if-no-files-found: ignore
 
       - name: 🩺 Dump runner state (on failure)
-        if: failure()
+        if: failure() || cancelled()
         timeout-minutes: 5
         shell: bash
         run: ./scripts/github/runner/dump_state.sh "post-deploy failure (${{ matrix.apps }})"
