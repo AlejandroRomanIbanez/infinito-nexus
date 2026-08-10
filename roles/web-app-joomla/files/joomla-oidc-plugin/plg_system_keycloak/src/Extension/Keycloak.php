@@ -36,6 +36,7 @@ class Keycloak extends CMSPlugin
     private const ENV_CLIENT_ID      = 'JOOMLA_OIDC_CLIENT_ID';
     private const ENV_CLIENT_SECRET  = 'JOOMLA_OIDC_CLIENT_SECRET';
     private const ENV_REDIRECT_URI   = 'JOOMLA_OIDC_REDIRECT_URI';
+    private const ENV_SOCKS_PROXY    = 'JOOMLA_OIDC_SOCKS_PROXY';
     private const ENV_FALLBACK       = 'JOOMLA_OIDC_FALLBACK_ENABLED';
     private const ENV_GROUP_ADMIN    = 'JOOMLA_OIDC_GROUP_ADMIN';
     private const ENV_GROUP_EDITOR   = 'JOOMLA_OIDC_GROUP_EDITOR';
@@ -91,12 +92,6 @@ class Keycloak extends CMSPlugin
         }
         $input = $this->app->getInput();
         $fallbackRequested = (string) $input->getCmd('fallback', '') === 'local';
-        // The form-login POST that follows the initial GET does NOT
-        // carry the `fallback=local` query, so we sticky-bit a
-        // short-lived cookie when the query is first seen and honour
-        // it for the next ~10 minutes (covers the local form-login
-        // round-trip, then either the user is logged in or the
-        // cookie expires and the IdP gate re-engages).
         if ($fallbackRequested) {
             setcookie(self::FALLBACK_COOKIE, '1', [
                 'expires'  => time() + self::FALLBACK_COOKIE_TTL,
@@ -170,6 +165,10 @@ class Keycloak extends CMSPlugin
             );
         }
         $client = new OpenIDConnectClient($issuer, $clientId, $clientSecret);
+        $socksProxy = (string) (getenv(self::ENV_SOCKS_PROXY) ?: '');
+        if ($socksProxy !== '') {
+            $client->setHttpProxy($socksProxy);
+        }
         $client->setRedirectURL($redirectUri);
         $client->addScope(['openid', 'profile', 'email', 'groups']);
         $client->setVerifyHost(true);
