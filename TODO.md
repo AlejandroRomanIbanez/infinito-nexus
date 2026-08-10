@@ -20,6 +20,53 @@ failure class from that run is committed (hlth-csp onion-sibling skip,
 onion-aware Playwright request timeouts + lint guard, joomla server-side OIDC
 reachability). The items below are the ones that are NOT fixed yet.
 
+- **https on the onion IdP — investigated and REJECTED, do not re-derive.** OIDC
+  Discovery / RFC 8414 want an https issuer, and an onion-exclusive Keycloak has
+  none, so strict client libraries refuse it. Serving TLS on the onion is blocked
+  on four independent things, in this order: (1) `roles/svc-net-tor/templates/torrc.j2`
+  publishes only `HiddenServicePort 80`, and no role declares 443 in
+  `ports.public`/`ports.local`, so `lookup('tor_ports')` can never emit it —
+  flipping TLS on first makes Keycloak unreachable over Tor entirely, because
+  `nginx_ssl_header.j2` is one if/else and port 80 disappears; (2)
+  `roles/sys-front-tls-selfsigned/tasks/00_core.yml` writes an unguarded CN, which
+  overflows X.509's 64-byte cap on a 62-char v3 onion — `group_vars/all/02_tls.yml`
+  already guards exactly this for the root CA and nowhere else; (3)
+  `nginx_ssl_header.j2` emits HSTS in the same branch, and browsers offer no
+  click-through on an HSTS host with an untrusted chain, so a self-signed interim
+  locks real users out while staying invisible to Playwright's
+  `ignoreHTTPSErrors`; (4) it fixes zero libcurl consumers, because RFC 7686
+  refusal happens at name resolution and is scheme-independent. Unblocking needs a
+  CA that issues for v3 `.onion` (HARICA, CA/B Forum ballot 144) — procurement,
+  not code. Until then the per-consumer fixes stand: SOCKS proxy for libcurl
+  clients, and the `PEERTUBE_OIDC_ALLOW_INSECURE_ISSUER` dist patch for
+  openid-client v6.
+
+- **peertube OIDC dist patch — a hack, kept deliberately, remove when upstream
+  lands.** `roles/web-app-peertube/tasks/oidc/enable.yml` runs a `sed` over the
+  npm-installed `dist/main.js` of `peertube-plugin-auth-openid-connect` so the
+  plugin honours `PEERTUBE_OIDC_ALLOW_INSECURE_ISSUER` (set in `templates/env.j2`
+  only when the issuer is an onion). It exists because openid-client v6 refuses a
+  non-HTTPS issuer and the plugin gates its own escape hatch on `NODE_ENV` alone,
+  which would swap PeerTube's whole runtime profile. Patching a third party's
+  compiled output is fragile by construction; the `grep -q` after the `sed` is
+  what keeps it honest — an upstream release that moves the line fails the deploy
+  loudly instead of silently doing nothing.
+  Exit path, in order: (1) file the issue and MR upstream — the plugin is an
+  official Framasoft one by Chocobozzz, AGPL-3.0 per the repo root `LICENSE`
+  (the npm package just ships no license field), and the fix is a
+  `registerSetting({ name: 'allow-insecure-issuer', type: 'input-checkbox',
+  default: false })` OR-ed into the existing condition; issue text and patch are
+  written and waiting. Currently blocked: the framagit account is not approved
+  yet. (2) Until it merges, run a fork — `git subtree split --prefix=
+  peertube-plugin-auth-openid-connect` gives a standalone repo (the 16 official
+  plugins sit flat in the root with no shared build, so nothing is missing except
+  the root `LICENSE`, which must be copied), built with `npm ci && npm run build`
+  because `library: ./dist/main.js` and `.npmignore` excludes `src`, and installed
+  with `--plugin-path`: `--npm-name` cannot take a git URL because
+  `getTypeFromNpmName` requires a `peertube-plugin-*` name, while `--plugin-path`
+  only needs the *directory* to carry that name. (3) Delete the sed task, the env
+  var and this entry once the setting is released.
+
 - **dual-family providers** — the one real remaining design gap. On a CI onion
   node, tor-enabled providers (e.g. mastodon) are onion-exclusive: their domain
   list contains only the `.onion` canonical, no clearnet sibling. The
