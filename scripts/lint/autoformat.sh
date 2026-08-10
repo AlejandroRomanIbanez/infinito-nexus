@@ -19,6 +19,9 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 
 cd "${REPO_ROOT}"
 
+RUFF_CACHE_DIR="build/ruff-cache-$(id -u)"
+export RUFF_CACHE_DIR
+
 # Exception: no trap-delete on EXIT for status_dir -- that would race the
 # background workers if the parent shell is interrupted mid-run (the trap
 # fires, the dir disappears, an in-flight worker then tries to write its
@@ -168,9 +171,6 @@ workers=(run_ruff run_claude run_shell_pair run_markdownlint run_ansible_lint ru
 
 if is_truthy "${PARALLEL}"; then
 	for w in "${workers[@]}"; do "${w}" & done
-	# `|| true` so `set -e` does not abort the parent if any worker
-	# exited non-zero — write_status has still run, and we want to reach
-	# the summary block.
 	wait || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 else
 	for w in "${workers[@]}"; do "${w}" || true; done # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
