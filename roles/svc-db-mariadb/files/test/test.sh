@@ -101,7 +101,8 @@ def pipe(a, b):
 def handle(conn):
     try:
         up = socks_connect()
-    except OSError:
+    except OSError as exc:
+        print("socks connect failed: %s" % exc, file=sys.stderr)
         conn.close()
         return
     threading.Thread(target=pipe, args=(conn, up), daemon=True).start()
