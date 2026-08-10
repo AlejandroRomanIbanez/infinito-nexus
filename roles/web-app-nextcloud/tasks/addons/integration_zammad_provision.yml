@@ -11,8 +11,8 @@
 
 - name: ⏳ Wait for the Zammad web endpoint
   wait_for:
-    host: "{{ lookup('domain', 'web-app-zammad') }}"
-    port: 80
+    host: "{{ DOCKER_REACH_HOST }}"
+    port: "{{ lookup('config', 'web-app-zammad', 'services.zammad.ports.local.http') }}"
     delay: 5
     timeout: "{{ lookup('timeout', 600) | int }}"
 

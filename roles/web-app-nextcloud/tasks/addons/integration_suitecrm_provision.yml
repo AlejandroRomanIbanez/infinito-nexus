@@ -1,8 +1,8 @@
 ---
 - name: ⏳ Wait for the SuiteCRM web endpoint
   wait_for:
-    host: "{{ lookup('domain', 'web-app-suitecrm') }}"
-    port: 80
+    host: "{{ DOCKER_REACH_HOST }}"
+    port: "{{ lookup('config', 'web-app-suitecrm', 'services.suitecrm.ports.local.http') }}"
     delay: 5
     timeout: "{{ lookup('timeout', 600) | int }}"
 
