@@ -25,13 +25,16 @@ separate jobs with a budget each.
 | compose | [compose/02_performance.sh](compose/02_performance.sh) | Compose deploy of the full application set on performance hardware |
 | compose | [compose/03_reuse.sh](compose/03_reuse.sh) | Compose redeploy reusing existing inventory and packages |
 | compose | [compose/04_teardown.sh](compose/04_teardown.sh) | Shuts down the stack and reverses environment changes |
-| swarm | [swarm/01_zombie.sh](swarm/01_zombie.sh) | Swarm deploy of the MariaDB database role (svc-db-mariadb) |
-| swarm | [swarm/02_roundtrip.sh](swarm/02_roundtrip.sh) | Compose+swarm roundtrip of the PostgreSQL database role (svc-db-postgres) |
+| swarm | [swarm/01_teardown.sh](swarm/01_teardown.sh) | Releases the development stack so the swarm cluster runs alone |
+| swarm | [swarm/02_zombie.sh](swarm/02_zombie.sh) | Swarm deploy of the MariaDB database role (svc-db-mariadb) |
+| swarm | [swarm/03_roundtrip.sh](swarm/03_roundtrip.sh) | Compose+swarm roundtrip of the PostgreSQL database role (svc-db-postgres) |
+| swarm | [swarm/04_teardown.sh](swarm/04_teardown.sh) | Shuts down the stack and reverses environment changes |
 
 | Shared | Purpose |
 |---|---|
 | [utils/common.sh](utils/common.sh) | Shared bootstrap, constants, and generic helpers (HTTP assertion, inventory inspection) |
 | [utils/cache.sh](utils/cache.sh) | Cache-stack assertions and probes (registry-cache, package-cache, DiD inner-build) |
+| [utils/teardown.sh](utils/teardown.sh) | Stack shutdown and environment reversal, shared by both closing steps |
 
 ## Usage
 
