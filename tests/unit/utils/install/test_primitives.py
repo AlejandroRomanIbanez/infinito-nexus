@@ -8,8 +8,11 @@ import unittest
 import unittest.mock as mock
 from http.client import RemoteDisconnected
 from pathlib import Path
-from typing import Self
+from typing import TYPE_CHECKING
 from urllib.error import HTTPError
+
+if TYPE_CHECKING:
+    from typing import Self
 
 from utils.install import primitives
 
@@ -67,7 +70,7 @@ class _FakeResponse:
     def read(self) -> bytes:
         return self._payload
 
-    def __enter__(self) -> _FakeResponse:
+    def __enter__(self) -> Self:
         return self
 
     def __exit__(self, *exc: object) -> bool:
