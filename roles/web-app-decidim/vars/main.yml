@@ -1,6 +1,7 @@
 ---
 application_id: "web-app-decidim"
 domain: "{{ lookup('domain', application_id) }}"
+swarm_stack_converge_retries: 600
 
 DECIDIM_VERSION: "{{ lookup('config', application_id, 'services.decidim.version') }}"
 DECIDIM_IMAGE: "{{ lookup('config', application_id, 'services.decidim.image') }}"

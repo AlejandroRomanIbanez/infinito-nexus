@@ -30,6 +30,8 @@ decidim:
   healthcheck:
     flavor: curl
     path: up
+    interval: 10s
+    start_period: 180s
   modes:
     compose:
       enabled: true
