@@ -41,19 +41,28 @@ branches="$(
 while read -r branch; do
 	[[ -n "${branch}" ]] || continue
 
-	run_id="$(
+	runs="$(
 		gh run list \
 			--repo "${REPOSITORY}" \
 			--branch "${branch}" \
-			--limit 1 \
-			--json databaseId,conclusion,attempt,updatedAt |
-			jq -r --arg cutoff "${cutoff}" --argjson max "${MAX_ATTEMPTS}" '
+			--limit 20 \
+			--json databaseId,conclusion,status,attempt,updatedAt
+	)"
+
+	active="$(jq -r 'map(select(.status != "completed")) | length' <<<"${runs}")"
+	if [[ "${active}" != "0" ]]; then
+		echo "${branch}: ${active} run(s) still active, leaving the cancelled one alone"
+		continue
+	fi
+
+	run_id="$(
+		jq -r --arg cutoff "${cutoff}" --argjson max "${MAX_ATTEMPTS}" '
         .[0]
         | select(.conclusion == "cancelled")
         | select($max == 0 or .attempt < $max)
         | select(.updatedAt > $cutoff)
         | .databaseId
-      '
+      ' <<<"${runs}"
 	)"
 
 	[[ -n "${run_id}" ]] || continue
