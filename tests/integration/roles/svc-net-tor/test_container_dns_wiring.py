@@ -38,6 +38,13 @@ class TestDnsmasqListeners(unittest.TestCase):
         self.assertIn("listen-address=127.0.0.1", rendered)
         self.assertNotIn("listen-address=172.17", rendered)
 
+    def test_no_bind_policy_when_the_listener_is_not_ours(self):
+        rendered = _render_dnsmasq(
+            TOR_DNSMASQ_OWNS_LISTENER=False, TOR_CONTAINER_DNS_HOST=""
+        )
+        self.assertNotIn("bind-dynamic", rendered)
+        self.assertNotIn("listen-address", rendered)
+
     def test_onion_queries_go_to_the_tor_resolver(self):
         self.assertIn("server=/onion/127.0.0.1#9053", _render_dnsmasq())
 
