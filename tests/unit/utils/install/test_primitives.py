@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 import os
+import tempfile
 import unittest
 import unittest.mock as mock
+from http.client import RemoteDisconnected
+from pathlib import Path
+from typing import Self
+from urllib.error import HTTPError
 
 from utils.install import primitives
 
@@ -53,6 +58,76 @@ class TestEnsureDirOnPath(unittest.TestCase):
         with mock.patch.dict(os.environ, {"PATH": original}, clear=False):
             primitives.ensure_dir_on_path("")
             self.assertEqual(os.environ["PATH"], original)
+
+
+class _FakeResponse:
+    def __init__(self, payload: bytes) -> None:
+        self._payload = payload
+
+    def read(self) -> bytes:
+        return self._payload
+
+    def __enter__(self) -> _FakeResponse:
+        return self
+
+    def __exit__(self, *exc: object) -> bool:
+        return False
+
+
+class TestDownloadFile(unittest.TestCase):
+    def setUp(self) -> None:
+        self._tmp = tempfile.TemporaryDirectory()
+        self.target = str(Path(self._tmp.name) / "asset")
+        self.addCleanup(self._tmp.cleanup)
+
+    def test_retries_a_dropped_connection_then_succeeds(self) -> None:
+        opener = mock.Mock(
+            side_effect=[RemoteDisconnected(), _FakeResponse(b"payload")]
+        )
+        with (
+            mock.patch.object(primitives, "urlopen", opener),
+            mock.patch.object(primitives.time, "sleep"),
+        ):
+            primitives.download_file("https://example.test/a", self.target)
+        self.assertEqual(opener.call_count, 2)
+        self.assertEqual(Path(self.target).read_bytes(), b"payload")
+
+    def test_client_error_is_fatal_on_the_first_attempt(self) -> None:
+        opener = mock.Mock(
+            side_effect=HTTPError("https://example.test/a", 404, "Not Found", {}, None)
+        )
+        with (
+            mock.patch.object(primitives, "urlopen", opener),
+            mock.patch.object(primitives.time, "sleep"),
+            self.assertRaises(HTTPError),
+        ):
+            primitives.download_file("https://example.test/a", self.target)
+        self.assertEqual(opener.call_count, 1)
+        self.assertFalse(Path(self.target).exists())
+
+    def test_retryable_status_is_retried(self) -> None:
+        opener = mock.Mock(
+            side_effect=[
+                HTTPError("https://example.test/a", 503, "Busy", {}, None),
+                _FakeResponse(b"ok"),
+            ]
+        )
+        with (
+            mock.patch.object(primitives, "urlopen", opener),
+            mock.patch.object(primitives.time, "sleep"),
+        ):
+            primitives.download_file("https://example.test/a", self.target)
+        self.assertEqual(opener.call_count, 2)
+
+    def test_exhausted_attempts_reraise(self) -> None:
+        opener = mock.Mock(side_effect=RemoteDisconnected())
+        with (
+            mock.patch.object(primitives, "urlopen", opener),
+            mock.patch.object(primitives.time, "sleep"),
+            self.assertRaises(RemoteDisconnected),
+        ):
+            primitives.download_file("https://example.test/a", self.target)
+        self.assertEqual(opener.call_count, primitives._DOWNLOAD_ATTEMPTS)
 
 
 class TestInstallWithOptionalSudo(unittest.TestCase):
