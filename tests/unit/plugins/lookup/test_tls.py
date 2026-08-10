@@ -5,7 +5,6 @@ from unittest.mock import patch
 
 from ansible.errors import AnsibleError
 
-# Make "ansible.module_utils.tls_common" importable during plain unit tests.
 import utils.tls_common as _tls_common
 from plugins.lookup.tls import LookupModule
 
@@ -85,6 +84,21 @@ class TestTlsResolveLookup(unittest.TestCase):
             ["web-app-a", "url.base"], variables=self.base_vars, mode="app"
         )[0]
         self.assertEqual(val, "https://a.example/")
+
+    def test_protocols_web_path_is_http_for_an_onion_only_app(self):
+        onion = dict(self.base_vars)
+        onion["domains"] = {**self.domains, "web-app-onion": "abc123.onion"}
+        onion["applications"] = {**self.applications, "web-app-onion": {}}
+        val = self.lookup.run(
+            ["web-app-onion", "protocols.web"], variables=onion, mode="app"
+        )[0]
+        self.assertEqual(val, "http")
+
+    def test_protocols_web_path_is_https_for_a_clearnet_app(self):
+        val = self.lookup.run(
+            ["web-app-a", "protocols.web"], variables=self.base_vars, mode="app"
+        )[0]
+        self.assertEqual(val, "https")
 
     def test_missing_required_vars(self):
         with self.assertRaises(AnsibleError):
