@@ -1,11 +1,12 @@
 """Behaviour of the swarm convergence gate.
 
 ``stack_ready.sh`` decides whether a swarm deploy is done. It is driven by an
-Ansible ``until`` loop of up to 150 polls, so both its verdict and how much it
-prints on a failing poll matter. Exercised here against a stub docker: a fully
-replicated stack passes, a short one fails, a completed one-shot counts as done,
-and a non-converged service reports the task rows that carry an error while
-staying quiet about the ones that do not.
+Ansible ``until`` loop, so both its verdict and how much it prints on a failing
+poll matter. Exercised here against a stub docker: a fully replicated stack
+passes, a short one fails, a completed one-shot counts as done, and a
+non-converged service reports every task row. Rows with an empty error field
+are the interesting ones -- a healthy-but-slow task carries no error, and
+suppressing it is what once hid a service that simply needed more time.
 """
 
 from __future__ import annotations
@@ -81,13 +82,21 @@ class TestStackReady(unittest.TestCase):
         self.assertEqual(proc.returncode, 1)
         self.assertIn("manifest pull timed out", proc.stderr)
 
-    def test_error_free_task_rows_are_not_echoed(self) -> None:
+    def test_error_free_task_rows_are_echoed(self) -> None:
         proc = self._run(
             "demo_slow 0/1\n",
             "demo_slow.1 desired=Running current=Preparing error=\n",
         )
         self.assertEqual(proc.returncode, 1)
-        self.assertNotIn("demo_slow.1", proc.stderr)
+        self.assertIn("demo_slow.1", proc.stderr)
+        self.assertIn("current=Preparing", proc.stderr)
+
+    def test_a_missing_task_state_dump_is_not_echoed_as_a_blank_line(self) -> None:
+        proc = self._run(
+            "demo_slow 0/1\n",
+            "demo_slow.1 desired=Running current=Preparing error=\n",
+        )
+        self.assertNotIn("\n    \n", proc.stderr)
 
 
 if __name__ == "__main__":

@@ -28,6 +28,26 @@ report_tasks() {
 	rows="$(printf '%s\n' "$ps" | head -10)"
 	[ -n "${rows}" ] || return 0
 	printf '%s\n' "${rows}" | sed 's/^/  /' >&2
+	report_task_states "$1"
+}
+
+# Exception: `docker service ps` renders CurrentState as prose ("Preparing 3 minutes ago"), which
+# cannot distinguish an image still extracting from a task idling on something else.
+report_task_states() {
+	local ids inspect
+	if ! ids=$(timeout 15 docker service ps --no-trunc --format '{{.ID}}' "$1" 2>/dev/null); then
+		return 0
+	fi
+	ids="$(printf '%s\n' "${ids}" | head -10 | tr '\n' ' ')"
+	[ -n "${ids// /}" ] || return 0
+	# shellcheck disable=SC2086
+	if ! inspect=$(timeout 15 docker inspect --type task ${ids} \
+		--format '{{.ID}} state={{.Status.State}} since={{.Status.Timestamp}} msg={{.Status.Message}}' 2>&1); then
+		printf '  %s: task state dump failed: %s\n' "$1" "${inspect}" >&2
+		return 0
+	fi
+	[ -n "${inspect}" ] || return 0
+	printf '%s\n' "${inspect}" | sed 's/^/    /' >&2
 }
 
 if ! services=$(timeout 15 docker stack services --format '{{.Name}} {{.Replicas}}' "$STACK"); then
