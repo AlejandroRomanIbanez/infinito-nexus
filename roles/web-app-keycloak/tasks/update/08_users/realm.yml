@@ -19,8 +19,7 @@
     KEYCLOAK_USER_ENABLED: "true"
   loop: >-
     {{
-      lookup('users')
-      | non_reserved_users
+      lookup('users_non_reserved')
       | dict2items
       | selectattr('value.password', 'defined')
       | selectattr('value.password')
