@@ -15,9 +15,7 @@ force_ssl_override:
   mounts:
     - service: mastodon
       target: /opt/mastodon/config/initializers/zzz_disable_force_ssl.rb
-      read_only: true
       when: "{{ not (lookup('tls', 'web-app-mastodon', 'enabled') | bool) }}"
     - service: sidekiq
       target: /opt/mastodon/config/initializers/zzz_disable_force_ssl.rb
-      read_only: true
       when: "{{ not (lookup('tls', 'web-app-mastodon', 'enabled') | bool) }}"
