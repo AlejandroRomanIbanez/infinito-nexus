@@ -9,8 +9,9 @@ data:
       target: /mastodon/public/system
 
 force_ssl_override:
-  type: bind
+  type: config
   source: "{{ [lookup('container', 'web-app-mastodon', 'directories.instance'), 'overrides', 'zzz_disable_force_ssl.rb'] | path_join }}"
+  mode: "0444"
   mounts:
     - service: mastodon
       target: /opt/mastodon/config/initializers/zzz_disable_force_ssl.rb
