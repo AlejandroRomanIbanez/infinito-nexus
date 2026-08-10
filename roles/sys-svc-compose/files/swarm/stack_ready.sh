@@ -25,7 +25,7 @@ report_tasks() {
 		printf '  %s: docker service ps failed: %s\n' "$1" "$ps" >&2
 		return 0
 	fi
-	rows="$(printf '%s\n' "$ps" | awk '!/error=$/' | head -10)"
+	rows="$(printf '%s\n' "$ps" | head -10)"
 	[ -n "${rows}" ] || return 0
 	printf '%s\n' "${rows}" | sed 's/^/  /' >&2
 }
