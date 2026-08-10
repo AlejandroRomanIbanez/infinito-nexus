@@ -53,15 +53,14 @@ for (const persona of PERSONAS) {
         .toContain(canonicalDomain);
     }
 
-    const loginForm = page.locator("form:has(input[type='password'])").first();
-    const password = loginForm.locator("input[type='password']").first();
+    const password = page.locator("input[type='password']:visible").first();
     await expect(
       password,
       "Funkwhale serves its own sign-in form on /login; the proxy only gates the route, it does not create an application session",
     ).toBeVisible({ timeout: 60_000 });
 
-    await loginForm
-      .locator("input[type='text'], input[type='email']")
+    await page
+      .locator("input[type='text']:visible, input[type='email']:visible")
       .first()
       .fill(persona.username);
     await password.fill(persona.password);
