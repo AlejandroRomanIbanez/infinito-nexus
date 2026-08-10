@@ -93,7 +93,7 @@ class TestDownloadFile(unittest.TestCase):
         ):
             primitives.download_file("https://example.test/a", self.target)
         self.assertEqual(opener.call_count, 2)
-        self.assertEqual(Path(self.target).read_bytes(), b"payload")
+        self.assertEqual(Path(self.target).read_bytes(), b"payload")  # nocheck: cache-read
 
     def test_client_error_is_fatal_on_the_first_attempt(self) -> None:
         opener = mock.Mock(
