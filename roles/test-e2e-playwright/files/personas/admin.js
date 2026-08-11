@@ -45,6 +45,7 @@ async function runAdminFlow(page, opts = {}) {
   await page.goto(`${appBaseUrl}/`, { waitUntil: "domcontentloaded" }).catch(() => {});
 
   let keycloakRoundTripCompleted = false;
+  let authPage = page;
   if (adminUsername && adminPassword) {
     if (oidcEnabled && !page.url().includes("openid-connect/auth")) {
       const strictLogin = page
@@ -55,10 +56,10 @@ async function runAdminFlow(page, opts = {}) {
         .getByRole("link", { name: /log\s*in|sign\s*in|sso|admin/i })
         .or(page.getByRole("button", { name: /log\s*in|sign\s*in|sso|admin/i }))
         .first();
-      await clickOidcLoginLink(page, strictLogin, looseLogin);
+      authPage = (await clickOidcLoginLink(page, strictLogin, looseLogin)) || page;
     }
-    if (page.url().includes("openid-connect/auth")) {
-      await performKeycloakLogin(page, adminUsername, adminPassword, canonicalDomain);
+    if (authPage.url().includes("openid-connect/auth")) {
+      await performKeycloakLogin(authPage, adminUsername, adminPassword, canonicalDomain);
       keycloakRoundTripCompleted = true;
     }
   }

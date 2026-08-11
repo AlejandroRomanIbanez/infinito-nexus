@@ -94,6 +94,7 @@ async function runBiberFlow(page, opts = {}) {
   //   * In-app OIDC plugin: the role's own UI exposes a Login link;
   //     click it to trigger the redirect, then perform Keycloak login.
   let keycloakRoundTripCompleted = false;
+  let authPage = page;
   if (biberUsername && biberPassword) {
     if (oidcEnabled && !page.url().includes("openid-connect/auth")) {
       // Two-pass: strict anchored regex targets the role's OWN Login button
@@ -112,10 +113,10 @@ async function runBiberFlow(page, opts = {}) {
         .getByRole("link", { name: /log\s*in|sign\s*in|sso/i })
         .or(page.getByRole("button", { name: /log\s*in|sign\s*in|sso/i }))
         .first();
-      await clickOidcLoginLink(page, strictLogin, looseLogin);
+      authPage = (await clickOidcLoginLink(page, strictLogin, looseLogin)) || page;
     }
-    if (page.url().includes("openid-connect/auth")) {
-      await performKeycloakLogin(page, biberUsername, biberPassword, canonicalDomain);
+    if (authPage.url().includes("openid-connect/auth")) {
+      await performKeycloakLogin(authPage, biberUsername, biberPassword, canonicalDomain);
       keycloakRoundTripCompleted = true;
     }
   }

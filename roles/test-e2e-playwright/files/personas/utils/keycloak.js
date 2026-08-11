@@ -73,8 +73,9 @@ async function performKeycloakLogin(page, username, password, canonicalDomain) {
 // clicking, so the click hits the JS-wrapped handler (which stores
 // PKCE state) and not the raw `href` (which would skip PKCE and break
 // the post-login token exchange on PKCE-enforced clients). The 15s
-// fallback covers roles whose Login link is purely static. Returns
-// true when the navigation reached `openid-connect/auth`.
+// fallback covers roles whose Login link is purely static. Returns the
+// Page that reached `openid-connect/auth` — the opener, or the popup for
+// roles that hand the IdP off via `window.open` — else null.
 //
 // The persona MUST pass `strictLink` (exact-match locator, e.g. accessible
 // name `^\s*login\s*$/i`) AND `looseLink` (substring locator). The helper
@@ -114,7 +115,7 @@ async function clickOidcLoginLink(page, strictLink, looseLink) {
           .waitFor({ state: "visible", timeout: 5_000 })
           .then(() => true)
           .catch(() => false);
-        if (!looseVisible) return false;
+        if (!looseVisible) return null;
       }
     }
 
@@ -126,14 +127,22 @@ async function clickOidcLoginLink(page, strictLink, looseLink) {
       )
       .catch(() => {});
     const urlBeforeClick = page.url();
+    const reachedIdp = (candidate) =>
+      candidate
+        .waitForURL(/openid-connect\/auth/, { timeout: 15_000 })
+        .then(() => candidate);
+    const popupPromise = page
+      .waitForEvent("popup", { timeout: 15_000 })
+      .then(reachedIdp);
     await loginLink.click().catch(() => {});
-    await page
-      .waitForURL(/openid-connect\/auth/, { timeout: 15_000 })
-      .catch(() => {});
-    if (page.url().includes("openid-connect/auth")) return true;
-    if (page.url() === urlBeforeClick) return false;
+    const authPage = await Promise.any([reachedIdp(page), popupPromise]).catch(
+      () => null,
+    );
+    if (authPage) return authPage;
+    if (page.url().includes("openid-connect/auth")) return page;
+    if (page.url() === urlBeforeClick) return null;
   }
-  return false;
+  return null;
 }
 
 async function performKeycloakLoginExpectingDenial(page, username, password, canonicalDomain) {
