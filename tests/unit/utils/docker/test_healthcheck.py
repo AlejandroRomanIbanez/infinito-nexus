@@ -1,11 +1,47 @@
+import os
+import subprocess
+import tempfile
 import unittest
+from pathlib import Path
 
 from utils.cache.yaml import load_yaml_str
 from utils.docker.healthcheck import PROBES, Curl, HttpStatus, MsmtpCurl, Nc, Tcp, build
 
+_MARKER = "/tmp/email_sent"
+
 
 def probe(flavor, **context):
     return PROBES[flavor](**context).test()
+
+
+def run_probe(argv, *, msmtp_rc, curl_rc):
+    """Execute a CMD-SHELL probe against stubbed msmtp and curl.
+
+    Args:
+        argv: the probe as returned by :func:`probe`.
+        msmtp_rc: exit code the msmtp stub returns.
+        curl_rc: exit code the curl stub returns.
+
+    Returns:
+        ``(exit_code, marker_written)`` for the probe as the container runs it.
+    """
+    with tempfile.TemporaryDirectory() as tmp:
+        root = Path(tmp)
+        stubs = root / "bin"
+        stubs.mkdir()
+        for name, rc in (("msmtp", msmtp_rc), ("curl", curl_rc)):
+            stub = stubs / name
+            stub.write_text(f"#!/bin/sh\ncat >/dev/null 2>&1\nexit {rc}\n")
+            stub.chmod(0o755)
+        marker = root / "email_sent"
+        script = argv[1].replace(_MARKER, str(marker))
+        completed = subprocess.run(
+            ["bash", "-c", script],
+            env={**os.environ, "PATH": f"{stubs}{os.pathsep}{os.environ['PATH']}"},
+            capture_output=True,
+            check=False,
+        )
+        return completed.returncode, marker.exists()
 
 
 def block(flavor, overrides=None, **context):
@@ -97,6 +133,26 @@ class TestOtherFlavors(unittest.TestCase):
         self.assertIn("if [ ! -f /tmp/email_sent ]", argv[1])
         self.assertIn("msmtp -t void@example", argv[1])
         self.assertTrue(argv[1].endswith("curl -f http://127.0.0.1:80/ || exit 1"))
+
+    def test_msmtp_curl_probe_behaviour(self):
+        argv = probe(
+            "msmtp_curl",
+            port=80,
+            email_enabled=True,
+            domain="app.example",
+            blackhole="void@example",
+        )
+        cases = (
+            ("a refused mail leaves the app healthy and retryable", 69, 0, 0, False),
+            ("an accepted mail marks itself sent", 0, 0, 0, True),
+            ("a dead web server is unhealthy", 0, 1, 1, None),
+        )
+        for label, msmtp_rc, curl_rc, want_rc, want_marker in cases:
+            with self.subTest(label):
+                rc, marker = run_probe(argv, msmtp_rc=msmtp_rc, curl_rc=curl_rc)
+                self.assertEqual(want_rc, rc)
+                if want_marker is not None:
+                    self.assertEqual(want_marker, marker)
 
     def test_msmtp_curl_drops_the_mail_branch_when_email_is_disabled(self):
         """An SMTP outage must not flap the container into unhealthy."""

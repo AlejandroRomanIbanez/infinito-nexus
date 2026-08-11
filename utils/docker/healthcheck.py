@@ -14,6 +14,8 @@ from typing import Any, ClassVar
 
 from utils.cache.yaml import dump_yaml_str
 
+MAIL_MARKER = "/tmp/email_sent"  # noqa: S108  container-internal path, not a host tmpfile
+
 _HTTP_REQUEST = (
     "echo -e 'GET /{path} HTTP/1.1\\r\\nHost: localhost\\r\\n"
     "Connection: close\\r\\n\\r\\n' >&3"
@@ -167,6 +169,16 @@ class MsmtpCurl(Probe):
     The /tmp/email_sent marker keeps a repeating probe from tripping SMTP
     rate limits, and a disabled email provider drops the mail branch so an
     unrelated SMTP outage cannot flap the container into unhealthy.
+
+    The branch is joined to the curl probe with ``;`` rather than ``&&`` on
+    purpose: msmtp exits non-zero whenever the relay refuses the message, and
+    chaining that into curl marks a perfectly live web app dead until the
+    swarm converge gate gives up. Liveness is curl's verdict alone. The
+    ``&&`` before ``touch`` stays, so a refused mail leaves no marker and the
+    next probe retries it; its stderr reaches Health.Log either way.
+    Delivery itself is covered where it belongs — by sys-ctl-hlth-msmtp,
+    which retries and then exits non-zero, and by the Mailu Playwright
+    roundtrip.
     """
 
     flavor = "msmtp_curl"
@@ -180,9 +192,9 @@ class MsmtpCurl(Probe):
             domain = self.context.get("domain", "")
             blackhole = self.context.get("blackhole", "")
             mail = (
-                "if [ ! -f /tmp/email_sent ]; then "
+                f"if [ ! -f {MAIL_MARKER} ]; then "
                 f"echo 'Subject: testmessage from {domain}\\n\\nSUCCESSFULL' "
-                f"| msmtp -t {blackhole} && touch /tmp/email_sent; fi && "
+                f"| msmtp -t {blackhole} && touch {MAIL_MARKER}; fi; "
             )
         return ["CMD-SHELL", f"{mail}curl -f {self.url} || exit 1"]
 
