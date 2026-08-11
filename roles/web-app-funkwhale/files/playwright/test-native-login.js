@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test");
 
-const { decodeDotenvQuotedValue, normalizeBaseUrl } = require("./personas");
+const { decodeDotenvQuotedValue, isAuthChain, normalizeBaseUrl } = require("./personas");
 const { performKeycloakLoginForm } = require("./personas/utils/keycloak");
 
 const appBaseUrl = normalizeBaseUrl(process.env.APP_BASE_URL || "");
@@ -23,6 +23,16 @@ const PERSONAS = [
 
 const signInAffordance = (page) => page.getByText(/^\s*(log\s?in|sign\s?in)\s*$/i).first();
 
+const hostOf = (page) => {
+  try {
+    return new URL(page.url()).hostname;
+  } catch {
+    return "";
+  }
+};
+const onIdentityProvider = (page) => isAuthChain(page.url()) && hostOf(page) !== canonicalDomain;
+const backOnApp = (page) => hostOf(page) === canonicalDomain && !isAuthChain(page.url());
+
 for (const persona of PERSONAS) {
   test(`${persona.label}: native sign-in → authenticated surface → sign-out`, async ({ page }) => {
     test.skip(
@@ -39,18 +49,18 @@ for (const persona of PERSONAS) {
 
     if (ssoEnabled) {
       await expect
-        .poll(() => page.url(), {
+        .poll(() => onIdentityProvider(page), {
           timeout: 60_000,
           message: "the oauth2 ACL protects /login, so the proxy must hand the persona to Keycloak",
         })
-        .not.toContain(canonicalDomain);
+        .toBe(true);
       await performKeycloakLoginForm(page, persona.username, persona.password);
       await expect
-        .poll(() => page.url(), {
+        .poll(() => backOnApp(page), {
           timeout: 60_000,
           message: `the oauth2 proxy gates /login, so Keycloak must hand back to ${canonicalDomain}`,
         })
-        .toContain(canonicalDomain);
+        .toBe(true);
     }
 
     const password = page.locator("input[type='password']:visible").first();

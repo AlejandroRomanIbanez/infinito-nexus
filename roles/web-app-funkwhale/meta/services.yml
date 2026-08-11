@@ -39,6 +39,13 @@ api:
   mem_reservation: 256m
   mem_limit: 1g
   pids_limit: 512
+migrate:
+  # nocheck: single-replica  run-once schema bootstrap; concurrent `funkwhale-manage migrate` races the migration graph
+  replicas: 1
+  cpus: "0.5"
+  mem_reservation: 256m
+  mem_limit: 1g
+  pids_limit: 512
 typesense:
   bond: 1
   enabled: true # nocheck: dynamic-flag
