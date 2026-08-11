@@ -44,6 +44,7 @@ flowchart LR
         dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
         dep_web_app_discourse["web-app-discourse 🐳🐝"]
         dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
+        dep_web_app_mailu["web-app-mailu 🐳🐝"]
         dep_web_app_matomo["web-app-matomo 🐳🐝"]
         dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
         dep_web_svc_css["web-svc-css 💻"]
@@ -54,6 +55,7 @@ flowchart LR
         svc_logout["logout"]
         svc_dashboard["dashboard"]
         svc_matomo["matomo"]
+        svc_email["email"]
         svc_mariadb["mariadb"]
         svc_discourse["discourse"]
         svc_wordpress["wordpress"]
@@ -68,6 +70,7 @@ flowchart LR
     dep_web_app_dashboard -. "0..1" .-> svc_dashboard
     dep_web_app_discourse -. "0..1" .-> svc_discourse
     dep_web_app_keycloak -. "0..1" .-> svc_sso
+    dep_web_app_mailu -. "0..1" .-> svc_email
     dep_web_app_matomo -. "0..1" .-> svc_matomo
     dep_web_app_prometheus -. "0..1" .-> svc_prometheus
     dep_web_svc_css -. "0..1" .-> svc_css
