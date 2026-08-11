@@ -32,6 +32,10 @@ on:
         required: false
         type: string
         default: ""
+      tor:
+        required: false
+        type: string
+        default: auto
   workflow_dispatch:
     inputs:
       distros:
@@ -58,6 +62,11 @@ on:
         required: false
         type: string
         default: ""
+      tor:
+        description: "🧅 auto gives tor to every second tor-capable app and flips with the run number; enabled to every capable one, disabled to none. A role pinning services.tor.enabled false is never eligible."
+        type: choice
+        default: auto
+        options: [auto, enabled, disabled]
 
 permissions:
   contents: read
@@ -129,6 +138,8 @@ jobs:
         shell: bash
         env:
           INFINITO_WHITELIST: ${{ steps.resolve_wl.outputs.whitelist }}
+          INFINITO_TOR: ${{ inputs.tor }}
+          RUN_NUMBER: ${{ github.run_number }}
         run: ./scripts/github/resolve/output_apps.sh
 
       - name: 🗺️ Render the plan into the run summary
@@ -223,6 +234,7 @@ jobs:
         shell: bash
         env:
           variant: ${{ matrix.variant }}
+          disable: ${{ matrix.disable }}
         run: ./scripts/tests/deploy/distros.sh "${{ env.SCRIPTS }}/00_one.sh" 2>&1 | tee "/tmp/ansible-${{ matrix.apps }}.log"
 
       - name: "🗄️ Effective node filesystems"

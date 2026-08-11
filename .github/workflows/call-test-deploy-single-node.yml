@@ -37,6 +37,11 @@ on:
         required: false
         type: string
         default: ""
+      tor:
+        description: "🧅 Tor axis for the compose leg: auto | enabled | disabled. The host leg has no onion."
+        required: false
+        type: string
+        default: auto
 
 permissions:
   contents: read
@@ -54,6 +59,7 @@ jobs:
       blacklist: ${{ inputs.blacklist }}
       marker: ${{ inputs.marker }}
       filesystem: ${{ inputs.filesystem }}
+      tor: ${{ inputs.tor }}
 
   host:
     name: 💻 Host

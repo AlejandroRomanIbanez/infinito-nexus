@@ -22,6 +22,7 @@ SYMBOLS: dict[str, str] = {
     "role_dependency": "⚙️",
     "compose": "🐳",
     "swarm": "🐝",
+    "tor": "🧅",
     "stack": "🥞",
     "host": "💻",
     "row": "🔢",

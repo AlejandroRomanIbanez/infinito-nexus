@@ -32,6 +32,11 @@ on:
         required: false
         type: string
         default: ""
+      tor:
+        description: "🧅 Tor axis: auto | enabled | disabled."
+        required: false
+        type: string
+        default: auto
 
 permissions:
   contents: read
@@ -99,6 +104,8 @@ jobs:
         shell: bash
         env:
           INFINITO_WHITELIST: ${{ steps.resolve_wl.outputs.whitelist }}
+          INFINITO_TOR: ${{ inputs.tor }}
+          RUN_NUMBER: ${{ github.run_number }}
         run: ./scripts/github/resolve/output_apps.sh
 
       - name: 🗺️ Render the plan into the run summary
@@ -173,6 +180,7 @@ jobs:
         env:
           apps: ${{ matrix.apps }}
           variant: ${{ matrix.variant }}
+          disable: ${{ matrix.disable }}
           ANSIBLE_LOG_PATH: /tmp/ansible-${{ matrix.apps }}.log
         run: ./scripts/tests/deploy/ci/all.sh 2>&1 | tee "/tmp/ansible-${{ matrix.apps }}.log"
 

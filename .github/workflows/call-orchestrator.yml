@@ -66,6 +66,11 @@ on:
         required: false
         type: string
         default: "auto"
+      tor:
+        description: "Tor axis of the swarm and compose matrices: 'auto' onions every second tor-capable entry and flips with the run number, 'enabled'/'disabled' pin every entry."
+        required: false
+        type: string
+        default: "auto"
       trusted_pr:
         description: "True when the PR carries the maintainer '🛡️ Trusted' label; skips the fork-prereq wait."
         required: false
@@ -251,6 +256,7 @@ jobs:
       whitelist: ${{ inputs.priority }}
       lifecycles: ${{ inputs.lifecycles }}
       filesystem: ${{ inputs.filesystem }}
+      tor: ${{ inputs.tor }}
       marker: " ⭐"
 
   test-deploy-single-node-priority:
@@ -272,6 +278,7 @@ jobs:
       lifecycles: ${{ inputs.lifecycles }}
       filesystem: ${{ inputs.filesystem }}
       modes: ${{ inputs.modes }}
+      tor: ${{ inputs.tor }}
       marker: " ⭐"
 
   test-deploy-compose-priority:
@@ -300,6 +307,7 @@ jobs:
       whitelist: ${{ inputs.priority }}
       lifecycles: ${{ inputs.lifecycles }}
       filesystem: ${{ inputs.filesystem }}
+      tor: ${{ inputs.tor }}
       marker: " ⭐"
 
   test-deploy-host-priority:
@@ -359,6 +367,7 @@ jobs:
       whitelist: ${{ inputs.whitelist }}
       lifecycles: ${{ inputs.lifecycles }}
       filesystem: ${{ inputs.filesystem }}
+      tor: ${{ inputs.tor }}
       blacklist: ${{ inputs.priority }}
 
   test-deploy-single-node:
@@ -392,6 +401,7 @@ jobs:
       lifecycles: ${{ inputs.lifecycles }}
       filesystem: ${{ inputs.filesystem }}
       modes: ${{ inputs.modes }}
+      tor: ${{ inputs.tor }}
       blacklist: ${{ inputs.priority }}
 
   test-deploy-compose:
@@ -427,6 +437,7 @@ jobs:
       whitelist: ${{ inputs.whitelist }}
       lifecycles: ${{ inputs.lifecycles }}
       filesystem: ${{ inputs.filesystem }}
+      tor: ${{ inputs.tor }}
       blacklist: ${{ inputs.priority }}
 
   test-deploy-host:

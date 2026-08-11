@@ -24,6 +24,12 @@ In swarm mode (``INFINITO_DEPLOY_MODE=swarm``) the discovery already selects
 per variant (``role#variant`` tokens from cli.meta.ci.query); each token maps
 1:1 to a runner. A bare role name (no ``#``) still expands to one entry per
 variant. Compose mode packs several variants per runner.
+
+Swarm and compose entries also carry the tor axis (see :func:`assign_tor`):
+``tor`` says whether the entry deploys behind the node onion, ``disable``
+carries the provider tokens the deploy drill switches off, and a ``tor`` entry
+wears the onion glyph in its label. Host mode has no onion, so its entries are
+always assigned the ``disabled`` axis regardless of ``INFINITO_TOR``.
 """
 
 from __future__ import annotations
@@ -37,6 +43,7 @@ from humanfriendly import InvalidSize, parse_size
 
 from utils import PROJECT_ROOT
 from utils.cache.applications import get_variants
+from utils.cache.yaml import load_yaml_any
 from utils.github.variant.limits import DEFAULT_BUNDLE_SIZE, DEFAULT_MAX_STORAGE
 from utils.roles.applications.services.registry import (
     build_service_registry_from_applications,
@@ -47,6 +54,8 @@ from utils.roles.applications.services.resources import (
     collect_role_resources,
 )
 from utils.roles.display import display_names
+from utils.roles.mapping import ROLE_FILE_META_SERVICES
+from utils.symbol_glossary import to_emoji
 
 if TYPE_CHECKING:
     from collections.abc import Iterable, Mapping, Sequence
@@ -54,6 +63,126 @@ if TYPE_CHECKING:
     from typing import Any
 
 ROLES_DIR = PROJECT_ROOT / "roles"
+
+TOR_MODES = ("auto", "enabled", "disabled")
+
+TOR_DEPLOY_MODES = ("swarm", "compose")
+
+
+def _tor_flag(config: Mapping[str, Any]) -> Any:
+    """The ``services.tor.enabled`` value of one config, or ``None`` if unset."""
+    services = config.get("services") if isinstance(config, dict) else None
+    tor = services.get("tor") if isinstance(services, dict) else None
+    return tor.get("enabled") if isinstance(tor, dict) else None
+
+
+def _base_tor_capable(app: str) -> bool:
+    """Read the tor gate straight from the role's ``meta/services.yml``."""
+    path = ROLES_DIR / app / ROLE_FILE_META_SERVICES
+    if not path.exists():
+        return True
+    try:
+        services = load_yaml_any(path) or {}
+    except Exception:  # noqa: BLE001  malformed role meta must not break the matrix
+        return True
+    return _tor_flag({"services": services}) is not False
+
+
+def tor_capable(
+    app: str,
+    variant_csv: str = "",
+    variants_per_app: Mapping[str, Sequence[Mapping[str, Any]]] | None = None,
+) -> bool:
+    """Whether a matrix entry may be deployed behind the node onion.
+
+    Args:
+        app: application id.
+        variant_csv: the entry's variant indices, comma separated; empty for a
+            role that declares none.
+        variants_per_app: rendered variant configs per app; ``None`` falls back
+            to the role's base ``meta/services.yml``.
+
+    Returns:
+        ``False`` when every variant the entry covers pins
+        ``services.tor.enabled`` to a literal false, ``True`` otherwise. A
+        reactive Jinja flag counts as capable: it is the role saying "onion
+        when the node is dark". Consulting the variants matters — roles pin the
+        gate ``true`` in variant 0 and ``false`` in the rest, so reading only
+        the base config claims an onion for two thirds of the rounds that
+        deliberately run without one.
+    """
+    declared = (variants_per_app or {}).get(app) or []
+    covered = [
+        declared[index]
+        for index in (
+            int(token)
+            for token in variant_csv.split(",")
+            if token.strip().lstrip("-").isdigit()
+        )
+        if 0 <= index < len(declared)
+    ]
+    if not covered:
+        return _base_tor_capable(app)
+    return any(_tor_flag(config) is not False for config in covered)
+
+
+def assign_tor(
+    entries: list[dict[str, str]],
+    mode: str,
+    run: int,
+    variants_per_app: Mapping[str, Sequence[Mapping[str, Any]]] | None = None,
+) -> None:
+    """Decide the tor axis for every matrix entry, in place.
+
+    Args:
+        entries: matrix entries in emission order.
+        mode: ``enabled`` gives tor to every capable entry, ``disabled`` to
+            none, ``auto`` to every second capable one. The run number's
+            parity flips which one starts, so two consecutive runs cover
+            both states on every capable entry.
+        run: run number.
+        variants_per_app: rendered variant configs per app, so an entry whose
+            variants switch the tor gate off is never counted capable.
+
+    Every entry gains ``tor`` (``"true"``/``"false"``) and ``disable``, the
+    token list handed to the deploy drill; an entry without tor disables the
+    provider so no dependency edge can pull it back into the closure.
+    """
+    capable = [
+        index
+        for index, entry in enumerate(entries)
+        if tor_capable(entry["apps"], entry.get("variant", ""), variants_per_app)
+    ]
+    if mode == "enabled":
+        with_tor = set(capable)
+    elif mode == "disabled":
+        with_tor = set()
+    else:
+        with_tor = {
+            index for position, index in enumerate(capable) if position % 2 == run % 2
+        }
+    for index, entry in enumerate(entries):
+        enabled = index in with_tor
+        entry["tor"] = "true" if enabled else "false"
+        entry["disable"] = "" if enabled else "tor"
+
+
+def resolve_tor_mode(raw: str | None = None) -> str:
+    """Tor axis mode from ``INFINITO_TOR``; unknown or empty means ``auto``."""
+    if raw is None:
+        raw = os.environ.get("INFINITO_TOR")
+    value = (raw or "").strip().lower()
+    return value if value in TOR_MODES else "auto"
+
+
+def resolve_run_number(raw: str | None = None) -> int:
+    """Run number from ``RUN_NUMBER``; its parity flips the ``auto`` split."""
+    if raw is None:
+        raw = os.environ.get("RUN_NUMBER")
+    try:
+        return int((raw or "0").strip())
+    except ValueError:
+        return 0
 
 
 def resolve_bundle_size(raw: str | None = None) -> int:
@@ -264,8 +393,12 @@ def compose_bundle_counts(
     }
 
 
+def _deploy_mode() -> str:
+    return (os.environ.get("INFINITO_DEPLOY_MODE") or "").strip().lower()
+
+
 def _swarm_mode() -> bool:
-    return (os.environ.get("INFINITO_DEPLOY_MODE") or "").strip().lower() == "swarm"
+    return _deploy_mode() == "swarm"
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -294,9 +427,19 @@ def main(argv: Sequence[str] | None = None) -> int:
             max_storage_bytes=resolve_max_storage(),
             bundle_size_per_app=app_bundle_sizes(apps),
         )
+    on_axis = _deploy_mode() in TOR_DEPLOY_MODES
+    assign_tor(
+        entries,
+        resolve_tor_mode() if on_axis else "disabled",
+        resolve_run_number(),
+        variants_per_app,
+    )
     codec = display_names()
     for entry in entries:
-        entry["label"] = codec.encode(entry["apps"], entry["variant"])
+        label = codec.encode(entry["apps"], entry["variant"])
+        entry["label"] = (
+            f"{to_emoji('tor')}{label}" if entry["tor"] == "true" else label
+        )
     print(json.dumps(entries))
     return 0
 
