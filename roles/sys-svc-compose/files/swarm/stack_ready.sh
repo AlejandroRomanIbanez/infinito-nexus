@@ -2,6 +2,7 @@
 set -euo pipefail
 
 : "${STACK:?STACK env var is required}"
+: "${FATAL_GRACE:?FATAL_GRACE env var is required}"
 
 is_completed_oneshot() {
 	local ps
@@ -25,9 +26,49 @@ report_tasks() {
 		printf '  %s: docker service ps failed: %s\n' "$1" "$ps" >&2
 		return 0
 	fi
-	rows="$(printf '%s\n' "$ps" | awk '!/error=$/' | head -10)"
+	rows="$(printf '%s\n' "$ps" | head -10)"
 	[ -n "${rows}" ] || return 0
 	printf '%s\n' "${rows}" | sed 's/^/  /' >&2
+}
+
+# Exception: a slot that burned three attempts and converges on the fourth is
+# byte-identical to one that never will, so strikes may only count once the
+# service has churned past any dependency wait it could be racing. `.UpdatedAt`
+# is the epoch because every deploy path bumps it and task churn does not.
+# An unreadable or non-numeric read must mean "keep waiting" -- the gate may
+# lose an abort, it may never invent one.
+churned_past_grace() {
+	local now updated
+	now=$(date +%s)
+	updated=$(timeout 15 docker service inspect \
+		--format '{{.UpdatedAt.Unix}}' "$1" 2>/dev/null) || return 1
+	case "$updated" in
+	'' | *[!0-9]*) return 1 ;;
+	esac
+	[ "$((now - updated))" -ge "$FATAL_GRACE" ]
+}
+
+# Exception: keys on current-state, never desired-state. A rejected or
+# unschedulable task never ran, so docker has already judged the spec unrunnable
+# and no clock is needed. Filtering on desired=Running instead hides that whole
+# group -- a service dead in three seconds has no task desiring Running, the
+# table comes back empty, and the caller waits out its entire budget.
+has_fatal_task() {
+	local ps grace=0
+	churned_past_grace "$1" && grace=1
+	ps=$(timeout 15 docker service ps --no-trunc \
+		--format '{{.Name}}|{{.CurrentState}}|{{.Error}}' "$1" 2>/dev/null) || return 1
+	[ -n "$ps" ] || return 1
+	awk -F'|' -v grace="$grace" '
+		{
+			if (ended[$1]) next
+			newest = !seen[$1]++
+			if ($3 == "") { if (!newest) ended[$1] = 1; next }
+			if (newest && $2 ~ /^(Rejected|Pending)/) fatal = 1
+			if (++errs[$1] >= 3 && grace) fatal = 1
+		}
+		END { exit fatal ? 0 : 1 }
+	' <<<"$ps"
 }
 
 if ! services=$(timeout 15 docker stack services --format '{{.Name}} {{.Replicas}}' "$STACK"); then
@@ -47,9 +88,16 @@ done <<<"$services"
 
 if [ -n "$not_running" ]; then
 	echo "not converged:$not_running" >&2
-	printf '%s\n' "$not_running" | tr ' ' '\n' | while read -r svc; do
-		[ -n "$svc" ] || continue
+	fatal=0
+	for svc in $not_running; do
 		report_tasks "$svc"
+		if has_fatal_task "$svc"; then
+			echo "stuck: $svc" >&2
+			fatal=1
+		fi
 	done
+	if [ "$fatal" -ne 0 ]; then
+		exit 2
+	fi
 	exit 1
 fi
