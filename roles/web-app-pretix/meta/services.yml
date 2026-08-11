@@ -42,6 +42,7 @@ postgres:
 pretix:
   healthcheck:
     flavor: curl
+    hostname: localhost
   modes:
     compose:
       enabled: true
