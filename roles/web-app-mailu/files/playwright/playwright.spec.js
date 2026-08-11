@@ -128,20 +128,12 @@ test("mailu: sso login, open admin interface, logout", async ({ page }) => {
 
   await waitForFirstVisible(page, [composeButton, inboxContainer], resolveTimeout(30_000));
 
-  // 7. Navigate to the admin interface (admin users see an Administration link or /admin path)
-  const adminLink = page.getByRole("link", { name: /administration|admin/i });
-  const adminLinkVisible = await adminLink.first().isVisible().catch(() => false);
-
-  if (adminLinkVisible) {
-    await adminLink.first().click({ timeout: resolveTimeout(30_000) });
-  } else {
-    // Fallback: navigate directly to the admin URL
-    await gotoOnion(page, `${expectedMailuBaseUrl}/admin`);
-  }
+  // 7. Navigate to the admin interface
+  await gotoOnion(page, `${expectedMailuBaseUrl}/admin`);
 
   // 8. Verify admin interface loaded — match any heading visible in Mailu's admin panel
   await expect(
-    page.locator("h1, h2, h3, .nav-title, .sidebar-heading").filter({ hasText: /administration|domains|user|mail/i }).first()
+    page.locator("h1, h2, h3, .nav-title, .sidebar-heading").filter({ hasText: /administration|domains|user|mail/i }).filter({ visible: true }).first()
   ).toBeVisible({ timeout: resolveTimeout(30_000) });
 
   // 9. Logout — Mailu admin logout is a link with /logout or /signout in the href
