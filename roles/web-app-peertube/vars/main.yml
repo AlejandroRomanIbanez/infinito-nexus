@@ -7,7 +7,8 @@ PEERTUBE_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, enti
 
 PEERTUBE_OIDC_PLUGIN: "peertube-plugin-auth-openid-connect"
 PEERTUBE_OIDC_ENABLED: "{{ lookup('config', application_id, 'services.sso.enabled') }}"
-PEERTUBE_OIDC_INSECURE_ISSUER: "{{ PEERTUBE_OIDC_ENABLED | bool and (lookup('config', application_id, 'services.tor.enabled') | bool) and (OIDC.CLIENT.ISSUER_URL is search('\\.onion(/|:|$)')) }}"
+PEERTUBE_OIDC_INSECURE_ISSUER: "{{ PEERTUBE_OIDC_ENABLED | bool and (lookup('config', application_id, 'services.tor.enabled') | bool) and (OIDC.CLIENT.ISSUER_URL
+  is search('\\.onion(/|:|$)')) }}"
 
 PEERTUBE_LIVE_ENABLED: "{{ lookup('config', application_id, 'services.peertube.live.enabled') | bool }}"
 PEERTUBE_RTMP_PORT: "{{ lookup('config', application_id, 'services.peertube.ports.internal.rtmp') }}"
