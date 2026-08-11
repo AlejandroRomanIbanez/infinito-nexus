@@ -77,8 +77,8 @@ class Keycloak extends CMSPlugin
         }
     }
 
-    private const FALLBACK_COOKIE      = 'kc_fallback_local';
-    private const FALLBACK_COOKIE_TTL  = 600; // 10 minutes — covers the local form-login round-trip
+    private const FALLBACK_FLAG = 'keycloak.fallback_until';
+    private const FALLBACK_TTL  = 600;
 
     private function shouldGuardRoute(): bool
     {
@@ -92,19 +92,17 @@ class Keycloak extends CMSPlugin
         }
         $input = $this->app->getInput();
         $fallbackRequested = (string) $input->getCmd('fallback', '') === 'local';
+        $session = Factory::getSession();
         if ($fallbackRequested) {
-            setcookie(self::FALLBACK_COOKIE, '1', [
-                'expires'  => time() + self::FALLBACK_COOKIE_TTL,
-                'path'     => '/',
-                'samesite' => 'Lax',
-                'secure'   => true,
-                'httponly' => true,
-            ]);
+            $session->set(self::FALLBACK_FLAG, time() + self::FALLBACK_TTL);
             return false;
         }
-        $fallbackCookie = $input->cookie->getString(self::FALLBACK_COOKIE, '');
-        if ($fallbackCookie === '1') {
+        $fallbackUntil = (int) $session->get(self::FALLBACK_FLAG, 0);
+        if ($fallbackUntil > time()) {
             return false;
+        }
+        if ($fallbackUntil) {
+            $session->clear(self::FALLBACK_FLAG);
         }
         return true;
     }
