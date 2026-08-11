@@ -93,6 +93,52 @@ async function loginToOdoo(page) {
   );
 }
 
+let cachedStorageState = null;
+
+/**
+ * Open a context that is already signed in to Odoo.
+ *
+ * The first caller performs the full SSO round-trip and caches the storage
+ * state; later callers restore it. A restored state that no longer renders the
+ * web client is discarded and the full login runs instead.
+ *
+ * @param {import('@playwright/test').Browser} browser
+ * @returns {Promise<{context: import('@playwright/test').BrowserContext, page: import('@playwright/test').Page}>}
+ */
+async function authenticatedContext(browser) {
+  const webClient = ".o_web_client, .o_main_navbar, .o_action_manager";
+  if (cachedStorageState) {
+    const context = await browser.newContext({
+      ignoreHTTPSErrors: true,
+      storageState: cachedStorageState,
+    });
+    const page = await context.newPage();
+    const restored = await gotoOnion(page, `${baseUrl()}/odoo`, {
+      waitUntil: "domcontentloaded",
+      timeout: resolveTimeout(60_000),
+    })
+      .then(() =>
+        page
+          .locator(webClient)
+          .first()
+          .waitFor({ state: "visible", timeout: resolveTimeout(60_000) })
+      )
+      .then(() => true)
+      .catch(() => false);
+    if (restored) {
+      return { context, page };
+    }
+    cachedStorageState = null;
+    await context.close();
+  }
+
+  const context = await browser.newContext({ ignoreHTTPSErrors: true });
+  const page = await context.newPage();
+  await loginToOdoo(page);
+  cachedStorageState = await context.storageState();
+  return { context, page };
+}
+
 async function openModule(page, modulePath) {
   const url = `${baseUrl()}/${String(modulePath).replace(/^\//, "")}`;
   await gotoOnion(page, url, { waitUntil: "domcontentloaded", timeout: resolveTimeout(90_000) });
@@ -104,4 +150,11 @@ async function openModule(page, modulePath) {
   await expect(appShell.first()).toBeVisible({ timeout: resolveTimeout(120_000) });
 }
 
-module.exports = { env, baseUrl, clickOdooSsoButton, loginToOdoo, openModule };
+module.exports = {
+  env,
+  baseUrl,
+  clickOdooSsoButton,
+  loginToOdoo,
+  authenticatedContext,
+  openModule,
+};

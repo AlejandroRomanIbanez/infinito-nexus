@@ -5,13 +5,10 @@ const shared = require("../_shared");
 
 test("addon account: Accounting/Invoicing module is installed and serves its customer-invoices action", async ({ browser }) => {
   skipUnlessAddonEnabled("account");
-  test.setTimeout(resolveTimeout(180_000));
 
-  const context = await browser.newContext({ ignoreHTTPSErrors: true });
-  const page = await context.newPage();
+  const { context, page } = await shared.authenticatedContext(browser);
 
   try {
-    await shared.loginToOdoo(page);
     // Odoo 19 resolves the account module's Customer Invoices action at the
     // /odoo/invoicing deep-link (title "Invoices"); the Accounting dashboard at
     // /odoo/accounting only shows journal cards. When the account module is not

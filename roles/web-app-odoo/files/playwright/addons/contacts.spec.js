@@ -6,11 +6,9 @@ const shared = require("../_shared");
 test("addon contacts: contacts module UI renders", async ({ browser }) => {
   skipUnlessAddonEnabled("contacts");
 
-  const context = await browser.newContext({ ignoreHTTPSErrors: true });
-  const page = await context.newPage();
+  const { context, page } = await shared.authenticatedContext(browser);
 
   try {
-    await shared.loginToOdoo(page);
     await shared.openModule(page, "odoo/contacts");
 
     const surface = page.locator(

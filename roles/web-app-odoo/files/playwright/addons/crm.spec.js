@@ -5,13 +5,10 @@ const shared = require("../_shared");
 
 test("addon crm: CRM module is installed and its pipeline feature renders", async ({ browser }) => {
   skipUnlessAddonEnabled("crm");
-  test.setTimeout(resolveTimeout(180_000));
 
-  const context = await browser.newContext({ ignoreHTTPSErrors: true });
-  const page = await context.newPage();
+  const { context, page } = await shared.authenticatedContext(browser);
 
   try {
-    await shared.loginToOdoo(page);
     await shared.openModule(page, "odoo/crm");
 
     const errorPage = page.locator(".o_error_dialog, .o_error_detail").or(

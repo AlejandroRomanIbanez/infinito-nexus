@@ -5,13 +5,10 @@ const shared = require("../_shared");
 
 test("addon sale_management: Sales module is installed and serves its quotations action", async ({ browser }) => {
   skipUnlessAddonEnabled("sale_management");
-  test.setTimeout(resolveTimeout(180_000));
 
-  const context = await browser.newContext({ ignoreHTTPSErrors: true });
-  const page = await context.newPage();
+  const { context, page } = await shared.authenticatedContext(browser);
 
   try {
-    await shared.loginToOdoo(page);
     await shared.openModule(page, "odoo/sales");
 
     const breadcrumb = page

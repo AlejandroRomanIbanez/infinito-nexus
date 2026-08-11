@@ -5,13 +5,10 @@ const shared = require("../_shared");
 
 test("addon stock: Inventory module is installed and serves its warehouse operations action", async ({ browser }) => {
   skipUnlessAddonEnabled("stock");
-  test.setTimeout(resolveTimeout(180_000));
 
-  const context = await browser.newContext({ ignoreHTTPSErrors: true });
-  const page = await context.newPage();
+  const { context, page } = await shared.authenticatedContext(browser);
 
   try {
-    await shared.loginToOdoo(page);
     await shared.openModule(page, "odoo/inventory");
 
     const breadcrumb = page
