@@ -19,3 +19,18 @@ force_ssl_override:
     - service: sidekiq
       target: /opt/mastodon/config/initializers/zzz_disable_force_ssl.rb
       when: "{{ not (lookup('tls', 'web-app-mastodon', 'enabled') | bool) }}"
+
+oidc_http_discovery:
+  type: config
+  source: "{{ [lookup('container', 'web-app-mastodon', 'directories.instance'), 'overrides', '00_oidc_http_discovery.rb'] | path_join }}"
+  mode: "0444"
+  mounts:
+    - service: mastodon
+      target: /opt/mastodon/config/initializers/00_oidc_http_discovery.rb
+      when: "{{ not (lookup('tls', 'web-app-mastodon', 'enabled') | bool) }}"
+    - service: sidekiq
+      target: /opt/mastodon/config/initializers/00_oidc_http_discovery.rb
+      when: "{{ not (lookup('tls', 'web-app-mastodon', 'enabled') | bool) }}"
+    - service: migrate
+      target: /opt/mastodon/config/initializers/00_oidc_http_discovery.rb
+      when: "{{ not (lookup('tls', 'web-app-mastodon', 'enabled') | bool) }}"
