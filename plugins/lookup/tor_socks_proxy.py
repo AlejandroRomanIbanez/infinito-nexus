@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import contextlib
 from typing import Any
 
 from ansible.errors import AnsibleError
@@ -46,6 +47,10 @@ class LookupModule(LookupBase):
             templar=getattr(self, "_templar", None),
         ).run([], variables=variables, roles_dir=kwargs.get("roles_dir"))[0]
 
-        return [
-            resolve_proxy_url(applications, variables.get("DEPLOYMENT_MODE", "compose"))
-        ]
+        raw_mode = variables.get("DEPLOYMENT_MODE", "compose")
+        templar = getattr(self, "_templar", None)
+        if templar is not None:
+            with contextlib.suppress(Exception):
+                raw_mode = templar.template(raw_mode)
+
+        return [resolve_proxy_url(applications, str(raw_mode).strip())]
