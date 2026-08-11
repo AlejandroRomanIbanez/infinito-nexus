@@ -33,6 +33,7 @@ const {
   assertUnauthenticatedLanding,
   assertCspInjections,
   runRoleInteraction,
+  LOGIN_CONTROL_NAME,
 } = require("./utils");
 
 async function runBiberFlow(page, opts = {}) {
@@ -137,8 +138,8 @@ async function runBiberFlow(page, opts = {}) {
   }
   if (reachedAuthenticated) {
     const loginControl = page
-      .getByRole("link", { name: /log\s*in|sign\s*in|sso/i })
-      .or(page.getByRole("button", { name: /log\s*in|sign\s*in|sso/i }))
+      .getByRole("link", { name: LOGIN_CONTROL_NAME })
+      .or(page.getByRole("button", { name: LOGIN_CONTROL_NAME }))
       .first();
     const loginStillVisible = await loginControl
       .waitFor({ state: "hidden", timeout: resolveTimeout(60_000) })

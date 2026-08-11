@@ -11,6 +11,7 @@ const {
   assertUnauthenticatedLanding,
   assertCspInjections,
   runRoleInteraction,
+  LOGIN_CONTROL_NAME,
 } = require("./utils");
 
 async function runAdminFlow(page, opts = {}) {
@@ -168,8 +169,8 @@ async function runAdminFlow(page, opts = {}) {
   }
   if (adminReachedAuthenticated) {
     const loginStillVisible = await page
-      .getByRole("link", { name: /log\s*in|sign\s*in|sso/i })
-      .or(page.getByRole("button", { name: /log\s*in|sign\s*in|sso/i }))
+      .getByRole("link", { name: LOGIN_CONTROL_NAME })
+      .or(page.getByRole("button", { name: LOGIN_CONTROL_NAME }))
       .first()
       .isVisible({ timeout: resolveTimeout(2_000) })
       .catch(() => false);
