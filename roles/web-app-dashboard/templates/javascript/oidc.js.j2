@@ -23,7 +23,7 @@ const KC_MIRROR_BASE = "{{ _oidc_mirror_onion }}";
 {% else %}
 const KC_MIRROR_BASE = null;
 {% endif %}
-const KC_JS_ASSET_URL = "{{ lookup('asset', application_id, 'keycloak-js', 'dist/keycloak.js') }}";
+const KC_JS_ASSET_URL = "{{ lookup('asset', application_id, 'keycloak-js', 'lib/keycloak.js') }}";
 
 const DEBUG = {{ MODE_DEBUG | string | lower }};
 // Keycloak's hidden session-status iframe is noisy on newer Chromium builds and
@@ -73,14 +73,12 @@ function setItemVisible(el, visible) {
 /* ==============================================
    3) Dynamically load the Keycloak.js adapter
    ============================================== */
-function loadKeycloakAdapter(src) {
-  return new Promise((resolve, reject) => {
-    const s = document.createElement("script");
-    s.src = src;
-    s.onload = resolve;
-    s.onerror = () => reject(new Error("Failed to load keycloak.js from " + src));
-    document.head.appendChild(s);
-  });
+async function loadKeycloakAdapter(src) {
+  const mod = await import(src);
+  if (typeof mod.default !== "function") {
+    throw new Error("keycloak.js exposed no default export at " + src);
+  }
+  return mod.default;
 }
 
 /* ==============================================
@@ -149,16 +147,12 @@ async function initAuthUI() {
   const kcJsUrl = (KC_MIRROR_BASE && window.location.hostname.endsWith(".onion") && KC_JS_ASSET_URL.startsWith("https://"))
     ? KC_MIRROR_BASE + "/" + KC_JS_ASSET_URL.replace(/^https:\/\//, "")
     : KC_JS_ASSET_URL;
+  let Keycloak;
   try {
-    await loadKeycloakAdapter(kcJsUrl);
+    Keycloak = await loadKeycloakAdapter(kcJsUrl);
   } catch (e) {
     console.error("[oidc] Failed to load adapter:", e);
     return; // nothing else to do
-  }
-
-  if (typeof window.Keycloak !== "function") {
-    console.error("[oidc] window.Keycloak is not available after loading:", kcJsUrl);
-    return;
   }
 
   // Initialize the Keycloak instance
