@@ -12,7 +12,7 @@ redirect_uris = ["#{base}#{path}", "#{base}/index.php#{path}"].join("\n")
 app = Doorkeeper::Application.find_or_initialize_by(name: "Nextcloud")
 was_new = app.new_record?
 app.redirect_uri = redirect_uris
-app.scopes = "api read_user" if app.respond_to?(:scopes=)
+app.scopes = "read_user read_api read_repository" if app.respond_to?(:scopes=)
 app.confidential = true if app.respond_to?(:confidential=)
 if org
   app.organization = org if app.respond_to?(:organization=)

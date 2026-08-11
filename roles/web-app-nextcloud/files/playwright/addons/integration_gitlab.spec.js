@@ -45,43 +45,41 @@ test("integration integration_gitlab: per-user OAuth connect reaches the partner
       "the personal 'Connect to GitLab' control must render once the partner OAuth client is provisioned"
     ).toBeVisible({ timeout: 30_000 });
 
-    let authorizeUrl = await connect.getAttribute("href").catch(() => null);
-    if (!authorizeUrl || !/\/oauth\/authorize/.test(authorizeUrl)) {
-      const popupPromise = context.waitForEvent("page", { timeout: 15_000 }).catch(() => null);
-      await Promise.all([
-        page.waitForURL((u) => new URL(u).host === partnerHost, { timeout: 15_000 }).catch(() => {}),
-        connect.click({ timeout: 10_000 }).catch(() => {}),
-      ]);
-      const popup = await popupPromise;
-      const target = popup || page;
-      await target.waitForLoadState("domcontentloaded", { timeout: 30_000 }).catch(() => {});
-      authorizeUrl = target.url();
-    }
+    const requestPromise = context
+      .waitForEvent("request", {
+        predicate: (req) => new URL(req.url()).host === partnerHost && req.url().includes("/oauth/authorize"),
+        timeout: 30_000,
+      })
+      .catch(() => null);
+    await connect.click({ timeout: 10_000 });
+    const request = await requestPromise;
+    const response = request ? await request.response().catch(() => null) : null;
 
-    const authorize = new URL(authorizeUrl, instanceUrl);
-    const initiatedOnPartner =
-      authorize.host === partnerHost &&
-      (authorize.pathname.includes("/oauth/authorize") ||
-        (authorize.searchParams.get("redirect_to") || authorize.searchParams.get("return_to") || "").includes("/oauth/authorize"));
+    const authorize = new URL(request ? request.url() : page.url(), instanceUrl);
     expect(
-      initiatedOnPartner,
-      `the per-user connect must initiate OAuth on the partner GitLab (got ${authorize.href})`
-    ).toBe(true);
-
-    const authorizeQuery = authorize.pathname.includes("/oauth/authorize")
-      ? authorize.searchParams
-      : new URL(
-          authorize.searchParams.get("redirect_to") || authorize.searchParams.get("return_to") || authorize.href,
-          instanceUrl
-        ).searchParams;
+      authorize.host,
+      `the per-user connect must hand off to the partner GitLab (got ${authorize.href})`
+    ).toBe(partnerHost);
     expect(
-      (authorizeQuery.get("client_id") || "").length,
+      authorize.pathname,
+      `the per-user connect must initiate OAuth on the partner /oauth/authorize endpoint (got ${authorize.href})`
+    ).toContain("/oauth/authorize");
+    expect(
+      (authorize.searchParams.get("client_id") || "").length,
       "the authorize request must carry the provisioned OAuth client_id (proves the partner-registered app)"
     ).toBeGreaterThan(0);
     expect(
-      authorizeQuery.get("response_type"),
+      authorize.searchParams.get("response_type"),
       "the coupling must use the authorization-code grant"
     ).toBe("code");
+    expect(
+      new URL(authorize.searchParams.get("redirect_uri") || "", instanceUrl).host,
+      "the authorize request must hand the code back to this Nextcloud, not a third party"
+    ).toBe(nextcloudHost);
+    expect(
+      response ? response.status() : 599,
+      `the partner GitLab must answer the authorize request (got ${response ? response.status() : "no response"})`
+    ).toBeLessThan(400);
   } finally {
     await page.close().catch(() => {});
     await context.close().catch(() => {});
