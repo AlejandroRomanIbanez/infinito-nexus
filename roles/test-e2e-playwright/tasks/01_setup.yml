@@ -11,6 +11,25 @@
     dest: "{{ TEST_E2E_PLAYWRIGHT_SHARED_DIR }}/package.json"
     mode: "0644"
 
+- name: 📦 Pack the persona flows for a single transfer
+  ansible.builtin.command:
+    cmd: >-
+      tar -cf {{ TEST_E2E_PLAYWRIGHT_PERSONAS_ARCHIVE | quote }}
+      -C {{ lookup('path_absolute', 'roles/test-e2e-playwright/files/personas') | quote }} .
+  delegate_to: localhost
+  changed_when: false
+
+- name: ✅ Ensure the shared personas dir exists
+  ansible.builtin.file:
+    path: "{{ TEST_E2E_PLAYWRIGHT_SHARED_PERSONAS }}"
+    state: directory
+    mode: "0755"
+
+- name: 📋 Stage the persona flows once for every role of this run
+  ansible.builtin.unarchive:
+    src: "{{ TEST_E2E_PLAYWRIGHT_PERSONAS_ARCHIVE }}"
+    dest: "{{ TEST_E2E_PLAYWRIGHT_SHARED_PERSONAS }}/"
+
 - name: 🔍 Probe shared install stamp
   ansible.builtin.stat:
     path: "{{ TEST_E2E_PLAYWRIGHT_SHARED_STAMP }}"
