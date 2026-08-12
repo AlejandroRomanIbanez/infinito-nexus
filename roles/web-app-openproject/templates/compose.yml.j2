@@ -37,7 +37,7 @@ x-op-app: &app
     {{ lookup('container_networks') | indent(4) }}
     {{ lookup('container_depends_on', application_id, extra={
   'cache': {'condition': 'service_started'},
-  OPENPROJECT_SEEDER_SERVICE: {'condition': 'service_started'},
+  OPENPROJECT_SEEDER_SERVICE: {'condition': 'service_completed_successfully'},
 }) | indent(4) }}
     {{ lookup('container_healthcheck', service_name) | indent(4) }}
     {{ lookup('container_volumes', application_id, OPENPROJECT_WEB_SERVICE) | indent(4) }}
@@ -51,7 +51,7 @@ x-op-app: &app
     {{ lookup('container_networks') | indent(4) }}
     {{ lookup('container_depends_on', application_id, extra={
   'cache': {'condition': 'service_started'},
-  OPENPROJECT_SEEDER_SERVICE: {'condition': 'service_started'},
+  OPENPROJECT_SEEDER_SERVICE: {'condition': 'service_completed_successfully'},
 }) | indent(4) }}
     {{ lookup('container_volumes', application_id, 'worker') | indent(4) }}
 
@@ -64,7 +64,7 @@ x-op-app: &app
     {{ lookup('container_networks') | indent(4) }}
     {{ lookup('container_depends_on', application_id, extra={
   'cache': {'condition': 'service_started'},
-  OPENPROJECT_SEEDER_SERVICE: {'condition': 'service_started'},
+  OPENPROJECT_SEEDER_SERVICE: {'condition': 'service_completed_successfully'},
 }) | indent(4) }}
     {{ lookup('container_volumes', application_id, 'cron') | indent(4) }}
 
