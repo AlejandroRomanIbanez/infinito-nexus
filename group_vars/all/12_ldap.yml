@@ -31,7 +31,6 @@ LDAP:
       GROUPS: "ou=groups,{{ LDAP_DN_BASE }}"
       ROLES: "ou=roles,{{ LDAP_DN_BASE }}"
 
-
   BIND_CREDENTIAL: "{{ lookup('config','svc-db-openldap', 'secrets.credentials.administrator_database_password') }}"
   SERVER:
     DOMAIN: "{{ _ldap_name if _ldap_docker_network_enabled else _ldap_domain }}" # Mapping for public or locale access
