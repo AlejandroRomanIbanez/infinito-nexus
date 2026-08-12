@@ -9,6 +9,10 @@ OPENPROJECT_REF: "{{ lookup('config', application_id, 'services.openproject.ref'
 OPENPROJECT_WEB_SERVICE: "web"
 OPENPROJECT_WEB_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ OPENPROJECT_WEB_SERVICE ~ '.name') }}"
 OPENPROJECT_WEB_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, OPENPROJECT_WEB_SERVICE) }}"
+OPENPROJECT_MIGRATION_WAIT_SECONDS: 600
+OPENPROJECT_MIGRATION_POLL_SECONDS: 10
+OPENPROJECT_AWAIT_MIGRATIONS_ABS: "{{ [ lookup('container', application_id, 'directories.config'), 'await_migrations.sh'] | path_join }}"
+OPENPROJECT_AWAIT_MIGRATIONS_TARGET: "{{ (lookup('volume', application_id, 'await_migrations').mounts | first).target }}"
 OPENPROJECT_SEEDER_SERVICE: "seeder"
 OPENPROJECT_SEEDER_CONTAINER: "{{ lookup('config', application_id, 'services.' ~ OPENPROJECT_SEEDER_SERVICE ~ '.name') }}"
 OPENPROJECT_CRON_CONTAINER: "{{ lookup('config', application_id, 'services.cron.name') }}"

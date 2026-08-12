@@ -13,6 +13,15 @@ data:
       target: /var/openproject/assets
     - service: seeder
       target: /var/openproject/assets
+await_migrations:
+  type: config
+  source: "{{ OPENPROJECT_AWAIT_MIGRATIONS_ABS }}"
+  mode: "0555"
+  mounts:
+    - service: web
+      target: &await_migrations_target /usr/local/bin/await_migrations.sh
+    - service: worker
+      target: *await_migrations_target
 pgdata_dummy:
   # Exception: mount only exists to prevent OpenProject images from creating
   # anonymous volumes for the unused embedded postgres data path.

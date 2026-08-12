@@ -13,6 +13,13 @@
     - compose up
     - compose build
 
+- name: "⏳ Transferring await_migrations.sh to {{ OPENPROJECT_AWAIT_MIGRATIONS_ABS }}"
+  stack_host_copy:
+    src: shell/await_migrations.sh
+    dest: "{{ OPENPROJECT_AWAIT_MIGRATIONS_ABS }}"
+    mode: "0555"
+  notify: compose up
+
 - name: "📁 create {{ OPENPROJECT_DUMMY_DIR }}"
   file:
     path: "{{ OPENPROJECT_DUMMY_DIR }}"

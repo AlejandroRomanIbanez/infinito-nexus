@@ -32,7 +32,7 @@ x-op-app: &app
   {{ service_name }}:
     <<: *app
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    command: "./docker/prod/web"
+    command: ["{{ OPENPROJECT_AWAIT_MIGRATIONS_TARGET }}", "{{ OPENPROJECT_MIGRATION_WAIT_SECONDS }}", "{{ OPENPROJECT_MIGRATION_POLL_SECONDS }}", "./docker/prod/web"]
     {{ lookup('compose_only', 'container_name', OPENPROJECT_WEB_CONTAINER) }}
     {{ lookup('container_networks') | indent(4) }}
     {{ lookup('container_depends_on', application_id, extra={
@@ -46,7 +46,7 @@ x-op-app: &app
   {{ service_name }}:
     <<: *app
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    command: "./docker/prod/worker"
+    command: ["{{ OPENPROJECT_AWAIT_MIGRATIONS_TARGET }}", "{{ OPENPROJECT_MIGRATION_WAIT_SECONDS }}", "{{ OPENPROJECT_MIGRATION_POLL_SECONDS }}", "./docker/prod/worker"]
     {{ lookup('compose_only', 'container_name', OPENPROJECT_WORKER_CONTAINER) }}
     {{ lookup('container_networks') | indent(4) }}
     {{ lookup('container_depends_on', application_id, extra={
