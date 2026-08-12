@@ -15,7 +15,7 @@ data:
       target: /var/openproject/assets
 await_migrations:
   type: config
-  source: "{{ OPENPROJECT_AWAIT_MIGRATIONS_ABS }}"
+  source: "{{ [ lookup('container', 'web-app-openproject', 'directories.config'), 'await_migrations.sh'] | path_join }}"
   mode: "0555"
   mounts:
     - service: web
