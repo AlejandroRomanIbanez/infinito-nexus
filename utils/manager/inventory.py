@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 from utils.cache.applications import get_variants
 from utils.handler.vault import VaultHandler, VaultScalar
 from utils.handler.yaml import YamlHandler
+from utils.manager.credential_key import override_key
 from utils.manager.value_generator import ValueGenerator
 from utils.roles.applications.services.database import has_single_database_service
 from utils.roles.applications.services.registry import (
@@ -162,7 +163,7 @@ class InventoryManager:
         apps = self.inventory.setdefault("applications", {})
         target = apps.setdefault(app_id, {})
 
-        self.recurse_credentials(schema, target)
+        self.recurse_credentials(schema, target.setdefault("secrets", {}))
 
     def _apply_one_role_special_rules(self, role_path: Path) -> None:
         """
@@ -177,16 +178,16 @@ class InventoryManager:
         if has_single_database_service({app_id: cfg}, app_id):
             apps = self.inventory.setdefault("applications", {})
             target = apps.setdefault(app_id, {})
-            target.setdefault("credentials", {})["database_password"] = (
-                self.value_generator.generate_value("alphanumeric")
-            )
+            target.setdefault("secrets", {}).setdefault("credentials", {})[
+                "database_password"
+            ] = self.value_generator.generate_value("alphanumeric")
 
         if is_explicit_truth(sso.get("enabled")):
             apps = self.inventory.setdefault("applications", {})
             target = apps.setdefault(app_id, {})
-            target.setdefault("credentials", {})["sso_proxy_cookie_secret"] = (
-                self.value_generator.generate_value("random_hex_16")
-            )
+            target.setdefault("secrets", {}).setdefault("credentials", {})[
+                "sso_proxy_cookie_secret"
+            ] = self.value_generator.generate_value("random_hex_16")
 
         objstore_enabled = False
         if isinstance(services, dict):
@@ -200,9 +201,9 @@ class InventoryManager:
         if objstore_enabled:
             apps = self.inventory.setdefault("applications", {})
             target = apps.setdefault(app_id, {})
-            target.setdefault("credentials", {})["objstore_secret_key"] = (
-                self.value_generator.generate_value("alphanumeric")
-            )
+            target.setdefault("secrets", {}).setdefault("credentials", {})[
+                "objstore_secret_key"
+            ] = self.value_generator.generate_value("alphanumeric")
 
         for engine_name in ("rabbitmq", "elasticsearch", "typesense"):
             engine_cfg = (
@@ -213,9 +214,9 @@ class InventoryManager:
             ):
                 apps = self.inventory.setdefault("applications", {})
                 target = apps.setdefault(app_id, {})
-                target.setdefault("credentials", {})[f"{engine_name}_password"] = (
-                    self.value_generator.generate_value("alphanumeric")
-                )
+                target.setdefault("secrets", {}).setdefault("credentials", {})[
+                    f"{engine_name}_password"
+                ] = self.value_generator.generate_value("alphanumeric")
 
     def apply_schema(self) -> dict:
         """
@@ -232,7 +233,7 @@ class InventoryManager:
 
         apps = self.inventory.setdefault("applications", {})
         target = apps.setdefault(self.app_id, {})
-        self.recurse_credentials(self.schema, target)
+        self.recurse_credentials(self.schema, target.setdefault("secrets", {}))
 
         return self.inventory
 
@@ -300,9 +301,11 @@ class InventoryManager:
 
         algorithm = meta.get("algorithm") or "plain"
 
+        set_key = override_key(self.app_id, full_key.split("credentials.", 1)[1])
+
         if algorithm == "plain":
-            if full_key in self.overrides:
-                plain = self.overrides[full_key]
+            if set_key in self.overrides:
+                plain = self.overrides[set_key]
             elif isinstance(existing_value, str) and existing_value != "":
                 return
             elif self.allow_empty_plain:
@@ -310,13 +313,13 @@ class InventoryManager:
             else:
                 print(
                     f"ERROR: Plain algorithm for '{full_key}' requires override "
-                    f"via --set {full_key}=<value>",
+                    f"via --set {set_key}=<value>",
                     file=sys.stderr,
                 )
                 sys.exit(1)
         else:
             plain = self.overrides.get(
-                full_key, self.value_generator.generate_value(algorithm)
+                set_key, self.value_generator.generate_value(algorithm)
             )
 
         if plain == "":

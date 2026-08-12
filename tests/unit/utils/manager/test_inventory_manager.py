@@ -195,7 +195,7 @@ class TestInventoryManager(TestCase):
                 )
                 inv = mgr.apply_schema()
 
-                creds = inv["applications"]["app_test"]["credentials"]
+                creds = inv["applications"]["app_test"]["secrets"]["credentials"]
                 self.assertIn("api_key", creds)
                 self.assertEqual(creds["api_key"], "")
 
@@ -264,7 +264,7 @@ class TestInventoryManager(TestCase):
                 )
                 inv = mgr.apply_schema()
 
-                creds = inv["applications"]["app_test"]["credentials"]
+                creds = inv["applications"]["app_test"]["secrets"]["credentials"]
                 self.assertEqual(creds["sso_proxy_cookie_secret"], "generated-secret")
                 mock_vault.encrypt_string.assert_not_called()
 
@@ -326,7 +326,7 @@ class TestInventoryManager(TestCase):
                     allow_empty_plain=True,
                 )
                 inv = mgr.apply_schema()
-                creds = inv["applications"]["app_test"]["credentials"]
+                creds = inv["applications"]["app_test"]["secrets"]["credentials"]
                 self.assertEqual(creds["sso_proxy_cookie_secret"], "dynamic-secret")
 
     def test_oauth2_disabled_skips_cookie_secret(self):
@@ -446,7 +446,7 @@ class TestInventoryManager(TestCase):
                 )
                 inv = mgr.apply_schema()
 
-                creds = inv["applications"]["app_test"]["credentials"]
+                creds = inv["applications"]["app_test"]["secrets"]["credentials"]
                 self.assertIn("api_key", creds)
                 value = creds["api_key"]
 
@@ -488,9 +488,11 @@ class TestInventoryManager(TestCase):
             inventory_data = {
                 "applications": {
                     "app_test": {
-                        "credentials": {
-                            "already_vaulted": existing_vault,
-                            "complex": existing_dict,
+                        "secrets": {
+                            "credentials": {
+                                "already_vaulted": existing_vault,
+                                "complex": existing_dict,
+                            }
                         }
                     }
                 }
@@ -547,7 +549,7 @@ class TestInventoryManager(TestCase):
                 )
                 inv = mgr.apply_schema()
 
-                creds = inv["applications"]["app_test"]["credentials"]
+                creds = inv["applications"]["app_test"]["secrets"]["credentials"]
 
                 self.assertIn("already_vaulted", creds)
                 self.assertIn("complex", creds)

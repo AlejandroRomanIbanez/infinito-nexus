@@ -25,9 +25,9 @@ ZAMMAD_SEARCH_PORT: "{{ lookup('config', application_id, 'services.' ~ ZAMMAD_SE
 
 ZAMMAD_API_BOT_USER: "{{ lookup('users', 'zammad-api-bot') }}"
 ZAMMAD_WIZARD_BYPASS_USER: "{{ lookup('users', 'zammad-wizard-bypass-admin') }}"
-ZAMMAD_API_BOT_PASSWORD: "{{ lookup('config', application_id, 'credentials.api_bot_password') }}"
-ZAMMAD_INITIAL_ADMIN_PASSWORD: "{{ lookup('config', application_id, 'credentials.initial_admin_password') }}"
-ZAMMAD_SECRET_KEY_BASE: "{{ lookup('config', application_id, 'credentials.secret_key_base') }}"
+ZAMMAD_API_BOT_PASSWORD: "{{ lookup('config', application_id, 'secrets.credentials.api_bot_password') }}"
+ZAMMAD_INITIAL_ADMIN_PASSWORD: "{{ lookup('config', application_id, 'secrets.credentials.initial_admin_password') }}"
+ZAMMAD_SECRET_KEY_BASE: "{{ lookup('config', application_id, 'secrets.credentials.secret_key_base') }}"
 
 ZAMMAD_HOSTNAME: "{{ lookup('domain', application_id) }}"
 ZAMMAD_WEB_PROTOCOL: "{{ lookup('tls', application_id, 'protocols.web') }}"

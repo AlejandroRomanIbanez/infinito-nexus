@@ -30,7 +30,7 @@
     database_host: "127.0.0.1"
     database_port: "5432"
     database_username: "postgres"
-    database_password: "{{ lookup('config', application_id, 'credentials.postgresql_secret') }}"
+    database_password: "{{ lookup('config', application_id, 'secrets.credentials.postgresql_secret') }}"
     database_name: "" # Multiple databases
   when:
     - "'svc-bkp-volume-2-local' in group_names"

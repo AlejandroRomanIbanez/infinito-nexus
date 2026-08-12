@@ -61,12 +61,12 @@ class TestCreateCredentials(unittest.TestCase):
                     "--vault-password-file",
                     vault_pw_file,
                     "--set",
-                    "credentials.api_key=SECRET",
+                    "applications.app_test.secrets.credentials.api_key=SECRET",
                     "--force",
                 ]
                 main()
                 data = load_yaml_any(inventory_file)
-                creds = data["applications"]["app_test"]["credentials"]
+                creds = data["applications"]["app_test"]["secrets"]["credentials"]
                 self.assertIn("api_key", creds)
                 self.assertIsInstance(creds["api_key"], str)
                 self.assertTrue(creds["api_key"].lstrip().startswith("$ANSIBLE_VAULT"))
@@ -127,7 +127,7 @@ class TestCreateCredentials(unittest.TestCase):
                 main()
 
             data = load_yaml_any(inventory_file)
-            creds = data["applications"]["app_empty_plain"]["credentials"]
+            creds = data["applications"]["app_empty_plain"]["secrets"]["credentials"]
             self.assertIn("api_key", creds)
             self.assertEqual(creds["api_key"], "")
 
@@ -294,7 +294,7 @@ class TestCreateCredentials(unittest.TestCase):
                 main()
 
             data = load_yaml_any(inventory_file)
-            creds = data["applications"]["app_nested"]["credentials"]
+            creds = data["applications"]["app_nested"]["secrets"]["credentials"]
             self.assertIn("recaptcha", creds)
             self.assertIsInstance(
                 creds["recaptcha"],

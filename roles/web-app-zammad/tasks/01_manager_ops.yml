@@ -29,7 +29,7 @@
       {{ lookup('database', application_id) | combine({
         'username': 'postgres',
         'name': 'postgres',
-        'password': lookup('config', 'svc-db-postgres', 'credentials.POSTGRES_PASSWORD'),
+        'password': lookup('config', 'svc-db-postgres', 'secrets.credentials.POSTGRES_PASSWORD'),
       }) }}
     # nocheck: database-query-raw
     query: "{{ lookup('template', role_path ~ '/templates/sql/grant_createdb.sql.j2') }}"

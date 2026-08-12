@@ -67,7 +67,7 @@
     {{ lookup('container_image', application_id, 'matrix-chatgpt-bot') }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     environment:
-      OPENAI_API_KEY: "{{ lookup('config', application_id, 'credentials.chatgpt_bridge_openai_api_key')}}"
+      OPENAI_API_KEY: "{{ lookup('config', application_id, 'secrets.credentials.chatgpt_bridge_openai_api_key')}}"
       CHATGPT_CONTEXT: 'thread'
       CHATGPT_API_MODEL: 'gpt-3.5-turbo'
       CHATGPT_REVERSE_PROXY: 'https://api.openai.com/v1/chat/completions'
@@ -78,8 +78,8 @@
       KEYV_BOT_STORAGE: 'true'
       MATRIX_HOMESERVER_URL: '{{ MATRIX_SYNAPSE_URL }}'
       MATRIX_BOT_USERNAME: '@chatgptbot:{{ MATRIX_SERVER_NAME }}'
-      MATRIX_ACCESS_TOKEN: "{{ lookup('config', application_id, 'credentials.chatgpt_bridge_access_token', '') }}"
-      MATRIX_BOT_PASSWORD: "{{ lookup('config', application_id, 'credentials.chatgpt_bridge_user_password') }}"
+      MATRIX_ACCESS_TOKEN: "{{ lookup('config', application_id, 'secrets.credentials.chatgpt_bridge_access_token', '') }}"
+      MATRIX_BOT_PASSWORD: "{{ lookup('config', application_id, 'secrets.credentials.chatgpt_bridge_user_password') }}"
       MATRIX_DEFAULT_PREFIX: '!chatgpt'
       MATRIX_DEFAULT_PREFIX_REPLY: 'false'
       MATRIX_WHITELIST: ':{{ MATRIX_SERVER_NAME }}'

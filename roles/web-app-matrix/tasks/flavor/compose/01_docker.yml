@@ -144,7 +144,7 @@
     container exec -i {{ MATRIX_SYNAPSE_CONTAINER_ADDRESS }}
     register_new_matrix_user
     -u chatgptbot
-    -p {{ lookup('config', application_id, 'credentials.chatgpt_bridge_user_password') | quote }}
+    -p {{ lookup('config', application_id, 'secrets.credentials.chatgpt_bridge_user_password') | quote }}
     -a -c {{ MATRIX_SYNAPSE_CONFIG_PATH_CONTAINER | quote }}
     http://localhost:{{ MATRIX_SYNAPSE_CONTAINER_PORT }}
   register: matrix_create_chatgptbot

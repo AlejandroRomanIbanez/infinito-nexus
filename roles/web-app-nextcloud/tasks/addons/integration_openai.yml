@@ -12,7 +12,7 @@
 
 - name: 🔍 Resolve Flowise LiteLLM master key for integration_openai api_key
   set_fact:
-    nextcloud_openai_flowise_api_key: "{{ lookup('config', 'web-app-flowise', 'credentials.llm_master_key', '') }}"
+    nextcloud_openai_flowise_api_key: "{{ lookup('config', 'web-app-flowise', 'secrets.credentials.llm_master_key', '') }}"
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   when: nextcloud_openai_use_flowise | bool

@@ -26,7 +26,7 @@ defaults_oidc:
   URL: "{{ _oidc_url }}"
   CLIENT:
     ID: "{{ _oidc_client_id }}" # Client identifier, typically matching your primary domain
-    SECRET: "{{ lookup('config', 'web-app-keycloak', 'credentials.oidc_client_secret', '') }}" # Defaults to the generated Keycloak credential; set OIDC.CLIENT.SECRET in the inventory to override
+    SECRET: "{{ lookup('config', 'web-app-keycloak', 'secrets.credentials.oidc_client_secret', '') }}" # Defaults to the generated Keycloak credential; set OIDC.CLIENT.SECRET in the inventory to override
     REALM: "{{ _oidc_client_realm }}" # The realm to which the client belongs in the OIDC provider
     ISSUER_URL: "{{ _oidc_client_issuer_url }}" # Issuer URL (must match discovery issuer)
     DISCOVERY_DOCUMENT: "{{ _oidc_client_issuer_url ~ '/.well-known/openid-configuration' }}" # URL for fetching the provider's configuration details

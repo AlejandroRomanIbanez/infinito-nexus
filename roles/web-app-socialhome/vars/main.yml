@@ -8,7 +8,7 @@ SOCIALHOME_LISTEN_PORT: "{{ lookup('config', application_id, 'services.' ~ entit
 SOCIALHOME_INSTANCE_NAME: "{{ defaults_service_provider.platform.titel }}"
 
 SOCIALHOME_ADMIN_USERNAME: "{{ lookup('users', 'administrator').username }}"
-SOCIALHOME_ADMIN_PASSWORD: "{{ lookup('config', application_id, 'credentials.administrator_password') }}"
+SOCIALHOME_ADMIN_PASSWORD: "{{ lookup('config', application_id, 'secrets.credentials.administrator_password') }}"
 
 SOCIALHOME_CONFIG_FILE: "/etc/socialhome/socialhome.toml"
 SOCIALHOME_CONFIG_HOST_FILE: "{{ [lookup('container', application_id, 'directories.volumes'), 'socialhome.toml'] | path_join }}"
@@ -18,6 +18,6 @@ SOCIALHOME_MAX_STORAGE_BYTES: 4294967296
 SOCIALHOME_COTURN_ENABLED: "{{ lookup('config', application_id, 'services.coturn.enabled') | bool }}"
 SOCIALHOME_COTURN_HOST: "{{ lookup('domain', 'web-svc-coturn') if SOCIALHOME_COTURN_ENABLED | bool else '' }}"
 SOCIALHOME_COTURN_PORT: "{{ lookup('config', 'web-svc-coturn', 'services.coturn.ports.public.stun_turn') if SOCIALHOME_COTURN_ENABLED | bool else '' }}"
-SOCIALHOME_COTURN_SECRET: "{{ lookup('config', 'web-svc-coturn', 'credentials.auth_secret') if SOCIALHOME_COTURN_ENABLED | bool else '' }}"
+SOCIALHOME_COTURN_SECRET: "{{ lookup('config', 'web-svc-coturn', 'secrets.credentials.auth_secret') if SOCIALHOME_COTURN_ENABLED | bool else '' }}"
 SOCIALHOME_STUN_URL: "{{ 'stun:' ~ SOCIALHOME_COTURN_HOST ~ ':' ~ SOCIALHOME_COTURN_PORT if SOCIALHOME_COTURN_ENABLED | bool else '' }}"
 SOCIALHOME_TURN_URL: "{{ 'turn:' ~ SOCIALHOME_COTURN_HOST ~ ':' ~ SOCIALHOME_COTURN_PORT if SOCIALHOME_COTURN_ENABLED | bool else '' }}"

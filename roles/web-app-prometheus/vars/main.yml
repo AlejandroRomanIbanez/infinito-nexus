@@ -14,9 +14,9 @@ ALERTMANAGER_CONFIG_DOCKER: "/etc/alertmanager/alertmanager.yml"
 ALERT_RULES_CONFIG_HOST: "{{ [ lookup('container', application_id, 'directories.config'), 'alert_rules.yml' ] | path_join }}"
 ALERT_RULES_CONFIG_DOCKER: "/etc/prometheus/alert_rules.yml"
 
-ALERTMANAGER_TELEGRAM_BOT_TOKEN: "{{ lookup('config', application_id, 'credentials.alerting_telegram_bot_token', '') }}"
+ALERTMANAGER_TELEGRAM_BOT_TOKEN: "{{ lookup('config', application_id, 'secrets.credentials.alerting_telegram_bot_token', '') }}"
 ALERTMANAGER_TELEGRAM_CHAT_ID: "{{ lookup('config', application_id, 'services.prometheus.alerting.telegram.chat_id') }}"
-ALERTMANAGER_MATTERMOST_WEBHOOK_URL: "{{ lookup('config', application_id, 'credentials.alerting_mattermost_webhook_url', '') }}"
+ALERTMANAGER_MATTERMOST_WEBHOOK_URL: "{{ lookup('config', application_id, 'secrets.credentials.alerting_mattermost_webhook_url', '') }}"
 
 BLACKBOX_CONTAINER: "{{ lookup('config', application_id, 'services.blackbox-exporter.name') }}"
 

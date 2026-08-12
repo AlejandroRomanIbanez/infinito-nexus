@@ -54,7 +54,7 @@ _META_TOPICS: tuple[str, ...] = (
 _META_ADDONS_DIR: str = "addons"
 
 _META_NON_GENERIC_TOPICS: frozenset[str] = frozenset(
-    {"main", "variants", "volumes", "schema", "users"}
+    {"main", "variants", "volumes", "secrets", "users"}
 )
 
 
@@ -213,7 +213,7 @@ def _build_role_base_config(
             schema_data.get("credentials") or {}
         )
         if creds_defaults:
-            config_data["credentials"] = creds_defaults
+            config_data.setdefault("secrets", {})["credentials"] = creds_defaults
 
     users_meta = _load_yaml_cached(meta_dir / "users.yml", default_if_missing={})
     if isinstance(users_meta, dict) and users_meta:

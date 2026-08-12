@@ -38,7 +38,6 @@ class TestEnsureMap(unittest.TestCase):
 class TestEmitCredentials(unittest.TestCase):
     def setUp(self):
         self.vault = VaultHandler("dummy_pw_file")
-        # Stub ansible-vault — return a marker string the test can detect.
         patcher = unittest.mock.patch.object(
             self.vault,
             "encrypt_string",
@@ -56,7 +55,6 @@ class TestEmitCredentials(unittest.TestCase):
             schema,
             dest,
             app_id="app",
-            primary_app_id="app",
             key_path="",
             overrides={},
             vault_handler=self.vault,
@@ -78,7 +76,6 @@ class TestEmitCredentials(unittest.TestCase):
             schema,
             dest,
             app_id="app",
-            primary_app_id="app",
             key_path="",
             overrides={},
             vault_handler=self.vault,
@@ -98,7 +95,6 @@ class TestEmitCredentials(unittest.TestCase):
             schema,
             dest,
             app_id="app",
-            primary_app_id="app",
             key_path="",
             overrides={},
             vault_handler=self.vault,
@@ -115,7 +111,6 @@ class TestEmitCredentials(unittest.TestCase):
             schema,
             dest,
             app_id="app",
-            primary_app_id="app",
             key_path="",
             overrides={},
             vault_handler=self.vault,
@@ -131,9 +126,8 @@ class TestEmitCredentials(unittest.TestCase):
             schema,
             dest,
             app_id="app",
-            primary_app_id="app",
             key_path="",
-            overrides={"applications.app.credentials.api_key": "from-override"},
+            overrides={"applications.app.secrets.credentials.api_key": "from-override"},
             vault_handler=self.vault,
             skip_existing=False,
             track_added=None,
@@ -151,7 +145,6 @@ class TestEmitCredentials(unittest.TestCase):
             schema,
             dest,
             app_id="app",
-            primary_app_id="app",
             key_path="",
             overrides={},
             vault_handler=self.vault,
@@ -174,7 +167,6 @@ class TestEmitCredentials(unittest.TestCase):
             schema,
             dest,
             app_id="app",
-            primary_app_id="app",
             key_path="",
             overrides={},
             vault_handler=self.vault,

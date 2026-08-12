@@ -25,7 +25,7 @@ XWIKI_ADMIN_USER: "{{ lookup('users', 'administrator').username }}"
 XWIKI_ADMIN_GROUP: "administrator"
 XWIKI_ADMIN_GROUP_PAGE: "XWikiAdminGroup"
 
-XWIKI_SUPERADMIN_PASSWORD: "{{ lookup('config', application_id, 'credentials.superadminpassword') }}"
+XWIKI_SUPERADMIN_PASSWORD: "{{ lookup('config', application_id, 'secrets.credentials.superadminpassword') }}"
 XWIKI_SUPERADMIN_USERNAME: "superadmin"
 
 XWIKI_DOCKER_REACH_URL: "http://{{ DOCKER_REACH_HOST }}:{{ XWIKI_HOST_PORT }}"

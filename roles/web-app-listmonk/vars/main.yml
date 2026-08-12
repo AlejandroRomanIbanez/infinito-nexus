@@ -41,10 +41,10 @@ LISTMONK_SETTINGS:
     value: "true"
 
   - key: "security.captcha_key"
-    value: "\"{{ lookup('config', application_id, 'credentials.hcaptcha.key') }}\""
+    value: "\"{{ lookup('config', application_id, 'secrets.credentials.hcaptcha.key') }}\""
 
   - key: "security.captcha_secret"
-    value: "\"{{ lookup('config', application_id, 'credentials.hcaptcha.secret') }}\""
+    value: "\"{{ lookup('config', application_id, 'secrets.credentials.hcaptcha.secret') }}\""
 
   - key: "smtp"
     value: >-

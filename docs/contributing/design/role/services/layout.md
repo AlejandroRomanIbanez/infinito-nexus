@@ -42,7 +42,11 @@ The paths are:
 | `meta/volumes.yml.<key>`              | `volumes.<key>`                                  |
 | `meta/services.yml.<primary_entity>.<top-level-key>.<…>` | `services.<primary_entity>.<top-level-key>.<…>` |
 
-`credentials.*` paths are populated by `apply_schema()` at `applications.<app>.credentials.<…>`.
+| `meta/secrets.yml.credentials.<key>`  | `secrets.credentials.<key>`                      |
+
+`secrets.credentials.*` paths are populated by `apply_schema()` at
+`applications.<app>.secrets.credentials.<…>`, so the credential file obeys the
+same file-root rule as every other `meta/<topic>.yml`.
 
 ## Services Inlining Rule 📥
 
@@ -344,10 +348,10 @@ config: {}                  # optional, opaque, role-interpreted runtime payload
 | `version` | no | string | `""` | A pin MUST be a quoted string, never an unquoted number. `""` tracks the app default. |
 | `group` | no | string | — | Free grouping label (e.g. Odoo `core`/`optional`). MUST NOT affect enablement. |
 | `update` | no | map | — | `monitored` (bool, default `false`), `catalog` (a supported adapter), `upstream_id` (defaults to the addon id). |
-| `config` | no | map | — | Opaque, role-interpreted runtime payload. Lint does not constrain its inner shape beyond requiring a mapping. Secrets inside `config` MUST resolve through `lookup('config', application_id, 'credentials.<name>')` and MUST NOT be inlined literally. |
+| `config` | no | map | — | Opaque, role-interpreted runtime payload. Lint does not constrain its inner shape beyond requiring a mapping. Secrets inside `config` MUST resolve through `lookup('config', application_id, 'secrets.credentials.<name>')` and MUST NOT be inlined literally. |
 
 Any credential an addon needs is declared in `meta/secrets.yml` `credentials:`
-and read via `lookup('config', application_id, 'credentials.<name>')`. There
+and read via `lookup('config', application_id, 'secrets.credentials.<name>')`. There
 is no new secret store.
 
 ### Bridges: in-repo dependency vs network bridge

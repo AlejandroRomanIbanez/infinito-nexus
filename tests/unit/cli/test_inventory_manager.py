@@ -134,7 +134,9 @@ class TestInventoryManager(unittest.TestCase):
         inv_file = self.tmpdir / "inventory.yml"
         inv_file.write_text(" ", encoding="utf-8")
 
-        overrides = {"credentials.plain_cred": "OVERRIDE_PLAIN"}
+        overrides = {
+            "applications.testapp.secrets.credentials.plain_cred": "OVERRIDE_PLAIN"
+        }
 
         mgr = InventoryManager(role_dir, inv_file, "pw", overrides=overrides)
 
@@ -154,8 +156,8 @@ class TestInventoryManager(unittest.TestCase):
 
         apps = result["applications"]["testapp"]
 
-        self.assertIn("credentials", apps)
-        creds = apps["credentials"]
+        self.assertIn("secrets", apps)
+        creds = apps["secrets"]["credentials"]
 
         self.assertEqual(creds["database_password"], "GEN_alphanumeric")
 

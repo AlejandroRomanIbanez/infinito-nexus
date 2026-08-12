@@ -122,7 +122,9 @@ class TestInventoryManagerIntegration(TestCase):
                     role_path=role_path,
                     inventory_path=inv_path,
                     vault_pw="pw",
-                    overrides={"credentials.plain_needed": "OVERRIDE"},
+                    overrides={
+                        "applications.web-app-demo.secrets.credentials.plain_needed": "OVERRIDE"
+                    },
                     allow_empty_plain=False,
                 )
                 inv = mgr.apply_schema()
@@ -132,7 +134,7 @@ class TestInventoryManagerIntegration(TestCase):
             self.assertIn("svc-db-mariadb", apps)
 
             root_app = apps["web-app-demo"]
-            root_creds = root_app["credentials"]
+            root_creds = root_app["secrets"]["credentials"]
 
             self.assertIn("database_password", root_creds)
             self.assertIsInstance(root_creds["database_password"], str)
@@ -152,10 +154,10 @@ class TestInventoryManagerIntegration(TestCase):
                 "PLAIN:plain_needed:OVERRIDE", str(root_creds["plain_needed"])
             )
 
-            self.assertEqual(root_app["non_credentials"]["flag"], True)
+            self.assertEqual(root_app["secrets"]["non_credentials"]["flag"], True)
 
             prov_app = apps["svc-db-mariadb"]
-            prov_creds = prov_app["credentials"]
+            prov_creds = prov_app["secrets"]["credentials"]
 
             self.assertIn("root_password", prov_creds)
             self.assertIsInstance(prov_creds["root_password"], VaultScalar)
@@ -240,7 +242,7 @@ class TestInventoryManagerIntegration(TestCase):
 
             apps = inv.get("applications", {})
             self.assertIn("web-app-demo", apps)
-            self.assertIn("api_key", apps["web-app-demo"]["credentials"])
+            self.assertIn("api_key", apps["web-app-demo"]["secrets"]["credentials"])
             self.assertNotIn("web-svc-asset", apps)
 
 

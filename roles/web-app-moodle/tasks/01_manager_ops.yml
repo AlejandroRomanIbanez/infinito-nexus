@@ -32,7 +32,7 @@
     php {{ MOODLE_CLI_DIR }}/install_database.php
     --agree-license
     --adminuser={{ lookup('config', application_id, 'users.administrator.username') }}
-    --adminpass={{ lookup('config', application_id, 'credentials.user_password') | quote }}
+    --adminpass={{ lookup('config', application_id, 'secrets.credentials.user_password') | quote }}
     --adminemail={{ lookup('config', application_id, 'users.administrator.email') }}
     --fullname="{{ MOODLE_SITE_TITLE }}"
     --shortname=Academy

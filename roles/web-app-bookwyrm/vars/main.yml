@@ -8,7 +8,7 @@ container_hostname: "{{ lookup('container_hostname', application_id) }}"
 BOOKWYRM_REGISTRATION_OPEN: "{{ lookup('config', application_id, 'services.bookwyrm.registration_open') | string | lower }}"
 BOOKWYRM_ALLOW_INVITE_REQUESTS: "{{ lookup('config', application_id, 'services.bookwyrm.allow_invite_request') | string | lower }}"
 
-BOOKWYRM_SECRET_KEY: "{{ lookup('config', application_id, 'credentials.secret_key') }}"
+BOOKWYRM_SECRET_KEY: "{{ lookup('config', application_id, 'secrets.credentials.secret_key') }}"
 
 BOOKWYRM_URL: "{{ lookup('tls', application_id, 'url.base') }}"
 BOOKWYRM_HOSTNAME: "{{ lookup('domain', application_id) }}"
