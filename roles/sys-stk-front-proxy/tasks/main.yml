@@ -95,7 +95,7 @@
     webserver_websocket_location: ""
     webserver_client_max_body_size: "{{ lookup('config', front_proxy_application_id, 'server.client_max_body_size', '100m') }}"
   register: nginx_conf
-  notify: restart openresty
+  notify: reload openresty
 
 - block:
     - name: "🔍 Check if {{ lookup('domain', front_proxy_application_id) }} is reachable"
@@ -120,3 +120,28 @@
 
 - name: "🔄 Restart Webserver for '{{ front_proxy_domain_conf_dst_resolved }}'"
   ansible.builtin.meta: flush_handlers
+
+- name: "🔍 Verify '{{ front_proxy_domain }}' is served after the reload"
+  uri_probe:
+    url: "{{ lookup('tls', front_proxy_application_id, 'url.base') }}"
+    status_code:
+      - 200
+      - 301
+      - 302
+  register: front_proxy_reload_check
+  failed_when: false
+  changed_when: false
+  when: nginx_conf.changed
+
+- name: 🔄 Fall back to a full redeploy when the reload did not take
+  ansible.builtin.command:
+    cmd: "true"
+  notify: restart openresty
+  when:
+    - nginx_conf.changed
+    - front_proxy_reload_check.status is defined
+    - front_proxy_reload_check.status not in [200, 301, 302]
+
+- name: "🔄 Flush the fallback redeploy for '{{ front_proxy_domain }}'"
+  ansible.builtin.meta: flush_handlers
+  when: nginx_conf.changed
