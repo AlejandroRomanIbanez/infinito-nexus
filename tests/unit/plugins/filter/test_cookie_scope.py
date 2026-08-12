@@ -1,9 +1,41 @@
 import unittest
+from pathlib import Path
 
-from plugins.filter.cookie_scope import common_dns_suffix
+from plugins.filter.cookie_scope import common_dns_suffix, domain_strings
 
 
 class CommonDnsSuffixTests(unittest.TestCase):
+    def test_sso_template_normalizes_mapping_before_filtering(self):
+        project_root = Path(__file__).resolve().parents[4]
+        template = (
+            project_root
+            / "roles/web-app-keycloak/templates/sso_proxy/oauth2-proxy-keycloak.cfg.j2"
+        ).read_text(encoding="utf-8")
+
+        normalization = "| domain_strings"
+        self.assertIn(normalization, template)
+        self.assertLess(template.index(normalization), template.index("select('search'"))
+        self.assertLess(template.index(normalization), template.index("reject('search'"))
+
+    def test_domain_pipeline_normalizes_every_supported_shape(self):
+        mapping = {
+            "filer": "filer.seaweedfs.s3.infinito.example",
+            "master": "master.seaweedfs.s3.infinito.example",
+        }
+        self.assertEqual(
+            common_dns_suffix(domain_strings(mapping)),
+            "seaweedfs.s3.infinito.example",
+        )
+        self.assertEqual(
+            common_dns_suffix(domain_strings("cloud.infinito.example")),
+            "cloud.infinito.example",
+        )
+        mixed = domain_strings(
+            ["cloud.infinito.example", "cloud.examplelongonionaddress.onion"]
+        )
+        clearnet = [domain for domain in mixed if not domain.endswith(".onion")]
+        self.assertEqual(common_dns_suffix(clearnet), "cloud.infinito.example")
+
     def test_single_domain_returned_unchanged(self):
         self.assertEqual(
             common_dns_suffix(["cloud.infinito.example"]), "cloud.infinito.example"
