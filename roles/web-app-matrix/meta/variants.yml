@@ -120,8 +120,7 @@
       enabled: true
       shared: true
     tor:
-      enabled: false
-      shared: false # nocheck: variants-static-override
+      enabled: true
   addons:
     mautrix-whatsapp:
       enabled: true

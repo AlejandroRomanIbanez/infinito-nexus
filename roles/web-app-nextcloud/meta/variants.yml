@@ -2,6 +2,9 @@
 # Matrix-deploy variant overrides for web-app-nextcloud.
 # See docs/contributing/artefact/files/role/variants.md for the file format.
 #
+# nocheck: comments-valid: eight variants of ~90 near-identical service lines are
+# unreadable without a heading naming what each one adds.
+#
 # nocheck: variant-limit: the loosely-coupled (bond<1) bridge partners are too heavy
 # to co-host, so each budget-bin of them needs its own variant.
 #
@@ -272,8 +275,7 @@
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
-      enabled: false
-      shared: false # nocheck: variants-static-override
+      enabled: true
 # Variant 3: openproject + mattermost + matrix
 - services:
     container_backup:
@@ -361,8 +363,7 @@
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
-      enabled: false
-      shared: false # nocheck: variants-static-override
+      enabled: true
 # Variant 4: onlyoffice + mastodon
 - services:
     container_backup:
@@ -450,8 +451,7 @@
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
-      enabled: false
-      shared: false # nocheck: variants-static-override
+      enabled: true
 # Variant 5: zammad
 - services:
     container_backup:
@@ -539,8 +539,7 @@
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
-      enabled: false
-      shared: false # nocheck: variants-static-override
+      enabled: true
 # Variant 6: gitlab
 - services:
     container_backup:
@@ -628,8 +627,7 @@
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
-      enabled: false
-      shared: false # nocheck: variants-static-override
+      enabled: true
 # Variant 7: discourse + peertube
 - services:
     container_backup:
@@ -717,5 +715,4 @@
       enabled: true
       shared: true
     tor:
-      enabled: false
-      shared: false # nocheck: variants-static-override
+      enabled: true
