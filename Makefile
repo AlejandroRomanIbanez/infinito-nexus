@@ -118,7 +118,7 @@ clean-cache:
 	@bash scripts/system/cache/clean.sh
 
 .PHONY: clean-container-owned
-# Remove container-owned generated artefacts (build/, tasks/groups/*.yml).
+# Remove container-owned generated artefacts (build/).
 # Note: these files are created inside the compose container with the in-container UID (typically `nobody`); the host cannot rm them directly.
 # Note: the helper auto-starts a stopped infinito container before deleting; safe no-op when the targets do not exist.
 clean-container-owned:

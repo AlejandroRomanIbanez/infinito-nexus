@@ -1,0 +1,7 @@
+---
+- name: "🔧 setup {{ role_entry.app }}"
+  ansible.builtin.include_role:
+    name: "{{ role_entry.role }}"
+
+- name: "🚿 flush handlers after {{ role_entry.app }}"
+  ansible.builtin.meta: flush_handlers
