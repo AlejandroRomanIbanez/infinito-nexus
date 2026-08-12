@@ -31,12 +31,6 @@ report_tasks() {
 	printf '%s\n' "${rows}" | sed 's/^/  /' >&2
 }
 
-# Exception: a slot that burned three attempts and converges on the fourth is
-# byte-identical to one that never will, so strikes may only count once the
-# service has churned past any dependency wait it could be racing. `.UpdatedAt`
-# is the epoch because every deploy path bumps it and task churn does not.
-# An unreadable or non-numeric read must mean "keep waiting" -- the gate may
-# lose an abort, it may never invent one.
 churned_past_grace() {
 	local now updated
 	now=$(date +%s)
@@ -48,11 +42,6 @@ churned_past_grace() {
 	[ "$((now - updated))" -ge "$FATAL_GRACE" ]
 }
 
-# Exception: keys on current-state, never desired-state. A rejected or
-# unschedulable task never ran, so docker has already judged the spec unrunnable
-# and no clock is needed. Filtering on desired=Running instead hides that whole
-# group -- a service dead in three seconds has no task desiring Running, the
-# table comes back empty, and the caller waits out its entire budget.
 has_fatal_task() {
 	local ps grace=0
 	churned_past_grace "$1" && grace=1

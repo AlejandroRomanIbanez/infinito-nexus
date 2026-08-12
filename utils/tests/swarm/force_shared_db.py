@@ -10,10 +10,10 @@ compose-only pattern. Flipping every consumer's DB service to ``shared: true``
 routes it to the central svc-db-* provider (as the baseline variant does), so
 no per-app DB is scheduled in swarm.
 
-Exception: a manager-pinned role keeps its volumes node-local
-(``swarm_nfs_backed``) and its DB sidecar carries the matching placement
-constraint, so a literal ``shared: false`` there is honoured instead of
-overridden — Magento hard-fails ``setup:install`` on the central MariaDB major.
+A manager-pinned role keeps its volumes node-local (``swarm_nfs_backed``) and
+its DB sidecar carries the matching placement constraint, so a literal
+``shared: false`` there is honoured instead of overridden — Magento hard-fails
+``setup:install`` on the central MariaDB major.
 
 Inputs (env): ``INV_DIR`` — inventory dir holding ``host_vars/*.yml``
 (default ``/tmp/inv``).
