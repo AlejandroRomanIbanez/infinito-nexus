@@ -120,6 +120,10 @@ docker run --rm -it \
 - [EspoCRM Documentation](https://docs.espocrm.com/) 📖  
 - [Infinito.Nexus Project Repository](https://s.infinito.nexus/code) 🔗  
 
+## Persona contract opt-outs
+
+`biber` only ever exists inside EspoCRM through OIDC auto-provisioning (`ESPOCRM_CONFIG_OIDC_CREATE_USER=true`, [`templates/env.j2`](./templates/env.j2)); the role itself seeds only the administrator account. In the `services.sso.enabled: false` matrix variants that provisioning path is gone and no native `biber` user exists, so [`templates/playwright.env.j2`](./templates/playwright.env.j2) renders `PERSONA_BIBER_BLOCKED=true`. The `administrator` and `guest` personas run in every variant.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

@@ -1,4 +1,5 @@
 ---
+# nocheck: seaweedfs-playwright — Funkwhale writes to the bucket only through the audio-library import flow, which needs a persona-owned library and a real track upload the role does not provision; PROXY_MEDIA=true serves every read back through the API, so the bucket has no persona-reachable surface
 funkwhale:
   modes:
     compose:
@@ -34,6 +35,13 @@ api:
   ports:
     internal:
       http: 5000
+  cpus: "0.5"
+  mem_reservation: 256m
+  mem_limit: 1g
+  pids_limit: 512
+migrate:
+  # nocheck: single-replica  run-once schema bootstrap; concurrent `funkwhale-manage migrate` races the migration graph
+  replicas: 1
   cpus: "0.5"
   mem_reservation: 256m
   mem_limit: 1g
@@ -115,6 +123,7 @@ prometheus:
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
 
+# nocheck: playwright-service-flag
 tor:
   bond: 1
   enabled: "{{ 'svc-net-tor' in group_names }}"

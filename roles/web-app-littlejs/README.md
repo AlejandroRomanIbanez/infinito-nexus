@@ -101,6 +101,10 @@ docker run --rm -it \
 - Upstream engine & examples: [KilledByAPixel/LittleJS](https://github.com/KilledByAPixel/LittleJS)
 - LittleJS README & docs: [GitHub – LittleJS](https://github.com/KilledByAPixel/LittleJS#readme)
 
+## Persona contract opt-outs
+
+[`meta/services.yml`](./meta/services.yml) pins `sso.enabled` and `logout.enabled` to `false`; the role serves the upstream LittleJS build from a static nginx image and ships no auth layer at all. There is nothing for the `biber` or `administrator` persona to log in to, so [`templates/playwright.env.j2`](./templates/playwright.env.j2) declares `PERSONA_BIBER_BLOCKED=true` and `PERSONA_ADMINISTRATOR_BLOCKED=true`. The `guest` persona and the baseline reachability assertions run unconditionally.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

@@ -123,6 +123,14 @@ docker run --rm -it \
 * [Shopware Developer Documentation](https://developer.shopware.com/)
 * [Shopware Store (Plugins)](https://store.shopware.com/en/)
 
+## Persona contract opt-outs
+
+[`tasks/01_admin.yml`](./tasks/01_admin.yml) provisions only the administrator in Shopware's user table; `biber` reaches the backend solely through the oauth2-proxy declared in [`meta/services.yml`](./meta/services.yml). In the `services.sso.enabled: false` matrix variants that proxy is absent and `biber` has no native account, so [`templates/playwright.env.j2`](./templates/playwright.env.j2) renders `PERSONA_BIBER_BLOCKED=true`.
+
+`PERSONA_ADMINISTRATOR_BLOCKED=true` is declared because the shared helper cannot reach Shopware's logout, not because the journey is untestable. The only logout control lives in `.sw-admin-menu__user-actions`, which the administration stylesheet keeps at `display: none` until its toggle is clicked, and that toggle is a bare `div` carrying no role, no `aria-haspopup` and no dropdown class — nothing in the helper's trigger set matches it. Its second fallback, following a same-origin settings link, misses as well because the administration is hash-routed and every settings target is `#/sw/settings/...`.
+
+The journey itself is not dropped. [`files/playwright/test-admin-native.js`](./files/playwright/test-admin-native.js) drives it through Shopware's own selectors: native admin login, an authenticated backend assertion, then logout through the user-actions toggle and back to the login form. It is gated on `SSO_SERVICE_ENABLED`, because with the proxy in front the native form is unreachable. The `guest` persona and the role-local reachability, TLS and HSTS assertions run unconditionally.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

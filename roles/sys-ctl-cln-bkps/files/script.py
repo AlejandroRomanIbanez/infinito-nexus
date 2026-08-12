@@ -7,7 +7,6 @@ from pathlib import Path
 
 import psutil
 
-# Validating arguments
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "--maximum-backup-size-percent",
@@ -35,12 +34,10 @@ def print_used_disc_space(backup_dir):
 
 def is_directory_used_by_another_process(directory_path):
     command = "lsof " + directory_path
-    # directory_path comes from Ansible-templated config (host-trusted), not user input.
-    process = subprocess.Popen(  # noqa: S602
+    process = subprocess.Popen(  # noqa: S602 - directory_path comes from Ansible-templated config (host-trusted), never user input
         [command], stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True
     )
     process.communicate()
-    # @See https://stackoverflow.com/questions/29841984/non-zero-exit-code-for-lsof
     return not process.wait() > bool(0)
 
 
@@ -125,12 +122,17 @@ def get_amount_of_iteration(versions, average_version_directories_per_applicatio
 
 
 def delete_iteration(backup_dir, average_version_directories_per_application):
+    """Run one deletion pass over every application.
+
+    Returns:
+        The number of version directories deleted during this pass.
+    """
+    deleted = 0
     for host_backup_directory_name in os.listdir(backup_dir):
         print(f"Iterating over host: {host_backup_directory_name}")
         host_backup_directory_path = str(Path(backup_dir) / host_backup_directory_name)
         for application_directory in os.listdir(host_backup_directory_path):
             print(f"Iterating over backup application: {application_directory}")
-            # The directory which contains all backup versions of the application
             versions_directory = (
                 str(Path(host_backup_directory_path) / application_directory) + "/"
             )
@@ -146,7 +148,9 @@ def delete_iteration(backup_dir, average_version_directories_per_application):
                 version_path = str(Path(versions_directory) / version)
                 if is_directory_deletable(version, versions, version_path):
                     delete_version(version_path, backup_dir)
+                    deleted += 1
                 version_iteration += 1
+    return deleted
 
 
 def check_time_left(start_time, time_limit):
@@ -162,7 +166,6 @@ def check_time_left(start_time, time_limit):
     elapsed_time = current_time - start_time
     remaining_time = time_limit - elapsed_time
 
-    # Convert times to readable format
     start_time_str = time.strftime("%H:%M:%S", time.localtime(start_time))
     current_time_str = time.strftime("%H:%M:%S", time.localtime(current_time))
     remaining_time_str = time.strftime("%H:%M:%S", time.gmtime(remaining_time))
@@ -205,7 +208,11 @@ while is_larger_than_maximum_backup_size(maximum_backup_size_percent, backup_dir
     print(
         f"Average version directories per application directory: {average_version_directories}"
     )
-    delete_iteration(backup_dir, average_version_directories)
+    if delete_iteration(backup_dir, average_version_directories) == 0:
+        print(
+            "No deletable backup versions left; the remaining usage is not backup-driven. Exiting."
+        )
+        break
     itteration_counter += 1
 
 print_used_disc_space(backup_dir)

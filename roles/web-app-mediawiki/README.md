@@ -134,6 +134,12 @@ provisions a 3-node DinD swarm, deploys this role as a stack, drains
 the worker running the application service, and asserts that wiki
 content survives the reschedule.
 
+## Persona contract opt-outs
+
+This role declares `PERSONA_ADMINISTRATOR_BLOCKED` and `PERSONA_BIBER_BLOCKED` in `templates/playwright.env.j2` for two different reasons. The wiki's bureaucrat and sysop is a local account created by `maintenance/run.php createAndPromote` in `tasks/04_admin.yml` with `MEDIAWIKI_ADMINISTRATOR_PASSWORD` — the role-local `credentials.administrator_password`, not the Keycloak secret the persona helper carries in `ADMIN_PASSWORD`. `$wgPluggableAuth_EnableLocalLogin` is false, so no native form accepts that password anyway, and `$wgOpenIDConnect_UseEmailNameAsUserName` lands the Keycloak identity on a separate, e-mail-named wiki account that holds no sysop rights.
+
+Biber is blocked by `$wgPluggableAuth_EnableAutoLogin`, which this role sets to true in `vars/main.yml`: every anonymous request is bounced straight back into the identity provider, so the verified unauthenticated landing after in-app logout that the persona contract demands can never be observed here. The path back to the generic personas is either auto-login off, or a deploy step that promotes the OIDC-provisioned administrator account to sysop.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

@@ -1,11 +1,10 @@
 import sys
 import unittest
-from unittest import mock
+import unittest.mock as mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError
 
-# Make "ansible.module_utils.tls_common" importable during plain unit tests.
 import utils.tls_common as _tls_common
 from plugins.lookup.cert import LookupModule
 from utils.cache import _reset_cache_for_tests
@@ -36,8 +35,6 @@ class TestCertPlanLookup(unittest.TestCase):
             "web-app-off": {"server": {"tls": {"enabled": False}}},
         }
 
-        # IMPORTANT (new strict behavior):
-        # For TLS_SELFSIGNED_SCOPE=global, CURRENT_PLAY_DOMAINS_ALL MUST be list[str].
         self.vars = {
             "domains": self.domains,
             "applications": self.applications,
@@ -112,8 +109,6 @@ class TestCertPlanLookup(unittest.TestCase):
             out["files"]["key"], "/etc/infinito.nexus/selfsigned/global/privkey.pem"
         )
 
-        # New strict behavior:
-        # SANs come from CURRENT_PLAY_DOMAINS_ALL (list[str]), plus primary_domain first.
         self.assertEqual(
             out["domains"]["san"],
             ["b.example", "a.example", "b-alt.example", "c.example", "api.c.example"],
@@ -126,22 +121,22 @@ class TestCertPlanLookup(unittest.TestCase):
             self.lookup.run(["web-app-b"], variables=v, mode="app")
 
         v2 = dict(self.vars)
-        v2["CURRENT_PLAY_DOMAINS_ALL"] = {"a.example": True}  # wrong type
+        v2["CURRENT_PLAY_DOMAINS_ALL"] = {"a.example": True}
         with self.assertRaises(AnsibleError):
             self.lookup.run(["web-app-b"], variables=v2, mode="app")
 
         v3 = dict(self.vars)
-        v3["CURRENT_PLAY_DOMAINS_ALL"] = []  # empty list not allowed
+        v3["CURRENT_PLAY_DOMAINS_ALL"] = []
         with self.assertRaises(AnsibleError):
             self.lookup.run(["web-app-b"], variables=v3, mode="app")
 
         v4 = dict(self.vars)
-        v4["CURRENT_PLAY_DOMAINS_ALL"] = ["a.example", ""]  # empty string not allowed
+        v4["CURRENT_PLAY_DOMAINS_ALL"] = ["a.example", ""]
         with self.assertRaises(AnsibleError):
             self.lookup.run(["web-app-b"], variables=v4, mode="app")
 
         v5 = dict(self.vars)
-        v5["CURRENT_PLAY_DOMAINS_ALL"] = ["a.example", 123]  # non-string not allowed
+        v5["CURRENT_PLAY_DOMAINS_ALL"] = ["a.example", 123]
         with self.assertRaises(AnsibleError):
             self.lookup.run(["web-app-b"], variables=v5, mode="app")
 
@@ -211,10 +206,6 @@ class TestCertPlanLookup(unittest.TestCase):
         with self.assertRaises(AnsibleError):
             self.lookup.run(["web-app-a"], variables=v, mode="app")
 
-    # -------------------------------------------------------------------------
-    # New tests for "Jinja-in-vars expansion inside lookup" logic
-    # -------------------------------------------------------------------------
-
     def test_selfsigned_base_path_expands_jinja_from_hostvars(self):
         """
         TLS_SELFSIGNED_BASE_PATH may contain Jinja markers and must be expanded
@@ -223,7 +214,6 @@ class TestCertPlanLookup(unittest.TestCase):
         v = dict(self.vars)
         v["TLS_SELFSIGNED_BASE_PATH"] = "/etc/{{ SOFTWARE_DOMAIN }}/selfsigned"
 
-        # Simulate real ansible lookup context
         v["inventory_hostname"] = "localhost"
         v["hostvars"] = {
             "localhost": {
@@ -273,7 +263,6 @@ class TestCertPlanLookup(unittest.TestCase):
         v = dict(self.vars)
         v["TLS_SELFSIGNED_BASE_PATH"] = "/etc/{{ SOFTWARE_DOMAIN }}/selfsigned"
 
-        # No SOFTWARE_DOMAIN present in either variables or hostvars context
         v["inventory_hostname"] = "localhost"
         v["hostvars"] = {"localhost": {}}
 
@@ -288,10 +277,8 @@ class TestCertPlanLookup(unittest.TestCase):
         v = dict(self.vars)
         v["TLS_SELFSIGNED_BASE_PATH"] = "/etc/{{ SOFTWARE_DOMAIN }}/selfsigned"
 
-        # variables has one value
         v["SOFTWARE_DOMAIN"] = "Wrong.Name"
 
-        # hostvars has another, should win
         v["inventory_hostname"] = "localhost"
         v["hostvars"] = {
             "localhost": {
@@ -311,7 +298,6 @@ class TestCertPlanLookup(unittest.TestCase):
         after rendering by injecting literal braces.
         """
         v = dict(self.vars)
-        # This will render to a string that still contains "{{ STILL_JINJA }}"
         v["TLS_SELFSIGNED_BASE_PATH"] = "/etc/{{ '{{ STILL_JINJA }}' }}/selfsigned"
         v["inventory_hostname"] = "localhost"
         v["hostvars"] = {"localhost": {"SOFTWARE_DOMAIN": "infinito.nexus"}}

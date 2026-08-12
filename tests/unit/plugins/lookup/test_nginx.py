@@ -1,5 +1,5 @@
 import unittest
-from unittest import mock
+import unittest.mock as mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError
@@ -20,7 +20,6 @@ class _FakeTlsResolveLookup:
         if len(terms) != 2 or terms[1] != "protocols.web":
             raise AssertionError(f"Unexpected terms passed to tls: {terms}")
 
-        # Legacy kwarg want must be ignored; if it appears, fail (we don't expect it anymore)
         if kwargs.get("want"):
             raise AssertionError(f"Unexpected want kwarg passed to tls: {kwargs}")
 
@@ -117,7 +116,6 @@ class TestNginxPathsLookup(unittest.TestCase):
         self.assertIsInstance(ensure_paths, list)
         self.assertEqual(ensure_paths, [d["path"] for d in ensure])
 
-        # well_known is container path → must NOT be part of host dir creation
         self.assertNotIn("/usr/share/nginx/well-known/", ensure_paths)
 
     def test_canonical_dict_supplies_volume_paths(self):

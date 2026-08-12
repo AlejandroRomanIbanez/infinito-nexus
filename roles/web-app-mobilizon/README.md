@@ -104,6 +104,10 @@ docker run --rm -it \
 
 - [Mobilizon Official Website](https://mobilizon.org)
 
+## Persona contract opt-outs
+
+[`templates/config.exs.j2`](./templates/config.exs.j2) wires Keycloak as the only login provider this role configures, and [`tasks/main.yml`](./tasks/main.yml) creates no Mobilizon account; `MOBILIZON_INSTANCE_DISABLE_DATABASE_LOGIN` ([`templates/env.j2`](./templates/env.j2)) additionally closes the database login whenever LDAP is on. In the `services.sso.enabled: false` matrix variants neither persona has credentials, so [`templates/playwright.env.j2`](./templates/playwright.env.j2) renders `PERSONA_BIBER_BLOCKED=true` and `PERSONA_ADMINISTRATOR_BLOCKED=true`. The `guest` persona and the baseline assertions run unconditionally.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

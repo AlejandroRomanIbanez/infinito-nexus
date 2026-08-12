@@ -1,5 +1,5 @@
 ---
-# nocheck: seaweedfs-playwright - Shopware ships no templates/playwright.env.j2; the object-store upload is covered by the Flysystem amazon-s3 public/private/theme/sitemap config, not a Playwright surface
+# nocheck: seaweedfs-playwright - the object store is reached only through the Flysystem amazon-s3 public/private/theme/sitemap adapters; Shopware exposes no object-browser surface to script
 logout:
   bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
@@ -56,7 +56,7 @@ shopware:
   min_storage: 278MB
   package:
     name: shopware/production
-    version: 6.7.8.2
+    version: 6.7.13.0
   title: "{{ ORGANIZATION }} Shop"
   proxy:
     service_key: web
@@ -166,6 +166,7 @@ prometheus:
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
 
+# nocheck: playwright-service-flag
 tor:
   bond: 1
   enabled: "{{ 'svc-net-tor' in group_names }}"

@@ -142,6 +142,10 @@ docker run --rm -it \
 
 To inspect and modify live settings inside the container, open a shell and use the Rails console for full LDAP and SMTP configuration.
 
+## Persona contract opt-outs
+
+The `administrator` persona is **not** blocked: [tasks/04_admin.yml](./tasks/04_admin.yml) seeds a native OpenProject account whose password is the Keycloak administrator secret, so the journey runs in every variant. The `biber` persona is blocked only in the `sso: false` variants — OpenProject is seeded with the administrator alone, and `biber` is auto-provisioned exclusively through the oauth2-proxy trusted-header bridge onto the LDAP auth source, which those variants remove. Both flags are declared explicitly in [templates/playwright.env.j2](./templates/playwright.env.j2).
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

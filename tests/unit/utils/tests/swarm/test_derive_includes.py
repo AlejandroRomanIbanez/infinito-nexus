@@ -55,6 +55,17 @@ class TestForceSharedDbView(unittest.TestCase):
         self.assertTrue(result["web-app-x"]["services"]["postgres"]["shared"])
         self.assertFalse(result["web-app-x"]["services"]["sso"]["shared"])
 
+    def test_a_pinned_local_db_is_left_unshared(self):
+        apps = {
+            "web-app-x": {"services": {"postgres": {"enabled": True, "shared": False}}}
+        }
+        with (
+            self._keys({"postgres"}),
+            unittest.mock.patch.object(mod, "pinned_local_db", return_value=True),
+        ):
+            result = mod._force_shared_db_view(apps)
+        self.assertFalse(result["web-app-x"]["services"]["postgres"]["shared"])
+
     def test_missing_entries_are_not_created(self):
         apps = {"web-app-x": {"services": {"sso": {"enabled": True}}}}
         with self._keys({"mariadb"}):

@@ -1,5 +1,5 @@
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from ansible.errors import AnsibleActionFail
 from ansible.plugins.loader import become_loader, shell_loader

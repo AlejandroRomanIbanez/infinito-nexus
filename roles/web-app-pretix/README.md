@@ -120,6 +120,10 @@ The `oidc` plugin (`pretix-oidc`, pinned to `2.3.1`) is pip-installed at image b
 - [Pretix Documentation](https://docs.pretix.eu/en/latest/)  
 - [Pretix GitHub Repository](https://github.com/pretix/pretix)  
 
+## Persona contract opt-outs
+
+The shared `biber` and `administrator` persona helpers are declared blocked in [templates/playwright.env.j2](./templates/playwright.env.j2). The role provisions no pretix account at all — [tasks/main.yml](./tasks/main.yml) only deploys the stack — while pretix's native auth backend authenticates a pretix `User` row that is created by the interactive first-run setup. The `pretix-oidc` backend added on top lives on pretix's `/control` login page, whereas the role's base URL serves the public ticket shop that the baseline scenarios in [files/playwright/playwright.spec.js](./files/playwright/playwright.spec.js) assert. Seeding a backend user is the path back to a runnable persona journey.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

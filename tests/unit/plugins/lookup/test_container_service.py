@@ -7,8 +7,8 @@ service name in `<stack>_<service_key>` form in swarm mode.
 from __future__ import annotations
 
 import unittest
+import unittest.mock as mock
 from typing import Any
-from unittest import mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError
@@ -89,11 +89,6 @@ class TestContainerServiceLookup(unittest.TestCase):
         self.assertEqual(out, ["mattermost_mattermost"])
 
     def test_swarm_mode_ignores_services_name_field(self):
-        # docker stack deploy names services <stack>_<compose-key>. The
-        # compose `name:` field maps to `container_name` (compose-only)
-        # and is silently ignored by swarm, so the lookup must derive the
-        # swarm-addressable name from the service KEY, not from
-        # `services.<key>.name`.
         apps = _apps(service_name="custom-mm-name")
         out = _run(
             "web-app-mattermost",

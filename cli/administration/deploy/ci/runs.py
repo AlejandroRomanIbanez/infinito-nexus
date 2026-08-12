@@ -202,7 +202,7 @@ def _run(args: list[str]) -> str:
 
 def _branch_remote() -> str:
     """The remote the current branch tracks (e.g. a fork), falling back to
-    'origin' or the only configured remote."""
+    ``remote.pushDefault``, then 'origin' or the only configured remote."""
     try:
         upstream = _run(
             ["git", "rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{upstream}"]
@@ -212,6 +212,12 @@ def _branch_remote() -> str:
     except subprocess.CalledProcessError:
         pass
     remotes = _run(["git", "remote"]).split()
+    try:
+        push_default = _run(["git", "config", "--get", "remote.pushDefault"])
+        if push_default in remotes:
+            return push_default
+    except subprocess.CalledProcessError:
+        pass
     if "origin" in remotes:
         return "origin"
     if not remotes:

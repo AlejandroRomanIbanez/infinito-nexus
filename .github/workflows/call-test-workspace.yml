@@ -15,7 +15,6 @@ on:
         default: rotate
 
 permissions:
-  actions: write
   contents: read
   packages: read
 

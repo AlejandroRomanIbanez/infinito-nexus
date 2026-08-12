@@ -129,6 +129,12 @@ Key settings in `meta/services.yml` and `meta/server.yml`:
 
 - [Fider GitHub](https://github.com/getfider/fider)
 
+## Persona contract opt-outs
+
+The shared `biber` and `administrator` persona journeys are opted out via `PERSONA_BIBER_BLOCKED` / `PERSONA_ADMINISTRATOR_BLOCKED` in `templates/playwright.env.j2`.
+Fider's SSO entry is a two-step modal: the header "Sign in" button only opens the provider dialog, and a second click on "Continue with … SSO" performs the Keycloak redirect, whereas the shared helper clicks exactly once and never reaches the IdP.
+Both journeys are covered end-to-end by this role's own `fider: admin sso login` and `fider: biber sso login as regular user` scenarios in `files/playwright/playwright.spec.js`; the opt-out lapses once the shared helper learns Fider's modal.
+
 ## Credits
 
 Implemented by **[Alejandro Roman Ibanez](https://github.com/AlejandroRomanIbanez)**.

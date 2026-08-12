@@ -5,8 +5,8 @@ with every prerequisite before its dependents."""
 from __future__ import annotations
 
 import unittest
+import unittest.mock as mock
 from pathlib import Path
-from unittest import mock
 
 from cli.meta.roles.order.run import __main__ as run
 

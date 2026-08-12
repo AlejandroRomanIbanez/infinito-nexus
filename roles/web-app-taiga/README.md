@@ -146,6 +146,11 @@ docker run --rm -it \
       --diff -vv'
 ```
 
+## Persona contract opt-outs
+
+Taiga redirects `/` to the public `/discover` showcase, which renders a bare Login link but not the OIDC entry point; only `/login` binds the SSO directive (see the note in [`files/playwright/_shared.js`](./files/playwright/_shared.js)). The shared personas always enter at the site root, so they can never reach Taiga's SSO button.
+Taiga's AngularJS shell additionally exposes logout only through `ng-click` / `tg-nav` / `ui-sref` directives, which the generic in-app logout helper cannot activate. [`templates/playwright.env.j2`](./templates/playwright.env.j2) therefore declares `PERSONA_BIBER_BLOCKED=true` and `PERSONA_ADMINISTRATOR_BLOCKED=true`; the equivalent journeys are driven by the role-local `test-login-oidc.js` and `test-login-native.js` specs, which enter at `/login` and log out through Taiga's own control.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

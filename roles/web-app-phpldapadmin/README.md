@@ -104,6 +104,10 @@ docker run --rm -it \
 - [phpLDAPadmin Docker Container Documentation](https://github.com/leenooks/phpLDAPadmin/wiki/Docker-Container)
 - [Official phpldapadmin Homepage](https://github.com/leenooks/phpLDAPadmin)
 
+## Persona contract opt-outs
+
+phpLDAPadmin authenticates with an LDAP bind DN and the OpenLDAP `administrator_database_password`, not with the Keycloak `administrator` username/password pair, so the `administrator` persona has no in-app credential once it is through the oauth2-proxy. [`meta/services.yml`](./meta/services.yml) additionally admits only the `web-app-phpldapadmin` administrator RBAC group to that proxy (`sso.oauth2.allowed_groups`), and `biber` carries an empty role list, so it is denied before phpLDAPadmin is reached. [`templates/playwright.env.j2`](./templates/playwright.env.j2) therefore declares `PERSONA_BIBER_BLOCKED=true` and `PERSONA_ADMINISTRATOR_BLOCKED=true`; the `guest` persona and the baseline assertions run unconditionally.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

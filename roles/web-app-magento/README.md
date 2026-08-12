@@ -119,6 +119,10 @@ docker run --rm -it \
 - [Adobe Commerce DevDocs](https://developer.adobe.com/commerce/)
 - [OpenSearch](https://opensearch.org/)
 
+## Persona contract opt-outs
+
+[`tasks/01_setup.yml`](./tasks/01_setup.yml) seeds only the administrator into Magento's admin table (`bin/magento setup:install --admin-user`, credentials from [`templates/env.j2`](./templates/env.j2)); `biber` reaches the backend solely through the oauth2-proxy declared in [`meta/services.yml`](./meta/services.yml). In the `services.sso.enabled: false` matrix variants that proxy is absent and `biber` has no native account, so [`templates/playwright.env.j2`](./templates/playwright.env.j2) renders `PERSONA_BIBER_BLOCKED=true`. The `administrator` persona keeps its native login via `ADMIN_NATIVE_PASSWORD` and runs in every variant.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

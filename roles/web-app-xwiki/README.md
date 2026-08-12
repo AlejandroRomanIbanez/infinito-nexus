@@ -131,6 +131,11 @@ The OIDC/LDAP runtime configuration (provider URLs, bind DN, secrets) lives in t
 - [XWiki Documentation](https://www.xwiki.org/xwiki/bin/view/Documentation/)  
 - [XWiki GitHub Repository](https://github.com/xwiki/xwiki-platform)  
 
+## Persona contract opt-outs
+
+The administrator is provisioned as an `XWiki.XWikiUsers` object without a `password` property (see [`templates/xml/user/xwikiusers_object.xml.j2`](./templates/xml/user/xwikiusers_object.xml.j2)), and every privileged operation of the role authenticates as the built-in `superadmin` with `credentials.superadminpassword`. Neither credential is the Keycloak secret the shared persona helpers submit, and `biber` has no XWiki user page at all — only the administrator page is created ([`tasks/03_administrator.yml`](./tasks/03_administrator.yml)) — while the OIDC group mapping stays commented out in [`templates/xwiki.properties.j2`](./templates/xwiki.properties.j2).
+[`templates/playwright.env.j2`](./templates/playwright.env.j2) therefore declares `PERSONA_BIBER_BLOCKED=true` and `PERSONA_ADMINISTRATOR_BLOCKED=true`. The Keycloak coupling is instead proven through XWiki's own login action by the addon spec [`files/playwright/addons/oidc-authenticator.spec.js`](./files/playwright/addons/oidc-authenticator.spec.js).
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

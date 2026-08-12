@@ -100,7 +100,8 @@ RUN set -eux; \
       --prefer-dist \
       --no-interaction \
       --optimize-autoloader \
-      --no-scripts
+      --no-scripts; \
+    composer dump-autoload --no-dev --optimize --no-interaction
 
 RUN set -eux; \
     mkdir -p "${SUITECRM_LDAP_EXTENSION_DIR}"; \
@@ -124,6 +125,8 @@ ENV SUITECRM_APP_DIR=${SUITECRM_APP_DIR} \
     SUITECRM_WEB_GROUP=${SUITECRM_WEB_GROUP}
 
 COPY --from=builder --chown=${SUITECRM_WEB_USER}:${SUITECRM_WEB_GROUP} ${SUITECRM_APP_DIR} ${SUITECRM_SEED_DIR}
+
+RUN test -f "${SUITECRM_SEED_DIR}/vendor/autoload_runtime.php"
 
 RUN set -eux; \
     mkdir -p "${SUITECRM_APP_DIR}"; \

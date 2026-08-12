@@ -7,7 +7,7 @@ consumer of its own store.
 
 import importlib.util
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from ansible.errors import AnsibleError
 

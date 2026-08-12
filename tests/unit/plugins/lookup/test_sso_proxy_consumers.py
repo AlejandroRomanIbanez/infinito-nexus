@@ -11,7 +11,7 @@ import importlib
 import importlib.util
 import sys
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from ansible.errors import AnsibleError
 
@@ -72,13 +72,9 @@ class SsoProxyConsumersLookupTests(unittest.TestCase):
         lk._loader = mock.MagicMock()
         return lk.run(terms or [], variables={"applications": applications})
 
-    # --- term-shape contract --------------------------------------------
-
     def test_positional_terms_raise(self):
         with self.assertRaises(AnsibleError):
             self._run({}, ["extra-arg"])
-
-    # --- enumeration ----------------------------------------------------
 
     def test_empty_applications_returns_empty_list(self):
         result = self._run({})
@@ -103,7 +99,7 @@ class SsoProxyConsumersLookupTests(unittest.TestCase):
             "web-app-b": _role(enabled=True, flavor="oidc"),
             "web-app-c": _role(enabled=False, flavor="oauth2"),
             "web-app-d": _role(enabled=True, flavor="oauth2"),
-            "web-app-e": {"services": {}},  # no sso block at all
+            "web-app-e": {"services": {}},
         }
         result = self._run(apps)
         self.assertEqual(result, [["web-app-a", "web-app-d"]])
@@ -118,9 +114,6 @@ class SsoProxyConsumersLookupTests(unittest.TestCase):
         self.assertEqual(result, [["web-app-alpha", "web-app-mu", "web-app-zeta"]])
 
     def test_jinja_enabled_string_is_treated_as_potentially_truthy(self):
-        # An unrendered Jinja string (the dynamic-flag form) is the merged
-        # payload's shape for SSO-gated roles; the resolver renders it to
-        # a bool via Python's bool(...) → True (non-empty string truthy).
         apps = {
             "web-app-a": {
                 "services": {

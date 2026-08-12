@@ -134,6 +134,12 @@ docker run --rm -it \
       --diff -vv'
 ```
 
+## Persona contract opt-outs
+
+Both authenticated Playwright personas are blocked while `services.sso.enabled` is false. The dashboard's entire Keycloak integration is the browser-side `oidc.js` bundle, and `DASHBOARD_JS_FILES` in `vars/main.yml` ships that file only when SSO is enabled, so with SSO off the page renders neither a Login link nor a logout control.
+
+port-ui is a tile launcher with no admin tier, so the `administrator` persona has no admin-only surface to assert against beyond the same login chain. With SSO enabled both personas run.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

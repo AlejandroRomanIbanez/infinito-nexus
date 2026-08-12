@@ -95,6 +95,11 @@ docker run --rm -it \
 - [ejabberd Container Documentation](https://docs.ejabberd.im/CONTAINER/)
 - [Converse.js](https://conversejs.org/)
 
+## Persona contract opt-outs
+
+ejabberd's only HTTP surface is `ejabberd_web_admin` on `/admin` (see [`templates/configuration.yml.j2`](./templates/configuration.yml.j2)). It authenticates a bare JID against LDAP over HTTP Basic, so there is no Keycloak redirect to follow and no in-app logout control to click; client authentication itself runs over ports 5222/5269 and stays outside the Playwright loop, as noted under Watch Points.
+`acl.admin` additionally lists only the administrator JID, so the web admin refuses every other account outright. [`templates/playwright.env.j2`](./templates/playwright.env.j2) therefore declares `PERSONA_BIBER_BLOCKED=true` and `PERSONA_ADMINISTRATOR_BLOCKED=true`; the `guest` persona and the baseline reachability assertions run unconditionally.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

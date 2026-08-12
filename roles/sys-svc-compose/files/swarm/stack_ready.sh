@@ -2,6 +2,7 @@
 set -euo pipefail
 
 : "${STACK:?STACK env var is required}"
+: "${FATAL_GRACE:?FATAL_GRACE env var is required}"
 
 is_completed_oneshot() {
 	local ps
@@ -50,6 +51,35 @@ report_task_states() {
 	printf '%s\n' "${inspect}" | sed 's/^/    /' >&2
 }
 
+churned_past_grace() {
+	local now updated
+	now=$(date +%s)
+	updated=$(timeout 15 docker service inspect \
+		--format '{{.UpdatedAt.Unix}}' "$1" 2>/dev/null) || return 1
+	case "$updated" in
+	'' | *[!0-9]*) return 1 ;;
+	esac
+	[ "$((now - updated))" -ge "$FATAL_GRACE" ]
+}
+
+has_fatal_task() {
+	local ps grace=0
+	churned_past_grace "$1" && grace=1
+	ps=$(timeout 15 docker service ps --no-trunc \
+		--format '{{.Name}}|{{.CurrentState}}|{{.Error}}' "$1" 2>/dev/null) || return 1
+	[ -n "$ps" ] || return 1
+	awk -F'|' -v grace="$grace" '
+		{
+			if (ended[$1]) next
+			newest = !seen[$1]++
+			if ($3 == "") { if (!newest) ended[$1] = 1; next }
+			if (newest && $2 ~ /^(Rejected|Pending)/) fatal = 1
+			if (++errs[$1] >= 3 && grace) fatal = 1
+		}
+		END { exit fatal ? 0 : 1 }
+	' <<<"$ps"
+}
+
 if ! services=$(timeout 15 docker stack services --format '{{.Name}} {{.Replicas}}' "$STACK"); then
 	echo "not converged: docker stack services failed or timed out for ${STACK}" >&2
 	exit 1
@@ -67,9 +97,16 @@ done <<<"$services"
 
 if [ -n "$not_running" ]; then
 	echo "not converged:$not_running" >&2
-	printf '%s\n' "$not_running" | tr ' ' '\n' | while read -r svc; do
-		[ -n "$svc" ] || continue
+	fatal=0
+	for svc in $not_running; do
 		report_tasks "$svc"
+		if has_fatal_task "$svc"; then
+			echo "stuck: $svc" >&2
+			fatal=1
+		fi
 	done
+	if [ "$fatal" -ne 0 ]; then
+		exit 2
+	fi
 	exit 1
 fi

@@ -17,6 +17,7 @@ private registry.
 from __future__ import annotations
 
 import hashlib
+import http.client
 import json
 import re
 import tempfile
@@ -75,7 +76,12 @@ def _bearer_token(challenge: str, repo: str) -> str | None:
         )
         with urllib.request.urlopen(req, timeout=15) as resp:  # noqa: S310 - https request to a trusted registry host
             body = json.loads(resp.read().decode())
-    except (urllib.error.URLError, OSError, json.JSONDecodeError):
+    except (
+        urllib.error.URLError,
+        OSError,
+        http.client.HTTPException,
+        json.JSONDecodeError,
+    ):
         return None
     return body.get("token") or body.get("access_token")
 
@@ -107,7 +113,7 @@ def _request(url: str, repo: str, method: str, accept: str | None):
                 if token:
                     continue
             return exc.code, exc.headers, None
-        except (urllib.error.URLError, OSError):
+        except (urllib.error.URLError, OSError, http.client.HTTPException):
             return None
     return None
 

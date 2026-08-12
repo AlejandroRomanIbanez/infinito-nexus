@@ -114,6 +114,12 @@ docker run --rm -it \
 - [KIX Start website](https://www.kixdesk.com/)
 - [KIX documentation](https://docs.kixdesk.com/)
 
+## Persona contract opt-outs
+
+This role declares `PERSONA_BIBER_BLOCKED` in `templates/playwright.env.j2`. KIX sits behind an oauth2-proxy whose `sso.oauth2.allowed_groups` in `meta/services.yml` admits only `roles/web-app-kix/administrator` and `roles/web-app-kix/user`; biber belongs to neither, so the proxy denies him before KIX renders anything. Past the proxy KIX is a two-stage login: the SPA still presents its own agent form at `/auth` that binds against LDAP, and the shared persona helper has no second stage after the Keycloak round-trip.
+
+The runnable journey lives in `files/playwright/test-login-biber.js`, which first grants biber the KIX user group over the Keycloak Admin API and then drives `runKixLoginLogoutFlow` through both stages to the universal logout. The path back to the generic persona is a KIX build that accepts the proxy's trusted headers instead of demanding its own login.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

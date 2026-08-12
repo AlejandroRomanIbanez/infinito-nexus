@@ -7,7 +7,7 @@ tests stay hermetic — no filesystem access into ``roles/``.
 
 import importlib.util
 import unittest
-from unittest import mock
+import unittest.mock as mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError

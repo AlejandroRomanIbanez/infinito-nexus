@@ -146,6 +146,12 @@ This role declares no addons (it ships no `meta/addons/` directory). Mattermost 
 - [Mattermost Configuration Settings](https://docs.mattermost.com/configure/configuration-settings.html)
 - [GitLab SSO in Mattermost](https://docs.mattermost.com/deployment/sso-gitlab.html)
 
+## Persona contract opt-outs
+
+This role declares `PERSONA_ADMINISTRATOR_BLOCKED` and `PERSONA_BIBER_BLOCKED` in `templates/playwright.env.j2` for the same mechanism. Mattermost Team Edition ships no native OIDC provider, so the role piggybacks Keycloak onto the GitLab OAuth slot (`MM_GITLABSETTINGS_*` in `templates/env.j2`); the resulting entry point is `a[href='/oauth/gitlab/login']`, relabelled "SSO with Infinito.Nexus" by `templates/javascript.js.j2`, which the shared helper's name-based login matcher does not recognise. Mattermost v11+ also serves a `/landing` interstitial to unauthenticated visitors that only clears once `localStorage.__landingPageSeen__` is seeded before navigation, and the shared helper has no init-script hook to do that.
+
+The journey is covered bespoke in `files/playwright/test-sso-login.js`, which seeds the landing flag, clicks the GitLab-slot link, verifies the channel view, and signs out via `/logout`; `files/playwright/test-biber-dm-administrator.js` adds the peer exchange. The path back to the generic personas is an SSO control whose accessible name matches the shared matcher.
+
 ## Credits
 
 Implemented by **[Alejandro Roman Ibanez](https://github.com/AlejandroRomanIbanez)**.

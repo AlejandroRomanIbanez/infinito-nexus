@@ -82,6 +82,20 @@ class TestForceSharedTrue(unittest.TestCase):
         self.assertTrue(svc["mariadb"]["shared"])
         self.assertNotIn("shared", svc["matomo"])
 
+    def test_keeps_manager_pinned_role_local_db(self):
+        self._write(
+            {
+                "applications": {
+                    "web-app-magento": {
+                        "services": {"mariadb": {"enabled": True, "shared": False}}
+                    }
+                }
+            }
+        )
+        self.assertFalse(force_shared_true(self.host_vars, {"mariadb"}))
+        svc = self._read()["applications"]["web-app-magento"]["services"]
+        self.assertFalse(svc["mariadb"]["shared"])
+
     def test_no_change_when_already_shared(self):
         self._write(
             {"applications": {"a": {"services": {"mariadb": {"shared": True}}}}}

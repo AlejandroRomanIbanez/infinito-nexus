@@ -57,6 +57,7 @@ flowchart LR
         dpt_web_app_matrix["web-app-matrix 🐳🐝"]
         dpt_web_app_nextcloud["web-app-nextcloud 🐳🐝"]
         dpt_web_app_opentalk["web-app-opentalk 🐳🐝"]
+        dpt_web_app_socialhome["web-app-socialhome 🐳🐝"]
     end
     dep_svc_bkp_volume_2_local -. "0..1" .-> svc_container_backup
     dep_svc_db_redis -. "0..1" .-> svc_redis
@@ -65,6 +66,7 @@ flowchart LR
     svc_coturn -. "0..1" .-> dpt_web_app_matrix
     svc_coturn -. "0..1" .-> dpt_web_app_nextcloud
     svc_coturn -. "0..1" .-> dpt_web_app_opentalk
+    svc_coturn -. "0..1" .-> dpt_web_app_socialhome
 ```
 
 Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments). Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.

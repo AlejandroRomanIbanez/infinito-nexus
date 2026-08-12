@@ -114,6 +114,12 @@ docker run --rm -it \
 - [Gitea Official Website](https://gitea.io/)
 - [Gitea LDAP integration](https://docs.gitea.com/administration/authentication/)
 
+## Persona contract opt-outs
+
+The shared `biber` and `administrator` persona journeys are opted out via `PERSONA_BIBER_BLOCKED` / `PERSONA_ADMINISTRATOR_BLOCKED` in `templates/playwright.env.j2`.
+As soon as an IAM source is wired, the role sets `GITEA__service__DISABLE_REGISTRATION` (`templates/env.j2`, driven by `GITEA_IAM_ENABLED` in `vars/main.yml`), and `tasks/setup/oidc.yml` registers only the auth source — never a Gitea user — so a Keycloak identity without a pre-linked Gitea account is bounced back to `/user/login`.
+The opt-out lapses once the deploy provisions (or auto-links) Gitea accounts for the persona identities.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

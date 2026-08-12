@@ -1,5 +1,5 @@
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from utils.packages.outcome import aggregate, failure_message
 

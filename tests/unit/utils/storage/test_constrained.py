@@ -1,6 +1,6 @@
 import unittest
+import unittest.mock as mock
 from types import SimpleNamespace
-from unittest import mock
 
 from utils.storage import constrained
 from utils.storage.constrained import is_constrained, required_storage_bytes

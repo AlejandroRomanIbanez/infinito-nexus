@@ -110,6 +110,11 @@ docker run --rm -it \
 - [YOURLS Official Website](https://yourls.org/)
 - [YOURLS GitHub Repository](https://github.com/YOURLS/YOURLS)
 
+## Persona contract opt-outs
+
+YOURLS has no native SSO; the admin session is minted from the oauth2-proxy identity header by the `shunt_is_valid_user` drop-in in [`files/sso/infinito_sso.php`](./files/sso/infinito_sso.php), which honours the header only on the gated admin path and only for members of the YOURLS administrator group.
+The gate itself admits only that same RBAC group ([`meta/services.yml`](./meta/services.yml)), so `biber` is rejected before YOURLS renders anything: [`templates/playwright.env.j2`](./templates/playwright.env.j2) declares `PERSONA_BIBER_BLOCKED=true`, and the denial is asserted explicitly by `files/playwright/test-biber-denied.js`. The `administrator` persona stays live and exercises the bridge end to end.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

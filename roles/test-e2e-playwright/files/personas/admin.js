@@ -48,6 +48,7 @@ async function runAdminFlow(page, opts = {}) {
   await gotoOnion(page,`${appBaseUrl}/`, { waitUntil: "domcontentloaded" }).catch(() => {});
 
   let keycloakRoundTripCompleted = false;
+  let authPage = page;
   if (adminUsername && adminPassword) {
     if (oidcEnabled && !page.url().includes("openid-connect/auth")) {
       const strictLogin = page
@@ -58,10 +59,10 @@ async function runAdminFlow(page, opts = {}) {
         .getByRole("link", { name: /log\s*in|sign\s*in|sso|admin/i })
         .or(page.getByRole("button", { name: /log\s*in|sign\s*in|sso|admin/i }))
         .first();
-      await clickOidcLoginLink(page, strictLogin, looseLogin);
+      authPage = (await clickOidcLoginLink(page, strictLogin, looseLogin)) || page;
     }
-    if (page.url().includes("openid-connect/auth")) {
-      await performKeycloakLogin(page, adminUsername, adminPassword, canonicalDomain);
+    if (authPage.url().includes("openid-connect/auth")) {
+      await performKeycloakLogin(authPage, adminUsername, adminPassword, canonicalDomain);
       keycloakRoundTripCompleted = true;
     }
   }
@@ -76,7 +77,7 @@ async function runAdminFlow(page, opts = {}) {
       }
       const usernameField = page
         .locator(
-          "input[name='username']:visible, input[name='email']:visible, input[name='login']:visible, input[type='email']:visible, input[autocomplete='username']:visible",
+          "input[name='username']:visible, input[name='email']:visible, input[name='login']:visible, input[name$='[username]']:visible, input[name$='[email]']:visible, input[type='email']:visible, input[autocomplete='username']:visible",
         )
         .first();
       if (await usernameField.isVisible().catch(() => false)) {
@@ -128,7 +129,7 @@ async function runAdminFlow(page, opts = {}) {
       .or(surface.getByRole("link", { name: /(profile|user.?menu|^menu$|signed\s*in)/i }))
       .or(
         surface.locator(
-          "[data-region='user-menu-toggle'], .user-menu-toggle, .usermenu, [aria-label*='user menu' i], [aria-label*='account' i], [data-testid*='user' i], a[href*='logout' i], a[href*='end_session' i], a[href*='end-session' i]",
+          "[data-region='user-menu-toggle'], .user-menu-toggle, .usermenu, [aria-label*='user menu' i], [aria-label*='account' i], [data-testid*='user' i]:not(input):not(textarea):not(select), a[href*='logout' i], a[href*='end_session' i], a[href*='end-session' i]",
         ),
       );
   let adminReachedAuthenticated =

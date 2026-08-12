@@ -10,8 +10,8 @@ resolved-value lookup would introduce.
 from __future__ import annotations
 
 import unittest
+import unittest.mock as mock
 from typing import Any
-from unittest import mock
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError
@@ -123,12 +123,6 @@ class TestContainerExecAddrLookup(unittest.TestCase):
         )
 
     def test_swarm_mode_uses_compose_yaml_service_key(self):
-        # The resolver script composes the docker-swarm service name as
-        # `<stack>_<service_key>` because the compose-yaml service key
-        # is what `docker stack deploy` names the service after.
-        # `services.<key>.name` is the compose-side `container_name`
-        # override and is ignored by swarm, so the lookup MUST pass
-        # the service_key (not the bare name) to the resolver.
         apps = _apps(service_name="custom-mm-name")
         out = _run(
             "web-app-mattermost",

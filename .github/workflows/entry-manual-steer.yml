@@ -92,10 +92,6 @@ on:
 
 permissions:
   contents: read
-  packages: write
-  security-events: write
-  actions: write
-  issues: write
 
 jobs:
   pick-distro:
@@ -115,6 +111,12 @@ jobs:
   ci-orchestrator:
     name: 🎛️ Orchestrate CI (manual)
     needs: pick-distro
+    permissions:
+      actions: read
+      contents: read
+      packages: write
+      security-events: write
+      issues: write
     uses: ./.github/workflows/call-orchestrator.yml
     with:
       distros: ${{ needs.pick-distro.outputs.distros }}

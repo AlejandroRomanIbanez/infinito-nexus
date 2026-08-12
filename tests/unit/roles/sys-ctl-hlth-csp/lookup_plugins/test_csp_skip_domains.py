@@ -3,7 +3,7 @@ from __future__ import annotations
 import importlib.util
 import sys
 import unittest
-from unittest import mock
+import unittest.mock as mock
 from unittest.mock import patch
 
 from . import PROJECT_ROOT

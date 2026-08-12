@@ -37,6 +37,7 @@ flowchart LR
         svc_postgres["postgres"]
         svc_redis["redis"]
         svc_bookwyrm["bookwyrm"]
+        svc_migrate["migrate"]
         svc_worker["worker"]
         svc_minio["minio ❌"]
         svc_seaweedfs["seaweedfs"]
@@ -115,6 +116,12 @@ docker run --rm -it \
 - [BookWyrm Documentation](https://docs.joinbookwyrm.com/)
 - [ActivityPub (Wikipedia)](https://en.wikipedia.org/wiki/ActivityPub)
 - [Fediverse (Wikipedia)](https://en.wikipedia.org/wiki/Fediverse)
+
+## Persona contract opt-outs
+
+Both authenticated Playwright personas are blocked. BookWyrm's logout control is an icon-only avatar dropdown with no accessible name, so the shared in-app-logout helper cannot locate it; the trusted-header login itself works.
+
+The `administrator` persona is additionally blocked because this role never creates a BookWyrm staff account. `files/sso/header_auth.py` provisions proxied identities with `create_user(...)` and no `is_staff` flag, and no task promotes an existing account, so the administrator arrives as an ordinary member with no admin surface to exercise.
 
 ## Credits
 

@@ -14,6 +14,7 @@ data:
 whiteboard_tmp:
   name: nextcloud_whiteboard_tmp
   type: volume
+  backup: false
   mounts:
     - service: whiteboard
       target: /tmp
@@ -21,6 +22,7 @@ whiteboard_tmp:
 whiteboard_fontcache:
   name: nextcloud_whiteboard_fontcache
   type: volume
+  backup: false
   mounts:
     - service: whiteboard
       target: /var/cache/fontconfig
@@ -28,6 +30,7 @@ whiteboard_fontcache:
 talk_recording_tmp:
   name: nextcloud_talk_recording_tmp
   type: volume
+  backup: false
   mounts:
     - service: talk_recording
       target: /tmp

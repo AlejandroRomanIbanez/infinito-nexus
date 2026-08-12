@@ -4,10 +4,10 @@ import io
 import os
 import tempfile
 import unittest
+import unittest.mock as mock
 import urllib.error
 from email.message import Message
 from pathlib import Path
-from unittest import mock
 
 from utils.docker import registry
 

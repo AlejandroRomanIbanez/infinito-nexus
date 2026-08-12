@@ -65,7 +65,6 @@ _BASELINE: frozenset[str] = frozenset(
         "plugins/lookup/nginx.py",
         "roles/svc-bkp-remote-2-local/files/pull_specific_host.py",
         "roles/svc-opt-ssd-hdd/files/script.py",
-        "roles/sys-ctl-cln-bkps/files/script.py",
         "roles/sys-ctl-rpr-container-soft/files/script.py",
         "roles/sys-svc-compose-ca/files/compose_ca.py",
         "roles/sys-svc-compose/files/compose.py",

@@ -124,6 +124,10 @@ docker run --rm -it \
 - [Scaling a Mastodon Server](https://www.digitalocean.com/community/tutorials/how-to-scale-your-mastodon-server)
 - [Mastodon GitHub Issues](https://github.com/mastodon/mastodon/issues/7958)
 
+## Persona contract opt-outs
+
+[`tasks/05_administrator.yml`](./tasks/05_administrator.yml) creates the account with `tootctl accounts create` and never sets or captures a password, so `ADMIN_PASSWORD` — the Keycloak secret — cannot drive Mastodon's native `/auth/sign_in`; `biber` has no Mastodon account at all, since the OIDC sign-in ([`templates/env.j2`](./templates/env.j2)) is the only path that would create one. In the `services.sso.enabled: false` matrix variants that path is removed, so [`templates/playwright.env.j2`](./templates/playwright.env.j2) renders `PERSONA_BIBER_BLOCKED=true` and `PERSONA_ADMINISTRATOR_BLOCKED=true`. The SeaweedFS companion scenario ([`files/playwright/test-seaweedfs.js`](./files/playwright/test-seaweedfs.js)) drives the same admin journey and skips on the same flag.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

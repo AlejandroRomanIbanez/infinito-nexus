@@ -8,7 +8,7 @@ computation itself is covered by tests.unit.utils.networks.test_render.
 from __future__ import annotations
 
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from ansible.errors import AnsibleError
 

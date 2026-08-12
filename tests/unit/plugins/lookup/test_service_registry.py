@@ -2,8 +2,8 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+import unittest.mock as mock
 from pathlib import Path
-from unittest import mock
 from unittest.mock import patch
 
 from plugins.lookup.service_registry import LookupModule

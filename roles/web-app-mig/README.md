@@ -95,6 +95,12 @@ docker run --rm -it \
 
 - [Meta Infinite Graph Homepage](https://github.com/kevinveenbirkenbach/meta-infinite-graph)
 
+## Persona contract opt-outs
+
+This role declares `PERSONA_ADMINISTRATOR_BLOCKED` and `PERSONA_BIBER_BLOCKED` in `templates/playwright.env.j2` for the same reason. `meta/services.yml` pins `sso.enabled: false` and `sso.shared: false`: MIG serves the pre-rendered Meta Infinite Graph over its own compose stack and has no login surface, no accounts, and no authenticated state at all. Consequently the env file renders no `ADMIN_USERNAME`, `ADMIN_PASSWORD`, `BIBER_USERNAME` or `BIBER_PASSWORD` for the shared helpers to read.
+
+The `dashboard` service in `meta/services.yml` is only a consumer tile pointing at MIG's canonical domain; it does not host MIG. The role's contract is fully carried by the reachability, canonical-domain and content-type scenarios in `files/playwright/playwright.spec.js`, plus the guest persona. The path back to the generic personas is an authenticated MIG surface, which upstream does not have.
+
 ## Credits
 
 Implemented by **[Kevin Veen-Birkenbach](https://www.veen.world)**.

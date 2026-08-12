@@ -1,8 +1,8 @@
 import importlib.util
 import unittest
+import unittest.mock as mock
 from types import ModuleType
 from typing import ClassVar
-from unittest import mock
 
 from . import PROJECT_ROOT
 

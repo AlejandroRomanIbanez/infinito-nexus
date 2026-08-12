@@ -2,6 +2,10 @@ const { test, expect } = require("@playwright/test");
 const { resolveTimeout } = require("./timeouts");
 
 const { decodeDotenvQuotedValue, normalizeBaseUrl, runAdminFlow, runBiberFlow, runGuestFlow , expectHstsWhenTls, gotoOnion } = require("./personas");
+
+require("./test-seaweedfs");
+
+
 test.use({ ignoreHTTPSErrors: true });
 
 const appBaseUrl = normalizeBaseUrl(process.env.APP_BASE_URL || "");

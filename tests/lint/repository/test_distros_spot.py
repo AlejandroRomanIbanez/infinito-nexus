@@ -80,7 +80,7 @@ class TestDistrosSpot(unittest.TestCase):
         offenders: list[str] = []
         for pattern in _LIST_SOURCES:
             for path in sorted(PROJECT_ROOT.glob(f"**/{pattern}")):
-                if ".git" in path.parts or "node_modules" in path.parts:
+                if {".git", ".claude", "node_modules"} & set(path.parts):
                     continue
                 if path.resolve() == this_file:
                     continue

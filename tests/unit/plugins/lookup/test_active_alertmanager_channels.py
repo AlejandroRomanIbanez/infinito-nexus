@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import unittest
-from unittest import mock
+import unittest.mock as mock
 
 from plugins.lookup.active_alertmanager_channels import LookupModule
 
@@ -12,8 +12,6 @@ def _make_applications(*app_ids: str, channels: tuple = ()) -> dict:
     apps listed in *channels* get services.prometheus.communication.channel: true;
     others do not.
     """
-    # Per the materialised payload moved from
-    # `applications.<app>.compose.services.<X>` to `applications.<app>.services.<X>`.
     return {
         app_id: (
             {"services": {"prometheus": {"communication": {"channel": True}}}}
@@ -71,7 +69,7 @@ class TestActiveAlertmanagerChannelsSelfDeclaration(unittest.TestCase):
     """services.prometheus.communication.channel flag gate — must be true in app config."""
 
     def test_excludes_app_without_channel_flag(self):
-        apps = _make_applications("web-app-mattermost")  # no channel flag
+        apps = _make_applications("web-app-mattermost")
         result = _run(apps, ["web-app-mattermost"])
         self.assertNotIn("web-app-mattermost", result)
 

@@ -46,6 +46,7 @@ NEXTCLOUD_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, NEX
 
 NEXTCLOUD_OPENPROJECT_CONTAINER_ADDRESS: "{{ lookup('container_address', 'web-app-openproject', 'web') }}"
 NEXTCLOUD_ZAMMAD_CONTAINER_ADDRESS: "{{ lookup('container_address', 'web-app-zammad', 'railsserver') }}"
+NEXTCLOUD_GITLAB_CONTAINER_ADDRESS: "{{ lookup('container_address', 'web-app-gitlab', 'webservice') }}"
 
 NEXTCLOUD_PROXY_EXCLUDED_HOSTS:
   - apps.nextcloud.com
