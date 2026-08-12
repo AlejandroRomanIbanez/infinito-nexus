@@ -72,6 +72,12 @@ UNIT_DUMPS="${INFINITO_RESCUE_DIAGNOSTICS_DIR:?INFINITO_RESCUE_DIAGNOSTICS_DIR i
 
 DRILL_START_TS="$(docker exec "${MGR}" date +%Y%m%d%H%M%S)"
 
+echo "==> [0/9] disarm the backup calendar timers for the duration of the drill"
+for _node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}"; do
+	docker exec "${_node}" timeout 660 sh -c \
+		"systemctl stop 'svc-bkp-*.timer' 2>/dev/null; while systemctl is-active --quiet 'svc-bkp-*.service'; do sleep 5; done" # nocheck: shell-or-true -- a node without the timers installed has nothing to stop
+done
+
 echo "==> [1/9] seed markers (live NFS volume + manager secrets)"
 docker exec "${NFS_SERVER}" sh -c \
 	"mkdir -p '${NFS_VOL_DIR}' && printf '%s' '${DR_TOKEN}' > '${NFS_VOL_DIR}/${DR_MARKER}'"
