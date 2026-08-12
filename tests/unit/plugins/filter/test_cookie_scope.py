@@ -1,21 +1,26 @@
 import unittest
-from pathlib import Path
 
 from plugins.filter.cookie_scope import common_dns_suffix, domain_strings
+from utils.cache.files import PROJECT_ROOT, read_text
 
 
 class CommonDnsSuffixTests(unittest.TestCase):
     def test_sso_template_normalizes_mapping_before_filtering(self):
-        project_root = Path(__file__).resolve().parents[4]
-        template = (
-            project_root
-            / "roles/web-app-keycloak/templates/sso_proxy/oauth2-proxy-keycloak.cfg.j2"
-        ).read_text(encoding="utf-8")
+        template = read_text(
+            str(
+                PROJECT_ROOT
+                / "roles/web-app-keycloak/templates/sso_proxy/oauth2-proxy-keycloak.cfg.j2"
+            )
+        )
 
         normalization = "| domain_strings"
         self.assertIn(normalization, template)
-        self.assertLess(template.index(normalization), template.index("select('search'"))
-        self.assertLess(template.index(normalization), template.index("reject('search'"))
+        self.assertLess(
+            template.index(normalization), template.index("select('search'")
+        )
+        self.assertLess(
+            template.index(normalization), template.index("reject('search'")
+        )
 
     def test_domain_pipeline_normalizes_every_supported_shape(self):
         mapping = {

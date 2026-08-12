@@ -18,6 +18,9 @@ from __future__ import annotations
 
 import unittest
 
+from utils.cache.files import read_text
+from utils.roles.mapping import ROLE_FILE_DEFAULTS_MAIN
+
 from . import PROJECT_ROOT
 
 _ENV_TEMPLATE = "templates/test.env.j2"
@@ -36,10 +39,8 @@ def _role_dirs():
 
 class TestCliTestAssetsPaired(unittest.TestCase):
     def test_harness_resets_leaked_compose_mode_before_role_vars(self) -> None:
-        harness = (
-            PROJECT_ROOT / "roles/test-e2e-cli/tasks/run_one.yml"
-        ).read_text(encoding="utf-8")
-        reset = "roles/sys-svc-compose/defaults/main.yml"
+        harness = read_text(str(PROJECT_ROOT / "roles/test-e2e-cli/tasks/run_one.yml"))
+        reset = f"roles/sys-svc-compose/{ROLE_FILE_DEFAULTS_MAIN}"
         role_vars = "roles', application_id, 'vars/main.yml"
 
         self.assertIn(reset, harness)
