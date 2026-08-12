@@ -23,7 +23,7 @@ Pulls only. Pushes are not intercepted.
 | `rubygems` | `gem-proxy` | `rubygems.org` |
 | `go` | `go-proxy` | `proxy.golang.org` |
 | `helm` | `helm-bitnami` | `charts.bitnami.com/bitnami` |
-| `yum` | `yum-rocky`, `yum-fedora` | `download.rockylinux.org`, `dl.fedoraproject.org` |
+| `yum` | `yum-rocky`, `yum-fedora` | `download.rockylinux.org`, `download.fedoraproject.org` |
 | `raw` | `raw-githubusercontent`, `raw-codeload-github`, `raw-packagist`, `raw-alpine` | `raw.githubusercontent.com`, `codeload.github.com`, `repo.packagist.org`, `dl-cdn.alpinelinux.org` |
 
 A proxy repo that holds a cached copy serves it when its remote is unreachable, regardless of `metadataMaxAge` (measured). `autoBlock` is therefore off: while a remote is auto-blocked Nexus answers `404 Remote Auto Blocked` instead of falling back to that cached copy. The mirror repos below only come into play when nothing is cached either.
