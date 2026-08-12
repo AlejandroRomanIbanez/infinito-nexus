@@ -39,8 +39,10 @@ class LookupModule(LookupBase):
         vars_ = variables or getattr(self._templar, "available_variables", {}) or {}
         templar = getattr(self, "_templar", None)
 
-        mode = vars_.get("compose_mode") or vars_.get("compose_mode_force") or vars_.get(
-            "DEPLOYMENT_MODE", "compose"
+        mode = (
+            vars_.get("compose_mode")
+            or vars_.get("compose_mode_force")
+            or vars_.get("DEPLOYMENT_MODE", "compose")
         )
         if templar is not None:
             with contextlib.suppress(Exception):
@@ -66,5 +68,9 @@ class LookupModule(LookupBase):
         lines = ["deploy:", f"  {replicas}"]
         placement = get_role_placement(str(application_id))
         if placement:
-            lines += ["  placement:", "    constraints:", f"      - node.role == {placement}"]
+            lines += [
+                "  placement:",
+                "    constraints:",
+                f"      - node.role == {placement}",
+            ]
         return ["\n".join(lines)]

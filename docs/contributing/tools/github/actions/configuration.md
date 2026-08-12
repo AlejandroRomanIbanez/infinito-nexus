@@ -183,4 +183,3 @@ INFINITO_PLAYWRIGHT_KEEP: ${{ vars.INFINITO_PLAYWRIGHT_KEEP }}
 | *(not set / empty)* | Trace / screenshot / video kept only on failure ✓ |
 | `true` | Trace / screenshot / video kept for every test ✓ |
 | any other value | Trace / screenshot / video kept only on failure ✓ |
-
