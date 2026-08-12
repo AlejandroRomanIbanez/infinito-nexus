@@ -88,9 +88,13 @@ class TestEmailLookup(unittest.TestCase):
         self.assertTrue(result["tls"])
         self.assertEqual(result["from"], "root@host1.localdomain")
 
-    def test_onion_domain_disables_tls(self) -> None:
-        # On an onion node the mail domain is .onion (no TLS cert): relay plaintext
-        # to the loopback Mailu front on port 25 instead of failing the handshake.
+    def test_onion_domain_disables_tls_but_keeps_auth(self) -> None:
+        """An onion mail host has no TLS certificate, so the relay speaks
+        plaintext — Tor already encrypts the transport. AUTH must survive that:
+        without credentials the message reaches Mailu unauthenticated with a
+        local envelope sender, and rspamd's antispoof rule rejects it with
+        554 5.7.1. Plaintext submission is port 587; 25 is the inbound MX and
+        offers no AUTH at all."""
         variables = {
             "groups": {"web-app-mailu": ["host1"]},
             "SYSTEM_EMAIL_HOST": "mail.abc123.onion",
@@ -100,7 +104,8 @@ class TestEmailLookup(unittest.TestCase):
         }
         result = self.lookup.run([], variables=variables)[0]
         self.assertFalse(result["tls"])
-        self.assertEqual(result["port"], 25)
+        self.assertTrue(result["auth"])
+        self.assertEqual(result["port"], 587)
 
     def test_clearnet_external_keeps_tls(self) -> None:
         variables = {
@@ -113,6 +118,64 @@ class TestEmailLookup(unittest.TestCase):
         result = self.lookup.run([], variables=variables)[0]
         self.assertTrue(result["tls"])
         self.assertEqual(result["port"], 465)
+
+    def test_the_axis_matrix_stays_where_it_was_measured(self) -> None:
+        """Decoupling auth from tls may only move the two cases it was meant to.
+
+        The clearnet default and the local relay must render byte-identically,
+        or a change aimed at the onion has silently reached every deploy."""
+        cases = [
+            ("mail.example.org", True, True, {"tls": True, "auth": True, "port": 465}),
+            (
+                "mail.example.org",
+                False,
+                True,
+                {"tls": False, "auth": True, "port": 587},
+            ),
+            ("mail.x.onion", True, True, {"tls": False, "auth": True, "port": 587}),
+            (
+                "mail.example.org",
+                True,
+                False,
+                {"tls": False, "auth": False, "port": 25},
+            ),
+        ]
+        for host, tls_enabled, external, expected in cases:
+            with self.subTest(host=host, tls=tls_enabled, external=external):
+                variables = {
+                    "groups": {"web-app-mailu": ["host1"]} if external else {},
+                    "SYSTEM_EMAIL_HOST": host,
+                    "TLS_ENABLED": tls_enabled,
+                    "DOMAIN_PRIMARY": host.split(".", 1)[1],
+                    "inventory_hostname": "host1",
+                }
+                result = self.lookup.run([], variables=variables)[0]
+                for key, value in expected.items():
+                    self.assertEqual(
+                        bool(result[key]) if key != "port" else result[key], value
+                    )
+
+    def test_auth_mechanism_is_named_only_where_msmtp_would_refuse(self) -> None:
+        """msmtp aborts with EX_UNAVAILABLE when it has to pick a mechanism
+        itself on a cleartext link, so the onion relay needs PLAIN spelled out.
+        The TLS and the no-relay cases must keep rendering on and off, or the
+        change reaches deploys it was never meant to touch."""
+        cases = [
+            ("mail.example.org", True, True, "on"),
+            ("mail.x.onion", True, True, "plain"),
+            ("mail.example.org", True, False, "off"),
+        ]
+        for host, tls_enabled, external, expected in cases:
+            with self.subTest(host=host, external=external):
+                variables = {
+                    "groups": {"web-app-mailu": ["host1"]} if external else {},
+                    "SYSTEM_EMAIL_HOST": host,
+                    "TLS_ENABLED": tls_enabled,
+                    "DOMAIN_PRIMARY": host.split(".", 1)[1],
+                    "inventory_hostname": "host1",
+                }
+                result = self.lookup.run([], variables=variables)[0]
+                self.assertEqual(result["auth_mechanism"], expected)
 
     def test_empty_string_falls_back_to_plugin_default(self) -> None:
         variables = {
