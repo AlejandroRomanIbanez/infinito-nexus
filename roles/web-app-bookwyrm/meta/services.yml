@@ -49,6 +49,7 @@ redis:
 bookwyrm:
   healthcheck:
     flavor: curl
+    hostname: localhost
   modes:
     compose:
       enabled: true
