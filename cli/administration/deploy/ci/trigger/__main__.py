@@ -123,7 +123,11 @@ def main(argv: list[str] | None = None) -> int:
 
     config: dict[str, str] = {}
     if source is not None:
-        config = runs.config_from_run(source["displayTitle"], source["jobs"])
+        config = runs.config_from_run(
+            source["displayTitle"],
+            source["jobs"],
+            runs.inputs_from_jobs(source["jobs"], repo),
+        )
 
     if priority:
         label = f"priority {priority}, then the remaining roles"

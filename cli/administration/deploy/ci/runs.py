@@ -48,6 +48,14 @@ CONFIG_INPUTS = (
     "instructions",
 )
 
+LOG_INPUTS = ("tor",)
+"""Inputs the retrigger reads from the job log rather than the run title.
+
+The title renders these as glyphs, so recovering one means translating a
+symbol back into a value; the log holds the word the operator picked. Reading
+it there keeps the retrigger honest even if the title's marker changes shape.
+"""
+
 MODE_GLYPHS = {
     "docker": to_emoji("compose"),
     "swarm": to_emoji("swarm"),
@@ -387,12 +395,25 @@ def config_from_title(title: str) -> dict[str, str]:
     return {name: recorded[name] for name in CONFIG_INPUTS if name in recorded}
 
 
-def config_from_run(title: str, jobs: list[dict]) -> dict[str, str]:
+def config_from_run(
+    title: str, jobs: list[dict], logged: dict[str, str] | None = None
+) -> dict[str, str]:
     """The source run's configuration, with the distros the title does not
-    record recovered from its jobs (:func:`distros_from_jobs`)."""
+    record recovered from its jobs (:func:`distros_from_jobs`).
+
+    Args:
+        title: the source run's display title.
+        jobs: the source run's jobs.
+        logged: inputs read verbatim from a called job's log
+            (:func:`inputs_from_jobs`); :data:`LOG_INPUTS` are taken from here
+            instead of from the title.
+    """
     config = config_from_title(title)
     if not config.get("distros"):
         config = {**config, "distros": distros_from_jobs(jobs)}
+    config.update(
+        {name: (logged or {}).get(name, "") for name in LOG_INPUTS},
+    )
     return {name: value for name, value in config.items() if value}
 
 

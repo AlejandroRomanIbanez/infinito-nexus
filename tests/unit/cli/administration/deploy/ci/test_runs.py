@@ -340,6 +340,19 @@ class TestConfigFromTitle(unittest.TestCase):
         jobs = [{"name": "🎲 Pick distro(s)"}, {"name": "🧹 Lint"}]
         self.assertNotIn("distros", runs.config_from_run(title, jobs))
 
+    def test_the_tor_mode_is_carried_over_from_the_job_log(self) -> None:
+        title = render({"sequencing": "serial"})
+        jobs = [{"name": "🎲 Pick distro(s)"}]
+        self.assertEqual(
+            runs.config_from_run(title, jobs, {"tor": "exclusive"})["tor"],
+            "exclusive",
+        )
+
+    def test_a_run_whose_log_records_no_tor_mode_carries_none(self) -> None:
+        title = render({"sequencing": "serial"})
+        self.assertNotIn("tor", runs.config_from_run(title, [], {}))
+        self.assertNotIn("tor", runs.config_from_run(title, []))
+
 
 if __name__ == "__main__":
     unittest.main()
