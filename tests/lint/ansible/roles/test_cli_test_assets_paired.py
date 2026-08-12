@@ -35,6 +35,16 @@ def _role_dirs():
 
 
 class TestCliTestAssetsPaired(unittest.TestCase):
+    def test_harness_resets_leaked_compose_mode_before_role_vars(self) -> None:
+        harness = (
+            PROJECT_ROOT / "roles/test-e2e-cli/tasks/run_one.yml"
+        ).read_text(encoding="utf-8")
+        reset = "roles/sys-svc-compose/defaults/main.yml"
+        role_vars = "roles', application_id, 'vars/main.yml"
+
+        self.assertIn(reset, harness)
+        self.assertLess(harness.index(reset), harness.index(role_vars))
+
     def test_env_template_and_script_come_as_a_pair(self) -> None:
         offenders: dict[str, str] = {}
         for role_dir in _role_dirs():
