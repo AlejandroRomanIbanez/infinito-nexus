@@ -7,6 +7,7 @@
     _playwright_stage_dir: "{{ TEST_E2E_PLAYWRIGHT_STAGE_BASE_DIR }}/{{ application_id }}"
     _playwright_stage_tests_dir: "{{ TEST_E2E_PLAYWRIGHT_STAGE_BASE_DIR }}/{{ application_id }}/tests"
     _playwright_reports_dir: "{{ TEST_E2E_PLAYWRIGHT_REPORTS_BASE_DIR }}/{{ application_id }}"
+    _playwright_personas_archive: "/tmp/infinito-playwright-personas-{{ application_id }}.tar"
     _playwright_default_package_template: "{{ lookup('path_absolute', 'roles/test-e2e-playwright/templates/package.json.j2') }}"
     _playwright_default_config_js: "{{ lookup('path_absolute', 'roles/test-e2e-playwright/files/playwright.config.js') }}"
     _playwright_ca_required: "{{ (TLS_MODE | lower) == 'self_signed' }}"
@@ -169,12 +170,24 @@
     - addon-gating.js
     - timeouts.js
 
+- name: 📦 Pack the persona flows for a single transfer
+  ansible.builtin.command:
+    cmd: >-
+      tar -cf {{ _playwright_personas_archive | quote }}
+      -C {{ lookup('path_absolute', 'roles/test-e2e-playwright/files/personas') | quote }} .
+  delegate_to: localhost
+  changed_when: false
+
+- name: 📁 Create staging personas directory
+  ansible.builtin.file:
+    path: "{{ _playwright_stage_tests_dir }}/personas"
+    state: directory
+    mode: "0755"
+
 - name: 📋 Copy persona flows and helper modules into staging tests directory
-  ansible.builtin.copy:
-    src: "{{ lookup('path_absolute', 'roles/test-e2e-playwright/files/personas') }}/"
+  ansible.builtin.unarchive:
+    src: "{{ _playwright_personas_archive }}"
     dest: "{{ _playwright_stage_tests_dir }}/personas/"
-    mode: "0644"
-    directory_mode: "0755"
 
 - name: ✅ Ensure staging volume directory exists
   ansible.builtin.file:
