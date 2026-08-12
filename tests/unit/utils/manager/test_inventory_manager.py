@@ -10,7 +10,7 @@ from utils.handler.vault import VaultScalar
 from utils.manager.inventory import InventoryManager
 from utils.manager.value_generator import ValueGenerator
 from utils.roles.mapping import (
-    ROLE_FILE_META_SCHEMA,
+    ROLE_FILE_META_SECRETS,
     ROLE_FILE_META_SERVICES,
     ROLE_FILE_VARS_MAIN,
 )
@@ -35,7 +35,7 @@ class TestInventoryManager(TestCase):
             (role_path / "vars").mkdir(parents=True, exist_ok=True)
             (role_path / "config").mkdir(parents=True, exist_ok=True)
 
-            (role_path / ROLE_FILE_META_SCHEMA).write_text("{}", encoding="utf-8")
+            (role_path / ROLE_FILE_META_SECRETS).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_VARS_MAIN).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_META_SERVICES).write_text("{}", encoding="utf-8")
             inv_path.write_text("{}", encoding="utf-8")
@@ -46,7 +46,7 @@ class TestInventoryManager(TestCase):
                 p = Path(path)
                 if p == inventory_path:
                     return {}
-                if p == role_path / ROLE_FILE_META_SCHEMA:
+                if p == role_path / ROLE_FILE_META_SECRETS:
                     return {}
                 if p == role_path / ROLE_FILE_VARS_MAIN:
                     return {}
@@ -85,7 +85,7 @@ class TestInventoryManager(TestCase):
             (role_path / "config").mkdir(parents=True, exist_ok=True)
             inv_path.write_text("{}", encoding="utf-8")
 
-            (role_path / ROLE_FILE_META_SCHEMA).write_text("{}", encoding="utf-8")
+            (role_path / ROLE_FILE_META_SECRETS).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_VARS_MAIN).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_META_SERVICES).write_text("{}", encoding="utf-8")
 
@@ -105,7 +105,7 @@ class TestInventoryManager(TestCase):
                 p = Path(path)
                 if p == inventory_path:
                     return {"applications": {}}
-                if p == role_path / ROLE_FILE_META_SCHEMA:
+                if p == role_path / ROLE_FILE_META_SECRETS:
                     return schema_data
                 if p == role_path / ROLE_FILE_VARS_MAIN:
                     return {"application_id": "app_test"}
@@ -146,7 +146,7 @@ class TestInventoryManager(TestCase):
             (role_path / "config").mkdir(parents=True, exist_ok=True)
             inv_path.write_text("{}", encoding="utf-8")
 
-            (role_path / ROLE_FILE_META_SCHEMA).write_text("{}", encoding="utf-8")
+            (role_path / ROLE_FILE_META_SECRETS).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_VARS_MAIN).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_META_SERVICES).write_text("{}", encoding="utf-8")
 
@@ -166,7 +166,7 @@ class TestInventoryManager(TestCase):
                 p = Path(path)
                 if p == inventory_path:
                     return {"applications": {}}
-                if p == role_path / ROLE_FILE_META_SCHEMA:
+                if p == role_path / ROLE_FILE_META_SECRETS:
                     return schema_data
                 if p == role_path / ROLE_FILE_VARS_MAIN:
                     return {"application_id": "app_test"}
@@ -216,7 +216,7 @@ class TestInventoryManager(TestCase):
             (role_path / "config").mkdir(parents=True, exist_ok=True)
             inv_path.write_text("{}", encoding="utf-8")
 
-            (role_path / ROLE_FILE_META_SCHEMA).write_text("{}", encoding="utf-8")
+            (role_path / ROLE_FILE_META_SECRETS).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_VARS_MAIN).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_META_SERVICES).write_text("{}", encoding="utf-8")
 
@@ -236,7 +236,7 @@ class TestInventoryManager(TestCase):
                 p = Path(path)
                 if p == inventory_path:
                     return {"applications": {}}
-                if p == role_path / ROLE_FILE_META_SCHEMA:
+                if p == role_path / ROLE_FILE_META_SECRETS:
                     return schema_data
                 if p == role_path / ROLE_FILE_VARS_MAIN:
                     return {"application_id": "app_test"}
@@ -277,7 +277,7 @@ class TestInventoryManager(TestCase):
             (role_path / "vars").mkdir(parents=True, exist_ok=True)
             (role_path / "config").mkdir(parents=True, exist_ok=True)
             inv_path.write_text("{}", encoding="utf-8")
-            (role_path / ROLE_FILE_META_SCHEMA).write_text("{}", encoding="utf-8")
+            (role_path / ROLE_FILE_META_SECRETS).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_VARS_MAIN).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_META_SERVICES).write_text("{}", encoding="utf-8")
 
@@ -295,7 +295,7 @@ class TestInventoryManager(TestCase):
                 p = Path(path)
                 if p == inv_path:
                     return {"applications": {}}
-                if p == role_path / ROLE_FILE_META_SCHEMA:
+                if p == role_path / ROLE_FILE_META_SECRETS:
                     return schema_data
                 if p == role_path / ROLE_FILE_VARS_MAIN:
                     return {"application_id": "app_test"}
@@ -338,7 +338,7 @@ class TestInventoryManager(TestCase):
             (role_path / "vars").mkdir(parents=True, exist_ok=True)
             (role_path / "config").mkdir(parents=True, exist_ok=True)
             inv_path.write_text("{}", encoding="utf-8")
-            (role_path / ROLE_FILE_META_SCHEMA).write_text("{}", encoding="utf-8")
+            (role_path / ROLE_FILE_META_SECRETS).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_VARS_MAIN).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_META_SERVICES).write_text("{}", encoding="utf-8")
 
@@ -346,7 +346,7 @@ class TestInventoryManager(TestCase):
                 p = Path(path)
                 if p == inv_path:
                     return {"applications": {}}
-                if p == role_path / ROLE_FILE_META_SCHEMA:
+                if p == role_path / ROLE_FILE_META_SECRETS:
                     return {"credentials": {}}
                 if p == role_path / ROLE_FILE_VARS_MAIN:
                     return {"application_id": "app_test"}
@@ -394,7 +394,7 @@ class TestInventoryManager(TestCase):
             (role_path / "config").mkdir(parents=True, exist_ok=True)
             inv_path.write_text("{}", encoding="utf-8")
 
-            (role_path / ROLE_FILE_META_SCHEMA).write_text("{}", encoding="utf-8")
+            (role_path / ROLE_FILE_META_SECRETS).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_VARS_MAIN).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_META_SERVICES).write_text("{}", encoding="utf-8")
 
@@ -414,7 +414,7 @@ class TestInventoryManager(TestCase):
                 p = Path(path)
                 if p == inventory_path:
                     return {"applications": {}}
-                if p == role_path / ROLE_FILE_META_SCHEMA:
+                if p == role_path / ROLE_FILE_META_SECRETS:
                     return schema_data
                 if p == role_path / ROLE_FILE_VARS_MAIN:
                     return {"application_id": "app_test"}
@@ -476,7 +476,7 @@ class TestInventoryManager(TestCase):
             (role_path / "config").mkdir(parents=True, exist_ok=True)
             inv_path.write_text("{}", encoding="utf-8")
 
-            (role_path / ROLE_FILE_META_SCHEMA).write_text("{}", encoding="utf-8")
+            (role_path / ROLE_FILE_META_SECRETS).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_VARS_MAIN).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_META_SERVICES).write_text("{}", encoding="utf-8")
 
@@ -515,7 +515,7 @@ class TestInventoryManager(TestCase):
                 p = Path(path)
                 if p == inventory_path:
                     return inventory_data
-                if p == role_path / ROLE_FILE_META_SCHEMA:
+                if p == role_path / ROLE_FILE_META_SECRETS:
                     return schema_data
                 if p == role_path / ROLE_FILE_VARS_MAIN:
                     return {"application_id": "app_test"}
@@ -566,7 +566,7 @@ class TestInventoryManager(TestCase):
             (role_path / "config").mkdir(parents=True, exist_ok=True)
             inv_path.write_text("{}", encoding="utf-8")
 
-            (role_path / ROLE_FILE_META_SCHEMA).write_text("{}", encoding="utf-8")
+            (role_path / ROLE_FILE_META_SECRETS).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_VARS_MAIN).write_text("{}", encoding="utf-8")
             (role_path / ROLE_FILE_META_SERVICES).write_text("{}", encoding="utf-8")
 
@@ -589,7 +589,7 @@ class TestInventoryManager(TestCase):
                 p = Path(path)
                 if p == inv_path:
                     return {"applications": {}}
-                if p == role_path / ROLE_FILE_META_SCHEMA:
+                if p == role_path / ROLE_FILE_META_SECRETS:
                     return schema_data
                 if p == role_path / ROLE_FILE_VARS_MAIN:
                     return {"application_id": "app_test"}
@@ -640,7 +640,7 @@ class TestInventoryManagerVariant(TestCase):
         (role_path / ROLE_FILE_VARS_MAIN).write_text(
             f"application_id: {app_id}\n", encoding="utf-8"
         )
-        (role_path / ROLE_FILE_META_SCHEMA).write_text("{}", encoding="utf-8")
+        (role_path / ROLE_FILE_META_SECRETS).write_text("{}", encoding="utf-8")
         (role_path / ROLE_FILE_META_SERVICES).write_text("{}", encoding="utf-8")
         return role_path
 

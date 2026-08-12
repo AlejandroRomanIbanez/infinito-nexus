@@ -14,14 +14,14 @@ from utils.cache import base as cache_base
 from utils.cache.yaml import dump_yaml_str
 from utils.roles.applications.config import AppConfigKeyError, ConfigEntryNotSetError
 from utils.roles.mapping import (
-    ROLE_FILE_META_SCHEMA,
+    ROLE_FILE_META_SECRETS,
     ROLE_FILE_META_SERVICES,
     ROLE_FILE_META_USERS,
 )
 
 
 def _write_schema(base_dir: Path, application_id: str, schema: dict) -> None:
-    schema_path = base_dir / "roles" / application_id / ROLE_FILE_META_SCHEMA
+    schema_path = base_dir / "roles" / application_id / ROLE_FILE_META_SECRETS
     schema_path.parent.mkdir(parents=True, exist_ok=True)
     schema_path.write_text(dump_yaml_str(schema), encoding="utf-8")
 

@@ -187,7 +187,7 @@ The mautrix network bridges are declared in
 [`meta/addons/`](./meta/addons/) as `mechanism: bridge` addons
 (requirement 026, Decision 13). Each is `required: false` and **disabled by default**; its
 per-network DB password is referenced from
-[`meta/schema.yml`](./meta/schema.yml) `credentials:`, never inlined.
+[`meta/secrets.yml`](./meta/secrets.yml) `credentials:`, never inlined.
 
 | Addon | Mechanism | Default state | Bridges |
 |-------|-----------|---------------|---------|

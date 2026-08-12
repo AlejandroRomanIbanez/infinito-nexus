@@ -120,7 +120,7 @@ ansible-vault view group_vars/web-app-n8n.yml
 
 ## Developer Notes
 
-Variant matrix: [variants.yml](./meta/variants.yml). Service flags and image pin: [services.yml](./meta/services.yml). Credentials declared in [schema.yml](./meta/schema.yml).
+Variant matrix: [variants.yml](./meta/variants.yml). Service flags and image pin: [services.yml](./meta/services.yml). Credentials declared in [secrets.yml](./meta/secrets.yml).
 
 ## Further Resources
 

@@ -7,7 +7,7 @@ _APPLICATION_MARKER_FILES = (
     "server.yml",
     "rbac.yml",
     "volumes.yml",
-    "schema.yml",
+    "secrets.yml",
     "users.yml",
 )
 

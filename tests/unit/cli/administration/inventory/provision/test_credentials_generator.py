@@ -8,7 +8,7 @@ from ruamel.yaml import YAML
 from cli.administration.inventory.provision.credentials_generator import (
     generate_credentials_for_roles,
 )
-from utils.roles.mapping import ROLE_FILE_META_SCHEMA
+from utils.roles.mapping import ROLE_FILE_META_SECRETS
 
 
 class TestCredentialsGenerator(unittest.TestCase):
@@ -24,10 +24,9 @@ class TestCredentialsGenerator(unittest.TestCase):
             roles_dir = tmp / "roles"
             roles_dir.mkdir()
 
-            # Create a fake role path that resolver returns
             role_path = roles_dir / "web-app-nextcloud"
             (role_path / "meta").mkdir(parents=True)
-            (role_path / ROLE_FILE_META_SCHEMA).write_text("x: 1\n", encoding="utf-8")
+            (role_path / ROLE_FILE_META_SECRETS).write_text("x: 1\n", encoding="utf-8")
 
             host_vars_file = tmp / "host_vars.yml"
             host_vars_file.write_text("", encoding="utf-8")
@@ -109,7 +108,6 @@ ansible_become_password: !vault |
                     "cli.administration.inventory.provision.credentials_generator.subprocess.run"
                 ) as spr,
             ):
-                # Simulate: credentials tool runs fine but outputs nothing
                 spr.return_value.returncode = 0
                 spr.return_value.stdout = ""
                 spr.return_value.stderr = ""
@@ -124,8 +122,6 @@ ansible_become_password: !vault |
                     workers=1,
                 )
 
-            # Should not crash and may or may not call subprocess depending on resolver behavior.
-            # With our patch, it SHOULD call it exactly once.
             spr.assert_called_once()
 
     def test_generate_credentials_forwards_app_variant_to_subprocess(self):
@@ -140,7 +136,7 @@ ansible_become_password: !vault |
 
             role_path = roles_dir / "svc-bkp-volume-2-local"
             (role_path / "meta").mkdir(parents=True)
-            (role_path / ROLE_FILE_META_SCHEMA).write_text("x: 1\n", encoding="utf-8")
+            (role_path / ROLE_FILE_META_SECRETS).write_text("x: 1\n", encoding="utf-8")
 
             host_vars_file = tmp / "host_vars.yml"
             host_vars_file.write_text("", encoding="utf-8")
@@ -234,7 +230,7 @@ ansible_become_password: !vault |
 
             role_path = roles_dir / "web-app-taiga"
             (role_path / "meta").mkdir(parents=True)
-            (role_path / ROLE_FILE_META_SCHEMA).write_text("x: 1\n", encoding="utf-8")
+            (role_path / ROLE_FILE_META_SECRETS).write_text("x: 1\n", encoding="utf-8")
 
             host_vars_file = tmp / "host_vars.yml"
             host_vars_file.write_text(

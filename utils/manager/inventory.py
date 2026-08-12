@@ -13,14 +13,11 @@ from utils.roles.applications.services.registry import (
     is_explicit_truth,
     resolve_service_dependency_roles_from_config,
 )
-from utils.roles.mapping import ROLE_FILE_META_SCHEMA, ROLE_FILE_VARS_MAIN
+from utils.roles.mapping import ROLE_FILE_META_SECRETS, ROLE_FILE_VARS_MAIN
 
 if TYPE_CHECKING:
     from pathlib import Path
 
-# Marker fields that identify a credential schema leaf. Any
-# `default:` value is preserved verbatim; algorithm defaults to `plain` when
-# absent; `validation:` only applies to user-provided values.
 _CREDENTIAL_LEAF_MARKERS = ("description", "algorithm", "validation", "default")
 
 
@@ -91,7 +88,7 @@ class InventoryManager:
 
     @staticmethod
     def _load_role_schema_by_path(role_path: Path) -> dict[str, Any]:
-        schema_path = role_path / ROLE_FILE_META_SCHEMA
+        schema_path = role_path / ROLE_FILE_META_SECRETS
         if not schema_path.exists():
             return {}
         return YamlHandler.load_yaml(schema_path) or {}
@@ -129,7 +126,6 @@ class InventoryManager:
         resolved: list[str] = []
         seen: set[str] = set()
 
-        # seed with root role's direct includes
         root_cfg = self.load_role_config_by_path(self.role_path)
         queue: list[str] = self._direct_schema_includes_from_config(root_cfg)
 
@@ -185,10 +181,6 @@ class InventoryManager:
                 self.value_generator.generate_value("alphanumeric")
             )
 
-        # The oauth2-proxy sidecar (flavor: oauth2) needs a cookie secret
-        # per consumer. Pure-OIDC roles do not, but the original branch
-        # provisioned it for either flavor — keep that behaviour by
-        # provisioning whenever services.sso.enabled is truthy.
         if is_explicit_truth(sso.get("enabled")):
             apps = self.inventory.setdefault("applications", {})
             target = apps.setdefault(app_id, {})
@@ -231,13 +223,11 @@ class InventoryManager:
           1) all recursively discovered shared-provider roles
           2) this role itself
         """
-        # 1) Provider roles (transitive)
         for role_name in self.resolve_schema_includes_recursive(self.role_path.name):
             role_path = self.roles_root / role_name
             self._apply_one_role_special_rules(role_path)
             self._apply_one_role_schema(role_name)
 
-        # 2) Root role
         self._apply_one_role_special_rules(self.role_path)
 
         apps = self.inventory.setdefault("applications", {})
@@ -276,8 +266,6 @@ class InventoryManager:
             if isinstance(meta, dict):
                 sub = dest.setdefault(key, {})
                 if not isinstance(sub, dict):
-                    # Replace non-dict placeholder so nested credentials
-                    # have a writeable container.
                     sub = {}
                     dest[key] = sub
                 self.recurse_credentials(meta, sub, full_key)
@@ -305,8 +293,6 @@ class InventoryManager:
             return
 
         if "default" in meta:
-            # Write the literal Jinja string verbatim, no rendering,
-            # no validation, no algorithm-based generation.
             if isinstance(existing_value, str) and existing_value != "":
                 return
             dest[key] = meta["default"]

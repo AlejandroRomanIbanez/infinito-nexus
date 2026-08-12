@@ -15,7 +15,7 @@ from pathlib import Path
 from cli.administration.inventory.credentials import main
 from utils.cache.yaml import dump_yaml, load_yaml_any
 from utils.roles.mapping import (
-    ROLE_FILE_META_SCHEMA,
+    ROLE_FILE_META_SECRETS,
     ROLE_FILE_META_SERVICES,
     ROLE_FILE_VARS_MAIN,
 )
@@ -23,18 +23,14 @@ from utils.roles.mapping import (
 
 class TestCreateCredentials(unittest.TestCase):
     def test_main_overrides_and_file_writing(self):
-        # Setup temporary files for role-path vars and inventory
         with tempfile.TemporaryDirectory() as tmpdir:
             role_path = str(Path(tmpdir) / "role")
             Path(str(Path(role_path) / "meta")).mkdir(parents=True)
             Path(str(Path(role_path) / "vars")).mkdir(parents=True)
-            # Create vars/main.yml with application_id
             main_vars = {"application_id": "app_test"}
             dump_yaml(str(Path(role_path) / ROLE_FILE_VARS_MAIN), main_vars)
-            # Create config/main.yml with features disabled
             config = {"features": {"central_database": False}}
             dump_yaml(str(Path(role_path) / ROLE_FILE_META_SERVICES), config)
-            # Create schema.yml defining plain credential
             schema = {
                 "credentials": {
                     "api_key": {
@@ -44,21 +40,18 @@ class TestCreateCredentials(unittest.TestCase):
                     }
                 }
             }
-            dump_yaml(str(Path(role_path) / ROLE_FILE_META_SCHEMA), schema)
-            # Prepare inventory file
+            dump_yaml(str(Path(role_path) / ROLE_FILE_META_SECRETS), schema)
             inventory_file = str(Path(tmpdir) / "inventory.yml")
             dump_yaml(inventory_file, {})
             vault_pw_file = str(Path(tmpdir) / "pw.txt")
             with Path(vault_pw_file).open("w") as f:
                 f.write("pw")
 
-            # Simulate ansible-vault encrypt_string output for api_key
             fake_snippet = "!vault |\n  $ANSIBLE_VAULT;1.1;AES256\n    ENCRYPTEDVALUE"
             completed = subprocess.CompletedProcess(
                 args=["ansible-vault"], returncode=0, stdout=fake_snippet, stderr=""
             )
             with unittest.mock.patch("subprocess.run", return_value=completed):
-                # Run main with override for credentials.api_key and force to skip prompt
                 sys.argv = [
                     "create/credentials.py",
                     "--role-path",
@@ -71,13 +64,10 @@ class TestCreateCredentials(unittest.TestCase):
                     "credentials.api_key=SECRET",
                     "--force",
                 ]
-                # Should complete without error
                 main()
-                # Verify inventory file updated with vaulted api_key
                 data = load_yaml_any(inventory_file)
                 creds = data["applications"]["app_test"]["credentials"]
                 self.assertIn("api_key", creds)
-                # VaultScalar serializes to a vault block, safe_load returns a string containing the vault header
                 self.assertIsInstance(creds["api_key"], str)
                 self.assertTrue(creds["api_key"].lstrip().startswith("$ANSIBLE_VAULT"))
 
@@ -93,15 +83,12 @@ class TestCreateCredentials(unittest.TestCase):
             Path(str(Path(role_path) / "meta")).mkdir(parents=True)
             Path(str(Path(role_path) / "vars")).mkdir(parents=True)
 
-            # vars/main.yml with application_id
             main_vars = {"application_id": "app_empty_plain"}
             dump_yaml(str(Path(role_path) / ROLE_FILE_VARS_MAIN), main_vars)
 
-            # config/main.yml
             config = {"features": {"central_database": False}}
             dump_yaml(str(Path(role_path) / ROLE_FILE_META_SERVICES), config)
 
-            # schema/main.yml: plain credential *without* overrides
             schema = {
                 "credentials": {
                     "api_key": {
@@ -111,13 +98,11 @@ class TestCreateCredentials(unittest.TestCase):
                     }
                 }
             }
-            dump_yaml(str(Path(role_path) / ROLE_FILE_META_SCHEMA), schema)
+            dump_yaml(str(Path(role_path) / ROLE_FILE_META_SECRETS), schema)
 
-            # Empty inventory file
             inventory_file = str(Path(tmpdir) / "inventory.yml")
             dump_yaml(inventory_file, {})
 
-            # Vault password file
             vault_pw_file = str(Path(tmpdir) / "pw.txt")
             with Path(vault_pw_file).open("w") as f:
                 f.write("pw")
@@ -143,7 +128,6 @@ class TestCreateCredentials(unittest.TestCase):
 
             data = load_yaml_any(inventory_file)
             creds = data["applications"]["app_empty_plain"]["credentials"]
-            # api_key should exist and be an empty string, not a vault block
             self.assertIn("api_key", creds)
             self.assertEqual(creds["api_key"], "")
 
@@ -159,7 +143,7 @@ class TestCreateCredentials(unittest.TestCase):
                 {"application_id": "app_test"},
             )
             dump_yaml(str(Path(role_path) / ROLE_FILE_META_SERVICES), {})
-            dump_yaml(str(Path(role_path) / ROLE_FILE_META_SCHEMA), {})
+            dump_yaml(str(Path(role_path) / ROLE_FILE_META_SECRETS), {})
 
             inventory_file = str(Path(tmpdir) / "inventory.yml")
             dump_yaml(inventory_file, {})
@@ -212,7 +196,7 @@ class TestCreateCredentials(unittest.TestCase):
                 {"application_id": "app_test"},
             )
             dump_yaml(str(Path(role_path) / ROLE_FILE_META_SERVICES), {})
-            dump_yaml(str(Path(role_path) / ROLE_FILE_META_SCHEMA), {})
+            dump_yaml(str(Path(role_path) / ROLE_FILE_META_SECRETS), {})
 
             inventory_file = str(Path(tmpdir) / "inventory.yml")
             dump_yaml(inventory_file, {})
@@ -254,7 +238,7 @@ class TestCreateCredentials(unittest.TestCase):
     def test_nested_credentials_dict_recurses_instead_of_stringifying(self):
         """Regression for run 26428080957 jobs 77797371397 / 77797371442.
 
-        A `meta/schema.yml` `credentials.<group>.{leaf,...}` nested
+        A `meta/secrets.yml` `credentials.<group>.{leaf,...}` nested
         block must materialise as a nested CommentedMap with one vault
         block per leaf — NOT collapsed via ``str(dict)`` into the
         Python-repr blob ``"{'key': '...', 'secret': '...'}"`` that
@@ -285,7 +269,7 @@ class TestCreateCredentials(unittest.TestCase):
                     }
                 }
             }
-            dump_yaml(str(Path(role_path) / ROLE_FILE_META_SCHEMA), schema)
+            dump_yaml(str(Path(role_path) / ROLE_FILE_META_SECRETS), schema)
 
             inventory_file = str(Path(tmpdir) / "inventory.yml")
             dump_yaml(inventory_file, {})

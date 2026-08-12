@@ -55,7 +55,7 @@ roles/web-app-erpnext/
 │   ├── info.yml
 │   ├── server.yml
 │   ├── services.yml
-│   ├── schema.yml
+│   ├── secrets.yml
 │   ├── users.yml
 │   ├── variants.yml
 │   └── volumes.yml
@@ -200,7 +200,7 @@ DB numbers (0 / 1 / 2) are stable for v1; if `svc-db-redis` later partitions ten
 
 - [x] `roles/web-app-erpnext/` exists with the layout in the [Target Schema](#role-layout) above.
 - [x] `meta/services.yml` pins `frappe/erpnext` to a concrete stable v15.x semver (no `:latest`, no `:edge`, no v14, no v16).
-- [x] `meta/info.yml`, `meta/server.yml`, `meta/main.yml`, `meta/schema.yml`, `meta/users.yml`, `meta/volumes.yml`, `meta/rbac.yml`, `meta/variants.yml` exist and pass the repo's standard role-meta lint (per [008](README.md#archive)).
+- [x] `meta/info.yml`, `meta/server.yml`, `meta/main.yml`, `meta/secrets.yml`, `meta/users.yml`, `meta/volumes.yml`, `meta/rbac.yml`, `meta/variants.yml` exist and pass the repo's standard role-meta lint (per [008](README.md#archive)).
 
 ### Central-service reuse (Decision #7)
 

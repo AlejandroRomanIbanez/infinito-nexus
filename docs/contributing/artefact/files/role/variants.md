@@ -8,7 +8,7 @@ For how the file is consumed at runtime (folder-per-round model, `--variant` / `
 
 - The file MUST live at `roles/<application_id>/meta/variants.yml`.
 - It MUST NOT be named `meta/inventory.yml`. The Ansible language server auto-applies the inventory schema to that filename, and the variant list does not satisfy it.
-- A role MAY omit the file entirely. The loader then exposes exactly one variant equal to the assembled per-role meta payload (`meta/services.yml` + `meta/server.yml` + `meta/rbac.yml` + `meta/volumes.yml` + `apply_schema()`'d `meta/schema.yml`) unchanged.
+- A role MAY omit the file entirely. The loader then exposes exactly one variant equal to the assembled per-role meta payload (`meta/services.yml` + `meta/server.yml` + `meta/rbac.yml` + `meta/volumes.yml` + `apply_schema()`'d `meta/secrets.yml`) unchanged.
 
 ## File Format 📋
 

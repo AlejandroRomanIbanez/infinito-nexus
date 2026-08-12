@@ -169,7 +169,7 @@ self-provisions without it. `PENPOT_FLAGS` renders `enable-registration` /
 - **S3-compatible object storage (future):** Penpot supports an `assets-s3`
   backend (`PENPOT_STORAGE_ASSETS_FS_*` → `PENPOT_STORAGE_ASSETS_S3_*`). It is
   intentionally **not** implemented here; switching the backend and adding the
-  S3 credentials to `meta/schema.yml` is the documented upgrade path.
+  S3 credentials to `meta/secrets.yml` is the documented upgrade path.
 
 ## Ports & networking
 
