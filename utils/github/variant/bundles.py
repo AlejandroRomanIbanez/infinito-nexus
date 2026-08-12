@@ -27,9 +27,10 @@ variant. Compose mode packs several variants per runner.
 
 Swarm and compose entries also carry the tor axis (see :func:`assign_tor`):
 ``tor`` says whether the entry deploys behind the node onion, ``disable``
-carries the provider tokens the deploy drill switches off, and a ``tor`` entry
-wears the onion glyph in its label. Host mode has no onion, so its entries are
-always assigned the ``disabled`` axis regardless of ``INFINITO_TOR``.
+carries the provider tokens the deploy drill switches off, and the label opens
+with the onion glyph or the clearnet globe so a job name states which of the
+two it tested. Host mode has no onion, so its entries are always assigned the
+``disabled`` axis regardless of ``INFINITO_TOR`` and wear neither glyph.
 """
 
 from __future__ import annotations
@@ -64,9 +65,18 @@ if TYPE_CHECKING:
 
 ROLES_DIR = PROJECT_ROOT / "roles"
 
-TOR_MODES = ("auto", "enabled", "disabled")
+TOR_MODES = ("auto", "enforced", "exclusive", "disabled")
 
 TOR_DEPLOY_MODES = ("swarm", "compose")
+
+
+def _variant_indices(variant_csv: str) -> list[int]:
+    """Parse a matrix entry's comma-separated variant indices."""
+    return [
+        int(token)
+        for token in variant_csv.split(",")
+        if token.strip().lstrip("-").isdigit()
+    ]
 
 
 def _tor_flag(config: Mapping[str, Any]) -> Any:
@@ -114,16 +124,48 @@ def tor_capable(
     declared = (variants_per_app or {}).get(app) or []
     covered = [
         declared[index]
-        for index in (
-            int(token)
-            for token in variant_csv.split(",")
-            if token.strip().lstrip("-").isdigit()
-        )
+        for index in _variant_indices(variant_csv)
         if 0 <= index < len(declared)
     ]
     if not covered:
         return _base_tor_capable(app)
     return any(_tor_flag(config) is not False for config in covered)
+
+
+def keep_tor_variants(
+    entries: list[dict[str, str]],
+    variants_per_app: Mapping[str, Sequence[Mapping[str, Any]]] | None = None,
+) -> list[dict[str, str]]:
+    """Reduce every entry to the variants that can run behind the node onion.
+
+    Args:
+        entries: matrix entries in emission order.
+        variants_per_app: rendered variant configs per app.
+
+    Returns:
+        a new list where each entry covers only its tor-capable variants, and
+        entries left with none are gone. This is what ``exclusive`` means: the
+        run tests the onion and nothing else, so a bundle of three variants of
+        which one can use tor shrinks to that one instead of dragging the other
+        two along. Unrelated to ``services.tor.exclusive``, which drops a
+        deployed app's clearnet vhost; this one only narrows what CI runs.
+    """
+    kept: list[dict[str, str]] = []
+    for entry in entries:
+        app = entry["apps"]
+        indices = _variant_indices(entry.get("variant", ""))
+        if not indices:
+            if tor_capable(app, "", variants_per_app):
+                kept.append(entry)
+            continue
+        live = [
+            index for index in indices if tor_capable(app, str(index), variants_per_app)
+        ]
+        if not live:
+            continue
+        csv = ",".join(str(index) for index in live)
+        kept.append({**entry, "variant": csv, "variant_slug": csv.replace(",", "-")})
+    return kept
 
 
 def assign_tor(
@@ -136,10 +178,12 @@ def assign_tor(
 
     Args:
         entries: matrix entries in emission order.
-        mode: ``enabled`` gives tor to every capable entry, ``disabled`` to
+        mode: ``enforced`` gives tor to every capable entry, ``disabled`` to
             none, ``auto`` to every second capable one. The run number's
             parity flips which one starts, so two consecutive runs cover
-            both states on every capable entry.
+            both states on every capable entry. ``exclusive`` behaves like
+            ``enforced``; the incapable entries are gone before it runs,
+            dropped by :func:`keep_tor_variants`.
         run: run number.
         variants_per_app: rendered variant configs per app, so an entry whose
             variants switch the tor gate off is never counted capable.
@@ -153,7 +197,7 @@ def assign_tor(
         for index, entry in enumerate(entries)
         if tor_capable(entry["apps"], entry.get("variant", ""), variants_per_app)
     ]
-    if mode == "enabled":
+    if mode in ("enforced", "exclusive"):
         with_tor = set(capable)
     elif mode == "disabled":
         with_tor = set()
@@ -168,7 +212,14 @@ def assign_tor(
 
 
 def resolve_tor_mode(raw: str | None = None) -> str:
-    """Tor axis mode from ``INFINITO_TOR``; unknown or empty means ``auto``."""
+    """Tor axis mode from ``INFINITO_TOR``; unknown or empty means ``auto``.
+
+    Args:
+        raw: explicit value; ``None`` reads the environment.
+
+    Returns:
+        one of :data:`TOR_MODES`.
+    """
     if raw is None:
         raw = os.environ.get("INFINITO_TOR")
     value = (raw or "").strip().lower()
@@ -428,18 +479,17 @@ def main(argv: Sequence[str] | None = None) -> int:
             bundle_size_per_app=app_bundle_sizes(apps),
         )
     on_axis = _deploy_mode() in TOR_DEPLOY_MODES
-    assign_tor(
-        entries,
-        resolve_tor_mode() if on_axis else "disabled",
-        resolve_run_number(),
-        variants_per_app,
-    )
+    tor_mode = resolve_tor_mode() if on_axis else "disabled"
+    if tor_mode == "exclusive":
+        entries = keep_tor_variants(entries, variants_per_app)
+    assign_tor(entries, tor_mode, resolve_run_number(), variants_per_app)
     codec = display_names()
     for entry in entries:
         label = codec.encode(entry["apps"], entry["variant"])
-        entry["label"] = (
-            f"{to_emoji('tor')}{label}" if entry["tor"] == "true" else label
-        )
+        if on_axis:
+            glyph = to_emoji("tor" if entry["tor"] == "true" else "clearnet")
+            label = f"{glyph}{label}"
+        entry["label"] = label
     print(json.dumps(entries))
     return 0
 

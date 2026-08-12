@@ -23,6 +23,7 @@ SYMBOLS: dict[str, str] = {
     "compose": "🐳",
     "swarm": "🐝",
     "tor": "🧅",
+    "clearnet": "🌐",
     "stack": "🥞",
     "host": "💻",
     "row": "🔢",

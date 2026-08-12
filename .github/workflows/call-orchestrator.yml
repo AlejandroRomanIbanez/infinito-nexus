@@ -67,7 +67,7 @@ on:
         type: string
         default: "auto"
       tor:
-        description: "Tor axis of the swarm and compose matrices: 'auto' onions every second tor-capable entry and flips with the run number, 'enabled'/'disabled' pin every entry."
+        description: "Tor axis of the swarm and compose matrices: 'auto' onions every second tor-capable entry and flips with the run number, 'enforced' onions all of them, 'exclusive' also drops the entries that cannot, 'disabled' onions none."
         required: false
         type: string
         default: "auto"

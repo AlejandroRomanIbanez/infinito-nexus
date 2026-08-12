@@ -239,6 +239,14 @@ class TestFilterPlanToVariants(unittest.TestCase):
             self.PLAN[3:],
         )
 
+    def test_a_gap_in_the_selection_drops_only_the_rounds_it_skips(self):
+        """The tor axis' ``exclusive`` mode hands over a bundle with holes: a
+        role whose middle variant cannot take an onion yields ``0,2``."""
+        self.assertEqual(
+            filter_plan_to_variants(self.PLAN, [0, 2, 4]),
+            [self.PLAN[0], self.PLAN[2], self.PLAN[4]],
+        )
+
     def test_order_follows_plan_not_argument(self):
         self.assertEqual(
             filter_plan_to_variants(self.PLAN, [4, 0]),

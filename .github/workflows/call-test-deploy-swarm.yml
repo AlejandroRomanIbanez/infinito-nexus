@@ -63,10 +63,10 @@ on:
         type: string
         default: ""
       tor:
-        description: "🧅 auto gives tor to every second tor-capable app and flips with the run number; enabled to every capable one, disabled to none. A role pinning services.tor.enabled false is never eligible."
+        description: "🧅 auto onions every second tor-capable variant and flips with the run number; enforced onions every capable one; exclusive additionally drops the variants that cannot take an onion; disabled onions none."
         type: choice
         default: auto
-        options: [auto, enabled, disabled]
+        options: [auto, enforced, exclusive, disabled]
 
 permissions:
   contents: read

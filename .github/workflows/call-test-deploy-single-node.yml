@@ -38,7 +38,7 @@ on:
         type: string
         default: ""
       tor:
-        description: "🧅 Tor axis for the compose leg: auto | enabled | disabled. The host leg has no onion."
+        description: "🧅 Tor axis for the compose leg: auto | enforced | exclusive | disabled. The host leg has no onion."
         required: false
         type: string
         default: auto

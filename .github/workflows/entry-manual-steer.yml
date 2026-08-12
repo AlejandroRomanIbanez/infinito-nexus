@@ -1,5 +1,5 @@
 name: "🕹️ Manual"
-run-name: "🕹️ ${{ inputs.mode_fail_fast && '🛑 ' || '' }}${{ inputs.sequencing != 'auto' && format('🐛{0} ', inputs.sequencing == 'serial' && '序' || '并') || '' }}${{ inputs.workspace != 'auto' && format('🧑‍💻{0} ', inputs.workspace == 'true' && '是' || '否') || '' }}${{ inputs.instructions != 'auto' && format('📖{0} ', inputs.instructions == 'true' && '是' || '否') || '' }}${{ inputs.tor != 'auto' && format('🧅{0} ', inputs.tor == 'enabled' && '是' || '否') || '' }}${{ inputs.filesystem != '' && format('🗄️{0} ', inputs.filesystem) || '' }}${{ inputs.distros != '' && format('🐧{0} ', inputs.distros) || '' }}${{ inputs.lifecycles != '' && format('♻️{0} ', inputs.lifecycles) || '' }}${{ inputs.modes != 'swarm compose host' && format('🚀{0} ', inputs.modes) || '' }}${{ inputs.priority != '' && format('⭐{0} ', inputs.priority) || '' }}${{ inputs.whitelist != '' && format('🎯{0}', inputs.whitelist) || '🔀 diff (origin/main)' }}"
+run-name: "🕹️ ${{ inputs.mode_fail_fast && '🛑 ' || '' }}${{ inputs.sequencing != 'auto' && format('🐛{0} ', inputs.sequencing == 'serial' && '序' || '并') || '' }}${{ inputs.workspace != 'auto' && format('🧑‍💻{0} ', inputs.workspace == 'true' && '是' || '否') || '' }}${{ inputs.instructions != 'auto' && format('📖{0} ', inputs.instructions == 'true' && '是' || '否') || '' }}${{ inputs.tor != 'auto' && format('{0} ', inputs.tor == 'disabled' && '🌐' || inputs.tor == 'enforced' && '🧅强制' || '🧅独占') || '' }}${{ inputs.filesystem != '' && format('🗄️{0} ', inputs.filesystem) || '' }}${{ inputs.distros != '' && format('🐧{0} ', inputs.distros) || '' }}${{ inputs.lifecycles != '' && format('♻️{0} ', inputs.lifecycles) || '' }}${{ inputs.modes != 'swarm compose host' && format('🚀{0} ', inputs.modes) || '' }}${{ inputs.priority != '' && format('⭐{0} ', inputs.priority) || '' }}${{ inputs.whitelist != '' && format('🎯{0}', inputs.whitelist) || '🔀 diff (origin/main)' }}"
 
 concurrency:
   group: global-ci-${{ github.repository }}-${{ github.ref_name }}
@@ -39,13 +39,14 @@ on:
         default: ""
         type: string
       tor:
-        description: "🧅 Tor axis for swarm and compose. 'auto' onions every second tor-capable app and flips with the run number, so two runs cover both states everywhere. 'enabled': every capable app. 'disabled': none. A role pinning services.tor.enabled false is never eligible."
+        description: "🧅 Tor axis for swarm and compose. 'auto' onions every second tor-capable variant and flips with the run number, so two runs cover both states everywhere. 'enforced' onions every variant that can take one. 'exclusive' drops every variant that cannot, so the run tests the onion and nothing else. 'disabled' onions none. A variant pinning services.tor.enabled false is never eligible."
         required: false
         default: "auto"
         type: choice
         options:
           - "auto"
-          - "enabled"
+          - "enforced"
+          - "exclusive"
           - "disabled"
       sequencing:
         description: "🐛 Deploy-mode order per line. 'serial': swarm, then compose, then host. 'parallel': all at once. 'auto': serial above 65 jobs per line."

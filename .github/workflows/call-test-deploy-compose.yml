@@ -33,7 +33,7 @@ on:
         type: string
         default: ""
       tor:
-        description: "🧅 Tor axis: auto | enabled | disabled."
+        description: "🧅 Tor axis: auto | enforced | exclusive | disabled."
         required: false
         type: string
         default: auto

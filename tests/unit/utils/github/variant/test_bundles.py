@@ -256,7 +256,7 @@ class TestSwarmMode(unittest.TestCase):
                     "variant_slug": str(i),
                     "tor": "false",
                     "disable": "tor",
-                    "label": f"web-app-five {i}",
+                    "label": f"\U0001f310web-app-five {i}",
                 }
                 for i in range(5)
             ],
@@ -276,7 +276,7 @@ class TestSwarmMode(unittest.TestCase):
                     "variant_slug": "0",
                     "tor": "false",
                     "disable": "tor",
-                    "label": "web-app-bbb 0",
+                    "label": "\U0001f310web-app-bbb 0",
                 },
                 {
                     "apps": "web-app-bbb",
@@ -284,7 +284,7 @@ class TestSwarmMode(unittest.TestCase):
                     "variant_slug": "1",
                     "tor": "false",
                     "disable": "tor",
-                    "label": "web-app-bbb 1",
+                    "label": "\U0001f310web-app-bbb 1",
                 },
             ],
         )
@@ -303,7 +303,7 @@ class TestSwarmMode(unittest.TestCase):
                     "variant_slug": "3",
                     "tor": "false",
                     "disable": "tor",
-                    "label": "web-app-five 3",
+                    "label": "\U0001f310web-app-five 3",
                 },
                 {
                     "apps": "web-app-five",
@@ -311,7 +311,7 @@ class TestSwarmMode(unittest.TestCase):
                     "variant_slug": "0",
                     "tor": "false",
                     "disable": "tor",
-                    "label": "web-app-five 0",
+                    "label": "\U0001f310web-app-five 0",
                 },
                 {
                     "apps": "web-app-bare",
@@ -319,7 +319,7 @@ class TestSwarmMode(unittest.TestCase):
                     "variant_slug": "0",
                     "tor": "false",
                     "disable": "tor",
-                    "label": "web-app-bare 0",
+                    "label": "\U0001f310web-app-bare 0",
                 },
                 {
                     "apps": "web-app-bare",
@@ -327,7 +327,7 @@ class TestSwarmMode(unittest.TestCase):
                     "variant_slug": "1",
                     "tor": "false",
                     "disable": "tor",
-                    "label": "web-app-bare 1",
+                    "label": "\U0001f310web-app-bare 1",
                 },
             ],
         )
@@ -354,7 +354,7 @@ class TestSwarmMode(unittest.TestCase):
                     "variant_slug": "0-1",
                     "tor": "false",
                     "disable": "tor",
-                    "label": "web-app-bbb 0,1",
+                    "label": "\U0001f310web-app-bbb 0,1",
                 }
             ],
         )
@@ -362,11 +362,11 @@ class TestSwarmMode(unittest.TestCase):
 
 class TestResolveTorMode(unittest.TestCase):
     def test_known_modes_pass_through(self) -> None:
-        for raw in ("auto", "ENABLED", " disabled "):
+        for raw in ("auto", "ENFORCED", " disabled ", "Exclusive"):
             self.assertEqual(vb.resolve_tor_mode(raw), raw.strip().lower())
 
     def test_unknown_and_empty_fall_back_to_auto(self) -> None:
-        for raw in ("", None, "yes", "tor"):
+        for raw in ("", None, "yes", "tor", "enabled"):
             self.assertEqual(vb.resolve_tor_mode(raw), "auto")
 
 
@@ -447,8 +447,8 @@ class TestAssignTor(unittest.TestCase):
             vb.assign_tor(entries, mode, run)
         return {entry["apps"]: entry for entry in entries}
 
-    def test_enabled_gives_tor_to_every_capable_entry(self) -> None:
-        by_app = self._assign("enabled", 0)
+    def test_enforced_gives_tor_to_every_capable_entry(self) -> None:
+        by_app = self._assign("enforced", 0)
         self.assertEqual(
             {app: by_app[app]["tor"] for app in self.APPS},
             {"a": "true", "b": "true", "c": "false", "d": "true"},
@@ -490,6 +490,91 @@ class TestAssignTor(unittest.TestCase):
         by_app = self._assign("auto", 0)
         for entry in by_app.values():
             self.assertEqual(entry["disable"], "" if entry["tor"] == "true" else "tor")
+
+
+class TestKeepTorVariants(unittest.TestCase):
+    """``exclusive`` narrows each entry to the variants that can use the onion."""
+
+    def _entry(self, app, variant):
+        return {
+            "apps": app,
+            "variant": variant,
+            "variant_slug": variant.replace(",", "-"),
+        }
+
+    def test_a_bundle_shrinks_to_its_capable_variants(self) -> None:
+        kept = vb.keep_tor_variants(
+            [self._entry("web-app-rotating", "0,1,2")], TOR_VARIANTS
+        )
+        self.assertEqual(
+            kept, [self._entry("web-app-rotating", "0")], "the bundle must shrink to 0"
+        )
+
+    def test_a_gap_in_the_middle_yields_a_non_contiguous_bundle(self) -> None:
+        variants = {
+            "web-app-holed": [
+                {"services": {"tor": {"enabled": True}}},
+                {"services": {"tor": {"enabled": False}}},
+                {"services": {"tor": {"enabled": True}}},
+            ]
+        }
+        kept = vb.keep_tor_variants([self._entry("web-app-holed", "0,1,2")], variants)
+        self.assertEqual(kept, [self._entry("web-app-holed", "0,2")])
+
+    def test_an_entry_without_a_capable_variant_is_dropped(self) -> None:
+        self.assertEqual(
+            vb.keep_tor_variants(
+                [self._entry("web-app-rotating", "1,2")], TOR_VARIANTS
+            ),
+            [],
+        )
+
+    def test_a_capable_entry_survives_untouched(self) -> None:
+        entry = self._entry("web-app-reactive", "0")
+        self.assertEqual(vb.keep_tor_variants([entry], TOR_VARIANTS), [entry])
+
+    def test_a_variantless_entry_falls_back_to_the_base_config(self) -> None:
+        entry = {"apps": "web-app-bare", "variant": "", "variant_slug": ""}
+        with patch.object(vb, "_base_tor_capable", return_value=False):
+            self.assertEqual(vb.keep_tor_variants([entry], TOR_VARIANTS), [])
+        with patch.object(vb, "_base_tor_capable", return_value=True):
+            self.assertEqual(vb.keep_tor_variants([entry], TOR_VARIANTS), [entry])
+
+
+class TestLabelGlyphs(unittest.TestCase):
+    """A job name states which of the two networks it tested."""
+
+    ONION = "\U0001f9c5"
+    GLOBE = "\U0001f310"
+
+    def _labels(self, deploy_mode, tor_mode):
+        with (
+            patch.object(vb, "get_variants", return_value={"web-app-bbb": [{}, {}]}),
+            patch.object(vb, "app_variant_storages", return_value={}),
+            patch.dict(
+                "os.environ",
+                {"INFINITO_DEPLOY_MODE": deploy_mode, "INFINITO_TOR": tor_mode},
+            ),
+            patch("builtins.print") as mock_print,
+        ):
+            vb.main(['["web-app-bbb"]'])
+        return [e["label"] for e in json.loads(mock_print.call_args.args[0])]
+
+    def test_an_onion_entry_wears_the_onion(self) -> None:
+        for label in self._labels("swarm", "enforced"):
+            self.assertTrue(label.startswith(self.ONION), label)
+
+    def test_a_clearnet_entry_wears_the_globe(self) -> None:
+        for label in self._labels("swarm", "disabled"):
+            self.assertTrue(label.startswith(self.GLOBE), label)
+
+    def test_compose_is_marked_too(self) -> None:
+        for label in self._labels("compose", "disabled"):
+            self.assertTrue(label.startswith(self.GLOBE), label)
+
+    def test_host_wears_neither(self) -> None:
+        for label in self._labels("host", "enforced"):
+            self.assertFalse(label.startswith((self.ONION, self.GLOBE)), label)
 
 
 if __name__ == "__main__":
