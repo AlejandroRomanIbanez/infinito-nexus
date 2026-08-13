@@ -102,7 +102,8 @@
           -e NC_OAUTH_CLIENT_SECRET={{ nextcloud_op_ncclient.clientSecret | quote }}
           {{ NEXTCLOUD_OPENPROJECT_LOCAL_CID | quote }}
           bash -lc 'cd /app && bundle exec rails runner -'
-        stdin: "{{ lookup('file', 'ruby/utils/doorkeeper_allow_onion_redirect.rb') ~ '\n' ~ lookup('file', 'ruby/addons/openproject/ensure_nextcloud_storage.rb') }}"
+        stdin: "{{ lookup('file', 'ruby/utils/doorkeeper_allow_onion_redirect.rb') ~ '\n' ~ lookup('file', 'ruby/addons/openproject/ensure_nextcloud_storage.rb')
+          }}"
       delegate_to: "{{ NEXTCLOUD_OPENPROJECT_HOST_NODE }}"
       register: nextcloud_op_client_store
       changed_when: true
