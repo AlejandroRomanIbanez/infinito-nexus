@@ -100,6 +100,8 @@ for (const persona of PERSONAS) {
       await gotoOnion(page, `${appBaseUrl}/logout`, { waitUntil: "domcontentloaded" });
     }
 
+    await gotoOnion(page, appBaseUrl, { waitUntil: "domcontentloaded" });
+
     await expect(
       signInAffordance(page),
       `after sign-out Funkwhale must offer sign-in to ${persona.label} again`,
