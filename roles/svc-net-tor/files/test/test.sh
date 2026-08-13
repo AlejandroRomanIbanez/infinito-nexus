@@ -57,7 +57,7 @@ probe() {
 		code="$(curl "${curl_proxy[@]}" --silent --show-error --location \
 			--insecure --max-time 30 \
 			-o /dev/null -w '%{http_code}' \
-			"${scheme}://${domain}/" 2>/dev/null || true)"
+			"${scheme}://${domain}/" || true)"
 		if [[ "${code}" =~ ^[234][0-9][0-9]$ ]]; then
 			echo "${code}"
 			return 0
