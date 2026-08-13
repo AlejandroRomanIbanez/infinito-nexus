@@ -5,7 +5,7 @@
 //   SEAWEEDFS_* keys consumed by runSeaweedfsStorageCheck.
 
 const { test, expect } = require("@playwright/test");
-const { resolveTimeout } = require("./timeouts");
+const { resolveTimeout, isOnionTarget } = require("./timeouts");
 const { skipUnlessServiceEnabled } = require("./service-gating");
 const { normalizeUrl, readEnv, performKeycloakLogin, clickOidcLoginLink, runSeaweedfsStorageCheck } = require("./personas");
 
@@ -17,6 +17,7 @@ const AVATAR_PNG = Buffer.from(
 test.use({ ignoreHTTPSErrors: true });
 
 test("seaweedfs: a saved Mastodon avatar is stored in the SeaweedFS bucket", async ({ page, browser }) => {
+  test.skip(isOnionTarget(), "SeaweedFS filer UI is not a Tor surface on an onion node (headless backend)");
   skipUnlessServiceEnabled("seaweedfs");
   test.skip(
     (process.env.PERSONA_ADMINISTRATOR_BLOCKED || "").toLowerCase() === "true",
