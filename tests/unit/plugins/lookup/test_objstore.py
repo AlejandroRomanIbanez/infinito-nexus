@@ -115,7 +115,7 @@ class ObjstoreLookupTests(unittest.TestCase):
         applications = {
             "web-app-foo": {
                 "services": {"seaweedfs": {"enabled": True, "shared": True}},
-                "credentials": {"objstore_secret_key": "sk"},
+                "secrets": {"credentials": {"objstore_secret_key": "sk"}},
             },
             "web-app-seaweedfs": {
                 "services": {
@@ -152,7 +152,7 @@ class ObjstoreLookupTests(unittest.TestCase):
         applications = {
             "web-app-foo": {
                 "services": {"minio": {"enabled": True, "shared": True}},
-                "credentials": {"objstore_secret_key": "sk"},
+                "secrets": {"credentials": {"objstore_secret_key": "sk"}},
             },
             "web-app-minio": {
                 "services": {"minio": {"name": "minio-central"}},
@@ -170,7 +170,7 @@ class ObjstoreLookupTests(unittest.TestCase):
         applications = {
             "web-app-foo": {
                 "services": {"seaweedfs": {"enabled": True, "shared": False}},
-                "credentials": {"objstore_secret_key": "sk"},
+                "secrets": {"credentials": {"objstore_secret_key": "sk"}},
             }
         }
 
@@ -195,7 +195,7 @@ class ObjstoreLookupTests(unittest.TestCase):
         applications = {
             "web-app-foo": {
                 "services": {"minio": {"enabled": True, "shared": True}},
-                "credentials": {"objstore_secret_key": "sk"},
+                "secrets": {"credentials": {"objstore_secret_key": "sk"}},
             },
             "web-app-minio": {"services": {"minio": {"name": "minio-central"}}},
         }
@@ -231,7 +231,7 @@ class ObjstoreLookupTests(unittest.TestCase):
                 "services": {
                     "seaweedfs": {"enabled": True, "shared": False, "public": True}
                 },
-                "credentials": {"objstore_secret_key": "s3cr3t"},
+                "secrets": {"credentials": {"objstore_secret_key": "s3cr3t"}},
             }
         }
 

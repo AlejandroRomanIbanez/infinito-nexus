@@ -8,6 +8,7 @@ from ansible.errors import AnsibleError
 from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
+from utils.manager.credential_key import OVERRIDE_SECTION
 from utils.roles.applications.config import get
 from utils.roles.applications.services.database import (
     get_database_service_config,
@@ -135,7 +136,7 @@ class LookupModule(LookupBase):
         password = get(
             applications,
             consumer_id,
-            "credentials.database_password",
+            f"{OVERRIDE_SECTION}.database_password",
             strict=False,
             default="",
         )

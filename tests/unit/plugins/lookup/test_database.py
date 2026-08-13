@@ -76,7 +76,7 @@ class DatabaseLookupTests(unittest.TestCase):
         applications = {
             "web-app-foo": {
                 "services": {},
-                "credentials": {"database_password": "pw"},
+                "secrets": {"credentials": {"database_password": "pw"}},
             }
         }
         ports = {"localhost": {"database": {"svc-db-postgres": "5432"}}}
@@ -128,7 +128,7 @@ class DatabaseLookupTests(unittest.TestCase):
         applications = {
             "web-app-foo": {
                 "services": {"postgres": {"enabled": True, "shared": False}},
-                "credentials": {"database_password": "pw"},
+                "secrets": {"credentials": {"database_password": "pw"}},
             },
             "svc-db-postgres": {
                 "services": {
@@ -200,7 +200,7 @@ class DatabaseLookupTests(unittest.TestCase):
         applications = {
             "web-app-foo": {
                 "services": {"postgres": {"enabled": True, "shared": True}},
-                "credentials": {"database_password": "pw"},
+                "secrets": {"credentials": {"database_password": "pw"}},
             },
             "svc-db-postgres": {
                 "services": {
@@ -249,7 +249,7 @@ class DatabaseLookupTests(unittest.TestCase):
         applications = {
             "web-app-foo": {
                 "services": {"mariadb": {"enabled": True, "shared": False}},
-                "credentials": {"database_password": "pw"},
+                "secrets": {"credentials": {"database_password": "pw"}},
             },
             "svc-db-mariadb": {
                 "services": {
@@ -300,7 +300,7 @@ class DatabaseLookupTests(unittest.TestCase):
                         "version": "15",
                     }
                 },
-                "credentials": {"database_password": "pw"},
+                "secrets": {"credentials": {"database_password": "pw"}},
             },
             "svc-db-postgres": {
                 "services": {"postgres": {"name": "postgres-central", "version": "16"}}
@@ -333,7 +333,7 @@ class DatabaseLookupTests(unittest.TestCase):
         applications = {
             "web-app-foo": {
                 "services": {"postgres": {"enabled": False, "shared": False}},
-                "credentials": {"database_password": "pw"},
+                "secrets": {"credentials": {"database_password": "pw"}},
             }
         }
         ports = {"localhost": {"database": {"svc-db-postgres": "5432"}}}
