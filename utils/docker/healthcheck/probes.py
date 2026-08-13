@@ -1,11 +1,7 @@
-"""Container healthcheck probes, one class per flavor.
+"""Probes: one class per flavor, each deciding whether the container serves.
 
-Pure and Ansible free: the lookup plugin resolves a service's configuration
-and hands it to :func:`build`, which picks the flavor and renders the
-compose ``healthcheck`` mapping.
-
-All probes target the loopback inside the container, so they prove that
-this container serves, not that some replica somewhere does.
+Pure and Ansible free. Every probe targets the loopback INSIDE the container,
+so it proves that this container serves, not that some replica somewhere does.
 """
 
 from __future__ import annotations
@@ -13,12 +9,13 @@ from __future__ import annotations
 import shlex
 from typing import Any, ClassVar
 
-from utils.cache.yaml import dump_yaml_str
-
-MAIL_MARKER = "/tmp/email_sent"  # noqa: S108  container-internal path, not a host tmpfile
-
 CURL = ("curl",)
 CURL_NO_PROXY = ("--noproxy", "*")
+
+_HTTP_REQUEST = (
+    "echo -e 'GET /{path} HTTP/1.1\\r\\nHost: localhost\\r\\n"
+    "Connection: close\\r\\n\\r\\n' >&3"
+)
 
 
 def curl_argv(*flags: str, url: str, hostname: str | None = None) -> list[str]:
@@ -52,12 +49,6 @@ def curl_shell(*flags: str, url: str, hostname: str | None = None) -> str:
     )
 
 
-_HTTP_REQUEST = (
-    "echo -e 'GET /{path} HTTP/1.1\\r\\nHost: localhost\\r\\n"
-    "Connection: close\\r\\n\\r\\n' >&3"
-)
-
-
 class Probe:
     """Base for every flavor: timings plus the argv docker executes."""
 
@@ -80,6 +71,17 @@ class Probe:
 
     def test(self) -> list[str]:
         raise NotImplementedError
+
+    def shell(self) -> str:
+        """The same command as one shell string, so a prefix can compose with it.
+
+        Returns:
+            The CMD-SHELL payload, or the exec argv quoted for a shell.
+        """
+        form, *rest = self.test()
+        if form == "CMD-SHELL":
+            return rest[0]
+        return " ".join(shlex.quote(part) for part in rest)
 
     def block(self, overrides: dict[str, Any]) -> dict[str, Any]:
         """Assemble the healthcheck mapping.
@@ -134,7 +136,12 @@ class Wget(Probe):
 
 
 class Http(Probe):
-    """Whichever of wget or curl the image happens to ship."""
+    """Whichever of wget or curl the image happens to ship.
+
+    The wget half stays proxy-aware on purpose: busybox wget rejects
+    ``--proxy=off``, and this flavor exists for images where which tool ships is
+    unknown, so hardening it there would break the very case it covers.
+    """
 
     flavor = "http"
     retries = 5
@@ -196,63 +203,24 @@ class Nc(Probe):
         return ["CMD-SHELL", f"nc -z localhost {self.port} || exit 1"]
 
 
-class MsmtpCurl(Probe):
-    """Probes http, and on the first run also sends one test mail.
+class Connect(Probe):
+    """Proves only that the port accepts a TCP connection.
 
-    The /tmp/email_sent marker keeps a repeating probe from tripping SMTP
-    rate limits, and a disabled email provider drops the mail branch so an
-    unrelated SMTP outage cannot flap the container into unhealthy.
-
-    The branch is joined to the curl probe with ``;`` rather than ``&&`` on
-    purpose: msmtp exits non-zero whenever the relay refuses the message, and
-    chaining that into curl marks a perfectly live web app dead until the
-    swarm converge gate gives up. Liveness is curl's verdict alone. The
-    ``&&`` before ``touch`` stays, so a refused mail leaves no marker and the
-    next probe retries it; its stderr reaches Health.Log either way.
-    Delivery itself is covered where it belongs — by sys-ctl-hlth-msmtp,
-    which retries and then exits non-zero, and by the Mailu Playwright
-    roundtrip.
+    For a service that speaks something other than HTTP there -- php-fpm answers
+    FastCGI -- so neither curl nor an HTTP request over the socket can judge it.
+    ``/dev/tcp`` is a bash builtin, hence the explicit interpreter.
     """
 
-    flavor = "msmtp_curl"
+    flavor = "connect"
+    interval = "1m"
     timeout = "20s"
     retries = 5
-    start_period = "120s"
+    start_period = "15m"
 
     def test(self) -> list[str]:
-        mail = ""
-        if self.context.get("email_enabled"):
-            domain = self.context.get("domain", "")
-            blackhole = self.context.get("blackhole", "")
-            mail = (
-                f"if [ ! -f {MAIL_MARKER} ]; then "
-                f"echo 'Subject: testmessage from {domain}\\n\\nSUCCESSFULL' "
-                f"| msmtp -t {blackhole} && touch {MAIL_MARKER}; fi; "
-            )
-        return ["CMD-SHELL", f"{mail}{curl_shell('-f', url=self.url)} || exit 1"]
+        return ["CMD", "bash", "-c", f"</dev/tcp/127.0.0.1/{self.port}"]
 
 
 PROBES: dict[str, type[Probe]] = {
-    probe.flavor: probe for probe in (Curl, Wget, Http, Tcp, HttpStatus, Nc, MsmtpCurl)
+    probe.flavor: probe for probe in (Curl, Wget, Http, Tcp, HttpStatus, Nc, Connect)
 }
-
-
-def known_flavors() -> str:
-    return ", ".join(sorted(PROBES))
-
-
-def build(flavor: str, overrides: dict[str, Any], **context: Any) -> str:
-    """Render a service's healthcheck block as YAML, starting at column zero.
-
-    Args:
-        flavor: key into PROBES, or empty to use an explicit ``test`` argv.
-        overrides: the service's healthcheck entry from services.yml.
-        context: port, path, hostname, samples and any flavor specific extras.
-
-    Raises:
-        KeyError: the flavor is unknown.
-    """
-    probe = (PROBES[flavor] if flavor else Custom)(**context)
-    return dump_yaml_str({"healthcheck": probe.block(overrides)}, width=10**6).rstrip(
-        "\n"
-    )

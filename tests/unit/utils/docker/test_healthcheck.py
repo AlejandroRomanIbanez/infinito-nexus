@@ -5,13 +5,15 @@ import unittest
 from pathlib import Path
 
 from utils.cache.yaml import load_yaml_str
-from utils.docker.healthcheck import PROBES, Curl, HttpStatus, MsmtpCurl, Nc, Tcp, build
+from utils.docker.healthcheck.compose import build, compose, resolve_flavors
+from utils.docker.healthcheck.prefixes import PREFIXES
+from utils.docker.healthcheck.probes import PROBES, Connect, Curl, HttpStatus, Nc, Tcp
 
 _MARKER = "/tmp/email_sent"
 
 
 def probe(flavor, **context):
-    return PROBES[flavor](**context).test()
+    return compose(flavor, **context).test()
 
 
 def run_probe(argv, *, msmtp_rc, curl_rc):
@@ -196,10 +198,53 @@ class TestBuild(unittest.TestCase):
 
     def test_every_flavor_names_itself_in_the_registry(self):
         self.assertEqual(
-            {"curl", "wget", "http", "http_status", "nc", "tcp", "msmtp_curl"},
+            {"curl", "wget", "http", "http_status", "nc", "tcp", "connect"},
             set(PROBES),
         )
         self.assertTrue(all(key == cls.flavor for key, cls in PROBES.items()))
+
+    def test_connect_opens_the_port_and_asserts_nothing_else(self):
+        self.assertEqual(
+            ["CMD", "bash", "-c", "</dev/tcp/127.0.0.1/9000"],
+            probe("connect", port=9000),
+        )
+
+    def test_connect_composed_keeps_the_same_liveness_command(self):
+        composed = probe(["msmtp", "connect"], port=9000, email_enabled=False)
+        self.assertEqual(
+            ["CMD-SHELL", "bash -c '</dev/tcp/127.0.0.1/9000' || exit 1"], composed
+        )
+
+    def test_an_unknown_name_raises_rather_than_rendering_nothing(self):
+        with self.assertRaises(KeyError):
+            compose("nosuchflavor", port=80)
+
+    def test_a_prefix_is_not_a_probe_and_cannot_stand_alone(self):
+        self.assertEqual({"msmtp"}, set(PREFIXES))
+        self.assertNotIn("msmtp", PROBES)
+        with self.assertRaises(ValueError):
+            compose(["msmtp"], port=80)
+
+    def test_two_probes_in_one_declaration_are_refused(self):
+        with self.assertRaises(ValueError):
+            compose(["curl", "connect"], port=80)
+
+    def test_the_legacy_name_expands_to_the_composed_pair(self):
+        self.assertEqual(["msmtp", "curl"], resolve_flavors("msmtp_curl"))
+        self.assertEqual(
+            probe(["msmtp", "curl"], port=80, email_enabled=False),
+            probe("msmtp_curl", port=80, email_enabled=False),
+        )
+
+    def test_a_prefix_raises_a_timing_but_never_lowers_one(self):
+        composed = block(["msmtp", "connect"], port=9000)
+        self.assertEqual("15m", composed["start_period"])
+        self.assertEqual("15m", block("connect", port=9000)["start_period"])
+        self.assertEqual("120s", block(["msmtp", "curl"], port=80)["start_period"])
+        self.assertEqual("30s", block("curl", port=80)["start_period"])
+
+    def test_composing_takes_the_probes_interval(self):
+        self.assertEqual("1m", block(["msmtp", "curl"], port=80)["interval"])
 
     def test_http_status_inherits_the_request_builder_from_tcp(self):
         self.assertTrue(issubclass(HttpStatus, Tcp))
@@ -209,7 +254,7 @@ class TestBuild(unittest.TestCase):
         self.assertEqual(
             Curl(port=9, path="x").url,
             Nc(port=9, path="x").url,
-            MsmtpCurl(port=9, path="x").url,
+            Connect(port=9, path="x").url,
         )
 
 

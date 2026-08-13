@@ -64,6 +64,11 @@ moodle:
     internal:
       http: 80
       fpm: 9000
+  healthcheck:
+    flavor:
+      - msmtp
+      - connect
+    port_key: fpm
   proxy:
     service_key: nginx
   run_after:

@@ -16,7 +16,7 @@ from typing import Any
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 
-from utils.docker.healthcheck import MAIL_MARKER
+from utils.docker.healthcheck.prefixes import MAIL_MARKER
 
 
 class LookupModule(LookupBase):
