@@ -9,9 +9,6 @@ from pathlib import Path
 
 DOMAIN_FROM_FILENAME_RE = re.compile(r"^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\.conf$")
 
-# Very small "listen" heuristics:
-# - treat as HTTPS if we see "listen ... 443" OR "listen ... ssl"
-# - treat as HTTP  if we see "listen ... 80"
 LISTEN_443_RE = re.compile(r"^\s*listen\s+[^;]*\b443\b", re.IGNORECASE)
 LISTEN_80_RE = re.compile(r"^\s*listen\s+[^;]*\b80\b", re.IGNORECASE)
 LISTEN_SSL_RE = re.compile(r"^\s*listen\s+[^;]*\bssl\b", re.IGNORECASE)
@@ -22,7 +19,7 @@ def extract_domains_from_filenames(config_path: str) -> list[str] | None:
     Extract domain names from .conf filenames in the given directory.
 
     Example:
-      baserow.infinito.example.conf -> baserow.infinito.example
+      baserow.<primary-domain>.conf -> baserow.<primary-domain>
     """
     try:
         out: list[str] = []
@@ -31,7 +28,7 @@ def extract_domains_from_filenames(config_path: str) -> list[str] | None:
                 continue
             if not DOMAIN_FROM_FILENAME_RE.match(fn):
                 continue
-            out.append(fn[:-5])  # strip ".conf"
+            out.append(fn.removesuffix(".conf"))
     except FileNotFoundError:
         print(f"Directory {config_path} not found.", file=sys.stderr)
         return None
@@ -51,8 +48,8 @@ def is_skipped_domain(domain: str, skip_set: set[str], skip_labels: set[str]) ->
     A domain is skipped if it is listed explicitly in ``--skip-domain``, or if
     it is the ``.onion`` sibling of a skipped clearnet vhost. Clearnet and onion
     vhosts of the same app share the leftmost subdomain label (``mirror`` for
-    both ``mirror.infinito.example`` and ``mirror.<host>.onion``), so a
-    ``--skip-domain mirror.infinito.example`` also drops ``mirror.<host>.onion``
+    both ``mirror.<primary-domain>`` and ``mirror.<host>.onion``), so a
+    ``--skip-domain mirror.<primary-domain>`` also drops ``mirror.<host>.onion``
     — which serves the same 4xx at ``/`` and would otherwise fail the probe.
     """
     if domain in skip_set:
@@ -139,7 +136,8 @@ def build_docker_cmd(
     if use_host_network:
         cmd.extend(["--network", "host"])
 
-    # IMPORTANT: allow with-ca-trust.sh to install CA into container trust store
+    # Exception: runs as root because with-ca-trust.sh installs the CA into the
+    # container trust store, which an unprivileged user cannot write to.
     cmd.extend(["--user", "0:0"])
 
     cmd.append(image)

@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 from utils.domains.application_domain_index import iter_app_domains
+from utils.domains.default_primary import default_domain_primary
 from utils.domains.list import ROLES_DIR, build_applications_from_roles
 from utils.roles.entity.apps import apps_for_entity
 from utils.tor_onion import identity_hs_dir
@@ -37,7 +38,6 @@ if TYPE_CHECKING:
     from collections.abc import Iterable
 
 DEFAULT_NGINX_DIR = Path("/etc/nginx")
-DEFAULT_DOMAIN_PRIMARY = "infinito.example"
 _PROTOCOLS: tuple[str, ...] = ("http", "https")
 
 
@@ -54,7 +54,7 @@ def _resolve_domain_primary(domain_primary: str | None) -> str:
     return (
         os.environ.get("DOMAIN")
         or os.environ.get("INFINITO_DOMAIN")
-        or DEFAULT_DOMAIN_PRIMARY
+        or default_domain_primary()
     )
 
 
