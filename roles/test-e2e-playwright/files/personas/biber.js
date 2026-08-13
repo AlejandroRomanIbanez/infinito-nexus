@@ -107,7 +107,8 @@ async function runBiberFlow(page, opts = {}) {
   if (!reachedAuthenticated) {
     reachedAuthenticated = await authMarker(page)
       .first()
-      .isVisible({ timeout: resolveTimeout(15_000) })
+      .waitFor({ state: "visible", timeout: resolveTimeout(15_000) })
+      .then(() => true)
       .catch(() => false);
   }
   if (!reachedAuthenticated) {
