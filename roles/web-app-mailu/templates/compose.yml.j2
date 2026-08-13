@@ -44,18 +44,7 @@
       {% endfor %}
     {% endif %}
 
-    {% if ( ( DOCKER_IN_CONTAINER | bool ) and ( MAILU_OIDC_ENABLED | bool ) ) or DEPLOYMENT_MODE == 'swarm' %}
-    extra_hosts:
-      {% if ( DOCKER_IN_CONTAINER | bool ) and ( MAILU_OIDC_ENABLED | bool ) %}
-      - "{{ MAILU_OIDC_HOST }}:host-gateway"
-      {% endif %}
-      {% if DEPLOYMENT_MODE == 'swarm' %}
-      - "{{ MAILU_SWARM_DB_HOST }}:{{ MAILU_SWARM_DB_ADDR }}"
-      {% if not lookup('engine', 'redis', application_id, 'local') %}
-      - "{{ MAILU_SWARM_REDIS_HOST }}:{{ MAILU_SWARM_REDIS_ADDR }}"
-      {% endif %}
-      {% endif %}
-    {% endif %}
+    {{ lookup('container_extra_hosts', extra_hosts=MAILU_EXTRA_HOSTS) | indent(4) }}
 
     {{ lookup('container_networks') | indent(4) }}
 

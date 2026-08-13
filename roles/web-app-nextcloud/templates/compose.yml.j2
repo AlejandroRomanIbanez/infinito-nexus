@@ -11,10 +11,9 @@
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     {{ lookup('container_healthcheck', service_name, samples=(groups[application_id] | default([]) | length) if DEPLOYMENT_MODE == 'swarm' else 1) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
-    {% if NEXTCLOUD_HPB_NETWORK_MODE == 'host' %}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    {% endif %}
+    {{ lookup('container_extra_hosts', extra_hosts=(
+         ['host.docker.internal:host-gateway'] if NEXTCLOUD_HPB_NETWORK_MODE == 'host' else []
+       )) | indent(4) }}
 
   {% set service_name = NEXTCLOUD_SERVICE %}
   {% set container_healthcheck_start_period = '20m' %}
@@ -37,7 +36,7 @@
       retries: 10
       start_period: {{ container_healthcheck_start_period }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    {% include 'roles/sys-svc-container/templates/onion_oidc_socks.yml.j2' %}
+    {{ lookup('container_extra_hosts') | indent(4) }}
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 

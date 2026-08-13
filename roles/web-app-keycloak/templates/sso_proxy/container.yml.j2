@@ -19,8 +19,10 @@
         constraints:
           - node.role == manager
 {% endif %}
-    extra_hosts:
-      - "{{ lookup('domain', 'web-app-keycloak') }}:host-gateway"
+    {{ lookup('container_extra_hosts', extra_hosts=(
+         [] if lookup('domain', 'web-app-keycloak').endswith('.onion')
+         else [lookup('domain', 'web-app-keycloak') ~ ':host-gateway']
+       )) | indent(4) }}
     healthcheck:
       test: ["CMD", "/bin/oauth2-proxy", "--version"]
       interval: 30s

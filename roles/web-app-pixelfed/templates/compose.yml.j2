@@ -5,7 +5,7 @@
     {{ lookup('compose_only', 'container_name', PIXELFED_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     entrypoint: "{{ PIXELFED_ENTRYPOINT_DOCKER }}"
-    {% include 'roles/sys-svc-container/templates/onion_oidc_socks.yml.j2' %}
+    {{ lookup('container_extra_hosts') | indent(4) }}
     {{ lookup('container_volumes', application_id, 'pixelfed') | indent(4) }}
     {{ lookup('container_ports', ['pixelfed', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     {{ lookup('container_depends_on', application_id) | indent(4) }}

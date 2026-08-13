@@ -105,7 +105,7 @@ reachability). The items below are the ones that are NOT fixed yet.
 - **server-side OIDC reachability candidates** — joomla failed because its app
   container performs server-side OIDC discovery against `http://auth.<onion>`
   without an `extra_hosts` mapping. Roles with the same mechanic and no
-  `onion_oidc_socks.yml.j2` include yet (fix is the same one-line include,
+  `container_extra_hosts` lookup yet (fix is the same one-line lookup,
   apply on CI evidence): wordpress (daggerhart plugin) and mediawiki
   (PluggableAuth) are structurally identical PHP in-app plugins (high
   likelihood); discourse, jenkins, jira, confluence, gitlab, odoo, openwebui,
