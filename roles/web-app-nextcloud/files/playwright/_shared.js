@@ -10,6 +10,7 @@ const biberPassword = decodeDotenvQuotedValue(process.env.BIBER_PASSWORD);
 const nextcloudDirectLoginPassword = decodeDotenvQuotedValue(process.env.NEXTCLOUD_DIRECT_LOGIN_PASSWORD) || loginPassword;
 const oidcIssuerUrl = decodeDotenvQuotedValue(process.env.OIDC_ISSUER_URL);
 const nextcloudBaseUrl = decodeDotenvQuotedValue(process.env.NEXTCLOUD_BASE_URL);
+const mastodonBaseUrl = decodeDotenvQuotedValue(process.env.MASTODON_BASE_URL);
 const moodleBaseUrl = decodeDotenvQuotedValue(process.env.MOODLE_BASE_URL);
 const peertubeBaseUrl = decodeDotenvQuotedValue(process.env.PEERTUBE_BASE_URL);
 const xwikiBaseUrl = decodeDotenvQuotedValue(process.env.XWIKI_BASE_URL);
@@ -351,6 +352,7 @@ module.exports = {
     biberUsername,
     biberPassword,
     nextcloudBaseUrl,
+    mastodonBaseUrl,
     moodleBaseUrl,
     peertubeBaseUrl,
     xwikiBaseUrl,

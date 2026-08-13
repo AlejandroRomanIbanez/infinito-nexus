@@ -72,7 +72,14 @@ test("integration integration_mastodon: connects Nextcloud to the partner Mastod
       "the Mastodon admin instance-address field must be populated with the partner URL (addon hook sets oauth_instance_url)"
     ).toBeTruthy();
 
+    const partnerBaseUrl = (shared.env.mastodonBaseUrl || "").trim();
+    expect(
+      /^https?:\/\//i.test(partnerBaseUrl),
+      "MASTODON_BASE_URL must resolve to the deployed partner Mastodon base URL when integration_mastodon is enabled (it is the same url.base the addon hook writes into oauth_instance_url)"
+    ).toBeTruthy();
+
     const nextcloudHost = new URL(shared.env.nextcloudBaseUrl).host;
+    const partnerHost = new URL(partnerBaseUrl).host;
     const instanceHost = new URL(configuredInstanceUrl).host;
     expect(
       instanceHost,
@@ -81,7 +88,7 @@ test("integration integration_mastodon: connects Nextcloud to the partner Mastod
     expect(
       instanceHost,
       "the Mastodon oauth_instance_url must point at the deployed microblog partner host"
-    ).toBe("microblog.infinito.example");
+    ).toBe(partnerHost);
 
     // Coupling signal 2: the per-user "Connect to Mastodon" handoff must drive to
     // the PARTNER instance's /oauth/authorize endpoint, carrying the provisioned
