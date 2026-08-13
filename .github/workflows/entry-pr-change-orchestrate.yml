@@ -63,7 +63,7 @@ jobs:
   assert-main-merged:
     name: 🔀 Assert main is merged
     needs: detect-pr-scope
-    if: ${{ github.event_name == 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository }}
+    if: ${{ github.event_name == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - name: ⬇️ Checkout the base branch for its tooling
