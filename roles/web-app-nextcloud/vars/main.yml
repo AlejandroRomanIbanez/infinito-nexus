@@ -27,8 +27,8 @@ NEXTCLOUD_HOST_NGINX_PATH: "{{ [ lookup('container', application_id, 'directorie
 
 NEXTCLOUD_CNODE_PLUGIN_TASKS_PATH: "{{ [role_path, 'tasks/addons/'] | path_join }}"
 
-NEXTCLOUD_DOCKER_WORK_DIRECTORY: "/var/www/html/"
-NEXTCLOUD_DOCKER_CONF_ADD_PATH: "/var/www/infinito/"
+NEXTCLOUD_DOCKER_WORK_DIRECTORY: "{{ lookup('volume', 'web-app-nextcloud', 'data').target }}"
+NEXTCLOUD_DOCKER_CONF_ADD_PATH: "{{ lookup('volume', 'web-app-nextcloud', 'infinito_conf').target }}"
 NEXTCLOUD_DOCKER_CONF_LOADER_PATH: "{{ [ NEXTCLOUD_DOCKER_WORK_DIRECTORY, 'config/zzz-infinito.config.php'] | path_join }}"
 
 NEXTCLOUD_ADMINISTRATOR_PASSWORD: "{{ lookup('config', application_id, 'secrets.credentials.administrator_password') }}"

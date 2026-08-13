@@ -8,7 +8,7 @@
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["zammad-init"]
     {{ lookup('container_volumes', application_id, ZAMMAD_INIT_SERVICE, extra_volumes=[
-        'zammad_storage:/opt/zammad/storage',
+        'zammad_storage:' ~ lookup('volume', 'web-app-zammad', 'zammad_storage').target,
         ZAMMAD_TELEGRAM_HELPER_HOST_PATH ~ ':' ~ ZAMMAD_TELEGRAM_HELPER_CONTAINER_PATH ~ ':ro',
     ]) | indent(4) }}
     {{ lookup('container_depends_on', application_id) | indent(4) }}
@@ -22,7 +22,7 @@
     command: ["zammad-railsserver"]
     {{ lookup('depends_on', {ZAMMAD_INIT_SERVICE: 'service_completed_successfully'}, indent=4) }}
 {% set _rails_extra_volumes = [
-    'zammad_storage:/opt/zammad/storage',
+    'zammad_storage:' ~ lookup('volume', 'web-app-zammad', 'zammad_storage').target,
     ZAMMAD_OMNIAUTH_INIT_HOST_PATH ~ ':' ~ ZAMMAD_OMNIAUTH_INIT_CONTAINER_PATH ~ ':ro',
     ZAMMAD_TELEGRAM_HELPER_HOST_PATH ~ ':' ~ ZAMMAD_TELEGRAM_HELPER_CONTAINER_PATH ~ ':ro',
 ] %}

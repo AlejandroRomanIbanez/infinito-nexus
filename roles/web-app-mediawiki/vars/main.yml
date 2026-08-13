@@ -13,7 +13,7 @@ MEDIAWIKI_LOCALSETTINGS_HOST_PATH: "{{ MEDIAWIKI_CONFIG_DIR }}/LocalSettings.php
 MEDIAWIKI_LOCALSETTINGS_CONTAINER_PATH: "{{ MEDIAWIKI_HTML_DIR }}/LocalSettings.php"
 
 MEDIAWIKI_LOCAL_MOUNT_DIR: "{{ [ MEDIAWIKI_VOLUMES_DIR, 'mw-local' ] | path_join }}"
-MEDIAWIKI_LOCAL_PATH: "/opt/mw-local"
+MEDIAWIKI_LOCAL_PATH: "{{ lookup('volume', 'web-app-mediawiki', 'mw_local').target }}"
 
 MEDIAWIKI_VERSION: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.version') }}"
 MEDIAWIKI_IMAGE: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.image') }}"

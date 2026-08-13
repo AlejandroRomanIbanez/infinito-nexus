@@ -51,7 +51,7 @@ prometheus:
   shared: true
   provides:
     - prometheus
-  image: prom/prometheus
+  image: prom{{ lookup('volume', 'web-app-prometheus', 'data').target }}
   version: v3.13.2
   name: prometheus
   cpus: "0.5"
@@ -72,7 +72,7 @@ prometheus:
   lifecycle: beta
   min_storage: 307MB
 alertmanager:
-  image: prom/alertmanager
+  image: prom{{ lookup('volume', 'web-app-prometheus', 'alertmanager_data').target }}
   version: v0.33.1
   name: prometheus-alertmanager
   cpus: "0.25"

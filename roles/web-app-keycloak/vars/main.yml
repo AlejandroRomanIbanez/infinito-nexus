@@ -48,7 +48,7 @@ KEYCLOAK_HEALTH_ENABLED: true
 
 KEYCLOAK_REALM_IMPORT_ENABLED: "{{ lookup('config', application_id, 'services.keycloak.realm.import_enabled') }}"
 KEYCLOAK_REALM_IMPORT_DIR_HOST: "{{ [lookup('container', application_id, 'directories.volumes'),'import'] | path_join }}"
-KEYCLOAK_REALM_IMPORT_DIR_DOCKER: "/opt/keycloak/data/import/"
+KEYCLOAK_REALM_IMPORT_DIR_DOCKER: "{{ lookup('volume', 'web-app-keycloak', 'realm_import').target }}"
 KEYCLOAK_REALM_IMPORT_FILE_SRC: "import/realm.json.j2"
 KEYCLOAK_REALM_IMPORT_FILENAME: "realm.json"
 KEYCLOAK_REALM_IMPORT_FILE_DST: "{{ [KEYCLOAK_REALM_IMPORT_DIR_HOST,KEYCLOAK_REALM_IMPORT_FILENAME] | path_join }}"

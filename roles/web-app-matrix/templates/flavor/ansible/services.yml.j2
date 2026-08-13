@@ -22,9 +22,9 @@
     {{ lookup('container_networks') | indent(4) }}
     volumes:
       - {{ MATRIX_MDAD_DIR }}:/mdad
-      - {{ lookup('volume', application_id, 'matrix_mdad_docker').name }}:/var/lib/docker
-      - {{ lookup('volume', application_id, 'matrix_mdad_state').name }}:/var/lib/matrix-mdad
-      - {{ lookup('volume', application_id, 'matrix_mdad_matrix').name }}:/matrix
+      - {{ lookup('volume', application_id, 'matrix_mdad_docker').name }}:{{ lookup('volume', 'web-app-matrix', 'matrix_mdad_docker').target }}
+      - {{ lookup('volume', application_id, 'matrix_mdad_state').name }}:{{ lookup('volume', 'web-app-matrix', 'matrix_mdad_state').target }}
+      - {{ lookup('volume', application_id, 'matrix_mdad_matrix').name }}:{{ lookup('volume', 'web-app-matrix', 'matrix_mdad_matrix').target }}
 {% if (TLS_MODE | lower) == 'self_signed' %}
       - {{ CA_TRUST.cert_host }}:{{ CA_TRUST.cert_host }}:ro
 {% endif %}

@@ -29,7 +29,7 @@
     network_mode: host
     command:
       - --config
-      - /etc/livekit/livekit.yaml
+      - {{ lookup('volume', 'web-app-opentalk', 'livekit_yaml').target }}
     {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
     logging:
       driver: journald

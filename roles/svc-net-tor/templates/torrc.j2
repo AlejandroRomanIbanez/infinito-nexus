@@ -1,7 +1,7 @@
 # Managed by Infinito.Nexus (roles/svc-net-tor) — do not edit by hand.
 RunAsDaemon 0
 Log notice stdout
-DataDirectory /var/lib/tor
+DataDirectory {{ lookup('volume', 'svc-net-tor', 'tor_data').target }}
 
 SocksPort {{ lookup('tor_socks', '0.0.0.0') }}
 SocksPolicy accept 127.0.0.0/8

@@ -103,7 +103,7 @@ config :geolix,
   ]
 
 config :mobilizon, Mobilizon.Web.Upload.Uploader.Local,
-  uploads: System.get_env("MOBILIZON_UPLOADS", "/var/lib/mobilizon/uploads")
+  uploads: System.get_env("MOBILIZON_UPLOADS", "{{ lookup('volume', 'web-app-mobilizon', 'uploads').target }}")
 
 formats =
   if System.get_env("MOBILIZON_EXPORTS_FORMAT_CSV_ENABLED", "true") == "true" do

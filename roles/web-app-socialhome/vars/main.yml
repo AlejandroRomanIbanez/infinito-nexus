@@ -10,7 +10,7 @@ SOCIALHOME_INSTANCE_NAME: "{{ defaults_service_provider.platform.titel }}"
 SOCIALHOME_ADMIN_USERNAME: "{{ lookup('users', 'administrator').username }}"
 SOCIALHOME_ADMIN_PASSWORD: "{{ lookup('config', application_id, 'secrets.credentials.administrator_password') }}"
 
-SOCIALHOME_CONFIG_FILE: "/etc/socialhome/socialhome.toml"
+SOCIALHOME_CONFIG_FILE: "{{ lookup('volume', 'web-app-socialhome', 'config').target }}"
 SOCIALHOME_CONFIG_HOST_FILE: "{{ [lookup('container', application_id, 'directories.volumes'), 'socialhome.toml'] | path_join }}"
 
 SOCIALHOME_MAX_STORAGE_BYTES: 4294967296

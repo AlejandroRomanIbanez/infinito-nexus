@@ -23,7 +23,7 @@ SHOPWARE_WEB_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 
 SHOPWARE_WORKER_CONTAINER: "{{ lookup('config', application_id, 'services.worker.name') }}"
 SHOPWARE_SCHED_CONTAINER: "{{ lookup('config', application_id, 'services.scheduler.name') }}"
 SHOPWARE_INIT_HOST: "{{ [ lookup('container', application_id, 'directories.volumes'), 'init.sh' ] | path_join }}"
-SHOPWARE_INIT_DOCKER: "/usr/local/bin/init.sh"
+SHOPWARE_INIT_DOCKER: "{{ lookup('volume', 'web-app-shopware', 'init_script').target }}"
 SHOPWARE_FRAMEWORK_HOST: "{{ [ lookup('container', application_id, 'directories.config'), 'framework.yaml' ] | path_join }}"
 SHOPWARE_FILESYSTEM_HOST: "{{ [ lookup('container', application_id, 'directories.config'), 'shopware.yaml' ] | path_join }}"
 SHOPWARE_OBJSTORE_ENABLED: "{{ lookup('objstore', application_id, 'enabled') }}"

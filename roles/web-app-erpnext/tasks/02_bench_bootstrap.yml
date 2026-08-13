@@ -31,7 +31,7 @@
       container exec -i
       -e SITE_NAME -e API_BOT_LOGIN -e API_BOT_EMAIL -e API_BOT_FIRSTNAME -e API_BOT_LASTNAME -e API_BOT_PASSWORD -e API_KEY_SECRET
       {{ ERPNEXT_BACKEND_LOCAL_CID | quote }}
-      bash -c 'cd /home/frappe/frappe-bench/sites && /home/frappe/frappe-bench/env/bin/python -'
+      bash -c 'cd {{ lookup('volume', 'web-app-erpnext', 'sites').target }} && /home/frappe/frappe-bench/env/bin/python -'
     stdin: "{{ lookup('ansible.builtin.file', role_path ~ '/files/scripts/apply/api_bot.py') }}"
   delegate_to: "{{ ERPNEXT_BACKEND_HOST_NODE }}"
   environment:
