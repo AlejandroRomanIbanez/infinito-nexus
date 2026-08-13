@@ -10,11 +10,47 @@ this container serves, not that some replica somewhere does.
 
 from __future__ import annotations
 
+import shlex
 from typing import Any, ClassVar
 
 from utils.cache.yaml import dump_yaml_str
 
 MAIL_MARKER = "/tmp/email_sent"  # noqa: S108  container-internal path, not a host tmpfile
+
+CURL = ("curl",)
+CURL_NO_PROXY = ("--noproxy", "*")
+
+
+def curl_argv(*flags: str, url: str, hostname: str | None = None) -> list[str]:
+    """Build a curl invocation as argv, for docker's exec form.
+
+    Args:
+        flags: curl flags this probe wants, e.g. ``-f`` or ``-fsS``.
+        url: the URL to request.
+        hostname: sent as a Host header when the vhost matters.
+
+    Returns:
+        The argv list, proxy-free.
+
+    Every probe here targets the container's own loopback, so a request that a
+    proxy picks up is wrong by definition -- the Wget probe has said so with
+    ``--proxy=off`` since it was written. Both spellings come from here so the
+    exec form and the shell form cannot drift: the shell form needs the
+    wildcard quoted and the exec form needs it bare, which is exactly the kind
+    of difference that rots when it is written out three times.
+    """
+    argv = [*CURL, *flags, *CURL_NO_PROXY]
+    if hostname:
+        argv += ["-H", f"Host: {hostname}"]
+    return [*argv, url]
+
+
+def curl_shell(*flags: str, url: str, hostname: str | None = None) -> str:
+    """The CMD-SHELL spelling of :func:`curl_argv`, quoted for a shell."""
+    return " ".join(
+        shlex.quote(part) for part in curl_argv(*flags, url=url, hostname=hostname)
+    )
+
 
 _HTTP_REQUEST = (
     "echo -e 'GET /{path} HTTP/1.1\\r\\nHost: localhost\\r\\n"
@@ -83,15 +119,9 @@ class Curl(Probe):
 
     def test(self) -> list[str]:
         if self.samples > 1:
-            host = f"-H 'Host: {self.hostname}' " if self.hostname else ""
-            return [
-                "CMD-SHELL",
-                " && ".join([f"curl -f {host}{self.url}"] * self.samples),
-            ]
-        argv = ["CMD", "curl", "-f"]
-        if self.hostname:
-            argv += ["-H", f"Host: {self.hostname}"]
-        return [*argv, self.url]
+            probe = curl_shell("-f", url=self.url, hostname=self.hostname)
+            return ["CMD-SHELL", " && ".join([probe] * self.samples)]
+        return ["CMD", *curl_argv("-f", url=self.url, hostname=self.hostname)]
 
 
 class Wget(Probe):
@@ -113,7 +143,10 @@ class Http(Probe):
     def test(self) -> list[str]:
         return [
             "CMD-SHELL",
-            f"wget -qO- {self.url} >/dev/null || curl -fsS {self.url} >/dev/null",
+            (
+                f"wget -qO- {self.url} >/dev/null"
+                f" || {curl_shell('-fsS', url=self.url)} >/dev/null"
+            ),
         ]
 
 
@@ -196,7 +229,7 @@ class MsmtpCurl(Probe):
                 f"echo 'Subject: testmessage from {domain}\\n\\nSUCCESSFULL' "
                 f"| msmtp -t {blackhole} && touch {MAIL_MARKER}; fi; "
             )
-        return ["CMD-SHELL", f"{mail}curl -f {self.url} || exit 1"]
+        return ["CMD-SHELL", f"{mail}{curl_shell('-f', url=self.url)} || exit 1"]
 
 
 PROBES: dict[str, type[Probe]] = {

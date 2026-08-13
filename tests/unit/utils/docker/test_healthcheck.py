@@ -51,7 +51,7 @@ def block(flavor, overrides=None, **context):
 class TestCurl(unittest.TestCase):
     def test_single_sample_uses_the_exec_form(self):
         self.assertEqual(
-            ["CMD", "curl", "-f", "http://127.0.0.1:80/"],
+            ["CMD", "curl", "-f", "--noproxy", "*", "http://127.0.0.1:80/"],
             probe("curl", port=80, path="", hostname=None, samples=1),
         )
 
@@ -66,7 +66,16 @@ class TestCurl(unittest.TestCase):
 
     def test_a_hostname_becomes_a_header_argument(self):
         self.assertEqual(
-            ["CMD", "curl", "-f", "-H", "Host: app.example", "http://127.0.0.1:80/"],
+            [
+                "CMD",
+                "curl",
+                "-f",
+                "--noproxy",
+                "*",
+                "-H",
+                "Host: app.example",
+                "http://127.0.0.1:80/",
+            ],
             probe("curl", port=80, hostname="app.example"),
         )
 
@@ -96,7 +105,7 @@ class TestOtherFlavors(unittest.TestCase):
                 "CMD-SHELL",
                 (
                     "wget -qO- http://127.0.0.1:8080/ >/dev/null "
-                    "|| curl -fsS http://127.0.0.1:8080/ >/dev/null"
+                    "|| curl -fsS --noproxy '*' http://127.0.0.1:8080/ >/dev/null"
                 ),
             ],
             probe("http", port=8080),
@@ -132,7 +141,9 @@ class TestOtherFlavors(unittest.TestCase):
         )
         self.assertIn("if [ ! -f /tmp/email_sent ]", argv[1])
         self.assertIn("msmtp -t void@example", argv[1])
-        self.assertTrue(argv[1].endswith("curl -f http://127.0.0.1:80/ || exit 1"))
+        self.assertTrue(
+            argv[1].endswith("curl -f --noproxy '*' http://127.0.0.1:80/ || exit 1")
+        )
 
     def test_msmtp_curl_probe_behaviour(self):
         argv = probe(
@@ -157,7 +168,7 @@ class TestOtherFlavors(unittest.TestCase):
     def test_msmtp_curl_drops_the_mail_branch_when_email_is_disabled(self):
         """An SMTP outage must not flap the container into unhealthy."""
         self.assertEqual(
-            ["CMD-SHELL", "curl -f http://127.0.0.1:80/ || exit 1"],
+            ["CMD-SHELL", "curl -f --noproxy '*' http://127.0.0.1:80/ || exit 1"],
             probe("msmtp_curl", port=80, email_enabled=False),
         )
 
