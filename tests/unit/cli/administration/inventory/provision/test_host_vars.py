@@ -44,10 +44,6 @@ existing_key: foo
             self.assertEqual(data["existing_key"], "foo")
             self.assertEqual(getattr(data["secret"], "tag", None), "!vault")
 
-            # ensure_host_vars_file MUST NOT bake networks/TLS/DOMAIN defaults
-            # into host_vars; those live in group_vars / the inventory vars-file
-            # so that env-driven values (INFINITO_IP4, INFINITO_DOMAIN, ...)
-            # propagate without being silently overridden.
             self.assertNotIn("DOMAIN_PRIMARY", data)
             self.assertNotIn("TLS_ENABLED", data)
             self.assertNotIn("networks", data)
