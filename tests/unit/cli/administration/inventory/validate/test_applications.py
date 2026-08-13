@@ -32,7 +32,7 @@ class TestCompareApplicationKeys(unittest.TestCase):
     def test_credentials_keys_are_skipped(self):
         apps = {
             "app1": {
-                "credentials": {"api_key": "secret"},
+                "secrets": {"credentials": {"api_key": "secret"}},
                 "services": {"port": 8080},
             }
         }
