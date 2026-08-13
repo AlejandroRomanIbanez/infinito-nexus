@@ -8,8 +8,9 @@
 
 # variant 0: development credentials so the Playwright admin
 # scenario can sign in without an out-of-band password handoff.
-- credentials:
-    administrator_password: "'$tr0ng€xampl3PW!"
+- secrets:
+    credentials:
+      administrator_password: "'$tr0ng€xampl3PW!"
   services:
     dashboard:
       enabled: true
@@ -57,8 +58,9 @@
     tor:
       enabled: false
       shared: false # nocheck: variants-static-override
-  credentials:
-    administrator_password: "'$tr0ng€xampl3PW!"
+  secrets:
+    credentials:
+      administrator_password: "'$tr0ng€xampl3PW!"
 - services:
     sso:
       enabled: false
