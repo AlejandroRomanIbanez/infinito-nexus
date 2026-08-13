@@ -8,7 +8,12 @@ from typing import TYPE_CHECKING
 from ruamel.yaml import YAML
 from ruamel.yaml.comments import CommentedMap
 
-from ..credentials.emit import credentials_map, declared_credentials, ensure_map
+from cli.administration.inventory.credentials.emit import (
+    credentials_map,
+    declared_credentials,
+    ensure_map,
+)
+
 from .role_resolver import resolve_role_path
 
 if TYPE_CHECKING:
