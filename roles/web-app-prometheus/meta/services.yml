@@ -51,7 +51,7 @@ prometheus:
   shared: true
   provides:
     - prometheus
-  image: prom{{ lookup('volume', 'web-app-prometheus', 'data').target }}
+  image: prom/prometheus # nocheck: volumes-path-single-spot: the repository path of an image name, not a mount target
   version: v3.13.2
   name: prometheus
   cpus: "0.5"
@@ -72,7 +72,7 @@ prometheus:
   lifecycle: beta
   min_storage: 307MB
 alertmanager:
-  image: prom{{ lookup('volume', 'web-app-prometheus', 'alertmanager_data').target }}
+  image: prom/alertmanager # nocheck: volumes-path-single-spot: the repository path of an image name, not a mount target
   version: v0.33.1
   name: prometheus-alertmanager
   cpus: "0.25"
