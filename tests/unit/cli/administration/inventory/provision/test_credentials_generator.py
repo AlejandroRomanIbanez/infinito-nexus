@@ -36,8 +36,9 @@ class TestCredentialsGenerator(unittest.TestCase):
             snippet = """\
 applications:
   web-app-nextcloud:
-    credentials:
-      admin_password: secret
+    secrets:
+      credentials:
+        admin_password: secret
 ansible_become_password: !vault |
   $ANSIBLE_VAULT;1.1;AES256
     ENCRYPTEDVALUE
@@ -71,7 +72,7 @@ ansible_become_password: !vault |
 
             self.assertIn("applications", doc)
             self.assertEqual(
-                doc["applications"]["web-app-nextcloud"]["credentials"][
+                doc["applications"]["web-app-nextcloud"]["secrets"]["credentials"][
                     "admin_password"
                 ],
                 "secret",
@@ -236,8 +237,9 @@ ansible_become_password: !vault |
             host_vars_file.write_text(
                 "applications:\n"
                 "  web-app-taiga:\n"
-                "    credentials:\n"
-                '      sso_proxy_cookie_secret: ""\n',
+                "    secrets:\n"
+                "      credentials:\n"
+                '        sso_proxy_cookie_secret: ""\n',
                 encoding="utf-8",
             )
             vault_pw_file = tmp / ".password"
@@ -246,8 +248,9 @@ ansible_become_password: !vault |
             snippet = """\
 applications:
   web-app-taiga:
-    credentials:
-      sso_proxy_cookie_secret: regenerated-secret
+    secrets:
+      credentials:
+        sso_proxy_cookie_secret: regenerated-secret
 """
 
             with (
@@ -277,7 +280,7 @@ applications:
                 doc = yaml_rt.load(f) or {}
 
             self.assertEqual(
-                doc["applications"]["web-app-taiga"]["credentials"][
+                doc["applications"]["web-app-taiga"]["secrets"]["credentials"][
                     "sso_proxy_cookie_secret"
                 ],
                 "regenerated-secret",
