@@ -74,7 +74,8 @@ for domain in "${domains[@]}"; do
 	if code="$(probe "${domain}")"; then
 		printf '[OK]   %-60s HTTP %s\n' "${domain}" "${code}"
 	else
-		printf '[FAIL] %-60s HTTP %s\n' "${domain}" "${code}"
+		addr="$(getent hosts "${domain}" 2>/dev/null | head -n1)"
+		printf '[FAIL] %-60s HTTP %s dns=%s\n' "${domain}" "${code}" "${addr%% *}"
 		failed=$((failed + 1))
 	fi
 done
