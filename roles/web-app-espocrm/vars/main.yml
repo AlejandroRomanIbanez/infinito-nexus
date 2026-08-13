@@ -19,6 +19,8 @@ ESPOCRM_ENTRYPOINT_SCRIPT_DOCKER: "{{ [ '/usr/local/bin/', ESPOCRM_ENTRYPOINT_SC
 ESPOCRM_CONFIG_FILE_PRIVATE: "/var/www/html/data/config-internal.php"
 ESPOCRM_URL: "{{ lookup('tls', application_id, 'url.base') }}"
 ESPOCRM_OIDC_ENABLED: "{{ lookup('config', application_id, 'services.sso.enabled') }}"
+ESPOCRM_OIDC_ONION_ISSUER: "{{ lookup('tls', 'web-app-keycloak', 'domain').endswith('.onion') }}"
+ESPOCRM_OIDC_SOCKS_PROXY: "{{ lookup('tor_socks_proxy') if ESPOCRM_OIDC_ONION_ISSUER | bool else '' }}"
 ESPOCRM_LDAP_ENABLED: "{{ lookup('config', application_id, 'services.ldap.enabled') }}"
 ESPOCRM_USER: "www-data"
 
