@@ -100,6 +100,15 @@ for (const persona of PERSONAS) {
       await gotoOnion(page, `${appBaseUrl}/logout`, { waitUntil: "domcontentloaded" });
     }
 
+    const confirmSignOut = page.getByRole("button", { name: /(log|sign)\s?(me\s?)?out/i }).first();
+    const confirmReachable = await confirmSignOut
+      .waitFor({ state: "visible", timeout: resolveTimeout(10_000) })
+      .then(() => true)
+      .catch(() => false);
+    if (confirmReachable) {
+      await confirmSignOut.click();
+    }
+
     await gotoOnion(page, appBaseUrl, { waitUntil: "domcontentloaded" });
 
     await expect(
