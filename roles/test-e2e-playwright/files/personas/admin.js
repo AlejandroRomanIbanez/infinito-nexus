@@ -72,7 +72,11 @@ async function runAdminFlow(page, opts = {}) {
     const base = appBaseUrl.replace(/\/$/, "");
     const tryNativeLogin = async (probeTimeout = 5_000) => {
       const passwordField = page.locator("input[type='password']:visible").first();
-      if (!(await passwordField.isVisible({ timeout: probeTimeout }).catch(() => false))) {
+      const passwordReady = await passwordField
+        .waitFor({ state: "visible", timeout: probeTimeout })
+        .then(() => true)
+        .catch(() => false);
+      if (!passwordReady) {
         return false;
       }
       const usernameField = page
@@ -138,7 +142,8 @@ async function runAdminFlow(page, opts = {}) {
   if (!adminReachedAuthenticated) {
     adminReachedAuthenticated = await adminAuthMarker(page)
       .first()
-      .isVisible({ timeout: resolveTimeout(15_000) })
+      .waitFor({ state: "visible", timeout: resolveTimeout(15_000) })
+      .then(() => true)
       .catch(() => false);
   }
   if (!adminReachedAuthenticated) {
