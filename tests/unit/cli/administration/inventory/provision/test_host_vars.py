@@ -163,42 +163,41 @@ ansible_become_password: !vault |
             node = data["ansible_become_password"]
             self.assertEqual(getattr(node, "tag", None), "!vault")
 
+    def test_apply_vars_overrides_from_file_deep_merge_and_overwrite(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            tmp = Path(tmpdir)
 
-def test_apply_vars_overrides_from_file_deep_merge_and_overwrite(self):
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmp = Path(tmpdir)
+            host_vars_file = tmp / "host_vars.yml"
+            host_vars_file.write_text(
+                dump_yaml_str(
+                    {
+                        "networks": {"internet": {"ip4": "1.2.3.4", "ip6": "::1"}},
+                        "TLS_ENABLED": True,
+                        "nested": {"keep": "yes"},
+                    }
+                ),
+                encoding="utf-8",
+            )
 
-        host_vars_file = tmp / "host_vars.yml"
-        host_vars_file.write_text(
-            dump_yaml_str(
-                {
-                    "networks": {"internet": {"ip4": "1.2.3.4", "ip6": "::1"}},
-                    "TLS_ENABLED": True,
-                    "nested": {"keep": "yes"},
-                }
-            ),
-            encoding="utf-8",
-        )
+            vars_file = tmp / "vars.yml"
+            vars_file.write_text(
+                dump_yaml_str(
+                    {
+                        "networks": {"internet": {"ip4": "10.0.0.10"}},
+                        "TLS_ENABLED": False,
+                        "nested": {"newkey": "added"},
+                    }
+                ),
+                encoding="utf-8",
+            )
 
-        vars_file = tmp / "vars.yml"
-        vars_file.write_text(
-            dump_yaml_str(
-                {
-                    "networks": {"internet": {"ip4": "10.0.0.10"}},
-                    "TLS_ENABLED": False,
-                    "nested": {"newkey": "added"},
-                }
-            ),
-            encoding="utf-8",
-        )
+            apply_vars_overrides_from_file(
+                host_vars_file=host_vars_file, vars_file=vars_file
+            )
 
-        apply_vars_overrides_from_file(
-            host_vars_file=host_vars_file, vars_file=vars_file
-        )
-
-        data = load_yaml_any(host_vars_file)
-        self.assertEqual(data["networks"]["internet"]["ip4"], "10.0.0.10")
-        self.assertEqual(data["networks"]["internet"]["ip6"], "::1")
-        self.assertIs(data["TLS_ENABLED"], False)
-        self.assertEqual(data["nested"]["keep"], "yes")
-        self.assertEqual(data["nested"]["newkey"], "added")
+            data = load_yaml_any(host_vars_file)
+            self.assertEqual(data["networks"]["internet"]["ip4"], "10.0.0.10")
+            self.assertEqual(data["networks"]["internet"]["ip6"], "::1")
+            self.assertIs(data["TLS_ENABLED"], False)
+            self.assertEqual(data["nested"]["keep"], "yes")
+            self.assertEqual(data["nested"]["newkey"], "added")
