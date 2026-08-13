@@ -30,6 +30,7 @@ postgres:
 confluence:
   healthcheck:
     flavor: curl
+    hostname: localhost
   modes:
     compose:
       enabled: true

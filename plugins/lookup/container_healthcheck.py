@@ -95,9 +95,7 @@ class LookupModule(LookupBase):
             config: that service's healthcheck entry.
             kwargs: the call site's keyword arguments.
         """
-        hostname = self._render(
-            config.get("hostname", self._vars.get("container_hostname"))
-        )
+        hostname = self._render(config.get("hostname"))
         port_key = str(config.get("port_key", "http") or "http")
         context = {
             "test": config.get("test"),

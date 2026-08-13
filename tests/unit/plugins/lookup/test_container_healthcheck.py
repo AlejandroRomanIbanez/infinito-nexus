@@ -3,8 +3,13 @@
 Pins that values taken straight out of the play vars are templated before
 use. ``include_role: vars:`` hands them over unrendered, so under
 ``sys-stk-full`` ``application_id`` arrives as the literal string
-``{{ sys_stk_full_application_id }}`` and ``container_hostname`` as
-``{{ lookup('domain', application_id) }}``.
+``{{ sys_stk_full_application_id }}``, and the same holds for a
+``healthcheck.hostname`` read out of the service config.
+
+Also pins that the ``container_hostname`` play var never reaches the probe's
+HTTP ``Host`` header: it is computed for ``sethostname(2)`` and clamped to 63
+bytes, so on a v3 onion deployment it degrades to the bare entity name and the
+app rejects it.
 """
 
 from __future__ import annotations
@@ -23,6 +28,13 @@ SERVICES = {
     },
     "web-app-x": {
         "services.web.healthcheck": {"flavor": "curl", "samples": 2},
+        "services.web.ports.internal.http": 8080,
+    },
+    "web-app-host": {
+        "services.web.healthcheck": {
+            "flavor": "curl",
+            "hostname": "{{ lookup('domain', application_id) }}",
+        },
         "services.web.ports.internal.http": 8080,
     },
     "web-app-bare": {},
@@ -85,15 +97,17 @@ class TestContainerHealthcheckLookup(unittest.TestCase):
         self.assertIn("/dev/tcp/localhost/5000", block)
         self.assertIn("start_period: 10m", block)
 
-    def test_unrendered_container_hostname_is_templated(self):
-        vars_ = {
-            "application_id": "web-app-x",
-            "container_hostname": "{{ lookup('domain', application_id) }}",
-        }
+    def test_unrendered_healthcheck_hostname_is_templated(self):
+        vars_ = {"application_id": "web-app-host"}
         rendered = {"{{ lookup('domain', application_id) }}": "x.example.com"}
         block = self._make(vars_, rendered).run(["web"], variables=vars_)[0]
         self.assertIn("Host: x.example.com", block)
         self.assertNotIn("lookup(", block)
+
+    def test_container_hostname_play_var_never_reaches_the_host_header(self):
+        vars_ = {"application_id": "web-app-x", "container_hostname": "bookwyrm"}
+        block = self._make(vars_).run(["web"], variables=vars_)[0]
+        self.assertNotIn("Host:", block)
 
     def test_plain_application_id_passes_through(self):
         vars_ = {"application_id": "web-app-dashboard"}
