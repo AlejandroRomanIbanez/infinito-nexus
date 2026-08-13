@@ -10,20 +10,19 @@
 # (<servers>/{http,https}/<domain>.conf); pass explicit domains as arguments to
 # override.
 #
-# Env overrides:
-#   TOR_SOCKS         SOCKS proxy for .onion (required env; pass
-#                     127.0.0.1:<svc-net-tor services.tor.ports.local.socks>)
-#   NGINX_SERVERS_DIR vhost servers dir     (required env; the deployed
-#                     OpenResty servers dir from the nginx lookup)
-#   RETRIES           attempts per domain   (default 20)
-#   SLEEP_SECONDS     wait between attempts (default 15)
+# Env (all required; the role's test.env carries them):
+#   TOR_SOCKS         SOCKS proxy for .onion (127.0.0.1:<svc-net-tor
+#                     services.tor.ports.local.socks>)
+#   NGINX_SERVERS_DIR the deployed OpenResty servers dir from the nginx lookup
+#   RETRIES           attempts per domain
+#   SLEEP_SECONDS     wait between attempts
 
 set -uo pipefail
 
 TOR_SOCKS="${TOR_SOCKS:?pass TOR_SOCKS as env (127.0.0.1:<svc-net-tor services.tor.ports.local.socks>)}"
 NGINX_SERVERS_DIR="${NGINX_SERVERS_DIR:?pass NGINX_SERVERS_DIR as env (the deployed OpenResty vhost servers dir from the nginx lookup, e.g. /etc/nginx/conf.d/servers)}"
-RETRIES="${RETRIES:-20}"
-SLEEP_SECONDS="${SLEEP_SECONDS:-15}"
+RETRIES="${RETRIES:?pass RETRIES as env (attempts per domain, from svc-net-tor test.env)}"
+SLEEP_SECONDS="${SLEEP_SECONDS:?pass SLEEP_SECONDS as env (wait between attempts, from svc-net-tor test.env)}"
 
 discover_domains() {
 	find "${NGINX_SERVERS_DIR}/http" "${NGINX_SERVERS_DIR}/https" \
