@@ -182,12 +182,12 @@ collabora:
   shared: "{{ 'web-svc-collabora' in group_names }}"
 # nocheck: playwright-service-flag: bridged web-conferencing partner, covered by partner role spec
 bigbluebutton:
-  bond: 1
+  bond: 0.5
   enabled: "{{ 'web-app-bigbluebutton' in group_names }}"
   shared: "{{ 'web-app-bigbluebutton' in group_names }}"
 # nocheck: playwright-service-flag: bridged wiki partner, covered by partner role spec
 xwiki:
-  bond: 1
+  bond: 0.5
   enabled: "{{ 'web-app-xwiki' in group_names }}"
   shared: "{{ 'web-app-xwiki' in group_names }}"
 # nocheck: playwright-service-flag: object store, no Playwright surface
