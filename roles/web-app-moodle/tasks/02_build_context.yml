@@ -55,6 +55,7 @@
     mode: "0640"
   vars:
     sys_svc_mail_msmtp_ca_bundle_override: /etc/ssl/certs/ca-certificates.crt
+    sys_svc_mail_msmtp_in_container: true
   notify:
     - compose build
     - compose up

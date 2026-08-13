@@ -13,9 +13,13 @@ through here, from two sources that are both optional:
    those calls over the local network to the proxy that already serves the
    vhost. Skipped unless the application has SSO enabled and the provider vhost
    is an ``.onion`` name, so it is a no-op on clearnet.
-2. ``extra_hosts=``, whatever the call site needs on top: a peer's overlay VIP,
-   a partner service reachable only on the host, the ``host.docker.internal``
-   alias.
+2. ``host_alias=true``, which pins ``host.docker.internal`` at whatever reaches
+   the host in the effective mode. A container that must talk to a service the
+   host publishes -- msmtp relaying through the swarm ingress on :587, for
+   instance -- needs the alias, and it must not hardcode ``host-gateway``
+   because that breaks under swarm for the reason below.
+3. ``extra_hosts=``, whatever the call site needs on top: a peer's overlay VIP,
+   or a partner service reachable only on the host.
 
 Entries are ``"name:address"`` strings and are deduplicated in first-seen
 order. With nothing to emit the lookup returns an empty string.
@@ -51,6 +55,7 @@ from __future__ import annotations
 from typing import Any
 
 from ansible.errors import AnsibleError
+from ansible.module_utils.parsing.convert_bool import boolean as _to_bool
 from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
@@ -86,9 +91,12 @@ class LookupModule(LookupBase):
                 "pass application_id= explicitly"
             )
 
-        entries = self._sso_pins(application_id) + self._caller_entries(
-            kwargs.get("extra_hosts")
-        )
+        entries = self._sso_pins(application_id)
+        if _to_bool(self._render(kwargs.get("host_alias", False)), strict=False):
+            entries.append(
+                f"{DOCKER_INTERNAL_HOST}:{self._gateway_address(DOCKER_INTERNAL_HOST)}"
+            )
+        entries += self._caller_entries(kwargs.get("extra_hosts"))
         merged = list(dict.fromkeys(entries))
         if not merged:
             return [""]
