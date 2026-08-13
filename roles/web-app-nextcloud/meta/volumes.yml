@@ -4,11 +4,11 @@ data:
   type: volume
   mounts:
     - service: nextcloud
-      target: /var/www/html/
+      target: &var_www_html_target /var/www/html/
     - service: cron
-      target: /var/www/html/
+      target: *var_www_html_target
     - service: proxy
-      target: /var/www/html/
+      target: *var_www_html_target
       read_only: true
 
 whiteboard_tmp:
@@ -17,7 +17,7 @@ whiteboard_tmp:
   backup: false
   mounts:
     - service: whiteboard
-      target: /tmp
+      target: &tmp_target /tmp
 
 whiteboard_fontcache:
   name: nextcloud_whiteboard_fontcache
@@ -33,7 +33,7 @@ talk_recording_tmp:
   backup: false
   mounts:
     - service: talk_recording
-      target: /tmp
+      target: *tmp_target
 
 nginx_conf:
   type: config
@@ -49,6 +49,6 @@ infinito_conf:
   read_only: true
   mounts:
     - service: nextcloud
-      target: /var/www/infinito/
+      target: &var_www_infinito_target /var/www/infinito/
     - service: cron
-      target: /var/www/infinito/
+      target: *var_www_infinito_target

@@ -4,15 +4,15 @@ data:
   name: openproject_data
   mounts:
     - service: proxy
-      target: /var/openproject/assets
+      target: &var_openproject_assets_target /var/openproject/assets
     - service: web
-      target: /var/openproject/assets
+      target: *var_openproject_assets_target
     - service: worker
-      target: /var/openproject/assets
+      target: *var_openproject_assets_target
     - service: cron
-      target: /var/openproject/assets
+      target: *var_openproject_assets_target
     - service: seeder
-      target: /var/openproject/assets
+      target: *var_openproject_assets_target
 await_migrations:
   type: config
   source: "{{ [ lookup('container', 'web-app-openproject', 'directories.config'), 'await_migrations.sh'] | path_join }}"
@@ -31,12 +31,12 @@ pgdata_dummy:
   nfs: false
   mounts:
     - service: proxy
-      target: /var/openproject/pgdata
+      target: &var_openproject_pgdata_target /var/openproject/pgdata
     - service: web
-      target: /var/openproject/pgdata
+      target: *var_openproject_pgdata_target
     - service: worker
-      target: /var/openproject/pgdata
+      target: *var_openproject_pgdata_target
     - service: cron
-      target: /var/openproject/pgdata
+      target: *var_openproject_pgdata_target
     - service: seeder
-      target: /var/openproject/pgdata
+      target: *var_openproject_pgdata_target

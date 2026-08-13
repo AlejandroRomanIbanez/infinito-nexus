@@ -8,19 +8,19 @@ sites:
     mode: "0770"
   mounts:
     - service: erpnext-configurator
-      target: /home/frappe/frappe-bench/sites
+      target: &home_frappe_frappe_bench_sites_target /home/frappe/frappe-bench/sites
     - service: erpnext-backend
-      target: /home/frappe/frappe-bench/sites
+      target: *home_frappe_frappe_bench_sites_target
     - service: erpnext-websocket
-      target: /home/frappe/frappe-bench/sites
+      target: *home_frappe_frappe_bench_sites_target
     - service: erpnext-scheduler
-      target: /home/frappe/frappe-bench/sites
+      target: *home_frappe_frappe_bench_sites_target
     - service: erpnext-queue-short
-      target: /home/frappe/frappe-bench/sites
+      target: *home_frappe_frappe_bench_sites_target
     - service: erpnext-queue-long
-      target: /home/frappe/frappe-bench/sites
+      target: *home_frappe_frappe_bench_sites_target
     - service: erpnext-frontend
-      target: /home/frappe/frappe-bench/sites
+      target: *home_frappe_frappe_bench_sites_target
 logs:
   type: volume
   name: erpnext_logs
@@ -30,16 +30,16 @@ logs:
     mode: "0770"
   mounts:
     - service: erpnext-configurator
-      target: /home/frappe/frappe-bench/logs
+      target: &home_frappe_frappe_bench_logs_target /home/frappe/frappe-bench/logs
     - service: erpnext-backend
-      target: /home/frappe/frappe-bench/logs
+      target: *home_frappe_frappe_bench_logs_target
     - service: erpnext-websocket
-      target: /home/frappe/frappe-bench/logs
+      target: *home_frappe_frappe_bench_logs_target
     - service: erpnext-scheduler
-      target: /home/frappe/frappe-bench/logs
+      target: *home_frappe_frappe_bench_logs_target
     - service: erpnext-queue-short
-      target: /home/frappe/frappe-bench/logs
+      target: *home_frappe_frappe_bench_logs_target
     - service: erpnext-queue-long
-      target: /home/frappe/frappe-bench/logs
+      target: *home_frappe_frappe_bench_logs_target
     - service: erpnext-frontend
-      target: /home/frappe/frappe-bench/logs
+      target: *home_frappe_frappe_bench_logs_target
