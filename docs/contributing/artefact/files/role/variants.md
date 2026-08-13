@@ -15,7 +15,7 @@ For how the file is consumed at runtime (folder-per-round model, `--variant` / `
 - The top-level node MUST be a YAML list. A non-list root is a hard error.
 - Each list entry MUST be either:
   - the empty mapping `{}` (the canonical no-override entry), or
-  - a YAML mapping that mirrors the assembled application payload, so it can override anything reachable under `applications.<app>.{server,rbac,services,volumes,credentials}` (see [layout.md](../../../design/role/services/layout.md)).
+  - a YAML mapping that mirrors the assembled application payload, so it can override anything reachable under `applications.<app>.<root>` (see [layout.md](../../../design/role/services/layout.md)). Every root is the name of a `meta/` topic — `services`, `server`, `rbac`, `volumes`, `secrets`, `addons`, `csp`, `domains`, `networks`, `info`, `users` — because the entry is baked into `host_vars` raw, which makes its top-level key the inventory path. A key no `meta/<topic>.yml` produces lands where nothing reads it and the override is silently discarded; `TestVariantTopLevelKeys` in [test_layout.py](../../../../../tests/lint/ansible/roles/meta/test_layout.py) rejects it.
 - The literal `null` is normalised to `{}` so a bare `- ` list item stays valid.
 - Scalars at entry level (numbers, strings, lists) are rejected.
 - Variants are addressed by their **zero-based index** in the list.

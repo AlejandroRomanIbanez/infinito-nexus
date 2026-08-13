@@ -34,7 +34,7 @@ The dev-deploy CLI threads the variant index through three layers so a variant's
 2. The provision CLI parses the JSON and forwards the per-app index as `--variant <N>` to each `infinito administration inventory credentials` subprocess call.
 3. `InventoryManager` resolves the root role's config via `get_variants(roles_dir)[app_id][N]` so `resolve_schema_includes_recursive` sees the variant-merged `services` map and discovers every shared provider the variant enables.
 
-The resulting snippets cover every shared provider in the variant's closure, so the deploy stage finds the required `applications.<provider>.credentials` block in the inventory and `lookup('config', 'credentials', '<provider>')` succeeds.
+The resulting snippets cover every shared provider in the variant's closure, so the deploy stage finds the required `applications.<provider>.secrets.credentials` block in the inventory and `lookup('config', '<provider>', 'secrets.credentials.<key>')` succeeds.
 
 The variant only affects inventory generation; the Ansible deploy itself reads `applications.<app>` overrides from the variant-resolved inventory and MUST NOT consult variant data at runtime.
 

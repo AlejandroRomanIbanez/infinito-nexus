@@ -204,7 +204,7 @@ DB numbers (0 / 1 / 2) are stable for v1; if `svc-db-redis` later partitions ten
 
 ### Central-service reuse (Decision #7)
 
-- [x] When `services.mariadb.shared=true` (V1 + matching `group_names`), Frappe connects to the central `svc-db-mariadb` via the in-stack `mariadb` network alias using svc-db-mariadb's `credentials.root_password` for `bench new-site`; when `shared=false` (V2/V3) `sys-svc-rdbms` templates a per-role MariaDB container and bench uses the consumer's per-role db password as root.
+- [x] When `services.mariadb.shared=true` (V1 + matching `group_names`), Frappe connects to the central `svc-db-mariadb` via the in-stack `mariadb` network alias using svc-db-mariadb's `secrets.credentials.root_password` for `bench new-site`; when `shared=false` (V2/V3) `sys-svc-rdbms` templates a per-role MariaDB container and bench uses the consumer's per-role db password as root.
 - [x] Frappe's three Redis logical roles share one instance via DB-number split (`cache=0`, `queue=1`, `socketio=2`) using the in-compose `redis` alias.
 - [x] When `services.mariadb.enabled` (always true for ERPNext) is unsatisfiable, `sys-stk-full` fails the deploy at the database-readiness gate before bench-bootstrap runs.
 
