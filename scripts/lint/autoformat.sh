@@ -120,13 +120,17 @@ run_ansible_lint() {
 		write_status ansible-lint SKIP
 		return 0
 	fi
-	local rc=0
-	ansible-lint --fix >/dev/null 2>&1 || rc=$?
+	local rc=0 out
+	out="$(mktemp)"
+	ansible-lint --fix >"${out}" 2>&1 || rc=$?
 	if [[ $rc -eq 0 || $rc -eq 2 || $rc -eq 8 ]]; then
 		write_status ansible-lint OK
 	else
+		printf 'ansible-lint exited %s:\n' "${rc}" >&2
+		cat "${out}" >&2
 		write_status ansible-lint FAIL
 	fi
+	rm -f "${out}"
 }
 
 run_mbake() {
