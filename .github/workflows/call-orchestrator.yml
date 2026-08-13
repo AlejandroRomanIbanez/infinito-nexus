@@ -173,8 +173,9 @@ jobs:
     secrets: inherit
   
   test-dns:
-    needs: 
+    needs:
       - build-ci-images
+      - fork-prereqs-ready
     uses: ./.github/workflows/call-test-dns.yml
     with:
       distros: "arch debian ubuntu fedora centos"
@@ -258,6 +259,7 @@ jobs:
       - test
       - build-ci-images
       - images-mirror-missing
+      - fork-prereqs-ready
     uses: ./.github/workflows/call-test-deploy-swarm.yml
     with:
       distros: ${{ inputs.distros }}
@@ -517,6 +519,7 @@ jobs:
       - build-ci-images
       - lint
       - test
+      - fork-prereqs-ready
     with:
       distros: ${{ inputs.distros }}
     secrets: inherit
