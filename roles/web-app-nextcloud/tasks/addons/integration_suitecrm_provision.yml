@@ -22,7 +22,7 @@
       - error_reporting=E_ERROR
       - -
     chdir: "{{ nextcloud_crm_instance_dir }}"
-    stdin: "{{ lookup('file', 'suitecrm/provision_oauth_password_client.php') }}"
+    stdin: "{{ lookup('file', 'php/addons/suitecrm/provision_oauth_password_client.php') }}"
   register: nextcloud_crm_provision
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"

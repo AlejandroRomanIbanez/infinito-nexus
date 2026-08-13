@@ -54,6 +54,10 @@ if application.nil?
       owner: creator,
       integration: storage
     )
+  if result.is_a?(ServiceResult) && !result.success?
+    raise "OAuth application creation failed: #{result.errors.full_messages.join('; ')}"
+  end
+
   application = result.is_a?(ServiceResult) ? result.result : result
   op_client_secret = application.plaintext_secret if application.respond_to?(:plaintext_secret)
   storage.reload

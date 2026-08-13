@@ -18,9 +18,6 @@ if (!is_array($entries)) {
     exit(1);
 }
 
-// icrypto: store an ICrypto ciphertext that the app reads back via $crypto->decrypt()
-// (integration_gitlab/mattermost getClearAppValue). sensitive: store the plaintext as an
-// IAppConfig sensitive value that getValueString() auto-decrypts (integration_zammad).
 $mode = getenv("NC_ENC_MODE") ?: "icrypto";
 $crypto = \OC::$server->get(\OCP\Security\ICrypto::class);
 $appConfig = \OC::$server->get(\OCP\IAppConfig::class);
