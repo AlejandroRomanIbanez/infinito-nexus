@@ -188,6 +188,51 @@
     tor:
       enabled: false
       shared: false # nocheck: variants-static-override
+  addons: &addons_static_off
+    appointments:
+      enabled: false
+    calendar:
+      enabled: false
+    collectives:
+      enabled: false
+    contacts:
+      enabled: false
+    cospend:
+      enabled: false
+    drawio:
+      enabled: false
+    epubviewer:
+      enabled: false
+    event_update_notification:
+      enabled: false
+    external:
+      enabled: false
+    files_bpm:
+      enabled: false
+    forms:
+      enabled: false
+    gpxpod:
+      enabled: false
+    groupfolders:
+      enabled: false
+    mail:
+      enabled: false
+    metadata:
+      enabled: false
+    news:
+      enabled: false
+    phonetrack:
+      enabled: false
+    polls:
+      enabled: false
+    quota_warning:
+      enabled: false
+    recognize:
+      enabled: false
+    tables:
+      enabled: false
+    tasks:
+      enabled: false
 # Variant 2: openwebui + flowise
 - services:
     container_backup:
@@ -276,6 +321,7 @@
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
       enabled: true
+  addons: *addons_static_off
 # Variant 3: openproject + mattermost + matrix
 - services:
     container_backup:
@@ -364,6 +410,7 @@
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
       enabled: true
+  addons: *addons_static_off
 # Variant 4: onlyoffice + mastodon
 - services:
     container_backup:
@@ -452,6 +499,7 @@
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
       enabled: true
+  addons: *addons_static_off
 # Variant 5: zammad
 - services:
     container_backup:
@@ -540,6 +588,7 @@
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
       enabled: true
+  addons: *addons_static_off
 # Variant 6: gitlab
 - services:
     container_backup:
@@ -628,6 +677,7 @@
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
       enabled: true
+  addons: *addons_static_off
 # Variant 7: discourse + peertube
 - services:
     container_backup:
@@ -716,6 +766,7 @@
       shared: true
     tor:
       enabled: true
+  addons: *addons_static_off
 # Variant 8: xwiki
 - services:
     container_backup:
@@ -804,3 +855,4 @@
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
       enabled: true
+  addons: *addons_static_off

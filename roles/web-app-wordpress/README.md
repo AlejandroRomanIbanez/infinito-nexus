@@ -145,7 +145,7 @@ the unified addon contract. The OIDC and WP-Discourse runtime config lives in ea
 |-------|-----------|---------------|---------|
 | `daggerhart-openid-connect-generic` | `plugin` | enabled with the `sso` service | `sso` → `web-app-keycloak` |
 | `wp-discourse` | `plugin` | enabled with the `discourse` service | `discourse` → `web-app-discourse` |
-| `activitypub` | `plugin` | always enabled (Fediverse federation) | none |
+| `activitypub` | `plugin` | enabled in variant 0 (Fediverse federation); off in later variants | none |
 | `infinito-oidc-rbac-mapper` | `mu_plugin` | `required` (always installed, vendored) | `sso` → `web-app-keycloak` |
 | `infinito-http-ca-trust` | `mu_plugin` | `required` (always installed, vendored) | none |
 
