@@ -7,7 +7,7 @@
       -e CLIENT_ID -e CLIENT_SECRET -e ISSUER_URL
       -e GROUP_ROLE_MAP_JSON
       {{ ERPNEXT_BACKEND_LOCAL_CID | quote }}
-      bash -c 'cd {{ lookup('volume', 'web-app-erpnext', 'sites').target }} && /home/frappe/frappe-bench/env/bin/python -'
+      {{ ERPNEXT_BENCH_PYTHON }}
     stdin: "{{ lookup('ansible.builtin.file', role_path ~ '/files/scripts/apply/oidc_settings.py') }}"
   delegate_to: "{{ ERPNEXT_BACKEND_HOST_NODE }}"
   environment:

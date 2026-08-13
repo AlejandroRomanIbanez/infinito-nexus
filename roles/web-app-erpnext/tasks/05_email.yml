@@ -6,7 +6,7 @@
       -e SITE_NAME -e MAIL_FROM_NAME -e MAIL_FROM_ADDRESS
       -e SMTP_HOST -e SMTP_PORT -e SMTP_USER -e SMTP_PASS
       {{ ERPNEXT_BACKEND_LOCAL_CID | quote }}
-      bash -c 'cd {{ lookup('volume', 'web-app-erpnext', 'sites').target }} && /home/frappe/frappe-bench/env/bin/python -'
+      {{ ERPNEXT_BENCH_PYTHON }}
     stdin: "{{ lookup('ansible.builtin.file', role_path ~ '/files/scripts/apply/email_account.py') }}"
   delegate_to: "{{ ERPNEXT_BACKEND_HOST_NODE }}"
   environment:
