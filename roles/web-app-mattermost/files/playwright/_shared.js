@@ -75,7 +75,7 @@ async function dismissMattermostPopups(frame) {
 
   for (let round = 0; round < 3; round++) {
     for (const sel of dismissSelectors) {
-      if (await sel.first().isVisible({ timeout: resolveTimeout(2000) }).catch(() => false)) {
+      if (await sel.first().isVisible().catch(() => false)) {
         await sel.first().click({ force: true }).catch(() => {});
         await new Promise(r => setTimeout(r, resolveTimeout(500)));
       }
