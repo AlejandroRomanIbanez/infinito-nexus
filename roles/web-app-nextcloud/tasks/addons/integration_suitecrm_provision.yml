@@ -35,7 +35,7 @@
 - name: 🔗 Link the SuiteCRM OAuth password client into integration_suitecrm
   shell: >
     {{ NEXTCLOUD_DOCKER_EXEC_OCC }} config:app:set integration_suitecrm {{ item.key }}
-    --value '{{ item.value }}'
+    --value={{ item.value | quote }}
   loop:
     - { key: "oauth_instance_url", value: "{{ nextcloud_crm_base_url }}" }
     - { key: "client_id", value: "{{ nextcloud_crm_client_id }}" }
