@@ -13,6 +13,7 @@ hard error rather than a guess.
 from __future__ import annotations
 
 import os
+import re
 import subprocess
 import tempfile
 import unittest
@@ -108,27 +109,30 @@ class TestDistrosLoop(unittest.TestCase):
         self.assertEqual(proc.returncode, 7, proc.stderr)
         self.assertEqual(len(record.split()), 2)
 
-    def test_budget_skips_a_distro_that_no_longer_fits(self) -> None:
+    def test_a_distro_needs_the_slowest_run_plus_headroom_to_start(self) -> None:
         proc, record = self._run(
             DISTROS,
-            'sleep 3\necho "${INFINITO_DISTRO}" >> "${RECORD}"',
-            INFINITO_CI_DISTRO_BUDGET_SECONDS="5",
+            'sleep 2\necho "${INFINITO_DISTRO}" >> "${RECORD}"',
+            INFINITO_CI_DISTRO_BUDGET_SECONDS="3",
         )
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertEqual(len(record.split()), 1)
-        self.assertRegex(proc.stdout, r"Skipping distro|budget exhausted")
 
-    def test_a_distro_that_ignores_sigterm_is_skipped_not_failed(self) -> None:
-        proc, record = self._run(
-            DISTROS,
-            'echo "${INFINITO_DISTRO}" >> "${RECORD}"\n'
-            'test "$(wc -l < "${RECORD}")" -gt 1 && { trap "" TERM; sleep 300; }\n'
-            "exit 0",
-            INFINITO_CI_DISTRO_BUDGET_SECONDS="8",
+        match = re.search(
+            r"< (\d+)s \(max_seen=(\d+)s \+ (\d+)% headroom\)", proc.stdout
         )
-        self.assertEqual(proc.returncode, 0, proc.stderr)
-        self.assertRegex(proc.stdout, r"Budget exhausted while distro=")
-        self.assertIn("🟦 skipped", self.summary)
+        self.assertIsNotNone(match, proc.stdout)
+        needed, max_seen, percent = (int(g) for g in match.groups())
+        self.assertGreater(percent, 0)
+        self.assertEqual(needed, max_seen * (100 + percent) // 100)
+
+    def test_a_distro_the_budget_kills_mid_run_fails_the_job(self) -> None:
+        proc, _record = self._run(
+            DISTROS, "sleep 30", INFINITO_CI_DISTRO_BUDGET_SECONDS="1"
+        )
+        self.assertEqual(proc.returncode, 124, proc.stderr)
+        self.assertIn("❌ failed", self.summary)
+        self.assertRegex(self.summary, r"rc=124 after \d+s, with \d+s of the 1s budget")
 
     def test_the_job_summary_tables_every_distro_in_execution_order(self) -> None:
         proc, _record = self._run(
@@ -153,7 +157,7 @@ class TestDistrosLoop(unittest.TestCase):
     def test_the_job_summary_marks_skipped_and_failed_distros(self) -> None:
         proc, _record = self._run(
             DISTROS,
-            'sleep 3\necho "${INFINITO_DISTRO}" >> "${RECORD}"\nexit 7',
+            'echo "${INFINITO_DISTRO}" >> "${RECORD}"\nexit 7',
             INFINITO_CI_DISTRO_BUDGET_SECONDS="5",
         )
         self.assertEqual(proc.returncode, 7, proc.stderr)
