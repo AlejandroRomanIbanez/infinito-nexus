@@ -64,7 +64,7 @@ test("seaweedfs: an uploaded Decidim avatar is stored in the SeaweedFS bucket", 
         .locator('[data-upload] button, .upload-container button, [data-upload-modal]')
         .or(appPage.getByRole("button", { name: /avatar|add file|add image|edit image|replace image|upload|change/i }))
         .first();
-      if (await openModal.isVisible({ timeout: resolveTimeout(10_000) }).catch(() => false)) {
+      if (await openModal.waitFor({ state: "visible", timeout: resolveTimeout(2_000) }).then(() => true).catch(() => false)) {
         await openModal.click().catch(() => {});
         await appPage.waitForLoadState("networkidle").catch(() => {});
       }

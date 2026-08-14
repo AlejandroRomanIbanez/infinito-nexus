@@ -79,11 +79,11 @@ test("integration integration_matrix: per-user login drives a real session again
       .waitForResponse((resp) => /\/apps\/integration_matrix\//.test(resp.url()), { timeout: resolveTimeout(30_000) })
       .catch(() => null);
 
-    if (await passwordField.isVisible({ timeout: resolveTimeout(10_000) }).catch(() => false)) {
+    if (await passwordField.waitFor({ state: "visible", timeout: resolveTimeout(2_000) }).then(() => true).catch(() => false)) {
       await loginField.fill(shared.env.loginUsername || "admin").catch(() => {});
       await passwordField.fill(shared.env.loginPassword || "").catch(() => {});
       await connectButton.click({ timeout: resolveTimeout(10_000) }).catch(() => {});
-    } else if (await connectButton.isVisible({ timeout: resolveTimeout(5_000) }).catch(() => false)) {
+    } else if (await connectButton.waitFor({ state: "visible", timeout: resolveTimeout(2_000) }).then(() => true).catch(() => false)) {
       await connectButton.click({ timeout: resolveTimeout(10_000) }).catch(() => {});
     }
 

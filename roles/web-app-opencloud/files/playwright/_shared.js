@@ -94,7 +94,7 @@ async function ssoLoginAndAssertUsername(page, username, password) {
   const credentialError = page
     .locator('#input-error, .alert-error, .kc-feedback-text')
     .first();
-  if (await credentialError.isVisible({ timeout: resolveTimeout(5_000) }).catch(() => false)) {
+  if (await credentialError.isVisible().catch(() => false)) {
     const message = ((await credentialError.textContent().catch(() => "")) || "").trim();
     throw new Error(
       `Keycloak rejected credentials for ${username}: "${message || "<no message>"}" (final URL: ${page.url()})`,
@@ -116,7 +116,7 @@ async function ssoLoginAndAssertUsername(page, username, password) {
   // Playwright's Chromium UA is not on the OpenCloud allow list, so the SPA
   // shows a splash with a "I want to continue anyway" button.
   const continueAnyway = page.getByRole("button", { name: /continue anyway/i });
-  if (await continueAnyway.isVisible({ timeout: resolveTimeout(5_000) }).catch(() => false)) {
+  if (await continueAnyway.waitFor({ state: "visible", timeout: resolveTimeout(2_000) }).then(() => true).catch(() => false)) {
     await continueAnyway.click();
   }
 

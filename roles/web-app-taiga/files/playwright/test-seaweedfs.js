@@ -49,12 +49,22 @@ test("seaweedfs: an uploaded Taiga avatar is stored in the SeaweedFS bucket", as
         .getByRole("button", { name: /save|upload|change/i })
         .or(appPage.locator('button[type="submit"], a.button-save, .save'))
         .first();
-      if (await saveAction.isVisible({ timeout: resolveTimeout(10_000) }).catch(() => false)) {
+      if (
+        await saveAction
+          .waitFor({ state: "visible", timeout: resolveTimeout(2_000) })
+          .then(() => true)
+          .catch(() => false)
+      ) {
         await saveAction.click().catch(() => {});
       }
 
       const rejection = appPage.getByText(/invalid image format|something went wrong/i).first();
-      if (await rejection.isVisible({ timeout: resolveTimeout(15_000) }).catch(() => false)) {
+      if (
+        await rejection
+          .waitFor({ state: "visible", timeout: resolveTimeout(2_000) })
+          .then(() => true)
+          .catch(() => false)
+      ) {
         throw new Error("Taiga rejected the avatar upload (change_avatar pil_image validation) — no object written to SeaweedFS");
       }
     },

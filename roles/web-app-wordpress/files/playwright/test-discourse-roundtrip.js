@@ -54,7 +54,10 @@ exports.register = function (shared) {
         name: /welcome to the editor/i,
       });
       if (
-        await welcomeDialog.isVisible({ timeout: resolveTimeout(5_000) }).catch(() => false)
+        await welcomeDialog
+          .waitFor({ state: "visible", timeout: resolveTimeout(2_000) })
+          .then(() => true)
+          .catch(() => false)
       ) {
         await welcomeDialog
           .getByRole("button", { name: /^close$/i })
@@ -76,7 +79,8 @@ exports.register = function (shared) {
         .getByRole("textbox", { name: /add title/i })
         .first();
       const titleBox = (await iframedTitleBox
-        .isVisible({ timeout: resolveTimeout(5_000) })
+        .waitFor({ state: "visible", timeout: resolveTimeout(2_000) })
+        .then(() => true)
         .catch(() => false))
         ? iframedTitleBox
         : topLevelTitleBox;

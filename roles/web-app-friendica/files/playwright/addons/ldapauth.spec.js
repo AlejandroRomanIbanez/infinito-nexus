@@ -51,7 +51,7 @@ test("addon ldapauth: a valid LDAP credential binds against openldap and a bogus
     const hasLoginForm = await page
       .locator("input[name='password']")
       .first()
-      .isVisible({ timeout: resolveTimeout(2_000) })
+      .isVisible()
       .catch(() => false);
     if (onAdminAddons && !hasLoginForm) {
       await expect(
@@ -81,7 +81,8 @@ test("addon ldapauth: a valid LDAP credential binds against openldap and a bogus
     const hasForm = await negPage
       .locator("input[name='password']")
       .first()
-      .isVisible({ timeout: resolveTimeout(30_000) })
+      .waitFor({ state: "visible", timeout: resolveTimeout(2_000) })
+      .then(() => true)
       .catch(() => false);
 
     // Only meaningful where Friendica's own login form is directly reachable

@@ -90,7 +90,7 @@ async function signInViaBbbOidc(page, username, password, personaLabel) {
         .locator("a, button")
         .filter({ hasText: /sign\s*in\s*with|openid|oidc|sso|single\s*sign[-\s]*on/i })
         .first();
-      if (await oidcButton.isVisible({ timeout: resolveTimeout(5_000) }).catch(() => false)) {
+      if (await oidcButton.waitFor({ state: "visible", timeout: resolveTimeout(2_000) }).then(() => true).catch(() => false)) {
         await oidcButton.click({ timeout: resolveTimeout(30_000) }).catch(() => {});
       }
     });

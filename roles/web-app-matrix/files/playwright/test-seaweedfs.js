@@ -71,7 +71,7 @@ test("seaweedfs: an uploaded Matrix avatar is stored in the SeaweedFS bucket", a
       const saveButton = appPage
         .getByRole("button", { name: /^(save|apply|upload|confirm)$/i })
         .first();
-      if (await saveButton.isVisible({ timeout: resolveTimeout(10_000) }).catch(() => false)) {
+      if (await saveButton.waitFor({ state: "visible", timeout: resolveTimeout(2_000) }).then(() => true).catch(() => false)) {
         await saveButton.click().catch(() => {});
       }
     },

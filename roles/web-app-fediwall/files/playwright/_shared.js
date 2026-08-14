@@ -88,7 +88,7 @@ async function loginToMastodonViaOidc(page, baseUrl) {
     .locator("button[type='submit'], button")
     .filter({ hasText: /save and continue/i })
     .first();
-  if (await saveAndContinue.isVisible({ timeout: resolveTimeout(10_000) }).catch(() => false)) {
+  if (await saveAndContinue.waitFor({ state: "visible", timeout: resolveTimeout(2_000) }).then(() => true).catch(() => false)) {
     await saveAndContinue.click();
   }
 
@@ -178,7 +178,7 @@ async function postOnFriendicaViaUi(page, baseUrl, statusText) {
   // friendica session. In v2 the password form is already visible from
   // step 1's `/` redirect to `/login`.
   await page.waitForLoadState("domcontentloaded", { timeout: resolveTimeout(30_000) }).catch(() => {});
-  if (await page.locator("input[name='password']").first().isVisible({ timeout: resolveTimeout(30_000) }).catch(() => false)) {
+  if (await page.locator("input[name='password']").first().waitFor({ state: "visible", timeout: resolveTimeout(2_000) }).then(() => true).catch(() => false)) {
     await loginViaFriendicaForm(page);
   }
 

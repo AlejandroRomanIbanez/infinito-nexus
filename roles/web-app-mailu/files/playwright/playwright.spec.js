@@ -50,7 +50,7 @@ async function clickThroughMailuSsoPage(frame) {
     return;
   }
 
-  if (await oidcLink.isVisible({ timeout: resolveTimeout(3_000) }).catch(() => false)) {
+  if (await oidcLink.waitFor({ state: "visible", timeout: resolveTimeout(3_000) }).then(() => true).catch(() => false)) {
     await oidcLink.click({ timeout: resolveTimeout(30_000) });
   }
 }
@@ -138,7 +138,7 @@ test("mailu: sso login, open admin interface, logout", async ({ page }) => {
 
   // 9. Logout — Mailu admin logout is a link with /logout or /signout in the href
   const logoutByHref = page.locator("a[href*='logout'], a[href*='signout']");
-  const logoutVisible = await logoutByHref.first().isVisible({ timeout: resolveTimeout(5_000) }).catch(() => false);
+  const logoutVisible = await logoutByHref.first().isVisible().catch(() => false);
 
   if (logoutVisible) {
     await logoutByHref.first().click({ timeout: resolveTimeout(30_000) });
@@ -172,7 +172,7 @@ test("mailu: biber sends email to administrator, administrator receives it", asy
 
     // Mailu webmail may show an SSO button or redirect directly to Keycloak
     const ssoButton = biberPage.getByRole("button", { name: /sso|single sign.?on|login with/i });
-    const ssoButtonVisible = await ssoButton.first().isVisible({ timeout: resolveTimeout(5_000) }).catch(() => false);
+    const ssoButtonVisible = await ssoButton.first().isVisible().catch(() => false);
 
     if (ssoButtonVisible) {
       await ssoButton.first().click({ timeout: resolveTimeout(30_000) });
@@ -243,7 +243,7 @@ test("mailu: biber sends email to administrator, administrator receives it", asy
     await adminPage.goto(mailuBaseUrl);
 
     const ssoButtonAdmin = adminPage.getByRole("button", { name: /sso|single sign.?on|login with/i });
-    const ssoAdminVisible = await ssoButtonAdmin.first().isVisible({ timeout: resolveTimeout(5_000) }).catch(() => false);
+    const ssoAdminVisible = await ssoButtonAdmin.first().isVisible().catch(() => false);
 
     if (ssoAdminVisible) {
       await ssoButtonAdmin.first().click({ timeout: resolveTimeout(30_000) });
@@ -318,7 +318,7 @@ test("administrator: app → universal logout", async ({ page }) => {
       const link = interactivePage
         .getByRole("link", { name: /^(admin|administration|domains|users|fetchmail|aliases)$/i })
         .first();
-      if (await link.isVisible({ timeout: resolveTimeout(10_000) }).catch(() => false)) {
+      if (await link.isVisible().catch(() => false)) {
         await link.click({ timeout: resolveTimeout(30_000) }).catch(() => {});
         await interactivePage.waitForLoadState("domcontentloaded", { timeout: resolveTimeout(30_000) }).catch(() => {});
         await expect(interactivePage.locator("body")).toContainText(

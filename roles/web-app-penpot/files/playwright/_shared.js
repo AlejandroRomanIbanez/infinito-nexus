@@ -141,7 +141,12 @@ async function penpotRegister(page, fullname, email, password) {
 
   // Optional second step: full name + terms acceptance.
   const nameField = page.getByLabel(/full ?name|^name$/i).first();
-  if (await nameField.isVisible({ timeout: resolveTimeout(15_000) }).catch(() => false)) {
+  if (
+    await nameField
+      .waitFor({ state: "visible", timeout: resolveTimeout(2_000) })
+      .then(() => true)
+      .catch(() => false)
+  ) {
     await nameField.fill(fullname);
     const terms = page.getByRole("checkbox").first();
     if (await terms.isVisible().catch(() => false)) await terms.check().catch(() => {});

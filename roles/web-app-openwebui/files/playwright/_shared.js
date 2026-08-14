@@ -46,13 +46,13 @@ async function dismissAllOpenModals(page) {
   const deadline = Date.now() + 15_000;
   while (Date.now() < deadline) {
     const modal = page.locator("[role='dialog'][aria-modal='true']").first();
-    if (!(await modal.isVisible({ timeout: resolveTimeout(500) }).catch(() => false))) {
+    if (!(await modal.isVisible().catch(() => false))) {
       return;
     }
     const explicitClose = modal
       .getByRole("button", { name: closeNameRegex })
       .first();
-    if (await explicitClose.isVisible({ timeout: resolveTimeout(500) }).catch(() => false)) {
+    if (await explicitClose.isVisible().catch(() => false)) {
       await explicitClose.click().catch(() => {});
     } else {
       await page.keyboard.press("Escape").catch(() => {});
@@ -71,7 +71,7 @@ async function openwebuiLogout(page, _openwebuiBaseUrl) {
     .locator("a, button, [role='menuitem']")
     .filter(signOutTextFilter)
     .first();
-  if (await topLevelSignOut.isVisible({ timeout: resolveTimeout(2_000) }).catch(() => false)) {
+  if (await topLevelSignOut.isVisible().catch(() => false)) {
     await actionableClick(topLevelSignOut);
     return;
   }
@@ -80,7 +80,12 @@ async function openwebuiLogout(page, _openwebuiBaseUrl) {
     .getByRole("img", { name: /open\s+user\s+profile\s+menu/i })
     .or(page.getByRole("button", { name: /open\s+user\s+profile\s+menu/i }))
     .first();
-  if (!(await menuTrigger.isVisible({ timeout: resolveTimeout(5_000) }).catch(() => false))) {
+  if (
+    !(await menuTrigger
+      .waitFor({ state: "visible", timeout: resolveTimeout(2_000) })
+      .then(() => true)
+      .catch(() => false))
+  ) {
     return;
   }
   await dismissAllOpenModals(page);
@@ -171,12 +176,17 @@ async function signInViaNativePassword(page, email, password, personaLabel) {
   const nameField = page
     .locator("input[autocomplete='name'], input[name='name'], input#name")
     .first();
-  if (await nameField.isVisible({ timeout: resolveTimeout(3_000) }).catch(() => false)) {
+  if (
+    await nameField
+      .waitFor({ state: "visible", timeout: resolveTimeout(2_000) })
+      .then(() => true)
+      .catch(() => false)
+  ) {
     const signinToggle = page
       .locator("a, button")
       .filter({ hasText: /sign\s*in|already\s+have/i })
       .first();
-    if (await signinToggle.isVisible({ timeout: resolveTimeout(3_000) }).catch(() => false)) {
+    if (await signinToggle.isVisible().catch(() => false)) {
       await signinToggle.click();
     }
   }
@@ -278,7 +288,7 @@ async function expectSignInRequiredAfterLogout(page) {
           })
       )
       .first();
-    if (await kcLogoutConfirm.isVisible({ timeout: resolveTimeout(2_000) }).catch(() => false)) {
+    if (await kcLogoutConfirm.isVisible().catch(() => false)) {
       await actionableClick(kcLogoutConfirm);
     }
     await page.waitForTimeout(resolveTimeout(2_000));

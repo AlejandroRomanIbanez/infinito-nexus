@@ -99,7 +99,7 @@ async function signInViaElementOidc(page, username, password, personaLabel) {
     .filter({ hasText: /single\s*sign[- ]*on|continue\s+with\s+(sso|oidc|keycloak|openid)|sign\s+in\s+with\s+(sso|oidc|keycloak|openid)/i })
     .first();
   await gotoElementApp(page, `${elementBaseUrl}/#/login`, ssoButton.or(ssoTextButton));
-  const candidate = (await ssoButton.isVisible({ timeout: resolveTimeout(15_000) }).catch(() => false))
+  const candidate = (await ssoButton.isVisible().catch(() => false))
     ? ssoButton
     : ssoTextButton;
   await expect(candidate, `${personaLabel}: Element SSO entry button on #/login must be visible`).toBeVisible({ timeout: resolveTimeout(30_000) });
@@ -117,7 +117,7 @@ async function signInViaElementOidc(page, username, password, personaLabel) {
   // token to Element. First-time logins also display a username-selection form
   // asking the user to pick their Matrix localpart before this confirmation.
   const usernameSelectField = page.locator("input[name='username'], input#field-username").first();
-  if (await usernameSelectField.isVisible({ timeout: resolveTimeout(5_000) }).catch(() => false)) {
+  if (await usernameSelectField.waitFor({ state: "visible", timeout: resolveTimeout(5_000) }).then(() => true).catch(() => false)) {
     await usernameSelectField.fill(username);
     const submit = page.locator("button[type='submit'], input[type='submit']").first();
     await submit.click({ timeout: resolveTimeout(30_000) });

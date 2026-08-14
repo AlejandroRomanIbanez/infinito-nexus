@@ -56,7 +56,8 @@ test("ldap-authenticator: XWiki enforces its LDAP-backed native credential form 
     (await page
       .locator("input[type='password']:visible")
       .first()
-      .isVisible({ timeout: resolveTimeout(30_000) })
+      .waitFor({ state: "visible", timeout: resolveTimeout(2_000) })
+      .then(() => true)
       .catch(() => false));
   expect(
     onLoginSurface,
@@ -100,7 +101,8 @@ test("ldap-authenticator: XWiki enforces its LDAP-backed native credential form 
     (await page
       .locator("input[type='password']:visible")
       .first()
-      .isVisible({ timeout: resolveTimeout(15_000) })
+      .waitFor({ state: "visible", timeout: resolveTimeout(2_000) })
+      .then(() => true)
       .catch(() => false));
   expect(
     stillUnauthenticated,

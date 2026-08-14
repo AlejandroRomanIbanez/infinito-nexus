@@ -76,7 +76,7 @@ async function loginViaOauth2ProxyAndFriendica(page, username, password) {
 
   // Step 2: Friendica's own login form (post-oauth2-proxy).
   await page.waitForLoadState("domcontentloaded", { timeout: resolveTimeout(30_000) }).catch(() => {});
-  if (await page.locator("input[name='password']").first().isVisible({ timeout: resolveTimeout(30_000) }).catch(() => false)) {
+  if (await page.locator("input[name='password']").first().waitFor({ state: "visible", timeout: resolveTimeout(2_000) }).then(() => true).catch(() => false)) {
     await loginViaFriendicaForm(page, username, password);
   }
 
