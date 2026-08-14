@@ -18,7 +18,9 @@
 Status after deploy-matrix run 29657147883 (commit 407b8a8a1). Every fixable
 failure class from that run is committed (hlth-csp onion-sibling skip,
 onion-aware Playwright request timeouts + lint guard, joomla server-side OIDC
-reachability). The items below are the ones that are NOT fixed yet.
+reachability). The items below are the ones that are NOT fixed yet. Runs
+31756400129 and 31756560361 have since moved several of them; entries corrected
+against those runs say so inline.
 
 - **https on the onion IdP — investigated and REJECTED, do not re-derive.** OIDC
   Discovery / RFC 8414 want an https issuer, and an onion-exclusive Keycloak has
@@ -81,16 +83,26 @@ reachability). The items below are the ones that are NOT fixed yet.
   `container_extra_hosts` lookup yet (fix is the same one-line lookup,
   apply on CI evidence): wordpress (daggerhart plugin) and mediawiki
   (PluggableAuth) are structurally identical PHP in-app plugins (high
-  likelihood); discourse, jenkins, jira, confluence, gitlab, odoo, openwebui,
+  likelihood); discourse, jenkins, jira, confluence, odoo, openwebui,
   pretix, zammad, semaphore, jellyfin, listmonk, xwiki, mastodon consume the
   issuer server-side too (unverified network path). oauth2-proxy-based apps
-  are NOT affected (proven green: prometheus admin SSO).
+  are NOT affected (proven green: prometheus admin SSO). Two names have left
+  this list on evidence: mobilizon got the lookup in 0e39f3fad after its
+  code-to-token call raised OAuth2.Error Connection refused twenty-four times,
+  and gitlab was NEVER a member - run 31756560361 shows it resolving and
+  connecting (peeraddr=172.30.0.10:443); its failure was the openid_connect gem
+  rebuilding the discovery URL over https regardless of the issuer scheme,
+  fixed in 2389b6e38.
 - **baseline exclusions** — `web-app-fider` and `web-app-bookwyrm` (also
-  espocrm, keycloak-job, n8n) were red before the tor branch and stay out of
-  scope for it; bookwyrm fails its oauth2 trusted-header session spec, fider
-  its baseline. Fix separately from the onion work.
+  keycloak-job, n8n) were red before the tor branch and stay out of scope for
+  it; bookwyrm fails its oauth2 trusted-header session spec, fider its
+  baseline. Fix separately from the onion work. espocrm has left this list: its
+  onion variant failed in the shared admin persona (fixed in b97cf8888) and its
+  clearnet variant returns HTTP 500 on GET /api/v1/App/user, cause still open.
 - **test-development environment jobs** — all 5 distro jobs
   (arch, debian, ubuntu, fedora, centos) hit the 4h30m cap under congestion
-  while still progressing (playwright image pull). Environmental, no code fix;
+  while still progressing (playwright image pull). Environmental, no code fix -
+  distinct from the distro sweep's own budget, which did have one: 508669809
+  books a budget SIGKILL as skipped, which ad9222630 had only done for SIGTERM;
   note that onion e2e inherently lengthens the routine (×5 onion timeouts,
   circuit waits), so under congestion these jobs are the first to hit the cap.
