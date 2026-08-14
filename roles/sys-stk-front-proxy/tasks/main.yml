@@ -45,6 +45,11 @@
       }}
   changed_when: false
 
+- name: 📂 Include dependencies
+  include_role:
+    name: "sys-svc-nss"
+  when: not (run_once_sys_svc_nss | default(false) | bool)
+
 - name: 🥾 Bootstrap Frontend Base
   ansible.builtin.include_role:
     name: sys-stk-front-base
