@@ -25,7 +25,7 @@ source "scripts/meta/env/load.sh"
 : "${INFINITO_DISTROS:?INFINITO_DISTROS is required (e.g. 'arch debian ubuntu fedora centos')}"
 : "${INFINITO_CI_DISTRO_BUDGET_SECONDS:?INFINITO_CI_DISTRO_BUDGET_SECONDS is required (declared in default.env)}"
 
-BUDGET_HEADROOM_PERCENT=30
+BUDGET_HEADROOM_PERCENT=15
 
 if (($# == 0)); then
 	echo "[ERROR] a per-distro command is required" >&2
