@@ -22,7 +22,7 @@ const dashboardTargetRoles = (() => {
 
 async function findVisibleTile(page, canonicalDomain) {
   const tile = page.locator(`a[href*="${canonicalDomain}"]:visible`).first();
-  const visible = await tile.isVisible({ timeout: resolveTimeout(5_000) }).catch(() => false);
+  const visible = await tile.isVisible().catch(() => false);
 
   if (!visible) {
     // Tile may be hidden inside a collapsed Bootstrap dropdown / accordion.
@@ -32,7 +32,7 @@ async function findVisibleTile(page, canonicalDomain) {
     const triggerCount = await triggers.count().catch(() => 0);
     for (let i = 0; i < triggerCount; i++) {
       const t = triggers.nth(i);
-      if (!(await t.isVisible({ timeout: resolveTimeout(200) }).catch(() => false))) continue;
+      if (!(await t.isVisible().catch(() => false))) continue;
       await t.click({ timeout: resolveTimeout(1_000) }).catch(() => {});
     }
   }

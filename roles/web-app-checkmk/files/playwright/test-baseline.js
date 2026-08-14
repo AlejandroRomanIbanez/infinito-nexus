@@ -32,7 +32,7 @@ test("administrator: app → admin surface → universal logout", async ({ page 
   await runAdminFlow(page, {
     adminInteraction: async (interactivePage) => {
       const setup = interactivePage.getByRole("link", { name: /^setup$/i }).first();
-      if (await setup.isVisible({ timeout: resolveTimeout(10_000) }).catch(() => false)) {
+      if (await setup.isVisible().catch(() => false)) {
         await setup.click({ timeout: resolveTimeout(30_000) }).catch(() => {});
         await interactivePage.waitForLoadState("domcontentloaded", { timeout: resolveTimeout(30_000) }).catch(() => {});
         await expect(interactivePage.locator("body")).toContainText(/setup|hosts|services|checkmk/i, {

@@ -54,7 +54,7 @@ test("administrator: app → universal logout", async ({ page }) => {
       const link = interactivePage
         .getByRole("link", { name: /^(leads|accounts|contacts|admin)$/i })
         .first();
-      if (await link.isVisible({ timeout: resolveTimeout(10_000) }).catch(() => false)) {
+      if (await link.isVisible().catch(() => false)) {
         await link.click({ timeout: resolveTimeout(30_000) }).catch(() => {});
         await interactivePage.waitForLoadState("domcontentloaded", { timeout: resolveTimeout(30_000) }).catch(() => {});
         await expect(interactivePage.locator("body")).toContainText(

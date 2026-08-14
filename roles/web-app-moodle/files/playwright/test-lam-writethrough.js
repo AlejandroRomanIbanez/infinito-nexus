@@ -49,7 +49,7 @@ exports.register = function (shared) {
         await lamPage.waitForLoadState("networkidle");
 
         const lamPwAfterSso = lamPage.locator("input[name='passwd'], input[name='password'], input#passwd").first();
-        if (lamLoginPassword && await lamPwAfterSso.isVisible({ timeout: resolveTimeout(5_000) }).catch(() => false)) {
+        if (lamLoginPassword && await lamPwAfterSso.isVisible().catch(() => false)) {
           await lamPwAfterSso.fill(lamLoginPassword);
           await lamPage.locator("button[type='submit'], input[type='submit']").first().click({ timeout: resolveTimeout(30_000) });
           await lamPage.waitForLoadState("networkidle");
@@ -65,7 +65,7 @@ exports.register = function (shared) {
 
       await lamPage.goto(`${lamBaseUrl}/lam/templates/lists/list.php?type=user`, { waitUntil: "load" });
       const filter = lamPage.locator("input[type='text'][name='filter_uid'], input[type='text'][name^='filter_']").first();
-      if (await filter.isVisible({ timeout: resolveTimeout(5_000) }).catch(() => false)) {
+      if (await filter.isVisible().catch(() => false)) {
         await filter.fill(shared.env.biberUsername);
         await filter.press("Enter");
         await lamPage.waitForLoadState("networkidle");
