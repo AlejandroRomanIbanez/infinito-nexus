@@ -39,11 +39,11 @@ const { resolveTimeout } = require("../../timeouts");
 const LOGOUT_NAME_RE = /log\s*out|sign\s*out|sign-out|abmelden/i;
 const ACCOUNT_MENU_NAME_RE = /(account|\bprofile\b|user.?menu|^menu$|signed\s*in)/i;
 
-async function clickFirstVisible(loc, { timeout = resolveTimeout(5_000) } = {}) {
+async function clickFirstVisible(loc) {
   const count = await loc.count().catch(() => 0);
   for (let i = 0; i < count; i++) {
     const cand = loc.nth(i);
-    if (await cand.isVisible({ timeout }).catch(() => false)) {
+    if (await cand.isVisible().catch(() => false)) {
       await cand.click({ timeout: resolveTimeout(5_000) }).catch(() => {});
       return true;
     }
@@ -96,7 +96,7 @@ async function waitForAnyLogoutCandidate(page, timeoutMs = resolveTimeout(30_000
       const count = await loc.count().catch(() => 0);
       for (let i = 0; i < count; i++) {
         const cand = loc.nth(i);
-        if (await cand.isVisible({ timeout: resolveTimeout(500) }).catch(() => false)) {
+        if (await cand.isVisible().catch(() => false)) {
           return true;
         }
       }
@@ -115,7 +115,7 @@ async function tryLogoutViaMenus(page) {
     const count = await triggerLoc.count().catch(() => 0);
     for (let i = 0; i < count; i++) {
       const trigger = triggerLoc.nth(i);
-      if (!(await trigger.isVisible({ timeout: resolveTimeout(1_000) }).catch(() => false))) continue;
+      if (!(await trigger.isVisible().catch(() => false))) continue;
       const key = await trigger.evaluate((el) => el.outerHTML.slice(0, 200)).catch(() => "");
       if (key && tried.has(key)) continue;
       tried.add(key);
@@ -141,7 +141,7 @@ async function openAccountSettings(page) {
   const count = await links.count().catch(() => 0);
   for (let i = 0; i < count; i++) {
     const link = links.nth(i);
-    if (!(await link.isVisible({ timeout: resolveTimeout(1_000) }).catch(() => false))) continue;
+    if (!(await link.isVisible().catch(() => false))) continue;
     await link.click({ timeout: resolveTimeout(5_000) }).catch(() => {});
     await page.waitForLoadState("domcontentloaded", { timeout: resolveTimeout(30_000) }).catch(() => {});
     return true;
@@ -156,10 +156,11 @@ async function openAccountSettings(page) {
  * without it the Keycloak SSO session — and every app session — survives.
  */
 async function confirmKeycloakLogoutIfPrompted(page) {
+  if (!/\/protocol\/openid-connect\/logout/i.test(page.url())) return;
   const confirmBtn = page
     .locator("#kc-logout, form[action*='logout-confirm'] input[type='submit'], form[action*='logout-confirm'] button")
     .first();
-  if (await confirmBtn.isVisible({ timeout: resolveTimeout(5_000) }).catch(() => false)) {
+  if (await confirmBtn.waitFor({ state: "visible", timeout: resolveTimeout(2_000) }).then(() => true).catch(() => false)) {
     await confirmBtn.click({ timeout: resolveTimeout(10_000) }).catch(() => {});
     await page.waitForLoadState("domcontentloaded", { timeout: resolveTimeout(30_000) }).catch(() => {});
   }

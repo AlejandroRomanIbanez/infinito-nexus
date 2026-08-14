@@ -90,7 +90,7 @@ async function runAdminFlow(page, opts = {}) {
       await passwordField.fill(adminNativePassword || adminPassword).catch(() => {});
       await passwordField.press("Enter").catch(() => {});
       await page.waitForLoadState("networkidle", { timeout: resolveTimeout(15_000) }).catch(() => {});
-      if (await passwordField.isVisible({ timeout: resolveTimeout(2_000) }).catch(() => false)) {
+      if (await passwordField.isVisible().catch(() => false)) {
         await page
           .getByRole("button", { name: /log\s*in|sign\s*in|login|submit/i })
           .or(page.locator("button[type='submit'], input[type='submit']"))
@@ -116,7 +116,7 @@ async function runAdminFlow(page, opts = {}) {
     const passwordStillVisible = await page
       .locator("input[type='password']:visible")
       .first()
-      .isVisible({ timeout: resolveTimeout(2_000) })
+      .isVisible()
       .catch(() => false);
     nativeLoginCompleted =
       loginAttempted &&
@@ -151,7 +151,7 @@ async function runAdminFlow(page, opts = {}) {
       if (frame === page.mainFrame()) continue;
       const fUrl = frame.url();
       if (!fUrl || fUrl === "about:blank") continue;
-      if (await adminAuthMarker(frame).first().isVisible({ timeout: resolveTimeout(1_000) }).catch(() => false)) {
+      if (await adminAuthMarker(frame).first().isVisible().catch(() => false)) {
         adminReachedAuthenticated = true;
         break;
       }
@@ -174,12 +174,14 @@ async function runAdminFlow(page, opts = {}) {
     }
   }
   if (adminReachedAuthenticated) {
-    const loginStillVisible = await page
+    const loginControl = page
       .getByRole("link", { name: LOGIN_CONTROL_NAME })
       .or(page.getByRole("button", { name: LOGIN_CONTROL_NAME }))
-      .first()
-      .isVisible({ timeout: resolveTimeout(2_000) })
-      .catch(() => false);
+      .first();
+    const loginStillVisible = await loginControl
+      .waitFor({ state: "hidden", timeout: resolveTimeout(12_000) })
+      .then(() => false)
+      .catch(() => loginControl.isVisible().catch(() => false));
     if (loginStillVisible) {
       expect(
         false,

@@ -89,7 +89,7 @@ async function runGuestFlow(page = {}) {
   const signedInMarker = page
     .getByRole("button", { name: /^(log\s*out|sign\s*out|abmelden)$/i })
     .or(page.getByRole("link", { name: /^(log\s*out|sign\s*out|abmelden)$/i }));
-  const isSignedIn = await signedInMarker.first().isVisible({ timeout: resolveTimeout(1_000) }).catch(() => false);
+  const isSignedIn = await signedInMarker.first().isVisible().catch(() => false);
   expect(
     isSignedIn,
     `guest must NOT end on a signed-in surface (URL ${finalUrl}, reachedAuthChain=${reachedAuthChain})`,

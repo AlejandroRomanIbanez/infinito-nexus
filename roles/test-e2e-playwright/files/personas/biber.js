@@ -116,7 +116,7 @@ async function runBiberFlow(page, opts = {}) {
       if (frame === page.mainFrame()) continue;
       const fUrl = frame.url();
       if (!fUrl || fUrl === "about:blank") continue;
-      if (await authMarker(frame).first().isVisible({ timeout: resolveTimeout(1_000) }).catch(() => false)) {
+      if (await authMarker(frame).first().isVisible().catch(() => false)) {
         reachedAuthenticated = true;
         break;
       }
@@ -144,7 +144,7 @@ async function runBiberFlow(page, opts = {}) {
       .or(page.getByRole("button", { name: LOGIN_CONTROL_NAME }))
       .first();
     const loginStillVisible = await loginControl
-      .waitFor({ state: "hidden", timeout: resolveTimeout(60_000) })
+      .waitFor({ state: "hidden", timeout: resolveTimeout(12_000) })
       .then(() => false)
       .catch(() => loginControl.isVisible().catch(() => false));
     if (loginStillVisible) {
