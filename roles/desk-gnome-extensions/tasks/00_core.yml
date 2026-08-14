@@ -8,7 +8,7 @@
     name: sys-pip-install
   vars:
     # TODO: switch to the PyPI name 'cli-gnome-extension-manager' once it is published
-    package_name: "git+{{ GNOME_EXTENSION_MANAGER_REPO }}@{{ GNOME_EXTENSION_MANAGER_REF }}"
+    package_name: "git+{{ DESK_GNOME_EXTENSIONS_MANAGER_REPO }}@{{ DESK_GNOME_EXTENSIONS_MANAGER_REF }}"
     global_install: true
 
 - name: ▶️ Execute CLI GNOME Extension manager script
