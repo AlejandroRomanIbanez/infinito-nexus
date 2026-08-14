@@ -141,7 +141,7 @@ for i in "${!distro_arr[@]}"; do
 
 	echo ">>> Duration: distro=${distro} took ${dur}s (max_seen=${max_seen}s)"
 
-	if [[ $rc -eq 124 ]] && ((dur >= remaining - 5)) && ((passed > 0)); then
+	if [[ $rc -eq 124 || $rc -eq 137 ]] && ((dur >= remaining - 5)) && ((passed > 0)); then
 		statuses[i]="skipped"
 		notes[i]="budget exhausted mid-run after ${dur}s"
 		skipped=$((skipped + 1))

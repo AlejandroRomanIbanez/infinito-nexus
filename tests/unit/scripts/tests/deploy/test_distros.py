@@ -118,6 +118,18 @@ class TestDistrosLoop(unittest.TestCase):
         self.assertEqual(len(record.split()), 1)
         self.assertRegex(proc.stdout, r"Skipping distro|budget exhausted")
 
+    def test_a_distro_that_ignores_sigterm_is_skipped_not_failed(self) -> None:
+        proc, record = self._run(
+            DISTROS,
+            'echo "${INFINITO_DISTRO}" >> "${RECORD}"\n'
+            'test "$(wc -l < "${RECORD}")" -gt 1 && { trap "" TERM; sleep 300; }\n'
+            "exit 0",
+            INFINITO_CI_DISTRO_BUDGET_SECONDS="8",
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        self.assertRegex(proc.stdout, r"Budget exhausted while distro=")
+        self.assertIn("🟦 skipped", self.summary)
+
     def test_the_job_summary_tables_every_distro_in_execution_order(self) -> None:
         proc, _record = self._run(
             DISTROS,
