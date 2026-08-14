@@ -14,7 +14,7 @@ tor: # nocheck: category-modes
       enabled: true
   # nocheck: default-placement-manager  node onion ingress: host-published SOCKS/DNS/Trans ports and the HiddenService loopback forward must live on the stack host
   placement: manager
-  bond: 1
+  bond: 0.5
   enabled: true
   shared: true
   exclusive: true

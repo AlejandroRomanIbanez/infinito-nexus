@@ -27,7 +27,7 @@ qdrant:
       qdrant: 6333
   lifecycle: beta
 tor:
-  bond: 1
+  bond: 0.5
   enabled: "{{ 'svc-net-tor' in group_names }}"
   shared: true # nocheck: dynamic-flag
 

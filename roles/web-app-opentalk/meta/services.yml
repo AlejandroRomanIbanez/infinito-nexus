@@ -156,7 +156,7 @@ prometheus:
 
 # nocheck: playwright-service-flag
 tor:
-  bond: 1
+  bond: 0.5
   enabled: false # nocheck: dynamic-flag
   shared: false # nocheck: dynamic-flag
 # nocheck: dynamic-flag
