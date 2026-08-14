@@ -22,7 +22,11 @@ APP_DIR="/var/www/html"
 SESSION_DIR="${APP_DIR}/data/.sessions"
 BOOT_LOCK="${APP_DIR}/data/.infinito-espocrm-boot.lock.d"
 READY_MARKER="${APP_DIR}/data/.infinito-espocrm-boot.ready"
-ORIG_ENTRYPOINT="/usr/local/bin/docker-entrypoint.sh"
+: "${ESPOCRM_ENTRYPOINT_SCRIPT_ORIGINAL:?ESPOCRM_ENTRYPOINT_SCRIPT_ORIGINAL is required}"
+ORIG_ENTRYPOINT="$ESPOCRM_ENTRYPOINT_SCRIPT_ORIGINAL"
+: "${ESPOCRM_CONFIG_LOGGER__PATH:?ESPOCRM_CONFIG_LOGGER__PATH is required}"
+LOG_DIR="${APP_DIR}/$(dirname "$ESPOCRM_CONFIG_LOGGER__PATH")"
+LOG_STEM="$(basename "$ESPOCRM_CONFIG_LOGGER__PATH" .log)"
 
 if [ "${1:-}" = "--wait-ready" ]; then
   shift
@@ -94,8 +98,8 @@ if [ "$_have_lock" = "1" ]; then
     if [ "$_init_rc" -ne 0 ]; then
       log "ERROR: image entrypoint init failed (rc=$_init_rc); last trace lines:"
       tail -n 40 "$_init_trace" >&2 || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
-      log "----- data/logs (newest) -----"
-      _newest_log=$(find "${APP_DIR}/data/logs/" -maxdepth 1 -name '*.log' -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -n 1 | cut -d' ' -f2-)
+      log "----- ${LOG_DIR} (newest) -----"
+      _newest_log=$(find "${LOG_DIR}/" -maxdepth 1 -name '*.log' -printf '%T@ %p\n' 2>/dev/null | sort -rn | head -n 1 | cut -d' ' -f2-)
       if [ -n "$_newest_log" ]; then
         tail -n 60 "$_newest_log" >&2 || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
       else
@@ -146,6 +150,19 @@ fi
 
 mkdir -p "$SESSION_DIR"
 chown www-data:www-data "$SESSION_DIR" 2>/dev/null || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
+
+stream_espo_log() {
+  while :; do
+    _log_today="${LOG_DIR}/${LOG_STEM}-$(date +%F).log"
+    tail -F -n +1 "$_log_today" 2>/dev/null &
+    _tail_pid=$!
+    while [ "$_log_today" = "${LOG_DIR}/${LOG_STEM}-$(date +%F).log" ]; do
+      sleep 60
+    done
+    kill "$_tail_pid" 2>/dev/null
+  done
+}
+stream_espo_log &
 
 if [ "$#" -gt 0 ]; then
   log "Exec CMD: $*"

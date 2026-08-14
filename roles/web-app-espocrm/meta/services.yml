@@ -9,6 +9,7 @@ ldap:
   bond: 1
   enabled: "{{ 'svc-db-openldap' in group_names }}"
   shared: "{{ 'svc-db-openldap' in group_names }}"
+  autocreate: true
 logout:
   bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
