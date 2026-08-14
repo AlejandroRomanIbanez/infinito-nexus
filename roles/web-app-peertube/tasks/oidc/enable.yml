@@ -56,15 +56,6 @@
       changed_when: true
       delegate_to: "{{ PEERTUBE_HOST_NODE }}"
 
-- name: "🩹 Let the OIDC plugin accept the plaintext onion issuer"
-  ansible.builtin.shell: |
-    # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
-    container exec {{ PEERTUBE_LOCAL_CID | quote }} sh -c 'f=/data/plugins/node_modules/{{ PEERTUBE_OIDC_PLUGIN }}/dist/main.js; sed -i "s#const discoverInsecureConfig = process.env.NODE_ENV#const discoverInsecureConfig = process.env.PEERTUBE_OIDC_ALLOW_INSECURE_ISSUER || process.env.NODE_ENV#" "$f"; grep -q PEERTUBE_OIDC_ALLOW_INSECURE_ISSUER "$f"'
-  when: PEERTUBE_OIDC_INSECURE_ISSUER | bool
-  changed_when: true
-  delegate_to: "{{ PEERTUBE_HOST_NODE }}"
-  notify: container recreate
-
 - name: "🔄 Update the settings column of the auth-openid-connect plugin"
   database_query:
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
