@@ -2,7 +2,7 @@
 # Matrix-deploy variant overrides for web-app-nextcloud.
 # See docs/contributing/artefact/files/role/variants.md for the file format.
 #
-# nocheck: comments-valid: eight variants of ~90 near-identical service lines are
+# nocheck: comments-valid: nine variants of ~90 near-identical service lines are
 # unreadable without a heading naming what each one adds.
 #
 # nocheck: variant-limit: the loosely-coupled (bond<1) bridge partners are too heavy
@@ -678,7 +678,7 @@
     tor:
       enabled: true
   addons: *addons_static_off
-# Variant 7: discourse + peertube
+# Variant 7: discourse + xwiki
 - services:
     container_backup:
       enabled: false
@@ -723,8 +723,8 @@
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
     xwiki:
-      enabled: false
-      shared: false # nocheck: variants-static-override backup shared stays literally true
+      enabled: true
+      shared: true
     seaweedfs:
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
@@ -762,19 +762,19 @@
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
     peertube:
-      enabled: true
-      shared: true
+      enabled: false
+      shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
       enabled: true
   addons: *addons_static_off
-# Variant 8: xwiki
+# Variant 8: peertube - clearnet, because the OIDC plugin rejects a plaintext onion issuer
 - services:
     container_backup:
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
     sso:
-      enabled: true
-      shared: true
+      enabled: false
+      shared: false # nocheck: variants-static-override backup shared stays literally true
     coturn:
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
@@ -782,8 +782,8 @@
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
     ldap:
-      enabled: true
-      shared: true
+      enabled: false
+      shared: false # nocheck: variants-static-override backup shared stays literally true
     dashboard:
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
@@ -812,8 +812,8 @@
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
     xwiki:
-      enabled: true
-      shared: true
+      enabled: false
+      shared: false # nocheck: variants-static-override backup shared stays literally true
     seaweedfs:
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
@@ -851,8 +851,9 @@
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
     peertube:
-      enabled: false
-      shared: false # nocheck: variants-static-override backup shared stays literally true
-    tor:
       enabled: true
+      shared: true
+    tor:
+      enabled: false
+      shared: false # nocheck: variants-static-override
   addons: *addons_static_off
