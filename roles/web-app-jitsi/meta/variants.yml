@@ -34,7 +34,6 @@
       shared: true
     tor:
       enabled: false # nocheck: variants-static-override
-      shared: false # nocheck: variants-static-override
 
 - services:
     css:
@@ -63,7 +62,6 @@
       shared: false
     tor:
       enabled: false # nocheck: variants-static-override
-      shared: false # nocheck: variants-static-override
 
 - services:
     css:
@@ -92,4 +90,3 @@
       shared: false
     tor:
       enabled: false # nocheck: variants-static-override
-      shared: false # nocheck: variants-static-override

@@ -34,9 +34,6 @@
       enabled: true
       shared: true
 
-    # Variant 2 (false-pinning) — siblings opted out so the
-    # variant-coverage matrix exercises the out-of-group_names branch
-    # of every dynamic services flag.
     css:
       enabled: true
       shared: true
@@ -55,7 +52,6 @@
       shared: false
     tor:
       enabled: false
-      shared: false # nocheck: variants-static-override
 - services:
     mastodon:
       enabled: true
@@ -64,8 +60,8 @@
       enabled: true
       shared: true
     fediwall:
-      # Variants replace lists wholesale (not deep-merged), so every
-      # wall.config field is restated here — no template fallbacks.
+      # Exception: variants replace lists wholesale rather than deep-merging, so
+      # every wall.config field is restated here - a template fallback never applies.
       walls:
         - slug: default
           config:
@@ -118,5 +114,4 @@
       enabled: false
       shared: false
     tor:
-      enabled: false
-      shared: false # nocheck: variants-static-override
+      enabled: true

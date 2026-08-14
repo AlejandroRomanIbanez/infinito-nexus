@@ -64,7 +64,6 @@
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
       enabled: false
-      shared: false # nocheck: variants-static-override
 
 - services:
     container_backup:
@@ -95,5 +94,4 @@
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
-      enabled: false
-      shared: false # nocheck: variants-static-override
+      enabled: true

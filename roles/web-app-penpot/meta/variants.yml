@@ -40,7 +40,6 @@
       shared: true
     tor:
       enabled: true
-# Variant pinning every dynamic services.yml flag to false.
 - services:
     container_backup:
       enabled: false
@@ -78,9 +77,6 @@
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
       enabled: false
-      shared: false # nocheck: variants-static-override
-# LDAP-only variant: LDAP bind login on, OIDC/SSO off, so the matrix
-# exercises the LDAP authentication branch in isolation.
 - services:
     container_backup:
       enabled: false
@@ -113,5 +109,4 @@
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
-      enabled: false
-      shared: false # nocheck: variants-static-override
+      enabled: true

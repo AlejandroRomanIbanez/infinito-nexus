@@ -8,6 +8,9 @@
 # nocheck: variant-limit: the loosely-coupled (bond<1) bridge partners are too heavy
 # to co-host, so each budget-bin of them needs its own variant.
 #
+# nocheck: sso-variant-tor — variant 8 pairs PeerTube, which is clearnet-only since
+# 8ffb1f567, so that round cannot pin the onion on.
+#
 # enabled and shared stay coupled (both true or both false). v0 enables every
 # tightly-coupled (bond>=1, same-host) service - the host baseline test_order pins.
 # Each later variant adds one budget-bin of loosely-coupled (bond<1, separate-host)
@@ -187,7 +190,6 @@
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
       enabled: false
-      shared: false # nocheck: variants-static-override
   addons: &addons_static_off
     appointments:
       enabled: false
@@ -855,5 +857,4 @@
       shared: true
     tor:
       enabled: false
-      shared: false # nocheck: variants-static-override
   addons: *addons_static_off

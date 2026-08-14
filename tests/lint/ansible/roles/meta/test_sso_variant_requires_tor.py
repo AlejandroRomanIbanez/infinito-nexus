@@ -1,4 +1,19 @@
-"""Lint guard: a variant that turns SSO on must also turn the onion on.
+"""Lint guard: the variant-level tor contract.
+
+Two rules, both opting out through ``# nocheck: sso-variant-tor``.
+
+The second: every variant of a role that declares a ``tor:`` block MUST pin
+``services.tor.enabled: true``. The onion is the shape the platform breaks in -
+plaintext origins drop ``Secure`` cookies, an https identity provider cannot
+embed in an http page, ``crypto.subtle`` is undefined outside a secure context -
+so a variant that never runs it is not testing the deployment users get.
+
+Variant 1 is exempt: it is the minimal, partner-free, clearnet round every role
+declares, and the one place the stack is exercised without the onion at all.
+Roles without a tor block are out of scope too - they have no onion to pin, and
+``test_tor_contract`` already decides who needs the block.
+
+The first: a variant that turns SSO on must also turn the onion on.
 
 Single sign-on over a plaintext ``http://<onion>`` origin is where the platform
 breaks in ways clearnet never shows: a framework's ``Secure`` session-cookie
@@ -35,6 +50,7 @@ if TYPE_CHECKING:
 
 ROLES_DIR = PROJECT_ROOT / "roles"
 _RULE = "sso-variant-tor"
+_CLEARNET_VARIANT = 1
 
 
 def _load_yaml(path: Path) -> Any:
@@ -56,9 +72,7 @@ def _suppressed(paths: tuple[Path, ...]) -> bool:
     for path in paths:
         if not path.is_file():
             continue
-        if any(
-            line_has_rule(line, _RULE) for line in read_text(str(path)).splitlines()
-        ):
+        if any(line_has_rule(line, _RULE) for line in read_text(str(path)).splitlines()):
             return True
     return False
 
@@ -67,6 +81,21 @@ def _flag(variant: Any, service: str) -> Any:
     services = variant.get("services") if isinstance(variant, dict) else None
     entry = services.get(service) if isinstance(services, dict) else None
     return entry.get("enabled") if isinstance(entry, dict) else None
+
+
+def _declares_tor(role_dir: Path) -> bool:
+    """True iff the role has an onion a variant could pin on.
+
+    Args:
+        role_dir: the role's directory.
+
+    A ``meta/services.yml`` that pins ``tor.enabled`` to a literal false has
+    already declared the role has no onion at all - the first of the three
+    opt-out cases - so it needs no marker repeating that in a comment.
+    """
+    services = _load_yaml(role_dir / ROLE_FILE_META_SERVICES)
+    tor = services.get("tor") if isinstance(services, dict) else None
+    return isinstance(tor, dict) and tor.get("enabled") is not False
 
 
 class TestSsoVariantRequiresTor(unittest.TestCase):
@@ -101,6 +130,41 @@ class TestSsoVariantRequiresTor(unittest.TestCase):
                 + "    enabled: true\n"
                 + f"\nOr opt the role out with `# nocheck: {_RULE} — <reason>` in "
                 + "meta/variants.yml when it cannot serve SSO over an onion."
+            )
+
+    def test_every_variant_pins_the_onion_on(self) -> None:
+        offenders: list[str] = []
+        for role_dir in sorted(p for p in ROLES_DIR.iterdir() if p.is_dir()):
+            variants_path = role_dir / ROLE_FILE_META_VARIANTS
+            variants = _load_yaml(variants_path)
+            if not isinstance(variants, list) or not variants:
+                continue
+            if not _declares_tor(role_dir):
+                continue
+            if _suppressed((variants_path, role_dir / ROLE_FILE_META_SERVICES)):
+                continue
+
+            for index, variant in enumerate(variants):
+                if index == _CLEARNET_VARIANT:
+                    continue
+                tor = _flag(variant, "tor")
+                if tor is True:
+                    continue
+                offenders.append(
+                    f"{role_dir.name}: variant {index} has "
+                    f"services.tor.enabled {tor!r}"
+                )
+
+        if offenders:
+            self.fail(
+                f"Variants not pinning the onion on ({len(offenders)}):\n"
+                + "\n".join(f"  - {o}" for o in offenders)
+                + "\n\nThe onion is the shape the platform breaks in, so every "
+                "variant of a role that declares a tor block exercises it "
+                "unless the role states why it cannot:\n"
+                + "  tor:\n"
+                + "    enabled: true\n"
+                + f"\nOr opt the role out with `# nocheck: {_RULE} — <reason>`."
             )
 
 

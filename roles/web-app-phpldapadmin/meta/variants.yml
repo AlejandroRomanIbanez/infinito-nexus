@@ -25,7 +25,6 @@
       enabled: true
       shared: true
 
-    # variant 1: Keycloak/federation surface off; LDAP-backed only.
     css:
       enabled: true
       shared: true
@@ -48,13 +47,11 @@
       enabled: false
       shared: false
 
-    # variant 2: LDAP-only path explicitly disables oauth2.
     css:
       enabled: false
       shared: false
     tor:
       enabled: false
-      shared: false # nocheck: variants-static-override
 - services:
     sso:
       enabled: false
@@ -75,5 +72,4 @@
       enabled: false
       shared: false
     tor:
-      enabled: false
-      shared: false # nocheck: variants-static-override
+      enabled: true

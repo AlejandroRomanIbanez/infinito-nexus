@@ -11,4 +11,3 @@
       shared: false # nocheck: variants-static-override
     tor:
       enabled: false
-      shared: false # nocheck: variants-static-override
