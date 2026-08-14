@@ -155,9 +155,7 @@ class TestAddonsVariantPinning(unittest.TestCase):
             variants = _variants(role_dir)
             if len(variants) < 3:
                 continue
-            required = sorted(
-                f.stem for f in addon_files if _base_enabled(f) is True
-            )
+            required = sorted(f.stem for f in addon_files if _base_enabled(f) is True)
             for index in range(2, len(variants)):
                 pinned = _pinned_addons(variants[index])
                 for addon_id in required:
@@ -193,15 +191,13 @@ class TestAddonsVariantPinning(unittest.TestCase):
             variants = _variants(role_dir)
             if len(variants) < 2:
                 continue
-            dynamic = {
-                f.stem for f in addon_files if isinstance(_base_enabled(f), str)
-            }
+            dynamic = {f.stem for f in addon_files if isinstance(_base_enabled(f), str)}
             for index, variant in enumerate(variants):
-                for addon_id in sorted(dynamic & set(_pinned_addons(variant))):
-                    findings.append(
-                        f"- {role}/{ROLE_FILE_META_VARIANTS}: variant {index} pins "
-                        f"dynamic addon {addon_id!r}"
-                    )
+                findings.extend(
+                    f"- {role}/{ROLE_FILE_META_VARIANTS}: variant {index} pins "
+                    f"dynamic addon {addon_id!r}"
+                    for addon_id in sorted(dynamic & set(_pinned_addons(variant)))
+                )
 
         if not findings:
             return

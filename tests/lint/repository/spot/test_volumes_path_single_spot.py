@@ -93,7 +93,9 @@ def _hits(lines: list[str], targets: dict[str, str]) -> list[tuple[int, str, str
 class TestVolumesPathSingleSpot(unittest.TestCase):
     def test_declared_paths_are_derived_not_repeated(self) -> None:
         findings: list[str] = []
-        for volumes_path in sorted(PROJECT_ROOT.glob(f"roles/*/{ROLE_FILE_META_VOLUMES}")):
+        for volumes_path in sorted(
+            PROJECT_ROOT.glob(f"roles/*/{ROLE_FILE_META_VOLUMES}")
+        ):
             role_dir = volumes_path.parent.parent
             targets = _unambiguous_targets(volumes_path)
             if not targets:
@@ -111,7 +113,9 @@ class TestVolumesPathSingleSpot(unittest.TestCase):
                     continue
                 for line_no, target, key in _hits(lines, targets):
                     rel = path.relative_to(PROJECT_ROOT).as_posix()
-                    findings.append(f"- {rel}:{line_no}: {target}  (declared as {key!r})")
+                    findings.append(
+                        f"- {rel}:{line_no}: {target}  (declared as {key!r})"
+                    )
 
         if not findings:
             return

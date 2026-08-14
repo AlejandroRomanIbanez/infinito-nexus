@@ -74,7 +74,9 @@ def _duplicate_targets(lines: list[str]) -> dict[str, list[int]]:
 class TestVolumesTargetSingleSpot(unittest.TestCase):
     def test_no_mount_target_is_written_twice(self) -> None:
         findings: list[str] = []
-        for path_str in iter_non_ignored_files(exclude_tests=True, extensions=(".yml",)):
+        for path_str in iter_non_ignored_files(
+            exclude_tests=True, extensions=(".yml",)
+        ):
             rel = Path(path_str).relative_to(PROJECT_ROOT).as_posix()
             if not _is_volumes_meta(rel):
                 continue

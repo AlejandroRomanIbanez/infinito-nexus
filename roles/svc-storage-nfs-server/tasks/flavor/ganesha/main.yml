@@ -104,4 +104,3 @@
     cmd: "{{ SVC_STORAGE_NFS_SERVER_GANESHA_SERVE }} start"
   register: svc_storage_nfs_server_ganesha_start
   changed_when: "'CHANGED' in svc_storage_nfs_server_ganesha_start.stdout"
-
