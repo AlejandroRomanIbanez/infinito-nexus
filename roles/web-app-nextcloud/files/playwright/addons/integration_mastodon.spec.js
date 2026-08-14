@@ -109,6 +109,11 @@ test("integration integration_mastodon: connects Nextcloud to the partner Mastod
       "the 'Connect to Mastodon' control must render once oauth_instance_url is provisioned — its absence means the per-user OAuth bridge never wired up"
     ).toBeVisible({ timeout: resolveTimeout(60_000) });
 
+    const authorizeRequests = [];
+    context.on("request", (request) => {
+      if (/\/oauth\/authorize\?/i.test(request.url())) authorizeRequests.push(request.url());
+    });
+
     const popupPromise = page.waitForEvent("popup", { timeout: resolveTimeout(15_000) }).catch(() => null);
     await Promise.all([
       page.waitForEvent("framenavigated", { timeout: resolveTimeout(60_000) }).catch(() => {}),
@@ -116,7 +121,7 @@ test("integration integration_mastodon: connects Nextcloud to the partner Mastod
     ]);
 
     const popup = await popupPromise;
-    const currentUrl = () => (popup ? popup.url() : page.url());
+    const currentUrl = () => authorizeRequests[0] ?? (popup ? popup.url() : page.url());
 
     await expect
       .poll(currentUrl, { timeout: resolveTimeout(60_000) })
