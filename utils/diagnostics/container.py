@@ -33,6 +33,8 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _EXEC_TIMEOUT = 120
+
+_JOURNAL_TIMEOUT = 600
 _NESTED_TIMEOUT = 600
 _TAR_TIMEOUT = 300
 _SELF_IN_CONTAINER = "/tmp/rescue-self.py"  # noqa: S108 - fixed staging path inside the inspected container
@@ -73,6 +75,10 @@ def capture(
     write(out / name, body)
 
 
+def source_name(path: str) -> str:
+    return re.sub(r"[^a-z0-9]+", "-", path.strip("/")) + ".txt"
+
+
 def sanitize(name: str) -> str:
     return re.sub(r"[^A-Za-z0-9._-]", "_", name)
 
@@ -99,39 +105,41 @@ def collect_host(out: Path, app_id: str, context: str, stamp: str) -> None:
         ("df.txt", ["df", "-h"]),
         ("free.txt", ["free", "-m"]),
         ("uptime.txt", ["uptime"]),
-        ("journal.txt", ["journalctl", "-b", "--no-pager"]),
-        ("journal-warnings.txt", ["journalctl", "-b", "-p", "warning", "--no-pager"]),
-        ("journal-errors.txt", ["journalctl", "-b", "-p", "err", "--no-pager"]),
         ("systemctl.txt", ["systemctl", "list-units", "--all", "--no-pager"]),
-        ("resolv-conf.txt", ["cat", "/etc/resolv.conf"]),
-        ("daemon-json.txt", ["cat", "/etc/docker/daemon.json"]),
         ("ip-addr.txt", ["ip", "-4", "addr"]),
+        ("nat-rules.txt", ["iptables-save", "-t", "nat"]),
         ("sockets-udp.txt", ["ss", "-lunp"]),
         ("sockets-tcp.txt", ["ss", "-lntp"]),
-        (
-            "sockets-proc.txt",
-            [
-                "cat",
-                "/proc/net/udp",
-                "/proc/net/tcp",
-                "/proc/net/udp6",
-                "/proc/net/tcp6",
-            ],
-        ),
-        ("nat-rules.txt", ["iptables-save", "-t", "nat"]),
         (
             "resolve-probe.txt",
             ["getent", "hosts", "deb.debian.org", "ghcr.io", "repo.packagist.org"],
         ),
-        ("modules.txt", ["cat", "/proc/modules"]),
-        ("devices.txt", ["cat", "/proc/devices", "/proc/misc"]),
         ("zfs-dev.txt", ["ls", "-l", "/dev/zfs"]),
         ("zfs-version.txt", ["zfs", "version"]),
-        ("net-snmp.txt", ["cat", "/proc/net/snmp", "/proc/net/netstat"]),
-        ("conntrack-stat.txt", ["cat", "/proc/net/stat/nf_conntrack"]),
     ):
         capture(out, name, cmd)
+    for path in (
+        "/etc/resolv.conf",
+        "/etc/docker/daemon.json",
+        "/proc/modules",
+        "/proc/devices",
+        "/proc/misc",
+        "/proc/net/udp",
+        "/proc/net/tcp",
+        "/proc/net/udp6",
+        "/proc/net/tcp6",
+        "/proc/net/snmp",
+        "/proc/net/netstat",
+        "/proc/net/stat/nf_conntrack",
+    ):
+        capture(out, source_name(path), ["cat", path])
     capture(out, "dmesg.txt", ["dmesg", "-T"])
+    for name, cmd in (
+        ("journal.txt", ["journalctl", "-b", "--no-pager"]),
+        ("journal-warnings.txt", ["journalctl", "-b", "-p", "warning", "--no-pager"]),
+        ("journal-errors.txt", ["journalctl", "-b", "-p", "err", "--no-pager"]),
+    ):
+        capture(out, name, cmd, timeout=_JOURNAL_TIMEOUT)
     collect_service_state(out)
 
 
@@ -198,14 +206,16 @@ def collect_runtime(out: Path, rt: str) -> tuple[list[str], list[str]]:
     capture(out, "stats.txt", [rt, "stats", "--no-stream", "--no-trunc"])
     capture(out, "containers.txt", [rt, "ps", "-a"])
     capture(
-        out / "containers",
-        "_daemon-journal.txt",
+        out,
+        "journal-daemon.txt",
         ["journalctl", "-b", "-u", "docker", "-u", "containerd", "--no-pager"],
+        timeout=_JOURNAL_TIMEOUT,
     )
     capture(
-        out / "containers",
-        "_kill-markers.txt",
+        out,
+        "journal-kill-markers.txt",
         ["journalctl", "-b", "-t", "infinito-kill", "--no-pager"],
+        timeout=_JOURNAL_TIMEOUT,
     )
     capture(
         out / "containers",
@@ -227,6 +237,7 @@ def collect_runtime(out: Path, rt: str) -> tuple[list[str], list[str]]:
             out / "containers",
             f"{safe}.journal.txt",
             [rt, "exec", name, "journalctl", "-b", "--no-pager"],
+            timeout=_JOURNAL_TIMEOUT,
         )
         if "postgres" in name:
             capture(

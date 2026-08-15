@@ -43,6 +43,15 @@ class HelperTests(unittest.TestCase):
         with mock.patch.object(mod, "run", return_value=_cp([], stdout=b"a\n\nb\n")):
             self.assertEqual(mod.list_lines(["c"]), ["a", "b"])
 
+    def test_source_name_keeps_the_path_readable(self):
+        mod = _load()
+        self.assertEqual(mod.source_name("/proc/net/udp6"), "proc-net-udp6.txt")
+        self.assertEqual(mod.source_name("/etc/resolv.conf"), "etc-resolv-conf.txt")
+        self.assertEqual(
+            mod.source_name("/proc/net/stat/nf_conntrack"),
+            "proc-net-stat-nf-conntrack.txt",
+        )
+
     def test_run_never_raises_on_missing_binary(self):
         mod = _load()
         result = mod.run(["/does/not/exist-xyz"])
@@ -54,7 +63,10 @@ class HelperTests(unittest.TestCase):
             out = Path(td)
             with mock.patch.object(mod, "run", return_value=_cp([], rc=2)):
                 mod.capture(out, "probe.txt", ["getent", "hosts", "example.org"])
-            self.assertEqual((out / "probe.txt").read_text(), "[no output, exit 2]\n")
+            probe = (
+                out / "probe.txt"
+            ).read_text()  # nocheck: cache-read - tempdir fixture
+            self.assertEqual(probe, "[no output, exit 2]\n")
 
     def test_a_full_disk_is_announced_on_stderr(self):
         mod = _load()
@@ -88,7 +100,7 @@ class CollectTests(unittest.TestCase):
             self.assertIn("context: ctx", meta)
             self.assertIn("host: myhost", meta)
 
-    def test_collect_host_reads_the_socket_table_without_iproute2(self):
+    def test_every_capture_is_one_file_beside_the_others(self):
         mod = _load()
         with tempfile.TemporaryDirectory() as td:
             out = Path(td)
@@ -96,24 +108,29 @@ class CollectTests(unittest.TestCase):
                 mod, "run", return_value=_cp([], stdout=b"")
             ) as runner:
                 mod.collect_host(out, "app", "ctx", "STAMP")
-            issued = [call.args[0] for call in runner.call_args_list]
-            self.assertIn(
-                [
-                    "cat",
-                    "/proc/net/udp",
-                    "/proc/net/tcp",
-                    "/proc/net/udp6",
-                    "/proc/net/tcp6",
-                ],
-                issued,
-            )
-            self.assertTrue((out / "sockets-proc.txt").is_file())
-            journals = [cmd for cmd in issued if cmd and cmd[0] == "journalctl"]
+            reads = [
+                call.args[0]
+                for call in runner.call_args_list
+                if call.args[0][:1] == ["cat"]
+            ]
+            self.assertTrue(reads)
+            for cmd in reads:
+                self.assertEqual(
+                    len(cmd), 2, f"a capture must read one source, not {cmd[1:]}"
+                )
+            self.assertTrue((out / "proc-net-udp.txt").is_file())
+            self.assertTrue((out / "journal.txt").is_file())
+            journals = [
+                call
+                for call in runner.call_args_list
+                if call.args[0][:1] == ["journalctl"]
+            ]
             self.assertTrue(journals)
-            for cmd in journals:
-                self.assertIn("-b", cmd)
-                self.assertNotIn("--since", cmd)
-                self.assertNotIn("-n", cmd)
+            for call in journals:
+                self.assertIn("-b", call.args[0])
+                self.assertNotIn("--since", call.args[0])
+                self.assertNotIn("-n", call.args[0])
+                self.assertEqual(call.kwargs.get("timeout"), mod._JOURNAL_TIMEOUT)
 
     def test_service_state_asks_for_the_main_pid_of_every_service(self):
         mod = _load()
@@ -246,9 +263,8 @@ class CollectTests(unittest.TestCase):
                 self.assertIn("-b", cmd)
                 self.assertNotIn("--since", cmd)
                 self.assertNotIn("-n", cmd)
-            base = out / "containers"
-            self.assertTrue((base / "_kill-markers.txt").is_file())
-            self.assertTrue((base / "_daemon-journal.txt").is_file())
+            self.assertTrue((out / "journal-kill-markers.txt").is_file())
+            self.assertTrue((out / "journal-daemon.txt").is_file())
 
     def test_collect_runtime_captures_pg_stat_activity_for_postgres(self):
         mod = _load()
