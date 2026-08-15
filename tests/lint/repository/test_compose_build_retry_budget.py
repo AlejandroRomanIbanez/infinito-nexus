@@ -28,8 +28,8 @@ COMPOSE = HANDLERS / "compose.yml"
 DEPLOY_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "call-test-deploy.yml"
 
 BUILDS = {
-    "swarm: pre-deploy build of local images": (SWARM, "_swarm_pre_deploy_build"),
-    "Build compose": (COMPOSE, "compose_build"),
+    "_swarm_pre_deploy_build": SWARM,
+    "compose_build": COMPOSE,
 }
 TIMEOUT_LOOKUP = re.compile(r"lookup\('timeout',\s*(\d+)\s*\)")
 
@@ -76,19 +76,21 @@ def _longest_step_seconds(path):
     return 60 * max(timeouts)
 
 
-def _by_name(path, name):
-    return next((t for t in _tasks(path) if t.get("name") == name), None)
+def _by_register(path, var):
+    task = next((t for t in _tasks(path) if t.get("register") == var), None)
+    assert task is not None, f"no task in {path} registers {var}"
+    return task
 
 
 class TestComposeBuildRetryBudget(unittest.TestCase):
     def test_the_ladder_body_does_not_discard_the_cache(self) -> None:
-        for name, (path, _) in BUILDS.items():
-            body = _by_name(path, name)["ansible.builtin.shell"]
+        for var, path in BUILDS.items():
+            body = _by_register(path, var)["ansible.builtin.shell"]
             self.assertNotIn("--no-cache", body)
 
     def test_a_cache_discarding_fallback_guards_the_ignore_errors(self) -> None:
-        for name, (path, var) in BUILDS.items():
-            self.assertTrue(_by_name(path, name).get("ignore_errors"))
+        for var, path in BUILDS.items():
+            self.assertTrue(_by_register(path, var).get("ignore_errors"))
             self.assertEqual(len(_fallbacks(path, var)), 1, f"{var} has no fallback")
 
     def test_the_worst_case_ladder_fits_the_budget(self) -> None:
@@ -98,15 +100,15 @@ class TestComposeBuildRetryBudget(unittest.TestCase):
             ]
         )
         cap = _longest_step_seconds(DEPLOY_WORKFLOW)
-        for name, (path, var) in BUILDS.items():
-            task = _by_name(path, name)
+        for var, path in BUILDS.items():
+            task = _by_register(path, var)
             worst = (
                 (1 + task["retries"]) * _timeout(task)
                 + task["retries"] * task["delay"]
                 + sum(_timeout(f) for f in _fallbacks(path, var))
             )
-            self.assertLess(worst, budget, f"{name} outgrows the sweep budget")
-            self.assertLess(worst, cap, f"{name} outgrows the deploy step cap")
+            self.assertLess(worst, budget, f"{var} outgrows the sweep budget")
+            self.assertLess(worst, cap, f"{var} outgrows the deploy step cap")
 
     def test_every_convergence_gate_waits_the_same_budget(self) -> None:
         """Both callers poll the same script for the same stack, so a budget that
