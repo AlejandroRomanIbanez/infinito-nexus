@@ -10,13 +10,11 @@ there is no in-deploy minting (a random mint would not match the provisioned nod
 
 from __future__ import annotations
 
+import contextlib
 import os
-from typing import TYPE_CHECKING
+from pathlib import Path
 
 from utils.tor_onion import IDENTITY_DIRNAME, identity_hs_dir, mint
-
-if TYPE_CHECKING:
-    from pathlib import Path
 
 __all__ = ["IDENTITY_DIRNAME", "ensure_node_onion", "identity_hs_dir"]
 
@@ -38,6 +36,32 @@ def _write_files(directory: Path, files: dict[str, bytes]) -> None:
             handle.write(content)
 
 
+def _hand_to_checkout_owner(base_dir: Path) -> None:
+    """Give the identity tree back to whoever owns the checkout.
+
+    The provisioner may run privileged -- as root inside the DiD on a bind
+    mount, or under sudo -- while the swarm playbook's `tar` that packs the
+    repo for the nodes runs as the workspace user. Keys minted 0600 and owned
+    by root make that tar abort with EACCES on all three files, so ownership
+    has to follow the tree, not the process that happened to mint them. A
+    no-op unless we are root and the checkout belongs to somebody else.
+
+    ``lchown`` rather than ``chown``: ``rglob`` yields symlinks too, and
+    following one would hand ownership of its target away instead. A path that
+    vanishes between the walk and the call is skipped rather than aborting the
+    provisioner -- the identity we care about is the one we just wrote.
+    """
+    if os.geteuid() != 0:
+        return
+    owner = base_dir.stat()
+    if owner.st_uid == 0:
+        return
+    identity = base_dir / IDENTITY_DIRNAME
+    for path in (identity, *identity.rglob("*")):
+        with contextlib.suppress(FileNotFoundError):
+            os.lchown(path, owner.st_uid, owner.st_gid)
+
+
 def ensure_node_onion(base_dir: str | Path) -> str:
     """Mint (or reuse) the node onion identity and return its ``.onion`` address.
 
@@ -50,10 +74,13 @@ def ensure_node_onion(base_dir: str | Path) -> str:
     inventory provisioner writes the returned address into
     ``applications.svc-net-tor.services.tor.node`` (no env indirection).
     """
-    hs = identity_hs_dir(base_dir)
+    base = Path(base_dir)
+    hs = identity_hs_dir(base)
     hostname_file = hs / "hostname"
     if hostname_file.exists():
+        _hand_to_checkout_owner(base)
         return hostname_file.read_text(encoding="ascii").strip()  # nocheck: cache-read
     key = mint()
     _write_files(hs, key.files())
+    _hand_to_checkout_owner(base)
     return key.address
