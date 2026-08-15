@@ -63,7 +63,7 @@ def main(argv: list[str] | None = None) -> int:
         metavar="URL|ID",
         help=(
             "Run URL or bare run id to reproduce: its configuration (distros, "
-            "modes, lifecycles, filesystem, sequencing, mode_fail_fast, "
+            "mode, lifecycles, filesystem, chunk_gate, "
             "workspace, instructions) is carried over, and with --failed its "
             "results also pick the apps. A bare id resolves against the current "
             "branch's repo. With --failed and no --run: the latest deploy run "

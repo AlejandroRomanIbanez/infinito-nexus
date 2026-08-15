@@ -230,7 +230,7 @@ class TestInputsFromJobs(unittest.TestCase):
             "2026-08-08T10:22:59.5Z   whitelist: ",
             "2026-08-08T10:22:59.5Z   priority: "
             + " ".join(f"web-app-{n}" for n in range(69)),
-            "2026-08-08T10:22:59.5Z   mode_fail_fast: true",
+            "2026-08-08T10:22:59.5Z   chunk_gate: true",
             "2026-08-08T10:22:59.5Z ##[endgroup]",
             "2026-08-08T10:22:59.6Z ##[group]Run echo hi",
             "2026-08-08T10:22:59.6Z   priority: not-an-input",
@@ -259,7 +259,7 @@ class TestInputsFromJobs(unittest.TestCase):
         self.assertEqual(len(inputs["priority"].split()), 69)
         self.assertEqual(inputs["distros"], "arch")
         self.assertEqual(inputs["whitelist"], "")
-        self.assertEqual(inputs["mode_fail_fast"], "true")
+        self.assertEqual(inputs["chunk_gate"], "true")
 
     def test_a_run_without_a_called_job_reads_nothing(self) -> None:
         self.assertEqual(runs.inputs_from_jobs([{"name": "🎲 Pick"}], "o/r"), {})
