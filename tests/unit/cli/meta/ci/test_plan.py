@@ -3,91 +3,98 @@ from __future__ import annotations
 import unittest
 
 from cli.meta.ci import plan
+from utils.symbol_glossary import to_emoji
+
+
+def _entry(app: str, variant: str, mode: str, *, priority: bool = False) -> dict:
+    return {
+        "apps": app,
+        "variant": variant,
+        "mode": mode,
+        "tor": "true" if variant == "0" else "false",
+        "disable": "",
+        "priority": "true" if priority else "false",
+        "weight": "42",
+        "label": f"{to_emoji(mode)}{app} {variant}",
+    }
+
+
+_PRIORITY = [_entry("web-app-a", "0", "compose", priority=True)]
+_REGULAR = [
+    _entry("web-app-b", "0", "swarm"),
+    _entry("web-app-b", "1", "compose"),
+]
+_ENTRIES = _PRIORITY + _REGULAR
 
 
 class TestCells(unittest.TestCase):
-    def test_swarm_rows_are_per_variant_tokens_with_variant_weights(self) -> None:
-        rows = [
-            ("svc-prio#0", "⭐"),
-            ("web-app-a#1", "✅"),
-            ("svc-prio#1", "⭐"),
-            ("web-app-b#0", "❌"),
-        ]
-        cells = plan._cells(
-            "swarm",
-            rows,
-            {"svc-prio#0": 5, "svc-prio#1": 3, "web-app-a#1": 10, "web-app-b#0": 7},
-            {"svc-prio": 2, "web-app-a": 2, "web-app-b": 1},
-            distros="debian",
+    def test_a_row_in_a_chunk_reports_that_chunk(self) -> None:
+        rows = plan.cells(
+            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
         )
-        self.assertEqual(
-            cells,
-            [
-                ("1", "svc-prio", "5", "0", "debian", "⭐"),
-                ("2", "web-app-a", "10", "1", "debian", "✅"),
-                ("3", "svc-prio", "3", "1", "debian", "⭐"),
-                ("4", "web-app-b", "7", "0", "debian", "❌"),
-            ],
-        )
+        self.assertEqual([row[0] for row in rows], ["0", "1", "1"])
 
-    def test_bundled_modes_keep_one_row_per_role(self) -> None:
-        rows = [("svc-prio", "⭐"), ("web-app-a", "✅")]
-        for mode in ("compose", "host"):
-            cells = plan._cells(
-                mode,
-                rows,
-                {"svc-prio": 5, "web-app-a": 10},
-                {"svc-prio": 2, "web-app-a": 1},
-                distros="debian",
-            )
-            self.assertEqual(
-                cells,
-                [
-                    ("1", "svc-prio", "5", "0,1", "debian", "⭐"),
-                    ("2", "web-app-a", "10", "0", "debian", "✅"),
-                ],
-                mode,
-            )
+    def test_a_priority_row_is_starred_not_ticked(self) -> None:
+        rows = plan.cells(
+            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
+        )
+        self.assertEqual(rows[0][-1], to_emoji("priority"))
+        self.assertEqual(rows[1][-1], to_emoji("enabled"))
+
+    def test_a_row_outside_the_sweep_is_marked_disabled(self) -> None:
+        rows = plan.cells(_ENTRIES, [_PRIORITY], distros="debian", current=None)
+        self.assertEqual(rows[1][-1], to_emoji("disabled"))
+        self.assertEqual(rows[1][0], "")
+
+    def test_the_current_chunk_is_marked(self) -> None:
+        rows = plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=1)
+        self.assertEqual(rows[0][0], "0")
+        self.assertEqual(rows[1][0], f"1{to_emoji('skip')}")
+
+    def test_the_mode_is_rendered_as_its_glyph(self) -> None:
+        rows = plan.cells(
+            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
+        )
+        self.assertEqual(rows[0][5], to_emoji("compose"))
+        self.assertEqual(rows[1][5], to_emoji("swarm"))
+
+    def test_the_tor_state_is_rendered_as_its_glyph(self) -> None:
+        rows = plan.cells(
+            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
+        )
+        self.assertEqual(rows[0][-2], to_emoji("tor"))
+        self.assertEqual(rows[2][-2], to_emoji("clearnet"))
+
+    def test_every_row_carries_the_distro_list(self) -> None:
+        rows = plan.cells(
+            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian arch", current=None
+        )
+        self.assertTrue(all(row[6] == "debian arch" for row in rows))
 
 
 class TestRender(unittest.TestCase):
-    def setUp(self) -> None:
-        self.sections = [
-            (
-                "compose",
-                54,
-                [
-                    ("1", "web-app-a", "10", "0", "debian", "✅"),
-                    ("2", "web-app-b", "7", "0", "debian", "❌"),
-                ],
-            ),
-            ("host", 10, [("1", "svc-x", "3", "0", "debian", "✅")]),
-        ]
+    def _rows(self) -> list[tuple[str, ...]]:
+        return plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=0)
 
-    def test_markdown_has_one_section_per_mode_and_no_legend(self) -> None:
-        out = plan.render_markdown(self.sections)
-        self.assertIn("### 🐳 compose (max jobs: 54)", out)
-        self.assertIn("### 💻 host (max jobs: 10)", out)
-        self.assertIn(
-            "| 🆔 Id | 📛 Name | 📊 Weight | 🎯 Variant | 🐧 Distros | ✅ Triggered |",
-            out,
-        )
-        self.assertIn("| 2 | web-app-b | 7 | 0 | debian | ❌ |", out)
-        self.assertNotIn("priority line", out)
+    def test_markdown_is_one_table_with_a_chunk_column(self) -> None:
+        out = plan.render_markdown("sweep 0", self._rows())
+        self.assertEqual(out.count("| ---"), 0)
+        self.assertEqual(out.count("\n|---"), 1)
+        self.assertIn(f"{to_emoji('chunk')} Chunk", out)
+        self.assertIn("web-app-a", out)
 
-    def test_cli_renders_display_width_aligned_sections(self) -> None:
-        out = plan.render_cli(self.sections)
-        self.assertIn("🐳 compose (max jobs: 54)", out)
-        self.assertIn("💻 host (max jobs: 10)", out)
-        header_line = next(
-            line for line in out.splitlines() if line.startswith("🆔 Id")
-        )
-        rule_line = next(line for line in out.splitlines() if line.startswith("---"))
-        self.assertEqual(len(rule_line), len(rule_line.rstrip()))
-        data_line = next(line for line in out.splitlines() if "web-app-a" in line)
-        name_col = rule_line.index("  ", rule_line.index("-")) + 2
-        self.assertEqual(data_line[name_col : name_col + 9], "web-app-a")
-        self.assertTrue(header_line)
+    def test_markdown_keeps_one_line_per_row(self) -> None:
+        out = plan.render_markdown("sweep 0", self._rows())
+        body = [line for line in out.splitlines() if line.startswith("| web")]
+        self.assertEqual(len(body), 0)
+        self.assertEqual(len([ln for ln in out.splitlines() if ln.startswith("| ")]), 4)
+
+    def test_cli_pads_to_display_width(self) -> None:
+        out = plan.render_cli("sweep 0", self._rows())
+        lines = out.splitlines()
+        self.assertEqual(lines[0], "sweep 0")
+        self.assertTrue(lines[2].startswith("---"))
+        self.assertEqual(len(lines), 3 + len(_ENTRIES))
 
 
 if __name__ == "__main__":

@@ -9,6 +9,13 @@ from tempfile import TemporaryDirectory
 
 from cli.meta.ci import slots
 
+_SETTINGS = {
+    "INFINITO_CI_JOB_LIMIT": "256",
+    "INFINITO_CI_CONCURRENCY": "20",
+    "INFINITO_CI_QUEUE_HOURS": "24",
+    "INFINITO_CI_MAX_CHUNKS": "3",
+}
+
 
 def _write(root: Path, rel: str, content: str) -> None:
     path = root / rel
@@ -16,7 +23,7 @@ def _write(root: Path, rel: str, content: str) -> None:
     path.write_text(textwrap.dedent(content), encoding="utf-8")
 
 
-def _tree() -> TemporaryDirectory:
+def _tree(timeout: int = 355) -> TemporaryDirectory:
     tmp = TemporaryDirectory()
     root = Path(tmp.name)
     _write(
@@ -27,40 +34,30 @@ def _tree() -> TemporaryDirectory:
           gate: {}
           build:
             needs: [gate]
-          test-deploy-single-node:
+          test-deploy-chunk-0:
             needs: [build]
-            uses: ./.github/workflows/single-node.yml
-          test-deploy-swarm:
-            needs: [build]
-            uses: ./.github/workflows/leaf.yml
+            uses: ./.github/workflows/call-test-deploy.yml
+          test-deploy-chunk-1:
+            needs: [test-deploy-chunk-0]
+            uses: ./.github/workflows/call-test-deploy.yml
           installs:
             needs: [gate]
             uses: ./.github/workflows/installs.yml
           done:
-            needs: [test-deploy-single-node, test-deploy-swarm]
+            needs: [test-deploy-chunk-0, test-deploy-chunk-1]
         """,
     )
     _write(
         root,
-        ".github/workflows/single-node.yml",
-        """
+        slots._DEPLOY_WORKFLOW,
+        f"""
         jobs:
-          compose:
-            uses: ./.github/workflows/leaf.yml
-          host:
-            uses: ./.github/workflows/leaf.yml
-        """,
-    )
-    _write(
-        root,
-        ".github/workflows/leaf.yml",
-        """
-        jobs:
-          discover: {}
+          discover: {{}}
           deploy:
+            timeout-minutes: {timeout}
             strategy:
               matrix:
-                include: ${{ fromJson(needs.discover.outputs.apps) }}
+                include: ${{{{ fromJson(needs.discover.outputs.apps) }}}}
         """,
     )
     _write(
@@ -103,26 +100,31 @@ def _tree() -> TemporaryDirectory:
 
 
 class TestReservedSlots(unittest.TestCase):
-    def test_counts_the_whole_chain_but_not_deploy_matrices(self) -> None:
+    def test_counts_the_whole_chain_but_not_chunk_matrices(self) -> None:
         with _tree() as tmp:
             self.assertEqual(
                 slots.reserved_slots(Path(tmp)),
-                2 + (3 + slots._DYNAMIC_MATRIX_ESTIMATE) + 1 + 2 + 1,
+                2 + 1 + 1 + (3 + slots._DYNAMIC_MATRIX_ESTIMATE) + 1,
             )
 
-    def test_deploy_caller_dynamic_matrices_reserve_nothing(self) -> None:
+    def test_a_chunk_block_reserves_only_its_discover_job(self) -> None:
         with _tree() as tmp:
             root = Path(tmp)
             jobs = slots._jobs(slots._load_workflow(root / slots._ORCHESTRATOR))
             self.assertEqual(
                 slots._job_slots(
-                    root, jobs["test-deploy-single-node"], count_dynamic=False
+                    root, jobs["test-deploy-chunk-0"], count_dynamic=False
                 ),
-                2,
-            )
-            self.assertEqual(
-                slots._job_slots(root, jobs["test-deploy-swarm"], count_dynamic=False),
                 1,
+            )
+
+    def test_a_block_outside_the_chunk_prefix_is_charged_its_matrix(self) -> None:
+        with _tree() as tmp:
+            root = Path(tmp)
+            jobs = slots._jobs(slots._load_workflow(root / slots._ORCHESTRATOR))
+            self.assertEqual(
+                slots._job_slots(root, jobs["test-deploy-chunk-0"], count_dynamic=True),
+                1 + slots._DYNAMIC_MATRIX_ESTIMATE,
             )
 
 
@@ -135,57 +137,67 @@ class TestEntryOverhead(unittest.TestCase):
             )
 
 
-class TestModeSlots(unittest.TestCase):
-    def test_split_follows_shares(self) -> None:
+class TestJobTimeout(unittest.TestCase):
+    def test_read_from_the_deploy_workflow(self) -> None:
+        with _tree(timeout=120) as tmp:
+            self.assertEqual(slots.job_timeout_minutes(Path(tmp)), 120)
+
+    def test_a_missing_timeout_fails_loudly(self) -> None:
         with _tree() as tmp:
             root = Path(tmp)
-            budget = slots.reserved_slots(root) + slots.entry_overhead(root)
-            with mock.patch.dict(
-                "os.environ", {"INFINITO_CI_JOB_LIMIT": str(budget + 60)}
-            ):
-                result = slots.mode_slots(root)
-        self.assertEqual(
-            result,
-            {
-                mode: max(
-                    60 * share // sum(slots._SHARES.values()), slots._MIN_MODE_SLOTS
-                )
-                for mode, share in slots._SHARES.items()
-            },
-        )
+            _write(root, slots._DEPLOY_WORKFLOW, "jobs:\n  deploy: {}\n")
+            with self.assertRaises(SystemExit):
+                slots.job_timeout_minutes(root)
 
-    def test_overrides_pin_a_mode_over_the_derived_value(self) -> None:
+
+class TestChunkArithmetic(unittest.TestCase):
+    def test_waves_fit_inside_the_queue_window(self) -> None:
+        with _tree(timeout=355) as tmp, mock.patch.dict("os.environ", _SETTINGS):
+            self.assertEqual(slots.waves(Path(tmp)), 4)
+            self.assertEqual(slots.chunk_size(Path(tmp)), 80)
+
+    def test_a_timeout_at_the_window_leaves_one_wave(self) -> None:
+        with _tree(timeout=24 * 60) as tmp, mock.patch.dict("os.environ", _SETTINGS):
+            self.assertEqual(slots.waves(Path(tmp)), 1)
+
+    def test_a_timeout_beyond_the_window_still_leaves_one_wave(self) -> None:
+        with _tree(timeout=30 * 60) as tmp, mock.patch.dict("os.environ", _SETTINGS):
+            self.assertEqual(slots.waves(Path(tmp)), 1)
+
+    def test_chunk_count_is_capped_by_the_declared_blocks(self) -> None:
         with (
             _tree() as tmp,
-            mock.patch.dict(slots._SLOT_OVERRIDES, {"swarm": 7}),
+            mock.patch.dict("os.environ", {**_SETTINGS, "INFINITO_CI_MAX_CHUNKS": "2"}),
         ):
-            result = slots.mode_slots(Path(tmp))
-        self.assertEqual(result["swarm"], 7)
-        self.assertNotIn("compose", slots._SLOT_OVERRIDES)
+            self.assertEqual(slots.chunk_count(Path(tmp)), 2)
 
-    def test_floor_when_chain_eats_the_budget(self) -> None:
+    def test_a_small_budget_needs_a_single_chunk(self) -> None:
         with (
             _tree() as tmp,
-            mock.patch.dict("os.environ", {"INFINITO_CI_JOB_LIMIT": "5"}),
+            mock.patch.dict("os.environ", {**_SETTINGS, "INFINITO_CI_JOB_LIMIT": "30"}),
         ):
-            result = slots.mode_slots(Path(tmp))
-        self.assertTrue(all(v >= slots._MIN_MODE_SLOTS for v in result.values()))
+            root = Path(tmp)
+            self.assertEqual(slots.chunk_count(root), 1)
+            self.assertEqual(slots.rows_per_sweep(root), slots.available(root))
+
+    def test_rows_per_sweep_never_exceeds_the_run_job_cap(self) -> None:
+        with _tree() as tmp, mock.patch.dict("os.environ", _SETTINGS):
+            root = Path(tmp)
+            self.assertLessEqual(slots.rows_per_sweep(root), slots.available(root))
 
 
 class TestRenderMatrix(unittest.TestCase):
-    def test_table_lists_every_job_and_the_totals(self) -> None:
+    def test_table_lists_every_job_and_the_chunk_arithmetic(self) -> None:
         with (
             _tree() as tmp,
             mock.patch.object(slots, "PROJECT_ROOT", Path(tmp)),
-            mock.patch.dict("os.environ", {"INFINITO_CI_JOB_LIMIT": "256"}),
+            mock.patch.dict("os.environ", _SETTINGS),
         ):
             table = slots.render_matrix()
-        reserved = 2 + (3 + slots._DYNAMIC_MATRIX_ESTIMATE) + 1 + 2 + 1
         self.assertIn("installs", table)
-        self.assertRegex(table, rf"reserved\s+{reserved}\n")
         self.assertRegex(table, r"job limit \(INFINITO_CI_JOB_LIMIT\)\s+256\n")
-        for mode, share in slots._SHARES.items():
-            self.assertIn(f"{mode} (share {share})", table)
+        for row in ("chunk size", "chunks filled", "rows per sweep", "waves"):
+            self.assertIn(row, table)
 
 
 if __name__ == "__main__":
