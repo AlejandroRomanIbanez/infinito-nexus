@@ -1,6 +1,6 @@
 import unittest
 
-from utils.roles.display import display_names
+from utils.roles.display import display_names, split_axes
 
 APP = "web-app-nextcloud"
 
@@ -56,6 +56,14 @@ class TestRoleDisplayName(unittest.TestCase):
     def test_lists_round_trip_and_keep_sentinels(self):
         ids = f"{APP} svc-db-postgres __ALL__"
         self.assertEqual(ids, self.codec.decode_list(self.codec.encode_list(ids)))
+
+    def test_an_axis_suffix_survives_the_decode(self):
+        encoded = f"{self.codec.encode(APP)}#0,2@swarm+tor"
+        self.assertEqual(f"{APP}#0,2@swarm+tor", self.codec.decode_list(encoded))
+
+    def test_a_role_id_holds_no_axis_seam(self):
+        self.assertEqual((APP, ""), split_axes(APP))
+        self.assertEqual((APP, "@host"), split_axes(f"{APP}@host"))
 
     def test_every_role_encodes_to_one_unique_space_free_token(self):
         seen: dict[str, str] = {}

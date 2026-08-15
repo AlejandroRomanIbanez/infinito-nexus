@@ -265,6 +265,71 @@ def combinations(
     ]
 
 
+def _reject(app: str, variant: str, reason: str) -> None:
+    """Abort on a selection the row cannot satisfy.
+
+    Raises:
+        SystemExit: always. A pin the row cannot take is an operator mistake,
+            and dropping the row instead would report a green run for a
+            combination that never ran.
+    """
+    shard = f"{VARIANT_SEPARATOR}{variant}" if variant else ""
+    raise SystemExit(f"selection {app}{shard}: {reason}")
+
+
+def check_pins(
+    app: str,
+    variant: str,
+    offered: Sequence[str],
+    *,
+    pin_mode: str | None,
+    pin_tor: bool | None,
+    capable: bool,
+    tor_mode: str,
+) -> None:
+    """Prove the row can take what the selection token pinned on it.
+
+    The offered modes are already narrowed by the run's ``--modes`` input and
+    the onion states by its ``--tor`` input, so this catches a pin that fights
+    the role, the variant, or the run's own axes with one check each.
+    """
+    if pin_mode is not None and pin_mode not in offered:
+        _reject(
+            app,
+            variant,
+            f"pinned mode {pin_mode!r} is not available here "
+            f"(offered: {', '.join(offered)})",
+        )
+    if pin_tor is None:
+        return
+    for mode in (pin_mode,) if pin_mode else offered:
+        if pin_tor in tor_states(mode, capable=capable, tor_mode=tor_mode):
+            return
+    _reject(
+        app,
+        variant,
+        f"pinned onion state {'tor' if pin_tor else 'clearnet'} is impossible "
+        f"here (mode, variant or the run's tor axis rules it out)",
+    )
+
+
+def sort_key(entry: Mapping[str, str]) -> tuple[Any, ...]:
+    """Where one entry sorts inside its chunk: display name, then variant,
+    then deploy mode, then onion state.
+
+    The chunk split itself is not sorted -- it follows the discovery ranking,
+    which is what decides who makes the budget cut. This only orders the jobs
+    a chunk already holds, so a chunk's job list reads like the plan table
+    instead of like the sweep's rotation.
+    """
+    return (
+        display_names().encode(entry["apps"]),
+        tuple(int(part) for part in entry["variant"].split(",") if part),
+        MODES.index(entry["mode"]) if entry["mode"] in MODES else len(MODES),
+        entry["tor"] == "true",
+    )
+
+
 def assign(
     rows: Sequence[Mapping[str, Any]],
     *,
@@ -277,6 +342,9 @@ def assign(
     Args:
         rows: discovery rows, each carrying ``name``, ``variant``, ``modes``
             (the offered subset) and ``priority``, in global query order.
+            ``pin_mode``/``pin_tor``, when a selection token set them, pin that
+            axis: the priority line then covers only the combinations that
+            match, and the regular line takes the pin instead of its rotation.
         sweep: sweep number driving both rotations.
         tor_mode: ``enforced`` onions every capable row, ``disabled`` none,
             ``exclusive`` drops the rows that cannot take one, ``auto``
@@ -304,10 +372,32 @@ def assign(
         priority = bool(row.get("priority"))
         capable = tor_capable(app, variant, variants_per_app)
         offered = tuple(row["modes"])
+        variant_csv = "" if variant is None else str(variant)
+        pin_mode = row.get("pin_mode")
+        pin_tor = row.get("pin_tor")
+        check_pins(
+            app,
+            variant_csv,
+            offered,
+            pin_mode=pin_mode,
+            pin_tor=pin_tor,
+            capable=capable,
+            tor_mode=tor_mode,
+        )
         if priority:
-            picked = combinations(offered, capable=capable, tor_mode=tor_mode)
+            picked = [
+                (mode, state)
+                for mode, state in combinations(
+                    offered, capable=capable, tor_mode=tor_mode
+                )
+                if pin_mode in (None, mode) and pin_tor in (None, state)
+            ]
         else:
-            mode = pick_mode(offered, position, sweep)
+            mode = pin_mode or pick_mode(
+                _offering(offered, pin_tor, capable=capable, tor_mode=tor_mode),
+                position,
+                sweep,
+            )
             picked = [
                 (mode, state)
                 for state in _rotated_tor(
@@ -316,11 +406,11 @@ def assign(
                     tor_mode=tor_mode,
                     position=position,
                     sweep=sweep,
+                    pin=pin_tor,
                 )
             ]
         if app == provider:
             picked = [(mode, enabled) for mode, enabled in picked if enabled]
-        variant_csv = "" if variant is None else str(variant)
         label = codec.encode(app, variant_csv)
         for mode, enabled in picked:
             glyphs = to_emoji(mode) + (
@@ -345,12 +435,36 @@ def assign(
     return entries
 
 
+def _offering(
+    offered: Sequence[str], pin: bool | None, *, capable: bool, tor_mode: str
+) -> tuple[str, ...]:
+    """The modes the rotation may still draw from once an onion state is
+    pinned: pinning the onion on a row that also offers host must not rotate
+    the row onto host, where no onion exists."""
+    if pin is None:
+        return tuple(offered)
+    return tuple(
+        mode
+        for mode in offered
+        if pin in tor_states(mode, capable=capable, tor_mode=tor_mode)
+    )
+
+
 def _rotated_tor(
-    mode: str, *, capable: bool, tor_mode: str, position: int, sweep: int
+    mode: str,
+    *,
+    capable: bool,
+    tor_mode: str,
+    position: int,
+    sweep: int,
+    pin: bool | None = None,
 ) -> list[bool]:
     """The single onion state a regular row takes this sweep, or nothing when
-    ``exclusive`` drops it."""
+    ``exclusive`` drops it. A pinned state replaces the rotation -- it was
+    proven possible by :func:`check_pins` before we get here."""
     allowed = tor_states(mode, capable=capable, tor_mode=tor_mode)
+    if pin is not None:
+        return [pin]
     if len(allowed) < 2:
         return allowed
     return [capable and wants_tor(position, sweep)]

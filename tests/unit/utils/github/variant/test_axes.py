@@ -328,6 +328,115 @@ class TestAssign(unittest.TestCase):
                     self.assertNotIn("false", [e["tor"] for e in entries])
 
 
+class TestPinnedAxes(unittest.TestCase):
+    def _entries(self, row: dict) -> list[dict[str, str]]:
+        return axes.assign([row], sweep=0, tor_mode="auto", variants_per_app=_VARIANTS)
+
+    def test_a_pinned_mode_replaces_the_rotation(self) -> None:
+        row = _row("web-app-b", 0, ("compose", "swarm"), pin_mode="swarm")
+        self.assertEqual([e["mode"] for e in self._entries(row)], ["swarm"])
+
+    def test_a_pinned_onion_state_replaces_the_rotation(self) -> None:
+        row = _row("web-app-b", 0, ("compose",), pin_tor=True)
+        self.assertEqual([e["tor"] for e in self._entries(row)], ["true"])
+
+    def test_an_open_axis_still_rotates(self) -> None:
+        row = _row("web-app-b", 0, ("compose", "swarm"), pin_tor=False)
+        picks = {
+            axes.assign(
+                [row], sweep=sweep, tor_mode="auto", variants_per_app=_VARIANTS
+            )[0]["mode"]
+            for sweep in range(2)
+        }
+        self.assertEqual(picks, {"compose", "swarm"})
+
+    def test_pinning_the_onion_keeps_the_rotation_off_host(self) -> None:
+        row = _row("web-app-b", 0, ("compose", "host"), pin_tor=True)
+        for sweep in range(4):
+            with self.subTest(sweep=sweep):
+                entries = axes.assign(
+                    [row], sweep=sweep, tor_mode="auto", variants_per_app=_VARIANTS
+                )
+                self.assertEqual([e["mode"] for e in entries], ["compose"])
+
+    def test_a_pin_narrows_the_priority_cross_product(self) -> None:
+        row = _row(
+            "web-app-b", 0, ("compose", "swarm"), priority=True, pin_mode="compose"
+        )
+        entries = self._entries(row)
+        self.assertEqual(
+            {(e["mode"], e["tor"]) for e in entries},
+            {("compose", "true"), ("compose", "false")},
+        )
+
+    def test_a_fully_pinned_priority_row_runs_exactly_once(self) -> None:
+        row = _row(
+            "web-app-b",
+            0,
+            ("compose", "swarm"),
+            priority=True,
+            pin_mode="swarm",
+            pin_tor=False,
+        )
+        self.assertEqual(len(self._entries(row)), 1)
+
+    def test_an_unoffered_mode_aborts_the_matrix(self) -> None:
+        row = _row("web-app-b", 0, ("compose",), pin_mode="swarm")
+        with self.assertRaises(SystemExit):
+            self._entries(row)
+
+    def test_an_impossible_onion_state_aborts_the_matrix(self) -> None:
+        row = _row("web-app-a", 1, ("compose",), pin_tor=True)
+        with self.assertRaises(SystemExit):
+            self._entries(row)
+
+    def test_a_pin_fighting_the_runs_tor_axis_aborts(self) -> None:
+        row = _row("web-app-b", 0, ("compose",), pin_tor=True)
+        with self.assertRaises(SystemExit):
+            axes.assign([row], sweep=0, tor_mode="disabled", variants_per_app=_VARIANTS)
+
+
+class TestSortKey(unittest.TestCase):
+    def _entries(self) -> list[dict[str, str]]:
+        rows = [
+            _row("web-app-b", 0, ("swarm",)),
+            _row("web-app-a", 1, ("compose",)),
+            _row("web-app-a", 0, ("compose",)),
+        ]
+        return axes.assign(rows, sweep=0, tor_mode="auto", variants_per_app=_VARIANTS)
+
+    def test_rows_sort_by_name_then_variant(self) -> None:
+        ordered = sorted(self._entries(), key=axes.sort_key)
+        self.assertEqual(
+            [(e["apps"], e["variant"]) for e in ordered],
+            [("web-app-a", "0"), ("web-app-a", "1"), ("web-app-b", "0")],
+        )
+
+    def test_the_mode_sorts_in_deploy_order_not_alphabetically(self) -> None:
+        entries = [
+            {"apps": "web-app-a", "variant": "0", "mode": mode, "tor": "false"}
+            for mode in ("host", "swarm", "compose")
+        ]
+        ordered = sorted(entries, key=axes.sort_key)
+        self.assertEqual([e["mode"] for e in ordered], list(axes.MODES))
+
+    def test_clearnet_sorts_ahead_of_the_onion(self) -> None:
+        entries = [
+            {"apps": "web-app-a", "variant": "0", "mode": "compose", "tor": tor}
+            for tor in ("true", "false")
+        ]
+        ordered = sorted(entries, key=axes.sort_key)
+        self.assertEqual([e["tor"] for e in ordered], ["false", "true"])
+
+    def test_a_variantless_row_sorts_ahead_of_variant_zero(self) -> None:
+        entries = [
+            {"apps": "web-app-a", "variant": "0", "mode": "compose", "tor": "false"},
+            {"apps": "web-app-a", "variant": "", "mode": "compose", "tor": "false"},
+        ]
+        ordered = sorted(entries, key=axes.sort_key)
+        self.assertEqual([e["variant"] for e in ordered], ["", "0"])
+
+
 class TestParseLabel(unittest.TestCase):
     def _title(self, mode: str, app: str, variant: str, **kw) -> str:
         rows = [_row(app, int(variant), (mode,), **kw)]

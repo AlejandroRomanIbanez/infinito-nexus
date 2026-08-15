@@ -14,12 +14,12 @@ on:
         default: ""
         type: string
       priority:
-        description: "⭐ Roles to deploy first, in every combination they can take (each variant × each offered mode × Tor and clearnet). They get chunks of their own; the regular rows wait until those are green."
+        description: "⭐ Roles to deploy first, in every combination left open (each variant × each offered mode × Tor and clearnet). Pin axes to narrow it: 'web-app-x#0,2@swarm+tor', or paste a job label back ('🚀🧅网络应用·Nextcloud#2'). They get chunks of their own; the regular rows wait until those are green."
         required: false
         default: ""
         type: string
       whitelist:
-        description: "🎯 Roles to deploy. Empty: diff vs origin/main. '__ALL__': every role."
+        description: "🎯 Roles to deploy, in their normal matrix position. Same token syntax as ⭐, but what a token leaves open stays on the sweep rotation instead of being covered in full. Empty: diff vs origin/main. '__ALL__': every role."
         required: false
         default: ""
         type: string
