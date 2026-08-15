@@ -30,11 +30,10 @@ _JOBS = [
 _RUN_URL = "https://github.com/o/r/actions/runs/55"  # nocheck: url
 _SOURCE_CONFIG = {
     "distros": "arch centos",
-    "modes": "swarm compose",
+    "mode": "swarm",
     "lifecycles": "stable",
     "filesystem": "btrfs",
-    "sequencing": "serial",
-    "mode_fail_fast": "false",
+    "chunk_gate": "false",
     "workspace": "false",
 }
 _SOURCE_RUN = {"jobs": _JOBS, "displayTitle": render(_SOURCE_CONFIG)}

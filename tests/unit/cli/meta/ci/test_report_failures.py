@@ -16,23 +16,33 @@ class TestReportFailures(unittest.TestCase):
     def test_failed_roles_parses_mode_role_variant(self) -> None:
         jobs = [
             {
-                "name": "x / ⭐ Priority · swarm / 🐝 web-app-xwiki 0",
+                "name": "x / test-deploy-chunk-0 / 🐝🧅 web-app-xwiki 0 ⭐",
                 "conclusion": "failure",
             },
-            {"name": "y / 🐳 web-app-openproject 0,1,2", "conclusion": "failure"},
-            {"name": "🐝 web-svc-logout 1", "conclusion": "timed_out"},
+            {"name": "y / 🐳🌐 web-app-openproject 0,1,2", "conclusion": "failure"},
+            {"name": "🐝🌐 web-svc-logout 1", "conclusion": "timed_out"},
             {"name": "z / 💻 Host / 💻 sys-front-proxy", "conclusion": "failure"},
-            {"name": "🐝 web-app-nextcloud 0", "conclusion": "success"},
+            {"name": "🐝🌐 web-app-nextcloud 0", "conclusion": "success"},
             {"name": "🧹 Lint", "conclusion": "failure"},
         ]
         self.assertEqual(
             failed_roles(jobs),
             {
-                "web-app-xwiki": [("swarm", "0")],
-                "web-app-openproject": [("compose", "0-1-2")],
-                "web-svc-logout": [("swarm", "1")],
-                "sys-front-proxy": [("host", "")],
+                "web-app-xwiki": [("swarm", "0", True)],
+                "web-app-openproject": [("compose", "0-1-2", False)],
+                "web-svc-logout": [("swarm", "1", False)],
+                "sys-front-proxy": [("host", "", False)],
             },
+        )
+
+    def test_the_same_variant_in_both_onion_states_stays_two_failures(self) -> None:
+        jobs = [
+            {"name": "🐳🧅 web-app-xwiki 0 ⭐", "conclusion": "failure"},
+            {"name": "🐳🌐 web-app-xwiki 0 ⭐", "conclusion": "failure"},
+        ]
+        self.assertEqual(
+            failed_roles(jobs),
+            {"web-app-xwiki": [("compose", "0", True), ("compose", "0", False)]},
         )
 
     def test_artifact_name(self) -> None:
@@ -45,16 +55,26 @@ class TestReportFailures(unittest.TestCase):
             "rescue-diagnostics-compose-web-app-x",
         )
 
+    def test_the_onion_state_keeps_the_artifact_names_apart(self) -> None:
+        self.assertNotEqual(
+            artifact_name("compose", "web-app-x", "0", True),
+            artifact_name("compose", "web-app-x", "0", False),
+        )
+        self.assertTrue(
+            artifact_name("compose", "web-app-x", "0", True).endswith("-tor")
+        )
+
     def test_issue_body_lists_failures_and_run(self) -> None:
         body = issue_body(
             "web-app-xwiki",
-            [("swarm", "0"), ("compose", "")],
+            [("swarm", "0", False), ("compose", "", True)],
             run_url="https://gh/run/1",
             excerpt="EXCERPT",
         )
         self.assertIn("web-app-xwiki", body)
         self.assertIn("https://gh/run/1", body)
         self.assertIn("rescue-diagnostics-swarm-web-app-xwiki-0", body)
+        self.assertIn("rescue-diagnostics-compose-web-app-xwiki-tor", body)
         self.assertIn("EXCERPT", body)
 
     def test_decisive_excerpt_prefers_error_context(self) -> None:

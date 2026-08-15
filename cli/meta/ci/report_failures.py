@@ -4,43 +4,53 @@ from __future__ import annotations
 
 import argparse
 import json
-import re
 import subprocess
 import sys
 from pathlib import Path
 
 from utils.cache.files import read_text
-from utils.symbol_glossary import to_emoji, to_word
+from utils.github.variant import axes
+from utils.roles.display import display_names
 
-_MODES = ("swarm", "compose", "host")
-_ROLE_RE = re.compile(
-    r"(" + "|".join(re.escape(to_emoji(m)) for m in _MODES) + r")️?\s+"
-    r"((?:web-app|web-svc|svc|sys)-[a-z0-9-]+?)(?:\s+([0-9,]+))?\s*$"
-)
 _DECISIVE_FILES = ("error-context.md", "meta.txt", "containers.txt")
 _TITLE = "CI failure: {role}"
 _LABEL = "ci-failure"
 
 
-def failed_roles(jobs: list[dict]) -> dict[str, list[tuple[str, str]]]:
-    """Map role -> [(mode, variant)] for every failed deploy job in *jobs*."""
-    out: dict[str, list[tuple[str, str]]] = {}
+def failed_roles(jobs: list[dict]) -> dict[str, list[tuple[str, str, bool]]]:
+    """Map role -> [(mode, variant, tor)] for every failed deploy job.
+
+    A deploy job is titled ``<mode glyph><tor glyph><display name> <variant>``
+    with an optional trailing ⭐ for a priority row. The middle is resolved
+    through the display-name codec rather than matched as a raw role id: job
+    names carry display names, so a regex over ``web-app-…`` silently matched
+    nothing and every failure went unreported.
+    """
+    codec = display_names()
+    out: dict[str, list[tuple[str, str, bool]]] = {}
     for job in jobs:
         if job.get("conclusion") not in ("failure", "timed_out"):
             continue
-        match = _ROLE_RE.search(job.get("name", ""))
-        if match is None:
+        label = axes.parse_label(str(job.get("name", "")))
+        if label is None:
             continue
-        mode = to_word(match.group(1))
-        role = match.group(2)
-        variant = (match.group(3) or "").replace(",", "-")
-        out.setdefault(role, []).append((mode, variant))
+        role = codec.decode(label.name)
+        if role is None:
+            continue
+        out.setdefault(role, []).append(
+            (label.mode, label.variant.replace(",", "-"), label.tor)
+        )
     return out
 
 
-def artifact_name(mode: str, role: str, variant: str) -> str:
-    suffix = f"-{variant}" if variant else ""
-    return f"rescue-diagnostics-{mode}-{role}{suffix}"
+def artifact_name(mode: str, role: str, variant: str, tor: bool = False) -> str:
+    """The rescue-diagnostics artifact one deploy job uploads.
+
+    The slug comes from :func:`axes.artifact_slug`, the same call the matrix
+    entry carries into the workflow, so the name this looks for and the name
+    CI uploads cannot drift apart.
+    """
+    return f"rescue-diagnostics-{axes.artifact_slug(mode, role, variant, tor)}"
 
 
 def decisive_excerpt(rescue_dir: Path, *, max_lines: int = 40) -> str:
@@ -60,7 +70,7 @@ def decisive_excerpt(rescue_dir: Path, *, max_lines: int = 40) -> str:
 
 def issue_body(
     role: str,
-    failures: list[tuple[str, str]],
+    failures: list[tuple[str, str, bool]],
     *,
     run_url: str,
     excerpt: str,
@@ -68,8 +78,9 @@ def issue_body(
     rows = "\n".join(
         f"- `{mode}`"
         + (f" variant `{variant}`" if variant else "")
-        + f" — artifact `{artifact_name(mode, role, variant)}`"
-        for mode, variant in failures
+        + (" behind the onion" if tor else "")
+        + f" — artifact `{artifact_name(mode, role, variant, tor)}`"
+        for mode, variant, tor in failures
     )
     return (
         f"Role **{role}** failed on `main`.\n\n"
@@ -169,10 +180,10 @@ def report(run_id: str, repo: str) -> int:
 
 
 def _download_excerpt(
-    repo: str, run_id: str, role: str, failures: list[tuple[str, str]], dest: Path
+    repo: str, run_id: str, role: str, failures: list[tuple[str, str, bool]], dest: Path
 ) -> str:
-    for mode, variant in failures:
-        name = artifact_name(mode, role, variant)
+    for mode, variant, tor in failures:
+        name = artifact_name(mode, role, variant, tor)
         try:
             _gh(
                 ["run", "download", run_id, "--repo", repo, "-n", name, "-D", str(dest)]

@@ -26,6 +26,7 @@ import sys
 
 from utils.distros import distro_names
 from utils.github import run_name
+from utils.github.variant import axes
 from utils.roles.display import display_names
 from utils.symbol_glossary import to_emoji
 
@@ -39,11 +40,10 @@ MODES = ("docker", "swarm", "host")
 
 CONFIG_INPUTS = (
     "distros",
-    "modes",
+    "mode",
     "lifecycles",
     "filesystem",
-    "sequencing",
-    "mode_fail_fast",
+    "chunk_gate",
     "workspace",
     "instructions",
 )
@@ -61,9 +61,10 @@ MODE_GLYPHS = {
     "swarm": to_emoji("swarm"),
     "host": to_emoji("host"),
 }
-_GLYPH_MODE = {glyph: mode for mode, glyph in MODE_GLYPHS.items()}
 
-_JOB_RE = re.compile(rf"({'|'.join(map(re.escape, MODE_GLYPHS.values()))})\s*(.+?)\s*$")
+_STATUS_MODE = {"compose": "docker", "swarm": "swarm", "host": "host"}
+"""The status table keeps calling compose 'docker'; the deploy axis calls it
+'compose'. Translate at the boundary instead of renaming either vocabulary."""
 
 
 def _effective(job: dict) -> str:
@@ -86,21 +87,21 @@ def cell(state: str) -> str:
 
 
 def _iter_deploy_jobs(jobs: list[dict]):
-    """Yield ``(app, mode, job)`` for every compose/swarm deploy job."""
+    """Yield ``(app, mode, job)`` for every deploy job."""
     codec = display_names()
     for job in jobs:
-        match = _JOB_RE.search(str(job.get("name", "")))
-        if not match:
+        label = axes.parse_label(str(job.get("name", "")))
+        if label is None:
             continue
-        app = codec.decode(match.group(2))
+        app = codec.decode(label.name)
         if app is not None:
-            yield app, _GLYPH_MODE[match.group(1)], job
+            yield app, _STATUS_MODE[label.mode], job
 
 
 def app_of_job(name: str) -> str | None:
     """The role id a deploy job ``name`` encodes, or None if it is not one."""
-    match = _JOB_RE.search(name)
-    return display_names().decode(match.group(2)) if match else None
+    label = axes.parse_label(name)
+    return display_names().decode(label.name) if label else None
 
 
 _SEVERITY = {"success": 0, "running": 1, "failure": 3}

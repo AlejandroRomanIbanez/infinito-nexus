@@ -293,11 +293,10 @@ class TestConfigFromTitle(unittest.TestCase):
     def test_a_full_title_round_trips_every_config_input(self) -> None:
         dispatched = {
             "distros": "debian arch",
-            "modes": "swarm compose",
+            "mode": "swarm",
             "lifecycles": "stable",
             "filesystem": "ext4",
-            "sequencing": "serial",
-            "mode_fail_fast": "false",
+            "chunk_gate": "false",
             "workspace": "true",
             "instructions": "false",
         }
@@ -306,17 +305,17 @@ class TestConfigFromTitle(unittest.TestCase):
     def test_a_value_input_on_its_default_records_nothing(self) -> None:
         recovered = runs.config_from_title(render({"distros": "debian"}))
         self.assertEqual(recovered["distros"], "debian")
-        self.assertNotIn("sequencing", recovered)
+        self.assertNotIn("mode", recovered)
 
     def test_a_run_from_another_entry_point_yields_no_override(self) -> None:
         self.assertEqual(runs.config_from_title("CI: Pull Request"), {})
 
     def test_randomised_distros_are_recovered_from_the_discover_jobs(self) -> None:
-        title = render({"sequencing": "serial"})
+        title = render({"mode": "swarm"})
         self.assertNotIn("distros", runs.config_from_title(title))
-        for mode in ("swarm", "docker", "host"):
-            with self.subTest(mode):
-                jobs = [{"name": discover_job_name(mode, "fedora arch")}]
+        for chunk in (0, 1, 2):
+            with self.subTest(chunk=chunk):
+                jobs = [{"name": discover_job_name(chunk, "fedora arch")}]
                 self.assertEqual(
                     runs.config_from_run(title, jobs)["distros"], "fedora arch"
                 )
@@ -336,12 +335,12 @@ class TestConfigFromTitle(unittest.TestCase):
             runs.untriggered_priority("web-app-a 网络应用·Funkwha...", {})
 
     def test_a_job_list_without_a_distro_group_adds_nothing(self) -> None:
-        title = render({"sequencing": "serial"})
+        title = render({"mode": "swarm"})
         jobs = [{"name": "🎲 Pick distro(s)"}, {"name": "🧹 Lint"}]
         self.assertNotIn("distros", runs.config_from_run(title, jobs))
 
     def test_the_tor_mode_is_carried_over_from_the_job_log(self) -> None:
-        title = render({"sequencing": "serial"})
+        title = render({"mode": "swarm"})
         jobs = [{"name": "🎲 Pick distro(s)"}]
         self.assertEqual(
             runs.config_from_run(title, jobs, {"tor": "exclusive"})["tor"],
@@ -349,7 +348,7 @@ class TestConfigFromTitle(unittest.TestCase):
         )
 
     def test_a_run_whose_log_records_no_tor_mode_carries_none(self) -> None:
-        title = render({"sequencing": "serial"})
+        title = render({"mode": "swarm"})
         self.assertNotIn("tor", runs.config_from_run(title, [], {}))
         self.assertNotIn("tor", runs.config_from_run(title, []))
 

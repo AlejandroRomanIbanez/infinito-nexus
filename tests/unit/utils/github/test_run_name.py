@@ -126,14 +126,13 @@ class ValueTests(unittest.TestCase):
 class DeclaredTemplateTests(unittest.TestCase):
     def test_the_declared_run_name_round_trips(self) -> None:
         dispatched = {
-            "sequencing": "serial",
-            "mode_fail_fast": "true",
+            "chunk_gate": "true",
             "workspace": "true",
             "instructions": "false",
             "filesystem": "ext4",
             "distros": "debian arch",
             "lifecycles": "stable",
-            "modes": "swarm compose",
+            "mode": "swarm",
         }
         self.assertEqual(run_name.values_from_title(render(dispatched)), dispatched)
 
