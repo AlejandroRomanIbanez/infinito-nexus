@@ -16,6 +16,8 @@
 #   NGINX_SERVERS_DIR the deployed OpenResty servers dir from the nginx lookup
 #   RETRIES           attempts per domain
 #   SLEEP_SECONDS     wait between attempts
+#   TOR_DNSMASQ_CONF  the dnsmasq drop-in path; its directory is scanned for
+#                     upstreams when a probe fails
 
 set -uo pipefail
 
@@ -23,6 +25,7 @@ TOR_SOCKS="${TOR_SOCKS:?pass TOR_SOCKS as env (127.0.0.1:<svc-net-tor services.t
 NGINX_SERVERS_DIR="${NGINX_SERVERS_DIR:?pass NGINX_SERVERS_DIR as env (the deployed OpenResty vhost servers dir from the nginx lookup, e.g. /etc/nginx/conf.d/servers)}"
 RETRIES="${RETRIES:?pass RETRIES as env (attempts per domain, from svc-net-tor test.env)}"
 SLEEP_SECONDS="${SLEEP_SECONDS:?pass SLEEP_SECONDS as env (wait between attempts, from svc-net-tor test.env)}"
+TOR_DNSMASQ_CONF="${TOR_DNSMASQ_CONF:?pass TOR_DNSMASQ_CONF as env (the dnsmasq drop-in path, from svc-net-tor vars)}"
 
 discover_domains() {
 	find "${NGINX_SERVERS_DIR}/http" "${NGINX_SERVERS_DIR}/https" \
@@ -68,6 +71,21 @@ probe() {
 	return 1
 }
 
+diagnose() {
+	local domain="$1" upstream upstreams=()
+	echo "       resolv: $(grep -v '^#' /etc/resolv.conf 2>/dev/null | tr '\n' ' ')"
+	grep -F "${domain}" /etc/hosts 2>/dev/null | sed 's/^/       hosts: /'
+	if ! command -v dig >/dev/null 2>&1; then
+		echo "       dig: not installed"
+		return
+	fi
+	echo "       dig: $(dig +short +time=2 +tries=1 "${domain}" A 2>&1 | tr '\n' ' ')"
+	mapfile -t upstreams < <(sed -nE 's/^server=([0-9.]+)$/\1/p' "$(dirname "${TOR_DNSMASQ_CONF}")"/*.conf 2>/dev/null)
+	for upstream in "${upstreams[@]}"; do
+		echo "       dig@${upstream}: $(dig +short +time=2 +tries=1 "@${upstream}" "${domain}" A 2>&1 | tr '\n' ' ')"
+	done
+}
+
 failed=0
 for domain in "${domains[@]}"; do
 	if code="$(probe "${domain}")"; then
@@ -75,6 +93,7 @@ for domain in "${domains[@]}"; do
 	else
 		addr="$(getent hosts "${domain}" 2>/dev/null | head -n1)"
 		printf '[FAIL] %-60s HTTP %s dns=%s\n' "${domain}" "${code}" "${addr%% *}"
+		diagnose "${domain}"
 		failed=$((failed + 1))
 	fi
 done
