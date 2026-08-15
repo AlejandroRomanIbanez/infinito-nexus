@@ -12,7 +12,7 @@ Repository variables are set under **Settings → Secrets and variables → Acti
 | `CI_SYNC_MAIN_SOURCE_REPOSITORY` | [entry-push-latest.yml](../../../../../.github/workflows/entry-push-latest.yml) | Syncs `main` from `infinito-nexus/core` before CI scope discovery | `<owner>/<repo>` to use another source, or `false`, empty, or the current repository to skip |
 | `CI_RUN_ON_MAIN` | [entry-push-latest.yml](../../../../../.github/workflows/entry-push-latest.yml) | Pushes to `main` skip CI | `true` to run CI on `main` pushes too |
 | `CI_ENABLE_AUTO_UPDATES` | [cron-update.yml](../../../../../.github/workflows/cron-update.yml), [entry-pr-open-dependabot-close.yml](../../../../../.github/workflows/entry-pr-open-dependabot-close.yml) | Update jobs skipped; Dependabot PRs auto-closed | `true` to allow update PRs (workflow-driven and Dependabot) |
-| `INFINITO_PLAYWRIGHT_KEEP` | [call-test-deploy-compose.yml](../../../../../.github/workflows/call-test-deploy-compose.yml) | Playwright keeps trace, screenshot and video only when a test fails | `true` to keep them for every test (passing runs included) |
+| `INFINITO_PLAYWRIGHT_KEEP` | [call-test-deploy.yml](../../../../../.github/workflows/call-test-deploy.yml) | Playwright keeps trace, screenshot and video only when a test fails | `true` to keep them for every test (passing runs included) |
 
 ## `CI_CANCEL_IN_PROGRESS` 🛑
 
@@ -151,7 +151,7 @@ Dependabot cannot read repository variables itself, so [entry-pr-open-dependabot
 
 ## `INFINITO_PLAYWRIGHT_KEEP` 🎬
 
-Controls whether Playwright keeps trace, screenshot, and video for every test or only for failing tests in the compose deploy-test workflow ([call-test-deploy-compose.yml](../../../../../.github/workflows/call-test-deploy-compose.yml)).
+Controls whether Playwright keeps trace, screenshot, and video for every test or only for failing tests in the deploy-test workflow ([call-test-deploy.yml](../../../../../.github/workflows/call-test-deploy.yml)).
 For the full propagation chain, the inventory override, and the local equivalents, see [Playwright Tests](../../../actions/testing/playwright.md#artefact-retention-).
 
 **Default behaviour (variable not set or set to any value other than `true`):**

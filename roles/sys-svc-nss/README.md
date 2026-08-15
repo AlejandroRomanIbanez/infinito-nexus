@@ -14,7 +14,7 @@ A deployment that keeps the shipped `DOMAIN_PRIMARY` serves names under `infinit
 
 ## Cosmos
 
-The diagram places Svc Nss in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
+The diagram places NSS in the Infinito.Nexus cosmos: the components it deploys (capabilities), the central services it consumes (dependencies), and its outward reach (federation and bridged external networks).
 
 ```mermaid
 flowchart LR
