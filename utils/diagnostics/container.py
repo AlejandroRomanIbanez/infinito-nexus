@@ -95,17 +95,25 @@ def collect_host(out: Path, app_id: str, context: str, stamp: str) -> None:
         ("df.txt", ["df", "-h"]),
         ("free.txt", ["free", "-m"]),
         ("uptime.txt", ["uptime"]),
-        ("journal.txt", ["journalctl", "-n", "10000", "--no-pager"]),
-        (
-            "journal-warnings.txt",
-            ["journalctl", "-b", "-p", "warning", "--since", "-6h", "--no-pager"],
-        ),
+        ("journal.txt", ["journalctl", "-b", "--no-pager"]),
+        ("journal-warnings.txt", ["journalctl", "-b", "-p", "warning", "--no-pager"]),
+        ("journal-errors.txt", ["journalctl", "-b", "-p", "err", "--no-pager"]),
         ("systemctl.txt", ["systemctl", "list-units", "--all", "--no-pager"]),
         ("resolv-conf.txt", ["cat", "/etc/resolv.conf"]),
         ("daemon-json.txt", ["cat", "/etc/docker/daemon.json"]),
         ("ip-addr.txt", ["ip", "-4", "addr"]),
         ("sockets-udp.txt", ["ss", "-lunp"]),
         ("sockets-tcp.txt", ["ss", "-lntp"]),
+        (
+            "sockets-proc.txt",
+            [
+                "cat",
+                "/proc/net/udp",
+                "/proc/net/tcp",
+                "/proc/net/udp6",
+                "/proc/net/tcp6",
+            ],
+        ),
         ("nat-rules.txt", ["iptables-save", "-t", "nat"]),
         (
             "resolve-probe.txt",
@@ -119,14 +127,37 @@ def collect_host(out: Path, app_id: str, context: str, stamp: str) -> None:
         ("conntrack-stat.txt", ["cat", "/proc/net/stat/nf_conntrack"]),
     ):
         capture(out, name, cmd)
-    dmesg = run(["dmesg", "-T"]).stdout.decode(errors="replace")
-    write(out / "dmesg.txt", dmesg.encode())
-    oom = [
-        line
-        for line in dmesg.splitlines()
-        if re.search(r"oom|kill|memory", line, re.IGNORECASE)
+    capture(out, "dmesg.txt", ["dmesg", "-T"])
+    collect_service_state(out)
+
+
+def collect_service_state(out: Path) -> None:
+    """Dump per-service liveness for every loaded service unit.
+
+    ``systemctl list-units`` reports a forking unit as active/running while its
+    guessed main process is gone, and the containers carry no ``ps``, so the
+    unit table alone cannot answer whether a daemon is still there. MainPID and
+    NRestarts can.
+    """
+    units = [
+        line.split()[0]
+        for line in list_lines(
+            ["systemctl", "list-units", "--type=service", "--all", "--no-pager"]
+        )
+        if line.split() and line.split()[0].endswith(".service")
     ]
-    write(out / "dmesg-oom.txt", "\n".join(oom).encode())
+    if not units:
+        return
+    capture(
+        out,
+        "service-state.txt",
+        [
+            "systemctl",
+            "show",
+            "--property=Id,ActiveState,SubState,MainPID,NRestarts,ExecMainStatus,ExecMainStartTimestamp",
+            *units,
+        ],
+    )
 
 
 def collect_local_dumps(out: Path) -> None:
@@ -165,21 +196,12 @@ def collect_runtime(out: Path, rt: str) -> tuple[list[str], list[str]]:
     capture(
         out / "containers",
         "_daemon-journal.txt",
-        [
-            "journalctl",
-            "-u",
-            "docker",
-            "-u",
-            "containerd",
-            "--since",
-            "-6h",
-            "--no-pager",
-        ],
+        ["journalctl", "-b", "-u", "docker", "-u", "containerd", "--no-pager"],
     )
     capture(
         out / "containers",
         "_kill-markers.txt",
-        ["journalctl", "-t", "infinito-kill", "--since", "-6h", "--no-pager"],
+        ["journalctl", "-b", "-t", "infinito-kill", "--no-pager"],
     )
     capture(
         out / "containers",
@@ -200,7 +222,7 @@ def collect_runtime(out: Path, rt: str) -> tuple[list[str], list[str]]:
         capture(
             out / "containers",
             f"{safe}.journal.txt",
-            [rt, "exec", name, "journalctl", "-n", "1000", "--no-pager"],
+            [rt, "exec", name, "journalctl", "-b", "--no-pager"],
         )
         if "postgres" in name:
             capture(
@@ -215,20 +237,6 @@ def collect_runtime(out: Path, rt: str) -> tuple[list[str], list[str]]:
                     "postgres",
                     "-c",
                     "SELECT pid, usename, datname, state, wait_event_type, backend_start, query_start, left(query, 120) AS query FROM pg_stat_activity ORDER BY backend_start;",
-                ],
-            )
-            capture(
-                out / "containers",
-                f"{safe}.pg_connections.txt",
-                [
-                    rt,
-                    "exec",
-                    name,
-                    "psql",
-                    "-U",
-                    "postgres",
-                    "-c",
-                    "SELECT usename, datname, state, count(*) FROM pg_stat_activity GROUP BY 1, 2, 3 ORDER BY 4 DESC;",
                 ],
             )
     capture(out, "services.txt", [rt, "service", "ls"])

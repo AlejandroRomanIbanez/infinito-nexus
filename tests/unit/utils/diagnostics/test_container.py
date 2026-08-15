@@ -63,6 +63,61 @@ class CollectTests(unittest.TestCase):
             self.assertIn("context: ctx", meta)
             self.assertIn("host: myhost", meta)
 
+    def test_collect_host_reads_the_socket_table_without_iproute2(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            with mock.patch.object(
+                mod, "run", return_value=_cp([], stdout=b"")
+            ) as runner:
+                mod.collect_host(out, "app", "ctx", "STAMP")
+            issued = [call.args[0] for call in runner.call_args_list]
+            self.assertIn(
+                [
+                    "cat",
+                    "/proc/net/udp",
+                    "/proc/net/tcp",
+                    "/proc/net/udp6",
+                    "/proc/net/tcp6",
+                ],
+                issued,
+            )
+            self.assertTrue((out / "sockets-proc.txt").is_file())
+            journals = [cmd for cmd in issued if cmd and cmd[0] == "journalctl"]
+            self.assertTrue(journals)
+            for cmd in journals:
+                self.assertIn("-b", cmd)
+                self.assertNotIn("--since", cmd)
+                self.assertNotIn("-n", cmd)
+
+    def test_service_state_asks_for_the_main_pid_of_every_service(self):
+        mod = _load()
+        listing = b"  dnsmasq.service loaded active running dnsmasq\n  tor.service loaded active running tor\n"
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            with mock.patch.object(
+                mod, "run", return_value=_cp([], stdout=listing)
+            ) as runner:
+                mod.collect_service_state(out)
+            shown = [
+                call.args[0]
+                for call in runner.call_args_list
+                if call.args[0][:2] == ["systemctl", "show"]
+            ]
+            self.assertEqual(len(shown), 1)
+            self.assertIn("MainPID", shown[0][2])
+            self.assertIn("NRestarts", shown[0][2])
+            self.assertEqual(shown[0][3:], ["dnsmasq.service", "tor.service"])
+            self.assertTrue((out / "service-state.txt").is_file())
+
+    def test_service_state_writes_nothing_without_units(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            with mock.patch.object(mod, "run", return_value=_cp([], stdout=b"")):
+                mod.collect_service_state(out)
+            self.assertFalse((out / "service-state.txt").exists())
+
     def test_collect_local_dumps_copies_role_evidence(self):
         mod = _load()
         with tempfile.TemporaryDirectory() as td:
@@ -162,6 +217,10 @@ class CollectTests(unittest.TestCase):
                 any("docker" in c and "containerd" in c for c in journalctls),
                 f"daemon-journal capture missing: {journalctls}",
             )
+            for cmd in journalctls:
+                self.assertIn("-b", cmd)
+                self.assertNotIn("--since", cmd)
+                self.assertNotIn("-n", cmd)
             base = out / "containers"
             self.assertTrue((base / "_kill-markers.txt").is_file())
             self.assertTrue((base / "_daemon-journal.txt").is_file())
@@ -184,8 +243,8 @@ class CollectTests(unittest.TestCase):
             self.assertTrue(
                 (base / "postgres_postgres.1.abc.pg_stat_activity.txt").is_file()
             )
-            self.assertTrue(
-                (base / "postgres_postgres.1.abc.pg_connections.txt").is_file()
+            self.assertFalse(
+                (base / "postgres_postgres.1.abc.pg_connections.txt").exists()
             )
 
 
