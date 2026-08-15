@@ -24,9 +24,11 @@ import re
 import subprocess
 import sys
 
+from utils.cache import PROJECT_ROOT
+from utils.cache.yaml import load_yaml_any
 from utils.distros import distro_names
 from utils.github import run_name
-from utils.github.variant import axes
+from utils.github.variant import axes, selection
 from utils.roles.display import display_names
 from utils.symbol_glossary import to_emoji
 
@@ -37,6 +39,38 @@ RUNNING = "⏳"
 MISSING = "➖"
 
 MODES = ("docker", "swarm", "host")
+
+ENTRY_WORKFLOW = ".github/workflows/entry-manual-steer.yml"
+
+SELECTION_INPUTS = ("priority",)
+"""The one input a retrigger decides itself: it IS the retrigger. Everything
+else the source run was dispatched with is carried over verbatim -- including
+``whitelist``, so a retrigger of a scoped run stays inside that scope instead
+of quietly widening to the whole repository."""
+
+
+def dispatch_inputs() -> tuple[str, ...]:
+    """Every ``workflow_dispatch`` input the manual entry declares.
+
+    Read from the workflow rather than listed here, so an input added to the
+    form is carried over without anyone remembering to teach this module about
+    it -- the failure mode otherwise is silent: the retrigger runs with that
+    input on its default and nothing says so.
+    """
+    data = load_yaml_any(str(PROJECT_ROOT / ENTRY_WORKFLOW), default_if_missing={}) or {}
+    triggers = data.get("on") if isinstance(data.get("on"), dict) else data.get(True)
+    dispatch = triggers.get("workflow_dispatch") if isinstance(triggers, dict) else None
+    inputs = dispatch.get("inputs") if isinstance(dispatch, dict) else None
+    return tuple(inputs or ())
+
+
+def carried_inputs() -> tuple[str, ...]:
+    """The inputs a retrigger reproduces: every dispatch input except the
+    selection it computes itself."""
+    return tuple(
+        name for name in dispatch_inputs() if name not in SELECTION_INPUTS
+    )
+
 
 CONFIG_INPUTS = (
     "distros",
@@ -178,6 +212,46 @@ def failed_roles(
         return scope in modes and modes[scope] != "success"
 
     return sorted(app for app, modes in statuses.items() if fails(modes))
+
+
+def failed_selections(jobs: list[dict], *, strict: bool = False) -> list[str]:
+    """The selection tokens that reproduce exactly what did not pass.
+
+    A role aggregated to its id loses what actually broke: the retrigger then
+    redeploys every variant of it, in whatever mode and onion state the sweep
+    rotation happens to pick, and the combination that failed may not be among
+    them. Each failed job therefore contributes its own
+    ``role#variant@mode+tor`` token (:mod:`utils.github.variant.selection`), so
+    the priority line replays that job and nothing else.
+
+    Every mode is read; there is no scope to narrow to. A run that failed in
+    swarm and in compose comes back as two tokens for the same role.
+
+    Args:
+        jobs: the source run's jobs.
+        strict: only hard failures (❌) count; cancelled, timed out and still
+            running are left out.
+
+    Returns:
+        sorted, deduplicated tokens.
+    """
+    tokens = set()
+    for app, _mode, job in _iter_deploy_jobs(jobs):
+        state = _effective(job)
+        if state == "success" or (strict and state != "failure"):
+            continue
+        label = axes.parse_label(str(job.get("name", "")))
+        tokens.add(
+            selection.describe(
+                selection.Pin(
+                    app,
+                    tuple(int(part) for part in label.variant.split(",") if part),
+                    label.mode,
+                    label.tor,
+                )
+            )
+        )
+    return sorted(tokens)
 
 
 def run_id_from_url(url: str) -> str:
@@ -405,22 +479,30 @@ def config_from_title(title: str) -> dict[str, str]:
 def config_from_run(
     title: str, jobs: list[dict], logged: dict[str, str] | None = None
 ) -> dict[str, str]:
-    """The source run's configuration, with the distros the title does not
-    record recovered from its jobs (:func:`distros_from_jobs`).
+    """Every input the source run was dispatched with, except the selection.
+
+    The job log is the source: it records all inputs verbatim, including the
+    ones the title renders as a glyph and the ones it renders not at all. The
+    title fills the gaps when a log is unreadable, and the distros -- which a
+    randomly picked run records nowhere -- come from the job names.
+
+    An input the source left on its default resolves to empty and is dropped,
+    so the retrigger leaves it on that same default rather than pinning
+    today's default into a run that never asked for it.
 
     Args:
         title: the source run's display title.
         jobs: the source run's jobs.
         logged: inputs read verbatim from a called job's log
-            (:func:`inputs_from_jobs`); :data:`LOG_INPUTS` are taken from here
-            instead of from the title.
+            (:func:`inputs_from_jobs`).
     """
-    config = config_from_title(title)
+    recorded = run_name.values_from_title(title)
+    config = {
+        name: (logged or {}).get(name) or recorded.get(name, "")
+        for name in carried_inputs()
+    }
     if not config.get("distros"):
-        config = {**config, "distros": distros_from_jobs(jobs)}
-    config.update(
-        {name: (logged or {}).get(name, "") for name in LOG_INPUTS},
-    )
+        config["distros"] = distros_from_jobs(jobs)
     return {name: value for name, value in config.items() if value}
 
 

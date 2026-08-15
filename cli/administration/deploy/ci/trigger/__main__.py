@@ -2,6 +2,12 @@
 
 entry-manual-steer.yml reads the "__ALL__" whitelist sentinel as "force a full
 deploy across all roles".
+
+A retrigger differs from its source run in the selection and in nothing else:
+every other dispatch input is carried over (:func:`runs.carried_inputs`, read
+off the workflow itself), and the priority line names the exact selections that
+failed -- role, variant, deploy mode and onion state -- rather than the roles
+they belong to.
 """
 
 from __future__ import annotations
@@ -39,16 +45,16 @@ def main(argv: list[str] | None = None) -> int:
     group.add_argument(
         "--failed",
         nargs="?",
-        const="total",
+        const=True,
         default=None,
-        choices=("total", "swarm", "compose", "docker", "host"),
-        metavar="{total,swarm,compose,host}",
+        metavar="(ignored)",
         help=(
-            "Re-trigger roles that were not green in the source run as the "
-            "priority line, together with the priority roles that run never "
-            "deployed at all; the remaining roles follow once they succeed. "
-            "Optional scope: 'total' (default; failed in any mode), "
-            "'swarm', 'compose', or 'host'."
+            "Re-trigger what was not green in the source run as the priority "
+            "line, together with the priority entries that run never deployed "
+            "at all; the remaining roles follow once they succeed. Every mode "
+            "is read, and each failed job comes back as the exact selection "
+            "that failed -- variant, deploy mode and onion state included. A "
+            "leftover scope argument is accepted and ignored."
         ),
     )
     group.add_argument(
@@ -106,14 +112,13 @@ def main(argv: list[str] | None = None) -> int:
             p.error("--apps was empty")
         whitelist = apps
     elif args.failed is not None:
-        scope = "docker" if args.failed == "compose" else args.failed
         statuses = runs.parse_role_statuses(source["jobs"])
-        failed = runs.failed_roles(statuses, scope, strict=args.strict)
+        failed = runs.failed_selections(source["jobs"], strict=args.strict)
         untriggered = runs.untriggered_priority(
             runs.dispatched_priority(source, repo), statuses
         )
         if not failed and not untriggered:
-            print(f"Nothing failed ({args.failed}) in that run; not triggering.")
+            print("Nothing failed in that run; not triggering.")
             return 0
         if untriggered:
             print(f"Priority roles that never deployed: {' '.join(untriggered)}")
@@ -128,6 +133,9 @@ def main(argv: list[str] | None = None) -> int:
             source["jobs"],
             runs.inputs_from_jobs(source["jobs"], repo),
         )
+    carried_whitelist = config.pop("whitelist", "")
+    if not whitelist and carried_whitelist:
+        whitelist = carried_whitelist
 
     if priority:
         label = f"priority {priority}, then the remaining roles"

@@ -27,6 +27,10 @@ _JOBS = [
     _job("swarm", "web-app-y", "success"),
 ]
 
+_FAILED_TOKENS = "web-app-x#0,1@swarm+clearnet web-app-y#0,1@compose+clearnet"
+"""What _JOBS failed at, exactly: x in swarm, y in compose, both on variant
+shard 0,1 and both on the clearnet."""
+
 _RUN_URL = "https://github.com/o/r/actions/runs/55"  # nocheck: url
 _SOURCE_CONFIG = {
     "distros": "arch centos",
@@ -82,15 +86,24 @@ class TestTriggerMain(unittest.TestCase):
         rc, calls = self._run(["--failed"], run={"_jobs": _JOBS})
         self.assertEqual(rc, 0)
         self.assertEqual(calls[0][2], "")
-        self.assertEqual(calls[0][3], "web-app-x web-app-y")
+        self.assertEqual(calls[0][3], _FAILED_TOKENS)
 
-    def test_failed_swarm_scope(self) -> None:
-        _rc, calls = self._run(["--failed", "swarm"], run={"_jobs": _JOBS})
-        self.assertEqual(calls[0][3], "web-app-x")
+    def test_a_leftover_scope_argument_no_longer_narrows_the_modes(self) -> None:
+        for scope in ("swarm", "compose", "total"):
+            with self.subTest(scope=scope):
+                _rc, calls = self._run(["--failed", scope], run={"_jobs": _JOBS})
+                self.assertEqual(calls[0][3], _FAILED_TOKENS)
 
-    def test_failed_compose_scope(self) -> None:
-        _rc, calls = self._run(["--failed", "compose"], run={"_jobs": _JOBS})
-        self.assertEqual(calls[0][3], "web-app-y")
+    def test_every_failed_mode_of_one_role_comes_back_separately(self) -> None:
+        both = [
+            _job("docker", "web-app-x", "failure"),
+            _job("swarm", "web-app-x", "failure"),
+        ]
+        _rc, calls = self._run(["--failed"], run={"_jobs": both})
+        self.assertEqual(
+            calls[0][3],
+            "web-app-x#0,1@compose+clearnet web-app-x#0,1@swarm+clearnet",
+        )
 
     def test_never_deployed_priority_roles_join_the_retrigger(self) -> None:
         source = {"jobs": _JOBS, "displayTitle": render(_SOURCE_CONFIG)}
@@ -115,7 +128,7 @@ class TestTriggerMain(unittest.TestCase):
         ):
             rc = trigger.main(["--failed", "--run", _RUN_URL])
         self.assertEqual(rc, 0)
-        self.assertEqual(calls[0], "web-app-never web-app-x web-app-y")
+        self.assertEqual(calls[0], "web-app-never web-app-x#0,1@swarm+clearnet web-app-y#0,1@compose+clearnet")
 
     def test_an_unreadable_job_log_aborts_instead_of_dropping_the_priority(
         self,
@@ -190,7 +203,7 @@ class TestTriggerMain(unittest.TestCase):
         ):
             rc = trigger.main(["--failed", "--run", _RUN_URL])
         self.assertEqual(rc, 0)
-        self.assertEqual(calls[0], ("web-app-x web-app-y", _SOURCE_CONFIG))
+        self.assertEqual(calls[0], (_FAILED_TOKENS, _SOURCE_CONFIG))
         fetch.assert_called_once()
         find_last.assert_not_called()
 
@@ -212,7 +225,7 @@ class TestTriggerMain(unittest.TestCase):
         ):
             rc = trigger.main(["--failed", "--run", "55"])
         self.assertEqual(rc, 0)
-        self.assertEqual(calls[0], ("web-app-x web-app-y", _SOURCE_CONFIG))
+        self.assertEqual(calls[0], (_FAILED_TOKENS, _SOURCE_CONFIG))
         fetch.assert_called_once_with("55", repo="o/r")
         find_last.assert_not_called()
 
