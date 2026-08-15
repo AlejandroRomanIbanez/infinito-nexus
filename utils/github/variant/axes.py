@@ -29,6 +29,9 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from utils import PROJECT_ROOT
 from utils.cache.yaml import load_yaml_any
+from utils.roles.applications.services.registry import (
+    build_service_registry_from_roles_dir,
+)
 from utils.roles.display import display_names
 from utils.roles.mapping import ROLE_FILE_META_SERVICES
 from utils.symbol_glossary import to_emoji, to_word
@@ -145,6 +148,15 @@ def tor_capable(
     if variant is None or not 0 <= variant < len(declared):
         return _base_tor_capable(app)
     return _tor_flag(declared[variant]) is not False
+
+
+def tor_provider() -> str | None:
+    """Application id of the role providing the ``tor`` service, ``None`` if
+    the registry names none. Resolved rather than hardcoded so renaming the
+    provider role cannot leave the matrix pointing at a dead id."""
+    entry = build_service_registry_from_roles_dir(ROLES_DIR).get("tor") or {}
+    role = entry.get("role")
+    return role if isinstance(role, str) and role else None
 
 
 def resolve_tor_mode(raw: str | None = None) -> str:
@@ -275,9 +287,12 @@ def assign(
         the roles a run is told to prove are proven everywhere at once rather
         than sampled over four sweeps. ``disable`` carries the provider tokens
         the deploy drill switches off; a row without tor disables the provider
-        so no dependency edge can pull it back into the closure.
+        so no dependency edge can pull it back into the closure. The provider's
+        own rows therefore never take the clearnet state: disabling tor there
+        would strip the app under test out of its own deploy.
     """
     codec = display_names()
+    provider = tor_provider()
     entries: list[dict[str, str]] = []
     for position, row in enumerate(rows):
         app = row["name"]
@@ -299,6 +314,8 @@ def assign(
                     sweep=sweep,
                 )
             ]
+        if app == provider:
+            picked = [(mode, enabled) for mode, enabled in picked if enabled]
         variant_csv = "" if variant is None else str(variant)
         label = codec.encode(app, variant_csv)
         for mode, enabled in picked:

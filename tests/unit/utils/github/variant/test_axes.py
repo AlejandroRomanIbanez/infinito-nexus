@@ -290,6 +290,22 @@ class TestAssign(unittest.TestCase):
         ]
         self.assertEqual(entry["disable"], "tor")
 
+    def test_the_provider_row_never_takes_the_clearnet_state(self) -> None:
+        provider = axes.tor_provider()
+        self.assertIsNotNone(provider)
+        for sweep in range(4):
+            for tor_mode in axes.TOR_MODES:
+                with self.subTest(sweep=sweep, tor_mode=tor_mode):
+                    entries = axes.assign(
+                        [_row(provider, 0, ("compose", "swarm"), priority=True)],
+                        sweep=sweep,
+                        tor_mode=tor_mode,
+                    )
+                    self.assertEqual(
+                        [e["disable"] for e in entries], [""] * len(entries)
+                    )
+                    self.assertNotIn("false", [e["tor"] for e in entries])
+
 
 class TestParseLabel(unittest.TestCase):
     def _title(self, mode: str, app: str, variant: str, **kw) -> str:
