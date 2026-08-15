@@ -20,4 +20,4 @@
     redis:
       shared: false
     tor:
-      enabled: false
+      enabled: true

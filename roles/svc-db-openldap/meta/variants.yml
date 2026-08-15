@@ -6,4 +6,4 @@
       exposed: true # nocheck: variants-static-override
 - services:
     tor:
-      enabled: false
+      enabled: true

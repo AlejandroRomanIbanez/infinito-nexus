@@ -51,7 +51,7 @@
       enabled: false
       shared: false
     tor:
-      enabled: false
+      enabled: true
 - services:
     mastodon:
       enabled: true

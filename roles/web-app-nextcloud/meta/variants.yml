@@ -189,7 +189,7 @@
       enabled: false
       shared: false # nocheck: variants-static-override backup shared stays literally true
     tor:
-      enabled: false
+      enabled: true
   addons: &addons_static_off
     appointments:
       enabled: false

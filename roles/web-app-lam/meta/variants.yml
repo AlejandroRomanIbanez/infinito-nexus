@@ -54,7 +54,7 @@
       enabled: false
       shared: false
     tor:
-      enabled: false
+      enabled: true
   secrets:
     credentials:
       administrator_password: "'$tr0ng€xampl3PW!"

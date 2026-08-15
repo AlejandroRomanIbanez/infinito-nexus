@@ -37,6 +37,7 @@ prometheus:
   # nocheck: prometheus-scrape
   scrape: false
 
+# nocheck: variants-coverage — sso-variant-tor requires the onion on in every variant, so the false polarity has no variant left to live in
 tor:
   bond: 0.5
   enabled: "{{ 'svc-net-tor' in group_names }}"

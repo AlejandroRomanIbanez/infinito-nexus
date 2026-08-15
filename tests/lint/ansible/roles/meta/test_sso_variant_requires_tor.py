@@ -8,10 +8,11 @@ plaintext origins drop ``Secure`` cookies, an https identity provider cannot
 embed in an http page, ``crypto.subtle`` is undefined outside a secure context -
 so a variant that never runs it is not testing the deployment users get.
 
-Variant 1 is exempt: it is the minimal, partner-free, clearnet round every role
-declares, and the one place the stack is exercised without the onion at all.
-Roles without a tor block are out of scope too - they have no onion to pin, and
-``test_tor_contract`` already decides who needs the block.
+No variant is exempt, not even the minimal round: the onion is part of the
+deployment under test, not a feature bolted onto the full shape. Roles without a
+tor block are out of scope - they have no onion to pin, and ``test_tor_contract``
+already decides who needs the block; so is a role whose ``meta/services.yml``
+pins ``tor.enabled`` to a literal false, which has already declared it has none.
 
 The first: a variant that turns SSO on must also turn the onion on.
 
@@ -50,7 +51,6 @@ if TYPE_CHECKING:
 
 ROLES_DIR = PROJECT_ROOT / "roles"
 _RULE = "sso-variant-tor"
-_CLEARNET_VARIANT = 1
 
 
 def _load_yaml(path: Path) -> Any:
@@ -145,8 +145,6 @@ class TestSsoVariantRequiresTor(unittest.TestCase):
                 continue
 
             for index, variant in enumerate(variants):
-                if index == _CLEARNET_VARIANT:
-                    continue
                 tor = _flag(variant, "tor")
                 if tor is True:
                     continue
