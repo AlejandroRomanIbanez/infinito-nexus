@@ -71,7 +71,9 @@ for (const persona of PERSONAS) {
     ).toBeVisible({ timeout: resolveTimeout(60_000) });
 
     await page
-      .locator("input[type='text']:visible, input[type='email']:visible")
+      .locator(
+        "input[autocomplete='username']:visible, input[type='text']:visible, input[type='email']:visible",
+      )
       .first()
       .fill(persona.username);
     await password.fill(persona.password);
