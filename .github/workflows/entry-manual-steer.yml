@@ -1,5 +1,5 @@
 name: "🕹️ Manual"
-run-name: "🕹️ ${{ inputs.mode_fail_fast && '🛑 ' || '' }}${{ inputs.sequencing != 'auto' && format('🐛{0} ', inputs.sequencing == 'serial' && '序' || '并') || '' }}${{ inputs.workspace != 'auto' && format('🧑‍💻{0} ', inputs.workspace == 'true' && '是' || '否') || '' }}${{ inputs.instructions != 'auto' && format('📖{0} ', inputs.instructions == 'true' && '是' || '否') || '' }}${{ inputs.tor != 'auto' && format('{0} ', inputs.tor == 'disabled' && '🌐' || inputs.tor == 'enforced' && '🧅强制' || '🧅独占') || '' }}${{ inputs.filesystem != '' && format('🗄️{0} ', inputs.filesystem) || '' }}${{ inputs.distros != '' && format('🐧{0} ', inputs.distros) || '' }}${{ inputs.lifecycles != '' && format('♻️{0} ', inputs.lifecycles) || '' }}${{ inputs.modes != 'swarm compose host' && format('🚀{0} ', inputs.modes) || '' }}${{ inputs.priority != '' && format('⭐{0} ', inputs.priority) || '' }}${{ inputs.whitelist != '' && format('🎯{0}', inputs.whitelist) || '🔀 diff (origin/main)' }}"
+run-name: "🕹️ ${{ inputs.chunk_gate && '🛑 ' || '' }}${{ inputs.resume_from_chunk != 0 && format('⏭️{0} ', inputs.resume_from_chunk) || '' }}${{ inputs.workspace != 'auto' && format('🧑‍💻{0} ', inputs.workspace == 'true' && '是' || '否') || '' }}${{ inputs.instructions != 'auto' && format('📖{0} ', inputs.instructions == 'true' && '是' || '否') || '' }}${{ inputs.tor != 'auto' && format('{0} ', inputs.tor == 'disabled' && '🌐' || inputs.tor == 'enforced' && '🧅强制' || '🧅独占') || '' }}${{ inputs.filesystem != '' && format('🗄️{0} ', inputs.filesystem) || '' }}${{ inputs.distros != '' && format('🐧{0} ', inputs.distros) || '' }}${{ inputs.lifecycles != '' && format('♻️{0} ', inputs.lifecycles) || '' }}${{ inputs.mode != 'auto' && format('🚀{0} ', inputs.mode) || '' }}${{ inputs.priority != '' && format('⭐{0} ', inputs.priority) || '' }}${{ inputs.whitelist != '' && format('🎯{0}', inputs.whitelist) || '🔀 diff (origin/main)' }}"
 
 concurrency:
   group: global-ci-${{ github.repository }}-${{ github.ref_name }}
@@ -14,7 +14,7 @@ on:
         default: ""
         type: string
       priority:
-        description: "⭐ Roles to deploy first. The rest waits until they are green."
+        description: "⭐ Roles to deploy first, in every combination they can take (each variant × each offered mode × Tor and clearnet). They get chunks of their own; the regular rows wait until those are green."
         required: false
         default: ""
         type: string
@@ -28,11 +28,16 @@ on:
         required: false
         default: ""
         type: string
-      modes:
-        description: "🚀 Deploy modes to test. Only the listed ones run their deploy job."
+      mode:
+        description: "🚀 Deploy mode. 'auto' rotates every row over the modes its role offers; a single mode keeps only the rows that mode can take."
         required: false
-        default: "swarm compose host"
-        type: string
+        default: "auto"
+        type: choice
+        options:
+          - "auto"
+          - "host"
+          - "compose"
+          - "swarm"
       filesystem:
         description: "🗄️ Space-separated filesystems the per-distro pick draws from (ext4, btrfs, zfs). Empty: all three."
         required: false
@@ -48,20 +53,21 @@ on:
           - "enforced"
           - "exclusive"
           - "disabled"
-      sequencing:
-        description: "🐛 Deploy-mode order per line. 'serial': swarm, then compose, then host. 'parallel': all at once. 'auto': serial above 65 jobs per line."
+      resume_from_chunk:
+        description: "⏭️ Skip every chunk below this index. Use to continue a sweep after fixing what broke it, instead of re-running the green chunks."
         required: false
-        default: "auto"
-        type: choice
-        options:
-          - "auto"
-          - "serial"
-          - "parallel"
-      mode_fail_fast:
-        description: "🛑 Stop a serial line at its first failed mode. Off: keep deploying the remaining modes."
+        default: 0
+        type: number
+      chunk_gate:
+        description: "🛑 Stop the chunk chain at its first failed chunk. Off: keep deploying the remaining chunks."
         required: false
         default: true
         type: boolean
+      sweep:
+        description: "🔁 Sweep number driving the mode/tor rotation and the regular-line offset. Empty: the run number."
+        required: false
+        default: ""
+        type: string
       workspace:
         description: "🧑‍💻 Run the workspace test (dev-runtime image matrix). 'auto' runs it on a global scope only."
         required: false
@@ -122,10 +128,11 @@ jobs:
       distros: ${{ needs.pick-distro.outputs.distros }}
       whitelist: ${{ inputs.whitelist }}
       lifecycles: ${{ inputs.lifecycles }}
-      modes: ${{ inputs.modes }}
+      mode: ${{ inputs.mode }}
       priority: ${{ inputs.priority }}
-      sequencing: ${{ inputs.sequencing }}
-      mode_fail_fast: ${{ inputs.mode_fail_fast }}
+      sweep: ${{ inputs.sweep }}
+      resume_from_chunk: ${{ inputs.resume_from_chunk }}
+      chunk_gate: ${{ inputs.chunk_gate }}
       filesystem: ${{ inputs.filesystem }}
       workspace: ${{ inputs.workspace }}
       workspace_track: ${{ inputs.workspace_track }}

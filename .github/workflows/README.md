@@ -28,32 +28,21 @@ flowchart TB
         codeql["cron-security-codeql.yml"]
         buildci["build-ci-images: images-build-ci.yml"] --> dns["test-dns.yml"]
         mirror["images-mirror-missing.yml"]
-        seq["sequencing: serial or parallel, per line"]
 
-        subgraph prio["priority line, skipped without a priority input"]
-            swarmprio["test-deploy-swarm-priority"]
-            swarmprio -->|"serial"| composeprio["test-deploy-compose-priority"]
-            composeprio -->|"serial"| hostprio["test-deploy-host-priority"]
-            snprio["test-deploy-single-node-priority: parallel"]
+        subgraph chain["serial chunk chain"]
+            chunk0["test-deploy-chunk-0"]
+            chunk0 --> chunk1["test-deploy-chunk-1"]
+            chunk1 --> chunk2["test-deploy-chunk-2"]
         end
 
-        subgraph reg["regular line"]
-            swarmreg["test-deploy-swarm"]
-            swarmreg -->|"serial"| composereg["test-deploy-compose"]
-            composereg -->|"serial"| hostreg["test-deploy-host"]
-            snreg["test-deploy-single-node: parallel"]
-        end
+        lintwf --> chain
+        testwf --> chain
+        dns --> chain
+        mirror --> chain
+        buildci --> chain
 
-        lintwf --> prio
-        testwf --> prio
-        dns --> prio
-        mirror --> prio
-        seq --> prio
-        prio -->|"all priority jobs green"| reg
-
-        swarmreg --> smoke["test-runner-smoke.yml"]
-        prio --> report["report-main-failures"]
-        reg --> report
+        chunk0 --> smoke["test-runner-smoke.yml"]
+        chain --> report["report-main-failures"]
 
         instmake["test-install-make.yml"]
         instpkgmgr["test-install-pkgmgr.yml"]
@@ -61,9 +50,7 @@ flowchart TB
         buildci --> testguide["test-instructions.yml"]
         mirror --> testguide
 
-        prio --> donegate["done"]
-        reg --> donegate
-        seq --> donegate
+        chain --> donegate["done"]
         smoke --> donegate
         instmake --> donegate
         instpkgmgr --> donegate
@@ -71,111 +58,112 @@ flowchart TB
         testguide --> donegate
     end
 
-    snprio --> singlenode["test-deploy-single-node.yml"]
-    snreg --> singlenode
-    singlenode --> deploycompose["test-deploy-compose.yml"]
-    singlenode --> deployhost["test-deploy-host.yml"]
-    composeprio --> deploycompose
-    composereg --> deploycompose
-    hostprio --> deployhost
-    hostreg --> deployhost
-    swarmprio --> deployswarm["test-deploy-swarm.yml"]
-    swarmreg --> deployswarm
+    chunk0 --> deploy["call-test-deploy.yml"]
+    chunk1 --> deploy
+    chunk2 --> deploy
 ```
 
-The priority line runs only when the orchestrator's `priority` input is set;
-with it empty every priority job is skipped and the regular line starts
-directly. The regular jobs receive the priority ids as `blacklist`, so each
-role deploys in exactly one line.
+## Sweeps and chunks
 
-## Deploy-line sequencing
+A **sweep** is one orchestrator run. It builds a single ordered list of
+`role#variant` rows, assigns each row a deploy mode and a tor state, and
+deploys the list in serial **chunk** blocks.
 
-A **line** is one half of a run: the priority line (`⭐`, the roles named in
-`priority`) or the regular line (`🔁`, everything else). Each line deploys up
-to three **modes**: swarm, compose, host. The lines are always sequential
-relative to each other; this section is about the order *inside* one line.
-
-### Why the order exists
+### Why chunks exist
 
 GitHub cancels a job that has sat queued for 24 hours. That clock starts when
 the job is queued, not when the run starts, and a `needs:` edge delays queueing
-until the dependency completes. A line that starts all three modes at once
-queues its whole matrix in one go, so with more roles than runner slots the
-tail of that matrix waits past the cut and dies unrun. Deploying the modes one
-after the other restarts the clock per mode.
+until the dependency completes. A run that queues its whole matrix at once
+leaves the tail waiting past the cut, where it dies unrun. Deploying in chunks
+chained on `needs:` restarts the clock per chunk.
 
-Serialising costs wall-clock, so it is only worth it above a certain size. The
-run does not pay it on a small diff.
+The chunk size is what makes that safe, and `cli.meta.ci.slots` derives it
+rather than pinning it:
 
-### The decision
+```text
+waves      = floor(INFINITO_CI_QUEUE_HOURS / the deploy job's timeout-minutes)
+chunk size = INFINITO_CI_CONCURRENCY * waves
+```
 
-The `sequencing` job resolves the effective whitelist (the same
-`scripts/github/resolve/effective_whitelist.sh` the discover steps use) and
-calls `cli.meta.ci.sequencing` once per line, emitting `serial` or `parallel`
-as a job output.
+Assuming every job burns its full timeout is deliberately pessimistic — no job
+can outlast it — so the estimate can only overshoot the real drain time. With
+the current constants that is 4 waves of 20 runners, so 80 rows per chunk, and
+the last job of a chunk starts around t=18h, well inside the 24h window.
 
-Job counts are taken on the row basis each mode actually runs on: swarm
-selections are `role#variant` tokens that map 1:1 onto jobs, compose and host
-selections are whole roles whose variants pack into bundles
-(`utils.github.variant.bundles`). The count deliberately omits the
-runner-storage filter that `scripts/meta/resolve/apps.sh` applies inside
-GitHub Actions, so it can only overestimate — erring towards the sequential
-layout, which cannot be cancelled.
+### How many chunks a sweep spends
 
-| `sequencing` input | Behaviour |
+The run's 256-job cap is the second ceiling. `slots` counts every non-deploy
+job the orchestrator chain spawns, subtracts the worst `entry-*.yml` overhead,
+and what remains is `available` — the rows one sweep may deploy across all its
+chunks. Rows beyond that roll into the next sweep, which starts reading the
+regular line at an offset (`cli.meta.ci.chunks`), so consecutive sweeps walk
+the whole list instead of re-testing the same head forever.
+
+GitHub Actions cannot generate a variable number of jobs, so the chunk blocks
+are written out in the orchestrator. `INFINITO_CI_MAX_CHUNKS` must equal how
+many exist there — `slots` plans a sweep against that key, and a sweep planned
+larger than the chain silently drops its tail. Blocks whose slice comes back
+empty skip themselves and cost nothing.
+
+Run `python -m cli.meta.ci.slots --matrix` to see the whole budget.
+
+### Priority
+
+`priority` names the roles that lead. They sort to the head of the list and the
+split forces a chunk boundary at the priority/regular seam, so a chunk is
+either all priority or all regular — the seam chunk stays short rather than
+being topped up. That is what guarantees every priority row is deployed before
+the first regular one starts. Priority rows wear a trailing `⭐` in their job
+name and never move with the sweep offset.
+
+They are also the rows a run must not sample. A priority row is deployed in
+**every combination it can take** — each variant, in each mode its role offers,
+and on the modes that carry the onion axis once behind Tor and once on
+clearnet — all within the same sweep. A 3-variant role offering compose and
+swarm therefore becomes 3 × 2 × 2 = **12 jobs**, not 3. That is the point of
+naming a role in `priority`: it is proven everywhere at once instead of over
+four sweeps.
+
+An explicit `tor` input still wins over the full coverage: `enforced`,
+`exclusive` and `disabled` are operator narrowings, and a variant that pins
+`services.tor.enabled` to false never gets an onion run regardless.
+
+### Mode and tor
+
+For **regular** rows both axes are a deterministic rotation over the row's
+position in the global list and the sweep number, never random, so a red job
+reproduces by re-running the same sweep:
+
+| Axis | Rotation |
 |---|---|
-| `auto` (default) | `serial` above `INFINITO_CI_SEQUENTIAL_THRESHOLD` jobs in that line, `parallel` at or below it |
-| `serial` | forced; skips the count entirely |
-| `parallel` | forced; skips the count entirely |
+| mode | `(position + sweep) % len(modes the role offers)` |
+| tor | `(position + sweep // 2) % 2` |
 
-The threshold lives in [`default.env`](../../default.env) as
-`INFINITO_CI_SEQUENTIAL_THRESHOLD`. Both lines are decided independently: a
-small priority line can run parallel while the regular line behind it runs
-serial.
+A role offers at most two modes in practice — swarm needs its own stack, host
+needs the absence of one — so a row flips between its two modes on consecutive
+sweeps. Tor turns on `sweep // 2` so it does not flip in lockstep: a row walks
+all four mode/tor combinations over four sweeps instead of only two. Priority
+rows skip the rotation entirely and take the whole cross-product at once.
 
-### The two layouts
-
-Serial order is **swarm, then compose, then host** — heaviest mode first, so
-the longest queue drains while the run is youngest.
-
-- **parallel** — `test-deploy-swarm-priority` plus
-  `test-deploy-single-node-priority`, which fans compose and host out
-  together. This is the layout the pipeline had before sequencing existed.
-- **serial** — `test-deploy-swarm-priority` →
-  `test-deploy-compose-priority` → `test-deploy-host-priority`, each chained
-  on the previous through `needs:`.
-
-The regular line mirrors this with the unsuffixed job names.
-
-A `needs:` edge is static, so a workflow cannot make one conditional. Both
-layouts therefore exist as separate jobs and the `sequencing` output skips
-one of them. Because a skipped dependency otherwise skips its dependents, the
-serial jobs carry `always()` plus explicit `needs.<job>.result` checks on the
-real gates. The swarm job depends on no sequencing decision at all: it leads
-in either layout.
+Because the same variant can now run twice in one sweep, the onion state is
+part of what identifies a job: it is in the job label (`🧅` vs `🌐`), in the
+deploy concurrency group, and in every artifact name. Two jobs uploading under
+one artifact name is a conflict, not an overwrite.
 
 ### Stopping on failure
 
-`mode_fail_fast` (default `true`) decides whether a serial line stops at its
-first failed mode:
+`chunk_gate` (default `true`) decides whether the chain stops at its first
+failed chunk:
 
 | Value | Behaviour |
 |---|---|
-| `true` | swarm fails → compose and host of that line are skipped |
-| `false` | every mode deploys and reports; the run still ends red |
+| `true` | chunk 0 fails → the remaining chunks are skipped |
+| `false` | every chunk deploys and reports; the run still ends red |
 
-`skipped` counts as passed, so a mode absent from `modes` never blocks the
-chain. The parallel layout ignores the switch — with no order there is nothing
-to stop. The setting is a checkbox on `entry-manual-steer.yml`; the other entry
-points take the default.
-
-### Job budget
-
-`cli.meta.ci.slots` divides the run's 256-job cap between the deploy
-matrices and reads the orchestrator to do it, so every deploy caller —
-including the serial twins — must be listed in its `_DEPLOY_CALLERS`.
-A caller missing there is charged a guessed dynamic-matrix estimate instead
-of its single discover job.
+`skipped` counts as passed, so an empty chunk never blocks the chain. After
+fixing what broke a sweep, `resume_from_chunk` re-enters at that index instead
+of re-running the green chunks. Both are inputs on `entry-manual-steer.yml`;
+the other entry points take the defaults.
 
 ## Cancellation
 
@@ -209,5 +197,5 @@ flowchart TB
 
 Also manually dispatchable: `cron-images-mirror-all.yml`, `cron-images-cleanup-ci.yml`,
 `cron-cleanup-stale.yml`, `cron-update.yml`, `cron-release-highest.yml`, `call-release-version.yml`,
-`call-lint.yml`, `call-test.yml`, `call-test-deploy-swarm.yml`, `call-test-dns.yml`,
+`call-lint.yml`, `call-test.yml`, `call-test-dns.yml`,
 `test-workspace.yml`, `test-runner-smoke.yml`.

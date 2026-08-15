@@ -1,4 +1,4 @@
-name: "🐝 Test: Deploy (swarm)"
+name: "🚀 Test: Deploy"
 
 on:
   workflow_call:
@@ -7,8 +7,21 @@ on:
         description: "Space-separated distro list (shown in the discover job name)"
         required: true
         type: string
+      index:
+        description: "Chunk index this call deploys; chunks run serially, one block per index."
+        required: true
+        type: string
+      sweep:
+        description: "Sweep number driving the mode and tor rotation and the regular-line offset."
+        required: true
+        type: string
       whitelist:
         description: "Optional space-separated whitelist of app ids"
+        required: false
+        type: string
+        default: ""
+      priority:
+        description: "Optional space-separated app ids for the priority line: sorted to the head of the list, cut into chunks of their own, and deployed in every combination they can take."
         required: false
         type: string
         default: ""
@@ -17,18 +30,18 @@ on:
         required: false
         type: string
         default: ""
-      blacklist:
-        description: "Optional space-separated app ids to drop from discovery"
+      modes:
+        description: "Deploy modes rows may be drawn from: 'auto' for every mode, or a subset of 'host compose swarm'."
         required: false
         type: string
-        default: ""
+        default: "auto"
       filesystem:
         description: "🗄️ Space-separated filesystems the per-distro pick draws from (ext4, btrfs, zfs). Empty: all three."
         required: false
         type: string
         default: ""
       marker:
-        description: "Optional suffix appended to the discover job name (e.g. ' ⭐' for the priority line)"
+        description: "Optional suffix appended to the discover job name (e.g. ' ⭐' for a priority chunk)"
         required: false
         type: string
         default: ""
@@ -39,31 +52,48 @@ on:
   workflow_dispatch:
     inputs:
       distros:
-        description: "Space-separated distro list (shown in the discover job name)"
+        description: "🐧 Space-separated distro list"
         required: true
         type: string
+        default: "debian"
+      index:
+        description: "📦 Chunk index to deploy."
+        required: false
+        type: string
+        default: "0"
+      sweep:
+        description: "🔁 Sweep number driving the mode/tor rotation and the regular-line offset."
+        required: false
+        type: string
+        default: "0"
       whitelist:
-        description: "Optional space-separated whitelist of app ids"
+        description: "🎯 Roles to deploy. Empty: diff vs origin/main. '__ALL__': every role."
+        required: false
+        type: string
+        default: ""
+      priority:
+        description: "⭐ Roles to deploy first, in every combination they can take."
         required: false
         type: string
         default: ""
       lifecycles:
-        description: "Lifecycle envelope for discovery (comma/space-separated)."
+        description: "♻️ Lifecycle envelope for discovery (comma/space-separated)."
         required: false
         type: string
         default: ""
-      blacklist:
-        description: "Optional space-separated app ids to drop from discovery"
+      modes:
+        description: "🚀 Deploy modes rows may be drawn from: 'auto', or a subset of 'host compose swarm'."
         required: false
         type: string
-        default: ""
+        default: "auto"
       filesystem:
         description: "🗄️ Space-separated filesystems the per-distro pick draws from (ext4, btrfs, zfs). Empty: all three."
         required: false
         type: string
         default: ""
       tor:
-        description: "🧅 auto onions every second tor-capable variant and flips with the run number; enforced onions every capable one; exclusive additionally drops the variants that cannot take an onion; disabled onions none."
+        description: "🧅 Tor axis: 'auto' rotates the onion over the capable rows, 'enforced' onions all of them, 'exclusive' drops the rows that cannot, 'disabled' onions none."
+        required: false
         type: choice
         default: auto
         options: [auto, enforced, exclusive, disabled]
@@ -78,22 +108,21 @@ env:
     access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
   INFINITO_IMAGE_TAG: ci-${{ github.sha }}
   INFINITO_GHCR_MIRROR_PREFIX: mirror
+  INFINITO_PLAYWRIGHT_KEEP: ${{ vars.INFINITO_PLAYWRIGHT_KEEP }}
   INFINITO_APP_DISCOVERY_RUNNER: host
-  INFINITO_DEPLOY_MODE: swarm
   INFINITO_DOCKER_FILESYSTEM_ALLOWED: ${{ inputs.filesystem }}
   INFINITO_LIFECYCLES: ${{ inputs.lifecycles }}
-  INFINITO_BLACKLIST: ${{ inputs.blacklist }}
 
 jobs:
   discover:
-    name: 🚢 Swarm (${{ inputs.distros }})${{ inputs.marker }}
+    name: 🔍 Chunk ${{ inputs.index }} (${{ inputs.distros }})${{ inputs.marker }}
     runs-on: ubuntu-latest
     timeout-minutes: 60
     outputs:
       apps: ${{ steps.discover.outputs.apps }}
 
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0
 
@@ -102,10 +131,6 @@ jobs:
         run: |
           set -euo pipefail
           echo "GITHUB_REPOSITORY_OWNER=$(scripts/meta/resolve/repository/owner.sh)" >> "$GITHUB_ENV"
-
-      - name: 📦 Install jq
-        shell: bash
-        run: ./scripts/install/apt.sh jq
 
       - name: 📦 Install deps (jq + envsubst)
         shell: bash
@@ -133,36 +158,42 @@ jobs:
           INPUT_WHITELIST: ${{ inputs.whitelist }}
         run: ./scripts/github/resolve/effective_whitelist.sh
 
-      - name: 🔍 Discover apps
+      - name: 🔍 Discover the chunk's rows
         id: discover
         shell: bash
         env:
           INFINITO_WHITELIST: ${{ steps.resolve_wl.outputs.whitelist }}
+          INFINITO_PRIORITY: ${{ inputs.priority }}
+          INFINITO_MODES: ${{ inputs.modes }}
           INFINITO_TOR: ${{ inputs.tor }}
-          RUN_NUMBER: ${{ github.run_number }}
+          INFINITO_CI_SWEEP: ${{ inputs.sweep }}
+          INFINITO_CI_CHUNK: ${{ inputs.index }}
         run: ./scripts/github/resolve/output_apps.sh
 
       - name: 🗺️ Render the plan into the run summary
         shell: bash
+        env:
+          INFINITO_CI_SWEEP: ${{ inputs.sweep }}
         run: |
           source scripts/meta/env/load.sh
           "${PYTHON}" -m cli.meta.ci.plan \
             --distros "${{ inputs.distros }}" \
             --whitelist "${{ steps.resolve_wl.outputs.whitelist }}" \
-            --priority "${{ inputs.blacklist }}" \
-            --modes "swarm" \
+            --priority "${{ inputs.priority }}" \
+            --modes "${{ inputs.modes }}" \
             --lifecycles "${{ inputs.lifecycles }}" \
+            --chunk "${{ inputs.index }}" \
             >> "$GITHUB_STEP_SUMMARY"
 
-  swarm:
-    name: "🐝${{ matrix.label }}"
+  deploy:
+    name: "${{ matrix.label }}"
     if: needs.discover.outputs.apps != '' && needs.discover.outputs.apps != '[]'
     runs-on: ubuntu-latest
     timeout-minutes: 355
     needs: discover
 
     concurrency:
-      group: "infinito-deploy-swarm-${{ matrix.apps }}#${{ matrix.variant_slug }}"
+      group: "infinito-deploy-${{ matrix.mode }}-${{ matrix.tor }}-${{ matrix.apps }}#${{ matrix.variant }}"
       cancel-in-progress: false
       queue: max
 
@@ -173,6 +204,7 @@ jobs:
 
     env:
       APP_ID: ${{ matrix.apps }}
+      INFINITO_DEPLOY_MODE: ${{ matrix.mode }}
       RESCHED_TIMEOUT: "120"
       SCRIPTS: scripts/tests/deploy/swarm/routine
 
@@ -191,7 +223,7 @@ jobs:
 
       - name: "⬇️ Checkout"
         if: ${{ !env.ACT }}
-        uses: actions/checkout@v7
+        uses: actions/checkout@v7.0.0
 
       - name: "📥 Load rescue-diagnostics SPOT into job env"
         shell: bash
@@ -207,15 +239,28 @@ jobs:
         shell: bash
         run: ./scripts/github/runner/relocate_docker_dataroot.sh
 
+      - name: 🔍 Resolve repository owner
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "GITHUB_REPOSITORY_OWNER=$(scripts/meta/resolve/repository/owner.sh)" >> "$GITHUB_ENV"
+
+      - name: 📦 Install jq
+        shell: bash
+        run: ./scripts/install/apt.sh jq
+
       - name: "🔍 Resolve SWARM_NAME (mandatory; default to the matrix app)"
+        if: ${{ matrix.mode == 'swarm' }}
         shell: bash
         run: echo "SWARM_NAME=${SWARM_NAME:-${{ matrix.apps }}}" >> "$GITHUB_ENV"
 
       - name: "📥 Load swarm topology SPOT into job env"
+        if: ${{ matrix.mode == 'swarm' }}
         shell: bash
         run: scripts/tests/deploy/swarm/utils/topology/export.sh
 
       - name: 🔧 Set up Python
+        if: ${{ matrix.mode == 'swarm' }}
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
@@ -223,6 +268,7 @@ jobs:
           cache-dependency-path: pyproject.toml
 
       - name: 📦 Install project (host venv)
+        if: ${{ matrix.mode == 'swarm' }}
         shell: bash
         run: |
           make install-force
@@ -231,14 +277,31 @@ jobs:
           echo "${VENV}/bin" >> "${GITHUB_PATH}"
 
       - name: "🚀 Drill ${{ matrix.apps }} per distro: ${{ inputs.distros }}"
+        if: ${{ matrix.mode == 'swarm' }}
         shell: bash
         env:
           variant: ${{ matrix.variant }}
           disable: ${{ matrix.disable }}
         run: ./scripts/tests/deploy/distros.sh "${{ env.SCRIPTS }}/00_one.sh" 2>&1 | tee "/tmp/ansible-${{ matrix.apps }}.log"
 
+      - name: 🚀 Deploy app
+        if: ${{ matrix.mode != 'swarm' }}
+        timeout-minutes: 350
+        shell: bash
+        env:
+          apps: ${{ matrix.apps }}
+          variant: ${{ matrix.variant }}
+          disable: ${{ matrix.disable }}
+          ANSIBLE_LOG_PATH: /tmp/ansible-${{ matrix.apps }}.log
+        run: ./scripts/tests/deploy/ci/all.sh 2>&1 | tee "/tmp/ansible-${{ matrix.apps }}.log"
+
+      - name: 🚫 Fail on deprecation warnings
+        if: ${{ always() && matrix.mode != 'swarm' }}
+        shell: bash
+        run: ./scripts/tests/deploy/ci/assert_no_deprecation_warnings.sh "/tmp/ansible-${{ matrix.apps }}.log"
+
       - name: "🗄️ Effective node filesystems"
-        if: always()
+        if: ${{ always() && matrix.mode == 'swarm' }}
         shell: bash
         run: ./scripts/tests/deploy/utils/filesystem/report.sh "/tmp/ansible-${{ matrix.apps }}.log"
 
@@ -261,15 +324,21 @@ jobs:
         if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@v7
         with:
-          name: role-runtimes-swarm-${{ matrix.apps }}${{ matrix.variant_slug && format('-{0}', matrix.variant_slug) || '' }}
+          name: role-runtimes-${{ matrix.artifact }}
           path: /tmp/role-runtimes-${{ matrix.apps }}.csv
           if-no-files-found: ignore
+
+      - name: 🩺 Dump runner state (on failure)
+        if: ${{ failure() && matrix.mode != 'swarm' }}
+        timeout-minutes: 5
+        shell: bash
+        run: ./scripts/github/runner/dump_state.sh "post-deploy failure (${{ matrix.apps }})"
 
       - name: "⬆️ Upload rescue diagnostics"
         if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@v7
         with:
-          name: rescue-diagnostics-swarm-${{ matrix.apps }}${{ matrix.variant_slug && format('-{0}', matrix.variant_slug) || '' }}
+          name: rescue-diagnostics-${{ matrix.artifact }}
           path: ${{ env.INFINITO_RESCUE_DIAGNOSTICS_BASE }}/
           if-no-files-found: ignore
 
@@ -278,14 +347,19 @@ jobs:
         shell: bash
         env:
           APP_ID: ${{ matrix.apps }}
-        run: bash scripts/github/inventory/zip/swarm_for_upload.sh
+        run: |
+          set -euo pipefail
+          kind=swarm
+          [ "${{ matrix.mode }}" = "swarm" ] || kind=compose
+          bash "scripts/github/inventory/zip/${kind}_for_upload.sh"
+          echo "INVENTORY_ZIP=/tmp/inventory-${kind}-${APP_ID}.zip" >> "$GITHUB_ENV"
 
       - name: "⬆️ Upload inventory artifact"
         if: ${{ always() && !env.ACT }}
         uses: actions/upload-artifact@v7
         with:
-          name: inventory-swarm-${{ matrix.apps }}
-          path: /tmp/inventory-swarm-${{ matrix.apps }}.zip
+          name: inventory-${{ matrix.artifact }}
+          path: ${{ env.INVENTORY_ZIP }}
           if-no-files-found: ignore
 
       - name: "📋 Playwright step summary"
@@ -300,13 +374,13 @@ jobs:
 
       - name: "⬆️ Upload Playwright artifacts"
         if: ${{ always() && !env.ACT }}
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@v7.0.1
         with:
-          name: playwright-swarm-${{ matrix.apps }}${{ matrix.variant_slug && format('-{0}', matrix.variant_slug) || '' }}
+          name: playwright-${{ matrix.artifact }}
           path: /tmp/playwright-artifacts/
           if-no-files-found: ignore
 
       - name: "🧹 Cleanup"
-        if: always()
+        if: ${{ always() && matrix.mode == 'swarm' }}
         timeout-minutes: 15
         run: scripts/tests/deploy/swarm/utils/clean/teardown.sh

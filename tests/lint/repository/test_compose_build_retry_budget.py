@@ -25,9 +25,7 @@ from . import PROJECT_ROOT
 HANDLERS = PROJECT_ROOT / "roles" / "sys-svc-compose" / "handlers"
 SWARM = HANDLERS / "swarm.yml"
 COMPOSE = HANDLERS / "compose.yml"
-COMPOSE_WORKFLOW = (
-    PROJECT_ROOT / ".github" / "workflows" / "call-test-deploy-compose.yml"
-)
+DEPLOY_WORKFLOW = PROJECT_ROOT / ".github" / "workflows" / "call-test-deploy.yml"
 
 BUILDS = {
     "swarm: pre-deploy build of local images": (SWARM, "_swarm_pre_deploy_build"),
@@ -57,13 +55,25 @@ def _fallbacks(path, var):
 
 
 def _longest_step_seconds(path):
+    """Longest per-step timeout the deploy workflow declares, in seconds.
+
+    Raises instead of falling back: an empty result means the workflow was
+    renamed or its step timeouts vanished, and a silent 0 would let any build
+    ladder pass the budget assertion below.
+    """
     document = load_yaml_any(str(path), default_if_missing={}) or {}
-    return 60 * max(
+    timeouts = [
         step["timeout-minutes"]
         for job in (document.get("jobs") or {}).values()
         for step in (job.get("steps") or [])
         if "timeout-minutes" in step
-    )
+    ]
+    if not timeouts:
+        raise AssertionError(
+            f"{path} declares no step-level 'timeout-minutes'; the compose "
+            f"build-retry budget is derived from it."
+        )
+    return 60 * max(timeouts)
 
 
 def _by_name(path, name):
@@ -87,7 +97,7 @@ class TestComposeBuildRetryBudget(unittest.TestCase):
                 "INFINITO_CI_DISTRO_BUDGET_SECONDS"
             ]
         )
-        cap = _longest_step_seconds(COMPOSE_WORKFLOW)
+        cap = _longest_step_seconds(DEPLOY_WORKFLOW)
         for name, (path, var) in BUILDS.items():
             task = _by_name(path, name)
             worst = (
