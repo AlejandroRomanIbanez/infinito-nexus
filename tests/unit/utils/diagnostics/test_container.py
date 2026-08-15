@@ -4,7 +4,9 @@ depth bound) and the always-exit-1 contract."""
 
 from __future__ import annotations
 
+import contextlib
 import importlib.util
+import io
 import os
 import subprocess
 import tempfile
@@ -45,6 +47,29 @@ class HelperTests(unittest.TestCase):
         mod = _load()
         result = mod.run(["/does/not/exist-xyz"])
         self.assertEqual(result.returncode, 124)
+
+    def test_a_silent_failure_records_its_exit_status(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            with mock.patch.object(mod, "run", return_value=_cp([], rc=2)):
+                mod.capture(out, "probe.txt", ["getent", "hosts", "example.org"])
+            self.assertEqual((out / "probe.txt").read_text(), "[no output, exit 2]\n")
+
+    def test_a_full_disk_is_announced_on_stderr(self):
+        mod = _load()
+        err = io.StringIO()
+        with (
+            tempfile.TemporaryDirectory() as td,
+            mock.patch.object(
+                Path,
+                "write_bytes",
+                side_effect=OSError(28, "No space left on device"),
+            ),
+            contextlib.redirect_stderr(err),
+        ):
+            mod.write(Path(td) / "x.txt", b"data")
+        self.assertIn("No space left on device", err.getvalue())
 
 
 class CollectTests(unittest.TestCase):

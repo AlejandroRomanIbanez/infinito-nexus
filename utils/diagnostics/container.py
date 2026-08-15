@@ -58,15 +58,18 @@ def write(path: Path, data: bytes) -> None:
     try:
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_bytes(data)
-    except OSError:
-        pass
+    except OSError as exc:
+        print(f"rescue: cannot write {path}: {exc}", file=sys.stderr)
 
 
 def capture(
     out: Path, name: str, cmd: list[str], *, timeout: int = _EXEC_TIMEOUT
 ) -> None:
     result = run(cmd, timeout=timeout)
-    write(out / name, result.stdout + result.stderr)
+    body = result.stdout + result.stderr
+    if not body.strip():
+        body = f"[no output, exit {result.returncode}]\n".encode()
+    write(out / name, body)
 
 
 def sanitize(name: str) -> str:
