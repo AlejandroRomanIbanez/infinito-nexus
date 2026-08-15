@@ -20,7 +20,12 @@ variants fall behind it first), and the lifecycle envelope is
 INFINITO_LIFECYCLES.
 
 ``--matrix`` renders the full ordered candidate list, so the matrix order IS
-the selection priority.
+the selection priority. Every human-facing view of that list goes through here
+rather than re-deriving the sort and the filter: hand-rolling
+``--sort "$INFINITO_DISCOVERY_SORT" --filter "compose == true"`` drops the
+clones-last prefix and reads the wrong column (``compose`` is what a role can
+do, ``test_compose`` is what CI tests), which silently shows an order no run
+will ever take.
 """
 
 from __future__ import annotations
@@ -87,12 +92,20 @@ def _query_argv(
     blacklist: str,
     lifecycles: str,
     fmt: list[str],
+    variant: bool = True,
 ) -> list[str]:
+    """The complexity call this run discovers through.
+
+    Args:
+        variant: ``False`` collapses the rows to whole roles. Only ``--matrix``
+            renders that view; discovery itself is always per ``role#variant``,
+            because that is the unit the budget cut and the deploy speak.
+    """
     args = [
         sys.executable,
         "-m",
         "cli.meta.roles.applications.complexity",
-        "--variant",
+        *(["--variant"] if variant else []),
         "--filter",
         build_filter(modes, whitelist, blacklist),
         "--sort",
@@ -171,6 +184,14 @@ def main(argv: list[str] | None = None) -> int:
             "role#variant. The matrix order is the selection priority."
         ),
     )
+    parser.add_argument(
+        "--roles",
+        action="store_true",
+        help=(
+            "With --matrix: one row per role instead of per role#variant, in "
+            "the same query order."
+        ),
+    )
     parser.add_argument("--format", choices=("json",), dest="fmt")
     args = parser.parse_args(argv)
 
@@ -187,6 +208,7 @@ def main(argv: list[str] | None = None) -> int:
                 blacklist=blacklist,
                 lifecycles="",
                 fmt=["-s"],
+                variant=not args.roles,
             ),
             cwd=PROJECT_ROOT,
             check=False,

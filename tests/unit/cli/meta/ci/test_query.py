@@ -78,5 +78,30 @@ class TestSortSpec(unittest.TestCase):
         self.assertTrue(query.sort_spec().startswith("asc clone"))
 
 
+class TestQueryArgv(unittest.TestCase):
+    """Every human-facing view renders through this argv, so a hand-rolled
+    --sort/--filter elsewhere cannot drift away from what CI discovers."""
+
+    def _argv(self, **kwargs) -> list[str]:
+        return query._query_argv(
+            ("compose",), whitelist="", blacklist="", lifecycles="", fmt=[], **kwargs
+        )
+
+    def test_the_row_basis_is_the_variant(self) -> None:
+        self.assertIn("--variant", self._argv())
+
+    def test_the_role_view_drops_only_the_variant_flag(self) -> None:
+        roles = self._argv(variant=False)
+        self.assertNotIn("--variant", roles)
+        self.assertEqual(
+            [roles[roles.index(flag) + 1] for flag in ("--sort", "--filter")],
+            [query.sort_spec(), query.build_filter(("compose",))],
+        )
+
+    def test_the_filter_reads_the_tested_column_not_the_capable_one(self) -> None:
+        argv = self._argv()
+        self.assertIn("test_compose == true", argv[argv.index("--filter") + 1])
+
+
 if __name__ == "__main__":
     unittest.main()
