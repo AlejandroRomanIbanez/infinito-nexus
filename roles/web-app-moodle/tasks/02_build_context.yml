@@ -39,8 +39,8 @@
   loop_control:
     label: "{{ item.path }}"
   notify:
-    - compose build
-    - compose up
+    - compose-build
+    - compose-up
 
 - name: "🔧 Ensure msmtp CA-bundle fact is set before rendering msmtprc"
   ansible.builtin.include_role:
@@ -57,8 +57,8 @@
     sys_svc_mail_msmtp_ca_bundle_override: /etc/ssl/certs/ca-certificates.crt
     sys_svc_mail_msmtp_in_container: true
   notify:
-    - compose build
-    - compose up
+    - compose-build
+    - compose-up
 
 - name: "📄 Render PHP runtime tuning into compose context"
   stack_host_template:
@@ -66,5 +66,5 @@
     dest: "{{ [_moodle_build_dir, MOODLE_BUILD_FILES.runtime_ini] | path_join }}"
     mode: "0644"
   notify:
-    - compose build
-    - compose up
+    - compose-build
+    - compose-up

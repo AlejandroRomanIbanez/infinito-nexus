@@ -5,7 +5,7 @@
 # container already sees the new file and SIGHUP is enough -- unlike
 # nginx.conf, which is bound as a FILE and whose inode the task pins at create
 # time (see restart.yml).
-- name: Validate OpenResty configuration before reloading
+- name: ✅ Validate OpenResty configuration before reloading
   ansible.builtin.shell: >
     container exec {{ lookup('container_address', 'svc-prx-openresty', 'openresty') }} openresty -t -q
   register: openresty_test_reload
@@ -19,7 +19,7 @@
     ('no such container' not in ((openresty_test_reload.stderr | default('')) | lower)) and
     ('is restarting' not in ((openresty_test_reload.stderr | default('')) | lower))
 
-- name: Reload OpenResty
+- name: ♻️ Reload OpenResty
   ansible.builtin.shell: >
     container exec {{ lookup('container_address', 'svc-prx-openresty', 'openresty') }} openresty -s reload
   register: openresty_reload

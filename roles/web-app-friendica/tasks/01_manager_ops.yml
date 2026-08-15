@@ -5,8 +5,8 @@
     dest: "{{ FRIENDICA_INIT_GATE_HOST }}"
     mode: "0755"
   notify:
-    - compose build
-    - compose up
+    - compose-build
+    - compose-up
 
 - name: 🔗 Integrate LDAP
   include_tasks: 02_ldap.yml
@@ -43,7 +43,7 @@
   ansible.builtin.include_tasks:
     file: 03_patch_config.yml
     apply:
-      notify: compose up
+      notify: compose-up
   when: friendica_config_exists.rc == 0
 - name: ➕ Add Friendica Add Ons
   include_tasks: 04_addons.yml

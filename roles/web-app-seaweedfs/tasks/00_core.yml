@@ -22,14 +22,14 @@
   stack_host_template:
     src: s3.json.j2
     dest: "{{ SEAWEEDFS_S3_CONFIG_PATH }}"
-  notify: compose up
+  notify: compose-up
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
 - name: "📄 Render role proxy nginx config"
   stack_host_template:
     src: nginx.conf.j2
     dest: "{{ [lookup('container', application_id, 'directories.volumes'), 'nginx.conf'] | path_join }}"
-  notify: compose up
+  notify: compose-up
   when: SEAWEEDFS_FRONTEND_ENABLED | bool
 
 - name: "▶️ Start the SeaweedFS stack"
@@ -55,7 +55,7 @@
     loop_var: seaweedfs_vhost
     label: "{{ seaweedfs_vhost[0] }}/{{ seaweedfs_vhost[1] }}"
   when: not (SEAWEEDFS_FRONTEND_ENABLED | bool)
-  notify: restart openresty
+  notify: restart-openresty
 
 - name: "⏳ Wait until the SeaweedFS S3 gateway answers"
   ansible.builtin.shell: >

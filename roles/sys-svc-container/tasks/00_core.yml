@@ -14,7 +14,7 @@
   retries: 5
   delay: 15
   until: sys_svc_container_packages_install is succeeded
-  notify: container manager restart
+  notify: container-manager-restart
 
 - name: 📦 Install Docker Python SDK dependencies via pip
   include_role:

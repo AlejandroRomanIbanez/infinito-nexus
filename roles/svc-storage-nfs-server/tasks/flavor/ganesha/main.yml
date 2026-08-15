@@ -13,7 +13,7 @@
     group: root
     mode: "0644"
   when: ansible_facts['os_family'] == 'Archlinux'
-  notify: "Restart NFS ganesha"
+  notify: "restart-nfs-ganesha"
 
 - name: "🔧 Mask the broken nfs-ganesha-config helper unit"
   ansible.builtin.systemd:
@@ -46,7 +46,7 @@
     owner: root
     group: root
     mode: "0644"
-  notify: "Restart NFS ganesha"
+  notify: "restart-nfs-ganesha"
 
 - name: "📁 Ensure the nfs-ganesha systemd drop-in dir exists"
   ansible.builtin.file:
@@ -63,7 +63,7 @@
     owner: root
     group: root
     mode: "0644"
-  notify: "Restart NFS ganesha"
+  notify: "restart-nfs-ganesha"
 
 - name: "🔄 Reload systemd so the drop-in is live before ganesha starts"
   ansible.builtin.systemd:

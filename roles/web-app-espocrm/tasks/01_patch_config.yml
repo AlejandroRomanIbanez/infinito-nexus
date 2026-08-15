@@ -17,7 +17,7 @@
     label: "{{ item.key }}"
   register: db_patch
   changed_when: "'CHANGED' in db_patch.stdout"
-  notify: compose up
+  notify: compose-up
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
 - name: ✅ Ensure siteUrl matches canonical domain

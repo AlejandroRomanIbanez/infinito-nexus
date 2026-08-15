@@ -15,19 +15,14 @@
         content: |
           # frozen_string_literal: true
 
-          # Hard-disable SSL enforcement (HTTP-only deployments)
           Rails.application.config.force_ssl = false
-
-          # Remove middleware that performs the redirect + HSTS
           Rails.application.config.middleware.delete ActionDispatch::SSL if defined?(ActionDispatch::SSL)
-
-          # Defensive: ensure URLs default to http in this process
           Rails.application.routes.default_url_options[:protocol] = "http"
-      notify: compose up
+      notify: compose-up
 
     - name: "📦 MASTODON | Install OIDC http-discovery override initializer (HTTP-only)"
       ansible.builtin.copy:
         src: "00_oidc_http_discovery.rb"
         dest: "{{ MASTODON_OIDC_HTTP_DISCOVERY_FILE }}"
         mode: "0644"
-      notify: compose up
+      notify: compose-up

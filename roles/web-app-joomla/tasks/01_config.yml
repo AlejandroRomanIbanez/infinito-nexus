@@ -11,6 +11,6 @@
     dest: "{{ JOOMLA_ENTRYPOINT_SCRIPT_HOST_ABS }}"
     mode: "0755"
   notify:
-    - compose build
-    - compose up
+    - compose-build
+    - compose-up
   when: IS_STACK_HOST | bool

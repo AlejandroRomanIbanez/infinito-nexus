@@ -13,7 +13,7 @@
     src: "nginx-moodle.conf.j2"
     dest: "{{ docker_compose.directories.instance | default(lookup('container', application_id, 'directories.instance')) }}/nginx.conf"
     mode: "0640"
-  notify: compose up
+  notify: compose-up
 
 - name: 🚿 flush docker service
   meta: flush_handlers

@@ -9,7 +9,7 @@
     dest: "{{ JENKINS_CASC_FILE }}"
     mode: "0644"
   notify:
-    - compose up
+    - compose-up
   when: IS_STACK_HOST | bool
 
 - name: "🎬 Stage Jenkins build-context sidecar files into the compose dir"
@@ -21,5 +21,5 @@
     - plugins.txt
     - "{{ lookup('path_absolute', 'roles/sys-ca-selfsigned/files/java-with-ca-trust.sh') }}"
   notify:
-    - compose build
-    - compose up
+    - compose-build
+    - compose-up

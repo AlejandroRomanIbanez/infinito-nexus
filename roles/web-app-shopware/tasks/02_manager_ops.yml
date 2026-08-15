@@ -5,8 +5,8 @@
     dest: "{{ SHOPWARE_INIT_HOST }}"
     mode: "0755"
   notify:
-    - compose up
-    - compose build
+    - compose-up
+    - compose-build
 
 - name: "📄 Render framework.yaml (trusted proxies/headers/hosts)"
   copy:
@@ -14,7 +14,7 @@
     dest: "{{ SHOPWARE_FRAMEWORK_HOST }}"
     mode: "0644"
   notify:
-    - compose up
+    - compose-up
 
 - name: "📄 Render shopware.yaml (SeaweedFS S3 filesystem)"
   stack_host_template:
@@ -23,8 +23,8 @@
     mode: "0644"
   when: SHOPWARE_OBJSTORE_ENABLED | bool
   notify:
-    - compose up
-    - compose build
+    - compose-up
+    - compose-build
 
 - name: "🚿 Flush compose handlers"
   meta: flush_handlers

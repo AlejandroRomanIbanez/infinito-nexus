@@ -18,8 +18,8 @@
         mode: "0755"
       when: IS_STACK_HOST | bool
       notify:
-        - compose build
-        - compose up
+        - compose-build
+        - compose-up
 
     - name: 🚀 Deploy Bootstrap Config
       include_tasks: utils/flush_config.yml

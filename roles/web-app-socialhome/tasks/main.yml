@@ -10,7 +10,7 @@
     src: socialhome.toml.j2
     dest: "{{ SOCIALHOME_CONFIG_HOST_FILE }}"
     mode: "0444"
-  notify: compose up
+  notify: compose-up
 
 - name: "🐳 Finalize compose deploy for '{{ application_id }}'"
   include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/finalize.yml') }}"

@@ -20,7 +20,7 @@
   when: (_tpl.condition | default(true)) | bool
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   register: _role_templates_render
-  notify: "{{ _tpl.notify | default(['compose up']) }}"
+  notify: "{{ _tpl.notify | default(['compose-up']) }}"
 
 - name: "[swarm] Slurp rendered '{{ _tpl.dest }}' from manager"
   ansible.builtin.slurp:
