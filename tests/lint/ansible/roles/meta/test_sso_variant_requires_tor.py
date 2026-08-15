@@ -72,7 +72,9 @@ def _suppressed(paths: tuple[Path, ...]) -> bool:
     for path in paths:
         if not path.is_file():
             continue
-        if any(line_has_rule(line, _RULE) for line in read_text(str(path)).splitlines()):
+        if any(
+            line_has_rule(line, _RULE) for line in read_text(str(path)).splitlines()
+        ):
             return True
     return False
 
@@ -149,8 +151,7 @@ class TestSsoVariantRequiresTor(unittest.TestCase):
                 if tor is True:
                     continue
                 offenders.append(
-                    f"{role_dir.name}: variant {index} has "
-                    f"services.tor.enabled {tor!r}"
+                    f"{role_dir.name}: variant {index} has services.tor.enabled {tor!r}"
                 )
 
         if offenders:

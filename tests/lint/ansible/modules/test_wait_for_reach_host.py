@@ -98,7 +98,7 @@ class TestWaitForReachHost(unittest.TestCase):
                 "onion authority, and only reaches a clearnet domain where the "
                 "ingress happens to be reachable; the probe then burns its whole "
                 "timeout while the service is up. Use "
-                "`host: \"{{ DOCKER_REACH_HOST }}\"` with the service's "
+                '`host: "{{ DOCKER_REACH_HOST }}"` with the service\'s '
                 "`ports.local.*`, or mark the line "
                 f"`# nocheck: {_RULE}` naming what the probe proves.\n\n"
                 f"{formatted}"
