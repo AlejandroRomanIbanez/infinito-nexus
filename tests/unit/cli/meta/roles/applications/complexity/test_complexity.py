@@ -791,23 +791,23 @@ class TestVariantMode(unittest.TestCase):
             variant_rows = compute_variant_complexity_rows(roles_dir)
             self.assertTrue(all(r.variants == 1 for r in variant_rows))
 
-    def test_bundles_whole_role_uses_compose_packing(self) -> None:
+    def test_whole_role_counts_every_declared_variant(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             roles_dir = Path(td) / "roles"
             roles_dir.mkdir()
             self._build_many_variant_role(roles_dir, "big", variants=4)
 
             whole_role = {r.name: r for r in compute_complexity_rows(roles_dir)}
-            self.assertEqual(whole_role["big"].bundles, 2)
+            self.assertEqual(whole_role["big"].variants, 4)
 
-    def test_bundles_is_one_per_variant_row(self) -> None:
+    def test_every_variant_gets_its_own_row(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             roles_dir = Path(td) / "roles"
             roles_dir.mkdir()
             self._build_many_variant_role(roles_dir, "big", variants=4)
 
             variant_rows = compute_variant_complexity_rows(roles_dir)
-            self.assertTrue(all(r.bundles == 1 for r in variant_rows))
+            self.assertTrue(all(r.variants == 1 for r in variant_rows))
             self.assertEqual(len([r for r in variant_rows if r.name == "big"]), 4)
 
     def test_variant_string_output_suffixes_index(self) -> None:
