@@ -7,7 +7,6 @@ runner:
     swarm:
       enabled: true
   lifecycle: beta
-  workload: node-local
   proxy:
     service_key: runner-1
   github_owner: infinito-nexus

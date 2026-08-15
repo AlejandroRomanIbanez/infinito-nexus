@@ -215,7 +215,7 @@ fi
 echo "    marker present on encrypted USB"
 
 echo "==> [6/9] tear the stack down completely (full disaster) before recovery"
-if [ "${HAS_SWARM_SERVICE}" = true ]; then
+if has_swarm_service; then
 	docker exec "${MGR}" bash "${BKP_IN_NODE}/04_stack_rm_wait.sh" "${STACK_NAME}"
 else
 	for _node in "${MGR}" "${WRK1}" "${WRK2}"; do
