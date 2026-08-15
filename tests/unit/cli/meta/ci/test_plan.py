@@ -6,7 +6,15 @@ from cli.meta.ci import plan
 from utils.symbol_glossary import to_emoji
 
 
-def _entry(app: str, variant: str, mode: str, *, priority: bool = False) -> dict:
+def _entry(
+    app: str,
+    variant: str,
+    mode: str,
+    *,
+    priority: bool = False,
+    identifier: str = "0",
+    covered: str = "0",
+) -> dict:
     return {
         "apps": app,
         "variant": variant,
@@ -15,14 +23,16 @@ def _entry(app: str, variant: str, mode: str, *, priority: bool = False) -> dict
         "disable": "",
         "priority": "true" if priority else "false",
         "weight": "42",
+        "id": identifier,
+        "covered": covered,
         "label": f"{to_emoji(mode)}{app} {variant}",
     }
 
 
-_PRIORITY = [_entry("web-app-a", "0", "compose", priority=True)]
+_PRIORITY = [_entry("web-app-a", "0", "compose", priority=True, identifier="3")]
 _REGULAR = [
-    _entry("web-app-b", "0", "swarm"),
-    _entry("web-app-b", "1", "compose"),
+    _entry("web-app-b", "0", "swarm", identifier="5", covered="7"),
+    _entry("web-app-b", "1", "compose", identifier="9"),
 ]
 _ENTRIES = _PRIORITY + _REGULAR
 
@@ -55,8 +65,24 @@ class TestCells(unittest.TestCase):
         rows = plan.cells(
             _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
         )
-        self.assertEqual(rows[0][5], to_emoji("compose"))
-        self.assertEqual(rows[1][5], to_emoji("swarm"))
+        mode = plan._COLUMNS.index("mode")
+        self.assertEqual(rows[0][mode], to_emoji("compose"))
+        self.assertEqual(rows[1][mode], to_emoji("swarm"))
+
+    def test_a_covered_row_names_the_id_that_covers_it(self) -> None:
+        covered = plan._COLUMNS.index("covered_by")
+        rows = plan.cells(
+            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
+        )
+        self.assertEqual(rows[0][covered], "")
+        self.assertEqual(rows[1][covered], "7")
+
+    def test_the_id_is_the_discovery_id_the_covered_by_points_at(self) -> None:
+        identifier = plan._COLUMNS.index("id")
+        rows = plan.cells(
+            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
+        )
+        self.assertEqual([row[identifier] for row in rows], ["3", "5", "9"])
 
     def test_the_tor_state_is_rendered_as_its_glyph(self) -> None:
         rows = plan.cells(
@@ -69,7 +95,8 @@ class TestCells(unittest.TestCase):
         rows = plan.cells(
             _ENTRIES, [_PRIORITY, _REGULAR], distros="debian arch", current=None
         )
-        self.assertTrue(all(row[6] == "debian arch" for row in rows))
+        distros = plan._COLUMNS.index("distros")
+        self.assertTrue(all(row[distros] == "debian arch" for row in rows))
 
 
 class TestRender(unittest.TestCase):

@@ -168,7 +168,7 @@ def main(argv: list[str] | None = None) -> int:
         tor_mode=axes.resolve_tor_mode(args.tor),
     )
     chunk = plan[args.index] if 0 <= args.index < len(plan) else []
-    dropped = ("priority", "weight")
+    dropped = ("priority", "weight", "id", "covered")
     print(json.dumps([{k: v for k, v in e.items() if k not in dropped} for e in chunk]))
     return 0
 

@@ -353,7 +353,11 @@ def assign(
             switches the tor gate off is never counted capable.
 
     Returns:
-        one entry per (row, mode, tor) the run deploys. A regular row yields
+        one entry per (row, mode, tor) the run deploys, carrying the row's
+        discovery ``id`` and the ``covered`` id of the earlier row that already
+        embeds it (``0``: nothing does), so a reader of the plan can tell a
+        redundant row from a unique one without a second query. A regular row
+        yields
         exactly one -- the rotation picks its combination for this sweep. A
         priority row yields every combination :func:`combinations` allows, so
         the roles a run is told to prove are proven everywhere at once rather
@@ -427,6 +431,8 @@ def assign(
                     "disable": "" if enabled else "tor",
                     "priority": "true" if priority else "false",
                     "weight": str(row.get("weight", 0)),
+                    "id": str(row.get("id", 0)),
+                    "covered": str(row.get("covered_by", 0)),
                     "artifact": artifact_slug(mode, app, variant_csv, enabled),
                     "label": f"{glyphs}{label}"
                     + (f" {to_emoji('priority')}" if priority else ""),

@@ -15,6 +15,11 @@ sweep's budget (the next sweep's offset picks it up). ``--chunk`` marks the
 block the calling job is running, so a chunk's summary shows its own slice in
 the context of the whole chain. ``--cli`` renders fixed-width terminal tables
 instead of Markdown.
+
+🆔 is the row's discovery id, the same number the complexity matrix prints, and
+🔰 names the id of the earlier row that already embeds this one -- empty when
+nothing does. A row with a 🔰 is redundant coverage: whatever it would prove,
+the row it points at proves first.
 """
 
 from __future__ import annotations
@@ -34,9 +39,9 @@ _OK = to_emoji("enabled")
 _OFF = to_emoji("disabled")
 _HERE = to_emoji("skip")
 
-_COLUMNS = ("chunk", "id", "name", "weight", "variant", "mode", "distros")
+_COLUMNS = ("chunk", "id", "covered_by", "name", "weight", "variant", "mode", "distros")
 _HEADERS = (
-    *(f"{to_emoji(key)} {key.capitalize()}" for key in _COLUMNS),
+    *(f"{to_emoji(key)} {key.replace('_', ' ').capitalize()}" for key in _COLUMNS),
     f"{to_emoji('tor')} Tor",
     f"{to_emoji('enabled')} Triggered",
 )
@@ -74,10 +79,12 @@ def cells(
         else:
             status = _STAR if entry["priority"] == "true" else _OK
             where = f"{chunk}{_HERE}" if chunk == current else str(chunk)
+        covered = entry.get("covered", "0")
         rows.append(
             (
                 where,
-                str(counter),
+                entry.get("id") or str(counter),
+                covered if covered not in ("", "0") else "",
                 entry["apps"],
                 entry["weight"],
                 entry["variant"],
