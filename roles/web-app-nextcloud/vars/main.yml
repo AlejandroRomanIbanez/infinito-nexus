@@ -50,7 +50,7 @@ NEXTCLOUD_ZAMMAD_CONTAINER_ADDRESS: "{{ lookup('container_address', 'web-app-zam
 NEXTCLOUD_GITLAB_CONTAINER_ADDRESS: "{{ lookup('container_address', 'web-app-gitlab', 'webservice') }}"
 
 NEXTCLOUD_PROXY_EXCLUDED_HOSTS:
-  - apps.nextcloud.com
+  - .nextcloud.com
   - github.com
   - .githubusercontent.com
   - codeberg.org
