@@ -73,7 +73,7 @@ async function runAdminFlow(page, opts = {}) {
     const tryNativeLogin = async (probeTimeout = 5_000) => {
       const passwordField = page.locator("input[type='password']:visible").first();
       const passwordReady = await passwordField
-        .waitFor({ state: "visible", timeout: probeTimeout })
+        .waitFor({ state: "visible", timeout: resolveTimeout(probeTimeout) })
         .then(() => true)
         .catch(() => false);
       if (!passwordReady) {
@@ -102,7 +102,7 @@ async function runAdminFlow(page, opts = {}) {
       return true;
     };
 
-    let loginAttempted = await tryNativeLogin(10_000);
+    let loginAttempted = await tryNativeLogin(15_000);
     if (!loginAttempted) {
       for (const loginPath of ["/login", "/admin/", "/admin"]) {
         await gotoOnion(page,`${base}${loginPath}`, { waitUntil: "domcontentloaded" }).catch(() => {});
