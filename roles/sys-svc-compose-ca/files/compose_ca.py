@@ -26,6 +26,10 @@ def die(msg: str, code: int = 2) -> None:
     raise SystemExit(code)
 
 
+def warn(msg: str) -> None:
+    print(f"[compose_ca] {msg}", file=sys.stderr)
+
+
 def run(
     cmd: list[str],
     *,
@@ -610,9 +614,16 @@ def render_override(
             has_sh = False
         else:
             img_name = image.strip()
-            _exists, raw_ep, raw_cmd, sh_state = image_meta.get(
+            readable, raw_ep, raw_cmd, sh_state = image_meta.get(
                 img_name, (False, [], [], None)
             )
+            if not readable:
+                warn(
+                    f"service '{name}': image '{img_name}' could not be inspected, so the "
+                    "wrapper entrypoint is skipped and only the mount plus SSL_*/CURL_* env "
+                    "carry the CA - a consumer that reads neither, like msmtp, must name "
+                    f"{ca_container} itself"
+                )
             has_sh = sh_state is not False
             img_ep = normalize_entrypoint(raw_ep)
             img_cmd = normalize_cmd(raw_cmd)

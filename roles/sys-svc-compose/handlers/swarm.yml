@@ -107,10 +107,7 @@
   listen:
     - compose-up
     - swarm-deploy
-  when:
-    - lookup('domains') | has_domain(application_id)
-    - lookup('tls', application_id, 'enabled') | bool
-    - lookup('tls', application_id, 'mode') == 'self_signed'
+  when: lookup('ca_injected', application_id)
   run_once: true
   delegate_to: "{{ STACK_HOST }}"
 

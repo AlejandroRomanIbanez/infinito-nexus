@@ -28,7 +28,6 @@
     src: "{{ WORDPRESS_MSMTP_SRC }}"
     dest: "{{ WORDPRESS_MSMTP_ABS }}"
   vars:
-    sys_svc_mail_msmtp_ca_bundle_override: /etc/ssl/certs/ca-certificates.crt
     sys_svc_mail_msmtp_in_container: true
   notify: compose-up
 

@@ -20,10 +20,7 @@
   until: compose_ca_override is succeeded
   listen:
     - compose-up
-  when:
-    - lookup('domains') | has_domain(application_id)
-    - lookup('tls', application_id, 'enabled') | bool
-    - lookup('tls', application_id, 'mode') == 'self_signed'
+  when: lookup('ca_injected', application_id)
 
 - name: ✅ Validate Docker Compose configuration
   ansible.builtin.shell: |

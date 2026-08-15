@@ -1,5 +1,2 @@
 ---
-_compose_ca_applicable: >-
-  {{ (lookup('domains') | has_domain(application_id))
-     and (lookup('tls', application_id, 'enabled') | bool)
-     and (lookup('tls', application_id, 'mode') == 'self_signed') }}
+_compose_ca_applicable: "{{ lookup('ca_injected', application_id) }}"
