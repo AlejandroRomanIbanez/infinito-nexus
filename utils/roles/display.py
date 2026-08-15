@@ -34,8 +34,10 @@ if TYPE_CHECKING:
 
 SEPARATOR = "·"
 
+VARIANT_SEPARATOR = "#"
+
 _HEADING = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
-_VARIANT_SUFFIX = re.compile(r"\s+[\d,]+$")
+_VARIANT_SUFFIX = re.compile(re.escape(VARIANT_SEPARATOR) + r"[\d,]+$")
 _ROLE_ID = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)+")
 _VARIATION = re.compile("[︎️]")
 
@@ -123,7 +125,7 @@ class RoleDisplayName:
                 for part in ("".join(self.category_labels(app_id)), fragment)
                 if part
             )
-        return f"{name} {variant}" if variant else name
+        return f"{name}{VARIANT_SEPARATOR}{variant}" if variant else name
 
     def _registry(self) -> dict[str, str]:
         if self._by_display is None:

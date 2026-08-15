@@ -36,9 +36,10 @@ class TestRoleDisplayName(unittest.TestCase):
         self.assertEqual("nextcloud", self.codec.id_fragment(APP))
         self.assertEqual("update", self.codec.id_fragment("update"))
 
-    def test_encode_holds_no_space_before_the_variant(self):
-        self.assertNotIn(" ", self.codec.encode(APP))
-        self.assertEqual(f"{self.codec.encode(APP)} 0,1", self.codec.encode(APP, "0,1"))
+    def test_the_variant_is_joined_without_whitespace(self):
+        encoded = self.codec.encode(APP, "0,1")
+        self.assertNotIn(" ", encoded)
+        self.assertEqual(f"{self.codec.encode(APP)}#0,1", encoded)
 
     def test_decode_reverses_encode_with_and_without_a_variant(self):
         for variant in ("", "0", "0,1"):
@@ -46,7 +47,7 @@ class TestRoleDisplayName(unittest.TestCase):
 
     def test_decode_passes_a_role_id_through(self):
         self.assertEqual(APP, self.codec.decode(APP))
-        self.assertEqual(APP, self.codec.decode(f"{APP} 0,1"))
+        self.assertEqual(APP, self.codec.decode(f"{APP}#0,1"))
 
     def test_decode_rejects_what_names_no_role(self):
         self.assertIsNone(self.codec.decode("Update Docker image versions"))

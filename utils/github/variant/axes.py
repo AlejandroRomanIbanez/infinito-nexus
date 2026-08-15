@@ -32,7 +32,7 @@ from utils.cache.yaml import load_yaml_any
 from utils.roles.applications.services.registry import (
     build_service_registry_from_roles_dir,
 )
-from utils.roles.display import display_names
+from utils.roles.display import VARIANT_SEPARATOR, display_names
 from utils.roles.mapping import ROLE_FILE_META_SERVICES
 from utils.symbol_glossary import to_emoji, to_word
 
@@ -48,14 +48,18 @@ TOR_MODES = ("auto", "enforced", "exclusive", "disabled")
 
 TOR_DEPLOY_MODES = ("swarm", "compose")
 
-_AXIS_GLYPHS = "".join(to_emoji(word) for word in ("tor", "clearnet", "priority"))
+LOCAL_GLYPH = to_emoji("test_host")
+
+_AXIS_GLYPHS = (
+    "".join(to_emoji(word) for word in ("tor", "clearnet", "priority")) + LOCAL_GLYPH
+)
 
 LABEL_RE = re.compile(
     r"^.*(" + "|".join(re.escape(to_emoji(mode)) for mode in MODES) + r")️?"
     r"(" + re.escape(to_emoji("tor")) + r")?"
     r"[" + re.escape(_AXIS_GLYPHS) + r"️\s]*"
     r"(.+?)"
-    r"(?:\s+([0-9,]+))?"
+    r"(?:" + re.escape(VARIANT_SEPARATOR) + r"([0-9,]+))?"
     r"[" + re.escape(_AXIS_GLYPHS) + r"️\s]*$"
 )
 """The leading ``.*`` is greedy on purpose: it anchors on the LAST mode glyph.
@@ -322,7 +326,7 @@ def assign(
             glyphs = to_emoji(mode) + (
                 to_emoji("tor" if enabled else "clearnet")
                 if mode in TOR_DEPLOY_MODES
-                else ""
+                else LOCAL_GLYPH
             )
             entries.append(
                 {

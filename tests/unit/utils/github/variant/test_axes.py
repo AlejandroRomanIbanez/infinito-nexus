@@ -80,6 +80,11 @@ class TestAxesDecouple(unittest.TestCase):
         self.assertEqual(len(seen), 4)
 
 
+class TestGlyphBinding(unittest.TestCase):
+    def test_the_local_glyph_is_the_house_symbol(self) -> None:
+        self.assertEqual("🏠", axes.LOCAL_GLYPH)
+
+
 class TestArtifactSlug(unittest.TestCase):
     def test_the_entry_carries_the_slug_the_reporter_looks_for(self) -> None:
         from cli.meta.ci.report_failures import artifact_name
@@ -289,6 +294,22 @@ class TestAssign(unittest.TestCase):
             0
         ]
         self.assertEqual(entry["disable"], "tor")
+
+    def test_a_host_row_carries_the_local_glyph_where_tor_rows_carry_theirs(
+        self,
+    ) -> None:
+        entries = axes.assign(
+            [_row("web-app-a", 0, ("host",)), _row("web-app-a", 0, ("compose",))],
+            sweep=0,
+            tor_mode="enforced",
+            variants_per_app=_VARIANTS,
+        )
+        host, compose = entries
+        self.assertTrue(host["label"].startswith(to_emoji("host") + axes.LOCAL_GLYPH))
+        self.assertTrue(
+            compose["label"].startswith(to_emoji("compose") + to_emoji("tor"))
+        )
+        self.assertEqual(axes.parse_label(host["label"]).mode, "host")
 
     def test_the_provider_row_never_takes_the_clearnet_state(self) -> None:
         provider = axes.tor_provider()
