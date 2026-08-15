@@ -1,6 +1,6 @@
 """Unit tests for utils/diagnostics/container.py: the best-effort
 collectors, the DiD recursion (probe, self-copy, env wiring, tar pull,
-depth bound) and the always-exit-1 contract."""
+cycle cut) and the always-exit-1 contract."""
 
 from __future__ import annotations
 
@@ -274,10 +274,37 @@ class CollectTests(unittest.TestCase):
 
 
 class RecurseTests(unittest.TestCase):
-    def test_depth_bound_stops_recursion(self):
+    def test_a_container_that_lists_itself_is_not_re_entered(self):
         mod = _load()
         with tempfile.TemporaryDirectory() as td:
-            self.assertEqual(mod.recurse(Path(td), "docker", "app", "", 3, 3, "S"), 0)
+
+            def fake_run(cmd, **kw):
+                if cmd[-1] == "{{.Names}}":
+                    return _cp(cmd, stdout=b"runner\n")
+                if cmd[-2:-1] == ["{{.Id}}"] or cmd[-1] == "{{.Id}}":
+                    return _cp(cmd, stdout=b"cafe1234\n")
+                return _cp(cmd, stdout=b"data")
+
+            with mock.patch.object(mod, "run", side_effect=fake_run):
+                entered = mod.recurse(
+                    Path(td), "docker", "app", "", 0, ["cafe1234"], "S"
+                )
+            self.assertEqual(entered, 0)
+
+    def test_a_container_without_an_id_is_not_entered(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+
+            def fake_run(cmd, **kw):
+                if cmd[-1] == "{{.Names}}":
+                    return _cp(cmd, stdout=b"nameless\n")
+                if "{{.Id}}" in cmd:
+                    return _cp(cmd)
+                return _cp(cmd, stdout=b"data")
+
+            with mock.patch.object(mod, "run", side_effect=fake_run):
+                entered = mod.recurse(Path(td), "docker", "app", "", 0, [], "S")
+            self.assertEqual(entered, 0)
 
     def test_recurse_skips_containers_without_runtime(self):
         mod = _load()
@@ -286,11 +313,13 @@ class RecurseTests(unittest.TestCase):
             def fake_run(cmd, **kw):
                 if cmd[-1] == "{{.Names}}":
                     return _cp(cmd, stdout=b"plain\n")
+                if "{{.Id}}" in cmd:
+                    return _cp(cmd, stdout=b"beef5678\n")
                 return _cp(cmd, rc=1)
 
             with mock.patch.object(mod, "run", side_effect=fake_run):
                 self.assertEqual(
-                    mod.recurse(Path(td), "docker", "app", "", 0, 3, "S"), 0
+                    mod.recurse(Path(td), "docker", "app", "", 0, [], "S"), 0
                 )
 
     def test_recurse_copies_self_and_pulls_nested_tar(self):
@@ -303,12 +332,14 @@ class RecurseTests(unittest.TestCase):
                 calls.append(cmd)
                 if cmd[-1] == "{{.Names}}":
                     return _cp(cmd, stdout=b"node1\n")
+                if "{{.Id}}" in cmd:
+                    return _cp(cmd, stdout=b"d00d1234\n")
                 if cmd[:2] == ["docker", "exec"] and "tar" in cmd:
                     return _cp(cmd, stdout=b"TARBYTES")
                 return _cp(cmd)
 
             with mock.patch.object(mod, "run", side_effect=fake_run):
-                nested = mod.recurse(out, "docker", "app", "ctx", 0, 3, "S")
+                nested = mod.recurse(out, "docker", "app", "ctx", 0, [], "S")
 
             self.assertEqual(nested, 1)
             copy_call = next(c for c in calls if "cat >" in " ".join(c))
@@ -316,7 +347,7 @@ class RecurseTests(unittest.TestCase):
             nested_exec = next(c for c in calls if "python3" in c)
             env_args = " ".join(nested_exec)
             self.assertIn("RESCUE_DEPTH=1", env_args)
-            self.assertIn("RESCUE_MAX_DEPTH=3", env_args)
+            self.assertIn("RESCUE_SEEN=", env_args)
             self.assertIn("INFINITO_RESCUE_DIAGNOSTICS_DIR=", env_args)
             extract = next(c for c in calls if c[:2] == ["tar", "-C"])
             self.assertIn(str(out / "containers" / "node1" / "nested"), extract)

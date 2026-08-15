@@ -8,7 +8,8 @@ journal, host resources), then RECURSES: it copies itself into every running
 container that carries python3 and a container runtime (DiD) and repeats the
 capture there, pulling each nested snapshot back under
 ``containers/<name>/nested/`` - from the outermost caller down to the deepest
-runtime (bounded by ``RESCUE_MAX_DEPTH``, default 3).
+runtime, however deep the nesting goes. ``RESCUE_SEEN`` carries the ids already
+entered, so a runtime that lists itself is cut as a cycle.
 
 Every collector is best-effort: a missing source must never abort the
 capture. ``INFINITO_RESCUE_DIAGNOSTICS_DIR`` (SPOT:
@@ -277,15 +278,18 @@ def recurse(
     app_id: str,
     context: str,
     depth: int,
-    max_depth: int,
+    seen: list[str],
     stamp: str,
 ) -> int:
     self_path = Path(__file__).resolve()
-    if depth >= max_depth or not self_path.is_file():
+    if not self_path.is_file():
         return 0
     nested_n = 0
     nested_out = f"/tmp/rescue-nested-{stamp}-{os.getpid()}"  # noqa: S108 - staging dir inside the inspected container, removed after the tar pull
     for name in list_lines([rt, "ps", "--format", "{{.Names}}"]):
+        cid = "".join(list_lines([rt, "inspect", "--format", "{{.Id}}", name]))
+        if not cid or cid in seen:
+            continue
         if not _container_can_recurse(rt, name):
             continue
         copied = run(
@@ -303,7 +307,7 @@ def recurse(
                 "-e",
                 f"RESCUE_DEPTH={depth + 1}",
                 "-e",
-                f"RESCUE_MAX_DEPTH={max_depth}",
+                "RESCUE_SEEN=" + ",".join([*seen, cid] if cid else seen),
                 "-e",
                 f"{_LOCAL_DUMPS_ENV}={os.environ.get(_LOCAL_DUMPS_ENV, '')}",
                 name,
@@ -342,7 +346,7 @@ def main(argv: list[str]) -> int:
         )
         return 1
     depth = int(os.environ.get("RESCUE_DEPTH", "0"))
-    max_depth = int(os.environ.get("RESCUE_MAX_DEPTH", "3"))
+    seen = [cid for cid in os.environ.get("RESCUE_SEEN", "").split(",") if cid]
     stamp = datetime.now(tz=UTC).strftime("%Y%m%d%H%M%SZ")
     out = Path(out_base) / f"{app_id}-{stamp}-{os.getpid()}"
     out.mkdir(parents=True, exist_ok=True)
@@ -355,7 +359,7 @@ def main(argv: list[str]) -> int:
     nested_n = 0
     if rt:
         containers, services = collect_runtime(out, rt)
-        nested_n = recurse(out, rt, app_id, context, depth, max_depth, stamp)
+        nested_n = recurse(out, rt, app_id, context, depth, seen, stamp)
 
     print(
         f"🩺 Rescue diagnostics for '{app_id}'" + (f" ({context})" if context else "")
