@@ -75,7 +75,7 @@ cleanup() {
 	local _rescue_host_dir="${INFINITO_RESCUE_DIAGNOSTICS_BASE}/${INFINITO_DISTRO}/${apps}"
 	mkdir -p "${_rescue_host_dir}"
 	echo ">>> Capturing rescue diagnostics inside ${INFINITO_CONTAINER} (recursive DiD snapshot) before teardown removes it"
-	docker exec \
+	timeout 1500 docker exec \
 		-e "INFINITO_RESCUE_DIAGNOSTICS_DIR=${INFINITO_RESCUE_DIAGNOSTICS_DIR}" \
 		"${INFINITO_CONTAINER}" \
 		python3 /opt/src/infinito/utils/diagnostics/container.py \
@@ -84,6 +84,15 @@ cleanup() {
 	docker exec "${INFINITO_CONTAINER}" \
 		tar -C "${INFINITO_RESCUE_DIAGNOSTICS_DIR}" -cf - . 2>/dev/null |
 		tar -C "${_rescue_host_dir}" -xf - 2>/dev/null || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
+
+	local _did_id
+	_did_id="$(docker inspect --format '{{.Id}}' "${INFINITO_CONTAINER}" 2>/dev/null)" || _did_id=""
+	echo ">>> Capturing rescue diagnostics on the CI host itself into ${_rescue_host_dir}/ci-host"
+	INFINITO_RESCUE_DIAGNOSTICS_DIR="${_rescue_host_dir}/ci-host" \
+		RESCUE_SEEN="${_did_id}" \
+		timeout 900 python3 "${REPO_ROOT}/utils/diagnostics/container.py" \
+		"${apps}" "ci host at compose post-deploy failure" 2>/dev/null || true # nocheck: shell-or-true -- the collector exits 1 by contract so the caller cannot mistake a snapshot for a passing deploy
+
 	bash scripts/tests/deploy/utils/rescue_index.sh "${_rescue_host_dir}"
 
 	local _inv_parent

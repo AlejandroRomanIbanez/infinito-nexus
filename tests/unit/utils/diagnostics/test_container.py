@@ -100,6 +100,107 @@ class CollectTests(unittest.TestCase):
             self.assertIn("context: ctx", meta)
             self.assertIn("host: myhost", meta)
 
+    def test_each_probed_name_gets_its_own_verdict(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            with mock.patch.object(
+                mod, "run", return_value=_cp([], stdout=b"")
+            ) as runner:
+                mod.collect_host(out, "app", "ctx", "STAMP")
+            probes = [
+                call.args[0]
+                for call in runner.call_args_list
+                if call.args[0][:2] == ["getent", "hosts"]
+            ]
+            self.assertTrue(probes)
+            for cmd in probes:
+                self.assertEqual(len(cmd), 3, f"one name per probe, not {cmd[2:]}")
+            self.assertTrue((out / "resolve-deb-debian-org.txt").is_file())
+
+    def test_every_nameserver_is_asked_directly_where_a_tool_exists(self):
+        mod = _load()
+        resolv = b"search lan\nnameserver 10.0.0.1\nnameserver 10.0.0.2\n"
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            with (
+                mock.patch.object(
+                    mod.shutil, "which", side_effect=lambda b: b == "dig"
+                ),
+                mock.patch.object(mod, "run", return_value=_cp([], stdout=resolv)),
+            ):
+                mod.collect_resolver_probes(out)
+            self.assertTrue((out / "resolve-ghcr-io-via-10-0-0-2.txt").is_file())
+            self.assertTrue((out / "resolve-ghcr-io.txt").is_file())
+
+    def test_a_distro_without_a_query_tool_still_gets_the_per_name_verdicts(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            with (
+                mock.patch.object(mod.shutil, "which", return_value=None),
+                mock.patch.object(
+                    mod, "run", return_value=_cp([], stdout=b"nameserver 10.0.0.1\n")
+                ) as runner,
+            ):
+                mod.collect_resolver_probes(out)
+            self.assertTrue((out / "resolve-ghcr-io.txt").is_file())
+            self.assertFalse(any("dig" in c.args[0] for c in runner.call_args_list))
+
+    def test_the_firewall_dump_is_not_narrowed_to_one_table(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            with mock.patch.object(
+                mod, "run", return_value=_cp([], stdout=b"")
+            ) as runner:
+                mod.collect_host(out, "app", "ctx", "STAMP")
+            saves = [
+                call.args[0]
+                for call in runner.call_args_list
+                if call.args[0][:1] == ["iptables-save"]
+            ]
+            self.assertEqual(saves, [["iptables-save"]])
+            self.assertTrue((out / "firewall-rules.txt").is_file())
+
+    def test_every_network_definition_is_dumped(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            with mock.patch.object(
+                mod, "run", return_value=_cp([], stdout=b"bridge\ninfinito_net\n")
+            ):
+                mod.collect_networks(out, "docker")
+            self.assertTrue((out / "networks.txt").is_file())
+            self.assertTrue((out / "networks" / "infinito_net.inspect.json").is_file())
+
+    def test_free_space_and_free_inodes_are_separate_questions(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            with mock.patch.object(mod, "run", return_value=_cp([], stdout=b"")):
+                mod.collect_host(out, "app", "ctx", "STAMP")
+            self.assertTrue((out / "df.txt").is_file())
+            self.assertTrue((out / "df-inodes.txt").is_file())
+
+    def test_the_process_table_carries_no_argv(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            with mock.patch.object(
+                mod, "run", return_value=_cp([], stdout=b"")
+            ) as runner:
+                mod.collect_host(out, "app", "ctx", "STAMP")
+            listings = [
+                call.args[0]
+                for call in runner.call_args_list
+                if call.args[0][:1] == ["ps"]
+            ]
+            self.assertTrue(listings)
+            for cmd in listings:
+                self.assertNotIn("args", cmd[-1].split(","))
+            self.assertTrue((out / "processes.txt").is_file())
+
     def test_every_capture_is_one_file_beside_the_others(self):
         mod = _load()
         with tempfile.TemporaryDirectory() as td:
@@ -224,13 +325,28 @@ class CollectTests(unittest.TestCase):
                     return _cp(cmd, stdout=b"svc1\n")
                 return _cp(cmd, stdout=b"data")
 
-            with mock.patch.object(mod, "run", side_effect=fake_run):
+            with mock.patch.object(mod, "run", side_effect=fake_run) as runner:
                 containers, services = mod.collect_runtime(out, "docker")
+            execs = [
+                call
+                for call in runner.call_args_list
+                if call.args[0][:2] == ["docker", "exec"]
+            ]
+            self.assertTrue(execs)
+            for call in execs:
+                self.assertLessEqual(
+                    call.kwargs.get("timeout", mod._EXEC_TIMEOUT),
+                    mod._EXEC_TIMEOUT,
+                    f"a wedged container must stay inside one exec budget: {call.args[0]}",
+                )
             self.assertEqual(containers, ["web/1"])
             self.assertEqual(services, ["svc1"])
             self.assertTrue((out / "containers" / "web_1.log").is_file())
             self.assertTrue((out / "containers" / "web_1.inspect.json").is_file())
             self.assertTrue((out / "services" / "svc1.log").is_file())
+            self.assertTrue((out / "runtime-df.txt").is_file())
+            self.assertTrue((out / "volumes.txt").is_file())
+            self.assertTrue((out / "images.txt").is_file())
             self.assertFalse(
                 (out / "containers" / "web_1.pg_stat_activity.txt").is_file()
             )

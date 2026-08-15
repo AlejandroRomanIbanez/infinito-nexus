@@ -33,12 +33,14 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 _EXEC_TIMEOUT = 120
+_PROBE_TIMEOUT = 30
 
 _JOURNAL_TIMEOUT = 600
 _NESTED_TIMEOUT = 600
 _TAR_TIMEOUT = 300
 _SELF_IN_CONTAINER = "/tmp/rescue-self.py"  # noqa: S108 - fixed staging path inside the inspected container
 _LOCAL_DUMPS_ENV = "INFINITO_RESCUE_LOCAL_DUMPS_DIR"
+_PROBE_HOSTS = ("deb.debian.org", "ghcr.io", "repo.packagist.org")
 
 
 def runtime_bin() -> str | None:
@@ -103,23 +105,29 @@ def collect_host(out: Path, app_id: str, context: str, stamp: str) -> None:
     capture(out, "system.txt", ["uname", "-a"])
     for name, cmd in (
         ("df.txt", ["df", "-h"]),
+        ("df-inodes.txt", ["df", "-i"]),
         ("free.txt", ["free", "-m"]),
         ("uptime.txt", ["uptime"]),
         ("systemctl.txt", ["systemctl", "list-units", "--all", "--no-pager"]),
         ("ip-addr.txt", ["ip", "-4", "addr"]),
-        ("nat-rules.txt", ["iptables-save", "-t", "nat"]),
+        ("ip-route.txt", ["ip", "-4", "route"]),
+        ("ip-neigh.txt", ["ip", "-4", "neigh"]),
+        ("firewall-rules.txt", ["iptables-save"]),
         ("sockets-udp.txt", ["ss", "-lunp"]),
         ("sockets-tcp.txt", ["ss", "-lntp"]),
-        (
-            "resolve-probe.txt",
-            ["getent", "hosts", "deb.debian.org", "ghcr.io", "repo.packagist.org"],
-        ),
+        ("processes.txt", ["ps", "-eo", "pid,ppid,stat,etimes,rss,comm"]),
+        ("dnsmasq-conf-d.txt", ["grep", "-rH", ".", "/etc/dnsmasq.d"]),
         ("zfs-dev.txt", ["ls", "-l", "/dev/zfs"]),
         ("zfs-version.txt", ["zfs", "version"]),
     ):
         capture(out, name, cmd)
+    collect_resolver_probes(out)
     for path in (
+        "/etc/os-release",
         "/etc/resolv.conf",
+        "/etc/nsswitch.conf",
+        "/etc/hosts",
+        "/etc/dnsmasq.conf",
         "/etc/docker/daemon.json",
         "/proc/modules",
         "/proc/devices",
@@ -141,6 +149,43 @@ def collect_host(out: Path, app_id: str, context: str, stamp: str) -> None:
     ):
         capture(out, name, cmd, timeout=_JOURNAL_TIMEOUT)
     collect_service_state(out)
+
+
+def collect_resolver_probes(out: Path) -> None:
+    """Resolve each probed name, once through the stack and once per nameserver.
+
+    ``getent`` honours nsswitch and cannot address a server, so on its own it
+    cannot say which of the resolvers in resolv.conf refused. Where the distro
+    ships a query tool, ask every nameserver directly; where it does not, the
+    per-name verdicts still stand on their own.
+    """
+    tool = next(
+        (
+            argv
+            for argv in (
+                ["dig", "+time=3", "+tries=1"],
+                ["nslookup", "-timeout=3"],
+            )
+            if shutil.which(argv[0])
+        ),
+        None,
+    )
+    servers = [
+        parts[1]
+        for parts in (line.split() for line in list_lines(["cat", "/etc/resolv.conf"]))
+        if parts[:1] == ["nameserver"] and len(parts) > 1
+    ]
+    for host in _PROBE_HOSTS:
+        capture(out, f"resolve-{source_name(host)}", ["getent", "hosts", host])
+        if not tool:
+            continue
+        for server in servers:
+            argv = (
+                [*tool, f"@{server}", host, "A"]
+                if tool[0] == "dig"
+                else [*tool, host, server]
+            )
+            capture(out, f"resolve-{source_name(f'{host}-via-{server}')}", argv)
 
 
 def collect_service_state(out: Path) -> None:
@@ -201,10 +246,31 @@ def collect_local_dumps(out: Path) -> None:
         )
 
 
+def collect_networks(out: Path, rt: str) -> None:
+    """Dump the network definitions behind every container's resolver.
+
+    A container resolves through the runtime's embedded server on 127.0.0.11,
+    which forwards to whatever the network was created with, so ``inspect`` on
+    the container shows the address but never the forwarder behind it.
+    """
+    capture(out, "networks.txt", [rt, "network", "ls"])
+    for net in list_lines([rt, "network", "ls", "--format", "{{.Name}}"]):
+        capture(
+            out / "networks",
+            f"{sanitize(net)}.inspect.json",
+            [rt, "network", "inspect", net],
+        )
+
+
 def collect_runtime(out: Path, rt: str) -> tuple[list[str], list[str]]:
     capture(out, "runtime.txt", [rt, "info"])
     capture(out, "stats.txt", [rt, "stats", "--no-stream", "--no-trunc"])
     capture(out, "containers.txt", [rt, "ps", "-a"])
+    capture(out, "runtime-df.txt", [rt, "system", "df", "-v"])
+    capture(out, "volumes.txt", [rt, "volume", "ls"])
+    capture(out, "images.txt", [rt, "image", "ls", "--digests", "--no-trunc"])
+    capture(out, "nodes.txt", [rt, "node", "ls"])
+    collect_networks(out, rt)
     capture(
         out,
         "journal-daemon.txt",
@@ -230,14 +296,20 @@ def collect_runtime(out: Path, rt: str) -> tuple[list[str], list[str]]:
         capture(out / "containers", f"{safe}.inspect.json", [rt, "inspect", name])
         capture(
             out / "containers",
+            f"{safe}.resolv-conf.txt",
+            [rt, "exec", name, "cat", "/etc/resolv.conf"],
+            timeout=_PROBE_TIMEOUT,
+        )
+        capture(
+            out / "containers",
             f"{safe}.systemctl.txt",
             [rt, "exec", name, "systemctl", "status", "--all", "--no-pager"],
+            timeout=_PROBE_TIMEOUT,
         )
         capture(
             out / "containers",
             f"{safe}.journal.txt",
             [rt, "exec", name, "journalctl", "-b", "--no-pager"],
-            timeout=_JOURNAL_TIMEOUT,
         )
         if "postgres" in name:
             capture(
