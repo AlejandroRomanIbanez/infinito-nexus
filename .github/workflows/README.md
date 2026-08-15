@@ -128,7 +128,39 @@ An explicit `tor` input still wins over the full coverage: `enforced`,
 `exclusive` and `disabled` are operator narrowings, and a variant that pins
 `services.tor.enabled` to false never gets an onion run regardless.
 
+### Selection tokens
+
+An entry in `whitelist` or `priority` is a role name that MAY pin the axes the
+row would otherwise be assigned. Two spellings are accepted:
+
+| Form | Example |
+|---|---|
+| ASCII | `web-app-nextcloud#0,2@swarm+tor` |
+| the job label, pasted back out of the failed run | `🐳🧅网络应用·Nextcloud#0` |
+
+`#` selects variants (comma-separated), `@` the deploy mode, `+tor` /
+`+clearnet` the onion state. The onion state is spelled `+clearnet` rather than
+`-tor` because a role id may itself end in `-tor`.
+
+What a token leaves open belongs to the line it stands in: `priority` covers
+every remaining combination in one sweep, `whitelist` keeps the rotation and
+the row's position in the matrix. A pin the row cannot take — `@swarm` on a
+role without its own stack, `+tor` on a variant that pins
+`services.tor.enabled` false, or an axis that fights the run's own `mode` /
+`tor` input — aborts the matrix rather than dropping the row, because a dropped
+row would report a green run for a combination that never ran.
+
 ### Mode and tor
+
+The `tor` input decides what the onion axis is allowed to do at all:
+
+| Value | Effect |
+|---|---|
+| `auto` | rotates; a priority row covers both states in one sweep |
+| `enforced` | every capable row runs behind the onion |
+| `exclusive` | as `enforced`, and rows that cannot take an onion are dropped |
+| `disabled` | no row takes the onion |
+
 
 For **regular** rows both axes are a deterministic rotation over the row's
 position in the global list and the sweep number, never random, so a red job

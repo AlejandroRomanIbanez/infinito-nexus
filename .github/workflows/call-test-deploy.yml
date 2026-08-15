@@ -82,17 +82,17 @@ on:
         type: string
         default: ""
       modes:
-        description: "🚀 Deploy modes rows may be drawn from: 'auto', or a subset of 'host compose swarm'."
+        description: "🚀 Deploy modes to draw from: 'auto' or a subset of 'host compose swarm'"
         required: false
         type: string
         default: "auto"
       filesystem:
-        description: "🗄️ Space-separated filesystems the per-distro pick draws from (ext4, btrfs, zfs). Empty: all three."
+        description: "🗄️ Filesystems the per-distro pick draws from. Empty: ext4, btrfs, zfs"
         required: false
         type: string
         default: ""
       tor:
-        description: "🧅 Tor axis: 'auto' rotates the onion over the capable rows, 'enforced' onions all of them, 'exclusive' drops the rows that cannot, 'disabled' onions none."
+        description: "🧅 Tor axis; see .github/workflows/README.md for what each value does"
         required: false
         type: choice
         default: auto

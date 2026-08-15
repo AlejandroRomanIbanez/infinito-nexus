@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       workspace_track:
-        description: "rotate splits the distros across compose and swarm and flips with the run number; compose or swarm pins every distro to that track"
+        description: "🧑‍💻 Track per distro: rotate splits compose/swarm, or pin one"
         type: choice
         default: rotate
         options: [rotate, compose, swarm]
