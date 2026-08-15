@@ -56,8 +56,8 @@ on:
       resume_from_chunk:
         description: "⏭️ Skip every chunk below this index. Use to continue a sweep after fixing what broke it, instead of re-running the green chunks."
         required: false
-        default: 0
-        type: number
+        default: "0"
+        type: string
       chunk_gate:
         description: "🛑 Stop the chunk chain at its first failed chunk. Off: keep deploying the remaining chunks."
         required: false

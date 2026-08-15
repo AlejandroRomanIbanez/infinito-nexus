@@ -32,10 +32,10 @@ on:
         type: string
         default: ""
       resume_from_chunk:
-        description: "⏭️ Skip every chunk below this index. Use to continue a sweep after fixing what broke it, instead of re-running the green chunks."
+        description: "⏭️ Skip every chunk below this index. Use to continue a sweep after fixing what broke it, instead of re-running the green chunks. Typed string, not number: a workflow_dispatch number input reaches the caller as a string, and handing that to a number-typed workflow_call input makes GitHub reject the job before it is created."
         required: false
-        type: number
-        default: 0
+        type: string
+        default: "0"
       chunk_gate:
         description: "🛑 Stop the chunk chain at its first failed chunk. Off: keep deploying the remaining chunks."
         required: false
