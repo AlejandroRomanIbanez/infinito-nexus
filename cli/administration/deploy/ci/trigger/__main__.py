@@ -15,7 +15,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from cli.administration.deploy.ci import gh, runs
+from cli.administration.deploy.ci import gh, runs, selections
 from cli.meta.ci import matrix, query
 from utils.github.variant import axes
 
@@ -52,7 +52,9 @@ def _resume_offset(source: dict, whitelist: str, config: dict[str, str]) -> str:
         sweep=0,
         tor_mode=axes.resolve_tor_mode(config.get("tor")),
     )
-    return runs.resume_offset(entries, runs.deployed_selections(source["jobs"]))
+    return selections.resume_offset(
+        entries, selections.deployed_selections(source["jobs"])
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -139,7 +141,7 @@ def main(argv: list[str] | None = None) -> int:
         whitelist = apps
     elif args.failed is not None:
         statuses = runs.parse_role_statuses(source["jobs"])
-        failed = runs.failed_selections(source["jobs"], strict=args.strict)
+        failed = selections.failed_selections(source["jobs"], strict=args.strict)
         untriggered = runs.untriggered_priority(
             runs.dispatched_priority(source, repo), statuses
         )

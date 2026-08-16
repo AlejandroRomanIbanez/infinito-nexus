@@ -23,15 +23,21 @@ class TestOffset(unittest.TestCase):
         self.assertEqual(plan[0][0], 0)
 
     def test_an_offset_moves_the_window_by_exactly_that_many_rows(self) -> None:
-        plan = chunks.plan([], list(range(256)), size=80, blocks=2, budget=256, offset=5)
+        plan = chunks.plan(
+            [], list(range(256)), size=80, blocks=2, budget=256, offset=5
+        )
         self.assertEqual(plan[0][0], 5)
 
     def test_an_offset_past_the_tail_yields_nothing_instead_of_wrapping(self) -> None:
-        plan = chunks.plan([], list(range(10)), size=80, blocks=2, budget=256, offset=99)
+        plan = chunks.plan(
+            [], list(range(10)), size=80, blocks=2, budget=256, offset=99
+        )
         self.assertEqual(plan, [])
 
     def test_a_negative_offset_reads_as_the_head(self) -> None:
-        plan = chunks.plan([], list(range(20)), size=80, blocks=2, budget=256, offset=-3)
+        plan = chunks.plan(
+            [], list(range(20)), size=80, blocks=2, budget=256, offset=-3
+        )
         self.assertEqual(plan[0][0], 0)
 
 
@@ -87,9 +93,7 @@ class TestPlan(unittest.TestCase):
         self.assertEqual(plan[0], list(range(5)))
 
     def test_an_empty_selection_yields_no_chunk(self) -> None:
-        self.assertEqual(
-            chunks.plan([], [], size=80, blocks=3, budget=211), []
-        )
+        self.assertEqual(chunks.plan([], [], size=80, blocks=3, budget=211), [])
 
 
 if __name__ == "__main__":

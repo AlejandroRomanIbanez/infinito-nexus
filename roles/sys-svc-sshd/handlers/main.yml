@@ -25,6 +25,6 @@
 - name: ⏭️ Skip SSH restart if no SSH service exists
   ansible.builtin.debug:
     msg: >-
-      Skip handler 'sshd restart': neither sshd nor ssh service unit exists on this host.
+      Skip handler 'sshd-restart': neither sshd nor ssh service unit exists on this host.
   when: sys_svc_sshd_service_unit | length == 0
   listen: sshd-restart
