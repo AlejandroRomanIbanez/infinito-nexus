@@ -84,6 +84,15 @@ KEYCLOAK_DB_NETWORK_ARG: "{% if lookup('database', application_id, 'shared') | b
 
 KEYCLOAK_FRONTCHANNEL_LOGOUT_URL: "{{ lookup('tls', 'web-svc-logout', 'url.base') }}"
 KEYCLOAK_REDIRECT_URIS: "{{ lookup('redirect_uris') }}"
+KEYCLOAK_SAML_APPS: >-
+  {{ lookup('applications') | dict2items
+      | selectattr('value.services', 'defined')
+      | selectattr('value.services.sso', 'defined')
+      | selectattr('value.services.sso.flavor', 'defined')
+      | selectattr('value.services.sso.flavor', 'equalto', 'saml')
+      | map(attribute='key')
+      | select('in', group_names)
+      | list }}
 KEYCLOAK_WEB_ORIGINS: >-
   {{ KEYCLOAK_REDIRECT_URIS
       | map('regex_replace','/\\*$','')
