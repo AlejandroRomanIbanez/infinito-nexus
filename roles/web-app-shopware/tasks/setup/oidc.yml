@@ -24,6 +24,7 @@
       -e ADMIN_USER={{ lookup('users', 'administrator').username | quote }}
       -e ADMIN_PASSWORD={{ lookup('users', 'administrator').password | quote }}
       -e OIDC_AUTH_SERVER={{ OIDC.URL | quote }}
+      -e OIDC_INTERNAL_BASE={{ ('http://' ~ lookup('container_address', 'web-app-keycloak', 'keycloak') ~ ':' ~ lookup('config', 'web-app-keycloak', 'services.keycloak.ports.internal.http')) | quote }}
       -e OIDC_REALM={{ OIDC.CLIENT.REALM | quote }}
       -e OIDC_CLIENT_ID={{ OIDC.CLIENT.ID | quote }}
       -e OIDC_CLIENT_SECRET={{ OIDC.CLIENT.SECRET | quote }}

@@ -8,7 +8,8 @@
  *   SHOPWARE_API_BASE   base URL of the Shopware API as seen from the container
  *   ADMIN_USER          admin username for the password grant
  *   ADMIN_PASSWORD      admin password for the password grant
- *   OIDC_AUTH_SERVER    Keycloak base URL
+ *   OIDC_AUTH_SERVER    Keycloak base URL the browser reaches
+ *   OIDC_INTERNAL_BASE  Keycloak base URL the container reaches
  *   OIDC_REALM          Keycloak realm holding the client
  *   OIDC_CLIENT_ID      Keycloak client id
  *   OIDC_CLIENT_SECRET  Keycloak client secret
@@ -16,7 +17,7 @@
 
 declare(strict_types=1);
 
-const PROVIDER = 'keycloak';
+const PROVIDER = 'open_id_connect';
 
 function env(string $key): string
 {
@@ -80,6 +81,10 @@ if (!is_string($token) || $token === '') {
     exit(1);
 }
 
+$realm = env('OIDC_REALM');
+$browserRealm = rtrim(env('OIDC_AUTH_SERVER'), '/') . '/realms/' . $realm;
+$internalRealm = rtrim(env('OIDC_INTERNAL_BASE'), '/') . '/realms/' . $realm;
+
 $payload = [
     'name' => 'Keycloak',
     'provider' => PROVIDER,
@@ -90,12 +95,12 @@ $payload = [
     'keepUserUpdated' => true,
     'config' => [
         'scopes' => [],
-        'keycloakOidcJson' => json_encode([
-            'realm' => env('OIDC_REALM'),
-            'auth-server-url' => rtrim(env('OIDC_AUTH_SERVER'), '/') . '/',
-            'resource' => env('OIDC_CLIENT_ID'),
-            'credentials' => ['secret' => env('OIDC_CLIENT_SECRET')],
-        ], JSON_THROW_ON_ERROR),
+        'discoveryDocumentUrl' => $browserRealm . '/.well-known/openid-configuration',
+        'authorization_endpoint' => $browserRealm . '/protocol/openid-connect/auth',
+        'token_endpoint' => $internalRealm . '/protocol/openid-connect/token',
+        'userinfo_endpoint' => $internalRealm . '/protocol/openid-connect/userinfo',
+        'clientId' => env('OIDC_CLIENT_ID'),
+        'clientSecret' => env('OIDC_CLIENT_SECRET'),
     ],
 ];
 
