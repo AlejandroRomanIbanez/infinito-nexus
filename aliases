@@ -94,6 +94,7 @@ alias i8nive='m install-venv'
 alias i8on='m onboard'
 alias i8paco='i8source && python3 -m cli.meta.ci.plan --cli --modes compose' # plan table for the compose line
 alias i8paho='i8source && python3 -m cli.meta.ci.plan --cli --modes host' # plan table for the host line
+alias i8papr='i8source && python3 -m cli.meta.ci.plan --cli --modes auto --priority' # plan table for the priority line given as the next argument
 alias i8pasa='i8source && python3 -m cli.meta.ci.plan --cli --modes swarm' # plan table for the swarm line
 alias i8pi='pcd infinito' # cd to the infinito repo
 alias i8puci='__i8puci(){ gips && i8cifail "$1"; }; __i8puci' # sign-push + retrigger the failed selections of run $1, skipping the quality gate
