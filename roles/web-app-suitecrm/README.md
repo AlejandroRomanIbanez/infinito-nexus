@@ -121,13 +121,17 @@ docker run --rm -it \
 
 ## LDAP & SSO Notes
 
-- **LDAP** is configured via environment variables (`AUTH_TYPE=ldap`, `LDAP_*`).  
-  The role writes a `config_override.php` so SuiteCRM’s legacy backend
-  uses LDAP for authentication against your OpenLDAP service.
+- **LDAP** is configured via environment variables (`AUTH_TYPE=ldap`, `LDAP_*`) in
+  [`templates/env.j2`](./templates/env.j2). The role additionally renders
+  [`templates/ldap.yaml.j2`](./templates/ldap.yaml.j2) into the container's
+  `extensions/<software>/config/services/ldap/`, which maps the LDAP attributes onto
+  SuiteCRM's user fields for auto-created accounts.
 
-- **SSO** in SuiteCRM 8 is handled via **SAML** (e.g. with Keycloak as IdP) and
-  **OAuth providers** configured in the Administration panel (for outbound email and API access).
-  This role does not implement full OIDC login flows; instead, you configure SAML/OAuth inside SuiteCRM’s admin UI.
+- **SSO** reaches the app through the oauth2-proxy declared in
+  [`meta/services.yml`](./meta/services.yml) (`sso.flavor: oauth2`), which terminates the
+  Keycloak OIDC flow in front of SuiteCRM. SuiteCRM itself is not OIDC-aware; its own
+  SAML and OAuth provider settings stay untouched by this role and remain available in
+  the Administration panel.
 
 ## Persona contract opt-outs
 
