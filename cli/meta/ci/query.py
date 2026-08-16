@@ -14,18 +14,17 @@ The mode selection is a *filter*, not an axis: ``--modes swarm`` keeps the
 rows whose role can be deployed as a swarm stack, ``--modes "compose swarm"``
 keeps the rows at least one of the two can take. The shared filter is
 mode-clause + INFINITO_WHITELIST + INFINITO_BLACKLIST, the order is
-INFINITO_DISCOVERY_SORT behind a clones-last prefix (one representative per
-dna cluster stays ahead of the budget cut, so redundant same-service-set
+INFINITO_DISCOVERY_SORT, whose first key sorts clones last (one representative
+per dna cluster stays ahead of the budget cut, so redundant same-service-set
 variants fall behind it first), and the lifecycle envelope is
 INFINITO_LIFECYCLES.
 
 ``--matrix`` renders the full ordered candidate list, so the matrix order IS
 the selection priority. Every human-facing view of that list goes through here
 rather than re-deriving the sort and the filter: hand-rolling
-``--sort "$INFINITO_DISCOVERY_SORT" --filter "compose == true"`` drops the
-clones-last prefix and reads the wrong column (``compose`` is what a role can
-do, ``test_compose`` is what CI tests), which silently shows an order no run
-will ever take.
+``--sort "$INFINITO_DISCOVERY_SORT" --filter "compose == true"`` reads the
+wrong column (``compose`` is what a role can do, ``test_compose`` is what CI
+tests), which silently shows an order no run will ever take.
 """
 
 from __future__ import annotations
@@ -79,10 +78,8 @@ def build_filter(
 
 
 def sort_spec() -> str:
-    """The discovery sort, behind a clones-last prefix so one representative
-    per dna cluster stays ahead of the budget cut."""
-    spec = env_setting("INFINITO_DISCOVERY_SORT").strip()
-    return f"asc clone,{spec}"
+    """The discovery sort as declared in default.env."""
+    return env_setting("INFINITO_DISCOVERY_SORT").strip()
 
 
 def _query_argv(
