@@ -16,6 +16,14 @@
   notify:
     - compose-up
 
+- name: "📄 Render adminopenauth.yaml (OIDC client protocols follow the provider scheme)"
+  stack_host_template:
+    src: "adminopenauth.yaml.j2"
+    dest: "{{ SHOPWARE_ADMINOPENAUTH_HOST }}"
+    mode: "0644"
+  notify:
+    - compose-up
+
 - name: "📄 Render shopware.yaml (SeaweedFS S3 filesystem)"
   stack_host_template:
     src: "shopware.yaml.j2"

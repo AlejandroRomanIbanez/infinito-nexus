@@ -25,6 +25,7 @@ SHOPWARE_SCHED_CONTAINER: "{{ lookup('config', application_id, 'services.schedul
 SHOPWARE_INIT_HOST: "{{ [ lookup('container', application_id, 'directories.volumes'), 'init.sh' ] | path_join }}"
 SHOPWARE_INIT_DOCKER: "{{ lookup('volume', 'web-app-shopware', 'init_script').target }}"
 SHOPWARE_FRAMEWORK_HOST: "{{ [ lookup('container', application_id, 'directories.config'), 'framework.yaml' ] | path_join }}"
+SHOPWARE_ADMINOPENAUTH_HOST: "{{ [ lookup('container', application_id, 'directories.config'), 'adminopenauth.yaml' ] | path_join }}"
 SHOPWARE_FILESYSTEM_HOST: "{{ [ lookup('container', application_id, 'directories.config'), 'shopware.yaml' ] | path_join }}"
 SHOPWARE_OBJSTORE_ENABLED: "{{ lookup('objstore', application_id, 'enabled') }}"
 

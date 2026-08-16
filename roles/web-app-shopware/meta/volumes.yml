@@ -108,3 +108,17 @@ framework_yaml:
       target: *var_www_html_config_packages_framework_yaml_target
     - service: scheduler
       target: *var_www_html_config_packages_framework_yaml_target
+
+adminopenauth_yaml:
+  type: config
+  source: "{{ [lookup('container', 'web-app-shopware', 'directories.config'), 'adminopenauth.yaml'] | path_join }}"
+  mode: "0444"
+  mounts:
+    - service: init
+      target: &var_www_html_config_packages_adminopenauth_yaml_target /var/www/html/config/packages/adminopenauth.yaml
+    - service: web
+      target: *var_www_html_config_packages_adminopenauth_yaml_target
+    - service: worker
+      target: *var_www_html_config_packages_adminopenauth_yaml_target
+    - service: scheduler
+      target: *var_www_html_config_packages_adminopenauth_yaml_target
