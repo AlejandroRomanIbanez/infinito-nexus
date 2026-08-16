@@ -11,7 +11,7 @@
       set -e
       cd "$SHOPWARE_ROOT"
       php bin/console plugin:refresh
-      installed="$(php bin/console plugin:install --activate --clearCache "$PLUGIN_NAME")"
+      installed="$(php bin/console plugin:install --activate "$PLUGIN_NAME")"
       printf '%s\n' "$installed"
       printf '%s' "$installed" | grep -qi installed
   changed_when: false
@@ -30,4 +30,17 @@
       {{ SHOPWARE_WEB_LOCAL_CID | quote }}
       php
     stdin: "{{ lookup('ansible.builtin.file', role_path ~ '/files/ensure/oidc_client.php') }}"
+  changed_when: false
+
+- name: "♻️ Clear the cache so the provider is discovered"
+  ansible.builtin.shell:
+    cmd: >- # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
+      container exec -i --user {{ SHOPWARE_USER }}
+      -e SHOPWARE_ROOT={{ SHOPWARE_ROOT | quote }}
+      {{ SHOPWARE_WEB_LOCAL_CID | quote }}
+      sh
+    stdin: |
+      set -e
+      cd "$SHOPWARE_ROOT"
+      php bin/console cache:clear
   changed_when: false
