@@ -51,7 +51,6 @@ if [ -f "${ROLE_DIR}/meta/services.yml" ] &&
 	DEFAULT_PLACEMENT_MANAGER=true
 fi
 
-
 PROBE_PORT="$(PYTHONPATH="${_REPO_ROOT}" "${PYTHON}" -c "
 import os, yaml
 port = 80

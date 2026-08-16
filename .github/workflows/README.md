@@ -161,7 +161,6 @@ The `tor` input decides what the onion axis is allowed to do at all:
 | `exclusive` | as `enforced`, and rows that cannot take an onion are dropped |
 | `disabled` | no row takes the onion |
 
-
 For **regular** rows both axes are a deterministic rotation over the row's
 position in the global list and the sweep number, never random, so a red job
 reproduces by re-running the same sweep:
