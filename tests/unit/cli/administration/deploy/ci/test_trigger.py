@@ -8,6 +8,7 @@ from contextlib import redirect_stdout
 
 from cli.administration.deploy.ci import gh, runs
 from cli.administration.deploy.ci.trigger import __main__ as trigger
+from cli.meta.ci import matrix
 from tests.utils.ci.job_names import deploy_job_name
 from tests.utils.ci.run_name import render
 
@@ -57,6 +58,7 @@ class TestTriggerMain(unittest.TestCase):
             mock.patch.object(gh, "resolve_repo", return_value="o/r"),
             mock.patch.object(runs, "find_last_deploy_run", return_value=run),
             mock.patch.object(runs, "inputs_from_jobs", return_value=inputs or {}),
+            mock.patch.object(matrix, "entries_of", return_value=[]),
             mock.patch.object(
                 runs,
                 "dispatch_workflow",
@@ -117,6 +119,7 @@ class TestTriggerMain(unittest.TestCase):
                 "inputs_from_jobs",
                 return_value={"priority": "web-app-x web-app-never"},
             ),
+            mock.patch.object(matrix, "entries_of", return_value=[]),
             mock.patch.object(
                 runs,
                 "dispatch_workflow",
@@ -166,6 +169,7 @@ class TestTriggerMain(unittest.TestCase):
                 "inputs_from_jobs",
                 return_value={"priority": "web-app-x web-app-never"},
             ),
+            mock.patch.object(matrix, "entries_of", return_value=[]),
             mock.patch.object(
                 runs,
                 "dispatch_workflow",
@@ -195,6 +199,7 @@ class TestTriggerMain(unittest.TestCase):
             mock.patch.object(gh, "resolve_repo", return_value="o/r"),
             mock.patch.object(gh, "fetch_run", return_value=_SOURCE_RUN) as fetch,
             mock.patch.object(runs, "find_last_deploy_run") as find_last,
+            mock.patch.object(matrix, "entries_of", return_value=[]),
             mock.patch.object(
                 runs,
                 "dispatch_workflow",
@@ -217,6 +222,7 @@ class TestTriggerMain(unittest.TestCase):
             mock.patch.object(gh, "resolve_repo", return_value="o/r"),
             mock.patch.object(gh, "fetch_run", return_value=_SOURCE_RUN) as fetch,
             mock.patch.object(runs, "find_last_deploy_run") as find_last,
+            mock.patch.object(matrix, "entries_of", return_value=[]),
             mock.patch.object(
                 runs,
                 "dispatch_workflow",
@@ -238,6 +244,7 @@ class TestTriggerMain(unittest.TestCase):
             mock.patch.object(gh, "current_branch", return_value="feature/x"),
             mock.patch.object(gh, "resolve_repo", return_value="o/r"),
             mock.patch.object(gh, "fetch_run", return_value=_SOURCE_RUN),
+            mock.patch.object(matrix, "entries_of", return_value=[]),
             mock.patch.object(
                 runs,
                 "dispatch_workflow",

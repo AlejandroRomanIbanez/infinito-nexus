@@ -16,6 +16,8 @@ import argparse
 import sys
 
 from cli.administration.deploy.ci import gh, runs
+from cli.meta.ci import matrix, query
+from utils.github.variant import axes
 
 _WORKFLOW = "entry-manual-steer.yml"
 _ALL = "__ALL__"
@@ -27,6 +29,30 @@ def _fetch(run: str, repo: str) -> dict:
     if run.isdigit():
         return gh.fetch_run(run, repo=repo)
     return gh.fetch_run(gh.run_id_from_url(run), repo=gh.slug_from_url(run))
+
+
+def _resume_offset(source: dict, whitelist: str, config: dict[str, str]) -> str:
+    """Where the retrigger's regular line should start.
+
+    The source run walked the ranking until its budget ran out. Those rows
+    have a verdict already -- and the red ones return on the priority line --
+    so the regular line resumes behind them instead of redeploying the same
+    window. The ranking is recomputed under the retrigger's own configuration,
+    because that is the list the offset will be resolved against.
+
+    The priority line is deliberately left out of that computation: it only
+    blacklists rows from the regular query, and a token in it that no longer
+    resolves would abort here, in a helper whose job is to save runner time.
+    """
+    entries = matrix.entries_of(
+        modes=query.resolve_modes(config.get("mode") or query.ALL_MODES),
+        whitelist="" if whitelist == _ALL else whitelist,
+        priority="",
+        lifecycles=config.get("lifecycles", ""),
+        sweep=0,
+        tor_mode=axes.resolve_tor_mode(config.get("tor")),
+    )
+    return runs.resume_offset(entries, runs.deployed_selections(source["jobs"]))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -136,6 +162,13 @@ def main(argv: list[str] | None = None) -> int:
     carried_whitelist = config.pop("whitelist", "")
     if not whitelist and carried_whitelist:
         whitelist = carried_whitelist
+
+    if args.failed is not None:
+        config["offset"] = _resume_offset(source, whitelist, config)
+        if config["offset"]:
+            print(f"Regular line resumes at: {config['offset']}")
+        else:
+            config.pop("offset")
 
     if priority:
         label = f"priority {priority}, then the remaining roles"

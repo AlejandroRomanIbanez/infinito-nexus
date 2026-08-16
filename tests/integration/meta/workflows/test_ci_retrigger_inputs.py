@@ -26,6 +26,7 @@ from contextlib import redirect_stdout
 
 from cli.administration.deploy.ci import gh, runs
 from cli.administration.deploy.ci.trigger import __main__ as trigger
+from cli.meta.ci import matrix
 from tests.utils.ci.job_names import deploy_job_name
 
 _REPO = "o/r"
@@ -73,6 +74,7 @@ def _dispatch(argv: list[str], logged: dict[str, str]) -> tuple[str, str, dict]:
         mock.patch.object(gh, "resolve_repo", return_value=_REPO),
         mock.patch.object(gh, "fetch_run", return_value=source),
         mock.patch.object(runs, "inputs_from_jobs", return_value=logged),
+        mock.patch.object(matrix, "entries_of", return_value=[]),
         mock.patch.object(
             runs,
             "dispatch_workflow",
@@ -91,7 +93,7 @@ class TestCarriedInputs(unittest.TestCase):
     def test_the_carried_set_is_the_workflow_minus_the_priority_line(self) -> None:
         declared = set(runs.dispatch_inputs())
         self.assertTrue(declared, "entry-manual-steer.yml declares no inputs")
-        self.assertEqual(set(runs.carried_inputs()), declared - {"priority"})
+        self.assertEqual(set(runs.carried_inputs()), declared - {"priority", "offset"})
 
     def test_the_test_fixture_covers_every_declared_input(self) -> None:
         self.assertEqual(set(_VALUES), set(runs.dispatch_inputs()))
@@ -111,6 +113,12 @@ class TestCarriedInputs(unittest.TestCase):
         )
         self.assertNotIn("priority", config)
         self.assertNotEqual(priority, _VALUES["priority"])
+
+    def test_the_offset_is_not_carried_but_recomputed(self) -> None:
+        _whitelist, _priority, config = _dispatch(
+            ["--failed", "--run", _RUN_URL], _VALUES
+        )
+        self.assertNotEqual(config.get("offset"), _VALUES["offset"])
 
     def test_an_input_the_source_left_on_its_default_is_not_invented(self) -> None:
         _whitelist, _priority, config = _dispatch(

@@ -44,11 +44,15 @@ MODES = ("docker", "swarm", "host")
 
 ENTRY_WORKFLOW = ".github/workflows/entry-manual-steer.yml"
 
-SELECTION_INPUTS = ("priority",)
-"""The one input a retrigger decides itself: it IS the retrigger. Everything
-else the source run was dispatched with is carried over verbatim -- including
-``whitelist``, so a retrigger of a scoped run stays inside that scope instead
-of quietly widening to the whole repository."""
+SELECTION_INPUTS = ("priority", "offset")
+"""The two inputs a retrigger decides itself rather than carrying over.
+
+``priority`` IS the retrigger: it names what failed. ``offset`` follows from
+it -- the source run already has a verdict for everything up to where its
+budget ran out, so the regular line resumes behind that window
+(:func:`resume_offset`) instead of repeating it. Everything else is carried
+verbatim, including ``whitelist``, so a retrigger of a scoped run stays inside
+that scope instead of quietly widening to the whole repository."""
 
 
 def dispatch_inputs() -> tuple[str, ...]:
@@ -254,6 +258,70 @@ def failed_selections(jobs: list[dict], *, strict: bool = False) -> list[str]:
             )
         )
     return sorted(tokens)
+
+
+def deployed_selections(jobs: list[dict]) -> set[str]:
+    """Every selection the source run actually deployed, green or red.
+
+    The verdict is irrelevant here: what matters is that the run reached the
+    row at all, because that is what a retrigger no longer has to repeat.
+    """
+    return {
+        selection.describe(
+            selection.Pin(
+                app,
+                tuple(int(part) for part in label.variant.split(",") if part),
+                label.mode,
+                label.tor,
+            )
+        )
+        for app, _mode, job in _iter_deploy_jobs(jobs)
+        if (label := axes.parse_label(str(job.get("name", "")))) is not None
+    }
+
+
+def resume_offset(regular: list[dict[str, str]], deployed: set[str]) -> str:
+    """Where a retrigger should pick the regular line up again.
+
+    The source run deployed a window of the ranking and stopped at its budget.
+    Everything inside that window has a verdict -- the red rows come back on
+    the priority line anyway -- so the regular line has no reason to walk it a
+    second time. The answer is the last row of the leading run of deployed
+    rows, as a selection token: a token still names the same row after the
+    ranking shifts, a row count does not.
+
+    Stops at the first gap. A hole inside the window means that row was
+    filtered out, not that the run got further, and resuming past it would skip
+    whatever follows.
+
+    Args:
+        regular: the regular line of the retrigger's own discovery, in ranking
+            order.
+        deployed: tokens the source run deployed (:func:`deployed_selections`).
+
+    Returns:
+        the token to resume at, or ``''`` when the source run deployed nothing
+        of this line -- then the retrigger starts at the head, as it would
+        without an offset.
+    """
+    resume = ""
+    for entry in regular:
+        token = selection.describe(
+            selection.Pin(
+                entry["apps"],
+                tuple(
+                    int(part)
+                    for part in str(entry.get("variant", "")).split(",")
+                    if part
+                ),
+                entry["mode"],
+                entry["tor"] == "true",
+            )
+        )
+        if token not in deployed:
+            break
+        resume = token
+    return resume
 
 
 _INPUT_RE = re.compile(r"^\S+\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*): ?(?P<value>.*)$")
