@@ -51,3 +51,16 @@
     apply:
       no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
       delegate_to: "{{ SHOPWARE_WEB_HOST_NODE }}"
+
+- name: "🔐 Install & configure the enabled admin auth plugins"
+  ansible.builtin.include_tasks:
+    file: 03_setup.yml
+    apply:
+      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+      delegate_to: "{{ SHOPWARE_WEB_HOST_NODE }}"
+
+- name: "🧹 Remove the admin auth plugins that are disabled"
+  ansible.builtin.include_tasks:
+    file: 04_cleanup.yml
+    apply:
+      delegate_to: "{{ SHOPWARE_WEB_HOST_NODE }}"

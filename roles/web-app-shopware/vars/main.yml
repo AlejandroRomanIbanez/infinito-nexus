@@ -32,7 +32,8 @@ SHOPWARE_WORKER_ENTRYPOINT: "{{ lookup('config', application_id, 'services.worke
 SHOPWARE_SCHED_ENTRYPOINT: "{{ lookup('config', application_id, 'services.scheduler.entrypoint') }}"
 
 SHOPWARE_OIDC_ENABLED: "{{ lookup('config', application_id, 'services.sso.enabled') }}"
-SHOPWARE_LDAP_ENABLED: "{{ lookup('config', application_id, 'services.ldap.enabled') }}"
+SHOPWARE_OIDC_PLUGIN: KskHeptacomAdminOpenAuth
+SHOPWARE_API_BASE: "http://127.0.0.1:{{ lookup('config', application_id, 'services.web.ports.internal.http') }}"
 
 SHOPWARE_REDIS_ENABLED: "{{ lookup('config', application_id, 'services.redis.enabled') }}"
 SHOPWARE_REDIS_URL: "{{ lookup('engine', 'redis', application_id, 'url') }}"

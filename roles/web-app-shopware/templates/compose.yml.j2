@@ -44,6 +44,7 @@ x-environment: &shopware
 
 
     {{ lookup('container_networks') | indent(4) }}
+    {{ lookup('container_extra_hosts') | indent(4) }}
 
   {% set service_name = 'worker' %}
   {{ service_name }}:

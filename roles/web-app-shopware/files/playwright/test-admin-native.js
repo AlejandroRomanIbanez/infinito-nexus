@@ -2,17 +2,15 @@ const { test, expect } = require("@playwright/test");
 const { resolveTimeout } = require("./timeouts");
 
 const { decodeDotenvQuotedValue, normalizeBaseUrl , gotoOnion } = require("./personas");
+const { performKeycloakLogin } = require("./personas/utils/keycloak");
 
 const appBaseUrl = normalizeBaseUrl(process.env.APP_BASE_URL || "");
 const adminUsername = decodeDotenvQuotedValue(process.env.ADMIN_USERNAME || "");
 const adminPassword = decodeDotenvQuotedValue(process.env.ADMIN_PASSWORD || "");
+const canonicalDomain = decodeDotenvQuotedValue(process.env.CANONICAL_DOMAIN || "");
 const ssoEnabled = (process.env.SSO_SERVICE_ENABLED || "").toLowerCase() === "true";
 
-test("administrator: native admin login → catalogue → in-app logout", async ({ page }) => {
-  test.skip(
-    ssoEnabled,
-    "SSO_SERVICE_ENABLED=true: the oauth2-proxy owns /admin, so the native form is unreachable.",
-  );
+test("administrator: admin login → catalogue → in-app logout", async ({ page }) => {
   test.setTimeout(resolveTimeout(180_000));
 
   expect(adminUsername, "ADMIN_USERNAME must be set").toBeTruthy();
@@ -21,15 +19,31 @@ test("administrator: native admin login → catalogue → in-app logout", async 
   await page.context().clearCookies();
   await gotoOnion(page, `${appBaseUrl}/admin`, { waitUntil: "domcontentloaded" });
 
-  const password = page.locator("input[type='password']:visible").first();
-  await expect(
-    password,
-    "the administration SPA must paint its login form; a blank shell here means the admin bundle never booted",
-  ).toBeVisible({ timeout: resolveTimeout(60_000) });
+  if (ssoEnabled) {
+    expect(canonicalDomain, "CANONICAL_DOMAIN must be set").toBeTruthy();
 
-  await page.locator("input[name$='username']:visible").first().fill(adminUsername);
-  await password.fill(adminPassword);
-  await password.press("Enter");
+    const ssoButton = page
+      .locator("a.heptacom-admin-open-auth--button")
+      .filter({ hasText: /keycloak/i })
+      .first();
+    await expect(
+      ssoButton,
+      "AdminOpenAuth appends its provider link into .sw-login__content; a missing link means the plugin is inactive or the client row is not active",
+    ).toBeVisible({ timeout: resolveTimeout(60_000) });
+
+    await ssoButton.click();
+    await performKeycloakLogin(page, adminUsername, adminPassword, canonicalDomain);
+  } else {
+    const password = page.locator("input[type='password']:visible").first();
+    await expect(
+      password,
+      "the administration SPA must paint its login form; a blank shell here means the admin bundle never booted",
+    ).toBeVisible({ timeout: resolveTimeout(60_000) });
+
+    await page.locator("input[name$='username']:visible").first().fill(adminUsername);
+    await password.fill(adminPassword);
+    await password.press("Enter");
+  }
 
   const userActions = page.locator(".sw-admin-menu__user-actions-toggle");
   await expect(
