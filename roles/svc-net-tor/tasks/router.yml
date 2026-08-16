@@ -5,7 +5,6 @@
     fail_msg: >-
       networks.internet.dns must be set on a Tor node: dnsmasq runs with
       no-resolv and would answer .onion only.
-  when: DEPLOYMENT_MODE == 'compose'
 - name: "📦 Egress router | Install dnsmasq (host split-DNS forwarder)"
   become: true
   package_install:
@@ -35,7 +34,7 @@
   register: _tor_dnsmasq_foreign
 - name: "🔧 Egress router | Decide whether this dnsmasq is ours to reshape"
   ansible.builtin.set_fact:
-    TOR_DNSMASQ_OWNS_LISTENER: "{{ _tor_dnsmasq_foreign.matched == 0 and DEPLOYMENT_MODE == 'compose' }}"
+    TOR_DNSMASQ_OWNS_LISTENER: "{{ _tor_dnsmasq_foreign.matched == 0 }}"
 
 - name: "📝 Egress router | Render dnsmasq .onion split-DNS drop-in"
   ansible.builtin.template: # nocheck: stack-host-template (per-host dnsmasq system config in /etc/dnsmasq.d)
