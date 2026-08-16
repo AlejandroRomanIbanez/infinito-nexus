@@ -6,6 +6,7 @@ WEB_USER="${SUITECRM_WEB_USER:?SUITECRM_WEB_USER must be baked into the image}"
 WEB_GROUP="${SUITECRM_WEB_GROUP:?SUITECRM_WEB_GROUP must be baked into the image}"
 INSTALL_FLAG="${APP_DIR}/public/installed.flag"
 SEED_DIR="${SUITECRM_SEED_DIR:?SUITECRM_SEED_DIR must be baked into the image}"
+APP_VERSION="${SUITECRM_APP_VERSION:?SUITECRM_APP_VERSION must be baked into the image}"
 SEED_STAMP="${APP_DIR}/.tree-seeded"
 
 log() { printf '%s %s\n' "[suitecrm-entrypoint]" "$*" >&2; }
@@ -36,13 +37,12 @@ while :; do
   if [ "$_lock_mtime" -gt 0 ] && [ $(($(date +%s) - _lock_mtime)) -ge 1800 ]; then
     log "Stale boot lock detected - removing it and retrying."
     rmdir "$BOOT_LOCK" 2>/dev/null || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
-    continue
   fi
   if [ -f "$INSTALL_FLAG" ]; then
     break
   fi
   _lock_tries=$((_lock_tries + 1))
-  if [ "$_lock_tries" -ge 300 ]; then
+  if [ "$_lock_tries" -ge 420 ]; then
     log "ERROR: timed out waiting for the boot lock or install flag."
     exit 1
   fi
@@ -61,8 +61,15 @@ if [ "$_have_lock" = "1" ]; then
       cp -a "${SEED_DIR}/." "${APP_DIR}/"
       log "Seed complete."
     fi
-    echo "seeded" > "$SEED_STAMP"
+    echo "$APP_VERSION" > "$SEED_STAMP"
     chown "$WEB_USER:$WEB_GROUP" "$SEED_STAMP"
+  else
+    _seeded_version=$(cat "$SEED_STAMP")
+    if [ "$_seeded_version" = "seeded" ]; then
+      echo "$APP_VERSION" > "$SEED_STAMP"
+    elif [ "$_seeded_version" != "$APP_VERSION" ]; then
+      log "WARNING: volume tree is ${_seeded_version}, image ships ${APP_VERSION} - the tree is NOT re-seeded, upgrade it manually."
+    fi
   fi
 
   CACHE_REFRESH=0
@@ -96,6 +103,10 @@ if [ "$_have_lock" = "1" ]; then
     log "Existing prod cache - skipping cache:clear/warmup."
   fi
 
+  if [ "$CACHE_REFRESH" = "1" ]; then
+    chown -R "$WEB_USER:$WEB_GROUP" "${APP_DIR}/public/legacy"
+  fi
+
   # Exception: install/cache:clear above run as root; the legacy language
   # caches they wipe are regenerated lazily by apache as www-data, which
   # cannot write into root-owned cache dirs -> permanent 500 without this.
@@ -107,8 +118,5 @@ else
   log "SuiteCRM installed by another replica - skipping installer and cache pass."
 fi
 
-echo "OK" > "${APP_DIR}/public/healthcheck.html"
-chown "$WEB_USER:$WEB_GROUP" "${APP_DIR}/public/healthcheck.html"
-
-log "Starting apache2-foreground..."
-exec apache2-foreground
+log "Starting $*..."
+exec "$@"
