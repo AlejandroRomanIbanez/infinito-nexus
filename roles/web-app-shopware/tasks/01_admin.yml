@@ -12,6 +12,7 @@
       {{ SHOPWARE_WEB_LOCAL_CID | quote }}
       sh
     stdin: "{{ lookup('ansible.builtin.file', role_path ~ '/files/shell/admin/user.sh') }}"
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
 - name: "🛡️ Ensure the Shopware admin still holds the admin privilege"
   ansible.builtin.shell:

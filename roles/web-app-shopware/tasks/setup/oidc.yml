@@ -32,6 +32,7 @@
       php
     stdin: "{{ lookup('ansible.builtin.file', role_path ~ '/files/php/oidc/client.php') }}"
   changed_when: false
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
 - name: "♻️ Clear the cache so the provider is discovered"
   ansible.builtin.shell:

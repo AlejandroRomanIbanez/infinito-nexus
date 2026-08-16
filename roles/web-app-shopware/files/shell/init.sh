@@ -136,25 +136,6 @@ $PHP_BIN -d memory_limit=1024M bin/console database:migrate-destructive --all
 # ---------------------------
 # 4) Always rebuild caches, bundles, and themes
 # ---------------------------
-if [ "${SHOPWARE_OBJSTORE_ENABLED:-false}" = "true" ]; then
-  log "Waiting for S3 object store to become reachable..."
-  # shellcheck disable=SC2016
-  $PHP_BIN -r '
-$ep = getenv("SHOPWARE_OBJSTORE_ENDPOINT");
-if (!$ep) { exit(0); }
-$p = parse_url($ep);
-$host = $p["host"] ?? $ep;
-$port = $p["port"] ?? ((($p["scheme"] ?? "http") === "https") ? 443 : 80);
-$retries = 60;
-while ($retries-- > 0) {
-  $fp = @fsockopen($host, $port, $e, $s, 3);
-  if ($fp) { fclose($fp); exit(0); }
-  sleep(2);
-}
-fwrite(STDERR, "S3 endpoint ".$host.":".$port." not reachable\n"); exit(1);
-' || fail "S3 object store not reachable"
-fi
-
 log "Rebuilding caches and assets..."
 $PHP_BIN bin/console cache:clear
 retry 5 $PHP_BIN bin/console bundle:dump
@@ -168,13 +149,11 @@ $PHP_BIN bin/console dal:refresh:index || log "dal:refresh:index failed (non-cri
 # ---------------------------
 # 5) Verify admin bundles
 # ---------------------------
-if [ "${SHOPWARE_OBJSTORE_ENABLED:-false}" != "true" ]; then
-  if [ ! -d "public/bundles/administration" ]; then
-    fail "Missing directory public/bundles/administration (asset build failed)"
-  fi
-  if ! ls public/bundles/administration/* >/dev/null 2>&1; then
-    fail "No files found in public/bundles/administration (asset build failed)"
-  fi
+if [ ! -d "public/bundles/administration" ]; then
+  fail "Missing directory public/bundles/administration (asset build failed)"
+fi
+if ! ls public/bundles/administration/* >/dev/null 2>&1; then
+  fail "No files found in public/bundles/administration (asset build failed)"
 fi
 
 # ---------------------------
