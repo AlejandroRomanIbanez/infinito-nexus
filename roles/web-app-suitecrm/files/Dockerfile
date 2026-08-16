@@ -46,8 +46,6 @@ RUN sed -ri 's!'"${SUITECRM_APP_DIR}"'!'"${SUITECRM_APP_DIR}"'/public!g' \
 
 FROM base AS builder
 
-ENV COMPOSER_ALLOW_SUPERUSER=1
-
 ARG SUITECRM_APP_VERSION
 ARG SUITECRM_APP_DIR
 ARG SUITECRM_LDAP_EXTENSION_DIR
@@ -103,7 +101,7 @@ RUN set -eux; \
       --no-interaction \
       --optimize-autoloader \
       --no-scripts; \
-    composer dump-autoload --no-dev --optimize --no-interaction
+    COMPOSER_ALLOW_SUPERUSER=1 composer dump-autoload --no-dev --optimize --no-interaction
 
 RUN set -eux; \
     mkdir -p "${SUITECRM_LDAP_EXTENSION_DIR}"; \
