@@ -83,6 +83,7 @@ if [ "$_have_lock" = "1" ]; then
         -U "$SUITECRM_DB_USER" \
         -P "$SUITECRM_DB_PASSWORD" \
         -H "$SUITECRM_DB_HOST" \
+        -Z "$SUITECRM_DB_PORT" \
         -N "$SUITECRM_DB_NAME" \
         -S "$SUITECRM_URL" \
         -d "no"
