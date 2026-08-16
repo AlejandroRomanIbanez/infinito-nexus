@@ -183,9 +183,21 @@ def apply(
             every row passes through untouched.
 
     Returns:
-        the surviving rows, each carrying ``pin_mode`` and ``pin_tor`` for
-        :func:`utils.github.variant.axes.assign` to honour. Row order is the
+        one entry per (row, pin) the selection asks for, each carrying
+        ``pin_mode`` and ``pin_tor`` for
+        :func:`utils.github.variant.axes.assign` to honour. Order is the
         query's -- a selection narrows what runs, it never re-ranks it.
+
+        A row several tokens name is emitted once per token, which is the whole
+        point of the axes: ``role#1@compose+tor role#1@swarm+tor`` is one
+        variant that failed in two modes, and it has to come back as two
+        deploys. Two tokens narrowing a row the same way collapse into one, so
+        a duplicate in the input cannot become two jobs racing for one artifact
+        name.
+
+        A bare role name loses to any token that narrows the same row: writing
+        ``role role#1@swarm`` asks for a specific deploy, not for that deploy
+        plus a rotation-picked one on top.
 
     Raises:
         SystemExit: a token that pins something matched no row at all. Silently
@@ -197,14 +209,20 @@ def apply(
     kept: list[dict[str, Any]] = []
     matched: set[int] = set()
     for row in rows:
-        for index, pin in enumerate(pins):
-            if pin.app != row["name"]:
+        hits = [
+            (index, pin)
+            for index, pin in enumerate(pins)
+            if pin.app == row["name"]
+            and (not pin.variants or row.get("variant") in pin.variants)
+        ]
+        matched.update(index for index, _pin in hits)
+        narrowing = [(index, pin) for index, pin in hits if pin.pinned]
+        seen: set[tuple[str | None, bool | None]] = set()
+        for _index, pin in narrowing or hits[:1]:
+            if (pin.mode, pin.tor) in seen:
                 continue
-            if pin.variants and row.get("variant") not in pin.variants:
-                continue
-            matched.add(index)
+            seen.add((pin.mode, pin.tor))
             kept.append({**row, "pin_mode": pin.mode, "pin_tor": pin.tor})
-            break
     for index, pin in enumerate(pins):
         if index not in matched and pin.pinned:
             raise SystemExit(

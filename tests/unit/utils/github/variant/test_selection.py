@@ -99,6 +99,32 @@ class TestApply(unittest.TestCase):
         kept = selection.apply(_ROWS, selection.parse_list("web-app-b"))
         self.assertEqual([kept[0]["pin_mode"], kept[0]["pin_tor"]], [None, None])
 
+    def test_one_variant_that_failed_in_two_modes_comes_back_twice(self) -> None:
+        kept = selection.apply(
+            _ROWS,
+            selection.parse_list("web-app-a#0@compose+tor web-app-a#0@swarm+tor"),
+        )
+        self.assertEqual(
+            [(row["variant"], row["pin_mode"], row["pin_tor"]) for row in kept],
+            [(0, "compose", True), (0, "swarm", True)],
+        )
+
+    def test_the_same_narrowing_written_twice_stays_one_deploy(self) -> None:
+        kept = selection.apply(
+            _ROWS,
+            selection.parse_list("web-app-a#0@swarm+tor web-app-a#0@swarm+tor"),
+        )
+        self.assertEqual(len(kept), 1)
+
+    def test_a_bare_role_loses_to_a_token_that_narrows_the_same_row(self) -> None:
+        kept = selection.apply(
+            _ROWS, selection.parse_list("web-app-a web-app-a#0@swarm+tor")
+        )
+        self.assertEqual(
+            [(row["variant"], row["pin_mode"]) for row in kept],
+            [(0, "swarm"), (1, None)],
+        )
+
     def test_two_pins_on_one_role_keep_their_own_axes(self) -> None:
         kept = selection.apply(
             _ROWS, selection.parse_list("web-app-a#0@swarm web-app-a#1@compose")
