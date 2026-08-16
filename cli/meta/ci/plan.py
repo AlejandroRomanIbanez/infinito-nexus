@@ -11,7 +11,8 @@ diverge. One row per ``role#variant`` candidate in global query order, with
 the chunk it falls into and the axes it was assigned.
 
 Status per row: ⭐ a priority row, ✅ deployed by this sweep, ❌ beyond the
-sweep's budget (raise ``--offset`` to reach it). ``--chunk`` marks the
+sweep's budget (raise ``--offset`` to reach it), ✂️ cut as redundant coverage —
+a clone or a row an earlier one already embeds, which no sweep deploys. ``--chunk`` marks the
 block the calling job is running, so a chunk's summary shows its own slice in
 the context of the whole chain. ``--cli`` renders fixed-width terminal tables
 instead of Markdown.
@@ -38,6 +39,7 @@ _STAR = to_emoji("priority")
 _OK = to_emoji("enabled")
 _OFF = to_emoji("disabled")
 _HERE = to_emoji("skip")
+_CUT = to_emoji("redundant")
 
 _COLUMNS = ("chunk", "id", "covered_by", "name", "weight", "variant", "mode", "distros")
 _HEADERS = (
@@ -74,7 +76,9 @@ def cells(
     rows = []
     for counter, entry in enumerate(entries, start=1):
         chunk = _chunk_of(entry, plan)
-        if chunk is None:
+        if matrix.redundant(entry):
+            status, where = _CUT, ""
+        elif chunk is None:
             status, where = _OFF, ""
         else:
             status = _STAR if entry["priority"] == "true" else _OK

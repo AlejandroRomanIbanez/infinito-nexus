@@ -433,6 +433,7 @@ def assign(
                     "weight": str(row.get("weight", 0)),
                     "id": str(row.get("id", 0)),
                     "covered": str(row.get("covered_by", 0)),
+                    "clone": "true" if row.get("clone") else "false",
                     "artifact": artifact_slug(mode, app, variant_csv, enabled),
                     "label": f"{glyphs}{label}"
                     + (f" {to_emoji('priority')}" if priority else ""),

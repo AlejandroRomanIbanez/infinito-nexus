@@ -140,6 +140,13 @@ def offset_index(raw: int | str | None, regular: list[dict[str, str]]) -> int:
     )
 
 
+def redundant(entry: dict[str, str]) -> bool:
+    """Whether the sweep drops this row as coverage an earlier row already has."""
+    if entry["priority"] == "true":
+        return False
+    return entry["clone"] == "true" or entry["covered"] != "0"
+
+
 def chunks_of(
     entries: list[dict[str, str]], offset: int | str | None = 0
 ) -> list[list[dict[str, str]]]:
@@ -149,7 +156,11 @@ def chunks_of(
     *inside* a chunk is then sorted
     (:func:`utils.github.variant.axes.sort_key`), so the job list reads by role
     rather than by rank."""
-    regular = [entry for entry in entries if entry["priority"] != "true"]
+    regular = [
+        entry
+        for entry in entries
+        if entry["priority"] != "true" and not redundant(entry)
+    ]
     return [
         sorted(chunk, key=axes.sort_key)
         for chunk in chunks.plan(
@@ -216,7 +227,7 @@ def main(argv: list[str] | None = None) -> int:
         offset=resolve_offset(args.offset),
     )
     chunk = plan[args.index] if 0 <= args.index < len(plan) else []
-    dropped = ("priority", "weight", "id", "covered")
+    dropped = ("priority", "weight", "id", "covered", "clone")
     print(json.dumps([{k: v for k, v in e.items() if k not in dropped} for e in chunk]))
     return 0
 

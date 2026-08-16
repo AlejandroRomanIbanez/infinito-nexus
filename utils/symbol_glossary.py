@@ -48,6 +48,7 @@ SYMBOLS: dict[str, str] = {
     "clone": "🐑",
     "siblings": "👯",
     "covered_by": "🔰",
+    "redundant": "✂️",
     "planned": "🧭",
     "pre-alpha": "🧪",
     "alpha": "🐣",

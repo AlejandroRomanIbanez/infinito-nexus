@@ -6,13 +6,23 @@ import unittest.mock as mock
 from cli.meta.ci import matrix
 
 
-def _entry(app: str, variant: str, mode: str, *, priority: bool = False) -> dict:
+def _entry(
+    app: str,
+    variant: str,
+    mode: str,
+    *,
+    priority: bool = False,
+    covered: str = "0",
+    clone: bool = False,
+) -> dict:
     return {
         "apps": app,
         "variant": variant,
         "mode": mode,
         "tor": "false",
         "priority": "true" if priority else "false",
+        "covered": covered,
+        "clone": "true" if clone else "false",
     }
 
 
@@ -63,6 +73,32 @@ _REGULAR = [
     _entry("web-app-b", "1", "swarm"),
     _entry("web-app-b", "2", "compose"),
 ]
+
+
+class TestRedundant(unittest.TestCase):
+    def _chunked(self, entries: list[dict]) -> list[dict]:
+        with (
+            mock.patch.object(matrix.slots, "chunk_size", return_value=10),
+            mock.patch.object(matrix.slots, "chunk_count", return_value=4),
+            mock.patch.object(matrix.slots, "available", return_value=99),
+        ):
+            return [row for chunk in matrix.chunks_of(entries, 0) for row in chunk]
+
+    def test_a_covered_row_never_reaches_a_chunk(self) -> None:
+        entries = [_entry("web-app-a", "0", "compose", covered="7")]
+        self.assertEqual(self._chunked(entries), [])
+
+    def test_a_clone_never_reaches_a_chunk(self) -> None:
+        entries = [_entry("web-app-a", "0", "compose", clone=True)]
+        self.assertEqual(self._chunked(entries), [])
+
+    def test_a_plain_row_still_reaches_a_chunk(self) -> None:
+        entries = [_entry("web-app-a", "0", "compose")]
+        self.assertEqual(len(self._chunked(entries)), 1)
+
+    def test_a_pinned_clone_is_kept(self) -> None:
+        entries = [_entry("web-app-a", "0", "compose", priority=True, clone=True)]
+        self.assertEqual(len(self._chunked(entries)), 1)
 
 
 class TestOffsetIndex(unittest.TestCase):

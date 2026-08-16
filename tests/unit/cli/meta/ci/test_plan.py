@@ -14,6 +14,7 @@ def _entry(
     priority: bool = False,
     identifier: str = "0",
     covered: str = "0",
+    clone: bool = False,
 ) -> dict:
     return {
         "apps": app,
@@ -25,16 +26,18 @@ def _entry(
         "weight": "42",
         "id": identifier,
         "covered": covered,
+        "clone": "true" if clone else "false",
         "label": f"{to_emoji(mode)}{app} {variant}",
     }
 
 
 _PRIORITY = [_entry("web-app-a", "0", "compose", priority=True, identifier="3")]
 _REGULAR = [
-    _entry("web-app-b", "0", "swarm", identifier="5", covered="7"),
+    _entry("web-app-b", "0", "swarm", identifier="5"),
     _entry("web-app-b", "1", "compose", identifier="9"),
 ]
-_ENTRIES = _PRIORITY + _REGULAR
+_CUT = [_entry("web-app-c", "0", "compose", identifier="11", covered="7")]
+_ENTRIES = _PRIORITY + _REGULAR + _CUT
 
 
 class TestCells(unittest.TestCase):
@@ -42,7 +45,7 @@ class TestCells(unittest.TestCase):
         rows = plan.cells(
             _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
         )
-        self.assertEqual([row[0] for row in rows], ["0", "1", "1"])
+        self.assertEqual([row[0] for row in rows], ["0", "1", "1", ""])
 
     def test_a_priority_row_is_starred_not_ticked(self) -> None:
         rows = plan.cells(
@@ -75,14 +78,33 @@ class TestCells(unittest.TestCase):
             _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
         )
         self.assertEqual(rows[0][covered], "")
-        self.assertEqual(rows[1][covered], "7")
+        self.assertEqual(rows[3][covered], "7")
+
+    def test_a_covered_row_is_cut_instead_of_deployed(self) -> None:
+        rows = plan.cells(
+            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
+        )
+        self.assertEqual(rows[3][-1], to_emoji("redundant"))
+        self.assertEqual(rows[3][0], "")
+
+    def test_a_clone_is_cut_as_well(self) -> None:
+        entries = _ENTRIES + [_entry("web-app-d", "0", "compose", clone=True)]
+        rows = plan.cells(
+            entries, [_PRIORITY, _REGULAR], distros="debian", current=None
+        )
+        self.assertEqual(rows[-1][-1], to_emoji("redundant"))
+
+    def test_a_pinned_clone_stays_in_the_run(self) -> None:
+        entries = [_entry("web-app-d", "0", "compose", priority=True, clone=True)]
+        rows = plan.cells(entries, [entries], distros="debian", current=None)
+        self.assertEqual(rows[0][-1], to_emoji("priority"))
 
     def test_the_id_is_the_discovery_id_the_covered_by_points_at(self) -> None:
         identifier = plan._COLUMNS.index("id")
         rows = plan.cells(
             _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
         )
-        self.assertEqual([row[identifier] for row in rows], ["3", "5", "9"])
+        self.assertEqual([row[identifier] for row in rows], ["3", "5", "9", "11"])
 
     def test_the_tor_state_is_rendered_as_its_glyph(self) -> None:
         rows = plan.cells(
@@ -114,7 +136,7 @@ class TestRender(unittest.TestCase):
         out = plan.render_markdown("sweep 0", self._rows())
         body = [line for line in out.splitlines() if line.startswith("| web")]
         self.assertEqual(len(body), 0)
-        self.assertEqual(len([ln for ln in out.splitlines() if ln.startswith("| ")]), 4)
+        self.assertEqual(len([ln for ln in out.splitlines() if ln.startswith("| ")]), 5)
 
     def test_cli_pads_to_display_width(self) -> None:
         out = plan.render_cli("sweep 0", self._rows())
