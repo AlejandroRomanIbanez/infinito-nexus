@@ -27,10 +27,15 @@ on:
         type: string
         default: ""
       sweep:
-        description: "Sweep number driving the mode/tor rotation and the regular-line offset. Empty: the run number."
+        description: "Sweep number driving the mode and tor rotation. Empty: the run number."
         required: false
         type: string
         default: ""
+      offset:
+        description: "Regular rows to skip before filling the chunks. 0 starts at the head of the ranking; raise it to reach rows the budget leaves behind."
+        required: false
+        type: string
+        default: "0"
       resume_from_chunk:
         description: "⏭️ Skip every chunk below this index. Use to continue a sweep after fixing what broke it, instead of re-running the green chunks. Typed string, not number: a workflow_dispatch number input reaches the caller as a string, and handing that to a number-typed workflow_call input makes GitHub reject the job before it is created."
         required: false
@@ -180,6 +185,7 @@ jobs:
       distros: ${{ inputs.distros }}
       index: "0"
       sweep: ${{ inputs.sweep != '' && inputs.sweep || github.run_number }}
+      offset: ${{ inputs.offset }}
       whitelist: ${{ inputs.whitelist }}
       priority: ${{ inputs.priority }}
       lifecycles: ${{ inputs.lifecycles }}
@@ -211,6 +217,7 @@ jobs:
       distros: ${{ inputs.distros }}
       index: "1"
       sweep: ${{ inputs.sweep != '' && inputs.sweep || github.run_number }}
+      offset: ${{ inputs.offset }}
       whitelist: ${{ inputs.whitelist }}
       priority: ${{ inputs.priority }}
       lifecycles: ${{ inputs.lifecycles }}
@@ -242,6 +249,7 @@ jobs:
       distros: ${{ inputs.distros }}
       index: "2"
       sweep: ${{ inputs.sweep != '' && inputs.sweep || github.run_number }}
+      offset: ${{ inputs.offset }}
       whitelist: ${{ inputs.whitelist }}
       priority: ${{ inputs.priority }}
       lifecycles: ${{ inputs.lifecycles }}

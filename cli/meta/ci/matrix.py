@@ -99,21 +99,66 @@ def entries_of(
     )
 
 
-def chunks_of(entries: list[dict[str, str]], sweep: int) -> list[list[dict[str, str]]]:
+def resolve_offset(raw: int | str | None = None) -> str:
+    """The offset a run was given, as written. ``None`` reads
+    ``INFINITO_CI_OFFSET``; :func:`offset_index` decides what it means."""
+    if raw is None:
+        raw = os.environ.get("INFINITO_CI_OFFSET")
+    return "" if raw is None else str(raw).strip()
+
+
+def offset_index(raw: int | str | None, regular: list[dict[str, str]]) -> int:
+    """Where the regular chunks start reading.
+
+    A number is that many rows; anything else is a selection token
+    (:mod:`utils.github.variant.selection`) and the start is the first regular
+    row it names. Resuming at a role beats counting rows by hand: the ranking
+    shifts whenever a variant is added, so the index that meant 'carry on
+    behind nextcloud' yesterday means something else today, while the token
+    still says it.
+
+    Args:
+        raw: the ``offset`` input, a count or a token.
+        regular: the regular line in ranking order.
+
+    Raises:
+        SystemExit: a token that names no regular row. Starting at 0 instead
+            would silently redeploy the head an operator meant to skip.
+    """
+    text = "" if raw is None else str(raw).strip()
+    if not text:
+        return 0
+    if text.lstrip("+-").isdigit():
+        return max(int(text), 0)
+    pin = selection.parse(text)
+    for index, entry in enumerate(regular):
+        if selection.covers(pin, entry):
+            return index
+    raise SystemExit(
+        f"offset {selection.describe(pin)!r} names no row of the regular line; "
+        f"it is on the priority line, outside the run's filters, or gone"
+    )
+
+
+def chunks_of(
+    entries: list[dict[str, str]], offset: int | str | None = 0
+) -> list[list[dict[str, str]]]:
     """Cut the sweep's entries into its chunks, priority blocks first.
 
-    Which rows a chunk holds follows the discovery ranking; the order *inside*
-    a chunk is then sorted (:func:`utils.github.variant.axes.sort_key`), so the
-    job list of a chunk reads by role rather than by the sweep's rotation."""
+    Chunk 0 holds the head of the ranking unless *offset* moves it; the order
+    *inside* a chunk is then sorted
+    (:func:`utils.github.variant.axes.sort_key`), so the job list reads by role
+    rather than by rank."""
+    regular = [entry for entry in entries if entry["priority"] != "true"]
     return [
         sorted(chunk, key=axes.sort_key)
         for chunk in chunks.plan(
             [entry for entry in entries if entry["priority"] == "true"],
-            [entry for entry in entries if entry["priority"] != "true"],
-            sweep=sweep,
+            regular,
             size=slots.chunk_size(),
             blocks=slots.chunk_count(),
             budget=slots.available(),
+            offset=offset_index(offset, regular),
         )
     ]
 
@@ -126,6 +171,7 @@ def build_sweep(
     lifecycles: str,
     sweep: int,
     tor_mode: str,
+    offset: int = 0,
 ) -> list[list[dict[str, str]]]:
     """Every chunk of the sweep, priority blocks first."""
     return chunks_of(
@@ -137,7 +183,7 @@ def build_sweep(
             sweep=sweep,
             tor_mode=tor_mode,
         ),
-        sweep,
+        offset,
     )
 
 
@@ -152,6 +198,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--priority", default="")
     parser.add_argument("--lifecycles", default="")
     parser.add_argument("--tor", default=None)
+    parser.add_argument("--offset", default=None)
     args = parser.parse_args(argv)
 
     codec = display_names()
@@ -166,6 +213,7 @@ def main(argv: list[str] | None = None) -> int:
         lifecycles=args.lifecycles,
         sweep=sweep,
         tor_mode=axes.resolve_tor_mode(args.tor),
+        offset=resolve_offset(args.offset),
     )
     chunk = plan[args.index] if 0 <= args.index < len(plan) else []
     dropped = ("priority", "weight", "id", "covered")

@@ -40,7 +40,7 @@ _VALUES = {
     "mode": "swarm",
     "filesystem": "btrfs",
     "tor": "enforced",
-    "resume_from_chunk": "2",
+    "offset": "40",
     "chunk_gate": "false",
     "sweep": "7",
     "workspace": "true",

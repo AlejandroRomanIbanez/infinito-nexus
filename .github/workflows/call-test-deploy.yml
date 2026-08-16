@@ -15,6 +15,11 @@ on:
         description: "Sweep number driving the mode and tor rotation and the regular-line offset."
         required: true
         type: string
+      offset:
+        description: "Regular rows to skip before filling the chunks; 0 starts at the head of the ranking."
+        required: false
+        type: string
+        default: "0"
       whitelist:
         description: "Optional space-separated whitelist of app ids"
         required: false
@@ -168,6 +173,7 @@ jobs:
           INFINITO_TOR: ${{ inputs.tor }}
           INFINITO_CI_SWEEP: ${{ inputs.sweep }}
           INFINITO_CI_CHUNK: ${{ inputs.index }}
+          INFINITO_CI_OFFSET: ${{ inputs.offset }}
         run: ./scripts/github/resolve/output_apps.sh
 
       - name: 🗺️ Render the plan into the run summary

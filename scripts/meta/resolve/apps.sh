@@ -9,7 +9,8 @@ set -euo pipefail
 #
 # Inputs via env (defaults live in default.env, the single source of truth):
 #   INFINITO_CI_CHUNK              chunk index to emit (required)
-#   INFINITO_CI_SWEEP              sweep number driving rotation and offset
+#   INFINITO_CI_SWEEP              sweep number driving the mode/tor rotation
+#   INFINITO_CI_OFFSET             regular rows to skip before filling the chunks
 #   INFINITO_MODES                 'auto' or a subset of 'host compose swarm'
 #   INFINITO_WHITELIST             optional space-separated app ids to keep
 #   INFINITO_PRIORITY              optional space-separated app ids to lead
@@ -57,6 +58,7 @@ matrix_json="$(
 	run_meta_cli -m cli.meta.ci.matrix \
 		--index "${INFINITO_CI_CHUNK:?INFINITO_CI_CHUNK must be set to the chunk index to emit}" \
 		--sweep "${INFINITO_CI_SWEEP}" \
+		--offset "${INFINITO_CI_OFFSET}" \
 		--modes "${INFINITO_MODES}" \
 		--whitelist "${INFINITO_WHITELIST}" \
 		--priority "${INFINITO_PRIORITY}" \

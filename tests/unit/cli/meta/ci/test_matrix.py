@@ -60,3 +60,36 @@ class TestChunksOf(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+_REGULAR = [
+    _entry("web-app-a", "0", "compose"),
+    _entry("web-app-b", "1", "swarm"),
+    _entry("web-app-b", "2", "compose"),
+]
+
+
+class TestOffsetIndex(unittest.TestCase):
+    def test_nothing_given_starts_at_the_head(self) -> None:
+        for raw in (None, "", 0, "0"):
+            with self.subTest(raw=raw):
+                self.assertEqual(matrix.offset_index(raw, _REGULAR), 0)
+
+    def test_a_number_is_a_row_count(self) -> None:
+        self.assertEqual(matrix.offset_index("2", _REGULAR), 2)
+
+    def test_a_negative_count_reads_as_the_head(self) -> None:
+        self.assertEqual(matrix.offset_index("-5", _REGULAR), 0)
+
+    def test_a_role_token_starts_at_its_first_row(self) -> None:
+        self.assertEqual(matrix.offset_index("web-app-b", _REGULAR), 1)
+
+    def test_a_pinned_variant_starts_at_that_variant(self) -> None:
+        self.assertEqual(matrix.offset_index("web-app-b#2", _REGULAR), 2)
+
+    def test_a_pinned_mode_picks_the_row_of_that_mode(self) -> None:
+        self.assertEqual(matrix.offset_index("web-app-b#1@swarm", _REGULAR), 1)
+
+    def test_a_token_naming_no_regular_row_aborts(self) -> None:
+        with self.assertRaises(SystemExit):
+            matrix.offset_index("web-app-gone#3", _REGULAR)

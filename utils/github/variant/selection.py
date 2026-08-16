@@ -160,6 +160,25 @@ def parse(token: str) -> Pin:
     )
 
 
+def covers(pin: Pin, entry: Mapping[str, Any]) -> bool:
+    """Whether *pin* names this matrix entry.
+
+    An axis the token leaves open matches anything, so ``web-app-x`` covers
+    every row of that role and ``web-app-x#2@swarm`` only its swarm deploy of
+    variant 2. Reads the strings a matrix entry carries, not a discovery row's
+    native types.
+    """
+    if entry.get("apps") != pin.app:
+        return False
+    if pin.variants and str(entry.get("variant", "")) not in {
+        str(index) for index in pin.variants
+    }:
+        return False
+    if pin.mode is not None and entry.get("mode") != pin.mode:
+        return False
+    return pin.tor is None or (entry.get("tor") == "true") == pin.tor
+
+
 def parse_list(tokens: str) -> list[Pin]:
     """Every token of a space-separated ``whitelist``/``priority`` input."""
     return [parse(token) for token in tokens.split()]

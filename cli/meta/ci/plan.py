@@ -11,7 +11,7 @@ diverge. One row per ``role#variant`` candidate in global query order, with
 the chunk it falls into and the axes it was assigned.
 
 Status per row: ⭐ a priority row, ✅ deployed by this sweep, ❌ beyond the
-sweep's budget (the next sweep's offset picks it up). ``--chunk`` marks the
+sweep's budget (raise ``--offset`` to reach it). ``--chunk`` marks the
 block the calling job is running, so a chunk's summary shows its own slice in
 the context of the whole chain. ``--cli`` renders fixed-width terminal tables
 instead of Markdown.
@@ -146,6 +146,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--sweep", type=int, default=None)
     parser.add_argument("--chunk", type=int, default=None)
     parser.add_argument("--tor", default=None)
+    parser.add_argument("--offset", default=None)
     parser.add_argument("--cli", action="store_true")
     args = parser.parse_args(argv)
 
@@ -162,7 +163,7 @@ def main(argv: list[str] | None = None) -> int:
         sweep=sweep,
         tor_mode=axes.resolve_tor_mode(args.tor),
     )
-    plan = matrix.chunks_of(entries, sweep)
+    plan = matrix.chunks_of(entries, matrix.resolve_offset(args.offset))
     rows = cells(entries, plan, distros=args.distros, current=args.chunk)
 
     render = render_cli if args.cli else render_markdown
