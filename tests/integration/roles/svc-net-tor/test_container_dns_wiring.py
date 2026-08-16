@@ -12,7 +12,7 @@ def _render_dnsmasq(**overrides):
         "TOR_NODE_ONION": "example.onion",
         "TOR_HS_BACKEND_HOST": "172.17.0.1",
         "TOR_DNS_PORT": 9053,
-        "TOR_DNS_UPSTREAMS": ["127.0.0.11"],
+        "TOR_DNS_UPSTREAMS": ["172.30.0.53"],
     }
     variables.update(overrides)
     env = Environment(
@@ -49,7 +49,22 @@ class TestDnsmasqListeners(unittest.TestCase):
         self.assertIn("server=/onion/127.0.0.1#9053", _render_dnsmasq())
 
     def test_clearnet_upstreams_are_kept(self):
-        self.assertIn("server=127.0.0.11", _render_dnsmasq())
+        self.assertIn("server=172.30.0.53", _render_dnsmasq())
+
+    def test_upstream_policy_stays_off_a_listener_we_do_not_own(self):
+        """A shared dnsmasq brings its own upstreams, and in swarm
+        networks.internet.dns is the docker bridge that very dnsmasq answers
+        on. Writing a server= there points the resolver at itself, and
+        no-resolv would cut the upstreams its owner configured."""
+        rendered = _render_dnsmasq(TOR_DNSMASQ_OWNS_LISTENER=False)
+        self.assertNotIn("server=172.30.0.53", rendered)
+        self.assertNotIn("no-resolv", rendered)
+        self.assertIn("server=/onion/127.0.0.1#9053", rendered)
+
+    def test_upstream_policy_applies_to_our_own_listener(self):
+        rendered = _render_dnsmasq()
+        self.assertIn("no-resolv", rendered)
+        self.assertIn("server=172.30.0.53", rendered)
 
     def test_own_onion_resolves_to_a_container_reachable_backend(self):
         self.assertIn("address=/example.onion/172.17.0.1", _render_dnsmasq())

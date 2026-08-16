@@ -1,4 +1,11 @@
 ---
+- name: "✅ Egress router | Assert a clearnet resolver is configured"
+  ansible.builtin.assert:
+    that: networks.internet.dns | length > 0
+    fail_msg: >-
+      networks.internet.dns must be set on a Tor node: dnsmasq runs with
+      no-resolv and would answer .onion only.
+  when: DEPLOYMENT_MODE == 'compose'
 - name: "📦 Egress router | Install dnsmasq (host split-DNS forwarder)"
   become: true
   package_install:
@@ -20,45 +27,15 @@
     group: root
     mode: "0644"
   register: _tor_dnsmasq_confdir
-- name: "📁 Egress router | Ensure state directory exists"
-  ansible.builtin.file:
-    path: "{{ [ DIR_VAR_LIB, application_id ] | path_join }}"
-    state: directory
-    owner: root
-    group: root
-    mode: "0755"
-- name: "🔎 Egress router | Check for persisted clearnet upstreams"
-  ansible.builtin.stat:
-    path: "{{ TOR_DNS_UPSTREAMS_FILE }}"
-  register: _tor_upstreams_stat
-- name: "📖 Egress router | Read the current resolver (to capture upstreams once)"
-  ansible.builtin.slurp:
-    src: /etc/resolv.conf
-  register: _tor_resolv_now
-  when: not _tor_upstreams_stat.stat.exists
-- name: "💾 Egress router | Persist clearnet upstreams (first setup only)"
-  ansible.builtin.copy:
-    dest: "{{ TOR_DNS_UPSTREAMS_FILE }}"
-    content: "{{ (_tor_upstream_list | join('\n')) ~ '\n' }}"
-    owner: root
-    group: root
-    mode: "0644"
-  vars:
-    _tor_upstream_list: >-
-      {{ (_tor_resolv_now.content | b64decode)
-         | regex_findall('(?m)^nameserver\s+(\S+)')
-         | reject('equalto', '127.0.0.1') | list }}
-  when: not _tor_upstreams_stat.stat.exists
-- name: "📥 Egress router | Load captured upstreams"
-  ansible.builtin.slurp:
-    src: "{{ TOR_DNS_UPSTREAMS_FILE }}"
-  register: _tor_dns_upstreams_raw
 - name: "🔎 Egress router | Detect foreign dnsmasq drop-ins (shared instance)"
   ansible.builtin.find:
     paths: "{{ TOR_DNSMASQ_CONF | dirname }}"
     patterns: "*.conf"
     excludes: "{{ TOR_DNSMASQ_CONF | basename }}"
   register: _tor_dnsmasq_foreign
+- name: "🔧 Egress router | Decide whether this dnsmasq is ours to reshape"
+  ansible.builtin.set_fact:
+    TOR_DNSMASQ_OWNS_LISTENER: "{{ _tor_dnsmasq_foreign.matched == 0 and DEPLOYMENT_MODE == 'compose' }}"
 
 - name: "📝 Egress router | Render dnsmasq .onion split-DNS drop-in"
   ansible.builtin.template: # nocheck: stack-host-template (per-host dnsmasq system config in /etc/dnsmasq.d)
@@ -68,8 +45,7 @@
     group: root
     mode: "0644"
   vars:
-    TOR_DNS_UPSTREAMS: "{{ (_tor_dns_upstreams_raw.content | b64decode).split('\n') | map('trim') | reject('equalto', '') | list }}"
-    TOR_DNSMASQ_OWNS_LISTENER: "{{ _tor_dnsmasq_foreign.matched == 0 and DEPLOYMENT_MODE == 'compose' }}"
+    TOR_DNS_UPSTREAMS: "{{ [ networks.internet.dns ] }}"
   register: _tor_dnsmasq_conf
 - name: "🚀 Egress router | Enable + (re)start dnsmasq"
   ansible.builtin.systemd:
@@ -86,6 +62,7 @@
     group: root
     mode: "0644"
     unsafe_writes: true
+  when: TOR_DNSMASQ_OWNS_LISTENER | bool
 - name: "🔀 Egress router | Redirect .onion virtual-IP TCP to Tor TransPort"
   ansible.builtin.iptables:
     table: nat
