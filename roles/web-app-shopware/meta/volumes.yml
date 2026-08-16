@@ -122,3 +122,21 @@ adminopenauth_yaml:
       target: *var_www_html_config_packages_adminopenauth_yaml_target
     - service: scheduler
       target: *var_www_html_config_packages_adminopenauth_yaml_target
+
+filesystem_yaml:
+  type: config
+  source: "{{ [lookup('container', 'web-app-shopware', 'directories.config'), 'shopware.yaml'] | path_join }}"
+  mode: "0444"
+  mounts:
+    - service: init
+      target: &var_www_html_config_packages_zz_infinito_filesystem_yaml_target /var/www/html/config/packages/zz-infinito-filesystem.yaml
+      when: &objstore_enabled "{{ lookup('objstore', 'web-app-shopware', 'enabled') | bool }}"
+    - service: web
+      target: *var_www_html_config_packages_zz_infinito_filesystem_yaml_target
+      when: *objstore_enabled
+    - service: worker
+      target: *var_www_html_config_packages_zz_infinito_filesystem_yaml_target
+      when: *objstore_enabled
+    - service: scheduler
+      target: *var_www_html_config_packages_zz_infinito_filesystem_yaml_target
+      when: *objstore_enabled

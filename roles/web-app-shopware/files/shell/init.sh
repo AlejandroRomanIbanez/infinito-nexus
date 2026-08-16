@@ -118,6 +118,9 @@ fi
 if [ "$FIRST_INSTALL" -eq 1 ]; then
   log "Performing first-time Shopware installation..."
   $PHP_BIN -d memory_limit=1024M bin/console system:install --basic-setup --create-database
+  log "Locking the 'admin' account that --basic-setup creates with the published default password..."
+  $PHP_BIN -d memory_limit=1024M bin/console user:change-password admin \
+    --password="$($PHP_BIN -r 'echo bin2hex(random_bytes(32));')"
   mkdir -p "$(dirname "$MARKER")"
   : > "$MARKER"
 fi

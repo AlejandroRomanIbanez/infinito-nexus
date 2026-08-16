@@ -30,7 +30,7 @@
       -e OIDC_CLIENT_SECRET={{ OIDC.CLIENT.SECRET | quote }}
       {{ SHOPWARE_WEB_LOCAL_CID | quote }}
       php
-    stdin: "{{ lookup('ansible.builtin.file', role_path ~ '/files/ensure/oidc_client.php') }}"
+    stdin: "{{ lookup('ansible.builtin.file', role_path ~ '/files/php/oidc/client.php') }}"
   changed_when: false
 
 - name: "♻️ Clear the cache so the provider is discovered"

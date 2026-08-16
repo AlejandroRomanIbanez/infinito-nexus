@@ -1,7 +1,7 @@
 ---
 - name: "🚀 Deploy {{ SHOPWARE_INIT_HOST }}"
   copy:
-    src: init.sh
+    src: shell/init.sh
     dest: "{{ SHOPWARE_INIT_HOST }}"
     mode: "0755"
   notify:

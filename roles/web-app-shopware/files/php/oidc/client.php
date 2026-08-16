@@ -18,6 +18,7 @@
 declare(strict_types=1);
 
 const PROVIDER = 'open_id_connect';
+const ROLE_ACTION = 'heptacomAdminOpenAuthRoleAssignment';
 
 function env(string $key): string
 {
@@ -95,7 +96,7 @@ $payload = [
     'keepUserUpdated' => true,
     'config' => [
         'scopes' => [],
-        'discoveryDocumentUrl' => $browserRealm . '/.well-known/openid-configuration',
+        'discoveryDocumentUrl' => '',
         'authorization_endpoint' => $browserRealm . '/protocol/openid-connect/auth',
         'token_endpoint' => $internalRealm . '/protocol/openid-connect/token',
         'userinfo_endpoint' => $internalRealm . '/protocol/openid-connect/userinfo',
@@ -111,8 +112,34 @@ $id = $existing['data'][0]['id'] ?? null;
 if (is_string($id) && $id !== '') {
     api('PATCH', "{$entity}/{$id}", $payload, $token);
     echo "updated {$id}\n";
+} else {
+    api('POST', $entity, $payload, $token);
+    $id = api('GET', "{$entity}?filter[provider]=" . PROVIDER . '&limit=1', null, $token)['data'][0]['id'] ?? null;
+
+    if (!is_string($id) || $id === '') {
+        fwrite(STDERR, "the client was created but could not be read back\n");
+        exit(1);
+    }
+
+    echo "created {$id}\n";
+}
+
+$ruleEntity = "{$base}/api/heptacom-admin-open-auth-client-rule";
+$rulePayload = [
+    'clientId' => $id,
+    'actionName' => ROLE_ACTION,
+    'actionConfig' => ['userBecomeAdmin' => true],
+    'stopOnMatch' => true,
+];
+
+$existingRule = api('GET', "{$ruleEntity}?filter[clientId]={$id}&filter[actionName]=" . ROLE_ACTION . '&limit=1', null, $token);
+$ruleId = $existingRule['data'][0]['id'] ?? null;
+
+if (is_string($ruleId) && $ruleId !== '') {
+    api('PATCH', "{$ruleEntity}/{$ruleId}", $rulePayload, $token);
+    echo "rule updated {$ruleId}\n";
     exit(0);
 }
 
-api('POST', $entity, $payload, $token);
-echo "created\n";
+api('POST', $ruleEntity, $rulePayload, $token);
+echo "rule created\n";

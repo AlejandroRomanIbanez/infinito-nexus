@@ -11,4 +11,15 @@
       -e ADMIN_EMAIL={{ lookup('users', 'administrator').email | quote }}
       {{ SHOPWARE_WEB_LOCAL_CID | quote }}
       sh
-    stdin: "{{ lookup('ansible.builtin.file', role_path ~ '/files/ensure/admin_user.sh') }}"
+    stdin: "{{ lookup('ansible.builtin.file', role_path ~ '/files/shell/admin/user.sh') }}"
+
+- name: "🛡️ Ensure the Shopware admin still holds the admin privilege"
+  ansible.builtin.shell:
+    cmd: >- # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
+      container exec -i --user {{ SHOPWARE_USER }}
+      -e ADMIN_USER={{ lookup('users', 'administrator').username | quote }}
+      {{ SHOPWARE_WEB_LOCAL_CID | quote }}
+      php
+    stdin: "{{ lookup('ansible.builtin.file', role_path ~ '/files/php/admin/privileges.php') }}"
+  register: shopware_admin_privilege
+  changed_when: "'(0 row(s))' not in shopware_admin_privilege.stdout"
