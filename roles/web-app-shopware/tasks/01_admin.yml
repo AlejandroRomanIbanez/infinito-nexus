@@ -1,15 +1,4 @@
 ---
-- name: "🔧 Rename Shopware admin to {{ lookup('users', 'administrator').username }}"
-  ansible.builtin.shell:
-    cmd: >- # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
-      container exec -i --user {{ SHOPWARE_USER }}
-      -e SHOPWARE_ROOT={{ SHOPWARE_ROOT | quote }}
-      -e NEW_USER={{ lookup('users', 'administrator').username | quote }}
-      {{ SHOPWARE_WEB_LOCAL_CID | quote }}
-      sh
-    stdin: "{{ lookup('ansible.builtin.file', role_path ~ '/files/rename_admin_user.sh') }}"
-  changed_when: false
-
 - name: "✅ Ensure Shopware admin exists and has the desired password"
   ansible.builtin.shell:
     cmd: >- # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node

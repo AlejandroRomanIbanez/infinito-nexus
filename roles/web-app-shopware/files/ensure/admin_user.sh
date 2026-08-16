@@ -10,7 +10,7 @@
 #   ADMIN_PASSWORD    password to set/enforce
 #   ADMIN_FIRST_NAME  firstName attribute for user:create
 #   ADMIN_LAST_NAME   lastName attribute for user:create
-#   ADMIN_EMAIL       email attribute for user:create / user:update
+#   ADMIN_EMAIL       email attribute for user:create
 set -e
 cd "$SHOPWARE_ROOT"
 php bin/console user:create "$ADMIN_USER" \
@@ -21,5 +21,3 @@ php bin/console user:create "$ADMIN_USER" \
   --email="$ADMIN_EMAIL" || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 php bin/console user:change-password "$ADMIN_USER" \
   --password="$ADMIN_PASSWORD" || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
-php bin/console user:update "$ADMIN_USER" \
-  --email="$ADMIN_EMAIL" 2>/dev/null || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
