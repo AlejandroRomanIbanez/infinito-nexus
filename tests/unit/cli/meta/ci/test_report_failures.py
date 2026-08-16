@@ -16,13 +16,13 @@ class TestReportFailures(unittest.TestCase):
     def test_failed_roles_parses_mode_role_variant(self) -> None:
         jobs = [
             {
-                "name": "x / test-deploy-chunk-0 / 🐝🧅 web-app-xwiki 0 ⭐",
+                "name": "x / test-deploy-chunk-0 / 🐝🧅 web-app-xwiki#0 ⭐",
                 "conclusion": "failure",
             },
-            {"name": "y / 🐳🌐 web-app-openproject 0,1,2", "conclusion": "failure"},
-            {"name": "🐝🌐 web-svc-logout 1", "conclusion": "timed_out"},
+            {"name": "y / 🐳🌐 web-app-openproject#0,1,2", "conclusion": "failure"},
+            {"name": "🐝🌐 web-svc-logout#1", "conclusion": "timed_out"},
             {"name": "z / 💻 Host / 💻 sys-front-proxy", "conclusion": "failure"},
-            {"name": "🐝🌐 web-app-nextcloud 0", "conclusion": "success"},
+            {"name": "🐝🌐 web-app-nextcloud#0", "conclusion": "success"},
             {"name": "🧹 Lint", "conclusion": "failure"},
         ]
         self.assertEqual(
@@ -37,8 +37,8 @@ class TestReportFailures(unittest.TestCase):
 
     def test_the_same_variant_in_both_onion_states_stays_two_failures(self) -> None:
         jobs = [
-            {"name": "🐳🧅 web-app-xwiki 0 ⭐", "conclusion": "failure"},
-            {"name": "🐳🌐 web-app-xwiki 0 ⭐", "conclusion": "failure"},
+            {"name": "🐳🧅 web-app-xwiki#0 ⭐", "conclusion": "failure"},
+            {"name": "🐳🌐 web-app-xwiki#0 ⭐", "conclusion": "failure"},
         ]
         self.assertEqual(
             failed_roles(jobs),
