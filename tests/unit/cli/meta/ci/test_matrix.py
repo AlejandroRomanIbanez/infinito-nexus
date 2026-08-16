@@ -58,10 +58,6 @@ class TestChunksOf(unittest.TestCase):
         self.assertEqual([e["apps"] for e in chunks[1]], ["web-app-b"])
 
 
-if __name__ == "__main__":
-    unittest.main()
-
-
 _REGULAR = [
     _entry("web-app-a", "0", "compose"),
     _entry("web-app-b", "1", "swarm"),
@@ -93,3 +89,7 @@ class TestOffsetIndex(unittest.TestCase):
     def test_a_token_naming_no_regular_row_aborts(self) -> None:
         with self.assertRaises(SystemExit):
             matrix.offset_index("web-app-gone#3", _REGULAR)
+
+
+if __name__ == "__main__":
+    unittest.main()
