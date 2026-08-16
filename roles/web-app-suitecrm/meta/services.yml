@@ -60,7 +60,6 @@ suitecrm:
   pids_limit: 768
   email:
     from_name: Customer Relationship Management (SuiteCRM, {{ DOMAIN_PRIMARY }})
-  maintenance_mode: false
   ports:
     local:
       sso: 16490
