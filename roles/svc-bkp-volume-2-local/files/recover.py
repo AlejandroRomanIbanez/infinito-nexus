@@ -1,19 +1,29 @@
 #!/usr/bin/env python3
-"""Restore a docker volume's files from a backup-docker-to-local
-generation.
+"""Restore a backup-docker-to-local generation: a volume's files, or the
+generation's database dumps.
 
-Runs the role's deployed backup unit first (the usual baudolo run,
-storing a fresh differential generation of every volume and database),
-resolves the volume's mountpoint and mirrors the snapshot into it
-(``rsync -a --delete``). Stop the consuming project first. Database
-restores stay with ``baudolo-restore postgres|mariadb``.
+Both modes run the role's deployed backup unit first (the usual baudolo
+run, storing a fresh differential generation of every volume and
+database) unless ``--no-safety-backup`` says the target holds nothing
+worth saving.
 
-Host-agnostic: with ``--docker-host ssh://user@host`` the volume is
-inspected on that host and the snapshot is rsync-pushed onto its
-mountpoint over ssh, recovering a volume on a remote machine.
+Volume mode resolves the volume's mountpoint and mirrors the snapshot
+into it (``rsync -a --delete``). Stop the consuming project first.
+
+Database mode (``--databases``) replays every single-database dump of the
+generation with ``baudolo-restore <engine> --empty``, refusing while a
+consumer of that database still runs - a booting consumer recreates the
+pre-cleaned schema underneath the replay. The engine comes from the
+repository's service definitions, never from a container image.
+
+Host-agnostic in volume mode: with ``--docker-host ssh://user@host`` the
+volume is inspected on that host and the snapshot is rsync-pushed onto
+its mountpoint over ssh. Database mode is local-only, because the
+credentials live in the target host's own databases.csv.
 
 Usage:
     recover.py SOURCE_DIR VOLUME [--no-safety-backup] [--docker-host ENDPOINT]
+    recover.py --databases GENERATION_DIR [--no-safety-backup]
 """
 
 from __future__ import annotations
@@ -26,11 +36,15 @@ from pathlib import Path
 _REPO_ROOT = Path(__file__).resolve().parents[3]  # nocheck: project-root-import
 sys.path.insert(0, str(_REPO_ROOT))
 
+from utils.paths import FILE_DATABASE_SECRETS  # noqa: E402
+from utils.recovery import databases  # noqa: E402
 from utils.recovery.base import DirectoryRecovery  # noqa: E402
+
+UNIT_PATTERN = "svc-bkp-volume-2-local*.service"
 
 
 class VolumeRecovery(DirectoryRecovery):
-    unit_pattern = "svc-bkp-volume-2-local*.service"
+    unit_pattern = UNIT_PATTERN
 
     def __init__(
         self,
@@ -75,13 +89,32 @@ class VolumeRecovery(DirectoryRecovery):
         super().__init__(source_dir, target, service_backup=service_backup)
 
 
+class DatabaseRecovery(DirectoryRecovery):
+    """Replay a generation's sql dumps, with the same safety-backup contract."""
+
+    unit_pattern = UNIT_PATTERN
+
+    def __init__(self, generation_dir: str, *, service_backup: bool = True) -> None:
+        self.generation_dir = Path(generation_dir)
+        super().__init__(generation_dir, generation_dir, service_backup=service_backup)
+
+    def restore(self) -> None:
+        databases.replay(self.generation_dir, FILE_DATABASE_SECRETS)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "source_dir",
+        nargs="?",
         help="snapshot to restore from (e.g. <backups>/<machine-hash>/backup-docker-to-local/<generation>/<volume>/files)",
     )
-    parser.add_argument("volume", help="docker volume name to restore into")
+    parser.add_argument("volume", nargs="?", help="docker volume name to restore into")
+    parser.add_argument(
+        "--databases",
+        metavar="GENERATION_DIR",
+        help="replay the generation's sql dumps instead of restoring one volume's files",
+    )
     parser.add_argument(
         "--no-safety-backup",
         action="store_true",
@@ -92,10 +125,30 @@ def main() -> int:
         help="remote docker endpoint (e.g. ssh://user@host) to recover the volume on another host",
     )
     args = parser.parse_args()
+    service_backup = not args.no_safety_backup
+
+    if args.databases:
+        if args.source_dir or args.volume:
+            parser.error(
+                "--databases takes the generation directory and no positionals"
+            )
+        if args.docker_host:
+            parser.error(
+                "--databases is local-only: the credentials live in the target host's "
+                "own databases.csv, so run it on that host"
+            )
+        try:
+            return DatabaseRecovery(args.databases, service_backup=service_backup).run()
+        except databases.RecoveryError as error:
+            print(f"FAIL: {error}", file=sys.stderr)
+            return 1
+
+    if not args.source_dir or not args.volume:
+        parser.error("volume mode needs SOURCE_DIR and VOLUME")
     return VolumeRecovery(
         args.source_dir,
         args.volume,
-        service_backup=not args.no_safety_backup,
+        service_backup=service_backup,
         docker_host=args.docker_host,
     ).run()
 

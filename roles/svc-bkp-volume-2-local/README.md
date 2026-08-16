@@ -249,7 +249,53 @@ marker on the server's disk.
 
 ## Recover
 
-Run `files/recover.py` on the backed-up host to restore a volume's files:
+### The databases of a generation
+
+A generation stores this role's databases as sql dumps, not as a file tree
+(`--dump-only-sql`), so they are restored by their own step:
+
+```
+recover.py --databases <backups>/<machine-hash>/backup-docker-to-local/<generation>
+```
+
+or, through the chain, `python3 -m cli.administration.recover database <generation> localhost`.
+
+**A dump needs a running engine.** It is replayed through `docker exec`, so
+unlike a file tree it cannot be restored onto a bare host. After a total loss
+the order is: deploy the stack, stop the consumers, replay, start them again.
+The step names which of the two states is missing — a stopped container that
+only needs starting, or no container at all.
+
+It replays every single-database dump with `baudolo-restore <engine> --empty`.
+Two rules make it safe rather than convenient:
+
+1. **The consumers must be down.** `--empty` pre-cleans the schema in one psql
+   session and replays in the next; a booting consumer recreates the schema in
+   between and the dump's own `CREATE TABLE` then fails. The replay checks the
+   consumer's compose project and refuses while anything of it runs.
+2. **The engine is read, not guessed.** It comes from the service key in the
+   consuming role's `meta/services.yml`, the same value that fed the backup
+   seed, resolved through `utils/recovery/databases.py`. A dump whose engine no
+   role claims aborts the run instead of being replayed with an assumption.
+3. **The version has to fit.** The dump states which server it came out of, in
+   its own header — `-- Dumped from database version 17.11` for postgres,
+   `-- Server version\t11.8.8-MariaDB` for mariadb. That is compared against
+   the running engine before the pre-clean touches anything. Restoring forward
+   across a major version is the upgrade path and stays allowed; backward is
+   refused, because a newer dump uses syntax an older server rejects and the
+   schema would already be dropped by then. The version is deliberately not
+   kept in `databases.csv`: that file is written at seed time and would state
+   the version deployed back then, not the one the dump came from — and a
+   generation copied to another host carries its header along, a csv row does
+   not.
+
+Cluster dumps (`database = '*'`) are reported and skipped: `baudolo-restore`
+has no subcommand that replays them. Database mode is local-only — the
+credentials live in the target host's own `databases.csv`.
+
+### A single volume
+
+Run `files/recover.py` on the backed-up host to restore one volume's files:
 
 ```
 recover.py <backups>/<machine-hash>/backup-docker-to-local/<generation>/<volume>/files <volume>
@@ -257,7 +303,7 @@ recover.py <backups>/<machine-hash>/backup-docker-to-local/<generation>/<volume>
 
 1. Stop the consuming project (`docker compose down` / `docker stack rm <stack>`).
 2. Run the script; it first starts the role's deployed backup unit (a fresh differential baudolo generation of every volume and database), resolves the volume's mountpoint and mirrors the snapshot into it (`rsync -a --delete`). `--no-safety-backup` skips the unit run when the target holds nothing worth saving.
-3. Restore databases with `baudolo-restore postgres|mariadb ...`, then start the project again; on swarm, NFS-backed volumes are restored via `svc-bkp-nfs-2-local`'s `recover.py` instead (see below).
+3. Restore the databases with the `--databases` mode above **while the project is still down**, then start it again; on swarm, NFS-backed volumes are restored via `svc-bkp-nfs-2-local`'s `recover.py` instead (see below).
 
 ## Credits
 

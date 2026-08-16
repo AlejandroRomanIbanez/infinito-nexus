@@ -155,7 +155,28 @@ class RemoteTargetTest(unittest.TestCase):
 
 class RegistryTest(unittest.TestCase):
     def test_order(self):
-        self.assertEqual(recoverers.ORDER, ("device", "nfs", "volume", "secrets"))
+        self.assertEqual(
+            recoverers.ORDER, ("device", "nfs", "volume", "database", "secrets")
+        )
+
+    def test_database_follows_volume(self):
+        self.assertLess(
+            recoverers.ORDER.index("volume"), recoverers.ORDER.index("database")
+        )
+
+    def test_database_args_are_the_generation(self):
+        self.assertEqual(
+            recoverers.RECOVERERS["database"].args("/gen", "localhost"),
+            ["--databases", "/gen"],
+        )
+
+    def test_database_refuses_a_remote_target(self):
+        with self.assertRaises(ValueError):
+            recoverers.RECOVERERS["database"].args("/gen", "node-1")
+
+    def test_database_runs_the_volume_role_script(self):
+        cmd = recoverers.RECOVERERS["database"].command("/gen")
+        self.assertTrue(cmd[1].endswith("svc-bkp-volume-2-local/files/recover.py"))
 
     def test_command_starts_with_interpreter_and_script(self):
         cmd = recoverers.RECOVERERS["secrets"].command("/gen/files")

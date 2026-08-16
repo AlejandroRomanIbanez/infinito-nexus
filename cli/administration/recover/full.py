@@ -35,7 +35,12 @@ def _newest_gen(root: Path, repo: str) -> Path | None:
 
 
 def plan(root: Path) -> list[tuple[str, str]]:
-    """(type, source-files-dir) for each present repo, in order; volume per-volume."""
+    """(type, source) for each present repo, in order; volume per-volume.
+
+    The volume repo contributes a database step after its file steps: the
+    dumps have to land once the volumes are back and while the consumers are
+    still down, which is where the caller has them.
+    """
     steps: list[tuple[str, str]] = []
     for rtype, repo in _REPOS:
         generation = _newest_gen(root, repo)
@@ -43,6 +48,8 @@ def plan(root: Path) -> list[tuple[str, str]]:
             continue
         if rtype == "volume":
             steps += [(rtype, str(vol)) for vol in sorted(generation.glob("*/files"))]
+            if any(generation.glob("*/sql/*.backup.sql")):
+                steps.append(("database", str(generation)))
         elif (generation / "files").is_dir():
             steps.append((rtype, str(generation / "files")))
     return steps

@@ -154,6 +154,26 @@ class VolumeRecoverer(Recoverer):
         return argv
 
 
+class DatabaseRecoverer(Recoverer):
+    name = "database"
+    role = "svc-bkp-volume-2-local"
+    summary = "Generation's sql dumps -> their databases (consumers must be down)"
+
+    def args(self, source: str, target: str) -> list[str]:
+        if is_remote(source):
+            raise ValueError(
+                "database: remote source not supported; pull first or use 'full'"
+            )
+        if not source:
+            raise ValueError("database: empty source")
+        if remote_target(target):
+            raise ValueError(
+                "database: remote target not supported; the credentials live in "
+                f"the target's own databases.csv, so run the replay on {target}"
+            )
+        return ["--databases", source]
+
+
 class SecretsRecoverer(Recoverer):
     name = "secrets"
     role = "svc-bkp-secrets-2-local"
@@ -176,6 +196,7 @@ _RECOVERERS: tuple[Recoverer, ...] = (
     DeviceRecoverer(),
     NfsRecoverer(),
     VolumeRecoverer(),
+    DatabaseRecoverer(),
     SecretsRecoverer(),
 )
 RECOVERERS: dict[str, Recoverer] = {r.name: r for r in _RECOVERERS}
