@@ -91,5 +91,45 @@ class TestOffsetIndex(unittest.TestCase):
             matrix.offset_index("web-app-gone#3", _REGULAR)
 
 
+def _row(app: str, variant: int) -> dict:
+    return {"name": app, "variant": variant, "test_compose": True}
+
+
+class TestCandidates(unittest.TestCase):
+    _DISCOVERED = [_row("web-app-a", 0), _row("web-app-b", 0), _row("web-app-b", 1)]
+
+    def _candidates(self, priority: str) -> list[dict]:
+        with mock.patch.object(
+            matrix.query, "discover_rows", return_value=list(self._DISCOVERED)
+        ):
+            return matrix.candidates(
+                modes=("compose",), whitelist="", priority=priority, lifecycles=""
+            )
+
+    def _regular(self, priority: str) -> set[tuple[str, int]]:
+        return {
+            (row["name"], row["variant"])
+            for row in self._candidates(priority)
+            if not row["priority"]
+        }
+
+    def test_a_pinned_variant_leaves_its_siblings_in_the_regular_line(self) -> None:
+        self.assertEqual(
+            self._regular("web-app-b#0"), {("web-app-a", 0), ("web-app-b", 1)}
+        )
+
+    def test_a_pinned_variant_does_not_come_back_as_a_regular_row(self) -> None:
+        self.assertNotIn(("web-app-b", 0), self._regular("web-app-b#0"))
+
+    def test_a_bare_token_withdraws_the_whole_role(self) -> None:
+        with mock.patch.object(
+            matrix.query, "discover_rows", return_value=list(self._DISCOVERED)
+        ) as discovered:
+            matrix.candidates(
+                modes=("compose",), whitelist="", priority="web-app-b", lifecycles=""
+            )
+        self.assertEqual(discovered.call_args.kwargs["blacklist"], "web-app-b")
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -10,7 +10,7 @@ the run's shape is decided:
 1. Two discovery queries, keeping today's filter semantics: the priority line
    is queried on its own whitelist so priority roles run even when the
    diff-derived whitelist would not have selected them, and the regular line
-   is queried on the effective whitelist with the priority roles blacklisted.
+   is queried on the effective whitelist with the priority rows withdrawn.
    Concatenated, they are the sweep's ordered candidate list. Both lists are
    selection tokens (:mod:`utils.github.variant.selection`): what a token pins
    narrows the row, what it leaves open the line decides as it always did.
@@ -61,18 +61,18 @@ def candidates(
                 leading,
             )
         ]
-    rows += [
-        {**row, "priority": False}
-        for row in selection.apply(
-            query.discover_rows(
-                modes,
-                whitelist=selection.names(keep),
-                blacklist=selection.names(leading),
-                lifecycles=lifecycles,
-            ),
-            keep,
+    pinned = {(pin.app, variant) for pin in leading for variant in pin.variants}
+    regular = [
+        row
+        for row in query.discover_rows(
+            modes,
+            whitelist=selection.names(keep),
+            blacklist=selection.names(pin for pin in leading if not pin.variants),
+            lifecycles=lifecycles,
         )
+        if (row["name"], row.get("variant")) not in pinned
     ]
+    rows += [{**row, "priority": False} for row in selection.apply(regular, keep)]
     return [{**row, "modes": query.row_modes(row, modes)} for row in rows]
 
 
