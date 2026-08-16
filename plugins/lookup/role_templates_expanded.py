@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import glob
-import os
+from pathlib import Path
 from typing import Any
 
 from ansible.errors import AnsibleError
@@ -28,7 +28,7 @@ def _glob_files(pattern: str) -> list[str]:
         Sorted absolute paths; directories are dropped, mirroring Ansible's
         ``fileglob``.
     """
-    return sorted(path for path in glob.glob(pattern) if os.path.isfile(path))
+    return sorted(path for path in glob.glob(pattern) if Path(path).is_file())
 
 
 def _strip_j2(name: str) -> str:
@@ -61,7 +61,7 @@ def _expand_glob_entry(entry: dict, application_id: str) -> list[dict]:
     for path in _glob_files(str(templates_dir / str(entry["src_glob"]))):
         item = {key: entry.get(key, value) for key, value in DEFAULTS.items()}
         item["src"] = path
-        item["dest"] = dest_dir.rstrip("/") + "/" + _strip_j2(os.path.basename(path))
+        item["dest"] = dest_dir.rstrip("/") + "/" + _strip_j2(Path(path).name)
         out.append(item)
     return out
 
