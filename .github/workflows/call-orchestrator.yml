@@ -97,64 +97,22 @@ permissions:
   packages: read
 
 jobs:
-  wait-fork-prereq-run:
-    name: ⏳ Wait for fork run
-    runs-on: ubuntu-latest
-    env:
-      WAIT_REQUIRED: ${{ github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository && !inputs.trusted_pr }}
-    steps:
-      - name: 🏷️ Mark fork prerequisites as ready outside fork PRs or for trusted PRs
-        if: ${{ env.WAIT_REQUIRED != 'true' }}
-        shell: bash
-        run: |
-          set -euo pipefail
-          echo "Fork prerequisites are implicitly ready (non-fork PR or '🛡️ Trusted' label)."
-
-      - name: ⬇️ Checkout trusted workflow repo (helpers)
-        if: ${{ env.WAIT_REQUIRED == 'true' }}
-        uses: actions/checkout@v7.0.0
-        with:
-          ref: ${{ github.event.pull_request.base.sha }}
-          persist-credentials: false
-
-      - name: 🔑 Login to GHCR for CI image checks
-        if: ${{ env.WAIT_REQUIRED == 'true' }}
-        uses: docker/login-action@af1e73f918a031802d376d3c8bbc3fe56130a9b0 # v4.4.0
-        with:
-          registry: ghcr.io
-          username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: ⏳ Wait for privileged fork CI images
-        if: ${{ env.WAIT_REQUIRED == 'true' }}
-        shell: bash
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          WORKFLOW_FILE: entry-pr-change-orchestrate.yml
-          TARGET_EVENT: pull_request_target
-          PR_NUMBER: ${{ github.event.pull_request.number }}
-          PR_HEAD_SHA: ${{ github.event.pull_request.head.sha }}
-          PR_UPDATED_AT: ${{ github.event.pull_request.updated_at }}
-          INFINITO_DISTROS: "arch debian ubuntu fedora centos"
-          IMAGE_TAG: ci-${{ github.sha }}
-          WAIT_ATTEMPTS: ${{ inputs.image_wait_attempts }}
-          WAIT_SLEEP_SECONDS: ${{ inputs.image_wait_sleep_seconds }}
-        run: ./scripts/meta/wait/images.sh
-
-  fork-prereqs-ready:
-    name: 🚦 Gate Dependencies
-    needs: wait-fork-prereq-run
-    if: ${{ always() }}
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7.0.0
-      - name: ✅ Assert privileged prerequisites are ready
-        shell: bash
-        env:
-          RESULT: ${{ needs.wait-fork-prereq-run.result }}
-        run: ./scripts/github/gate/fork_prereqs.sh
+  validate-selection:
+    uses: ./.github/workflows/call-validation.yml
+    with:
+      whitelist: ${{ inputs.whitelist }}
+      priority: ${{ inputs.priority }}
+      mode: ${{ inputs.mode }}
+      tor: ${{ inputs.tor }}
+      lifecycles: ${{ inputs.lifecycles }}
+      fork_prereqs: true
+      trusted_pr: ${{ inputs.trusted_pr }}
+      image_wait_attempts: ${{ inputs.image_wait_attempts }}
+      image_wait_sleep_seconds: ${{ inputs.image_wait_sleep_seconds }}
+    secrets: inherit
 
   security-codeql:
+    needs: validate-selection
     permissions:
       contents: read
       packages: read
@@ -162,12 +120,15 @@ jobs:
     uses: ./.github/workflows/cron-security-codeql.yml
 
   lint:
+    needs: validate-selection
     uses: ./.github/workflows/call-lint.yml
 
   test:
+    needs: validate-selection
     uses: ./.github/workflows/call-test.yml
 
   build-ci-images:
+    needs: validate-selection
     permissions:
       contents: read
       packages: write
@@ -180,12 +141,13 @@ jobs:
   test-dns:
     needs:
       - build-ci-images
-      - fork-prereqs-ready
+      - validate-selection
     uses: ./.github/workflows/call-test-dns.yml
     with:
       distros: "arch debian ubuntu fedora centos"
 
   images-mirror-missing:
+    needs: validate-selection
     permissions:
       contents: read
       packages: write
@@ -212,7 +174,7 @@ jobs:
       - build-ci-images
       - images-mirror-missing
       - test-dns
-      - fork-prereqs-ready
+      - validate-selection
     uses: ./.github/workflows/call-test-deploy.yml
     with:
       distros: ${{ inputs.distros }}
@@ -297,8 +259,10 @@ jobs:
     secrets: inherit
 
   test-install-make:
+    needs: validate-selection
     uses: ./.github/workflows/call-test-install-make.yml
   test-install-pkgmgr:
+    needs: validate-selection
     uses: ./.github/workflows/call-test-install-pkgmgr.yml
 
   test-workspace:
@@ -320,7 +284,7 @@ jobs:
       - build-ci-images
       - lint
       - test
-      - fork-prereqs-ready
+      - validate-selection
     with:
       distros: ${{ inputs.distros }}
     secrets: inherit
@@ -347,8 +311,7 @@ jobs:
   done:
     name: 🏁 Finish pipeline
     needs:
-      - wait-fork-prereq-run
-      - fork-prereqs-ready
+      - validate-selection
       - build-ci-images
       - images-mirror-missing
       - test-dns
