@@ -109,6 +109,7 @@ export MACHINE_HASH REPO_DIR REPO_NAME
 if [[ "${ASYNC_ENABLED}" == "true" ]]; then
     if (( COUNT < 2 )); then
         echo "Only ${COUNT} generation(s); triggering one extra backup run for differential coverage"
+        sleep 1
         if ! timeout "${BKP_TEST_HEALTH_TIMEOUT}" systemctl start "${BKP_TEST_SERVICE}"; then
             echo "backup unit start returned non-zero; inspecting result"
         fi
