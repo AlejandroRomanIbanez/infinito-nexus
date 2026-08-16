@@ -200,4 +200,4 @@ async function inAppLogout(page) {
   expect.soft(false, "no in-app logout control reachable on the current authenticated surface").toBe(true);
 }
 
-module.exports = { inAppLogout };
+module.exports = { inAppLogout, confirmKeycloakLogoutIfPrompted };

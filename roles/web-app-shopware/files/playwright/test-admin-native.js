@@ -3,6 +3,7 @@ const { resolveTimeout } = require("./timeouts");
 
 const { decodeDotenvQuotedValue, normalizeBaseUrl , gotoOnion } = require("./personas");
 const { performKeycloakLogin } = require("./personas/utils/keycloak");
+const { confirmKeycloakLogoutIfPrompted } = require("./personas/utils/logout");
 
 const appBaseUrl = normalizeBaseUrl(process.env.APP_BASE_URL || "");
 const adminUsername = decodeDotenvQuotedValue(process.env.ADMIN_USERNAME || "");
@@ -74,6 +75,8 @@ test("administrator: admin login → catalogue → in-app logout", async ({ page
     timeout: resolveTimeout(15_000),
   });
   await logout.click();
+  await page.waitForLoadState("domcontentloaded", { timeout: resolveTimeout(30_000) }).catch(() => {});
+  await confirmKeycloakLogoutIfPrompted(page);
 
   await expect(
     page.locator("input[type='password']:visible").first(),
