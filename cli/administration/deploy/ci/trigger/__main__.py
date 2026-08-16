@@ -15,7 +15,7 @@ from __future__ import annotations
 import argparse
 import sys
 
-from cli.administration.deploy.ci import runs
+from cli.administration.deploy.ci import gh, runs
 
 _WORKFLOW = "entry-manual-steer.yml"
 _ALL = "__ALL__"
@@ -25,8 +25,8 @@ def _fetch(run: str, repo: str) -> dict:
     """The jobs and title of *run*, given as a URL or a bare id (which
     resolves against *repo*, the current branch's own)."""
     if run.isdigit():
-        return runs.fetch_run(run, repo=repo)
-    return runs.fetch_run(runs.run_id_from_url(run), repo=runs.slug_from_url(run))
+        return gh.fetch_run(run, repo=repo)
+    return gh.fetch_run(gh.run_id_from_url(run), repo=gh.slug_from_url(run))
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -88,8 +88,8 @@ def main(argv: list[str] | None = None) -> int:
     if args.strict and args.failed is None:
         p.error("--strict only applies with --failed")
 
-    branch = runs.current_branch()
-    repo = runs.resolve_repo()
+    branch = gh.current_branch()
+    repo = gh.resolve_repo()
 
     source = None
     if args.run:

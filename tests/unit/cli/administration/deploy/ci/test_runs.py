@@ -3,7 +3,7 @@ from __future__ import annotations
 import unittest
 from typing import ClassVar
 
-from cli.administration.deploy.ci import runs
+from cli.administration.deploy.ci import gh, runs
 from tests.utils.ci.job_names import deploy_job_name, discover_job_name
 from tests.utils.ci.run_name import render
 from utils.github import run_name
@@ -186,19 +186,19 @@ class TestFailedRoles(unittest.TestCase):
 class TestRunIdFromUrl(unittest.TestCase):
     def test_extracts_id(self) -> None:
         self.assertEqual(
-            runs.run_id_from_url("https://example.com/o/r/actions/runs/28140817070"),
+            gh.run_id_from_url("https://example.com/o/r/actions/runs/28140817070"),
             "28140817070",
         )
 
     def test_raises_without_id(self) -> None:
         with self.assertRaises(ValueError):
-            runs.run_id_from_url("https://example.com/o/r/actions")
+            gh.run_id_from_url("https://example.com/o/r/actions")
 
 
 class TestSlugFromUrl(unittest.TestCase):
     def test_run_url(self) -> None:
         self.assertEqual(
-            runs.slug_from_url(
+            gh.slug_from_url(
                 "https://github.com/kevinveenbirkenbach/infinito-nexus-core/actions/runs/28141113779/job/83339311104"
             ),
             "kevinveenbirkenbach/infinito-nexus-core",
@@ -206,18 +206,18 @@ class TestSlugFromUrl(unittest.TestCase):
 
     def test_ssh_remote(self) -> None:
         self.assertEqual(
-            runs.slug_from_url("git@github.com:infinito-nexus/core.git"),
+            gh.slug_from_url("git@github.com:infinito-nexus/core.git"),
             "infinito-nexus/core",
         )
 
     def test_https_remote(self) -> None:
         self.assertEqual(
-            runs.slug_from_url("https://github.com/owner/repo.git"), "owner/repo"
+            gh.slug_from_url("https://github.com/owner/repo.git"), "owner/repo"
         )
 
     def test_raises_on_non_github(self) -> None:
         with self.assertRaises(ValueError):
-            runs.slug_from_url("https://example.com/x/y")
+            gh.slug_from_url("https://example.com/x/y")
 
 
 class TestInputsFromJobs(unittest.TestCase):

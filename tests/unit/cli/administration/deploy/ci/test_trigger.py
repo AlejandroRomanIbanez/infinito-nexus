@@ -6,7 +6,7 @@ import unittest
 import unittest.mock as mock
 from contextlib import redirect_stdout
 
-from cli.administration.deploy.ci import runs
+from cli.administration.deploy.ci import gh, runs
 from cli.administration.deploy.ci.trigger import __main__ as trigger
 from tests.utils.ci.job_names import deploy_job_name
 from tests.utils.ci.run_name import render
@@ -53,8 +53,8 @@ class TestTriggerMain(unittest.TestCase):
         calls: list[tuple] = []
         buf = io.StringIO()
         with (
-            mock.patch.object(runs, "current_branch", return_value="feature/x"),
-            mock.patch.object(runs, "resolve_repo", return_value="o/r"),
+            mock.patch.object(gh, "current_branch", return_value="feature/x"),
+            mock.patch.object(gh, "resolve_repo", return_value="o/r"),
             mock.patch.object(runs, "find_last_deploy_run", return_value=run),
             mock.patch.object(runs, "inputs_from_jobs", return_value=inputs or {}),
             mock.patch.object(
@@ -109,9 +109,9 @@ class TestTriggerMain(unittest.TestCase):
         source = {"jobs": _JOBS, "displayTitle": render(_SOURCE_CONFIG)}
         calls: list = []
         with (
-            mock.patch.object(runs, "current_branch", return_value="feature/x"),
-            mock.patch.object(runs, "resolve_repo", return_value="o/r"),
-            mock.patch.object(runs, "fetch_run", return_value=source),
+            mock.patch.object(gh, "current_branch", return_value="feature/x"),
+            mock.patch.object(gh, "resolve_repo", return_value="o/r"),
+            mock.patch.object(gh, "fetch_run", return_value=source),
             mock.patch.object(
                 runs,
                 "inputs_from_jobs",
@@ -128,7 +128,10 @@ class TestTriggerMain(unittest.TestCase):
         ):
             rc = trigger.main(["--failed", "--run", _RUN_URL])
         self.assertEqual(rc, 0)
-        self.assertEqual(calls[0], "web-app-never web-app-x#0,1@swarm+clearnet web-app-y#0,1@compose+clearnet")
+        self.assertEqual(
+            calls[0],
+            "web-app-never web-app-x#0,1@swarm+clearnet web-app-y#0,1@compose+clearnet",
+        )
 
     def test_an_unreadable_job_log_aborts_instead_of_dropping_the_priority(
         self,
@@ -138,9 +141,9 @@ class TestTriggerMain(unittest.TestCase):
             "displayTitle": render({**_SOURCE_CONFIG, "priority": "web-app-x"}),
         }
         with (
-            mock.patch.object(runs, "current_branch", return_value="feature/x"),
-            mock.patch.object(runs, "resolve_repo", return_value="o/r"),
-            mock.patch.object(runs, "fetch_run", return_value=source),
+            mock.patch.object(gh, "current_branch", return_value="feature/x"),
+            mock.patch.object(gh, "resolve_repo", return_value="o/r"),
+            mock.patch.object(gh, "fetch_run", return_value=source),
             mock.patch.object(runs, "inputs_from_jobs", return_value={}),
             redirect_stdout(io.StringIO()),
             self.assertRaises(SystemExit),
@@ -155,9 +158,9 @@ class TestTriggerMain(unittest.TestCase):
         source = {"jobs": green, "displayTitle": render({})}
         calls: list = []
         with (
-            mock.patch.object(runs, "current_branch", return_value="feature/x"),
-            mock.patch.object(runs, "resolve_repo", return_value="o/r"),
-            mock.patch.object(runs, "fetch_run", return_value=source),
+            mock.patch.object(gh, "current_branch", return_value="feature/x"),
+            mock.patch.object(gh, "resolve_repo", return_value="o/r"),
+            mock.patch.object(gh, "fetch_run", return_value=source),
             mock.patch.object(
                 runs,
                 "inputs_from_jobs",
@@ -188,9 +191,9 @@ class TestTriggerMain(unittest.TestCase):
     def test_failed_with_run_url_uses_that_run(self) -> None:
         calls: list = []
         with (
-            mock.patch.object(runs, "current_branch", return_value="feature/x"),
-            mock.patch.object(runs, "resolve_repo", return_value="o/r"),
-            mock.patch.object(runs, "fetch_run", return_value=_SOURCE_RUN) as fetch,
+            mock.patch.object(gh, "current_branch", return_value="feature/x"),
+            mock.patch.object(gh, "resolve_repo", return_value="o/r"),
+            mock.patch.object(gh, "fetch_run", return_value=_SOURCE_RUN) as fetch,
             mock.patch.object(runs, "find_last_deploy_run") as find_last,
             mock.patch.object(
                 runs,
@@ -210,9 +213,9 @@ class TestTriggerMain(unittest.TestCase):
     def test_failed_with_bare_run_id_resolves_against_branch_repo(self) -> None:
         calls: list = []
         with (
-            mock.patch.object(runs, "current_branch", return_value="feature/x"),
-            mock.patch.object(runs, "resolve_repo", return_value="o/r"),
-            mock.patch.object(runs, "fetch_run", return_value=_SOURCE_RUN) as fetch,
+            mock.patch.object(gh, "current_branch", return_value="feature/x"),
+            mock.patch.object(gh, "resolve_repo", return_value="o/r"),
+            mock.patch.object(gh, "fetch_run", return_value=_SOURCE_RUN) as fetch,
             mock.patch.object(runs, "find_last_deploy_run") as find_last,
             mock.patch.object(
                 runs,
@@ -232,9 +235,9 @@ class TestTriggerMain(unittest.TestCase):
     def test_apps_with_a_run_reproduces_its_configuration(self) -> None:
         calls: list = []
         with (
-            mock.patch.object(runs, "current_branch", return_value="feature/x"),
-            mock.patch.object(runs, "resolve_repo", return_value="o/r"),
-            mock.patch.object(runs, "fetch_run", return_value=_SOURCE_RUN),
+            mock.patch.object(gh, "current_branch", return_value="feature/x"),
+            mock.patch.object(gh, "resolve_repo", return_value="o/r"),
+            mock.patch.object(gh, "fetch_run", return_value=_SOURCE_RUN),
             mock.patch.object(
                 runs,
                 "dispatch_workflow",
@@ -276,8 +279,8 @@ class TestBranchRemote(unittest.TestCase):
                 return push_default
             raise AssertionError(f"unexpected git call: {args}")
 
-        with mock.patch.object(runs, "_run", side_effect=fake_run):
-            return runs._branch_remote()
+        with mock.patch.object(gh, "_run", side_effect=fake_run):
+            return gh._branch_remote()
 
     def test_tracking_remote_wins(self) -> None:
         self.assertEqual(self._resolve("origin/main", "fork"), "origin")

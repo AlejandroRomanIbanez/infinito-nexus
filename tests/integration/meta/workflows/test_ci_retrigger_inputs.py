@@ -24,7 +24,7 @@ import unittest
 import unittest.mock as mock
 from contextlib import redirect_stdout
 
-from cli.administration.deploy.ci import runs
+from cli.administration.deploy.ci import gh, runs
 from cli.administration.deploy.ci.trigger import __main__ as trigger
 from tests.utils.ci.job_names import deploy_job_name
 
@@ -69,9 +69,9 @@ def _dispatch(argv: list[str], logged: dict[str, str]) -> tuple[str, str, dict]:
     seen: list[tuple[str, str, dict]] = []
     source = {"jobs": _JOBS, "displayTitle": ""}
     with (
-        mock.patch.object(runs, "current_branch", return_value=_BRANCH),
-        mock.patch.object(runs, "resolve_repo", return_value=_REPO),
-        mock.patch.object(runs, "fetch_run", return_value=source),
+        mock.patch.object(gh, "current_branch", return_value=_BRANCH),
+        mock.patch.object(gh, "resolve_repo", return_value=_REPO),
+        mock.patch.object(gh, "fetch_run", return_value=source),
         mock.patch.object(runs, "inputs_from_jobs", return_value=logged),
         mock.patch.object(
             runs,
