@@ -82,7 +82,7 @@ def sort_spec() -> str:
     """The discovery sort, behind a clones-last prefix so one representative
     per dna cluster stays ahead of the budget cut."""
     spec = env_setting("INFINITO_DISCOVERY_SORT").strip()
-    return f"asc clone,{spec}" if spec else "asc clone"
+    return f"asc clone,{spec}"
 
 
 def _query_argv(
