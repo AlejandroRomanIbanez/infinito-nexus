@@ -127,11 +127,16 @@ docker run --rm -it \
   `extensions/<software>/config/services/ldap/`, which maps the LDAP attributes onto
   SuiteCRM's user fields for auto-created accounts.
 
-- **SSO** reaches the app through the oauth2-proxy declared in
-  [`meta/services.yml`](./meta/services.yml) (`sso.flavor: oauth2`), which terminates the
-  Keycloak OIDC flow in front of SuiteCRM. SuiteCRM itself is not OIDC-aware; its own
-  SAML and OAuth provider settings stay untouched by this role and remain available in
-  the Administration panel.
+- **SSO** is SuiteCRM's own SAML login against Keycloak (`sso.flavor: saml` in
+  [`meta/services.yml`](./meta/services.yml)), not a proxy in front of it. Unauthenticated
+  requests hit the Symfony firewall's SAML entry point, which redirects to Keycloak;
+  the assertion comes back to `/saml/acs` and establishes a real SuiteCRM session, so the
+  app renders its own authenticated UI including its logout control. Accounts are created
+  on first login from the assertion (`SAML_AUTO_CREATE`), and the IdP signing certificate
+  is read from Keycloak's realm descriptor by
+  [`files/docker-entrypoint-suitecrm.sh`](./files/docker-entrypoint-suitecrm.sh) at boot,
+  container to container, because the canonical Keycloak URL is unresolvable from inside
+  the app container under Tor. `/auth` stays reachable as the local break-glass login.
 
 ## Persona contract opt-outs
 
