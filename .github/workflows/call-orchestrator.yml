@@ -103,6 +103,7 @@ permissions:
 
 jobs:
   validate-selection:
+    name: 🎯 Selection
     uses: ./.github/workflows/call-validation.yml
     with:
       whitelist: ${{ inputs.whitelist }}
