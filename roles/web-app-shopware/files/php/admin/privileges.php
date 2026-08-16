@@ -15,8 +15,18 @@ $dsn = sprintf(
     ltrim($url['path'] ?? '', '/')
 );
 
+$admin = getenv('ADMIN_USER');
+
 $pdo = new PDO($dsn, $url['user'] ?? '', $url['pass'] ?? '', [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]);
 $statement = $pdo->prepare('UPDATE `user` SET admin = 1 WHERE username = ?');
-$statement->execute([getenv('ADMIN_USER')]);
+$statement->execute([$admin]);
 
-printf("admin flag asserted for %s (%d row(s))\n", getenv('ADMIN_USER'), $statement->rowCount());
+$present = $pdo->prepare('SELECT COUNT(*) FROM `user` WHERE username = ?');
+$present->execute([$admin]);
+
+if ((int) $present->fetchColumn() === 0) {
+    fwrite(STDERR, "no Shopware user named {$admin}\n");
+    exit(1);
+}
+
+printf("admin flag asserted for %s (%d row(s))\n", $admin, $statement->rowCount());
