@@ -1,5 +1,6 @@
 ---
 # nocheck: dockerfile-custom
+# nocheck: image-healthcheck  CI runner, no service port; readiness is the runner's own registration
 runner:
   modes:
     compose:

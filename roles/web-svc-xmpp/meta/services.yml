@@ -17,6 +17,9 @@ ldap:
   enabled: "{{ 'svc-db-openldap' in group_names }}"
   shared: "{{ 'svc-db-openldap' in group_names }}"
 xmpp:
+  healthcheck:
+    flavor: tcp
+    port_key: http
   modes:
     compose:
       enabled: true

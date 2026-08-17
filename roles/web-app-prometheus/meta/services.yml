@@ -39,6 +39,9 @@ javascript:
   shared: "{{ lookup('config', 'web-app-prometheus', 'services.sso.enabled') | bool }}"
 # nocheck: playwright-service-flag — self-provider
 prometheus:
+  healthcheck:
+    flavor: wget
+    path: -/healthy
   modes:
     compose:
       enabled: true
@@ -72,6 +75,9 @@ prometheus:
   lifecycle: beta
   min_storage: 307MB
 alertmanager:
+  healthcheck:
+    flavor: wget
+    path: -/healthy
   image: prom/alertmanager # nocheck: volumes-path-single-spot: the repository path of an image name, not a mount target
   version: v0.33.1
   name: prometheus-alertmanager
@@ -84,6 +90,9 @@ alertmanager:
     internal:
       http: 9093
 blackbox-exporter:
+  healthcheck:
+    flavor: wget
+    path: -/healthy
   image: prom/blackbox-exporter
   version: v0.28.0
   name: prometheus-blackbox
@@ -108,6 +117,9 @@ cadvisor:
     internal:
       http: 8080
 node-exporter:
+  healthcheck:
+    flavor: wget
+    path: metrics
   image: prom/node-exporter
   version: v1.12.1
   name: prometheus-node-exporter

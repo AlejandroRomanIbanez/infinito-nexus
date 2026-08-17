@@ -36,6 +36,7 @@ postgres:
   bond: 1
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
+# nocheck: container-healthcheck-unused  rendered through the mastodon_service macro, whose service_name is a macro parameter
 mastodon:
   modes:
     compose:
@@ -71,6 +72,7 @@ mastodon:
   run_after:
     - web-app-keycloak
   lifecycle: beta
+# nocheck: container-healthcheck-unused  rendered through the mastodon_service macro, whose service_name is a macro parameter
 streaming:
   image: ghcr.io/mastodon/mastodon-streaming
   version: v4.6.2
@@ -86,6 +88,7 @@ streaming:
   healthcheck:
     flavor: wget
     path: api/v1/streaming/health
+# nocheck: container-healthcheck-unused  rendered through the mastodon_service macro, whose service_name is a macro parameter
 sidekiq:
   name: mastodon-sidekiq
   healthcheck:

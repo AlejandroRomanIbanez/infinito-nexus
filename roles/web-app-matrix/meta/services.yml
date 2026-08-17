@@ -102,6 +102,14 @@ prometheus:
     channel: true
 # nocheck: playwright-service-flag: shared provider entity; the app itself is covered by this role's own Playwright spec
 matrix:
+  healthcheck:
+    flavor: http_status
+    path: _matrix/client/versions
+    start_period: 10m
+    retries: 10
+  ports:
+    internal:
+      http: 8008
   modes:
     compose:
       enabled: true

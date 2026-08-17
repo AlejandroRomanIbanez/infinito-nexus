@@ -1,6 +1,8 @@
 ---
 # nocheck: seaweedfs-playwright — Funkwhale writes to the bucket only through the audio-library import flow, which needs a persona-owned library and a real track upload the role does not provision; PROXY_MEDIA=true serves every read back through the API, so the bucket has no persona-reachable surface
 funkwhale:
+  healthcheck:
+    flavor: wget
   modes:
     compose:
       enabled: true
@@ -29,6 +31,8 @@ funkwhale:
   mem_limit: 2g
   pids_limit: 1024
 api:
+  healthcheck:
+    flavor: curl
   image: funkwhale/api
   version: 2.0.9
   min_storage: 588MB
@@ -46,6 +50,7 @@ migrate:
   mem_reservation: 256m
   mem_limit: 1g
   pids_limit: 512
+# nocheck: image-healthcheck  no internal port declared, so no probe can address it
 typesense:
   bond: 1
   enabled: true # nocheck: dynamic-flag

@@ -28,6 +28,8 @@ javascript:
   enabled: true
   shared: true
 littlejs:
+  healthcheck:
+    flavor: wget
   modes:
     compose:
       enabled: true

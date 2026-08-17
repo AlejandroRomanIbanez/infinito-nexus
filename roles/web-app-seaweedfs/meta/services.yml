@@ -41,6 +41,8 @@ prometheus:
   shared: "{{ 'web-app-prometheus' in group_names }}"
 # nocheck: playwright-service-flag — central object-store provider entity
 seaweedfs:
+  healthcheck:
+    flavor: curl
   modes:
     compose:
       enabled: true
@@ -72,6 +74,7 @@ seaweedfs:
       sso: 16507
     internal:
       http: 8333
+# nocheck: image-healthcheck  no internal port declared, so no probe can address it
 proxy:
   name: seaweedfs-proxy
   image: nginx

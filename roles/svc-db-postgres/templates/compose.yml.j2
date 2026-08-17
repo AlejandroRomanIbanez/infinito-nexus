@@ -18,6 +18,7 @@
       - "maintenance_work_mem={{ POSTGRES_MAINTENANCE_WORK_MEM }}"
 
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
+    {{ lookup('container_healthcheck', service_name) | indent(4) }}
     {% if POSTGRES_EXPOSE_LOCAL %}
     {{ lookup('container_ports', ['postgres', 'postgres', DOCKER_BIND_HOST]) | indent(4) }}
     {% endif %}

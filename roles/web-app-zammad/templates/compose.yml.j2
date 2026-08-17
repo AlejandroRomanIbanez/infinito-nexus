@@ -17,6 +17,7 @@
   {% set service_name = ZAMMAD_RAILS_SERVICE %}
   {{ service_name }}:
     {{ lookup('container_image', application_id, 'zammad') }}
+    {{ lookup('container_healthcheck', 'zammad') | indent(4) }}
     {{ lookup('compose_only', 'container_name', ZAMMAD_RAILS_CONTAINER) }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     command: ["zammad-railsserver"]

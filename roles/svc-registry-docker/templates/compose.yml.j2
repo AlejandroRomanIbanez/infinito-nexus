@@ -8,6 +8,7 @@
     environment:
       REGISTRY_HTTP_ADDR: "{{ REGISTRY_BIND_IP }}:{{ REGISTRY_PORT }}"
     {% else %}
+    {{ lookup('container_healthcheck', service_name) | indent(4) }}
     {{ lookup('container_ports', ['docker', 'registry']) | indent(4) }}
     {% endif %}
     {{ lookup('container_volumes', application_id, entity_name) | indent(4) }}

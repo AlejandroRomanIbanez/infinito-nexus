@@ -25,6 +25,7 @@ cdn:
   min_storage: "1GB"
   lifecycle: beta
 # nocheck: playwright-service-flag — transient node image used only to build the npm asset mirror, never served
+# nocheck: image-healthcheck  build-time image run as a one-shot, no service port
 build:
   # nocheck: single-replica  one-shot npm-mirror build writing the shared served root; parallel replicas would race and duplicate work
   replicas: 1
