@@ -98,7 +98,9 @@ def volume_mountpoint(volume: str) -> Path:
 
 def file_volumes(generation_dir: Path) -> list[str]:
     """The volumes this generation stores as a file tree."""
-    return sorted(path.parent.name for path in generation_dir.glob("*/files"))
+    return sorted(
+        path.parent.name for path in generation_dir.glob(databases.FILES_GLOB)
+    )
 
 
 def sql(
@@ -170,7 +172,7 @@ def captured(generation_dir: Path, token: str) -> int:
     """
     missing: list[str] = []
     for volume in file_volumes(generation_dir):
-        marker = generation_dir / volume / "files" / MARKER_FILE
+        marker = generation_dir / volume / databases.FILES_DIR / MARKER_FILE
         if not marker.is_file() or marker.read_text(encoding="utf-8").strip() != token:
             missing.append(
                 f"volume {volume}: the generation holds no current {MARKER_FILE}"

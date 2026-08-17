@@ -3,6 +3,8 @@ import tempfile
 from pathlib import Path
 from unittest import TestCase, main, mock
 
+from baudolo.restore.paths import BackupPaths
+
 from utils.recovery import databases
 from utils.recovery import docker as recovery_docker
 
@@ -50,6 +52,40 @@ class TestEngineResolution(TestCase):
         engines = databases.engine_by_key()
         self.assertEqual(engines["postgres"], "postgres")
         self.assertEqual(engines["zammad"], "postgres")
+
+
+class TestLayoutFollowsBaudolo(TestCase):
+    """baudolo writes the generation, so core must read exactly what it writes."""
+
+    def setUp(self):
+        self.backups = Path(tempfile.mkdtemp())
+        self.paths = BackupPaths(
+            "postgres",
+            "abc123",
+            "20260816190906",
+            repo_name="a-repo",
+            backups_dir=str(self.backups),
+        )
+        for written in (self.paths.sql_file("zammad"), self.paths.cluster_file("all")):
+            Path(written).parent.mkdir(parents=True, exist_ok=True)
+            Path(written).write_text("")
+        self.generation = Path(self.paths.root()).parent
+
+    def test_generation_of_recovers_what_backup_paths_composed(self):
+        parts = databases.generation_of(self.generation)
+        self.assertEqual(parts.backups_dir, str(self.backups))
+        self.assertEqual(parts.machine_hash, "abc123")
+        self.assertEqual(parts.repo_name, "a-repo")
+        self.assertEqual(parts.name, "20260816190906")
+
+    def test_dumps_of_finds_the_files_backup_paths_names(self):
+        dumps, clusters = databases.dumps_of(self.generation)
+        self.assertEqual(
+            [(d.volume, d.database) for d in dumps], [("postgres", "zammad")]
+        )
+        self.assertEqual(
+            [(c.volume, c.instance) for c in clusters], [("postgres", "all")]
+        )
 
 
 class TestGenerationLayout(TestCase):
@@ -183,6 +219,12 @@ class TestClusterDumps(TestCase):
         found = databases.databases_in(self.cluster())
         for control in ("postgres", "template0", "template1"):
             self.assertNotIn(control, found)
+
+    def test_a_database_created_but_never_reconnected_still_counts(self):
+        """pg_dumpall names a database twice; a stream that only creates it
+        would otherwise leave it unseeded and the drill would pass regardless."""
+        cluster = self.cluster('CREATE DATABASE "late" WITH TEMPLATE = template0;\n')
+        self.assertEqual(databases.databases_in(cluster), ["late"])
 
     def test_a_quoted_name_loses_its_quotes(self):
         cluster = self.cluster('\\connect "odd-name"\n')

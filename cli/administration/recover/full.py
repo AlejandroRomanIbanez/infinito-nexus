@@ -19,6 +19,7 @@ import sys
 from pathlib import Path
 
 from cli.administration.recover import paths, recoverers, remote
+from utils.recovery.databases import DUMP_GLOB, FILES_DIR, FILES_GLOB
 
 _REPOS: tuple[tuple[str, str], ...] = (
     ("nfs", "backup-nfs-to-local"),
@@ -47,11 +48,11 @@ def plan(root: Path) -> list[tuple[str, str]]:
         if generation is None:
             continue
         if rtype == "volume":
-            steps += [(rtype, str(vol)) for vol in sorted(generation.glob("*/files"))]
-            if any(generation.glob("*/sql/*.backup.sql")):
+            steps += [(rtype, str(vol)) for vol in sorted(generation.glob(FILES_GLOB))]
+            if any(generation.glob(DUMP_GLOB)):
                 steps.append(("database", str(generation)))
-        elif (generation / "files").is_dir():
-            steps.append((rtype, str(generation / "files")))
+        elif (generation / FILES_DIR).is_dir():
+            steps.append((rtype, str(generation / FILES_DIR)))
     return steps
 
 

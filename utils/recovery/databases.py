@@ -9,6 +9,12 @@ The engine is read from the repository, not guessed from a container image.
 Whether a dump is readable by that engine is decided by ``baudolo-restore``
 itself, before its pre-clean drops anything.
 
+The generation layout belongs to baudolo, which writes it, so the file names
+and subdirectory below are asked of its ``BackupPaths`` instead of restated
+here. Restating them would let a rename on its side leave the globs matching
+nothing, which reads as "this generation holds no databases" rather than as a
+failure.
+
 A ``database = '*'`` row dumps a whole instance with ``pg_dumpall``. It goes
 back through ``baudolo-restore cluster`` with the instance's superuser; its
 ``\\connect`` lines name the databases, while the consumers sit in the compose
@@ -17,9 +23,12 @@ project of the engine, so both are checked.
 
 from __future__ import annotations
 
-import csv
-import re
+from pathlib import PurePath
 from typing import TYPE_CHECKING, NamedTuple
+
+from baudolo.databases import CLUSTER_ROW, DatabasesCsvError, Row, read_rows
+from baudolo.restore.db.cluster import dump_inventory
+from baudolo.restore.paths import BackupPaths
 
 from utils.cache.applications import get_application_defaults
 from utils.recovery import docker as recovery_docker
@@ -35,12 +44,17 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 RESTORE_BIN = "baudolo-restore"
-DUMP_SUFFIX = ".backup.sql"
-CLUSTER_SUFFIX = ".cluster.backup.sql"
+
+_LAYOUT = BackupPaths("", "", "", repo_name="", backups_dir="")
+DUMP_SUFFIX = PurePath(_LAYOUT.sql_file("")).name
+CLUSTER_SUFFIX = PurePath(_LAYOUT.cluster_file("")).name
+SQL_DIR = PurePath(_LAYOUT.sql_file("")).parent.name
+FILES_DIR = PurePath(_LAYOUT.files_dir()).name
+DUMP_GLOB = f"*/{SQL_DIR}/*{DUMP_SUFFIX}"
+FILES_GLOB = f"*/{FILES_DIR}"
+
 DEDICATED_VOLUME_SUFFIX = "_database"
 CLUSTER_ENGINE = "postgres"
-CLUSTER_ROW = "*"
-CONNECT_IN_DUMP = re.compile(r"^\\connect\s+(.*)$")
 CONTROL_DATABASES = frozenset({"postgres", "template0", "template1"})
 
 
@@ -116,7 +130,7 @@ def dumps_of(generation_dir: Path) -> tuple[list[Dump], list[Cluster]]:
     """
     dumps: list[Dump] = []
     clusters: list[Cluster] = []
-    for path in sorted(generation_dir.glob("*/sql/*" + DUMP_SUFFIX)):
+    for path in sorted(generation_dir.glob(DUMP_GLOB)):
         volume = path.parent.parent.name
         if path.name.endswith(CLUSTER_SUFFIX):
             clusters.append(Cluster(volume, path.name[: -len(CLUSTER_SUFFIX)], path))
@@ -125,12 +139,18 @@ def dumps_of(generation_dir: Path) -> tuple[list[Dump], list[Cluster]]:
     return dumps, clusters
 
 
+def _rows_of(csv_path: Path) -> list[Row]:
+    """The host's databases.csv, read through baudolo's own reader."""
+    if not csv_path.is_file():
+        raise RecoveryError(f"{csv_path} does not exist")
+    try:
+        return read_rows(str(csv_path))
+    except DatabasesCsvError as error:
+        raise RecoveryError(str(error)) from error
+
+
 def credentials_of(csv_path: Path) -> dict[str, tuple[str, str]]:
     """Read database credentials from the host's databases.csv.
-
-    Args:
-        csv_path: semicolon-separated, header row first, written by
-            ``baudolo-seed`` as instance;database;username;password.
 
     Returns:
         Database name to (user, password); the first row of a name wins,
@@ -139,89 +159,44 @@ def credentials_of(csv_path: Path) -> dict[str, tuple[str, str]]:
     Raises:
         RecoveryError: the file is missing, or a row is short of columns.
     """
-    if not csv_path.is_file():
-        raise RecoveryError(f"{csv_path} does not exist")
     credentials: dict[str, tuple[str, str]] = {}
-    with csv_path.open(newline="", encoding="utf-8") as handle:
-        rows = csv.reader(handle, delimiter=";")
-        next(rows, None)
-        for row in rows:
-            if not any(field.strip() for field in row):
-                continue
-            if len(row) < 4:
-                raise RecoveryError(f"{csv_path} has a row with {len(row)} column(s)")
-            credentials.setdefault(row[1], (row[2], row[3]))
+    for row in _rows_of(csv_path):
+        credentials.setdefault(row.database, (row.username, row.password))
     return credentials
 
 
 def cluster_credentials_of(csv_path: Path) -> dict[str, tuple[str, str]]:
     """Read the superuser of every instance that is dumped as a whole.
 
-    A cluster row states ``*`` where a single-database row names a database,
-    so :func:`credentials_of` would file every instance under the same key and
-    keep only the first. Cluster credentials are therefore keyed by instance.
-
-    Args:
-        csv_path: the host's databases.csv.
+    A cluster row states the cluster marker where a single-database row names
+    a database, so :func:`credentials_of` would file every instance under the
+    same key and keep only the first. Cluster credentials are therefore keyed
+    by instance.
 
     Returns:
         Instance name to (user, password).
     """
-    if not csv_path.is_file():
-        raise RecoveryError(f"{csv_path} does not exist")
     credentials: dict[str, tuple[str, str]] = {}
-    with csv_path.open(newline="", encoding="utf-8") as handle:
-        rows = csv.reader(handle, delimiter=";")
-        next(rows, None)
-        for row in rows:
-            if len(row) >= 4 and row[1].strip() == CLUSTER_ROW:
-                credentials.setdefault(row[0].strip(), (row[2], row[3]))
+    for row in _rows_of(csv_path):
+        if row.is_cluster:
+            credentials.setdefault(row.instance.strip(), (row.username, row.password))
     return credentials
 
 
 def databases_in(cluster: Cluster) -> list[str]:
     """Name the databases a cluster dump recreates.
 
-    The stream reconnects before each one, so its ``\\connect`` lines are the
-    inventory. The control databases are dropped: they exist in every cluster
-    and are not deployed as applications, so nothing consumes them.
+    The control databases are dropped: they exist in every cluster and are not
+    deployed as applications, so nothing consumes them.
 
     Args:
         cluster: the dump to read.
 
     Returns:
-        The database names, in the order the dump recreates them.
+        The database names, in the order the dump names them.
     """
-    found: list[str] = []
-    with cluster.path.open(encoding="utf-8", errors="replace") as handle:
-        for line in handle:
-            match = CONNECT_IN_DUMP.match(line)
-            if not match:
-                continue
-            name = connect_target(match.group(1))
-            if name and name not in CONTROL_DATABASES and name not in found:
-                found.append(name)
-    return found
-
-
-def connect_target(rest: str) -> str | None:
-    """The database a ``\\connect`` line switches to.
-
-    A quoted name may hold spaces, and psql options precede the target
-    (``\\connect -reuse-previous=on dbname=x``), so a pattern that stops at
-    whitespace reads ``"odd name"`` as ``odd`` and an option as a database.
-    """
-    text = rest.strip()
-    for token in text.split():
-        if token.startswith("-"):
-            continue
-        if token.startswith("dbname="):
-            text = token[len("dbname=") :]
-        break
-    if text.startswith('"'):
-        closing = text.find('"', 1)
-        return text[1:closing] if closing > 0 else None
-    return text.split()[0] if text.split() else None
+    dumped, _roles = dump_inventory(str(cluster.path))
+    return [name for name in dumped if name not in CONTROL_DATABASES]
 
 
 def engine_of(dump: Dump, engines: Mapping[str, str]) -> str:
