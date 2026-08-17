@@ -38,15 +38,20 @@ class TestResolveContainerDns(unittest.TestCase):
     def test_without_tor_only_clearnet(self):
         self.assertEqual(resolve_container_dns(_vars(group_names=[])), ["172.30.0.53"])
 
-    def test_swarm_node_skips_the_bridge_resolver(self):
+    def test_the_bridge_follows_ownership_not_the_deploy_mode(self):
         self.assertEqual(
-            resolve_container_dns(_vars(DEPLOYMENT_MODE="swarm")), ["172.30.0.53"]
+            resolve_container_dns(_vars(DEPLOYMENT_MODE="swarm")),
+            ["172.17.0.1", "172.30.0.53"],
         )
 
-    def test_swarm_node_without_clearnet_yields_empty_list(self):
+    def test_a_tor_node_without_clearnet_keeps_the_bridge(self):
         self.assertEqual(
-            resolve_container_dns(_vars(DEPLOYMENT_MODE="swarm", networks={})), []
+            resolve_container_dns(_vars(DEPLOYMENT_MODE="swarm", networks={})),
+            ["172.17.0.1"],
         )
+
+    def test_a_non_tor_node_yields_nothing_without_clearnet(self):
+        self.assertEqual(resolve_container_dns(_vars(group_names=[], networks={})), [])
 
     def test_without_bridge_only_clearnet(self):
         self.assertEqual(
