@@ -5,23 +5,18 @@ from plugins.lookup.playwright_workers import LookupModule, compute_workers
 
 class TestComputeWorkers(unittest.TestCase):
     def test_local_20c_64g(self):
-        # cpu 20//4=5, ram (64*0.5)//1.5=21, cap 6 -> 5
         self.assertEqual(compute_workers(20, 64.0, False), 5)
 
     def test_local_12c_31g(self):
-        # cpu 12//4=3, ram 10, cap 6 -> 3
         self.assertEqual(compute_workers(12, 31.0, False), 3)
 
     def test_hard_cap_binds(self):
-        # cpu 64//4=16, ram huge -> capped at 6
         self.assertEqual(compute_workers(64, 256.0, False), 6)
 
     def test_ram_binds(self):
-        # 20 cores but only 3 GB -> (3*0.5)//1.5 = 1
         self.assertEqual(compute_workers(20, 3.0, False), 1)
 
     def test_ci_cap_binds(self):
-        # cpu 16//4=4, ram 21, cap 6 -> 4, then CI cap -> 2
         self.assertEqual(compute_workers(16, 64.0, True), 2)
 
     def test_ci_small_runner(self):

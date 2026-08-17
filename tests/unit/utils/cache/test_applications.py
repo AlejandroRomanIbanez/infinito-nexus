@@ -74,8 +74,6 @@ class TestGetApplicationDefaults(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             roles = _seed_minimal_roles(Path(tmp))
             first = cache_apps.get_application_defaults(roles_dir=roles)
-            # Mutate the returned copy; the cache MUST hand back a fresh
-            # deep copy on the next call.
             first["web-app-foo"]["mutated"] = True
             second = cache_apps.get_application_defaults(roles_dir=roles)
             self.assertNotIn("mutated", second["web-app-foo"])
@@ -135,8 +133,6 @@ class TestGetVariants(unittest.TestCase):
             )
             variants = cache_apps.get_variants(roles_dir=roles)
             self.assertEqual(len(variants["web-app-foo"]), 2)
-            # Variant 0 (default) keeps the canonical image; variant 1 has the
-            # override applied.
             self.assertEqual(
                 variants["web-app-foo"][0]["services"]["foo"]["image"],
                 "foo",
@@ -178,10 +174,7 @@ class TestGetVariantOverridesOnly(unittest.TestCase):
                 """,
             )
             overrides = cache_apps.get_variant_overrides_only(roles_dir=roles)
-            # Variant 0 stays empty (no override): the role's
-            # `meta/services.yml` baseline (image=foo) is NOT mixed in.
             self.assertEqual(overrides["web-app-foo"][0], {})
-            # Variant 1 carries only the override fields.
             self.assertEqual(
                 overrides["web-app-foo"][1],
                 {"services": {"foo": {"image": "foo-alt"}}},

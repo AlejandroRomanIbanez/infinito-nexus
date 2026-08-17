@@ -74,7 +74,6 @@ class FilterModule:
                         config.get("server", {}).get("domains", {}).get("canonical", [])
                     )
 
-                # normalize to a list of strings
                 if isinstance(domains_entry, dict):
                     disabled = _disabled_entity_keys(config)
                     flattened = [

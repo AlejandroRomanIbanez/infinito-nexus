@@ -19,7 +19,6 @@ from ._fixtures import make_spec
 class TestBuildDevInventory(unittest.TestCase):
     def setUp(self) -> None:
         self.compose = MagicMock()
-        # Used by inventory.payload to locate roles_dir for variant lookup.
         self.compose.repo_root = Path("/tmp/infinito-nexus")
 
     @patch(
@@ -42,15 +41,12 @@ class TestBuildDevInventory(unittest.TestCase):
     ) -> None:
         build_dev_inventory(self.compose, make_spec())
 
-        # First exec call is the `infinito administration inventory provision ...`
-        # cmd; the second is the password-file ensure step.
         self.assertEqual(self.compose.exec.call_count, 2)
         first_cmd = self.compose.exec.call_args_list[0].args[0]
         self.assertEqual(
             first_cmd[0:4],
             ["infinito", "administration", "inventory", "provision"],
         )
-        # SPOT enforcement: the vars-file MUST come from the common.py constant.
         vars_file_index = first_cmd.index("--vars-file") + 1
         self.assertEqual(first_cmd[vars_file_index], DEV_INVENTORY_VARS_FILE)
 
@@ -67,8 +63,6 @@ class TestBuildDevInventory(unittest.TestCase):
                     "server": {
                         "domains": {"canonical": ["blog.multi.example"]},
                     },
-                    # Per: services live at applications.<app>.services
-                    # directly (no `compose.services` envelope).
                     "services": {"x": {"flag": True}},
                 },
             ],
@@ -102,7 +96,6 @@ class TestBuildDevInventory(unittest.TestCase):
             baked["applications"]["web-app-multi"]["services"]["x"],
             {"flag": True},
         )
-        # Implicit overrides untouched:
         self.assertEqual(baked["STORAGE_CONSTRAINED"], False)
         self.assertEqual(baked["RUNTIME"], "dev")
 
@@ -320,9 +313,6 @@ class TestBuildDevInventoryMatrix(unittest.TestCase):
                 ),
             ],
         )
-        # One build_dev_inventory call per round; each gets a spec whose
-        # active_variants matches the round's plan entry and whose include
-        # is the round's variant-resolved include set.
         self.assertEqual(build_inventory_mock.call_count, 2)
         for (_round_idx, inv_dir, round_vars, round_include, _purge), call in zip(
             plan, build_inventory_mock.call_args_list, strict=False

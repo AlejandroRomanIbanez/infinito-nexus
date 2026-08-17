@@ -19,7 +19,6 @@ def image_key_re(indent: str) -> re.Pattern:
 
 
 def merge_key_re(indent: str) -> re.Pattern:
-    # YAML merge key: "<<:"
     return re.compile(rf"^{re.escape(indent)}<<\s*:")
 
 
@@ -101,7 +100,7 @@ class TestComposeBuildTemplateRequiresImageTag(unittest.TestCase):
             lines = text.splitlines()
             checked_services: set[tuple[int, int]] = (
                 set()
-            )  # (header_idx, props_indent_len)
+            )
 
             for idx, line in enumerate(lines):
                 if not BUILD_LOOKUP_RE.search(line):
@@ -131,7 +130,6 @@ class TestComposeBuildTemplateRequiresImageTag(unittest.TestCase):
                 img_re = image_key_re(props_indent)
                 mrg_re = merge_key_re(props_indent)
 
-                # Search the whole service block (from header to end)
                 has_image = any(
                     img_re.match(lines[j]) for j in range(header_idx + 1, block_end)
                 )

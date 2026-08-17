@@ -8,7 +8,6 @@ from utils.roles.mapping import ROLE_FILE_TEMPL_COMPOSE
 
 from . import PROJECT_ROOT
 
-# New canonical call form: {{ lookup('compose_volumes', application_id, ...) }}
 COMPOSE_VOLUMES_LOOKUP_RE = re.compile(r"lookup\(\s*['\"]compose_volumes['\"]\s*,")
 
 # Deprecated pipe form: {{ lookup('applications') | compose_volumes(...) }}

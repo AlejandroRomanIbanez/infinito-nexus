@@ -8,23 +8,19 @@ from contextlib import redirect_stdout
 from io import StringIO
 from unittest.mock import patch
 
-# Absolute path to the tree/__main__.py script
 SCRIPT_PATH = os.path.abspath(
     os.path.join(os.path.dirname(__file__), "../../../../cli/build/tree/__main__.py")
 )
 
 class TestTreeShadowFolder(unittest.TestCase):
     def setUp(self):
-        # Create a temporary roles directory and a dummy role
         self.roles_dir = tempfile.mkdtemp()
         self.role_name = "dummyrole"
         self.role_path = os.path.join(self.roles_dir, self.role_name)
         os.makedirs(os.path.join(self.role_path, "meta"))
 
-        # Create a temporary shadow folder
         self.shadow_dir = tempfile.mkdtemp()
 
-        # Patch sys.argv so the script picks up our dirs
         self.orig_argv = sys.argv[:]
         sys.argv = [
             SCRIPT_PATH,
@@ -33,14 +29,12 @@ class TestTreeShadowFolder(unittest.TestCase):
             "-o", "json"
         ]
 
-        # Ensure project root is on sys.path so `import cli.build.tree` works
         from . import PROJECT_ROOT
 
         if str(PROJECT_ROOT) not in sys.path:
             sys.path.insert(0, str(PROJECT_ROOT))
 
     def tearDown(self):
-        # Restore original argv and clean up
         sys.argv = self.orig_argv
         shutil.rmtree(self.roles_dir)
         shutil.rmtree(self.shadow_dir)
@@ -60,7 +54,6 @@ class TestTreeShadowFolder(unittest.TestCase):
         mock_executor_cls,
         _mock_as_completed,
     ):
-        # Prepare the dummy graph that build_mappings should return
         dummy_graph = {"dummy": {"test": 42}}
         mock_build_mappings.return_value = dummy_graph
 
@@ -89,13 +82,11 @@ class TestTreeShadowFolder(unittest.TestCase):
 
         mock_executor_cls.return_value = DummyExecutor()
 
-        # Import the script module by name (so our @patch applies) and call main()
         import importlib
         tree_mod = importlib.import_module("cli.build.tree")
         with redirect_stdout(StringIO()):
             tree_mod.main()
 
-        # Verify that tree.json was written into the shadow folder
         expected_tree_path = os.path.join(
             self.shadow_dir, self.role_name, "meta", "tree.json"
         )
@@ -104,12 +95,10 @@ class TestTreeShadowFolder(unittest.TestCase):
             f"tree.json not found at {expected_tree_path}"
         )
 
-        # Verify contents match our dummy_graph
         with open(expected_tree_path, 'r') as f:
             data = json.load(f)
         self.assertEqual(data, dummy_graph, "tree.json content mismatch")
 
-        # Ensure that no tree.json was written to the real meta/ folder
         original_tree_path = os.path.join(self.role_path, "meta", "tree.json")
         self.assertFalse(
             os.path.exists(original_tree_path),

@@ -16,7 +16,6 @@ from pathlib import Path
 class TestInjSnippets(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Find repo root by locating inj_snippets.py upwards from this file
         cls.test_dir = str(Path(__file__).parent)
         root = cls.test_dir
         inj_rel = str(
@@ -34,12 +33,10 @@ class TestInjSnippets(unittest.TestCase):
                 raise RuntimeError(f"Could not locate {inj_rel} above {cls.test_dir}")
             root = parent
 
-        # Create isolated temporary roles tree
         cls.tmp = tempfile.TemporaryDirectory(prefix="inj-snippets-test-")
         cls.roles_dir = str(Path(cls.tmp.name) / "roles")
         Path(cls.roles_dir).mkdir(parents=True, exist_ok=True)
 
-        # Dynamically load inj_snippets by file path
         spec = importlib.util.spec_from_file_location(
             "inj_snippets", cls.inj_snippets_path
         )
@@ -48,19 +45,15 @@ class TestInjSnippets(unittest.TestCase):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
 
-        # Point the module to our temp roles/ directory
         module._ROLES_DIR = cls.roles_dir
 
-        # Keep the loaded module for calls
         cls.mod = module
 
-        # Mock feature names
         cls.feature_head_only = "zz_headonly"
         cls.feature_body_only = "zz_bodyonly"
         cls.feature_both = "zz_both"
         cls.feature_missing = "zz_missing"
 
-        # Create mock roles and snippet files
         cls._mkrole(cls.feature_head_only, head=True, body=False)
         cls._mkrole(cls.feature_body_only, head=False, body=True)
         cls._mkrole(cls.feature_both, head=True, body=True)

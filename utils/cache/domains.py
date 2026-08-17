@@ -138,9 +138,6 @@ def get_merged_domains(
 
     Cached keyed on (roles_dir, variables_signature).
     """
-    # Late imports: keeps `import utils.cache.domains` cheap and avoids a
-    # cycle with `utils.cache.applications` (which itself late-imports
-    # `utils.cache.users`).
     from plugins.filter.canonical_domains_map import (
         FilterModule as _CanonicalDomainsFilter,
     )

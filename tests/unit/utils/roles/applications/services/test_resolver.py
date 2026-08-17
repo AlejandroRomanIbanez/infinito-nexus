@@ -26,8 +26,6 @@ _MINIMAL_SERVICE_REGISTRY = {
 
 class TestServicesResolverDirect(unittest.TestCase):
     def test_direct_mapping_shared_services(self) -> None:
-        # Per the materialised payload moved from
-        # `compose.services.<X>` to `services.<X>`.
         cfg = {
             "services": {
                 "ldap": {"enabled": True, "shared": True},
@@ -72,7 +70,6 @@ class TestServicesResolverTransitive(unittest.TestCase):
         role_dir = root / "roles" / role
         (role_dir / "meta").mkdir(parents=True, exist_ok=True)
         (role_dir / "vars").mkdir(parents=True, exist_ok=True)
-        # Per the file root IS the services map (no compose envelope).
         (role_dir / ROLE_FILE_META_SERVICES).write_text(config, encoding="utf-8")
         (role_dir / ROLE_FILE_VARS_MAIN).write_text(
             f"application_id: {role}\n",

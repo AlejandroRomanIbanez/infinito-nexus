@@ -54,7 +54,6 @@ class GetSsoConfigTests(unittest.TestCase):
         self.assertFalse(res["is_oidc_native"])
 
     def test_enabled_oidc_default_flavor(self):
-        # No `flavor` key → defaults to 'oidc' → is_oidc_native is True.
         res = get_sso_config(_apps(enabled=True), "web-app-x")
         self.assertTrue(res["is_enabled"])
         self.assertTrue(res["is_oidc_native"])
@@ -88,7 +87,6 @@ class GetSsoConfigTests(unittest.TestCase):
         self.assertTrue(res["shared"])
 
     def test_predicate_keys_present_when_app_has_partial_block(self):
-        # Only `enabled` set, no `shared`, no `flavor`.
         apps = {"web-app-x": {"services": {"sso": {"enabled": True}}}}
         res = get_sso_config(apps, "web-app-x")
         for key in (
@@ -165,8 +163,6 @@ class Oauth2SubPropertiesTests(unittest.TestCase):
         self.assertEqual(res["oauth2_allowed_groups"], [])
 
     def test_oauth2_sub_keys_exposed_even_when_flavor_is_oidc(self):
-        # The resolver is flavor-agnostic for sub-key surfacing; callers
-        # are expected to gate on is_proxy_gated.
         res = get_sso_config(
             _apps(
                 enabled=True,
@@ -196,20 +192,14 @@ class IsPotentiallyEnabledTests(unittest.TestCase):
                 self.assertFalse(is_potentially_enabled(v))
 
     def test_string_true_is_potentially_enabled(self):
-        # Unrendered Jinja or literal "true" both count as potentially truthy.
         self.assertTrue(is_potentially_enabled("true"))
 
     def test_jinja_template_string_is_potentially_enabled(self):
-        # Static-analysis callers MUST treat unrendered Jinja as potentially
-        # truthy — the lint runs against the YAML source, not against the
-        # merged + rendered payload.
         self.assertTrue(
             is_potentially_enabled("{{ 'web-app-keycloak' in group_names }}")
         )
 
     def test_empty_string_is_potentially_enabled(self):
-        # Empty string is not the literal "false" form; treat as truthy
-        # so the lint flags ambiguous cases.
         self.assertTrue(is_potentially_enabled(""))
 
 

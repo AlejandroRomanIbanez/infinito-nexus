@@ -30,10 +30,6 @@ _COMPOSE_TEMPLATE_BASENAME = re.compile(r"^compose(?:[.\-][^/]+)?\.yml\.j2$")
 _INLINE_SECTION = re.compile(r"^(?P<indent>\s*)(volumes|configs|secrets):\s*$")
 _LOOKUP_CALL = re.compile(r"lookup\(\s*['\"](compose_volumes|container_volumes)['\"]")
 
-# A short-form bind entry parses as `- "<src>:<dst>[:ro]"`. We capture
-# (src, dst) and only flag when dst names a single file (see
-# _IS_SINGLE_FILE_TARGET). Directory binds and named volumes are
-# tolerated inline.
 _SHORT_FORM_BIND = re.compile(
     r"""
     ^\s*-\s*

@@ -101,7 +101,6 @@ class TestFileHasContentModule(unittest.TestCase):
 
     def test_missing_file_fails(self):
         missing = "/tmp/this-file-should-not-exist-ansible-test-12345"
-        # Already-absent is the state this test requires; either way we proceed.
         with contextlib.suppress(FileNotFoundError):
             Path(missing).unlink()
 

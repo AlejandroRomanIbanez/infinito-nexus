@@ -192,18 +192,12 @@ class TestPathInfo(unittest.TestCase):
         )
 
     def test_non_variant_subdir_falls_back_to_parent_only(self) -> None:
-        # A directory whose name does not start with ``variant-`` is not
-        # treated as a variant slot; the role uses that prefix as the
-        # archive marker.
         self.assertEqual(
             ps._path_info(Path("/tmp/root/web-app-foo/leftover/playwright-junit.xml")),
             ("leftover", "", ""),
         )
 
     def test_pass_dir_without_variant_parent_is_not_recognized(self) -> None:
-        # ``sync`` / ``async`` only count as pass markers when they sit
-        # inside a ``variant-*`` directory; otherwise treat them as a
-        # plain parent dir name.
         self.assertEqual(
             ps._path_info(Path("/tmp/root/web-app-foo/sync/playwright-junit.xml")),
             ("sync", "", ""),
@@ -222,7 +216,6 @@ class TestSummarizeFile(unittest.TestCase):
         self.assertEqual(summary["variant"], "")
         self.assertEqual(summary["pass"], "")
         self.assertEqual(len(summary["records"]), 4)
-        # Per-case records are now 5-tuples (time, name, status, msg, duration).
         self.assertEqual(summary["records"][1][2], "failed")
         self.assertEqual(summary["records"][3][2], "skipped")
         self.assertAlmostEqual(summary["records"][0][4], 1.0)
@@ -253,14 +246,9 @@ class TestSummarizeFile(unittest.TestCase):
             summary = ps._summarize_file(xml_path)
         assert summary is not None
         records = summary["records"]
-        # Suite-a starts at 12:00:00Z. First case starts there.
         self.assertEqual(records[0][0], "2026-05-17T12:00:00Z")
-        # Second case starts after the first case's 1.0s duration.
         self.assertEqual(records[1][0], "2026-05-17T12:00:01Z")
-        # Suite-b starts at 12:05:00Z — third case (first in suite-b).
         self.assertEqual(records[2][0], "2026-05-17T12:05:00Z")
-        # Fourth case starts after the third's 0.5s duration.
-        # Note: 12:05:00 + 0.5s → still 12:05:00 with second precision.
         self.assertEqual(records[3][0], "2026-05-17T12:05:00Z")
 
     def test_missing_timestamp_falls_back_to_file_mtime(self) -> None:
@@ -275,7 +263,6 @@ class TestSummarizeFile(unittest.TestCase):
                 Path(tmp) / "web-app-foo" / "playwright-junit.xml",
                 no_timestamp_fixture,
             )
-            # Force a known mtime so the fallback is deterministic.
             target = datetime.datetime(
                 2025, 5, 17, 5, 34, 56, tzinfo=datetime.UTC
             ).timestamp()
@@ -375,7 +362,6 @@ class TestRender(unittest.TestCase):
         self.assertIn(
             f"| `{_T0}` | `b` | variant-0 | async | t2 | 🔴 | 1m 5s | x |", out
         )
-        # Should have a single combined table, not two.
         self.assertEqual(
             out.count(
                 "| Time | App | Variant | Pass | Test | Status | Duration | Message |"
@@ -412,8 +398,6 @@ class TestRender(unittest.TestCase):
             [self._summary("foo", [(_T0, "t1", "passed", "", 1.0)])],
             "ctx",
         )
-        # Variant and Pass columns are present but empty for legacy/
-        # single-run layouts.
         self.assertIn(f"| `{_T0}` | `foo` |  |  | t1 | 🟢 | 1.0s |  |", out)
 
     def test_message_is_truncated(self) -> None:
@@ -490,7 +474,6 @@ class TestMain(unittest.TestCase):
             rc, out, _err = self._run(tmp, "web-app-foo")
         self.assertEqual(rc, 0)
         self.assertIn("### 🎭 Playwright — web-app-foo", out)
-        # Suite-a starts at 12:00:00Z; first case sits at that timestamp.
         self.assertIn(
             "| `2026-05-17T12:00:00Z` | `web-app-foo` | 1 | sync | passes | "
             "🟢 | 1.0s |  |",
@@ -501,8 +484,6 @@ class TestMain(unittest.TestCase):
             "fails on assertion | 🔴 | 2.5s | expected 1 got 0 |",
             out,
         )
-        # Suite-b starts at 12:05:00Z; skipped case is its second testcase
-        # (after a 0.5s pass that rounds to second-precision 0).
         self.assertIn(
             "| `2026-05-17T12:05:00Z` | `web-app-foo` | 1 | sync | "
             "skipped one | 🔵 | 0.0s | persona blocked by env |",

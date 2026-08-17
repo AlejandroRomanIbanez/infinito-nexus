@@ -52,8 +52,7 @@ class VaultHandler:
         """Recursively encrypt all leaves (plain text values) under the credentials section."""
         for key, value in branch.items():
             if isinstance(value, dict):
-                self.encrypt_leaves(value, vault_pw)  # Recurse into nested dictionaries
-            # Skip if already vaulted (i.e., starts with $ANSIBLE_VAULT)
+                self.encrypt_leaves(value, vault_pw)
             elif isinstance(value, str) and not value.lstrip().startswith(
                 "$ANSIBLE_VAULT"
             ):
@@ -61,4 +60,4 @@ class VaultHandler:
                 lines = snippet.splitlines()
                 indent = len(lines[1]) - len(lines[1].lstrip())
                 body = "\n".join(line[indent:] for line in lines[1:])
-                branch[key] = VaultScalar(body)  # Store encrypted value as VaultScalar
+                branch[key] = VaultScalar(body)

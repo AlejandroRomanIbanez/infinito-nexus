@@ -27,7 +27,6 @@ class TestFilterRolesByMinStorage(unittest.TestCase):
         return cfg_path
 
     def test_keeps_role_when_min_storage_is_within_required_storage(self) -> None:
-        # min_storage <= required_storage -> keep
         self._write_role_config(
             "web-app-demo",
             yaml_text="""
@@ -49,7 +48,6 @@ demo:
         self.assertEqual(kept, ["web-app-demo"])
 
     def test_filters_out_role_when_min_storage_exceeds_required_storage(self) -> None:
-        # min_storage > required_storage -> filtered out
         self._write_role_config(
             "web-app-demo",
             yaml_text="""
@@ -74,7 +72,6 @@ demo:
         self.assertIn("requires", err.getvalue())
 
     def test_missing_key_treats_as_zero_and_keeps_role(self) -> None:
-        # Missing min_storage -> treat as 0GB -> keep
         self._write_role_config(
             "web-app-demo",
             yaml_text="""
@@ -111,13 +108,11 @@ demo: {}
             )
 
         self.assertEqual(kept, [])
-        # Ensure absolute path is shown
         self.assertIn(
             str((self.roles_root / "web-app-does-not-exist").resolve()), err.getvalue()
         )
 
     def test_missing_services_file_skips_silently(self) -> None:
-        # Role dir exists but meta/services.yml missing
         role_dir = self.roles_root / "web-app-demo"
         role_dir.mkdir(parents=True, exist_ok=True)
 

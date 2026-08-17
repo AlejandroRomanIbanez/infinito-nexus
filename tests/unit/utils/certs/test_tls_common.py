@@ -25,7 +25,6 @@ from utils.tls_common import (
     want_get,
 )
 
-# Make "ansible.module_utils.tls_common" importable during plain unit tests.
 _tls_common = importlib.import_module("utils.tls_common")
 
 sys.modules.setdefault("ansible.module_utils.tls_common", _tls_common)
@@ -165,7 +164,6 @@ class TestTlsCommon(unittest.TestCase):
         self.assertFalse(is_onion_domain(""))
 
     def test_resolve_enabled_onion_always_off(self):
-        # .onion forces TLS off regardless of default or per-app override.
         self.assertFalse(resolve_enabled({}, True, primary_domain="x.onion"))
         self.assertFalse(
             resolve_enabled(
@@ -174,7 +172,6 @@ class TestTlsCommon(unittest.TestCase):
                 primary_domain="app.abc.onion",
             )
         )
-        # non-onion keeps normal behavior
         self.assertTrue(resolve_enabled({}, True, primary_domain="example.com"))
 
     def test_align_domain_to_consumer_clearnet_consumer_gets_clearnet(self):
@@ -311,12 +308,10 @@ class TestTlsCommon(unittest.TestCase):
         )
 
     def test_resolve_mode_app_level_mode_over_flavor(self):
-        # server.tls.mode takes precedence over server.tls.flavor.
         app = {"server": {"tls": {"mode": "self_signed", "flavor": "letsencrypt"}}}
         self.assertEqual(
             resolve_mode(app, True, "letsencrypt", err_prefix="t"), "self_signed"
         )
-        # falls back to flavor when mode unset
         app2 = {"server": {"tls": {"flavor": "self_signed"}}}
         self.assertEqual(
             resolve_mode(app2, True, "letsencrypt", err_prefix="t"), "self_signed"

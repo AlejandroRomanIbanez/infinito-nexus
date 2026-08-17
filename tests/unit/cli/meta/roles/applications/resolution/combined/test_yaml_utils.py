@@ -22,7 +22,7 @@ class TestCombinedYamlUtils(unittest.TestCase):
     def test_load_yaml_file_invalid_yaml_raises(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             p = Path(td) / "bad.yml"
-            p.write_text("a: [1, 2\n", encoding="utf-8")  # missing closing bracket
+            p.write_text("a: [1, 2\n", encoding="utf-8")
             with self.assertRaises(CombinedResolutionError):
                 load_yaml_file(p)
 

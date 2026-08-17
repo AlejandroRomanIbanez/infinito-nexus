@@ -38,7 +38,6 @@ def _generate_credentials_snippet_for_app(
         return None
 
     cmd = [
-        # Use current interpreter so utils + deps match the runtime
         sys.executable,
         "-m",
         "cli.administration.inventory.credentials",

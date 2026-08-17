@@ -55,7 +55,6 @@ class TestStampLogic(unittest.TestCase):
     def test_stale_stamp_triggers_install(self) -> None:
         with TemporaryDirectory() as tmp:
             root = _make_repo_root(tmp, stamp_age_offset=-60.0)
-            # Touch lint.sh after stamp so dep is newer.
             time.sleep(0.01)
             (root / "scripts" / "install" / "lint.sh").write_text(
                 "#updated\n", encoding="utf-8"

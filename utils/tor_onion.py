@@ -40,7 +40,6 @@ def identity_hs_dir(base_dir: str | Path) -> Path:
     return Path(base_dir) / IDENTITY_DIRNAME / "hs"
 
 
-# Tor key-file headers: 29 ASCII bytes padded with 3 NULs to a 32-byte header.
 SECRET_KEY_HEADER = b"== ed25519v1-secret: type0 ==\x00\x00\x00"
 PUBLIC_KEY_HEADER = b"== ed25519v1-public: type0 ==\x00\x00\x00"
 

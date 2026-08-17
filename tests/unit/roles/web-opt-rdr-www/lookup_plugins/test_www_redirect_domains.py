@@ -30,8 +30,6 @@ class WwwRedirectDomainsLookupTests(unittest.TestCase):
             "roles/web-opt-rdr-www/lookup_plugins/www_redirect_domains.py",
             "www_redirect_domains_lookup",
         )
-        # Rebind possibly globally-mocked names to the real implementations
-        # so this suite is robust against test ordering / pollution.
         from utils.roles.applications.config import get as _real_get
 
         cls.module.get = _real_get

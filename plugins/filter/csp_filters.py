@@ -44,10 +44,8 @@ def _sort_tokens(tokens):
     if not uniq:
         return uniq
 
-    # Lexicographically sort all tokens
     uniq = sorted(uniq)
 
-    # Ensure "'self'" is always first if present
     if "'self'" in uniq:
         uniq.remove("'self'")
         uniq.insert(0, "'self'")
@@ -256,7 +254,6 @@ class FilterModule:
             explicit_flags_by_dir = {}
 
             for directive in directives:
-                # Collect explicit flags (to later respect explicit "False" on base during merge)
                 explicit_flags = get(
                     applications,
                     application_id,
@@ -268,11 +265,9 @@ class FilterModule:
 
                 tokens = ["'self'"]
 
-                # Flags (with sane defaults)
                 flags = self.get_csp_flags(applications, application_id, directive)
                 tokens += flags
 
-                # Internal CDN defaults for selected directives
                 if directive in (
                     "script-src-elem",
                     "connect-src",
@@ -285,7 +280,6 @@ class FilterModule:
                         )
                     )
 
-                # Mirror privacy proxy (if tor enabled) – onion sessions load external assets through it
                 if directive in (
                     "script-src-elem",
                     "style-src-elem",
@@ -300,7 +294,6 @@ class FilterModule:
                         )
                     )
 
-                # Matomo (if enabled via services.matomo.enabled)
                 if directive in (
                     "script-src-elem",
                     "connect-src",
@@ -311,7 +304,6 @@ class FilterModule:
                         )
                     )
 
-                # Simpleicons (if enabled via services.simpleicons.enabled) – typically used via connect-src (fetch)
                 if directive == "connect-src" and self.is_feature_enabled(
                     applications, "simpleicons", application_id
                 ):
@@ -321,14 +313,12 @@ class FilterModule:
                         )
                     )
 
-                # reCAPTCHA (if enabled via services.recaptcha.enabled) – scripts + frames
                 if self.is_feature_enabled(
                     applications, "recaptcha", application_id
                 ) and directive in ("script-src-elem", "frame-src"):
                     tokens.append("https://www.gstatic.com")  # nocheck: url
                     tokens.append("https://www.google.com")
 
-                # hCaptcha (if enabled via services.hcaptcha.enabled) – scripts + frames
                 if self.is_feature_enabled(applications, "hcaptcha", application_id):
                     if directive == "script-src-elem":
                         tokens.append("https://www.hcaptcha.com")
@@ -336,12 +326,10 @@ class FilterModule:
                     if directive == "frame-src":
                         tokens.append("https://newassets.hcaptcha.com/")
 
-                # Frame ancestors (dashboard + logout)
                 if directive == "frame-ancestors":
                     if self.is_feature_enabled(
                         applications, "dashboard", application_id
                     ):
-                        # Allow being embedded by the dashboard app domain's site
                         domain = domains.get("web-app-dashboard")[0]
                         tokens.append(f"{domain}")
                     if self.is_feature_enabled(applications, "logout", application_id):
@@ -359,20 +347,17 @@ class FilterModule:
                             )
                         )
 
-                # Logout support requires inline handlers (script-src-attr + script-src-elem)
                 if directive in (
                     "script-src-attr",
                     "script-src-elem",
                 ) and self.is_feature_enabled(applications, "logout", application_id):
                     tokens.append("'unsafe-inline'")
 
-                # Custom whitelist
                 tokens += self.get_csp_whitelist(
                     applications, application_id, directive
                 )
                 tokens += self.get_extra_values(extra_whitelist, directive)
 
-                # Inline hashes (only if this directive does NOT include 'unsafe-inline')
                 if "'unsafe-inline'" not in tokens:
                     for snippet in self.get_csp_inline_content(
                         applications, application_id, directive
@@ -408,12 +393,11 @@ class FilterModule:
                 attr = tokens_by_dir.get(attr_key, [])
                 union = _dedup_preserve(base + elem + attr)
 
-                # Respect explicit disables on the base
                 explicit_base = explicit_flags_by_dir.get(base_key, {})
                 for flag_name in ("unsafe-inline", "unsafe-eval"):
                     union = _strip_if_disabled(union, explicit_base, flag_name)
 
-                tokens_by_dir[base_key] = union  # write back only to base
+                tokens_by_dir[base_key] = union
 
             merge_family("style-src", "style-src-elem", "style-src-attr")
             merge_family("script-src", "script-src-elem", "script-src-attr")
@@ -448,9 +432,6 @@ class FilterModule:
                                 ]
                             )
 
-            # ----------------------------------------------------------
-            # Assemble header
-            # ----------------------------------------------------------
             for directive, toks in list(tokens_by_dir.items()):
                 tokens_by_dir[directive] = _sort_tokens(toks)
 
@@ -461,7 +442,6 @@ class FilterModule:
                 if directive in tokens_by_dir
             )
 
-            # Keep permissive img-src for data/blob + any host (as before)
             parts.append("img-src * data: blob:;")
 
             return " ".join(parts)

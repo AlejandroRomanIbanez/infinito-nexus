@@ -12,7 +12,6 @@ import unittest
 
 from ansible.errors import AnsibleError
 
-# Import your lookup plugin (adjust import path if your repo layout differs)
 from plugins.lookup.unit_name import LookupModule
 
 
@@ -24,7 +23,6 @@ class DummyTemplar:
         self._version = version
 
     def template(self, s: str, **kwargs):
-        # The plugin calls: self._templar.template("{{ lookup('version') }}")
         if "lookup('version')" in s:
             return self._version
         if "{{ SOFTWARE_NAME | lower }}" in s:
@@ -38,13 +36,11 @@ class UnitNameLookupTests(unittest.TestCase):
     ) -> LookupModule:
         lm = LookupModule()
 
-        # Inject a dummy templar with variables
         lm._templar = DummyTemplar(
             available_variables={"SOFTWARE_DOMAIN": software_domain},
             version=version,
         )
 
-        # The plugin calls set_options(); for unit tests we make it a no-op
         lm.set_options = lambda *args, **kwargs: None
 
         return lm
@@ -77,7 +73,6 @@ class UnitNameLookupTests(unittest.TestCase):
     def test_template_unit_id_endswith_at(self):
         lm = self._mk_lookup(software_domain="infinito.nexus", version="2.0.0")
         res = lm.run(["alarm@"])
-        # Template semantics: "<base>.<ver>.<sw>@.service"
         self.assertEqual(res, ["alarm.2.0.0.infinito.nexus@.service"])
 
     def test_template_unit_id_endswith_at_with_sys_ctl_prefix(self):

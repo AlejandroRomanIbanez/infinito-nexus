@@ -3,12 +3,10 @@ import unittest
 
 from . import PROJECT_ROOT
 
-# Path to the actual plugin under roles/web-svc-logout/filter_plugins
 DOMAIN_FILTERS_PATH = str(
     PROJECT_ROOT / "roles" / "web-svc-logout" / "filter_plugins" / "domain_filters.py"
 )
 
-# Dynamically load the domain_filters module
 spec = importlib.util.spec_from_file_location("domain_filters", DOMAIN_FILTERS_PATH)
 domain_filters = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(domain_filters)
@@ -58,7 +56,7 @@ class TestLogoutDomainsFilter(unittest.TestCase):
     def test_missing_canonical_defaults_empty(self):
         applications = {
             "app1": {
-                "server": {"domains": {}},  # no 'canonical' key
+                "server": {"domains": {}},
                 "services": {"logout": {"enabled": True}},
             }
         }

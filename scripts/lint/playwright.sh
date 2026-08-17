@@ -143,10 +143,6 @@ lint_one_role() {
 	return "${rc}"
 }
 
-# Dispatch every spec through `lint_one_role` with up to
-# INFINITO_WORKER_CPU concurrent workers. Output is captured per role
-# and replayed in `SPEC_FILES` order in the second pass so stdout stays
-# deterministic regardless of completion order.
 log_dir="${STAGE_ROOT}/logs"
 mkdir -p "${log_dir}"
 

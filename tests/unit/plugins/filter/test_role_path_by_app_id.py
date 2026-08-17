@@ -26,13 +26,11 @@ def write_vars_file(base_dir, role_name, app_id):
 
 class TestRolePathByApplicationId(unittest.TestCase):
     def setUp(self):
-        # Create temporary directory for each test and switch cwd
         self.tmp_dir = tempfile.mkdtemp()
         self.prev_cwd = str(Path.cwd())
         os.chdir(self.tmp_dir)
 
     def tearDown(self):
-        # Restore cwd and clean up
         os.chdir(self.prev_cwd)
         shutil.rmtree(self.tmp_dir)
 

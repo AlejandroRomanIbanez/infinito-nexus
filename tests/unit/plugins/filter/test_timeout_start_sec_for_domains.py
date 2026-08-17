@@ -11,7 +11,6 @@ def _f():
 
 class TestTimeoutStartSecForDomains(unittest.TestCase):
     def test_basic_calculation_with_www(self):
-        # 3 unique base domains → + www.* = 6 domains
         domains = {
             "canonical": ["example.com", "foo.bar"],
             "api": {"a": "api.example.com"},
@@ -24,11 +23,9 @@ class TestTimeoutStartSecForDomains(unittest.TestCase):
             min_seconds=120,
             max_seconds=3600,
         )
-        # raw = 30 + 25 * 6 = 180
         self.assertEqual(result, 180)
 
     def test_no_www_min_clamp_applies(self):
-        # 3 unique domains, no www.* → raw = 30 + 25*3 = 105 → clamped to min=120
         domains = {
             "canonical": ["example.com", "foo.bar"],
             "api": {"a": "api.example.com"},
@@ -44,7 +41,6 @@ class TestTimeoutStartSecForDomains(unittest.TestCase):
         self.assertEqual(result, 120)
 
     def test_max_clamp_applies(self):
-        # >143 domains needed to exceed 3600 (25s each + 30 overhead)
         many = [f"host{i}.example.com" for i in range(150)]
         domains = {"canonical": many}
         result = _f()(
@@ -58,7 +54,6 @@ class TestTimeoutStartSecForDomains(unittest.TestCase):
         self.assertEqual(result, 3600)
 
     def test_deduplication_of_domains(self):
-        # All entries resolve to "x.com" → only 1 unique domain
         domains = {
             "a": ["x.com", "x.com"],
             "b": "x.com",
@@ -72,11 +67,9 @@ class TestTimeoutStartSecForDomains(unittest.TestCase):
             min_seconds=120,
             max_seconds=3600,
         )
-        # raw = 30 + 25 * 1 = 55 → clamped to 120
         self.assertEqual(result, 120)
 
     def test_deduplication_with_www_variants(self):
-        # 2 unique base domains, one already includes a "www.a.com"
         domains = {
             "canonical": ["a.com", "b.com", "www.a.com"],
             "extra": {"x": "a.com"},
@@ -89,8 +82,6 @@ class TestTimeoutStartSecForDomains(unittest.TestCase):
             min_seconds=1,
             max_seconds=10000,
         )
-        # Unique: {"a.com","b.com","www.a.com","www.b.com"} → 4
-        # raw = 30 + 25*4 = 130
         self.assertEqual(result, 130)
 
     def test_raises_on_invalid_type_int(self):
@@ -111,7 +102,6 @@ class TestTimeoutStartSecForDomains(unittest.TestCase):
             min_seconds=1,
             max_seconds=10000,
         )
-        # unique + www for b.com -> {"a.com","www.a.com","b.com","www.b.com"} = 4
         self.assertEqual(result, 30 + 25 * 4)
 
     def test_accepts_str_input(self):
@@ -123,7 +113,6 @@ class TestTimeoutStartSecForDomains(unittest.TestCase):
             min_seconds=1,
             max_seconds=10000,
         )
-        # {"a.com","www.a.com"} = 2
         self.assertEqual(result, 30 + 25 * 2)
 
 

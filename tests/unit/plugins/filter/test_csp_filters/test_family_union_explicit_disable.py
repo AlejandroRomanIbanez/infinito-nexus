@@ -42,7 +42,6 @@ class TestCspFamilyUnionExplicitDisable(unittest.TestCase):
         """
         apps = copy.deepcopy(self.apps)
 
-        # Explicitly disable unsafe-inline for the base
         apps["app1"].setdefault("csp", {}).setdefault("flags", {})
         apps["app1"]["csp"]["flags"].setdefault("style-src", {})
         apps["app1"]["csp"]["flags"]["style-src"]["unsafe-inline"] = False
@@ -53,10 +52,8 @@ class TestCspFamilyUnionExplicitDisable(unittest.TestCase):
         elem_tokens = self._get_directive_tokens(header, "style-src-elem")
         attr_tokens = self._get_directive_tokens(header, "style-src-attr")
 
-        # Base must NOT have 'unsafe-inline'
         self.assertNotIn("'unsafe-inline'", base_tokens)
 
-        # elem/attr may still have 'unsafe-inline' by default (granularity preserved)
         self.assertIn("'unsafe-inline'", elem_tokens)
         self.assertIn("'unsafe-inline'", attr_tokens)
 
@@ -67,12 +64,10 @@ class TestCspFamilyUnionExplicitDisable(unittest.TestCase):
         """
         apps = copy.deepcopy(self.apps)
 
-        # Force elem/attr to allow unsafe-inline explicitly
         apps["app1"].setdefault("csp", {}).setdefault("flags", {})
         apps["app1"]["csp"]["flags"]["script-src-elem"] = {"unsafe-inline": True}
         apps["app1"]["csp"]["flags"]["script-src-attr"] = {"unsafe-inline": True}
 
-        # Explicitly disable on base
         apps["app1"]["csp"]["flags"]["script-src"] = {
             "unsafe-inline": False,
             "unsafe-eval": True,
@@ -84,13 +79,10 @@ class TestCspFamilyUnionExplicitDisable(unittest.TestCase):
         elem_tokens = self._get_directive_tokens(header, "script-src-elem")
         attr_tokens = self._get_directive_tokens(header, "script-src-attr")
 
-        # Base: no 'unsafe-inline'
         self.assertNotIn("'unsafe-inline'", base_tokens)
-        # But elem/attr: yes
         self.assertIn("'unsafe-inline'", elem_tokens)
         self.assertIn("'unsafe-inline'", attr_tokens)
 
-        # Also ensure 'unsafe-eval' remains present on the base
         self.assertIn("'unsafe-eval'", base_tokens)
 
 

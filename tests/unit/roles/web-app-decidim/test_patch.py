@@ -39,8 +39,6 @@ class TestPatchOmniauthRb(unittest.TestCase):
     def test_registers_provider_in_decidim_registry(self):
         result = patch_omniauth_rb(OMNIAUTH_RB_FIXTURE)
         self.assertIn("Decidim.omniauth_providers[:openid_connect]", result)
-        # Registration must precede the builder block so Devise picks it up
-        # before Decidim::User loads.
         registry_idx = result.index("Decidim.omniauth_providers[:openid_connect]")
         builder_idx = result.index("Decidim::Auth.setup")
         self.assertLess(registry_idx, builder_idx)

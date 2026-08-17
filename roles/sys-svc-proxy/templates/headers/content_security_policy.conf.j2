@@ -28,6 +28,5 @@ header_filter_by_lua_block {
     end
 }
 
-# 3) Prevent upstream/app CSP (duplicates)
 proxy_hide_header Content-Security-Policy;
 proxy_hide_header Content-Security-Policy-Report-Only;

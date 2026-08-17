@@ -38,7 +38,6 @@ class TestWalkRepoRefPairs(unittest.TestCase):
         )
 
     def test_descends_into_nested_plugin_map(self) -> None:
-        # Discourse-style plugin nesting: discourse.plugins.<name>.repository+ref
         data = {
             "discourse": {
                 "plugins": {
@@ -109,7 +108,6 @@ plugin-b:
             config_path = Path(tmpdir) / "services.yml"
             config_path.write_text(original, encoding="utf-8")
 
-            # plugin-a's `ref:` is on line 3.
             changed = update_config_refs(config_path, {3: "v1.1.0"})
 
             self.assertTrue(changed)
@@ -170,7 +168,6 @@ plugin-b:
 
             suppressed = suppressed_ref_lines(config_path)
 
-            # plugin-a's `ref:` sits on line 4 and is suppressed.
             self.assertEqual(suppressed, {4})
 
 

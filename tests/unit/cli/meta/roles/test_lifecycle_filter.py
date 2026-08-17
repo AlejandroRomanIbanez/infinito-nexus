@@ -20,7 +20,6 @@ def _write_meta(role_dir: Path, lifecycle_value: str | None) -> None:
     role_name = role_dir.name
 
     if lifecycle_value is None:
-        # Empty primary entry - lifecycle field absent
         content = f"{role_name}: {{}}\n"
     else:
         content = f"{role_name}:\n  lifecycle: {lifecycle_value}\n"
@@ -39,9 +38,6 @@ def _write_meta_stage(role_dir: Path, stage_value: str) -> None:
 
 class TestLifecycleFilter(unittest.TestCase):
     def test_extract_lifecycle_string_lowercases_and_strips(self) -> None:
-        # The previous _extract_lifecycle helper was inlined into
-        # utils.roles.meta_lookup.get_role_lifecycle. Round-trip through a
-        # tempdir to assert the same lower/strip semantics.
         with TemporaryDirectory() as td:
             role_dir = Path(td) / "role-a"
             (role_dir / "meta").mkdir(parents=True)

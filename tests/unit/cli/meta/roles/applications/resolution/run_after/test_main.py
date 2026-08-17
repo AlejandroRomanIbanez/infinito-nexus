@@ -19,7 +19,6 @@ class TestRunAfterResolution(unittest.TestCase):
         self.roles_dir = self.repo_root / "roles"
         self.roles_dir.mkdir(parents=True, exist_ok=True)
 
-        # Patch roles_dir() to point to our temp repo
         self._orig_roles_dir = run_after_resolution.roles_dir
         run_after_resolution.roles_dir = lambda: self.roles_dir  # type: ignore[assignment]
         self.addCleanup(self._restore_patches)
@@ -67,7 +66,6 @@ class TestRunAfterResolution(unittest.TestCase):
         self.assertEqual(resolved, ["B"])
 
     def test_transitive_run_after_topological_order(self):
-        # A -> [B, C], B -> [D], C -> [D]
         self._make_role("A", run_after=["B", "C"])
         self._make_role("B", run_after=["D"])
         self._make_role("C", run_after=["D"])
@@ -75,11 +73,9 @@ class TestRunAfterResolution(unittest.TestCase):
 
         resolved = run_after_resolution.resolve_run_after_transitively("A")
 
-        # Must contain exactly B,C,D (no A)
         self.assertEqual(set(resolved), {"B", "C", "D"})
         self.assertNotIn("A", resolved)
 
-        # D must be before B and C (prerequisite-first)
         self.assertLess(resolved.index("D"), resolved.index("B"))
         self.assertLess(resolved.index("D"), resolved.index("C"))
 
@@ -89,13 +85,11 @@ class TestRunAfterResolution(unittest.TestCase):
 
     def test_invalid_reference_raises(self):
         self._make_role("A", run_after=["B"])
-        # do not create role B
         with self.assertRaises(run_after_resolution.RunAfterResolutionError) as ctx:
             run_after_resolution.resolve_run_after_transitively("A")
         self.assertIn("Invalid run_after reference", str(ctx.exception))
 
     def test_cycle_raises(self):
-        # A -> B -> C -> A
         self._make_role("A", run_after=["B"])
         self._make_role("B", run_after=["C"])
         self._make_role("C", run_after=["A"])
@@ -110,7 +104,7 @@ class TestRunAfterResolution(unittest.TestCase):
         self.assertIn("C", msg)
 
     def test_invalid_run_after_type_raises(self):
-        self._make_role("A", run_after=123)  # not a list
+        self._make_role("A", run_after=123)
 
         with self.assertRaises(run_after_resolution.RunAfterResolutionError) as ctx:
             run_after_resolution.resolve_run_after_transitively("A")
@@ -130,7 +124,6 @@ class TestRunAfterResolution(unittest.TestCase):
         self._make_role("C", run_after=[])
         self._make_role("D", run_after=[])
 
-        # Patch argv for argparse in main()
         orig_argv = os.sys.argv[:]
         try:
             os.sys.argv = ["prog", "A"]

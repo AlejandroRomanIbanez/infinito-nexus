@@ -37,7 +37,6 @@ def download_artifact(
 ) -> tuple[str, bool]:
     jitter(delay_max)
     target = dest / name
-    # gh refuses to extract over existing files, so clear the dir for re-runs.
     shutil.rmtree(target, ignore_errors=True)
     proc = gh_proc(
         ["run", "download", run, "-R", f"{owner}/{repo}", "-n", name, "-D", str(target)]

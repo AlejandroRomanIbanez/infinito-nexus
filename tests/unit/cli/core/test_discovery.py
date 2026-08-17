@@ -19,10 +19,8 @@ class TestDiscovery(unittest.TestCase):
             cli_dir = Path(td) / "cli"
             cli_dir.mkdir(parents=True, exist_ok=True)
 
-            # Dispatcher exists but must NOT be treated as a command
             self._touch(cli_dir / "__main__.py", "# dispatcher\n")
 
-            # commands
             self._touch(cli_dir / "deploy" / "container" / "__main__.py", "# cmd\n")
             self._touch(cli_dir / "build" / "tree" / "__main__.py", "# cmd\n")
             self._touch(cli_dir / "make" / "__main__.py", "# cmd\n")
@@ -53,7 +51,6 @@ class TestDiscovery(unittest.TestCase):
             cli_dir = Path(td) / "cli"
             cli_dir.mkdir(parents=True, exist_ok=True)
 
-            # Both deploy and deploy/container exist -> prefer deploy/container
             self._touch(cli_dir / "__main__.py", "# dispatcher\n")
             self._touch(cli_dir / "deploy" / "__main__.py", "# cmd\n")
             self._touch(cli_dir / "deploy" / "container" / "__main__.py", "# cmd\n")
@@ -75,11 +72,6 @@ class TestDiscovery(unittest.TestCase):
             self.assertEqual(remaining, ["nope", "--x"])
 
     def test_resolve_command_module_stops_at_first_flag(self):
-        # `infinito administration inventory provision <abs-path> --host localhost ...`:
-        # the subcommand is `administration inventory provision`; the absolute
-        # positional arg MUST NOT be tried as a sub-package, otherwise pathlib
-        # resets the search root and downstream args (huge `--vars` JSON) end up
-        # concatenated as a single path that hits ENAMETOOLONG.
         with tempfile.TemporaryDirectory() as td:
             cli_dir = Path(td) / "cli"
             cli_dir.mkdir(parents=True, exist_ok=True)
@@ -104,17 +96,12 @@ class TestDiscovery(unittest.TestCase):
             self.assertEqual(remaining, argv[3:])
 
     def test_resolve_command_module_survives_oserror_on_long_path(self):
-        # Defence in depth: even if a freshly-introduced positional arg
-        # somehow slips past the flag-stop heuristic and produces a path
-        # that stat() refuses (ENAMETOOLONG, ENOENT, EACCES), the
-        # dispatcher MUST keep trying shorter prefixes instead of crashing.
         with tempfile.TemporaryDirectory() as td:
             cli_dir = Path(td) / "cli"
             cli_dir.mkdir(parents=True, exist_ok=True)
             self._touch(cli_dir / "__main__.py", "# dispatcher\n")
             self._touch(cli_dir / "build" / "tree" / "__main__.py", "# cmd\n")
 
-            # 5000-char arg blows past most filesystem name-length limits.
             blob = "x" * 5000
             argv = ["build", "tree", blob]
             module, remaining = resolve_command_module(cli_dir, argv)
@@ -132,13 +119,9 @@ class TestIterDirEntries(unittest.TestCase):
             cli_dir = Path(td) / "cli"
             cli_dir.mkdir(parents=True, exist_ok=True)
 
-            # Runnable command at top level.
             self._touch(cli_dir / "make" / "__main__.py", "# cmd\n")
-            # Category folder (no own __main__.py) with a command underneath.
             self._touch(cli_dir / "meta" / "j2" / "__main__.py", "# cmd\n")
-            # Empty support package — must NOT show up.
             self._touch(cli_dir / "core" / "__init__.py", "")
-            # __pycache__ must be ignored.
             (cli_dir / "__pycache__").mkdir(parents=True, exist_ok=True)
 
             entries = iter_dir_entries(cli_dir, ())
@@ -156,8 +139,6 @@ class TestIterDirEntries(unittest.TestCase):
             self._touch(cli_dir / "meta" / "j2" / "__main__.py", "# cmd\n")
             self._touch(cli_dir / "meta" / "callorder" / "__main__.py", "# cmd\n")
             self._touch(cli_dir / "meta" / "roles" / "__init__.py", "")
-            # `meta/roles/all` is a runnable command underneath the otherwise
-            # empty `meta/roles` folder; the folder MUST surface as a category.
             self._touch(cli_dir / "meta" / "roles" / "all" / "__main__.py", "# cmd\n")
 
             entries = iter_dir_entries(cli_dir, ("meta",))

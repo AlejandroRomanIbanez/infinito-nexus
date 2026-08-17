@@ -36,13 +36,9 @@ class TestLoadYaml(unittest.TestCase):
         path = self._write("a.yml", "foo: 1\n")
         first = load_yaml(path)
         second = load_yaml(path)
-        # Same instance proves the cache hit (not just structural equal).
         self.assertIs(first, second)
 
     def test_resolved_paths_share_cache_entry(self):
-        # Two different spellings of the same absolute path MUST hit the
-        # same cache entry. We use "./<name>" vs the bare name from the
-        # tmp dir as the second spelling.
         path = self._write("a.yml", "foo: 1\n")
         first = load_yaml(path)
         sibling = path.parent / ("./" + path.name)
@@ -68,8 +64,6 @@ class TestLoadYaml(unittest.TestCase):
         self.assertEqual(result, {})
 
     def test_missing_file_default_is_not_cached(self):
-        # If the file appears later, the next read MUST see it instead
-        # of the synthetic default.
         path = self.tmp / "appears.yml"
         first = load_yaml(path, default_if_missing={"placeholder": True})
         self.assertEqual(first, {"placeholder": True})
@@ -104,8 +98,6 @@ class TestLoadYamlAny(unittest.TestCase):
         self.assertEqual(load_yaml_any(path), {})
 
     def test_load_yaml_any_and_load_yaml_share_cache(self):
-        # The two entry points MUST hit the same cache so a hot path
-        # that mixes them does not pay the parse cost twice.
         path = self._write("config.yml", "foo: 1\n")
         first = load_yaml_any(path)
         second = load_yaml(path)
@@ -139,8 +131,6 @@ class TestDumpYaml(unittest.TestCase):
         path.write_text("v: 1\n", encoding="utf-8")
         cached = load_yaml(path)
         self.assertEqual(cached["v"], 1)
-        # External writer would normally bypass the cache; dump_yaml
-        # MUST clear the entry so the next read sees the new content.
         dump_yaml(path, {"v": 2})
         refreshed = load_yaml(path)
         self.assertEqual(refreshed["v"], 2)
@@ -158,7 +148,6 @@ class TestInvalidate(unittest.TestCase):
         path = self.tmp / "x.yml"
         path.write_text("v: 1\n", encoding="utf-8")
         first = load_yaml(path)
-        # Simulate an external rewrite then explicit invalidation.
         path.write_text("v: 2\n", encoding="utf-8")
         invalidate(path)
         second = load_yaml(path)
@@ -166,7 +155,6 @@ class TestInvalidate(unittest.TestCase):
         self.assertIsNot(first, second)
 
     def test_invalidate_unknown_path_is_noop(self):
-        # Nothing in the cache for this path, so the call must not raise.
         invalidate(self.tmp / "never-loaded.yml")
 
 

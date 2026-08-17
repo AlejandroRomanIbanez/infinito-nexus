@@ -18,8 +18,6 @@ if grep -q "'${CONFIG_KEY}' *=> *'${CONFIG_VALUE}'," "$CONFIG_FILE"; then
   exit 0
 fi
 
-# Escape sed replacement specials in the value so `/`, `&`, `|`, `\`
-# survive verbatim regardless of which delimiter the rewrite uses.
 escaped=$(printf '%s' "$CONFIG_VALUE" | sed -e 's/[\\&|]/\\&/g' -e 's:/:\\/:g')
 
 sed -i "s/'${CONFIG_KEY}'\\s*=>\\s*[^,]*,/'${CONFIG_KEY}' => '${escaped}',/" "$CONFIG_FILE"

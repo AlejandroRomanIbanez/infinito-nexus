@@ -11,7 +11,6 @@ nix_bin_dir="$(dirname "$nix_bin")"
 nix_collect="$nix_bin_dir/nix-collect-garbage"
 nix_store="$nix_bin_dir/nix-store"
 
-# Remove old generations for all users + root (aggressive)
 if [ -x "$nix_collect" ]; then
   gc_rc=0
   gc_out="$("$nix_collect" -d 2>&1)" || gc_rc=$?
@@ -23,15 +22,12 @@ else
   "$nix_bin" store gc || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 fi
 
-# Additional GC pass (useful on some setups / older nix)
 if [ -x "$nix_store" ]; then
   "$nix_store" --gc || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 else
   "$nix_bin" store gc || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 fi
 
-# Deduplicate store paths to reduce disk usage (can take a bit).
-# Prefer modern CLI; fall back to nix-store on older setups.
 if ! "$nix_bin" store optimise; then
   if [ -x "$nix_store" ]; then
     "$nix_store" --optimise || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error

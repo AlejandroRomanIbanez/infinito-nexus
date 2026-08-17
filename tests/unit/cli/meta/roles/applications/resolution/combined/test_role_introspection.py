@@ -68,8 +68,6 @@ class TestRoleIntrospection(unittest.TestCase):
             _mk_role(root, "dep1", app_id="dep1")
             _mk_role(root, "dep2", app_id="dep2")
 
-            # Per run_after lives at meta/services.yml.<entity>.run_after
-            # Entity name for "web-app-a" is "a".
             _write_services(
                 root,
                 "web-app-a",
@@ -123,7 +121,6 @@ dependencies:
 
             with patch.object(repo_paths, "PROJECT_ROOT", root):
                 deps = ri.load_dependencies_app_only("web-app-a")
-                # sys-helper should be ignored (no application_id)
                 self.assertEqual(deps, ["web-app-b"])
 
     def test_load_dependencies_supports_dict_role_entries(self) -> None:

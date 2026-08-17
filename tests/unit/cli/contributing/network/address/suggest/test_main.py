@@ -41,7 +41,6 @@ class TestNetworksSuggest(unittest.TestCase):
         self.assertEqual(netsuggest.smallest_prefix(254), 24)
 
     def test_gap_first_within_existing_umbrella(self):
-        # Two /28 blocks occupied within 192.168.101.0/24 with a gap at .16/28
         occupied = [
             ("a", _net("192.168.101.0/28")),
             ("b", _net("192.168.101.32/28")),
@@ -51,17 +50,13 @@ class TestNetworksSuggest(unittest.TestCase):
         self.assertEqual(out.strip(), "192.168.101.16/28")
 
     def test_increment_fallback_when_full(self):
-        # Fill the first /28 umbrella entirely (16 sub-blocks).
         full = [(f"r{i}", _net(f"192.168.101.{i * 16}/28")) for i in range(16)]
-        # Add an existing /28 in 192.168.102.0/24 so the umbrella set spans 2 blocks
         occupied = [*full, ("seed", _net("192.168.102.0/28"))]
         rc, out, _ = self._run(["--clients", "14", "--count", "1"], occupied)
         self.assertEqual(rc, 0)
-        # First gap in the second umbrella is /28[16..31]
         self.assertEqual(out.strip(), "192.168.102.16/28")
 
     def test_no_umbrella_established_exits_non_zero(self):
-        # No occupied /28 anywhere; without --block we cannot bootstrap.
         with self.assertRaises(SystemExit):
             self._run(["--clients", "14", "--count", "1"], [])
 
@@ -71,7 +66,6 @@ class TestNetworksSuggest(unittest.TestCase):
             [],
         )
         self.assertEqual(rc, 0)
-        # Two leading /28 sub-blocks of 10.0.0.0/24
         self.assertEqual(
             out.splitlines(),
             ["10.0.0.0/28", "10.0.0.16/28"],

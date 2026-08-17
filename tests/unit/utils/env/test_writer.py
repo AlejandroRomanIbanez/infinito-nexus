@@ -35,7 +35,6 @@ class TestQuoteForDotenv(unittest.TestCase):
         self.assertEqual(quote_for_dotenv('a"b'), '"a\\"b"')
 
     def test_backslash_is_escaped_first(self) -> None:
-        # Backslash escaping must precede other escapes to avoid double-coding.
         self.assertEqual(quote_for_dotenv("a\\b"), '"a\\\\b"')
 
     def test_backslash_then_quote(self) -> None:
@@ -100,7 +99,6 @@ class TestWriteDotenv(unittest.TestCase):
             dest = Path(td) / ".env"
             write_dotenv(self._build({"A": "1", "B": "2"}), dest)
             text = read_text(str(dest))
-            # Each key block is preceded by a blank line.
             self.assertRegex(text, r"\nA=1\n")
             self.assertRegex(text, r"\nB=2\n")
 
@@ -137,7 +135,6 @@ class TestWriteDotenv(unittest.TestCase):
             dest = Path(td) / ".env"
             write_dotenv(self._build({}), dest)
             text = read_text(str(dest))
-            # Only the 3 header comment lines + trailing newline.
             self.assertEqual(text.count("\n"), 3)
             for line in text.splitlines():
                 self.assertTrue(line.startswith("#"))
@@ -154,7 +151,6 @@ class TestWriteDotenv(unittest.TestCase):
             )
             text = read_text(str(dest))
             self.assertIn("# doc-a\nA=1", text)
-            # B has no comment block above it.
             b_block = text[text.index("B=") - 60 : text.index("B=")]
             self.assertNotIn(
                 "# ", b_block.rsplit("\n", 2)[-2] if "\n" in b_block else ""

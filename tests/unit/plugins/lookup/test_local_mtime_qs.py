@@ -15,7 +15,6 @@ class TestLocalMtimeQs(unittest.TestCase):
         self.path = str(Path(self.tmpdir.name) / "file.css")
         with Path(self.path).open("w", encoding="utf-8") as f:
             f.write("body{}")
-        # set stable mtime
         self.mtime = int(time.time()) - 123
         os.utime(self.path, (self.mtime, self.mtime))
 

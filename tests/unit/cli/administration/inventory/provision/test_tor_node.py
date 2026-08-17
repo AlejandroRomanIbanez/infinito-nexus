@@ -30,7 +30,6 @@ class TestApplyTorNodeOnion(unittest.TestCase):
             data = load_yaml(hv)
             node = data["applications"]["svc-net-tor"]["services"]["tor"]["node"]
             self.assertTrue(node.endswith(".onion"))
-            # The key files are minted under base/.onion-identity/hs (the SPOT).
             self.assertTrue((base / ".onion-identity" / "hs" / "hostname").exists())
 
     def test_reuses_existing_identity(self) -> None:

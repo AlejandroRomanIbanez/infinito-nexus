@@ -38,12 +38,10 @@ add_repo_rpm_compatible() {
     return 0
   fi
 
-  # dnf4/yum: `config-manager --add-repo URL`
   if "${pm}" config-manager --add-repo "${repo_url}" >/dev/null 2>&1; then
     return 0
   fi
 
-  # dnf5: `config-manager addrepo --from-repofile=URL`
   if "${pm}" config-manager addrepo --from-repofile="${repo_url}" >/dev/null 2>&1; then
     return 0
   fi
@@ -63,13 +61,6 @@ elif [[ "${ID}" == "debian" || "${ID}" == "ubuntu" || "${ID_LIKE:-}" =~ debian ]
   export DEBIAN_FRONTEND=noninteractive
   sanitize_docker_apt_sources "${ID}" 0
 
-  # Ubuntu 26.04 ships docker-compose-v2 in universe with no Conflicts:
-  # against Docker upstream's docker-compose-plugin; both place a binary
-  # at /usr/libexec/docker/cli-plugins/docker-compose and dpkg aborts
-  # if a later transaction pulls docker-compose-v2 as a recommended
-  # dep (e.g. via ansible). Pin it out of selection on Ubuntu only.
-  # TODO: drop this once Ubuntu adds the Conflicts: marker.
-  # Tracking: https://bugs.launchpad.net/ubuntu/+source/docker-compose-v2/+bug/2151249
   if [[ "${ID}" == "ubuntu" ]]; then
     mkdir -p /etc/apt/preferences.d
     cat >/etc/apt/preferences.d/00-block-ubuntu-docker-compose-v2 <<'EOF'
@@ -116,7 +107,6 @@ elif [[ "${ID}" == "centos" || "${ID}" == "rhel" || "${ID_LIKE:-}" =~ (rhel|cent
   if [[ "${REPO_ONLY}" == "1" ]]; then
     ${PM} -y makecache || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
   else
-    # Prefer the same Docker CLI/buildx/compose package set as Fedora.
     (${PM} -y install docker-ce-cli docker-buildx-plugin docker-compose-plugin) || \
       (${PM} -y install docker-ce-cli) || \
       (${PM} -y install docker) || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error

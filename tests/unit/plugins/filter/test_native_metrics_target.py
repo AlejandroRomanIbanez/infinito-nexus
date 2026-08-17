@@ -49,7 +49,6 @@ class TestNativeMetricsTargetSuccess(unittest.TestCase):
         self.assertEqual(result, "mattermost:8067")
 
     def test_service_key_override(self):
-        # matrix entity name is "matrix" but compose service key is "synapse"
         apps = _make_applications(
             "web-app-matrix", "matrix-synapse", 9000, "synapse", service_key="synapse"
         )

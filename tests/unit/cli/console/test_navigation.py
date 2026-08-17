@@ -48,8 +48,6 @@ class TestIsCategory(unittest.TestCase):
         self.assertFalse(navigation.is_category(["does-not-exist"]))
 
     def test_leaf_command_is_not_category(self):
-        # cli/meta/env has __main__.py so it executes; cd-ing into it is
-        # not allowed.
         self.assertFalse(navigation.is_category(["meta", "env"]))
 
 

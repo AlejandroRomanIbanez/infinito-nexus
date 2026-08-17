@@ -24,7 +24,6 @@ class TestLittlejsHref(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         module = _load_littlejs_module()
-        # Store original function; we will always access it via type(self)
         cls._littlejs_href = module.littlejs_href
 
     def test_returns_hash_if_no_file(self):
@@ -37,7 +36,6 @@ class TestLittlejsHref(unittest.TestCase):
         self.assertEqual(href, "https://littlejs.example.com/examples/starter/")
 
     def test_short_example_uses_runner(self):
-        # no is_project → False by default
         example = {"file": "clock.js"}
         href = type(self)._littlejs_href(example, "https", "littlejs.example.com")
         self.assertEqual(

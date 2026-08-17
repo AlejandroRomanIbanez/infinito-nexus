@@ -19,7 +19,6 @@ class TestProcRun(unittest.TestCase):
         self.assertEqual(args[0], ["echo", "hi"])
         self.assertEqual(kwargs["cwd"], "/tmp")
         self.assertEqual(kwargs["check"], False)
-        # Ensure passthrough
         self.assertIn("stdout", kwargs)
         self.assertIn("stderr", kwargs)
 

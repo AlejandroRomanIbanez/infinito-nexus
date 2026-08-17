@@ -48,23 +48,15 @@ def write_role_vars(repo_root: str, role_name: str, database_type: str | None):
 
 class SplitPostgresConnectionsTests(unittest.TestCase):
     def setUp(self):
-        # Create an isolated temporary repository layout
         self.repo = tempfile.mkdtemp(prefix="repo_")
         self.roles_dir = str(Path(self.repo) / "roles")
         Path(self.roles_dir).mkdir(parents=True, exist_ok=True)
 
-        # Create roles:
-        # - app_a (postgres)
-        # - app_b (postgres)
-        # - app_c (mysql)
-        # - app_d (no vars/main.yml)
         write_role_vars(self.repo, "app_a", "postgres")
         write_role_vars(self.repo, "app_b", "postgres")
         write_role_vars(self.repo, "app_c", "mysql")
         write_role_vars(self.repo, "app_d", None)
 
-        # Copy the real plugin into this temp repo structure, preserving the
-        # project layout (plugins/filter/).
         src_plugin_path = str(
             Path(str(Path.cwd()))
             / "plugins"
@@ -90,11 +82,9 @@ class SplitPostgresConnectionsTests(unittest.TestCase):
         self.assertIn("split_postgres_connections", registry)
 
     def test_split_postgres_connections_division(self):
-        # There are 2 postgres roles -> 200 / 2 = 100
         avg = self.mod.split_postgres_connections(200, roles_dir=self.roles_dir)
         self.assertEqual(avg, 100)
 
-        # 5 / 2 -> floor 2
         self.assertEqual(
             self.mod.split_postgres_connections(5, roles_dir=self.roles_dir), 2
         )
@@ -109,7 +99,6 @@ class SplitPostgresConnectionsTests(unittest.TestCase):
             self.mod.split_postgres_connections("not-an-int", roles_dir=self.roles_dir)
 
     def test_missing_roles_dir_raises(self):
-        # Current plugin behavior: raise if roles_dir does not exist
         with self.assertRaises(AnsibleFilterError):
             self.mod.split_postgres_connections(100, roles_dir="/does/not/exist")
 

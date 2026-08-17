@@ -8,7 +8,6 @@ from plugins.filter.canonical_domains_map import FilterModule
 class TestDomainFilters(unittest.TestCase):
     def setUp(self):
         self.filter_module = FilterModule()
-        # Sample primary domain
         self.primary = "example.com"
 
     def test_canonical_empty_apps(self):
@@ -48,7 +47,6 @@ class TestDomainFilters(unittest.TestCase):
         }
         with self.assertRaises(AnsibleFilterError) as cm:
             self.filter_module.canonical_domains_map(apps, self.primary)
-        # Updated to match new exception message
         self.assertIn("already configured for", str(cm.exception))
 
     def test_invalid_canonical_type(self):
@@ -105,7 +103,6 @@ class TestDomainFilters(unittest.TestCase):
         should not raise errors since they are skipped by the filter.
         """
         apps = {"nonweb-app-app1": "not-a-dict", "another": 12345}
-        # Should simply return an empty result without exceptions
         result = self.filter_module.canonical_domains_map(apps, self.primary)
         self.assertEqual(result, {})
 

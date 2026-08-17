@@ -7,7 +7,6 @@ from unittest.mock import MagicMock, patch
 
 from . import PROJECT_ROOT
 
-# add role files directory to PYTHONPATH
 ROLE_FILES = PROJECT_ROOT / "roles/sys-ctl-hlth-csp/files"
 sys.path.insert(0, str(ROLE_FILES))
 
@@ -36,12 +35,10 @@ class TestExtractDomainsFromFilenames(unittest.TestCase):
         )
         self.assertIsInstance(domains, list)
 
-        # valid: must match ^([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\.conf$
         self.assertIn("example.com", domains)
         self.assertIn("api.example.com", domains)
         self.assertIn("sub.domain.co.uk", domains)
 
-        # invalid ones
         self.assertNotIn("not-a-domain", domains)
         self.assertNotIn("no-tld", domains)
         self.assertNotIn(".hidden", domains)
@@ -248,7 +245,6 @@ class TestBuildDockerCmd(unittest.TestCase):
         uidx = cmd.index("--user")
         self.assertEqual(cmd[uidx + 1], "0:0")
 
-        # host network default
         self.assertIn("--network", cmd)
         nidx = cmd.index("--network")
         self.assertEqual(cmd[nidx + 1], "host")
@@ -267,12 +263,10 @@ class TestBuildDockerCmd(unittest.TestCase):
 
         self.assertEqual(cmd[0:3], ["container", "run", "--rm"])
 
-        # still root user injection
         self.assertIn("--user", cmd)
         uidx = cmd.index("--user")
         self.assertEqual(cmd[uidx + 1], "0:0")
 
-        # no host network flags
         self.assertNotIn("--network", cmd)
         self.assertNotIn("host", cmd)
 
@@ -308,8 +302,8 @@ class TestRunChecker(unittest.TestCase):
         self, mock_run: MagicMock
     ) -> None:
         mock_run.side_effect = [
-            MagicMock(returncode=0),  # pull
-            MagicMock(returncode=3),  # run
+            MagicMock(returncode=0),
+            MagicMock(returncode=3),
         ]
 
         rc = script.run_checker(
@@ -331,10 +325,8 @@ class TestRunChecker(unittest.TestCase):
         run_call = mock_run.call_args_list[1]
         self.assertEqual(run_call.kwargs.get("check"), False)
 
-        # NEW: it calls the wrapper "run", not "docker"
         self.assertEqual(run_call.args[0][0:3], ["container", "run", "--rm"])
 
-        # NEW: should contain injected root user
         self.assertIn("--user", run_call.args[0])
         uidx = run_call.args[0].index("--user")
         self.assertEqual(run_call.args[0][uidx + 1], "0:0")

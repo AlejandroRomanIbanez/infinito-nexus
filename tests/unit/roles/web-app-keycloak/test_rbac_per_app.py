@@ -49,9 +49,6 @@ class TestKcPerAppLdapFilter(unittest.TestCase):
         )
 
     def test_filter_excludes_other_apps_by_construction(self):
-        # The substring filter is anchored at the application id with a
-        # trailing hyphen, so a sibling app cannot leak even if its CN
-        # starts with the same prefix.
         f = mod.kc_per_app_ldap_filter("web-app-wp")
         self.assertIn("cn=web-app-wp-*", f)
         self.assertNotIn("cn=web-app-wordpress-*", f)

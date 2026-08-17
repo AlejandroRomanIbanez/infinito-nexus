@@ -6,8 +6,6 @@ import unittest
 
 from utils.roles.applications.services.config import resolve_service_config
 
-# Provider entity name must equal the service key for the registry to register
-# it as the provider (see discover_role_services): svc-net-tor -> entity "tor".
 APPS = {
     "svc-net-tor": {
         "services": {
@@ -52,8 +50,6 @@ class TestResolveServiceConfig(unittest.TestCase):
         )
 
     def test_provider_reads_its_own_native_value(self):
-        # The provider role itself resolves to its own declaration, not a
-        # fallback (provider == application_id short-circuits).
         self.assertIs(
             resolve_service_config(APPS, "svc-net-tor", "tor", "exclusive"),
             True,

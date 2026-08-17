@@ -7,31 +7,25 @@ from utils.cert_utils import CertUtils
 
 class TestCertUtilsMatches(unittest.TestCase):
     def setUp(self):
-        # prepare your test cases
         self.tests = [
-            # Exact matches
             ("example.com", "example.com", True),
             ("www.example.com", "www.example.com", True),
             ("api.example.com", "api.example.com", True),
-            # Wildcard matches
             ("sub.example.com", "*.example.com", True),
             ("www.example.com", "*.example.com", True),
-            # Wildcard non-matches
-            ("example.com", "*.example.com", False),  # base domain is not covered
-            ("deep.sub.example.com", "*.example.com", False),  # too deep
+            ("example.com", "*.example.com", False),
+            ("deep.sub.example.com", "*.example.com", False),
             (
                 "sub.deep.example.com",
                 "*.deep.example.com",
                 True,
-            ),  # correct: one level below
-            # Special cases
+            ),
             ("deep.api.example.com", "*.api.example.com", True),
             (
                 "api.example.com",
                 "*.api.example.com",
                 False,
-            ),  # base not covered by wildcard
-            # Completely different domains
+            ),
             ("test.other.com", "*.example.com", False),
         ]
 

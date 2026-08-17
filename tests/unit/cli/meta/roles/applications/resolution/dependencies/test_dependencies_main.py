@@ -7,7 +7,6 @@ from contextlib import redirect_stdout
 from pathlib import Path
 from unittest.mock import patch
 
-# Import the module under test
 from cli.meta.roles.applications.resolution.dependencies import __main__ as deps_main
 from utils.roles.mapping import ROLE_FILE_META_MAIN, ROLE_FILE_VARS_MAIN
 

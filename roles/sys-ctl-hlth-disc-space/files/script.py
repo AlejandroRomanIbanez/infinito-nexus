@@ -13,7 +13,7 @@ def get_disk_usage_percentages():
         ["df", "--output=pcent"], capture_output=True, text=True, check=True
     )
 
-    lines = result.stdout.strip().split("\n")[1:]  # Skip header
+    lines = result.stdout.strip().split("\n")[1:]
     percentages = []
 
     for line in lines:
@@ -41,7 +41,7 @@ def main():
     print("Checking disk space usage...")
     subprocess.run(
         ["df"], check=False
-    )  # Show the same df output as the original script
+    )
 
     errors = 0
     percentages = get_disk_usage_percentages()

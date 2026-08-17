@@ -27,7 +27,6 @@ class TestInstallPackageCandidates(unittest.TestCase):
     def test_pacman_succeeds_first_candidate(self) -> None:
         with mock.patch.object(system_pkg, "run_privileged") as priv:
             system_pkg.install_package_candidates("pacman", ["ansible-core", "ansible"])
-        # Only one call: the first candidate succeeded.
         self.assertEqual(len(priv.call_args_list), 1)
         self.assertEqual(priv.call_args_list[0].args[0][0], "pacman")
 

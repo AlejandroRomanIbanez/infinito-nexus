@@ -90,8 +90,6 @@ class TestSubstitutePrimaryDomainPlaceholder(unittest.TestCase):
         self.assertEqual(out["administrator"]["email"], "admin@{{ DOMAIN_PRIMARY }}")
 
     def test_renders_jinja_in_raw_value(self) -> None:
-        # raw DOMAIN_PRIMARY is itself Jinja that the templar must
-        # resolve before inlining.
         users = _user_dict(email="admin@{{ DOMAIN_PRIMARY }}")
         out = substitute_primary_domain_placeholder(
             users,
@@ -165,9 +163,6 @@ class TestSubstituteScalarPlaceholders(unittest.TestCase):
         self.assertEqual(out["administrator"]["description"], "Infinito.Nexus operator")
 
     def test_resolves_jinja_in_raw_value(self) -> None:
-        # ORGANIZATION is defined in group_vars as `{{ SOFTWARE_NAME }}`;
-        # the helper must template the variable's own value before
-        # inlining it into the users dict.
         users = _user_dict(lastname="{{ ORGANIZATION }}")
         out = substitute_scalar_placeholders(
             users,
@@ -185,7 +180,6 @@ class TestSubstituteScalarPlaceholders(unittest.TestCase):
         self.assertEqual(out["administrator"]["lastname"], "Infinito.Nexus")
 
     def test_returns_unchanged_when_var_is_empty(self) -> None:
-        # Whitespace-only var: skip without inlining empty content.
         users = _user_dict(lastname="{{ ORGANIZATION }}")
         out = substitute_scalar_placeholders(
             users,
@@ -222,8 +216,6 @@ class TestSubstituteScalarPlaceholders(unittest.TestCase):
 
 class TestScalarPlaceholderSet(unittest.TestCase):
     def test_default_set_contains_known_keys(self) -> None:
-        # Guardrail: extending the tuple is intentional, removing
-        # an entry breaks existing user metas; pin the current set.
         self.assertEqual(
             set(_SCALAR_USER_PLACEHOLDERS), {"ORGANIZATION", "SOFTWARE_NAME"}
         )

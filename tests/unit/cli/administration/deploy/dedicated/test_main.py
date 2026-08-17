@@ -9,7 +9,6 @@ class TestDedicatedMainParser(unittest.TestCase):
     def test_build_parser_has_expected_core_args(self):
         parser = dedicated_main.build_parser()
 
-        # Smoke-check: parser exists and has some core options
         opts = {a.dest for a in parser._actions}
 
         self.assertIn("inventory", opts)
@@ -20,7 +19,6 @@ class TestDedicatedMainParser(unittest.TestCase):
         self.assertIn("verbose", opts)
         self.assertIn("diff", opts)
 
-        # Removed in the refactor
         self.assertNotIn("logs", opts)
 
 

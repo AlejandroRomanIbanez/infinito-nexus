@@ -48,9 +48,6 @@ class TestInputNormalisation(unittest.TestCase):
             {"db": "service_healthy", "init": "service_completed_successfully"},
             variables={"DEPLOYMENT_MODE": "compose"},
         )
-        # Lines 2+ carry the lookup's `indent` (4) plus YAML's own
-        # 2-space nested indent. Line 1 stays unindented so the
-        # template caller controls its column via `    {{ ... }}`.
         self.assertIn("      db:\n        condition: service_healthy", out)
         self.assertIn(
             "      init:\n        condition: service_completed_successfully", out
@@ -61,9 +58,6 @@ class TestInputNormalisation(unittest.TestCase):
         self.assertIn("      db:\n        condition: service_started", out)
 
     def test_mapping_with_empty_string_uses_default_condition(self):
-        # An empty / whitespace-only condition is treated as "unset"
-        # so a caller doing ``{SVC: ''}`` does not silently produce a
-        # compose file with a literal empty condition.
         out = _run({"db": "   "}, variables={"DEPLOYMENT_MODE": "compose"})
         self.assertIn("      db:\n        condition: service_started", out)
 
@@ -92,7 +86,7 @@ class TestInputNormalisation(unittest.TestCase):
     def test_invalid_condition_in_mapping_is_rejected(self):
         with self.assertRaisesRegex(AnsibleError, "invalid condition"):
             _run(
-                {"db": "service_healty"},  # typo
+                {"db": "service_healty"},
                 variables={"DEPLOYMENT_MODE": "compose"},
             )
 
@@ -105,8 +99,6 @@ class TestInputNormalisation(unittest.TestCase):
         self.assertEqual(out, "")
 
     def test_single_string_term_is_rejected(self):
-        # Catches the easy typo ``lookup('depends_on', SVC)`` where the
-        # caller forgot the list wrapper.
         with self.assertRaisesRegex(AnsibleError, "single string"):
             _run("db", variables={"DEPLOYMENT_MODE": "compose"})
 
@@ -144,7 +136,6 @@ class TestModeBehaviour(unittest.TestCase):
         self.assertIn("depends_on:", out)
         self.assertIn("- db", out)
         self.assertIn("- init", out)
-        # No conditions leak into swarm output.
         self.assertNotIn("condition:", out)
 
     def test_compose_emits_map_form(self):
@@ -156,11 +147,6 @@ class TestModeBehaviour(unittest.TestCase):
         self.assertIn("condition: service_healthy", out)
 
     def test_unknown_mode_falls_back_to_compose(self):
-        # Defending against typos in DEPLOYMENT_MODE so a swarm-shaped
-        # cluster does not silently get a compose-shaped file (or vice
-        # versa). Compose is the safe default since its `condition:`
-        # is at least *parseable* by swarm (it just errors at deploy
-        # time, surfacing the problem instead of silently working).
         out = _run(
             {"db": "service_healthy"},
             variables={"DEPLOYMENT_MODE": "kubernetes"},
@@ -172,10 +158,6 @@ class TestModeBehaviour(unittest.TestCase):
         self.assertIn("condition: service_healthy", out)
 
     def test_mode_override_kwarg(self):
-        # The mode kwarg is the test-only escape hatch; verify it
-        # actually overrides the variable-derived mode so the unit
-        # tests can drive both branches without going through the
-        # templar.
         out = _run(
             {"db": "service_healthy"},
             variables={"DEPLOYMENT_MODE": "compose"},
@@ -187,11 +169,6 @@ class TestModeBehaviour(unittest.TestCase):
 
 class TestOutputFormatting(unittest.TestCase):
     def test_compose_block_line1_unindented_lines2plus_indented_by_4(self):
-        # Caller writes ``    {{ lookup('depends_on', …) }}`` at column
-        # 4. Line 1 contributes no leading whitespace; the template's
-        # column-4 placement becomes line 1's indent at render time.
-        # Lines 2+ carry the lookup's `indent` (4) so they align under
-        # line 1 regardless of Jinja substitution semantics.
         out = _run({"db": "service_healthy"}, variables={"DEPLOYMENT_MODE": "compose"})
         expected = "depends_on:\n      db:\n        condition: service_healthy"
         self.assertEqual(out, expected)
@@ -202,8 +179,6 @@ class TestOutputFormatting(unittest.TestCase):
         self.assertEqual(out, expected)
 
     def test_custom_indent_kwarg_only_affects_lines_2_plus(self):
-        # indent=6 -> lines 2+ get 6 leading spaces, but line 1 still
-        # has none (template controls line 1's column).
         out = _run(
             {"db": "service_healthy"},
             variables={"DEPLOYMENT_MODE": "compose"},
@@ -213,9 +188,6 @@ class TestOutputFormatting(unittest.TestCase):
         self.assertIn("\n        db:", out)  # 6 indent + 2 yaml = 8
 
     def test_zero_indent_kwarg_keeps_left_edge_on_all_lines(self):
-        # indent=0 -> lines 2+ also start at the left edge (raw YAML).
-        # Useful for top-level placement with no surrounding service
-        # wrapper.
         out = _run(
             {"db": "service_healthy"},
             variables={"DEPLOYMENT_MODE": "compose"},
@@ -233,8 +205,6 @@ class TestOutputFormatting(unittest.TestCase):
             )
 
     def test_multiple_entries_preserve_insertion_order(self):
-        # Output order is meaningful for diff stability; verify dicts
-        # render in insertion order rather than YAML-sorted.
         out = _run(
             {"first": "service_started", "second": "service_healthy"},
             variables={"DEPLOYMENT_MODE": "compose"},
@@ -245,8 +215,6 @@ class TestOutputFormatting(unittest.TestCase):
         self.assertGreater(second_pos, first_pos)
 
     def test_single_entry_swarm_emits_list_item_with_indent(self):
-        # Verify the swarm list-form path also leaves line 1
-        # unindented and indents the bullet only by `indent`.
         out = _run({"db": "service_healthy"}, variables={"DEPLOYMENT_MODE": "swarm"})
         self.assertEqual(out, "depends_on:\n    - db")
 

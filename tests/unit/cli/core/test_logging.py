@@ -9,7 +9,6 @@ from utils.cache.files import read_text
 class TestLogging(unittest.TestCase):
     def test_open_log_file_creates_parents_and_writes(self):
         with tempfile.TemporaryDirectory() as td:
-            # nested path to ensure parents=True behavior is exercised
             log_dir = Path(td) / "a" / "b" / "c" / "logs"
 
             self.assertFalse(log_dir.exists())

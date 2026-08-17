@@ -71,15 +71,12 @@ class TestWildcardDNS(unittest.TestCase):
 
         got = _as_set(recs)
         expected = {
-            # apex wildcard always
             ("A", "*", "203.0.113.10", True),
             ("AAAA", "*", "2606:4700:4700::1111", True),
-            # derived parents
             ("A", "*.wiki", "203.0.113.10", True),
             ("AAAA", "*.wiki", "2606:4700:4700::1111", True),
             ("A", "*.b", "203.0.113.10", True),
             ("AAAA", "*.b", "2606:4700:4700::1111", True),
-            # www.a.b.example.com promotes a.b.example.com as a parent
             ("A", "*.a.b", "203.0.113.10", True),
             ("AAAA", "*.a.b", "2606:4700:4700::1111", True),
         }
@@ -87,7 +84,7 @@ class TestWildcardDNS(unittest.TestCase):
 
     def test_min_child_depth_yields_only_apex(self):
         apex = "example.com"
-        cpda = {"svc": ["x.example.com"]}  # depth = 1, below threshold
+        cpda = {"svc": ["x.example.com"]}
 
         recs = self.wildcard_records(
             current_play_domains_all=cpda,
@@ -96,7 +93,7 @@ class TestWildcardDNS(unittest.TestCase):
             ip6="2606:4700:4700::1111",
             proxied=False,
             explicit_domains=None,
-            min_child_depth=2,  # requires >= 2 → no parent derived
+            min_child_depth=2,
             ipv6_enabled=True,
         )
         got = _as_set(recs)
@@ -110,7 +107,6 @@ class TestWildcardDNS(unittest.TestCase):
         apex = "example.com"
         cpda = {"svc": ["a.b.example.com"]}
 
-        # IPv6 disabled → only A records (apex + parent)
         recs1 = self.wildcard_records(
             current_play_domains_all=cpda,
             apex=apex,
@@ -129,7 +125,6 @@ class TestWildcardDNS(unittest.TestCase):
             },
         )
 
-        # IPv6 enabled but ULA (not global) → skip AAAA (apex + parent)
         recs2 = self.wildcard_records(
             current_play_domains_all=cpda,
             apex=apex,
@@ -185,10 +180,8 @@ class TestWildcardDNS(unittest.TestCase):
         self.assertEqual(
             _as_set(recs),
             {
-                # apex wildcard always
                 ("A", "*", "203.0.113.5", False),
                 ("AAAA", "*", "2606:4700:4700::1111", False),
-                # derived from explicit domain
                 ("A", "*.wiki", "203.0.113.5", False),
                 ("AAAA", "*.wiki", "2606:4700:4700::1111", False),
             },
@@ -201,7 +194,7 @@ class TestWildcardDNS(unittest.TestCase):
                 "extra": {"alt": ["a.b.example.com"]},
             },
             "svc2": "www.a.b.example.com",
-            "svc3": ["x.example.net"],  # wrong apex → ignored
+            "svc3": ["x.example.net"],
         }
 
         recs = self.wildcard_records(
@@ -216,15 +209,12 @@ class TestWildcardDNS(unittest.TestCase):
         )
         got = _as_set(recs)
         expected = {
-            # apex wildcard always
             ("A", "*", "203.0.113.21", False),
             ("AAAA", "*", "2606:4700:4700::1111", False),
-            # derived parents
             ("A", "*.wiki", "203.0.113.21", False),
             ("AAAA", "*.wiki", "2606:4700:4700::1111", False),
             ("A", "*.b", "203.0.113.21", False),
             ("AAAA", "*.b", "2606:4700:4700::1111", False),
-            # www.a.b.example.com promotes a.b.example.com as a parent
             ("A", "*.a.b", "203.0.113.21", False),
             ("AAAA", "*.a.b", "2606:4700:4700::1111", False),
         }
@@ -237,7 +227,7 @@ class TestWildcardDNS(unittest.TestCase):
             self.wildcard_records(
                 current_play_domains_all={"svc": ["a.b.example.com"]},
                 apex="example.com",
-                ip4="",  # must not be empty
+                ip4="",
                 ip6=None,
                 proxied=False,
                 explicit_domains=None,

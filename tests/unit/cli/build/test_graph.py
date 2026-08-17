@@ -40,9 +40,6 @@ dependencies:
   - role_e
 """,
         )
-        # Per run_after lives in meta/services.yml under the role's
-        # primary entity; for "role_a" (no category prefix) the entity name
-        # is the role name itself.
         self._write_file(
             f"roles/role_a/{ROLE_FILE_META_SERVICES}",
             """
@@ -117,13 +114,11 @@ galaxy_info:
             )
 
     def test_build_mappings_collects_all_dependency_types(self):
-        # Create roles directory structure
         self._create_minimal_role("role_b")
         self._create_minimal_role("role_c")
         self._create_minimal_role("role_d")
         self._create_minimal_role("role_e")
 
-        # Role A with meta (dependencies); run_after now lives in services.yml
         self._write_file(
             f"role_a/{ROLE_FILE_META_MAIN}",
             """
@@ -142,7 +137,6 @@ role_a:
 """,
         )
 
-        # Role A tasks with include_role, import_role, include_tasks, import_tasks
         self._write_file(
             f"role_a/{ROLE_FILE_TASKS_MAIN}",
             """
@@ -163,13 +157,10 @@ role_a:
 """,
         )
 
-        # Dummy tasks/meta for other roles not required, but create dirs so they
-        # are recognized as roles.
-        self._create_minimal_role("role_a")  # dirs already exist but harmless
+        self._create_minimal_role("role_a")
 
         graphs = build_mappings("role_a", self.roles_dir, max_depth=2)
 
-        # Ensure we got all expected graph keys
         for key in ALL_KEYS:
             self.assertIn(key, graphs, msg=f"Missing graph key {key!r} in result")
 
@@ -177,42 +168,36 @@ role_a:
         def links_of(key: str):
             return graphs[key]["links"]
 
-        # run_after_to: role_a -> role_b
         run_after_links = links_of("run_after_to")
         self.assertIn(
             {"source": "role_a", "target": "role_b", "type": "run_after"},
             run_after_links,
         )
 
-        # dependencies_to: role_a -> role_c
         dep_links = links_of("dependencies_to")
         self.assertIn(
             {"source": "role_a", "target": "role_c", "type": "dependencies"},
             dep_links,
         )
 
-        # include_role_to: role_a -> role_d
         inc_role_links = links_of("include_role_to")
         self.assertIn(
             {"source": "role_a", "target": "role_d", "type": "include_role"},
             inc_role_links,
         )
 
-        # import_role_to: role_a -> role_e
         imp_role_links = links_of("import_role_to")
         self.assertIn(
             {"source": "role_a", "target": "role_e", "type": "import_role"},
             imp_role_links,
         )
 
-        # include_tasks_to: role_a -> "subtasks.yml"
         inc_tasks_links = links_of("include_tasks_to")
         self.assertIn(
             {"source": "role_a", "target": "subtasks.yml", "type": "include_tasks"},
             inc_tasks_links,
         )
 
-        # import_tasks_to: role_a -> "legacy.yml"
         imp_tasks_links = links_of("import_tasks_to")
         self.assertIn(
             {"source": "role_a", "target": "legacy.yml", "type": "import_tasks"},
@@ -232,7 +217,6 @@ role_a:
 
     def test_output_graph_writes_json_file(self):
         graph_data = {"nodes": [{"id": "role_a"}], "links": []}
-        # Use current working directory; file is small and cleaned manually.
         fname = "role_a_include_role_to.json"
         try:
             output_graph(graph_data, "json", "role_a", "include_role_to")

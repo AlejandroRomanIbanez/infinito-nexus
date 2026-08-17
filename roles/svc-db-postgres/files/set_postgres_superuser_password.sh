@@ -12,9 +12,6 @@ if [[ -z "$container_raw" || -z "$new_pw" ]]; then
   exit 2
 fi
 
-# In swarm mode the lookup emits `"$(/usr/bin/resolve-container-id <svc> <stack>)"`.
-# `eval` makes bash re-evaluate the subshell so we get the live task id; in
-# compose mode the arg is a bare name and `eval` is a noop.
 container=""
 eval "container=$container_raw"
 
@@ -103,12 +100,10 @@ fi
 
 backup="${hba_file}.bak_ansible_pwcheck_$$"
 
-# Backup hba
 container exec "$container" bash -lc "cp -a \"$hba_file\" \"$backup\""
 
 # shellcheck disable=SC2329,SC2317
 restore_hba() {
-  # Restore on exit (best effort)
   container exec "$container" bash -lc "if [ -f \"$backup\" ]; then cp -a \"$backup\" \"$hba_file\" && rm -f \"$backup\"; fi" >/dev/null 2>&1 || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
   container exec "$container" bash -lc "psql -U postgres -d postgres -Atc 'SELECT pg_reload_conf();' >/dev/null 2>&1" || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 }
@@ -116,14 +111,11 @@ restore_hba() {
 # Register direct function trap so ShellCheck sees the invocation path.
 trap restore_hba EXIT
 
-# Force password auth for local TCP (127.0.0.1)
-# Prepend a strict rule so it matches first.
 container exec "$container" bash -lc "{
   echo 'host all all 127.0.0.1/32 scram-sha-256'
   cat \"$backup\"
 } > \"$hba_file\""
 
-# Reload config
 container exec "$container" bash -lc "psql -U postgres -d postgres -Atc 'SELECT pg_reload_conf();' >/dev/null"
 
 # Helper: test password auth explicitly over TCP
@@ -137,7 +129,6 @@ if auth_test; then
   pre_ok=1
 fi
 
-# Set password (socket, no auth dependency)
 # shellcheck disable=SC2016
 container exec -e NEW_POSTGRES_PASSWORD="$new_pw" "$container" bash -lc '
   psql -U postgres -d postgres -v ON_ERROR_STOP=1 -v password="$NEW_POSTGRES_PASSWORD" <<'"'"'SQL'"'"'

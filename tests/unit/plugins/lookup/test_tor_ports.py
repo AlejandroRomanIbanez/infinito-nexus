@@ -132,10 +132,6 @@ class TestTorPortsLookup(unittest.TestCase):
                 }
             },
         }
-        # postgres+openldap exposed -> collected; mariadb exposed:false skipped;
-        # web-app-x exposed but not in deployed roles -> skipped. Only the
-        # loopback-published ports.local is taken, so openldap's public ldaps:636
-        # is intentionally excluded (nothing listens on 127.0.0.1:636 there).
         ports = collect_exposed_ports(
             apps, ["svc-db-postgres", "svc-db-openldap", "svc-db-mariadb"]
         )

@@ -32,7 +32,6 @@ _PERSONA_FLOW_DIR = (
 _PERSONA_FLOW_FILES: tuple[str, ...] = ("biber.js", "admin.js", "guest.js")
 
 _BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
-# Line comment not preceded by `:` so URLs (`http://…`) are not mistaken for one.
 _LINE_COMMENT = re.compile(r"(?<!:)//[^\n]*")
 
 _RAW_TIMEOUT = re.compile(

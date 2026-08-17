@@ -56,7 +56,6 @@ class TestParseStaticEnvQuoting(unittest.TestCase):
     def test_mismatched_quotes_not_stripped(self) -> None:
         with TemporaryDirectory() as td:
             p = _write(td, 'K="open\n')
-            # Mismatched quotes are kept; trailing "open" stays as-is.
             self.assertEqual(parse_static_env(p), {"K": '"open'})
 
     def test_inline_comment_stripped_unquoted(self) -> None:

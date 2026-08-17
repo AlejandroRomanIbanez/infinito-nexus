@@ -4,7 +4,6 @@ import subprocess
 import time
 from datetime import UTC, datetime
 
-# Global variable definition
 BREAK_TIME_SECONDS = 5
 
 

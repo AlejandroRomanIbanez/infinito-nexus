@@ -115,9 +115,6 @@ class TestApplicationVariants(unittest.TestCase):
         )
 
     def test_role_with_two_variants_deep_merges_each_entry(self):
-        # Per, the role's meta is split: server -> meta/server.yml,
-        # services -> meta/services.yml. The variants file overrides the
-        # assembled payload (top-level keys: server, services, ...).
         role = self.roles_dir / "web-app-bar"
         (role / "meta").mkdir(parents=True, exist_ok=True)
         (role / ROLE_FILE_META_SERVICES).write_text(
@@ -208,7 +205,6 @@ class TestApplicationVariants(unittest.TestCase):
         first = get_variants(roles_dir=self.roles_dir)
         second = get_variants(roles_dir=self.roles_dir)
         self.assertEqual(first, second)
-        # Mutating the returned copy MUST NOT corrupt the cache.
         second["web-app-cache"][0]["services"]["cache"]["x"] = 999
         self.assertEqual(
             get_variants(roles_dir=self.roles_dir)["web-app-cache"][0]["services"][
@@ -271,9 +267,6 @@ class TestMergedApplicationsUsesBaseConfig(unittest.TestCase):
         )
 
     def test_inventory_override_swaps_in_variant_one_payload(self):
-        # This mirrors what the init step bakes into host_vars when
-        # round 1 selects variant 1 for `web-app-multi`. Override wins
-        # via deep merge.
         variant_one = {
             "server": {
                 "domains": {
@@ -291,9 +284,6 @@ class TestMergedApplicationsUsesBaseConfig(unittest.TestCase):
         )
 
     def test_active_variants_marker_is_ignored_by_loader(self):
-        # The previous `_active_variants` runtime selector has been
-        # retired; the loader MUST NOT honour it any more. This test
-        # guards against accidentally re-introducing the runtime path.
         merged = get_merged_applications(
             variables={"_active_variants": {"web-app-multi": 1}},
             roles_dir=str(self.roles_dir),

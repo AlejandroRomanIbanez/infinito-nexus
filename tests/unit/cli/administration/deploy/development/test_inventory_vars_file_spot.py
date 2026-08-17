@@ -28,7 +28,6 @@ STATIC_ENV = PROJECT_ROOT / "default.env"
 
 
 def _parse_env_default(file_text: str) -> str:
-    # Match: INFINITO_INVENTORY_VARS_FILE=<DEFAULT>   (optional surrounding quotes)
     pattern = re.compile(
         r'^\s*INFINITO_INVENTORY_VARS_FILE=(?P<value>"[^"]*"|\'[^\']*\'|[^\s#]+)\s*(#.*)?$',
         re.MULTILINE,
@@ -58,20 +57,14 @@ class TestInventoryVarsFileSpotDriftGuard(unittest.TestCase):
         )
 
     def test_no_other_caller_hardcodes_the_literal(self):
-        # Whitelist: docs (prose), the SPOT itself, this test, and the
-        # Python fallback line. Anywhere else that mentions the literal
-        # path is a missed SPOT migration.
         literal = "inventories/development/default.yml"
         allowed_relative = {
             "default.env",
             "cli/administration/deploy/development/common.py",
             Path(__file__).relative_to(PROJECT_ROOT).as_posix(),
-            # Documentation and historical/comment references stay as-is:
             "docs/administration/deploy.md",
             "roles/web-app-odoo/tasks/03_oidc.yml",
-            # The dev inventory file itself sits at the literal path.
             "inventories/development/default.yml",
-            # Lint test names the dev inventory as the SPOT for env injections.
             "tests/lint/filesystem/env/test_no_ansible_env_lookups.py",
         }
         offenders: list[str] = []

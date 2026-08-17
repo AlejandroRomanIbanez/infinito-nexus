@@ -30,8 +30,6 @@ class LookupModule(LookupBase):
     def run(self, terms, variables: dict | None = None, **kwargs):
         variables = variables or {}
 
-        # New API: want-path is the 2nd positional term.
-        # Legacy 'want=' kwarg is ignored (no error) to keep tasks noise-free.
         if not terms or len(terms) not in (1, 2):
             raise AnsibleError(
                 "tls: one or two terms required: (domain|application_id[, want_path])"
@@ -68,7 +66,6 @@ class LookupModule(LookupBase):
             err_prefix="tls",
         )
 
-        # Family alignment applies to app-id terms only; domain terms are caller intent.
         if forced_mode == "app" or (forced_mode == "auto" and "." not in term):
             primary_domain = norm_domain(
                 align_domain_to_consumer(

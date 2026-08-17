@@ -42,8 +42,6 @@ class TestAddonVersions(unittest.TestCase):
 
         monitored = [e for e in entries if e.monitored]
 
-        # Group the monitored addons by catalog so the operator sees, per
-        # adapter, exactly which addons the drift job tracks.
         by_catalog: dict[str, list[str]] = {}
         for entry in monitored:
             catalog = entry.catalog or "(none)"
@@ -71,7 +69,6 @@ class TestAddonVersions(unittest.TestCase):
                         file=str(entry.config_path.relative_to(PROJECT_ROOT)),
                     )
 
-        # Always pass: drift is reported as warnings, never a hard failure.
         self.assertIsNotNone(entries)
 
 

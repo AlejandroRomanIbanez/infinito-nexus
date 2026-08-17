@@ -2,7 +2,6 @@ import sys
 import unittest
 from pathlib import Path
 
-# Ensure plugins/filter directory is on the path
 sys.path.insert(
     0,
     str(

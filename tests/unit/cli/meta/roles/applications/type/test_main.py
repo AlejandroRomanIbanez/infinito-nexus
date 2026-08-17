@@ -13,7 +13,6 @@ class TestCliMetaApplicationsType(TestCase):
         err = io.StringIO()
         with patch("sys.stdout", out), patch("sys.stderr", err):
             try:
-                # Patch argparse by patching sys.argv
                 with patch("sys.argv", ["prog", *argv]):
                     mod.main()
                 return 0, out.getvalue(), err.getvalue()
@@ -69,13 +68,11 @@ class TestCliMetaApplicationsType(TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(err, "")
 
-        # Ensure lifecycles normalization + forwarding happened
         mocked.assert_called_once()
         _args, kwargs = mocked.call_args
         self.assertIn("lifecycles", kwargs)
         self.assertEqual(kwargs["lifecycles"], {"alpha", "beta", "rc", "stable"})
 
-        # Output still correct
         self.assertIn('"a"', out)
 
     def test_error_handling(self) -> None:

@@ -41,7 +41,6 @@ class TestValidateInventory(unittest.TestCase):
             ),
             encoding="utf-8",
         )
-        # Per the file root IS the users map (no `users:` wrapper).
         (self.roles_dir / "identity" / ROLE_FILE_META_USERS).write_text(
             dump_yaml_str({"alice": {"email": "alice@example.com"}}),
             encoding="utf-8",
@@ -70,12 +69,6 @@ class TestValidateInventory(unittest.TestCase):
         return result
 
     def test_valid_inventory(self):
-        # Per, application defaults derived from meta/services.yml
-        # surface under `applications.<id>.services.<entity>` (the file root
-        # is the services map keyed by entity name). The flat keys
-        # port/enabled/settings the fixture writes into meta/services.yml
-        # therefore appear as services entries in the defaults dict, and
-        # the inventory side must mirror that shape.
         (self.inventory_dir / "group_vars.yml").write_text(
             dump_yaml_str(
                 {

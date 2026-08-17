@@ -53,8 +53,6 @@ class TestDoLs(unittest.TestCase):
             if not line.strip():
                 continue
             visible = line.replace("\033[2m", "").replace("\033[0m", "")
-            # Layout: `  <emoji>  <name>  <desc>`; desc is the segment
-            # past the two-space separator following the padded name.
             parts = visible.split("  ")
             desc = parts[-1].strip()
             self.assertLessEqual(len(desc), LS_DESC_LIMIT)

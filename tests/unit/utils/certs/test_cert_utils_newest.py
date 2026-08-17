@@ -25,7 +25,6 @@ Certificate:
 
 class TestCertUtilsFindNewest(unittest.TestCase):
     def setUp(self):
-        # Reset internal caches before each test
         CertUtils._domain_cert_mapping = None
         CertUtils._cert_snapshot = None
 
@@ -66,7 +65,7 @@ class TestCertUtilsFindNewest(unittest.TestCase):
                 ),
             ),
         ):
-            mock_dates.side_effect = [(10, 100000), (20, 100000)]  # older/newer
+            mock_dates.side_effect = [(10, 100000), (20, 100000)]
 
             folder = CertUtils.find_cert_for_domain(
                 "www.example.com", "/etc/letsencrypt/live", debug=False
@@ -126,8 +125,8 @@ class TestCertUtilsFindNewest(unittest.TestCase):
                 "os.stat",
                 side_effect=self._mock_stat_map(
                     {
-                        files[0]: 1000,  # exact is older
-                        files[1]: 5000,  # wildcard is much newer
+                        files[0]: 1000,
+                        files[1]: 5000,
                     }
                 ),
             ),
@@ -157,21 +156,18 @@ class TestCertUtilsFindNewest(unittest.TestCase):
             patch.object(CertUtils, "run_openssl_dates", return_value=(50, 100000)),
             patch("os.stat", side_effect=self._mock_stat_map({files[0]: 1000})),
         ):
-            # should match
             self.assertEqual(
                 CertUtils.find_cert_for_domain(
                     "api.example.com", "/etc/letsencrypt/live"
                 ),
                 "wild",
             )
-            # too deep -> should not match
             self.assertIsNone(
                 CertUtils.find_cert_for_domain(
                     "deep.api.example.com", "/etc/letsencrypt/live"
                 ),
                 "Wildcard must not match multiple labels.",
             )
-            # base domain not covered
             self.assertIsNone(
                 CertUtils.find_cert_for_domain("example.com", "/etc/letsencrypt/live"),
                 "Base domain is not covered by *.example.com.",

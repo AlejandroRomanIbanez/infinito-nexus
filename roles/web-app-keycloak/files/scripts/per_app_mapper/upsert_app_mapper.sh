@@ -35,8 +35,6 @@ EXISTING_ID=$(awk -F',' -v n="$MAPPER_NAME" \
   /tmp/kc_mappers_listing.txt | tr -d '\r')
 
 if [ -n "$EXISTING_ID" ]; then
-  # Inject the existing component id so kcadm performs an in-place
-  # update instead of failing with "id mismatch".
   sed "s|\"name\":|\"id\": \"$EXISTING_ID\",\n    \"name\":|" \
     "$PAYLOAD_FILE" \
     | container exec -i "$KC_CONTAINER" /opt/keycloak/bin/kcadm.sh update \

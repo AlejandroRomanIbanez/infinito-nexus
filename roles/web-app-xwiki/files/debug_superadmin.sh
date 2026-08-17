@@ -33,8 +33,6 @@ echo "content=$CONTENT_HEAD"
 echo "=== password hash compare ==="
 echo -n "container_hash="
 # shellcheck disable=SC2016
-# Single-quoted on purpose: the inner expansions ($cfg, $1, …) are
-# evaluated by the *container's* shell, not the host shell.
 container exec "$XWIKI_CONTAINER" sh -lc '
     cfg="/usr/local/tomcat/webapps/ROOT/WEB-INF/xwiki.cfg"
     if [ ! -f "$cfg" ]; then

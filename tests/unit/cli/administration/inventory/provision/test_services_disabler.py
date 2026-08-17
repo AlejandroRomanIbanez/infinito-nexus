@@ -51,7 +51,6 @@ class TestFindProviderRoles(unittest.TestCase):
         role_dir = self.roles_dir / role_name
         (role_dir / "meta").mkdir(parents=True)
         (role_dir / "vars").mkdir(parents=True)
-        # New layout: meta/services.yml is the services map directly
         dump_yaml(role_dir / ROLE_FILE_META_SERVICES, services)
         dump_yaml(role_dir / ROLE_FILE_VARS_MAIN, {"application_id": role_name})
 
@@ -142,7 +141,7 @@ class TestRemoveRolesFromInventory(unittest.TestCase):
         )
         remove_roles_from_inventory(
             self.inventory, ["web-app-matomo"]
-        )  # must not raise
+        )
         result = self._read()
         self.assertIn("web-app-nextcloud", result["all"]["children"])
 
@@ -188,7 +187,6 @@ class TestApplyServicesDisabled(unittest.TestCase):
         role_dir = self.roles_dir / role_name
         (role_dir / "meta").mkdir(parents=True)
         (role_dir / "vars").mkdir(parents=True)
-        # New layout: meta/services.yml is the services map directly
         dump_yaml(role_dir / ROLE_FILE_META_SERVICES, services)
         dump_yaml(role_dir / ROLE_FILE_VARS_MAIN, {"application_id": role_name})
 
@@ -266,15 +264,12 @@ class TestApplyServicesDisabled(unittest.TestCase):
                 }
             }
         )
-        # role defines oidc in its config
         self._make_role("web-app-matomo", {"oidc": {"enabled": True, "shared": True}})
         apply_services_disabled(self.host_vars, ["oidc"], roles_dir=self.roles_dir)
         result = self._read_host_vars()
-        # existing service untouched
         self.assertTrue(
             result["applications"]["web-app-matomo"]["services"]["matomo"]["enabled"]
         )
-        # missing service entry is created with enabled/shared false
         oidc = result["applications"]["web-app-matomo"]["services"]["oidc"]
         self.assertFalse(oidc["enabled"])
         self.assertFalse(oidc["shared"])
@@ -287,7 +282,6 @@ class TestApplyServicesDisabled(unittest.TestCase):
                 }
             }
         )
-        # role does NOT define oidc
         self._make_role("web-app-matomo", {"matomo": {"image": "matomo"}})
         apply_services_disabled(self.host_vars, ["oidc"], roles_dir=self.roles_dir)
         result = self._read_host_vars()
@@ -304,7 +298,6 @@ class TestApplyServicesDisabled(unittest.TestCase):
                 }
             }
         )
-        # role defines matomo — so compose section must be created
         self._make_role("web-app-foo", {"matomo": {"enabled": True, "shared": True}})
         apply_services_disabled(self.host_vars, ["matomo"], roles_dir=self.roles_dir)
         result = self._read_host_vars()
@@ -314,7 +307,6 @@ class TestApplyServicesDisabled(unittest.TestCase):
 
     def test_creates_app_entry_when_not_in_host_vars(self):
         self._write_host_vars({"applications": {}})
-        # role defines matomo but app is not yet in host_vars
         self._make_role("web-app-bar", {"matomo": {"enabled": True, "shared": True}})
         apply_services_disabled(self.host_vars, ["matomo"], roles_dir=self.roles_dir)
         result = self._read_host_vars()
@@ -374,7 +366,6 @@ class TestApplyServicesDisabledFromEnv(unittest.TestCase):
         role_dir = self.roles_dir / role_name
         (role_dir / "meta").mkdir(parents=True)
         (role_dir / "vars").mkdir(parents=True)
-        # New layout: meta/services.yml is the services map directly
         dump_yaml(role_dir / ROLE_FILE_META_SERVICES, services)
         dump_yaml(role_dir / ROLE_FILE_VARS_MAIN, {"application_id": role_name})
 
@@ -424,7 +415,6 @@ class TestServicesDisabledConflicts(unittest.TestCase):
         role_dir = self.roles_dir / role_name
         (role_dir / "meta").mkdir(parents=True)
         (role_dir / "vars").mkdir(parents=True)
-        # New layout: meta/services.yml is the services map directly
         dump_yaml(role_dir / ROLE_FILE_META_SERVICES, services)
         dump_yaml(role_dir / ROLE_FILE_VARS_MAIN, {"application_id": role_name})
 

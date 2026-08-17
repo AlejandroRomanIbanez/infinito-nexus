@@ -71,25 +71,19 @@ def calculate_transition_ratio(current_time, start_time, end_time):
     Returns:
     float: The transition ratio between 0 and 1.
     """
-    # Use the current date for timestamp calculation
     today = datetime.datetime.now().date()  # noqa: DTZ005  user's local "today" for time-of-day color picking
 
-    # Calculate timestamps for the start and end of the current period
     start_timestamp = datetime.datetime.combine(today, start_time).timestamp()
     end_timestamp = datetime.datetime.combine(today, end_time).timestamp()
 
-    # If start and end times are the same, return 0 to indicate no transition
     if start_timestamp == end_timestamp:
         return 0
 
-    # Calculate the current timestamp
     current_timestamp = datetime.datetime.combine(today, current_time).timestamp()
 
-    # Calculate the transition ratio
     transition_duration = end_timestamp - start_timestamp
     time_since_start = current_timestamp - start_timestamp
 
-    # Ratio as the proportion of time elapsed in the total transition duration
     return time_since_start / transition_duration
 
 
@@ -111,16 +105,16 @@ def change_keyboard_color(color, device_id):
 
 def main(vendor_and_product_id):
     color_times = {
-        "22:00": ("990000", "990000"),  # Night
-        "21:00": ("0000ff", "990000"),  # Evening Blue to Night
-        "20:00": ("fdbe51", "0000ff"),  # Evening Golden to Blue
-        "19:30": ("ff4500", "fdbe51"),  # Sunset to Golden
-        "12:00": ("ffffff", "ff4500"),  # Noon to Sunset
-        "07:30": ("ffd700", "ffffff"),  # Sunrise to Noon
-        "07:00": ("f9c80e", "ffd700"),  # Morning Golden to Sunrise
-        "06:00": ("ff7f00", "f9c80e"),  # Dawn to Golden
-        "05:00": ("5bc0eb", "ff7f00"),  # Morning Blue to Dawn
-        "04:00": ("990000", "5bc0eb"),  # Night to Blue
+        "22:00": ("990000", "990000"),
+        "21:00": ("0000ff", "990000"),
+        "20:00": ("fdbe51", "0000ff"),
+        "19:30": ("ff4500", "fdbe51"),
+        "12:00": ("ffffff", "ff4500"),
+        "07:30": ("ffd700", "ffffff"),
+        "07:00": ("f9c80e", "ffd700"),
+        "06:00": ("ff7f00", "f9c80e"),
+        "05:00": ("5bc0eb", "ff7f00"),
+        "04:00": ("990000", "5bc0eb"),
     }
 
     current_time = datetime.datetime.now().time()  # noqa: DTZ005  user's local time-of-day for color picking

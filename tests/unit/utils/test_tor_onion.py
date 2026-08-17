@@ -10,7 +10,6 @@ from utils.tor_onion import (
     onion_address,
 )
 
-# Deterministic test vector: seed 00,01,...,1f -> known v3 address.
 VECTOR_SEED = bytes(range(32))
 VECTOR_ADDRESS = "aoqqpp7tzyil4hlq3umoos6atft6jvrqtosq2xy53sdgiesvgg4bqead.onion"
 
@@ -42,10 +41,8 @@ class TestTorOnion(unittest.TestCase):
             },
         )
         self.assertEqual(files["hostname"], (VECTOR_ADDRESS + "\n").encode())
-        # public: 32-byte header + 32-byte key
         self.assertTrue(files["hs_ed25519_public_key"].startswith(PUBLIC_KEY_HEADER))
         self.assertEqual(len(files["hs_ed25519_public_key"]), 64)
-        # secret: 32-byte header + 64-byte expanded key
         self.assertTrue(files["hs_ed25519_secret_key"].startswith(SECRET_KEY_HEADER))
         self.assertEqual(len(files["hs_ed25519_secret_key"]), 96)
 

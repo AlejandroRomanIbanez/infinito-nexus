@@ -13,13 +13,10 @@ class TestNodeMaxOldSpaceSize(unittest.TestCase):
     """Unit tests for the node_max_old_space_size lookup plugin's core sizing."""
 
     def setUp(self):
-        # The materialised payload exposes services under the bare `services`
-        # key (no `compose.services` envelope).
         self.applications = {"web-app-nextcloud": {"services": {"whiteboard": {}}}}
         self.application_id = "web-app-nextcloud"
         self.service_name = "whiteboard"
 
-        # Patch get (imported from utils.roles.applications.config) in the plugin.
         self.patcher = patch("plugins.lookup.node_max_old_space_size.get")
         self.mock_get = self.patcher.start()
 
@@ -72,7 +69,7 @@ class TestNodeMaxOldSpaceSize(unittest.TestCase):
         self.assertEqual(mb, 3072)  # 35% of 16g = 5600, hardcap=3072
 
     def test_numeric_bytes_input(self):
-        self._set_mem_limit(2147483648)  # 2 GiB
+        self._set_mem_limit(2147483648)
         mb = na.node_max_old_space_size(
             self.applications, self.application_id, self.service_name
         )

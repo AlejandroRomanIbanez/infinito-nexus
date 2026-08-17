@@ -14,7 +14,6 @@ class TestCspHashesFinalTokenGuard(unittest.TestCase):
                     "whitelist": {},
                     "flags": {
                         "script-src": {"unsafe-eval": True, "unsafe-inline": False},
-                        # style-src flags may be removed in tests to rely on defaults
                         "style-src": {"unsafe-inline": True},
                     },
                     "hashes": {
@@ -47,19 +46,15 @@ class TestCspHashesFinalTokenGuard(unittest.TestCase):
         """
         apps = copy.deepcopy(self.apps)
 
-        # Remove explicit style-src flags entirely to rely solely on defaults
         apps["app1"]["csp"]["flags"].pop("style-src", None)
 
-        # Provide a style-src hash
         apps["app1"]["csp"]["hashes"]["style-src"] = "body { color: blue; }"
         style_hash = self.filter.get_csp_hash("body { color: blue; }")
 
         header = self.filter.build_csp_header(apps, "app1", self.domains, "https")
 
-        # Because defaults include 'unsafe-inline' for style-src, the hash MUST NOT appear
         self.assertNotIn(style_hash, header)
 
-        # And 'unsafe-inline' must appear in final tokens
         tokens = self._get_directive_tokens(header, "style-src")
         self.assertIn("'unsafe-inline'", tokens)
 
@@ -70,12 +65,10 @@ class TestCspHashesFinalTokenGuard(unittest.TestCase):
         """
         apps = copy.deepcopy(self.apps)
 
-        # Explicitly disable 'unsafe-inline' on base 'style-src' so hashes can be included
         apps["app1"].setdefault("csp", {}).setdefault("flags", {})
         apps["app1"]["csp"]["flags"].setdefault("style-src", {})
         apps["app1"]["csp"]["flags"]["style-src"]["unsafe-inline"] = False
 
-        # Provide a style-src hash
         content = "body { background: #abc; }"
         apps["app1"]["csp"].setdefault("hashes", {})["style-src"] = content
         expected_hash = self.filter.get_csp_hash(content)
@@ -83,8 +76,8 @@ class TestCspHashesFinalTokenGuard(unittest.TestCase):
         header = self.filter.build_csp_header(apps, "app1", self.domains, "https")
         base_tokens = self._get_directive_tokens(header, "style-src")
 
-        self.assertNotIn("'unsafe-inline'", base_tokens)  # confirm no unsafe-inline
-        self.assertIn(expected_hash, header)  # hash must be present
+        self.assertNotIn("'unsafe-inline'", base_tokens)
+        self.assertIn(expected_hash, header)
 
 
 if __name__ == "__main__":

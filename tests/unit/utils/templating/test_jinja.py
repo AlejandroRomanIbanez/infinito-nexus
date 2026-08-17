@@ -39,7 +39,7 @@ class TestJinjaStrict(unittest.TestCase):
         }
         ctx, inv_host = build_render_context(variables)
         self.assertEqual(inv_host, "host1")
-        self.assertEqual(ctx["SOFTWARE_NAME"], "Inner")  # hostvars wins
+        self.assertEqual(ctx["SOFTWARE_NAME"], "Inner")
         self.assertEqual(ctx["EXTRA"], "value")
 
     def test_render_strict_returns_raw_when_no_markers(self):
@@ -97,11 +97,9 @@ class TestJinjaStrict(unittest.TestCase):
             )
 
     def test_render_strict_fails_when_markers_remain_after_stabilization(self):
-        # Outer renders to another marker that cannot be resolved -> should fail.
         variables = {
             "inventory_hostname": "localhost",
             "A": "{{ B }}",
-            # B intentionally missing -> strict should raise (first pass already fails)
         }
         with self.assertRaises(AnsibleError):
             render_strict(
@@ -113,7 +111,6 @@ class TestJinjaStrict(unittest.TestCase):
             )
 
     def test_render_strict_fails_when_markers_remain_after_max_passes(self):
-        # Create a chain longer than max_passes: A->B->C->D->E->F->... -> FINAL
         variables = {"inventory_hostname": "localhost"}
         chain_len = 8
         for i in range(chain_len):
@@ -122,7 +119,6 @@ class TestJinjaStrict(unittest.TestCase):
             variables[k] = "{{ " + nxt + " }}"
         variables["FINAL"] = "ok"
 
-        # With max_passes too low, we should fail with markers remaining.
         with self.assertRaises(AnsibleError):
             render_strict(
                 "{{ A }}",
@@ -132,7 +128,6 @@ class TestJinjaStrict(unittest.TestCase):
                 max_passes=3,
             )
 
-        # With enough passes, it should succeed.
         ok = render_strict(
             "{{ A }}",
             variables=variables,

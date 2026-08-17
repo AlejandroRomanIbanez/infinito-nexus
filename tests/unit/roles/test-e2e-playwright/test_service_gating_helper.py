@@ -59,7 +59,6 @@ class TestServiceGatingHelper(unittest.TestCase):
             f.write(STUB_PKG_JSON)
         with Path(str(Path(stub_dir) / "index.js")).open("w") as f:
             f.write(STUB_INDEX_JS)
-        # Copy helper so `require("./service-gating")` works from the tmp dir.
         shutil.copy(HELPER_PATH, str(Path(self.tmpdir) / "service-gating.js"))
 
     def tearDown(self):
@@ -132,7 +131,6 @@ class TestServiceGatingHelper(unittest.TestCase):
         self.assertIn("SSO_SERVICE_ENABLED", proc.stdout)
 
     def test_unknown_service_hard_fails(self):
-        # With a non-empty registry, an unknown service MUST throw.
         proc = self._run_in_node(
             "return helper.isServiceEnabled('oicd');",
             env={"SSO_SERVICE_ENABLED": "true"},
@@ -141,8 +139,6 @@ class TestServiceGatingHelper(unittest.TestCase):
         self.assertIn("Unknown service", proc.stdout)
 
     def test_empty_registry_treats_everything_enabled(self):
-        # No *_SERVICE_ENABLED in the env at all => legacy staged .env;
-        # the helper MUST treat every service as enabled (backwards-compat).
         proc = self._run_in_node(
             "return helper.isServiceEnabled('sso');",
             env={},

@@ -198,8 +198,6 @@ class TestVolumeLookup(unittest.TestCase):
             _run("web-app-mattermost", "", canonical={"data": {}})
 
     def test_forces_defaults_build_on_registry_miss(self):
-        # Empty on the first read (lookup runs before any consumer built the
-        # role); populated after the forced build — the nfs_prep/ollama case.
         populated = {"data": {"type": "volume"}}
         with (
             patch(
@@ -216,7 +214,6 @@ class TestVolumeLookup(unittest.TestCase):
         self.assertEqual(gcv.call_count, 2)
 
     def test_populated_registry_skips_build(self):
-        # Already populated: no forced build, no wasted defaults deepcopy.
         with (
             patch(
                 "plugins.lookup.volume.get_canonical_volumes",

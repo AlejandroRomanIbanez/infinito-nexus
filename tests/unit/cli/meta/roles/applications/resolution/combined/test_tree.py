@@ -31,9 +31,6 @@ class TestCombinedTree(unittest.TestCase):
             root = Path(td)
             (root / "roles").mkdir()
 
-            # start app role with dashboard enabled.
-            # meta/services.yml is the services map at the
-            # file root, with run_after under the role's primary entity.
             _write(
                 root / "roles" / "start" / ROLE_FILE_VARS_MAIN,
                 "application_id: start\n",
@@ -50,8 +47,6 @@ class TestCombinedTree(unittest.TestCase):
                 ),
             )
 
-            # keycloak exists, and points back to start to force a visible cycle.
-            # Entity name for "web-app-keycloak" is "keycloak".
             _write(
                 root / "roles" / "web-app-keycloak" / ROLE_FILE_VARS_MAIN,
                 "application_id: web-app-keycloak\n",
@@ -61,7 +56,6 @@ class TestCombinedTree(unittest.TestCase):
                 "keycloak:\n  run_after:\n    - start\n",
             )
 
-            # required folders exist
             (root / "roles" / "start").mkdir(parents=True, exist_ok=True)
             (root / "roles" / "web-app-keycloak").mkdir(parents=True, exist_ok=True)
             (root / "roles" / "web-app-dashboard").mkdir(parents=True, exist_ok=True)

@@ -96,7 +96,6 @@ class TestDynamicModes(unittest.TestCase):
         self.assertIn("MODE_DEBUG", spec)
         self.assertIn("MODE_ASSERT", spec)
 
-        # No flags passed → defaults apply
         args = parser.parse_args([])
         resolved = modes.build_modes_from_args(spec, args)
 
@@ -110,9 +109,6 @@ class TestDynamicModes(unittest.TestCase):
         parser = ArgumentParser()
         spec = modes.add_dynamic_mode_args(parser, self.modes_meta)
 
-        # MODE_CLEANUP: true   → --skip-cleanup  sets it to False
-        # MODE_DEBUG:   false  → --debug        sets it to True
-        # MODE_ASSERT:  None   → --assert true  sets it to True
         args = parser.parse_args(["--skip-cleanup", "--debug", "--assert", "true"])
         resolved = modes.build_modes_from_args(spec, args)
 
@@ -126,12 +122,11 @@ class TestDynamicModes(unittest.TestCase):
         parser = ArgumentParser()
         spec = modes.add_dynamic_mode_args(parser, self.modes_meta)
 
-        # explicit false for MODE_ASSERT
         args = parser.parse_args(["--assert", "false"])
         resolved = modes.build_modes_from_args(spec, args)
 
-        self.assertTrue(resolved["MODE_CLEANUP"])  # still default True
-        self.assertFalse(resolved["MODE_DEBUG"])  # still default False
+        self.assertTrue(resolved["MODE_CLEANUP"])
+        self.assertFalse(resolved["MODE_DEBUG"])
         self.assertIn("MODE_ASSERT", resolved)
         self.assertFalse(resolved["MODE_ASSERT"])
 

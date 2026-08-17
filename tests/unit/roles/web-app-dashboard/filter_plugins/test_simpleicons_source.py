@@ -45,7 +45,6 @@ class TestSimpleiconSlugs(unittest.TestCase):
         self.assertEqual(simpleicon_slugs(cards), [])
 
     def test_strips_non_ascii_so_probe_url_is_ascii_encodable(self):
-        # U+2011 NON-BREAKING HYPHEN in a title crashed the uri probe (ascii encode)
         slugs = simpleicon_slugs([{"title": "Mini‑QR"}, {"title": "Café"}])
         self.assertEqual(slugs, ["miniqr", "cafe"])
         self.assertTrue(all(s.isascii() for s in slugs))

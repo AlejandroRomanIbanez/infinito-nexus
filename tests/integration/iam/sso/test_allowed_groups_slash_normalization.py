@@ -41,9 +41,6 @@ TEMPLATE_PATH = str(
     / "oauth2-proxy-keycloak.cfg.j2"
 )
 
-# Match an `allowed_groups = ...` line whose value pipeline includes the
-# slash-normalising regex_replace. Whitespace is permissive so cosmetic
-# reformats don't break the guard.
 ALLOWED_GROUPS_NORMALISED = re.compile(
     r"allowed_groups\s*=\s*\{\{[^}]*"
     r"map\(\s*['\"]regex_replace['\"]\s*,\s*"

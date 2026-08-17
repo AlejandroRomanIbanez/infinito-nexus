@@ -34,13 +34,11 @@ def _load_sut():
         raise ImportError(f"Could not create module spec for: {script_path}")
 
     module = importlib.util.module_from_spec(spec)
-    # Register so patch("sys_util_git_pull.<...>") works.
     sys.modules["sys_util_git_pull"] = module
     spec.loader.exec_module(module)
     return module
 
 
-# Load once at import time
 sut = _load_sut()
 
 
@@ -68,7 +66,6 @@ class SysUtilGitPullTests(unittest.TestCase):
         self.assertEqual("err", res.stderr)
 
     def test_run_checked_raises_on_non_transient_failure(self) -> None:
-        # Non-transient: stderr doesn't match any transient markers
         with patch.object(
             sut, "run", return_value=sut.RunResult(2, "out", "some permanent error")
         ):
@@ -77,7 +74,6 @@ class SysUtilGitPullTests(unittest.TestCase):
             self.assertIn("Command failed (rc=2)", str(ctx.exception))
 
     def test_run_checked_retries_on_transient_then_succeeds(self) -> None:
-        # Transient: contains e.g. "Connection reset by peer"
         seq = [
             sut.RunResult(128, "", "fatal: ... Recv failure: Connection reset by peer"),
             sut.RunResult(0, "ok", ""),
@@ -110,7 +106,6 @@ class SysUtilGitPullTests(unittest.TestCase):
         self.assertFalse(sut.is_dir_empty("/tmp/x"))
 
     def test_remote_exists_true_when_remote_list_contains_name(self) -> None:
-        # remote_exists now uses run(["git","remote"]) directly
         with patch.object(
             sut, "run", return_value=sut.RunResult(0, "origin\nupstream\n", "")
         ):
@@ -127,7 +122,6 @@ class SysUtilGitPullTests(unittest.TestCase):
             self.assertIn("Command failed (rc=1): git remote", str(ctx.exception))
 
     def test_tag_exists_uses_rev_parse_rc(self) -> None:
-        # tag_exists now uses run([...rev-parse...]) directly
         with patch.object(sut, "run", return_value=sut.RunResult(0, "", "")):
             self.assertTrue(sut.tag_exists("/repo", "stable", verbose=False))
         with patch.object(sut, "run", return_value=sut.RunResult(1, "", "")):
@@ -150,7 +144,6 @@ class SysUtilGitPullTests(unittest.TestCase):
             m_git.assert_not_called()
 
     def test_get_local_tag_commit_returns_commit_on_rc0(self) -> None:
-        # get_local_tag_commit uses run([...rev-parse...]) directly
         with patch.object(sut, "run", return_value=sut.RunResult(0, "abc123\n", "")):
             self.assertEqual(
                 "abc123", sut.get_local_tag_commit("/repo", "stable", verbose=False)
@@ -164,7 +157,6 @@ class SysUtilGitPullTests(unittest.TestCase):
         def fake_run_checked(
             cmd, cwd, verbose, retries=5, backoff_cap_seconds=20
         ) -> sut.RunResult:
-            # cmd: ["git","ls-remote","--tags",remote,"stable^{}"] or fallback "stable"
             if cmd[-1].endswith("^{}"):
                 return sut.RunResult(0, "deadbeef\trefs/tags/stable^{}\n", "")
             return sut.RunResult(0, "cafebabe\trefs/tags/stable\n", "")

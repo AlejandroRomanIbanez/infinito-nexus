@@ -27,11 +27,7 @@ retry() {
   done
 }
 
-# ---------------------------
-# 0) Root phase (if running as root)
-# ---------------------------
 if [ "$(id -u)" -eq 0 ]; then
-  # Prepare required folders and shared volumes
   mkdir -p "$APP_ROOT/.infinito" \
            "$APP_ROOT/public/bundles" \
            "$APP_ROOT/public/media" \
@@ -50,22 +46,16 @@ if [ "$(id -u)" -eq 0 ]; then
     "$APP_ROOT/var" \
     "$APP_ROOT/.infinito" || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 
-  # Switch to www-data for all subsequent operations
   exec su -s /bin/sh www-data "$0" "$@"
 fi
 
-# From here on: running as www-data
 cd "$APP_ROOT" || fail "Cannot cd to $APP_ROOT"
 
-# Optional environment hints
 APP_ENV_STR=$($PHP_BIN -r 'echo getenv("APP_ENV") ?: "";' 2>/dev/null || true)
 APP_URL_STR=$($PHP_BIN -r 'echo getenv("APP_URL") ?: "";' 2>/dev/null || true)
 [ -n "$APP_ENV_STR" ] || log "APP_ENV not set (using defaults)"
 [ -n "$APP_URL_STR" ] || log "APP_URL not set (reverse proxy must set headers)"
 
-# ---------------------------
-# 1) Database reachability check (PDO)
-# ---------------------------
 log "Checking database via PDO..."
 # shellcheck disable=SC2016
 $PHP_BIN -r '
@@ -87,9 +77,6 @@ while ($retries-- > 0) {
 fwrite(STDERR, "DB not reachable\n"); exit(1);
 ' || fail "Database not reachable"
 
-# ---------------------------
-# 2) First-time install detection
-# ---------------------------
 FIRST_INSTALL=0
 if [ ! -f "$MARKER" ]; then
   log "Checking if database is empty..."
@@ -126,29 +113,18 @@ if [ "$FIRST_INSTALL" -eq 1 ]; then
   : > "$MARKER"
 fi
 
-# ---------------------------
-# 3) Always run migrations
-# ---------------------------
 log "Running database migrations..."
 $PHP_BIN -d memory_limit=1024M bin/console database:migrate --all
 $PHP_BIN -d memory_limit=1024M bin/console database:migrate-destructive --all
 
-# ---------------------------
-# 4) Always rebuild caches, bundles, and themes
-# ---------------------------
 log "Rebuilding caches and assets..."
 $PHP_BIN bin/console cache:clear
 retry 5 $PHP_BIN bin/console bundle:dump
-# Use --copy if symlinks cause issues
 retry 5 $PHP_BIN bin/console assets:install --no-interaction --force
 retry 5 $PHP_BIN bin/console theme:refresh
 retry 5 $PHP_BIN bin/console theme:compile
-# Best-effort: not critical if it fails
 $PHP_BIN bin/console dal:refresh:index || log "dal:refresh:index failed (non-critical)"
 
-# ---------------------------
-# 5) Verify admin bundles
-# ---------------------------
 if [ ! -d "public/bundles/administration" ]; then
   fail "Missing directory public/bundles/administration (asset build failed)"
 fi
@@ -156,9 +132,6 @@ if ! ls public/bundles/administration/* >/dev/null 2>&1; then
   fail "No files found in public/bundles/administration (asset build failed)"
 fi
 
-# ---------------------------
-# 6) Show version info
-# ---------------------------
 $PHP_BIN bin/console system:version 2>/dev/null || log "system:version not available"
 
 log "Initialization complete."

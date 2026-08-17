@@ -317,7 +317,6 @@ class TestVerifyEndToEnd(unittest.TestCase):
         Path(self.log_path).write_text(content)
 
     def test_no_required_roles_returns_ok(self) -> None:
-        # No services.yml with required_by present
         self._set_log("")
         ok, missing = verify(
             roles_dir=self.roles_dir,
@@ -401,9 +400,7 @@ class TestVerifyEndToEnd(unittest.TestCase):
         body = (
             "TASK [sys-svc-webserver-core : Load OpenResty] ****\nok: [localhost] => \n"
         )
-        # Scenario: previous-round events at start; current slice starts AFTER them.
         self._set_log(prefix + body)
-        # With offset=0 the role's event is in scope → OK.
         ok, missing = verify(
             roles_dir=self.roles_dir,
             log_path=self.log_path,
@@ -411,7 +408,6 @@ class TestVerifyEndToEnd(unittest.TestCase):
             log_byte_offset=0,
         )
         self.assertTrue(ok)
-        # With offset past the event the slice is empty → role reported missing.
         ok, missing = verify(
             roles_dir=self.roles_dir,
             log_path=self.log_path,
@@ -473,7 +469,6 @@ class TestCLIMain(unittest.TestCase):
                 " web-app-yourls , web-svc-css ",
             ]
         )
-        # verify() was called with the trimmed list
         kwargs = mock_verify.call_args.kwargs
         self.assertEqual(kwargs["deployed_role_ids"], ["web-app-yourls", "web-svc-css"])
 

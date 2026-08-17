@@ -103,9 +103,6 @@ class TestTaskBlockBounds(unittest.TestCase):
         )
         chdir_idx = _line_index(lines, "chdir:")
         start, end = _task_block_bounds(lines, chdir_idx)
-        # The nearest matching start is the inner `- name:` (more
-        # indented), not the outer `- block:`. Documents that
-        # semantics so future readers know the helper is shallow.
         inner_name = _line_index(lines, "- name: Inner")
         self.assertEqual(start, inner_name)
         self.assertEqual(end, len(lines))
@@ -138,16 +135,11 @@ class TestTaskBlockBounds(unittest.TestCase):
             """
         )
         outer_idx = _line_index(lines, "- name: Outer")
-        # `Inner` is more indented than `Outer`, so it does NOT end the
-        # outer block - the whole file is the outer's block.
         self.assertEqual(_task_block_bounds(lines, outer_idx), (0, len(lines)))
 
 
 class TestIsTaskComposeOnlyGated(unittest.TestCase):
     def test_when_after_offending_line_is_seen(self):
-        # The lint scans top-down and hits the chdir line before the
-        # `when:` clause; the helper must look at the whole task body,
-        # not just lines above the violation.
         lines = _lines(
             """
             - name: Stop the stack (compose-only)
@@ -213,9 +205,6 @@ class TestIsTaskComposeOnlyGated(unittest.TestCase):
         self.assertFalse(is_task_compose_only_gated(lines, chdir_idx))
 
     def test_swarm_only_when_is_not_compose_gate(self):
-        # `DEPLOYMENT_MODE == 'swarm'` means the task runs ONLY on
-        # swarm - exactly where compose verbs would break. Must NOT
-        # be treated as compose-only.
         lines = _lines(
             """
             - name: Task
@@ -245,8 +234,6 @@ class TestIsTaskComposeOnlyGated(unittest.TestCase):
         self.assertFalse(is_task_compose_only_gated(lines, ungated_chdir))
 
     def test_compound_when_expression_with_compose_gate_is_accepted(self):
-        # Authors often combine the mode gate with another predicate;
-        # the helper looks for substring presence, not equality.
         lines = _lines(
             """
             - name: Task
@@ -260,9 +247,6 @@ class TestIsTaskComposeOnlyGated(unittest.TestCase):
         self.assertTrue(is_task_compose_only_gated(lines, chdir_idx))
 
     def test_idx_before_any_task_marker(self):
-        # idx 0 with no preceding `- name:` - falls back to scanning
-        # the whole file. The fixture has no compose gate at all, so
-        # the result must be False (not silently True).
         lines = _lines(
             """
             ---
@@ -273,8 +257,6 @@ class TestIsTaskComposeOnlyGated(unittest.TestCase):
         self.assertFalse(is_task_compose_only_gated(lines, 0))
 
     def test_idx_before_any_task_with_global_gate_falls_back(self):
-        # When idx falls outside any task block, the helper scans the
-        # full file - documenting that behaviour explicitly.
         lines = _lines(
             """
             ---
@@ -300,9 +282,6 @@ class TestKnownLimitations(unittest.TestCase):
     """
 
     def test_folded_scalar_when_is_not_detected(self):
-        # `when: >` puts the expression on a continuation line; the
-        # line-based regex sees `>` as the expression and never reads
-        # the next line.
         lines = _lines(
             """
             - name: Task
@@ -315,9 +294,6 @@ class TestKnownLimitations(unittest.TestCase):
         self.assertFalse(is_task_compose_only_gated(lines, idx))
 
     def test_list_form_when_is_not_detected(self):
-        # Idiomatic AND-list form. The `when:` line carries no inline
-        # expression, and the helper does not aggregate child list
-        # items.
         lines = _lines(
             """
             - name: Task
@@ -331,9 +307,6 @@ class TestKnownLimitations(unittest.TestCase):
         self.assertFalse(is_task_compose_only_gated(lines, idx))
 
     def test_in_operator_gate_is_not_detected(self):
-        # `DEPLOYMENT_MODE in ['compose']` / `not in ['swarm']` are
-        # both real Ansible idioms; the helper is wired to `==` / `!=`
-        # only.
         lines = _lines(
             """
             - name: Task in-form
@@ -351,9 +324,6 @@ class TestKnownLimitations(unittest.TestCase):
         self.assertFalse(is_task_compose_only_gated(lines, y_idx))
 
     def test_unquoted_literal_is_not_detected(self):
-        # `when: DEPLOYMENT_MODE != swarm` (no quotes around the
-        # literal) is rare but legal Ansible. The regex insists on
-        # quotes for safety against partial-word matches.
         lines = _lines(
             """
             - name: Task

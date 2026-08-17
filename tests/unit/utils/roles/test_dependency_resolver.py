@@ -156,9 +156,6 @@ class TestRoleDependencyResolver(unittest.TestCase):
         make_role(self.roles_dir, "J")
         make_role(self.roles_dir, "K")
 
-        # Per run_after lives at
-        # meta/services.yml.<primary_entity>.run_after; for "A" the entity
-        # name equals the role name.
         write(
             str(Path(self.roles_dir) / "A" / ROLE_FILE_META_SERVICES),
             """
@@ -179,16 +176,13 @@ class TestRoleDependencyResolver(unittest.TestCase):
 
         r = RoleDependencyResolver(self.roles_dir)
 
-        # Direkter Helper
         ra = r._extract_meta_run_after(str(Path(self.roles_dir) / "A"))
         self.assertEqual(ra, {"J", "K"})
 
-        # Transitiv – off by default
         visited_off = r.resolve_transitively(["A"], resolve_run_after=False)
         self.assertNotIn("J", visited_off)
         self.assertNotIn("K", visited_off)
 
-        # Transitiv – enabled
         visited_on = r.resolve_transitively(["A"], resolve_run_after=True)
         self.assertTrue({"A", "J", "K"}.issubset(visited_on))
 
@@ -252,8 +246,6 @@ class TestRoleDependencyResolver(unittest.TestCase):
               - { role: D2 }
             """,
         )
-        # Per run_after lives at
-        # meta/services.yml.<primary_entity>.run_after.
         write(
             str(Path(self.roles_dir) / "ROOT" / ROLE_FILE_META_SERVICES),
             """
@@ -266,13 +258,11 @@ class TestRoleDependencyResolver(unittest.TestCase):
 
         r = RoleDependencyResolver(self.roles_dir)
 
-        # Ohne run_after
         visited = r.resolve_transitively(["ROOT"], resolve_run_after=False)
         for expected in ["ROOT", "C1", "C2", "D1", "D2"]:
             self.assertIn(expected, visited)
         self.assertNotIn("RA1", visited)
 
-        # Mit run_after
         visited_ra = r.resolve_transitively(["ROOT"], resolve_run_after=True)
         self.assertIn("RA1", visited_ra)
 

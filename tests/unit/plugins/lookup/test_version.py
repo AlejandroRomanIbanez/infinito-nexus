@@ -7,8 +7,6 @@ from pathlib import Path
 class TestVersionLookup(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        # Import the lookup plugin module once.
-        # This assumes your repo structure allows importing "plugins.lookup.version".
         try:
             cls.plugin_module = importlib.import_module("plugins.lookup.version")
             cls.LookupModule = cls.plugin_module.LookupModule
@@ -38,18 +36,15 @@ class TestVersionLookup(unittest.TestCase):
         original_root = plugin_mod.PROJECT_ROOT
 
         with tempfile.TemporaryDirectory() as tmp:
-            # Place pyproject.toml at repo root (tmp) if requested
             if pyproject_content is not None:
                 pyproject_path = str(Path(tmp) / "pyproject.toml")
                 with Path(pyproject_path).open("w", encoding="utf-8") as f:
                     f.write(pyproject_content)
 
-            # Override PROJECT_ROOT so the plugin reads from the temp layout
             plugin_mod.PROJECT_ROOT = Path(tmp)
 
             try:
                 plugin = self.LookupModule()
-                # Plugin ignores terms/kwargs intentionally
                 return plugin.run([])
             finally:
                 plugin_mod.PROJECT_ROOT = original_root

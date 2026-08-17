@@ -52,8 +52,6 @@ class TestCombinedRoleIntrospection(unittest.TestCase):
     def test_load_run_after(self) -> None:
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
-            # Per run_after lives under meta/services.yml.<entity>.
-            # Entity for plain "a" is "a" itself.
             _write(
                 root / "roles" / "a" / ROLE_FILE_META_SERVICES,
                 "a:\n  run_after:\n    - web-app-x\n    - web-app-y\n",
@@ -68,7 +66,6 @@ class TestCombinedRoleIntrospection(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
 
-            # start role is app
             _write(
                 root / "roles" / "start" / ROLE_FILE_VARS_MAIN,
                 "application_id: start\n",
@@ -77,13 +74,11 @@ class TestCombinedRoleIntrospection(unittest.TestCase):
                 root / "roles" / "start" / ROLE_FILE_META_MAIN,
                 "dependencies:\n  - app-dep\n  - non-app-dep\n",
             )
-            # app-dep has application_id
             _write(
                 root / "roles" / "app-dep" / ROLE_FILE_VARS_MAIN,
                 "application_id: app-dep\n",
             )
             (root / "roles" / "app-dep").mkdir(parents=True, exist_ok=True)
-            # non-app-dep exists but no application_id
             (root / "roles" / "non-app-dep").mkdir(parents=True, exist_ok=True)
 
             with patch.object(repo_paths, "PROJECT_ROOT", root):
@@ -94,13 +89,10 @@ class TestCombinedRoleIntrospection(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
 
-            # wordpress is app
             _write(
                 root / "roles" / "web-app-wordpress" / ROLE_FILE_VARS_MAIN,
                 "application_id: wordpress\n",
             )
-            # Per the file root IS the services map (no
-            # `compose.services` envelope).
             _write(
                 root / "roles" / "web-app-wordpress" / ROLE_FILE_META_SERVICES,
                 "sso:\n"
@@ -112,7 +104,6 @@ class TestCombinedRoleIntrospection(unittest.TestCase):
                 "  shared: true\n",
             )
 
-            # required provider role folders must exist
             (root / "roles" / "web-app-keycloak").mkdir(parents=True)
             (root / "roles" / "web-app-dashboard").mkdir(parents=True)
 

@@ -50,7 +50,7 @@ from utils.symbol_glossary import to_emoji
 
 _GROUP_DEP_RE = re.compile(r"'([a-z0-9][a-z0-9-]*)'\s+in\s+group_names")
 _DEPENDENTS_CAP = 12
-_OFF_STROKE = "red"  # a hex literal kills the parse: `#` opens a mermaid entity code
+_OFF_STROKE = "red"
 _MERMAID_RESERVED = {
     "call",
     "class",

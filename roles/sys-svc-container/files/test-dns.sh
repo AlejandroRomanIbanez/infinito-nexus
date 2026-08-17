@@ -7,9 +7,6 @@ set -euo pipefail
 : "${BUSYBOX_IMAGE:?Missing Busybox image}"
 : "${NODE_IMAGE?Missing Node image; pass it empty to skip the getaddrinfo check}"
 
-# ------------------------------------------------------------
-# Required env (must already be present in the container)
-# ------------------------------------------------------------
 : "${DNS_IP:?Missing env DNS_IP}"
 : "${DOMAIN:?Missing env DOMAIN}"
 
@@ -25,9 +22,6 @@ section() {
 ok()   { echo "OK:   $*"; }
 fail() { echo "FAIL: $*"; exit 1; }
 
-# ------------------------------------------------------------
-# Wait for Docker-in-Docker daemon
-# ------------------------------------------------------------
 section "Wait for dockerd (DinD)"
 
 for i in $(seq 1 60); do
@@ -42,9 +36,6 @@ done
 [ -S /var/run/docker.sock ] || fail "docker.sock missing after waiting"
 container info >/dev/null 2>&1 || fail "container info still failing after waiting"
 
-# ------------------------------------------------------------
-# DNS tests via Busybox (A + check "no SERVFAIL" robustly)
-# ------------------------------------------------------------
 section "Docker-in-Docker DNS (busybox: A + no SERVFAIL)"
 
 container run --rm --dns "${DNS_IP}" "${BUSYBOX_IMAGE}" sh -lc "
@@ -80,9 +71,6 @@ container run --rm --dns "${DNS_IP}" "${BUSYBOX_IMAGE}" sh -lc "
 
 ok "Inner container DNS works (A present; no SERVFAIL)"
 
-# ------------------------------------------------------------
-# Node / getaddrinfo test (this is what CSP checker uses)
-# ------------------------------------------------------------
 if [ -z "${NODE_IMAGE}" ]; then
   section "Docker-in-Docker DNS (node/getaddrinfo): skipped, NODE_IMAGE is empty"
 else

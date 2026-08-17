@@ -13,7 +13,6 @@ class TestEnsureImage(unittest.TestCase):
         If the image already exists, ensure_image should only call
         `docker image inspect` and NOT run `docker build`.
         """
-        # docker image inspect → rc=0 (image exists)
         mock_run.return_value = subprocess.CompletedProcess(
             args=["docker", "image", "inspect", "infinito:latest"],
             returncode=0,
@@ -23,12 +22,10 @@ class TestEnsureImage(unittest.TestCase):
 
         deploy_container.ensure_image("infinito:latest")
 
-        # Exactly one call: docker image inspect
         self.assertEqual(mock_run.call_count, 1)
         cmd = mock_run.call_args_list[0].args[0]
         self.assertEqual(cmd[:3], ["docker", "image", "inspect"])
 
-        # Ensure docker build was never called
         self.assertFalse(
             any(
                 call.args[0][:2] == ["docker", "build"]
@@ -48,7 +45,6 @@ class TestEnsureImage(unittest.TestCase):
         def _side_effect(cmd, *args, **kwargs):
             calls.append(cmd)
 
-            # First: docker image inspect → rc=1 (missing)
             if cmd[:3] == ["docker", "image", "inspect"]:
                 return subprocess.CompletedProcess(
                     args=cmd,
@@ -57,7 +53,6 @@ class TestEnsureImage(unittest.TestCase):
                     stderr="missing",
                 )
 
-            # Then: docker build → rc=0 (success)
             if cmd[:2] == ["docker", "build"]:
                 return subprocess.CompletedProcess(
                     args=cmd,
@@ -66,7 +61,6 @@ class TestEnsureImage(unittest.TestCase):
                     stderr="",
                 )
 
-            # Any other commands (should not happen here)
             return subprocess.CompletedProcess(
                 args=cmd,
                 returncode=0,
@@ -104,7 +98,6 @@ class TestMain(unittest.TestCase):
             "--inventory-dir",
             "/tmp/inventory",
             "--",
-            # no inventory/deploy args here
         ]
         with unittest.mock.patch.object(sys, "argv", argv):
             rc = deploy_container.main()
@@ -142,23 +135,19 @@ class TestMain(unittest.TestCase):
 
         kwargs = mock_run_in_container.call_args.kwargs
 
-        # Container-level options
         self.assertEqual(kwargs["image"], "myimage:latest")
         self.assertTrue(kwargs["build"])
         self.assertFalse(kwargs["rebuild"])
         self.assertFalse(kwargs["no_cache"])
         self.assertIsNone(kwargs["name"])
 
-        # Inventory dir (new)
         self.assertEqual(kwargs["inventory_dir"], "/tmp/inventory")
 
-        # Inventory args: first segment after first '--' until second '--'
         self.assertEqual(
             kwargs["inventory_args"],
             ["--exclude", "foo,bar"],
         )
 
-        # Deploy args: everything after the second '--'
         self.assertEqual(
             kwargs["deploy_args"],
             ["--debug"],

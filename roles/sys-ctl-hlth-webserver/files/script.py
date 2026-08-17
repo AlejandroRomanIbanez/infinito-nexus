@@ -43,7 +43,6 @@ def _parse_json_mapping(name: str, value: str) -> dict[str, list[int]]:
         raise SystemExit(f"--{name} must be a valid JSON string: {e}") from e
     if not isinstance(obj, dict):
         raise SystemExit(f"--{name} must be a JSON object (mapping)")
-    # sanitize list-of-ints shape
     clean = {}
     for k, v in obj.items():
         if isinstance(v, list):
@@ -82,7 +81,6 @@ def main(argv=None) -> int:
             if expected and r.status_code in expected:
                 print(f"{domain}: OK")
             elif not expected:
-                # If somehow empty list slipped through, treat as failure to be explicit
                 print(
                     f"{domain}: ERROR: No expectations provided. Got {r.status_code}."
                 )

@@ -9,12 +9,10 @@ from utils.cache.yaml import dump_yaml
 
 class TestApplicationGidLookup(unittest.TestCase):
     def setUp(self):
-        # Create a temporary roles directory
         self.temp_dir = tempfile.mkdtemp()
         self.roles_dir = str(Path(self.temp_dir) / "roles")
         Path(self.roles_dir).mkdir()
 
-        # Define mock application_ids (role directory names are the canonical ids)
         self.application_ids = [
             "web-app-nextcloud",
             "web-app-moodle",
@@ -22,8 +20,6 @@ class TestApplicationGidLookup(unittest.TestCase):
             "web-app-taiga",
         ]
 
-        # Per an "application role" is identified by the presence of
-        # at least one of the project-owned `meta/<topic>.yml` files.
         for application_id in self.application_ids:
             role_path = str(Path(self.roles_dir) / application_id / "meta")
             Path(role_path).mkdir(parents=True)

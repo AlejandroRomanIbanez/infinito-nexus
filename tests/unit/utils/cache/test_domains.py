@@ -57,11 +57,6 @@ class TestMissingPrimaryDomain(unittest.TestCase):
                 )
 
     def test_falls_back_to_system_email_domain(self):
-        # Pure-python smoke: when DOMAIN_PRIMARY is absent but
-        # SYSTEM_EMAIL_DOMAIN is set, the function should NOT raise.
-        # The actual canonical-domains-map computation is exercised
-        # indirectly via get_merged_applications; we patch it out so
-        # this stays an isolated unit test of the dispatch code path.
         with tempfile.TemporaryDirectory() as tmp:
             roles = _seed_minimal_role(Path(tmp))
             with patch(
@@ -81,7 +76,6 @@ class TestCachingPerVariablesSignature(unittest.TestCase):
         _reset_cache_for_tests()
 
     def test_caches_result_for_identical_variables(self):
-        # Patch out the heavy call so this is a pure cache-behaviour test.
         with tempfile.TemporaryDirectory() as tmp:
             roles = _seed_minimal_role(Path(tmp))
             with patch(
@@ -98,7 +92,6 @@ class TestCachingPerVariablesSignature(unittest.TestCase):
                     roles_dir=roles,
                     templar=None,
                 )
-            # Same cache key -> upstream MUST only be called once.
             self.assertEqual(mocked.call_count, 1)
             self.assertEqual(first, second)
 
@@ -136,10 +129,8 @@ class TestResetClearsDomainsCache(unittest.TestCase):
                     roles_dir=roles,
                     templar=None,
                 )
-                # Cache MUST hold one entry now.
                 self.assertEqual(len(cache_domains._MERGED_DOMAINS_CACHE), 1)
                 _reset_cache_for_tests()
-                # Cache MUST be empty after the orchestrator runs.
                 self.assertEqual(len(cache_domains._MERGED_DOMAINS_CACHE), 0)
 
 

@@ -54,7 +54,6 @@ class TestWipeTokens(TokensTestBase, unittest.TestCase):
         self.assertEqual(self.tokens_file.stat().st_mtime_ns, before_mtime)
 
     def test_missing_file_returns_empty(self):
-        # File never created, .exists() == False.
         removed = wipe_tokens(["web-app-matomo"], tokens_file=self.tokens_file)
         self.assertEqual(removed, [])
         self.assertFalse(self.tokens_file.exists())
@@ -146,8 +145,6 @@ class TestMainShim(TokensTestBase, unittest.TestCase):
         self.assertIn("usage:", stderr.getvalue())
 
     def test_main_uses_default_path_when_no_override(self):
-        # With no FILE_TOKENS env var and the default path missing on the
-        # test host, main MUST still return 0 and report a no-op.
         stdout = io.StringIO()
         with redirect_stdout(stdout):
             rc = main(["web-app-nonexistent"])

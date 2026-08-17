@@ -5,7 +5,6 @@ import unittest
 
 from . import PROJECT_ROOT
 
-# Ensure repo root is importable (so `import cli...` works in all runners)
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -41,14 +40,12 @@ class TestFullInventoryCommand(unittest.TestCase):
         self.assertEqual(inventory["all"]["hosts"], [host])
 
     def test_ignore_filtering(self):
-        # Simulate argument parsing logic for ignore flattening
         ignore_args = ["foo,bar", "baz"]
         ignore_ids: set[str] = set()
         for entry in ignore_args:
             ignore_ids.update(i.strip() for i in entry.split(",") if i.strip())
         self.assertEqual(ignore_ids, {"foo", "bar", "baz"})
 
-        # Filtering list
         apps = ["foo", "bar", "baz", "other"]
         filtered = [app for app in apps if app not in ignore_ids]
         self.assertEqual(filtered, ["other"])

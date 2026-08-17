@@ -45,8 +45,6 @@ class TestLoadYamlFile(LoadersTestBase, unittest.TestCase):
             data["applications"]["app1"]["credentials"]["api_key"],
             "<vaulted>",
         )
-        # The next top-level section must survive the vault-stripping
-        # (the regex stops at the next non-indented line).
         self.assertEqual(data["users"], {"alice": {}})
 
     def test_missing_file_returns_none_and_warns(self):

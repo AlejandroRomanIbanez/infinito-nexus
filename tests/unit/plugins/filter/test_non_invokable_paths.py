@@ -16,7 +16,6 @@ class TestNonInvokablePaths(unittest.TestCase):
 
     def test_empty_roles(self):
         path = self.write_yaml({})
-        # No roles, so no non-invokable paths
         self.assertEqual(get_non_invokable_paths(path), [])
         Path(path).unlink()
 
@@ -34,7 +33,6 @@ class TestNonInvokablePaths(unittest.TestCase):
     def test_single_invokable_true_excluded(self):
         data = {"role1": {"invokable": True}}
         path = self.write_yaml(data)
-        # invokable True should not appear in non-invokable list
         self.assertEqual(get_non_invokable_paths(path), [])
         Path(path).unlink()
 
@@ -48,7 +46,6 @@ class TestNonInvokablePaths(unittest.TestCase):
             }
         }
         path = self.write_yaml(data)
-        # 'parent-child' (explicit False), 'parent-sub' (missing invokable), and 'parent-sub-deep' (missing) are non-invokable
         expected = ["parent-child", "parent-sub", "parent-sub-deep"]
         self.assertEqual(sorted(get_non_invokable_paths(path)), sorted(expected))
         Path(path).unlink()
@@ -56,7 +53,6 @@ class TestNonInvokablePaths(unittest.TestCase):
     def test_unwrap_roles_key(self):
         data = {"roles": {"role1": {"invokable": False}, "role2": {"invokable": True}}}
         path = self.write_yaml(data)
-        # Only role1 is non-invokable
         self.assertEqual(get_non_invokable_paths(path), ["role1"])
         Path(path).unlink()
 

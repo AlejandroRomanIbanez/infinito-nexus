@@ -17,15 +17,13 @@ class RunResult:
     stderr: str
 
 
-# Common transient network / transport errors seen with git+https in CI/docker.
-# We retry only when we are reasonably sure the failure is transient.
 TRANSIENT_MARKERS = (
     "Connection reset by peer",
     "Recv failure",
     "Could not resolve host",
     "Failed to connect",
     "Operation timed out",
-    "The requested URL returned error: 5",  # e.g. 502/503/504 sometimes
+    "The requested URL returned error: 5",
     "HTTP/2 stream",
     "TLS",
     "SSL",
@@ -98,7 +96,6 @@ def run_checked(
         )
         time.sleep(sleep_s)
 
-    # Should never be reached, but keep type-checkers happy.
     if last is not None:
         raise RuntimeError(
             f"Command failed (rc={last.rc}): {' '.join(cmd)}\n"
@@ -131,7 +128,6 @@ def is_git_repo(dest: str) -> bool:
 
 def remote_exists(dest: str, remote: str, verbose: bool) -> bool:
     r = run(["git", "remote"], cwd=dest, verbose=verbose)
-    # "git remote" should not fail for a valid repo; if it does, treat as fatal.
     if r.rc != 0:
         raise RuntimeError(
             f"Command failed (rc={r.rc}): git remote\n"
@@ -169,7 +165,6 @@ def get_local_tag_commit(dest: str, tag: str, verbose: bool) -> str:
 
 
 def resolve_remote_tag_commit(dest: str, remote: str, tag: str, verbose: bool) -> str:
-    # Annotated tags: tag^{} resolves to the tagged commit.
     r = run_checked(
         ["git", "ls-remote", "--tags", remote, f"{tag}^{{}}"],
         cwd=dest,
@@ -179,7 +174,6 @@ def resolve_remote_tag_commit(dest: str, remote: str, tag: str, verbose: bool) -
     if r.stdout:
         return r.stdout.split()[0]
 
-    # Lightweight tags
     r = run_checked(
         ["git", "ls-remote", "--tags", remote, tag],
         cwd=dest,
@@ -288,7 +282,6 @@ def main() -> int:
     if moved:
         changed = True
 
-    # machine-readable output (stdout!)
     print(f"CHANGED={str(changed).lower()}")
     if args.pin_tag:
         print(f"PIN_TAG={args.pin_tag}")

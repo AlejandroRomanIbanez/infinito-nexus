@@ -74,7 +74,6 @@ class TestApplyMirrorOverrides(unittest.TestCase):
         out = self._read_yaml(self.host_vars)
         svc = out["applications"]["web-app-nextcloud"]["services"]["app"]
 
-        # applications: manual values win
         self.assertEqual(svc["image"], "docker.io/library/nextcloud")
         self.assertEqual(svc["version"], "30.0.0")
 
@@ -284,14 +283,12 @@ class TestApplyMirrorOverrides(unittest.TestCase):
                     "services": {
                         "app": {
                             "image": "ghcr.io/acme/mirror/nextcloud",
-                            # missing version -> should be ignored
                         }
                     }
                 },
                 "web-app-wordpress": {
                     "services": {
                         "wp": {
-                            # missing image -> ignored
                             "version": "6.4",
                         }
                     }

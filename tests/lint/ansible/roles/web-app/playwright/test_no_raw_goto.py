@@ -31,11 +31,7 @@ _PERSONA_FLOW_DIR = (
 _PERSONA_FLOW_FILES: tuple[str, ...] = ("biber.js", "admin.js", "guest.js")
 
 _BLOCK_COMMENT = re.compile(r"/\*.*?\*/", re.DOTALL)
-# Line comment not preceded by `:` so URLs (`http://…`) are not mistaken for one.
 _LINE_COMMENT = re.compile(r"(?<!:)//[^\n]*")
-# String literals (template / double / single, escape-aware). Blanked so a
-# `page.goto(` mentioned inside an error message string is not a false match; a
-# real call keeps its `page.goto(` before the string argument.
 _STRING = re.compile(
     r"`(?:[^`\\]|\\.)*`|\"(?:[^\"\\]|\\.)*\"|'(?:[^'\\]|\\.)*'", re.DOTALL
 )

@@ -188,7 +188,6 @@ class TestPrintDirOverview(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             cli_dir = Path(td) / "cli"
             cli_dir.mkdir(parents=True, exist_ok=True)
-            # `meta` is a category folder with README.
             self._touch(
                 cli_dir / "meta" / "README.md",
                 "# Meta 🧬\n\nMeta operations folder.\n",
@@ -201,19 +200,15 @@ class TestPrintDirOverview(unittest.TestCase):
             joined = "\n".join(
                 str(call.args[0]) for call in mock_print.call_args_list if call.args
             )
-            # Title is taken from the README's H1; invocation path
-            # appears as the dim subtitle underneath.
             self.assertIn("Meta 🧬", joined)
             self.assertIn("infinito meta", joined)
             self.assertIn("Meta operations folder.", joined)
             self.assertIn("Categories:", joined)
-            # Full invocation form, no trailing slash on category folders.
             self.assertIn("infinito meta roles", joined)
             self.assertNotIn("roles/", joined)
             self.assertIn("Commands:", joined)
             self.assertIn("infinito meta j2", joined)
             self.assertIn("CMD-DESC", joined)
-            # Help-hint surfaces below the commands list.
             self.assertIn("--help", joined)
 
 

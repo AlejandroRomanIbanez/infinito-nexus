@@ -40,8 +40,6 @@ def _write_meta_services_run_after(
 
     p = root / "roles" / role / ROLE_FILE_META_SERVICES
     p.parent.mkdir(parents=True, exist_ok=True)
-    # For role names without a known category prefix, get_entity_name returns
-    # the role name itself.
     p.write_text(dump_yaml_str({role: {"run_after": run_after}}), encoding="utf-8")
 
 

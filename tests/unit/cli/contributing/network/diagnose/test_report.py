@@ -108,8 +108,6 @@ class TestHasIpv6DefaultRoute(unittest.TestCase):
             self.assertFalse(report.has_ipv6_default_route())
 
     def test_proc_fallback_picks_up_non_lo(self) -> None:
-        # ip cmd missing → fall back to /proc/net/ipv6_route. Line shape: 24 cols
-        # ending in iface name.
         proc_line = (
             "0" * 32
             + " 00 "

@@ -10,8 +10,6 @@ def _load_lookup_module() -> ModuleType:
     plugins/lookup/ path. Stubs out ansible imports so the unit test
     does not require the ansible runtime."""
 
-    # Stub minimal ansible.errors / ansible.plugins.lookup /
-    # ansible.plugins.loader so the plugin module imports cleanly.
     if "ansible" not in sys.modules:
         ansible_pkg = ModuleType("ansible")
         sys.modules["ansible"] = ansible_pkg

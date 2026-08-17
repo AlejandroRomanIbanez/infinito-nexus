@@ -16,7 +16,6 @@ class TestGraphLogic(unittest.TestCase):
         Path(str(Path(self.role_path) / "meta")).mkdir(parents=True)
         Path(str(Path(self.role_path) / "tasks")).mkdir(parents=True)
 
-        # Write meta/main.yml
         dump_yaml(
             str(Path(self.role_path) / ROLE_FILE_META_MAIN),
             {
@@ -25,7 +24,6 @@ class TestGraphLogic(unittest.TestCase):
             },
         )
 
-        # Write tasks/main.yml
         dump_yaml(
             str(Path(self.role_path) / ROLE_FILE_TASKS_MAIN),
             [

@@ -9,7 +9,6 @@ from utils.roles.mapping import ROLE_FILE_META_MAIN
 
 class TestTreeMain(unittest.TestCase):
     def setUp(self):
-        # Create a temporary roles directory with a fake role
         self.temp_dir = tempfile.mkdtemp()
         self.role_name = "testrole"
         self.role_path = str(Path(self.temp_dir) / self.role_name)
@@ -28,7 +27,6 @@ class TestTreeMain(unittest.TestCase):
         self.assertEqual(roles[0][0], self.role_name)
 
     def test_main_execution_does_not_raise(self):
-        # Mocking sys.argv and running main should not raise
         import sys
 
         old_argv = sys.argv

@@ -26,7 +26,6 @@ build_and_install_arch() {
 	echo "[arch] Initializing pacman keyring..."
 	pacman-key --init
 	pacman-key --populate archlinux
-	# Tolerate missing manjaro keyring on pure Arch images (no manjaro.gpg present).
 	pacman-key --populate manjaro 2>/dev/null || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 
 	echo "[arch] Installing build toolchain..."

@@ -130,7 +130,6 @@ class TestPlanDevInventoryMatrix(unittest.TestCase):
         _overrides_mock: MagicMock,
         resolve_include_mock: MagicMock,
     ) -> None:
-        # Both primaries; rounds = max(3, 2) = 3.
         get_variants_mock.return_value = {
             "web-app-three": [{}, {}, {}],
             "web-app-two": [{}, {}],
@@ -145,7 +144,6 @@ class TestPlanDevInventoryMatrix(unittest.TestCase):
             primary_apps=["web-app-three", "web-app-two"],
             base_inventory_dir="/srv/inv",
         )
-        # Round 0,1,2 -> three has 0,1,2 / two has 0,1,0 (clamped on R=2).
         self.assertEqual(
             plan,
             [
@@ -192,7 +190,6 @@ class TestPlanDevInventoryMatrix(unittest.TestCase):
         _overrides_mock: MagicMock,
         resolve_include_mock: MagicMock,
     ) -> None:
-        # WHY: per-round include must stay variant-specific while purge_set must be the union, otherwise the inter-round wipe leaks coturn into round 1.
         get_variants_mock.return_value = {
             "web-app-nextcloud": [{"shared_coturn": True}, {"shared_coturn": False}],
         }

@@ -38,13 +38,9 @@ class TestComposeFArgs(unittest.TestCase):
         )
         self.lookup = self.m.LookupModule()
 
-        # In real Ansible, LookupBase gets _loader/_templar injected.
-        # For unit tests, set them to placeholders.
         self.lookup._loader = object()
         self.lookup._templar = object()
 
-        # compose_file_args no longer reads variables['compose'].
-        # It builds compose via get_docker_paths(application_id, DIR_COMPOSITIONS).
         self.vars = {
             "DIR_COMPOSITIONS": "/x/",
             "domains": {
@@ -65,8 +61,6 @@ class TestComposeFArgs(unittest.TestCase):
         return _get
 
     def _stub_get_docker_paths(self, application_id: str, base_dir: str) -> dict:
-        # Keep structure identical to utils.docker.paths_utils.get_docker_paths()
-        # but stable for unit tests.
         self.assertEqual(application_id, "web-app-a")
         self.assertEqual(base_dir, "/x/")
         return {
@@ -187,21 +181,18 @@ class TestComposeFArgs(unittest.TestCase):
             )
 
     def test_requires_docker_compose_structure_from_get_docker_paths(self):
-        # get_docker_paths returns non-dict -> must fail
         with (
             patch.object(self.m, "get_docker_paths", return_value="nope"),
             self.assertRaises(AnsibleError),
         ):
             self.lookup.run(["web-app-a"], variables=self.vars)
 
-        # get_docker_paths returns dict but missing files -> must fail
         with (
             patch.object(self.m, "get_docker_paths", return_value={}),
             self.assertRaises(AnsibleError),
         ):
             self.lookup.run(["web-app-a"], variables=self.vars)
 
-        # get_docker_paths returns dict with non-dict files -> must fail
         with (
             patch.object(self.m, "get_docker_paths", return_value={"files": "nope"}),
             self.assertRaises(AnsibleError),

@@ -8,7 +8,6 @@ from cli.administration.deploy.dedicated import apps
 
 class TestValidateApplicationIds(unittest.TestCase):
     def test_no_ids_does_nothing(self):
-        # Should not raise
         apps.validate_application_ids("/etc/inventories/github-ci/devices.yml", [])
 
     @unittest.mock.patch("utils.roles.validation.deploy_id.ValidDeployId")
@@ -36,7 +35,6 @@ class TestValidateApplicationIds(unittest.TestCase):
         instance = mock_vdi_cls.return_value
         instance.validate.return_value = {}
 
-        # Should not exit
         apps.validate_application_ids(
             "/etc/inventories/github-ci/devices.yml",
             ["web-app-foo"],

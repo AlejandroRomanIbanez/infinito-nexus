@@ -10,7 +10,7 @@ from . import PROJECT_ROOT
 
 
 def load_target_module():
-    repo_root = PROJECT_ROOT  # /opt/src/infinito
+    repo_root = PROJECT_ROOT
     script_path = (
         repo_root / "roles" / "sys-ctl-hlth-disc-space" / "files" / "script.py"
     )
@@ -25,7 +25,6 @@ def load_target_module():
     return module
 
 
-# Load the module once for all tests
 SCRIPT_MODULE = load_target_module()
 
 

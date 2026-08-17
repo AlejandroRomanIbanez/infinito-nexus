@@ -139,8 +139,8 @@ class TestPathMtuProbe(unittest.TestCase):
         def fake(argv, timeout=5.0):
             calls["n"] += 1
             if calls["n"] == 1:
-                return 0, ""  # CAP_NET_RAW probe
-            return 0, ""  # first size (1472) succeeds
+                return 0, ""
+            return 0, ""
 
         with patch.object(probes, "cmd_capture", side_effect=fake):
             payload, total = probes.path_mtu_probe("1.2.3.4", socket.AF_INET)
@@ -148,7 +148,6 @@ class TestPathMtuProbe(unittest.TestCase):
         self.assertEqual(total, 1500)
 
     def test_returns_none_when_all_sizes_fail(self) -> None:
-        # First call (CAP_NET_RAW probe) succeeds, all sized probes fail.
         rcs = [(0, "")] + [(2, "size too big")] * len(probes.PMTU_PROBE_SIZES)
         with patch.object(probes, "cmd_capture", side_effect=rcs):
             payload, total = probes.path_mtu_probe("1.2.3.4", socket.AF_INET)

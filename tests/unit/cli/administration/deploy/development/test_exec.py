@@ -111,7 +111,6 @@ class TestDevelopmentExec(unittest.TestCase):
         ):
             exec_cmd.handler(_args(cmd=["true"], env=["EXTRA_VARS=a=1 b=2"]))
 
-        # Only the first '=' splits key from value; everything after stays intact.
         compose.exec.assert_called_once_with(
             ["true"],
             check=False,

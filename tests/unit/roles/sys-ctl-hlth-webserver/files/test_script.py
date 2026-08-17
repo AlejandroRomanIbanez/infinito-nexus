@@ -33,7 +33,7 @@ class TestStandaloneCheckerScript(unittest.TestCase):
             self.script.main(
                 [
                     "--expectations",
-                    '{"bad json": [200, 301]',  # missing closing brace
+                    '{"bad json": [200, 301]',
                 ]
             )
 
@@ -56,7 +56,6 @@ class TestStandaloneCheckerScript(unittest.TestCase):
 
             r = R()
             domain = url.split("://", 1)[1]
-            # both match expectations exactly
             mapping = {"ok1.example.org": 200, "ok2.example.org": 301}
             r.status_code = mapping.get(domain, 200)
             return r
@@ -94,20 +93,18 @@ class TestStandaloneCheckerScript(unittest.TestCase):
         mock_head.side_effect = head_side_effect
 
         exp = {
-            "bad.example.org": [404],  # mismatch (got 200)
-            "ok301.example.org": [301],  # OK
+            "bad.example.org": [404],
+            "ok301.example.org": [301],
             "never.example.org": [
                 200
-            ],  # will default to 200 in side effect? No mapping -> 200 -> OK
+            ],
         }
-        # Adjust side effect to ensure "never.example.org" is OK 200
         exit_code, output = self._run_main(
             [
                 "--expectations",
                 self._to_json(exp),
             ]
         )
-        # only 'bad.example.org' mismatched
         self.assertEqual(exit_code, 1)
         self.assertIn("bad.example.org: ERROR: Expected [404]. Got 200.", output)
 
@@ -125,7 +122,6 @@ class TestStandaloneCheckerScript(unittest.TestCase):
         mock_head.side_effect = head_side_effect
 
         exp_json = '{"foo.example.org": "not-a-list", "bar.example.org": 200}'
-        # Both entries get empty expectations -> 2 errors
         exit_code, output = self._run_main(
             [
                 "--expectations",

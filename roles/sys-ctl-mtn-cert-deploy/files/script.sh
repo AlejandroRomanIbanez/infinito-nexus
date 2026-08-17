@@ -10,9 +10,6 @@ fi
 ssl_cert_source_dir="$1"
 docker_compose_instance_directory="$2"
 
-# Compose wrapper base command (must include quoting as needed)
-# Example:
-#   compose_cmd="compose --chdir /opt/compose/mailu --project mailu"
 : "${compose_cmd:=}"
 
 if [ -z "$compose_cmd" ]; then
@@ -21,7 +18,6 @@ if [ -z "$compose_cmd" ]; then
   exit 1
 fi
 
-# Keep your existing target layout (minimal change)
 docker_compose_cert_directory="${docker_compose_instance_directory%/}/volumes/certs"
 
 if [ ! -d "$ssl_cert_source_dir" ]; then
@@ -29,7 +25,6 @@ if [ ! -d "$ssl_cert_source_dir" ]; then
   exit 1
 fi
 
-# Ensure the target cert directory exists
 if [ ! -d "$docker_compose_cert_directory" ]; then
   echo "Creating certs directory: $docker_compose_cert_directory"
   mkdir -p "$docker_compose_cert_directory"
@@ -38,8 +33,6 @@ fi
 echo "Copying certificates from: $ssl_cert_source_dir -> $docker_compose_cert_directory"
 cp -RvL "${ssl_cert_source_dir}/"* "$docker_compose_cert_directory"
 
-# Mailu optimization: create key.pem/cert.pem from whatever exists
-# Prefer LE naming if present
 if [ -f "${ssl_cert_source_dir}/privkey.pem" ] && [ -f "${ssl_cert_source_dir}/fullchain.pem" ]; then
   cp -v "${ssl_cert_source_dir}/privkey.pem"   "${docker_compose_cert_directory}/key.pem"
   cp -v "${ssl_cert_source_dir}/fullchain.pem" "${docker_compose_cert_directory}/cert.pem"
@@ -52,14 +45,10 @@ else
   exit 1
 fi
 
-# Set correct reading rights
 chmod a+r -v "${docker_compose_cert_directory}/"* || exit 1
 
-# Ensure we can chdir (compose project dir)
 cd "$docker_compose_instance_directory" || exit 1
 
-# List services via wrapper to ensure correct -p/-f/--env-file stack is used
-# IMPORTANT: use "--" to stop wrapper arg parsing (so compose flags like "--services" are passed through)
 services="$(sh -c "$compose_cmd -- ps --services")"
 
 restart_services=""
@@ -75,7 +64,6 @@ for service in $services; do
   fi
 done
 
-# Restart only the services that actually contain nginx
 if [ -n "$(echo "$restart_services" | tr -d ' ')" ]; then
   echo "Restarting Nginx services to apply new certificates:${restart_services}"
   # shellcheck disable=SC2086

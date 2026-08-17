@@ -9,14 +9,12 @@ from cli.core.app import parse_flags
 
 class TestApp(unittest.TestCase):
     def test_parse_flags_log_only_for_deploy(self):
-        # --log is ignored for non-deploy commands; it is removed from argv
         argv = ["infinito", "--log", "/tmp/infinito-logs", "build", "tree"]
         flags = parse_flags(argv)
         self.assertIsNone(flags.log_dir)
         self.assertNotIn("--log", argv)
         self.assertNotIn("/tmp/infinito-logs", argv)
 
-        # --log is accepted for deploy; it is removed from argv and stored in flags
         argv2 = ["infinito", "--log", "/tmp/infinito-logs", "deploy", "container"]
         flags2 = parse_flags(argv2)
         self.assertEqual(flags2.log_dir, Path("/tmp/infinito-logs"))
@@ -24,7 +22,6 @@ class TestApp(unittest.TestCase):
         self.assertNotIn("/tmp/infinito-logs", argv2)
 
     def test_parse_flags_log_requires_argument(self):
-        # Missing argument: '--log' is followed by another flag (or end of argv)
         argv = ["infinito", "--log", "--git-clean", "deploy", "container"]
         with self.assertRaises(SystemExit) as cm:
             parse_flags(argv)
@@ -92,7 +89,6 @@ class TestApp(unittest.TestCase):
         flags = parse_flags(argv)
         self.assertTrue(flags.tree)
         self.assertIsNone(flags.tree_depth)
-        # `meta` is preserved as a regular argument.
         self.assertEqual(argv, ["infinito", "meta"])
 
     @patch("cli.core.app.print_tree")
@@ -124,9 +120,6 @@ class TestApp(unittest.TestCase):
 
     @patch("cli.core.app.print_dir_overview")
     def test_app_main_navigates_into_category_folder(self, mock_overview):
-        # `cli/administration/` is a real category folder (no __main__.py)
-        # with sub-commands underneath. `infinito administration` MUST
-        # show its overview rather than failing.
         old_argv = sys.argv
         try:
             sys.argv = ["infinito", "administration"]

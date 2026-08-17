@@ -9,9 +9,6 @@ from ansible.plugins.lookup import LookupBase
 from utils.domains.primary_domain import get_domain
 from utils.roles.entity.name import get_entity_name
 
-# sethostname(2) caps a hostname at 64 bytes; onion subdomains
-# (sub.<56-char-onion>.onion) regularly exceed that and make the container
-# fail to start with "sethostname: invalid argument".
 _HOST_NAME_MAX = 63
 
 

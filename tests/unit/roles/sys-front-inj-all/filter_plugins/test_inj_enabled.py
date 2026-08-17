@@ -9,15 +9,12 @@ PLUGIN_PATH = (
     PROJECT_ROOT / "roles" / "sys-front-inj-all" / "filter_plugins" / "inj_enabled.py"
 )
 
-# Ensure 'utils' is importable under its canonical package name
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
-# Import the same module path the plugin uses
 mu_mod = import_module("utils.roles.applications.config")
 AppConfigKeyError = mu_mod.AppConfigKeyError
 
-# Load inj_enabled filter plugin from file
 spec = importlib.util.spec_from_file_location("inj_enabled", str(PLUGIN_PATH))
 inj_mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(inj_mod)
@@ -65,7 +62,6 @@ class TestInjEnabledFilter(unittest.TestCase):
             "app": {
                 "services": {
                     "javascript": {"enabled": True},
-                    # logout/css missing
                 }
             }
         }
@@ -82,7 +78,6 @@ class TestInjEnabledFilter(unittest.TestCase):
         self.assertEqual(result, {"logout": True, "css": True})
 
     def test_custom_prefix(self):
-        # inj_enabled always appends ".<feature>.enabled" to the prefix
         applications = {
             "app": {"flags": {"logout": {"enabled": True}, "css": {"enabled": False}}}
         }

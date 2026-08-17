@@ -3,7 +3,6 @@ import unittest
 
 from . import PROJECT_ROOT
 
-# Make project root importable so "plugins.filter.domain_tools" works no matter where tests run from
 if str(PROJECT_ROOT) not in sys.path:
     sys.path.insert(0, str(PROJECT_ROOT))
 
@@ -23,18 +22,17 @@ class TestDomainTools(unittest.TestCase):
         self.assertEqual(to_zone(".mail.example.com."), "example.com")
 
     def test_to_zone_keeps_two_last_labels(self):
-        # Naive behavior by design: last two labels only
         self.assertEqual(to_zone("service.co.uk"), "co.uk")
         self.assertEqual(to_zone("mx.mail.service.co.uk"), "co.uk")
         self.assertEqual(to_zone("uni.edu.pl"), "edu.pl")
 
     def test_to_zone_invalid_inputs(self):
         with self.assertRaises(AnsibleFilterError):
-            to_zone("")  # empty
+            to_zone("")
         with self.assertRaises(AnsibleFilterError):
-            to_zone("   ")  # whitespace
+            to_zone("   ")
         with self.assertRaises(AnsibleFilterError):
-            to_zone("localhost")  # no TLD part
+            to_zone("localhost")
         with self.assertRaises(AnsibleFilterError):
             to_zone(None)
 

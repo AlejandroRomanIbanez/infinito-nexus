@@ -46,9 +46,6 @@ if [ -d /mnt ]; then
 	sudo du -xh --max-depth=2 /mnt 2>/dev/null | sort -h | tail -15 || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 fi
 
-# Nested view — hlth-disc-space runs INSIDE the infinito container and
-# evaluates df there, so host-side df alone can be misleading. These
-# blocks silently no-op when the container is not (yet) running.
 echo "--- infinito container (nested view) ---"
 INFINITO_CONTAINER="$(docker ps --filter 'name=infinito_nexus' --format '{{.Names}}' 2>/dev/null | head -1 || true)"
 if [ -n "${INFINITO_CONTAINER}" ]; then

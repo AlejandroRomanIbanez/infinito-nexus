@@ -30,9 +30,6 @@ ${KEYCLOAK_EXEC_CONTAINER} sh -lc "
   REALM=\"${KEYCLOAK_REALM}\"
   VERIFIED=\"${KEYCLOAK_EMAIL_VERIFIED}\"
 
-  # ---------------------------------------------------------------------------
-  # Resolve user ID by username (extract UUID even if kcadm prints warnings)
-  # ---------------------------------------------------------------------------
   RAW=\"\$(${KEYCLOAK_KCADM} get users -r \"\$REALM\" -q username=\"\$USERNAME\" --fields id --format csv --noquotes 2>&1 || true)\"
 
   USER_ID=\"\$(printf '%s\n' \"\$RAW\" \
@@ -44,10 +41,6 @@ ${KEYCLOAK_EXEC_CONTAINER} sh -lc "
     exit 0
   fi
 
-  # ---------------------------------------------------------------------------
-  # Read current emailVerified without awk/jq (container is minimal).
-  # We search for: \"emailVerified\" : true|false
-  # ---------------------------------------------------------------------------
   CURRENT_RAW=\"\$(${KEYCLOAK_KCADM} get users/\$USER_ID -r \"\$REALM\" 2>&1 || true)\"
 
   CURRENT_LINE=\"\$(printf '%s\n' \"\$CURRENT_RAW\" \
@@ -55,7 +48,6 @@ ${KEYCLOAK_EXEC_CONTAINER} sh -lc "
     | grep -Eo '\"emailVerified\"[[:space:]]*:[[:space:]]*(true|false)' \
     | head -n1 || true)\"
 
-  # Extract boolean from the matched snippet using sed (no awk)
   CURRENT=\"\$(printf '%s' \"\$CURRENT_LINE\" \
     | sed -E 's/.*:[[:space:]]*(true|false).*/\\1/' \
     | tr -d ' ' \
@@ -66,9 +58,6 @@ ${KEYCLOAK_EXEC_CONTAINER} sh -lc "
     exit 0
   fi
 
-  # ---------------------------------------------------------------------------
-  # Update user
-  # ---------------------------------------------------------------------------
   ${KEYCLOAK_KCADM} update users/\$USER_ID -r \"\$REALM\" -s emailVerified=\"\$VERIFIED\"
 
   echo \"[keycloak][emailVerified] updated: \$USERNAME (\$USER_ID) -> \$VERIFIED\"

@@ -29,7 +29,6 @@ from utils.cache.files import iter_project_files, read_text
 
 from . import PROJECT_ROOT
 
-# Runtime rewriters that legitimately onionize inside generated lua/js.
 _EXEMPT_SUFFIXES: tuple[str, ...] = (
     "sys-front-inj-all/templates/body_filter.lua.j2",
     "web-app-dashboard/templates/javascript/oidc.js.j2",
@@ -37,7 +36,6 @@ _EXEMPT_SUFFIXES: tuple[str, ...] = (
 
 _JINJA_COMMENT = re.compile(r"{#.*?#}", re.DOTALL)
 
-# `~ '://'` or `'://' ~` — a URL assembled from a protocol and a host.
 _MANUAL_SCHEME = re.compile(r"~\s*['\"]://|://['\"]\s*~")
 _TO_ONION = re.compile(r"\bto_onion_url\b")
 

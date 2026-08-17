@@ -30,11 +30,9 @@ class TestWebHealthExpectationsFilter(unittest.TestCase):
                 f"Cannot find web_health_expectations.py at {cls.module_path}"
             )
 
-        # Load the filter module once for all tests
         cls.mod = load_module_from_path("web_health_expectations", cls.module_path)
 
     def setUp(self):
-        # Fresh mock for get per test
         self.get_patch = patch.object(self.mod, "get")
         self.mock_get = self.get_patch.start()
 
@@ -96,7 +94,7 @@ class TestWebHealthExpectationsFilter(unittest.TestCase):
             {
                 ("app-x", "domains.canonical"): ["x.example.org"],
                 ("app-x", "domains.aliases"): [],
-                ("app-x", "server.status_codes"): {"default": 700},  # invalid HTTP code
+                ("app-x", "server.status_codes"): {"default": 700},
             }
         )
         out = self.mod.web_health_expectations(apps, group_names=["app-x"])
@@ -177,7 +175,7 @@ class TestWebHealthExpectationsFilter(unittest.TestCase):
                 ("app-y", "domains.aliases"): [],
                 ("app-y", "server.status_codes"): {
                     "web": 999
-                },  # invalid; default missing
+                },
             }
         )
         out = self.mod.web_health_expectations(apps, group_names=["app-y"])
@@ -257,7 +255,7 @@ class TestWebHealthExpectationsFilter(unittest.TestCase):
                     "alias.g.example.org",
                     None,
                 ],
-                ("app-g", "server.status_codes"): {},  # → fallback
+                ("app-g", "server.status_codes"): {},
             }
         )
         out = self.mod.web_health_expectations(apps, group_names=["app-g"])
@@ -269,7 +267,6 @@ class TestWebHealthExpectationsFilter(unittest.TestCase):
 
     def test_www_mapping_is_added_and_forced_to_301_when_enabled(self):
         apps = {"app-h": {}}
-        # includes a canonical that already starts with www.
         self._configure_returns(
             {
                 ("app-h", "domains.canonical"): [
@@ -284,15 +281,12 @@ class TestWebHealthExpectationsFilter(unittest.TestCase):
             apps, group_names=["app-h"], www_enabled=True
         )
 
-        # base domains
         self.assertEqual(out["h.example.org"], [405])
         self.assertEqual(out["alias.h.example.org"], [301])
 
-        # auto-generated www.* entries always 301
         self.assertEqual(out["www.h.example.org"], [301])
         self.assertEqual(out["www.alias.h.example.org"], [301])
 
-        # any pre-existing www.* must be forced to 301 too
         self.assertEqual(out["www.keep301.example.org"], [301])
 
     def test_no_www_mapping_when_disabled(self):
@@ -316,7 +310,7 @@ class TestWebHealthExpectationsFilter(unittest.TestCase):
         apps = {}
         out = self.mod.web_health_expectations(
             apps,
-            group_names=["any"],  # required, even if no apps
+            group_names=["any"],
             redirect_maps=[{"source": "mail.example.org"}, "legacy.example.org"],
         )
         self.assertEqual(out["mail.example.org"], [301])
@@ -360,7 +354,7 @@ class TestWebHealthExpectationsFilter(unittest.TestCase):
         )
         out = self.mod.web_health_expectations(
             apps,
-            group_names=["some-other-app"],  # excludes the only app
+            group_names=["some-other-app"],
             redirect_maps=[{"source": "manual.example.org"}],
         )
         self.assertNotIn("ignored.example.org", out)
@@ -396,13 +390,12 @@ class TestWebHealthExpectationsFilter(unittest.TestCase):
             }
         )
         out = self.mod.web_health_expectations(apps, group_names=["app-l2"])
-        self.assertEqual(out["api1.l2.example.org"], [301, 403])  # per-key list wins
+        self.assertEqual(out["api1.l2.example.org"], [301, 403])
         self.assertEqual(out["api2.l2.example.org"], [301, 403])
         self.assertEqual(out["web.l2.example.org"], [200, 204])  # default list
 
     def test_status_codes_strings_and_ints_and_out_of_range_ignored(self):
         apps = {"app-l3": {}}
-        # 99 (<100) and 700 (>599) are ignored, "301" string is converted
         self._configure_returns(
             {
                 ("app-l3", "domains.canonical"): ["l3.example.org"],
@@ -458,7 +451,6 @@ class TestWebHealthExpectationsFilter(unittest.TestCase):
 
     def test_invalid_default_list_falls_back_to_default_ok(self):
         apps = {"app-l7": {}}
-        # everything invalid → fall back to DEFAULT_OK
         self._configure_returns(
             {
                 ("app-l7", "domains.canonical"): ["l7.example.org"],
@@ -530,8 +522,8 @@ class TestWebHealthExpectationsFilter(unittest.TestCase):
             }
         )
         out = self.mod.web_health_expectations(apps, group_names=["app-l11"])
-        self.assertEqual(out["api.l11.example.org"], [200, 204])  # default
-        self.assertEqual(out["v1.l11.example.org"], [301, 307])  # per-key list
+        self.assertEqual(out["api.l11.example.org"], [200, 204])
+        self.assertEqual(out["v1.l11.example.org"], [301, 307])
         self.assertEqual(out["v2.l11.example.org"], [301, 307])
 
     def test_expectations_keys_are_sorted_alphabetically(self):
@@ -567,7 +559,6 @@ class TestWebHealthExpectationsFilter(unittest.TestCase):
         keys = list(out.keys())
         self.assertEqual(keys, sorted(keys))
 
-    # --------- Deploy-aware onion view ---------
 
     ONION = "abc123def456ghij789klmno000pqrstuvwx111yz222abc333def444gh.onion"
 

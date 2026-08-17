@@ -87,7 +87,7 @@ class TestCompareApplicationKeys(unittest.TestCase):
     def test_key_typo_in_variants_still_rejected(self):
         """Variants widen legal_keys but only with what they actually
         declare — typos elsewhere remain caught."""
-        apps = {"app1": {"services": {"dashbaord": True}}}  # typo
+        apps = {"app1": {"services": {"dashbaord": True}}}
         defaults = {"app1": {"services": {}}}
         variants = {"app1": [{"services": {"dashboard": True}}]}
         result = compare_application_keys(apps, defaults, "src", variants)

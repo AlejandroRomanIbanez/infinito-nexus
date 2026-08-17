@@ -19,9 +19,6 @@ class TestResolveVariantPayloads(unittest.TestCase):
     def test_app_without_meta_collapses_to_variant_zero_payload(
         self, get_overrides_mock: MagicMock
     ) -> None:
-        # No `meta/variants.yml` -> loader exposes a single empty variant,
-        # i.e. `[{}]`. The 1st entry MUST be picked even though no variant
-        # was authored, so the per-app bake stays uniform.
         get_overrides_mock.return_value = {"web-app-foo": [{}]}
 
         resolved = _resolve_variant_payloads(
@@ -80,8 +77,6 @@ class TestBakeOverrides(unittest.TestCase):
                 "web-app-foo": {"feature_flag": False, "image": "v1"},
             },
         )
-        # User override wins on conflicting keys; non-conflicting keys
-        # from the variant payload remain visible.
         self.assertEqual(
             baked["applications"]["web-app-foo"],
             {"feature_flag": True, "image": "v1"},

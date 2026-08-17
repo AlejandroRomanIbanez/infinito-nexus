@@ -23,7 +23,6 @@ def ensure_attr!(obj, attr, value)
   true
 end
 
-# Prefer "Administrator", fallback "SuperAdmin", then first role
 admin_role =
   Role.where("lower(name) = ?", "administrator").first ||
   Role.where("lower(name) = ?", "superadmin").first ||
@@ -60,7 +59,6 @@ if user
     end
   end
 
-  # Set password always (hash compare not reliable)
   user.password = new_pw
   user.password_confirmation = new_pw if user.respond_to?(:password_confirmation=)
   changed = true

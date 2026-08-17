@@ -59,7 +59,6 @@ class TestDeploymentLookup(unittest.TestCase):
                 "group_names": ["web-app-bar"],
             },
         )
-        # `whitelist` is the operator's raw input — no intersection with group.
         self.assertEqual(result[0]["whitelist"], ["web-app-foo"])
 
     @patch("plugins.lookup.deployment.list_invokable_app_ids")
@@ -98,7 +97,6 @@ class TestDeploymentLookup(unittest.TestCase):
         LookupModule().run(
             [], variables={"APPLICATIONS_WHITELIST": [], "group_names": ["a"]}
         )
-        # invokable lookup runs only once for identical (whitelist, group)
         self.assertEqual(mock_list.call_count, 1)
 
     @patch("plugins.lookup.deployment.list_invokable_app_ids")

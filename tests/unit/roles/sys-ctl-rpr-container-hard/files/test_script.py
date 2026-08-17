@@ -44,20 +44,17 @@ class TestRepairDockerHard(unittest.TestCase):
 
             s.hard_restart_docker_services("/X/APP")
 
-            # Expect two calls: compose ... down / up -d
             self.assertEqual(len(calls), 2)
             self.assertEqual(calls[0]["cwd"], "/X/APP")
             self.assertEqual(calls[1]["cwd"], "/X/APP")
 
-            # down
             self.assertEqual(calls[0]["cmd"][0], "compose")
             self.assertIn("--chdir", calls[0]["cmd"])
             self.assertIn("/X/APP", calls[0]["cmd"])
             self.assertIn("--project", calls[0]["cmd"])
-            self.assertIn("APP", calls[0]["cmd"])  # basename project
+            self.assertIn("APP", calls[0]["cmd"])
             self.assertIn("down", calls[0]["cmd"])
 
-            # up -d
             self.assertEqual(calls[1]["cmd"][0], "compose")
             self.assertIn("--chdir", calls[1]["cmd"])
             self.assertIn("/X/APP", calls[1]["cmd"])
@@ -92,7 +89,6 @@ class TestRepairDockerHard(unittest.TestCase):
             return p == "/PARENT"
 
         def fake_isfile(p):
-            # Only app2 has compose.yml
             return p == "/PARENT/app2/compose.yml"
 
         def fake_hard_restart(dir_path):
@@ -108,7 +104,6 @@ class TestRepairDockerHard(unittest.TestCase):
             s.os.path.isfile = fake_isfile
             s.hard_restart_docker_services = fake_hard_restart
 
-            # With --only app2 -> only app2 is called
             sys_argv = sys.argv
             sys.argv = ["x", "/PARENT", "--only", "app2"]
             s.main()

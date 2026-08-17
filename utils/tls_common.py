@@ -216,13 +216,9 @@ def resolve_term(
     elif forced == "app":
         is_domain = False
     else:
-        # keep your old heuristic
         is_domain = "." in t
 
     if is_domain:
-        # 1) Try legacy reverse mapping (global domains mapping values).
-        #    If this succeeds, the requested domain *is* a canonical/variant in the global mapping,
-        #    so we keep it as primary.
         try:
             app_id_legacy = resolve_app_id_from_domain(
                 domains, t, err_prefix=err_prefix
@@ -231,7 +227,6 @@ def resolve_term(
         except AnsibleError:
             pass
 
-        # 2) Fallback: resolve via applications[*].domains.{canonical,aliases}
         apps = applications or {}
         if not isinstance(apps, dict):
             raise AnsibleError(
@@ -254,13 +249,11 @@ def resolve_term(
                 f"{err_prefix}: domain '{t}' not found (domains/applications)"
             )
 
-        # For alias terms, primary should be the canonical primary from global domains mapping
         primary = norm_domain(
             resolve_primary_domain_from_app(domains, str(app_id), err_prefix=err_prefix)
         )
         return str(app_id), primary
 
-    # app-id path
     app_id = t
     primary = norm_domain(
         resolve_primary_domain_from_app(domains, app_id, err_prefix=err_prefix)
@@ -276,8 +269,6 @@ def is_onion_domain(domain: Any) -> bool:
 def resolve_enabled(
     app: dict, enabled_default: bool, *, primary_domain: str = ""
 ) -> bool:
-    # .onion services are authenticated + encrypted by Tor itself and cannot
-    # obtain a public CA certificate, so TLS is always off for them.
     if is_onion_domain(primary_domain):
         return False
     override = get_path(app, "server.tls.enabled", None)
@@ -322,8 +313,6 @@ def resolve_mode(
 ) -> str:
     if not enabled:
         return "off"
-    # Per-app flavor override: 'server.tls.mode' takes precedence over the
-    # legacy 'server.tls.flavor', both over the global TLS_MODE default.
     override = get_path(app, "server.tls.mode", None)
     if not (isinstance(override, str) and override.strip()):
         override = get_path(app, "server.tls.flavor", None)

@@ -28,7 +28,6 @@ class TestCspTogglesDashboardLogout(unittest.TestCase):
         return []
 
     def _set_service_enabled(self, apps: dict, service: str, enabled: bool):
-        # Per the materialised payload moved to services.<X>.
         apps["app1"].setdefault("services", {}).setdefault(service, {})
         apps["app1"]["services"][service]["enabled"] = enabled
 

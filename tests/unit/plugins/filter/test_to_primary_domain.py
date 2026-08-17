@@ -2,7 +2,6 @@ import unittest
 
 from ansible.errors import AnsibleFilterError
 
-# Import the filter plugin
 from plugins.filter.to_primary_domain import FilterModule
 
 
@@ -26,9 +25,9 @@ class TestToPrimaryDomain(unittest.TestCase):
 
     def test_invalid_domains(self):
         invalid_cases = [
-            "localhost",  # not a real domain
-            1234,  # not a string
-            "",  # empty string
+            "localhost",
+            1234,
+            "",
         ]
         for input_domain in invalid_cases:
             with (

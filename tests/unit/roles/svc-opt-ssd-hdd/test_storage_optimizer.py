@@ -13,7 +13,6 @@ def load_optimizer_module():
     )
     spec = importlib.util.spec_from_file_location("storage_optimizer", module_path)
     optimizer = importlib.util.module_from_spec(spec)
-    # Register module so patch('storage_optimizer...') works
     sys.modules[spec.name] = optimizer
     spec.loader.exec_module(optimizer)
     return optimizer
@@ -24,7 +23,6 @@ storage_optimizer = load_optimizer_module()
 
 class TestHealthCheckLogic(unittest.TestCase):
     def setUp(self):
-        # Prevent sleeping delays in inline loops
         patcher = patch("storage_optimizer.time.sleep", return_value=None)
         self.sleep_patcher = patcher.start()
         self.addCleanup(self.sleep_patcher.stop)
