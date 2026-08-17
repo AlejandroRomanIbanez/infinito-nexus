@@ -43,6 +43,7 @@ prometheus:
 seaweedfs:
   healthcheck:
     flavor: curl
+    path: status
   modes:
     compose:
       enabled: true
