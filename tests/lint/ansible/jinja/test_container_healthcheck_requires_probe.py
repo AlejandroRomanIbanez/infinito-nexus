@@ -63,6 +63,7 @@ _SET_SERVICE_NAME = re.compile(r"""\{%-?\s*set\s+service_name\s*=\s*(.+?)\s*-?%\
 _LITERAL = re.compile(r"""^['"]([^'"]+)['"]$""")
 _INTERPOLATION = re.compile(r"""^\{\{\s*(.+?)\s*\}\}$""")
 _ROLE_VAR = re.compile(r"^[A-Z][A-Z0-9_]*$")
+_PLAIN_KEY = re.compile(r"^[a-z0-9][a-z0-9_-]*$")
 _ENTITY_NAME_EXPRESSIONS = ("entity_name", "application_id | get_entity_name")
 
 
@@ -91,6 +92,10 @@ def _resolve_expression(expression: str, app: str) -> str | None:
         return get_entity_name(app)
     if _ROLE_VAR.match(normalized):
         return _resolve_role_var(normalized, app)
+    if _PLAIN_KEY.match(normalized) and normalized in (
+        get_application_defaults().get(app, {}).get("services", {}) or {}
+    ):
+        return normalized
     return None
 
 
