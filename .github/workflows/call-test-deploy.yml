@@ -199,10 +199,11 @@ jobs:
     timeout-minutes: 355
     needs: discover
 
-    concurrency:
-      group: "infinito-deploy-${{ matrix.mode }}-${{ matrix.tor }}-${{ matrix.apps }}#${{ matrix.variant }}"
-      cancel-in-progress: false
-      queue: max
+    # TODO: blocks the queue and prevents job cancelling.
+    # concurrency:
+    #   group: "infinito-deploy-${{ matrix.mode }}-${{ matrix.tor }}-${{ matrix.apps }}#${{ matrix.variant }}"
+    #   cancel-in-progress: false
+    #   queue: max
 
     strategy:
       fail-fast: false
