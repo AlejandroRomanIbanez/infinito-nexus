@@ -47,21 +47,9 @@
             'c0']]} | to_json }}
 
 - name: "🔧 Verify the WebAdmin is served after unpack"
-  ansible.builtin.command:
-    argv:
-      - "{{ BIN_COMPOSE }}"
-      - exec
-      - -T
-      - stalwart
-      - curl
-      - -sS
-      - -o
-      - /dev/null
-      - -w
-      - "%{http_code}"
-      - "{{ STALWART_LOCAL_BASE_URL }}/"
-  args:
-    chdir: "{{ STALWART_INSTANCE_DIR }}"
+  ansible.builtin.shell: >-
+    container exec -i {{ STALWART_CONTAINER_ADDRESS }}
+    {{ 30 | curl }} -sS -o /dev/null -w "%{http_code}" {{ STALWART_LOCAL_BASE_URL }}/
   register: stalwart_webui_probe
   changed_when: false
   retries: 6

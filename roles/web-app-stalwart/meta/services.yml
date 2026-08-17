@@ -44,11 +44,8 @@ stalwart:
   modes:
     compose:
       enabled: true
-    # Limitation: not yet swarm-ported (BIN_COMPOSE exec/restart tasks,
-    # staged-file binds); flip to true once the role follows the mailu
-    # swarm pattern.
     swarm:
-      enabled: false
+      enabled: true
   # nocheck: default-placement-manager  mail edge at a known IP: MX A-record, PTR and SPF bind to the stack host IP (a floating task's egress IP breaks deliverability); the mail store is NFS-hostile and IS the app — same rationale as web-app-mailu
   placement: manager
   image: stalwartlabs/stalwart
@@ -97,7 +94,11 @@ stalwart:
 postgres:
   bond: 1
   enabled: true # nocheck: dynamic-flag
-  shared: "{{ 'svc-db-postgres' in group_names }}"
+  # Exception: central postgres only in compose — under swarm the overlay VIP
+  # to svc-db-postgres adds pressure on the manager-pinned stack (mailu pins
+  # its embedded redis for the same reason), and the embedded sidecar keeps
+  # the mail database node-local next to the NFS-hostile mail store.
+  shared: "{{ ('svc-db-postgres' in group_names) and (DEPLOYMENT_MODE == 'compose') }}"
   # Exception: the dedicated sidecar pins plain postgres — the platform default
   # (postgis/postgis) defeats baudolo's substring database detection
   # ('postgres' not in 'postgis/…'), so the volume was live-file-snapshotted

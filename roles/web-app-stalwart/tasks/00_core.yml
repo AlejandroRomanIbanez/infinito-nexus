@@ -22,6 +22,15 @@
     state: directory
     mode: "0755"
 
+# Exception: swarm does not auto-create a missing bind source — the certs
+# directory must exist before stack-up; sys-ctl-mtn-cert-deploy fills it
+# later (05_tls).
+- name: ✅ Ensure certs bind-source directory exists (host)
+  file:
+    path: "{{ [ STALWART_VOLUMES_DIR, 'certs' ] | path_join }}"
+    state: directory
+    mode: "0755"
+
 - name: 📄 Render Stalwart bootstrap configuration
   stack_host_template:
     src: config.json.j2
@@ -40,14 +49,17 @@
     state: directory
     mode: "0755"
 
+# Exception: only the stack host needs the bundle (the service is
+# manager-pinned) — N workers hammering GitHub would hit rate limits.
 - name: "⬇️ Download the Stalwart WebUI bundle (skipped when cached)"
   get_url_retry:
     url: "{{ STALWART_WEBUI_RESOURCE_URL }}"
     dest: "{{ STALWART_WEBUI_CACHE_FILE }}"
     mode: "0644"
+  when: IS_STACK_HOST | bool
 
 - name: "📦 Install the cached WebUI bundle into the instance dir"
-  ansible.builtin.copy:
+  stack_host_copy:
     src: "{{ STALWART_WEBUI_CACHE_FILE }}"
     dest: "{{ STALWART_WEBUI_LOCAL_FILE }}"
     remote_src: true
@@ -90,40 +102,6 @@
 - name: "🚿 Flush Docker Compose handlers"
   meta: flush_handlers
 
-# Exception: `compose up` won't recreate a container when only a bind-mounted
-# config changed, so restart clamav explicitly to load the new
-# clamav-milter.conf.
-- name: "🔄 Restart clamav to apply milter config change"
-  ansible.builtin.command:
-    argv:
-      - "{{ BIN_COMPOSE }}"
-      - restart
-      - clamav
-  args:
-    chdir: "{{ STALWART_INSTANCE_DIR }}"
-  changed_when: true
-  when:
-    - STALWART_ANTIVIRUS_ENABLED | bool
-    - stalwart_clamav_conf is defined
-    - stalwart_clamav_conf is changed
-
-# Exception: the roundcube image reads its config at container start, so
-# restart webmail to pick up a changed oauth.inc.php (compose up alone won't
-# recreate it).
-- name: "🔄 Restart webmail to apply Roundcube config change"
-  ansible.builtin.command:
-    argv:
-      - "{{ BIN_COMPOSE }}"
-      - restart
-      - webmail
-  args:
-    chdir: "{{ STALWART_INSTANCE_DIR }}"
-  changed_when: true
-  when:
-    - STALWART_SSO_ENABLED | bool
-    - stalwart_webmail_conf is defined
-    - stalwart_webmail_conf is changed
-
 - name: "🌐 Proxy the Roundcube webmail at {{ STALWART_WEBMAIL_DOMAIN }}"
   include_role:
     name: sys-stk-front-proxy
@@ -132,19 +110,6 @@
     http_port: "{{ STALWART_WEBMAIL_HTTP_PORT }}"
     webserver_vhost_flavour: "basic"
 
-- name: ⏳ Wait for Stalwart database and management API
-  include_tasks: 01_wait_for_api.yml
-
-# Exception: a failed unpack or 404 WebAdmin fails the deploy (the bundle
-# download above already failed hard) — Playwright would fail later anyway.
-- name: "⚙️ Provision the Stalwart WebUI (WebAdmin) bundle"
-  include_tasks: 02_webadmin.yml
-
-- name: "⚙️ Provision Stalwart mail domain, accounts, DKIM and DNS"
-  include_tasks: 03_provision_domain.yml
-
-# Exception: restart-or-defer — a restart while the OIDC issuer is down sticks
-# on internal auth.
-- name: "🔧 Apply Stalwart OIDC directory changes"
-  include_tasks: 10_oidc_apply.yml
-  when: STALWART_SSO_ENABLED | bool
+- name: "👔 Stalwart manager-side operations (container exec + provisioning)"
+  include_tasks: manager_ops.yml
+  when: IS_STACK_HOST | bool

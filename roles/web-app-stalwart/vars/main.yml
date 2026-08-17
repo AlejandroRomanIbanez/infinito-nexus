@@ -4,7 +4,6 @@ http_port: "{{ lookup('config', application_id, 'services.stalwart.ports.local.h
 
 database_password: "{{ lookup('config', application_id, 'credentials.database_password') }}"
 
-STALWART_INSTANCE_DIR: "{{ lookup('container', application_id, 'directories.instance') }}"
 STALWART_VOLUMES_DIR: "{{ lookup('container', application_id, 'directories.volumes') }}"
 STALWART_CONFIG_DIR: "{{ [ STALWART_VOLUMES_DIR, 'etc' ] | path_join }}"
 # Exception: JSON bootstrap (data store) only; everything else lives in the
@@ -13,9 +12,13 @@ STALWART_CONFIG_FILE: "{{ [ STALWART_CONFIG_DIR, 'config.json' ] | path_join }}"
 
 container_port: "{{ lookup('config', application_id, 'services.stalwart.ports.internal.http') }}"
 # Exception: management endpoints sit on the internal HTTP listener (bypass
-# the public proxy); reached via `compose exec stalwart curl`, hence localhost.
+# the public proxy); reached via `container exec … curl`, hence localhost.
 STALWART_LOCAL_BASE_URL: "http://localhost:{{ container_port }}"
 STALWART_JMAP_URL: "{{ STALWART_LOCAL_BASE_URL }}/jmap/"
+# Exception: mode-aware exec target — bare container name in compose, resolved
+# task container id ($(resolve-container-id …)) in swarm; must stay unquoted in
+# shell tasks.
+STALWART_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'stalwart') }}"
 
 STALWART_DOMAIN: "{{ lookup('config', application_id, 'services.stalwart.domain') }}"
 STALWART_DOMAIN_DNS_ZONE: "{{ STALWART_DOMAIN | to_zone }}"

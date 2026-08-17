@@ -17,32 +17,8 @@
   ansible.builtin.set_fact:
     stalwart_cert_missing: "{{ (stalwart_jmap.methodResponses[0][1].list | length) == 0 }}"
 
-# Exception: a freshly registered certificate is served only after a
-# (re)start; without the restart the listeners keep the built-in rcgen
-# certificate for the rest of the play (nothing else restarts Stalwart in
-# non-SSO mode) and strict TLS verification in consumers (msmtp) fails.
+# Exception: restart-to-activate — see 05_tls/activate.yml for why the
+# freshly registered certificate needs a (re)start.
 - name: "🔧 Register and activate the platform TLS certificate"
+  include_tasks: 05_tls/activate.yml
   when: stalwart_cert_missing | bool
-  block:
-    - name: "🔧 Register the platform TLS certificate with Stalwart"
-      include_tasks: jmap_call.yml
-      vars:
-        stalwart_jmap_body: >-
-          {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
-              'methodCalls': [['x:Certificate/set', {'create': {'c': {
-                'certificate': {'@type': 'File', 'filePath': '/etc/stalwart/certs/cert.pem'},
-                'privateKey': {'@type': 'File', 'filePath': '/etc/stalwart/certs/key.pem'}
-              }}}, 'c0']]} | to_json }}
-
-    - name: "🔄 Restart Stalwart to activate the registered certificate"
-      ansible.builtin.command:
-        argv:
-          - "{{ BIN_COMPOSE }}"
-          - restart
-          - stalwart
-      args:
-        chdir: "{{ STALWART_INSTANCE_DIR }}"
-      changed_when: true
-
-    - name: "⏳ Wait for Stalwart API after the certificate restart"
-      include_tasks: 01_wait_for_api.yml
