@@ -88,7 +88,7 @@ class TestCells(unittest.TestCase):
         self.assertEqual(rows[3][0], "")
 
     def test_a_clone_is_cut_as_well(self) -> None:
-        entries = _ENTRIES + [_entry("web-app-d", "0", "compose", clone=True)]
+        entries = [*_ENTRIES, _entry("web-app-d", "0", "compose", clone=True)]
         rows = plan.cells(
             entries, [_PRIORITY, _REGULAR], distros="debian", current=None
         )

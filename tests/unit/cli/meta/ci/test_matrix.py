@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import unittest
 import unittest.mock as mock
+from typing import ClassVar
 
 from cli.meta.ci import matrix
 
@@ -132,7 +133,11 @@ def _row(app: str, variant: int) -> dict:
 
 
 class TestCandidates(unittest.TestCase):
-    _DISCOVERED = [_row("web-app-a", 0), _row("web-app-b", 0), _row("web-app-b", 1)]
+    _DISCOVERED: ClassVar[list] = [
+        _row("web-app-a", 0),
+        _row("web-app-b", 0),
+        _row("web-app-b", 1),
+    ]
 
     def _candidates(self, priority: str) -> list[dict]:
         with mock.patch.object(

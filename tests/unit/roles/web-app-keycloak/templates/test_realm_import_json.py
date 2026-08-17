@@ -21,6 +21,7 @@ def role_filters() -> dict:
     spec.loader.exec_module(module)
     return module.FilterModule().filters()
 
+
 APP_URL = "https://suite.crm.example.com"
 
 CONTEXT = {
@@ -54,7 +55,12 @@ CONTEXT = {
         "ATTRIBUTES": {"USERNAME": "preferred_username"},
     },
     "LDAP": {
-        "DN": {"OU": {"USERS": "ou=users,dc=example,dc=com", "ROLES": "ou=roles,dc=example,dc=com"}},
+        "DN": {
+            "OU": {
+                "USERS": "ou=users,dc=example,dc=com",
+                "ROLES": "ou=roles,dc=example,dc=com",
+            }
+        },
         "RBAC": {"FLAVORS": ["groupOfNames"]},
         "USER": {
             "ATTRIBUTES": {
@@ -93,6 +99,7 @@ def render(saml_apps: list[str]) -> str:
         trim_blocks=True,
         keep_trailing_newline=True,
         undefined=StrictUndefined,
+        autoescape=False,  # noqa: S701 - renders JSON, where HTML escaping corrupts the value
     )
     env.filters["path_join"] = path_join
     env.filters["to_json"] = json.dumps
