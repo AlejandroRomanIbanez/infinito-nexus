@@ -22,6 +22,7 @@ flowchart LR
     end
     subgraph role [svc-bkp-volume-2-local 💻]
         svc_volume_2_local["volume-2-local"]
+        svc_test["test ❌"]
         svc_secrets_backup["secrets_backup"]
     end
     subgraph dependents [Dependents]

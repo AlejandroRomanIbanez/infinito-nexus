@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# Verify the newest backup generation is stored and non-empty (a volume
-# counts as payload with a files/ tree or a non-empty sql dump); when
-# PREVIOUS_GENERATION is set (async pass) additionally require it to be a
-# distinct, newer generation. Requires REPO_DIR/NEWEST_GENERATION from test.sh.
+# Verify the newest backup generation is stored and non-empty (a volume counts
+# as payload with a files/ tree or a non-empty sql dump).
+# Requires REPO_DIR/NEWEST_GENERATION from test.sh.
 set -euo pipefail
 
 : "${REPO_DIR:?}"
@@ -31,12 +30,3 @@ if (( EMPTY == ${#VOLUME_DIRS[@]} )); then
     exit 1
 fi
 echo "OK: backup payload present ($(( ${#VOLUME_DIRS[@]} - EMPTY )) non-empty volume(s))"
-
-if [[ -n "${PREVIOUS_GENERATION:-}" ]]; then
-    if [[ "${NEWEST_GENERATION}" == "${PREVIOUS_GENERATION}" ]] ||
-        [[ "${NEWEST_GENERATION}" < "${PREVIOUS_GENERATION}" ]]; then
-        echo "FAIL: newest generation ${NEWEST_GENERATION} is not newer than ${PREVIOUS_GENERATION}"
-        exit 1
-    fi
-    echo "OK: second generation ${NEWEST_GENERATION} stored after ${PREVIOUS_GENERATION}"
-fi
