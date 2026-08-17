@@ -253,7 +253,7 @@ marker on the server's disk.
 ### The databases of a generation
 
 A generation stores this role's databases as sql dumps, not as a file tree
-(`--dump-only-sql`), so they are restored by their own step:
+(`--only-sql`), so they are restored by their own step:
 
 ```
 recover.py --databases <backups>/<machine-hash>/backup-docker-to-local/<generation>

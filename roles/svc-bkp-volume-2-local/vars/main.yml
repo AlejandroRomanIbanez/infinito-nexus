@@ -100,5 +100,5 @@ BKP_VOLUME_2_LOCAL_EXEC: >-
   --compose-dir {{ DIR_COMPOSITIONS }}
   --databases-csv {{ FILE_DATABASE_SECRETS }}
   --backups-dir {{ DIR_BACKUPS }}
-  --dump-only-sql
+  --only-sql
   {{ BKP_VOLUME_2_LOCAL_CLI_ARGS_LIST | select('string') | join(' ') }}

@@ -202,7 +202,7 @@ class TestArgv(TestCase):
     def test_it_drops_hard_restart_and_its_values(self):
         command = [
             "baudolo",
-            "--dump-only-sql",
+            "--only-sql",
             "--hard-restart-projects",
             "mailu",
             "nextcloud",
@@ -211,11 +211,11 @@ class TestArgv(TestCase):
         ]
         self.assertEqual(
             SCRIPT.without_hard_restart(command),
-            ["baudolo", "--dump-only-sql", "--backups-dir", "/b"],
+            ["baudolo", "--only-sql", "--backups-dir", "/b"],
         )
 
     def test_it_leaves_a_command_without_hard_restart_alone(self):
-        command = ["baudolo", "--dump-only-sql"]
+        command = ["baudolo", "--only-sql"]
         self.assertEqual(SCRIPT.without_hard_restart(command), command)
 
     def test_never_execs_the_command_unchanged(self):
@@ -225,7 +225,7 @@ class TestArgv(TestCase):
             "never",
             "--",
             "baudolo",
-            "--dump-only-sql",
+            "--only-sql",
         ]
         with (
             mock.patch.object(SCRIPT.sys, "argv", argv),
@@ -234,7 +234,7 @@ class TestArgv(TestCase):
         ):
             SCRIPT.main()
         flags.assert_not_called()
-        execvp.assert_called_once_with("baudolo", ["baudolo", "--dump-only-sql"])
+        execvp.assert_called_once_with("baudolo", ["baudolo", "--only-sql"])
 
     def test_a_missing_separator_is_a_wiring_error(self):
         with (
