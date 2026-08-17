@@ -20,6 +20,8 @@
     realm: "{{ KEYCLOAK_REALM }}"
     assert_mode: "{{ MODE_ASSERT }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+  register: kc_stalwart_webmail
+  # rationale: async; nothing reads the client back in this chain, reaped at the end of update_routines.yml
   async: "{{ ASYNC_TIME if ASYNC_ENABLED | bool else omit }}"
   poll: "{{ ASYNC_POLL if ASYNC_ENABLED | bool else omit }}"
   when: KEYCLOAK_STALWART_WEBMAIL_ENABLED | bool

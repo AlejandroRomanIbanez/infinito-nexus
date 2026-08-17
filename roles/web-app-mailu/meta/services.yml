@@ -20,10 +20,11 @@ matomo:
   bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
-# Not MAIL_PROVIDER: a Mailu-active deploy must not pull stalwart into the closure.
-# nocheck: dynamic-flag — coexistence dep on the OTHER provider: `email` is a
-# covered key of this role, but the entry must gate on web-app-stalwart (never
-# self) so only a legacy-Mailu deploy pulls the active provider in.
+# Exception: gate on web-app-stalwart, never MAIL_PROVIDER — a Mailu-active
+# deploy must not pull stalwart into the closure. `email` is a covered key of
+# this role, but the entry must never gate on self, so only a legacy-Mailu
+# deploy pulls the active provider in.
+# nocheck: dynamic-flag
 email:
   bond: 1
   enabled: "{{ 'web-app-stalwart' in group_names }}"
@@ -40,11 +41,12 @@ mailu:
   placement: manager
   enabled: true # nocheck: dynamic-flag
   shared: true
-  # The static `email` provider slot belongs to the default (web-app-stalwart);
-  # the registry allows only one. Mailu is selected at runtime via MAIL_PROVIDER,
-  # which routes lookup('email') + consumer mail flags here instead.
-  # `covers` makes the consumers' `services.email` declaration satisfy their
-  # `run_after: web-app-mailu` entry (consumers run after BOTH providers).
+  # Rationale: the static `email` provider slot belongs to the default
+  # (web-app-stalwart); the registry allows only one. Mailu is selected at
+  # runtime via MAIL_PROVIDER, which routes lookup('email') + consumer mail
+  # flags here instead. `covers` makes the consumers' `services.email`
+  # declaration satisfy their `run_after: web-app-mailu` entry (consumers run
+  # after BOTH providers).
   covers:
     - email
   version: "2024.06"
@@ -79,7 +81,7 @@ mailu:
     service_key: front
   run_after:
     - web-app-matomo
-    # The mail provider must preload first (sys-svc-mail asserts its token).
+    # Rationale: the mail provider must preload first (sys-svc-mail asserts its token).
     - web-app-stalwart
   lifecycle: beta
   cpus: "1.0"
@@ -163,7 +165,7 @@ antivirus:
   enabled: true # nocheck: dynamic-flag
   shared: false
   image: clamav/clamav-debian
-  version: 1.5.3
+  version: 1.5.4
   cpus: "0.6"
   mem_reservation: 2g
   mem_limit: 3g

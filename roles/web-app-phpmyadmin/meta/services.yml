@@ -17,6 +17,8 @@ mariadb:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-mariadb' in group_names }}"
 phpmyadmin:
+  healthcheck:
+    flavor: tcp
   modes:
     compose:
       enabled: true
@@ -25,7 +27,7 @@ phpmyadmin:
   version: 5.2.3
   name: phpmyadmin
   image: phpmyadmin/phpmyadmin
-  min_storage: 1GB
+  min_storage: 422MB
   autologin: false
   ports:
     local:

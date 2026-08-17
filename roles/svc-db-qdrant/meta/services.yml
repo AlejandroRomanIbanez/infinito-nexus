@@ -12,8 +12,8 @@ qdrant:
   bond: 1
   image: qdrant/qdrant
   name: qdrant
-  version: v1.18.2
-  min_storage: 5GB
+  version: v1.19.0
+  min_storage: 270MB
   backup:
     database_routine: true
   cpus: "2.0"

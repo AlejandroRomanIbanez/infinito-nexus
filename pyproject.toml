@@ -4,28 +4,30 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "infinito-nexus"
-version = "11.6.0"
+version = "12.0.0"
 description = "Infinito.Nexus"
 readme = "README.md"
 requires-python = ">=3.11"
 license = { file = "LICENSE.md" }
 
 dependencies = [
-  "numpy",
-  "ansible",
-  "colorscheme-generator @ https://github.com/kevinveenbirkenbach/colorscheme-generator/archive/refs/tags/v0.3.0.zip",
   "bcrypt",
-  "ruamel.yaml",
-  "PyYAML",
-  "tld",
-  "passlib",
-  "requests",
+  "cryptography",
   "humanfriendly",
+  "PyYAML",
+  "ruamel.yaml",
 ]
 
 [project.optional-dependencies]
+deploy = [
+  "ansible",
+  "colorscheme-generator @ https://github.com/kevinveenbirkenbach/colorscheme-generator/archive/refs/tags/v0.3.0.zip",
+  "tld",
+  "passlib",
+  "requests",
+]
 dev = [
-  "ruff==0.16.0",
+  "ruff==0.16.2",
   "import-linter",
   "pre-commit",
   "git-maintainer-tools",
@@ -239,7 +241,6 @@ ignore = [
 "plugins/lookup/prometheus_integration_active.py" = ["BLE001"]
 "plugins/lookup/version.py" = ["BLE001"]
 "utils/cache/base.py" = ["BLE001"]
-"utils/github/variant_bundles.py" = ["BLE001"]
 "utils/nexus/list_apt_proxy_repos.py" = ["BLE001"]
 "utils/roles/applications/in_group_deps.py" = ["BLE001"]
 "utils/roles/applications/services/resources.py" = ["BLE001"]

@@ -1,7 +1,8 @@
 {% set email = lookup('email') %}
 defaults
-# EHLO/HELO identity — a valid FQDN. Strict servers (e.g. Stalwart) reject a
-# bare container hostname on port 25 (rejectNonFqdn), so pin it to the domain.
+# Exception: EHLO/HELO identity must be a valid FQDN — strict servers (e.g.
+# Stalwart) reject a bare container hostname on port 25 (rejectNonFqdn), so
+# pin it to the domain.
 domain              {{ DOMAIN_PRIMARY }}
 logfile             ~/.msmtp.log
 timeout             {{ email.timeout }}
@@ -12,7 +13,7 @@ tls                 {{ email.tls | on_off }}
 tls_trust_file      {{ sys_svc_mail_msmtp_ca_bundle }}
 tls_host_override   {{ email.host }}
 account             system_email_no_reply
-host                {{ '127.0.0.1' if (email.external | bool and DOCKER_IN_CONTAINER | bool and (DEPLOYMENT_MODE == 'compose' or 'svc-swarm-node' in group_names)) else email.host }}
+host                {{ lookup('smtp_host', email) }}
 port                {{ email.port }}
 from                {{ email['from'] }}
 {% if (email.auth | bool) %}

@@ -2,12 +2,25 @@
 # shellcheck disable=SC2034  # variables are consumed by callers that source this file
 
 # Naming constants are the SPOT in default.env, shared with the Python harness
-# (utils/tests/swarm/*). Read default.env directly (not the generated .env): the
-# workflow sources this file before `make dotenv` runs, so .env may not exist yet.
+# (utils/tests/swarm/*).
 _repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../../../.." && pwd)"
 _default_env="${_repo_root}/default.env"
+
+_swarm_topology_sources() {
+	if [ -f "${_repo_root}/.env" ]; then
+		grep -hE '^INFINITO_SWARM_[A-Z0-9_]+=' "${_repo_root}/.env" || [ "$?" -eq 1 ]
+	fi
+	grep -hE '^INFINITO_SWARM_[A-Z0-9_]+=' "$_default_env"
+}
+
+_swarm_topology_unparsable="$(_swarm_topology_sources | grep -vE '^[A-Z0-9_]+=([^"]*|"[^"]*")$' || [ "$?" -eq 1 ])"
+if [ -n "${_swarm_topology_unparsable}" ]; then
+	echo "[ERROR] unparsable swarm topology assignment(s): ${_swarm_topology_unparsable}" >&2
+	exit 1
+fi
+
 # shellcheck source=/dev/null
-source <(grep -E '^INFINITO_SWARM_[A-Z0-9_]+=' "$_default_env")
+source <(_swarm_topology_sources | sed -E 's/^([A-Z0-9_]+)="?([^"]*)"?$/: "${\1:=\2}"/')
 
 : "${SWARM_NAME:?SWARM_NAME is required (cluster id) - pass name= to the make target}"
 SWARM_PREFIX="${SWARM_NAME}-"
@@ -31,3 +44,9 @@ SWARM_LAB_NETWORK="${SWARM_PREFIX}${INFINITO_SWARM_LAB_NET_NAME}"
 WRK1="${SWARM_PREFIX}${INFINITO_SWARM_WRK1_NAME}"
 
 WRK2="${SWARM_PREFIX}${INFINITO_SWARM_WRK2_NAME}"
+
+MGR_IP="${INFINITO_SWARM_MGR_IP}"
+
+NFS_IP="${INFINITO_SWARM_NFS_IP}"
+
+BACKUP_IP="${INFINITO_SWARM_BACKUP_IP}"

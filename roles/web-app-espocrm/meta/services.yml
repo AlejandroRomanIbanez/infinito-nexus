@@ -36,10 +36,10 @@ espocrm:
     swarm:
       enabled: true
   image: espocrm/espocrm
-  version: "10.0.2"
+  version: "10.0.4"
   custom: true
   name: espocrm
-  min_storage: 8GB
+  min_storage: 470MB
   cpus: 1.5
   mem_reservation: 1.2g
   mem_limit: 2g
@@ -54,6 +54,9 @@ espocrm:
     local:
       websocket: 4002
       http: 8040
+  healthcheck:
+    flavor: curl
+    start_period: 15m
   run_after:
     - web-app-keycloak
     - web-app-stalwart

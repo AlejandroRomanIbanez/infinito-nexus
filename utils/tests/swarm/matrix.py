@@ -26,20 +26,36 @@ import subprocess
 import sys
 
 from utils import PROJECT_ROOT
+from utils.env.runtime import mem_available_mb, mem_stall_pct, mem_total_mb
+from utils.storage.constrained import host_storage_constrained
 
 _SWARM_DIR = PROJECT_ROOT / "scripts" / "tests" / "deploy" / "swarm"
 _SWARM_SCRIPTS = _SWARM_DIR / "routine"
 _ROLES_DIR = str(PROJECT_ROOT / "roles")
 _SWARM_EXTRAS_VARS = "inventories/development/swarm.yml"
 _DEFAULT_INVENTORY_DIR = "/tmp/inv"  # noqa: S108 - ephemeral swarm-test inventory base in CI
+DISK_FLOOR_MB = 6 * 2**10
+MEM_FLOOR_RATIO = 0.06
+
+
+def _abort(proc: subprocess.Popen[bytes], banner: str, probe: list[str]) -> int:
+    print(banner, flush=True)
+    subprocess.run(probe, check=False)
+    proc.terminate()
+    try:
+        proc.wait(timeout=30)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        proc.wait()
+    return 75
 
 
 def _run(cmd: list[str], *, env: dict[str, str], label: str) -> int:
-    """Run a matrix step, aborting visibly before the runner disk fills.
+    """Run a matrix step, aborting visibly before the runner disk or RAM fills.
 
     The Actions Worker dies silently on ENOSPC while writing its own logs, so
     a full disk truncates the job without diagnostics; terminating the step at
-    <6G free keeps enough room for rescue artifacts and the log upload.
+    DISK_FLOOR_MB keeps enough room for rescue artifacts and the log upload.
     """
     print(f"=== swarm-matrix: {label} ===", flush=True)
     proc = subprocess.Popen(cmd, cwd=str(PROJECT_ROOT), env=env)
@@ -47,20 +63,29 @@ def _run(cmd: list[str], *, env: dict[str, str], label: str) -> int:
         try:
             return int(proc.wait(timeout=30))
         except subprocess.TimeoutExpired:
-            if shutil.disk_usage("/").free < 6 * 2**30:
-                print(
+            if shutil.disk_usage("/").free < DISK_FLOOR_MB * 2**20:
+                return _abort(
+                    proc,
                     "=== swarm-matrix: DISK EXHAUSTION IMMINENT "
-                    "(<6G free on /) - aborting step ===",
-                    flush=True,
+                    f"(<{DISK_FLOOR_MB}M free on /) - aborting step ===",
+                    ["df", "-h", "/"],
                 )
-                subprocess.run(["df", "-h", "/"], check=False)
-                proc.terminate()
-                try:
-                    proc.wait(timeout=30)
-                except subprocess.TimeoutExpired:
-                    proc.kill()
-                    proc.wait()
-                return 75
+            avail = mem_available_mb()
+            total = mem_total_mb()
+            stall = mem_stall_pct()
+            print(
+                f"=== swarm-matrix: host mem {avail}M/{total}M available, "
+                f"stall60 {stall:.1f}% ===",
+                flush=True,
+            )
+            if total and avail < total * MEM_FLOOR_RATIO:
+                return _abort(
+                    proc,
+                    "=== swarm-matrix: MEMORY EXHAUSTION IMMINENT "
+                    f"({avail}M available, below {MEM_FLOOR_RATIO:.0%} of RAM)"
+                    " - aborting step ===",
+                    ["free", "-m"],
+                )
 
 
 def _provision(
@@ -197,6 +222,7 @@ def _backup_restore_drill(*, app_id: str, inv_dir: str, extras_path: str) -> int
     env["APP_ID"] = app_id
     env["INFINITO_INVENTORY_DIR"] = inv_dir
     env["DRILL_EXTRAS"] = extras_path
+    env["DISK_FLOOR_MB"] = str(DISK_FLOOR_MB)
     return _run(
         ["bash", str(_SWARM_SCRIPTS / "backup" / "base.sh")],
         env=env,
@@ -303,13 +329,26 @@ def main(argv: list[str] | None = None) -> int:
             include=round_include,
             active_variants=round_variants,
         )
+        from utils.tests.swarm.backup_repos import backup_provider_ips
         from utils.tests.swarm.write.extras import backup_applications_overrides
 
+        providers = backup_provider_ips(
+            app_id=app_id,
+            variants=round_variants,
+            manager=os.environ["MGR_IP"],
+            nfs_server=os.environ["NFS_IP"],
+        )
+        print(
+            f"=== swarm-matrix: remote-2-local backup providers "
+            f"(round {round_index}): {', '.join(providers)} ===",
+            flush=True,
+        )
         vars_payload = _bake_overrides(
             base_overrides={
-                "applications": backup_applications_overrides(
-                    os.environ["MGR_IP"], os.environ["NFS_IP"]
-                )
+                "applications": backup_applications_overrides(providers),
+                "STORAGE_CONSTRAINED": host_storage_constrained(
+                    [app_id], round_variants, local_vantage="/"
+                ),
             },
             variant_payloads=variant_payloads,
         )

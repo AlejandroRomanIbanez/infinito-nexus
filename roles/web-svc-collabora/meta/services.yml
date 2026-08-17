@@ -12,6 +12,9 @@ redis:
   enabled: false
   shared: "{{ 'svc-db-redis' in group_names }}"
 collabora:
+  healthcheck:
+    flavor: tcp
+    path: hosting/discovery
   modes:
     compose:
       enabled: true
@@ -29,7 +32,7 @@ collabora:
   # configuration or upstream restores the tooling.
   version: "26.04.2.1.1"
   name: collabora
-  min_storage: 10GB
+  min_storage: 734MB
   cpus: 2
   mem_reservation: 1g
   mem_limit: 2g

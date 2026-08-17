@@ -36,7 +36,9 @@ postgres:
   enabled: true # nocheck: dynamic-flag — matrix always needs a database
   shared: "{{ 'svc-db-postgres' in group_names }}"
 synapse:
-  version: v1.156.0
+  healthcheck:
+    flavor: curl
+  version: v1.158.0
   image: matrixdotorg/synapse
   name: matrix-synapse
   backup:
@@ -48,13 +50,15 @@ synapse:
       http: 8021
     public:
       federation: 8448
-  min_storage: 10GB
+  min_storage: 311MB
   cpus: "1.5"
   mem_reservation: "1g"
   mem_limit: "2g"
   pids_limit: 2048
 element:
-  version: v1.12.23
+  healthcheck:
+    flavor: wget
+  version: v1.12.25
   image: vectorim/element-web
   name: matrix-element
   ports:
@@ -62,7 +66,7 @@ element:
       http: 8022
     internal:
       http: 80
-  min_storage: 1GB
+  min_storage: 263MB
   cpus: "0.2"
   mem_reservation: 128m
   mem_limit: 256m
@@ -70,7 +74,7 @@ element:
 matrix-chatgpt-bot:
   version: 3.1.5
   image: ghcr.io/matrixgpt/matrix-chatgpt-bot
-  min_storage: 1GB
+  min_storage: 307MB
   cpus: "0.2"
   mem_reservation: 128m
   mem_limit: 256m

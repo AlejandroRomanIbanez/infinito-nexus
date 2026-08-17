@@ -61,6 +61,7 @@ stalwart:
   # through one coherent restart after baudolo's per-volume stop/start cycles.
   backup:
     project_hard_restart: true
+  # nocheck: min-storage-headroom  Reason: the mail store (maildir blobs, FTS index, queue) lives in this service's volumes and dwarfs the image transfer size
   min_storage: 20GB
   domain: "{{ lookup('email').domain }}"
   ports:

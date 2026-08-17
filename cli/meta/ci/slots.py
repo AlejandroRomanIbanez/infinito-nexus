@@ -50,12 +50,16 @@ _DEPLOY_CALLERS = frozenset(
     {
         "test-deploy-single-node",
         "test-deploy-single-node-priority",
+        "test-deploy-compose",
+        "test-deploy-compose-priority",
+        "test-deploy-host",
+        "test-deploy-host-priority",
         "test-deploy-swarm",
         "test-deploy-swarm-priority",
     }
 )
 
-_ORCHESTRATOR = ".github/workflows/ci-orchestrator.yml"
+_ORCHESTRATOR = ".github/workflows/call-orchestrator.yml"
 _DYNAMIC_MATRIX_ESTIMATE = 5
 _DEFAULT_JOB_LIMIT = 256
 _MIN_MODE_SLOTS = 3

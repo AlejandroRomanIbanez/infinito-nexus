@@ -11,7 +11,8 @@ bridge (`192.168.244.0/24`, MTU 1400): three swarm nodes (1 manager +
 2 workers), a non-swarm NFSv4 server serving the shared volume storage,
 and a non-swarm backup host for the DR drill. The node image
 ([`compose/swarm/Dockerfile`](../../../../compose/swarm/Dockerfile))
-bakes python3 + dnsmasq; the containers and the lab network are declared
+bakes python3 + dnsmasq and masks the zfs boot units the parent image's
+userland enables; the containers and the lab network are declared
 in [`compose/swarm/compose.yml`](../../../../compose/swarm/compose.yml) (project
 `${SWARM_NAME}`, backup host behind the `drill` profile) and started by
 one `docker compose up` in `routine/01_bootstrap.sh`. Lab DNS is provisioned
@@ -27,7 +28,7 @@ flowchart TB
         direction TB
         topo["🗺️ utils/topology/base + export<br/>SPOT node names + NFS paths → GITHUB_ENV"]:::infra
         cluster["🐝 01_bootstrap.sh<br/>host side: pre-clean, compose build + up<br/>all 5 nodes + lab network, sudo .deb build"]:::infra
-        boot["🧱 compose/swarm/playbook.yml (over docker connection)<br/>systemd wait, NFS-export wipe, IPs → GITHUB_ENV,<br/>lab DNS, repo + .deb install on every node"]:::infra
+        boot["🧱 compose/swarm/playbook.yml (over docker connection)<br/>systemd wait, NFS-export wipe,<br/>lab DNS, repo + .deb install on every node"]:::infra
         topo --> cluster --> boot
     end
 
@@ -40,15 +41,16 @@ flowchart TB
 
         subgraph drill["🔐 routine/backup/base.sh (DR drill, once, after round 1)"]
             direction TB
-            s1["1️⃣ seed marker into the live NFS volume"]:::drill
-            s2["2️⃣ trigger backup units<br/>volume-2-local @ manager, nfs-2-local @ NFS server"]:::drill
-            s3["3️⃣ locate the generation holding the marker"]:::drill
+            s1["1️⃣ seed markers into the live NFS volume<br/>and the manager secrets"]:::drill
+            s2["2️⃣ trigger backup units<br/>volume + secrets @ manager, nfs-2-local @ NFS server"]:::drill
+            s3["3️⃣ locate the generation holding the marker<br/>3️⃣b assert the volume repo is fresh + non-empty<br/>(its NFS-backed volumes are excluded by design)"]:::drill
             s4["4️⃣ pull to the backup host<br/>remote-2-local over the user-backup ssh wrapper"]:::drill
-            s5["5️⃣ mirror to a LUKS loop 'USB'<br/>local-2-device script.py"]:::drill
-            s6["6️⃣ recover device → local root<br/>local-2-device recover.py (luksOpen + newest snapshot)"]:::drill
-            s7["7️⃣ stack rm + wipe volume, recover root → export<br/>nfs-2-local recover.py"]:::drill
-            s8["8️⃣ recover volume + secrets backups<br/>volume-2-local + secrets recover.py<br/>(marker verified after the update pass)"]:::drill
-            s1 --> s2 --> s3 --> s4 --> s5 --> s6 --> s7 --> s8
+            s5["5️⃣ space gate: pulled tree + watchdog floor,<br/>du breakdown on failure; then LUKS loop 'USB'<br/>via the local-2-device unit"]:::drill
+            s6["6️⃣ full disaster: stack rm"]:::drill
+            s7["7️⃣ wipe the pulled tree, recover device → local root<br/>(luksOpen; the device holds the only copy left)"]:::drill
+            s8["8️⃣ wipe the live export (marker proven gone),<br/>recover root → export, restore NFS coherence"]:::drill
+            s9["9️⃣ delete the marker server-side, recover the volume<br/>through its NFS-mounted mountpoint, re-verify on the<br/>server; recover the host secrets"]:::drill
+            s1 --> s2 --> s3 --> s4 --> s5 --> s6 --> s7 --> s8 --> s9
         end
 
         prov --> dep --> conv --> drill --> purge
@@ -115,9 +117,10 @@ flowchart TB
     style lab fill:#ffffff,stroke:#e6e6e6;
 ```
 
-The drill proves the full `svc-bkp-*` chain forward through the DEPLOYED
-systemd units on every host (volume + secrets on the manager, nfs on the
-export host, remote pull + device sync on the backup host) and every
+The drill proves the `svc-bkp-*` chain forward through the DEPLOYED
+systemd units (nfs on the export host, volume + secrets on the manager when
+the app's include closure pulls those roles in, remote pull + device sync on
+the backup host) and every
 `recover.py` back (device -> local root -> NFS export, docker volume and
 host secrets into the live system paths), with marker files that must
 survive the whole loop: the matrix update pass boots the recovered stack
@@ -125,8 +128,12 @@ and `verify_recovered_marker.sh` asserts the marker on the live volume. It
 reuses the round-1 stack instead of spinning a dedicated cluster, and skips
 cleanly when the app declares no NFS-flagged volume. The backup host is started by `routine/01_bootstrap.sh` (drill
 profile) and receives its two roles via `extend_inventory`; the pull
-trust (backup keypair) and the role config (backup_providers, device
-mount/target/source) come from `utils/tests/swarm/write/extras.py`.
+trust (backup keypair) and the device mount/target/source come from
+`utils/tests/swarm/write/extras.py`, while
+`remote-2-local.backup_providers` is derived per round by
+`utils/tests/swarm/backup_repos.py` from the same placements
+`extend_inventory` turns into inventory groups, and reaches the deploy
+through the provisioner's host_vars merge.
 
 ## Scripts
 
@@ -137,11 +144,13 @@ the cluster declaration (image, containers, network, DNS play) in
 
 | Stage | Script | Purpose |
 |---|---|---|
+| loop | `scripts/tests/deploy/distros.sh` | SPOT: run the drill once per distro in random order under the shared time budget, then table every outcome (✅ passed / ❌ failed / 🟦 skipped) into the job summary |
+| loop | `routine/00_one.sh` | the whole drill for one distro; collect + teardown run from its `EXIT` trap |
 | bring-up | `utils/topology/base.sh` | SPOT: node names + NFS export/state paths (sourced, not run) |
 | bring-up | `utils/topology/export.sh` | write the topology SPOT into `$GITHUB_ENV` |
 | bring-up | `compose/swarm/compose.yml` + `compose/swarm/Dockerfile` | declare the 5 node containers, node image + lab network (compose SPOT) |
-| bring-up | `routine/01_bootstrap.sh` | one CI step, host side: pre-clean, `compose build` + one `compose up`, sudo `.deb` build, then the play |
-| bring-up | `compose/swarm/playbook.yml` | node side over docker connection: systemd wait, NFS-export wipe, IPs into `$GITHUB_ENV`, lab DNS, repo + `.deb` install |
+| bring-up | `routine/01_bootstrap.sh` | host side: pre-clean, `compose build` + one `compose up`, sudo `.deb` build, then the play |
+| bring-up | `compose/swarm/playbook.yml` | node side over docker connection: systemd wait, NFS-export wipe, lab DNS, repo + `.deb` install |
 | deploy | `routine/02_provision_inventory.sh` | provision the per-round inventory |
 | deploy | `routine/03_wait_converge.sh` | wait for every stack service to converge |
 | deploy | `routine/04_verify_reachable.sh` | probe the app is reachable in-cluster |
@@ -150,17 +159,21 @@ the cluster declaration (image, containers, network, DNS play) in
 | chaos | `routine/05_seed_content.sh` | seed a marker on the NFS volume |
 | chaos | `routine/06_drain_worker.sh` | drain the app's worker + force reschedule |
 | chaos | `routine/07_assert_state.sh` | assert the marker + reachability survived |
-| teardown | `utils/collect/diagnostics.sh` | collect stack/service diagnostics on failure |
-| teardown | `utils/collect/playwright_reports.sh` | pull Playwright reports from the manager |
+| teardown | `utils/collect/diagnostics.sh` | write stack/service diagnostics on failure, one file per topic under the rescue dir |
+| teardown | `../utils/rescue_index.sh` | list the collected rescue tree so a reader knows what the artifact holds |
+| teardown | `utils/collect/playwright_reports.sh` | pull Playwright reports from the manager into `/tmp/playwright-artifacts/<distro>/<app>` |
+| teardown | `utils/collect/topology_summary.sh` | render the node list + service placement into `$GITHUB_STEP_SUMMARY` |
 | teardown | `utils/clean/teardown.sh` | kill the nodes + remove the lab network |
 | helper | `utils/_context.sh` | per-app facts (entity, service, NFS volume, probes) |
-| helper | `utils/unmount_nfs_mounts.sh` | best-effort NFS unmount before node removal |
+| helper | `utils/unmount/nfs_mounts.sh` | best-effort NFS unmount before node removal |
+| helper | `utils/unmount/host_state.sh` | release the host mount of the shared state so the next cycle cannot inherit it |
 | recovery | `utils/clean/all.sh` | reap leftover clusters across every cluster id |
 | recovery | `utils/clean/stale_nfs.sh` | recover stale in-namespace NFS mounts |
 
 The matrix orchestrator
 (`utils/tests/swarm/matrix.py`) drives the deploy stage
-per variant round; the workflow `.github/workflows/test-deploy-swarm.yml`
-drives the surrounding stages. Run one app locally with
+per variant round; `routine/00_one.sh` drives the surrounding stages for one
+distro, and the workflow `.github/workflows/call-test-deploy-swarm.yml` drives the
+distro loop. Run one app locally with
 `make swarm-zombie app=<id>` (keeps the cluster for inspection) or the
 whole matrix via `make roundtrip`.

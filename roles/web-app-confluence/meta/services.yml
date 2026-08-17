@@ -28,16 +28,18 @@ postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 confluence:
+  healthcheck:
+    flavor: curl
   modes:
     compose:
       enabled: true
     swarm:
       enabled: true
   image: atlassian/confluence
-  version: 10.2.14
+  version: 10.2.15
   custom: true
   name: confluence
-  min_storage: 20GB
+  min_storage: 1390MB
   cpus: "3.0"
   mem_reservation: 6g
   mem_limit: 8g

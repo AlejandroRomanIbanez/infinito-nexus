@@ -51,6 +51,8 @@ seaweedfs:
   enabled: "{{ 'web-app-seaweedfs' in group_names }}"
   shared: "{{ 'web-app-seaweedfs' in group_names }}"
 penpot:
+  healthcheck:
+    flavor: curl
   modes:
     compose:
       enabled: true
@@ -77,7 +79,7 @@ penpot:
   lifecycle: beta
 frontend:
   image: penpotapp/frontend
-  version: "2.16.2"
+  version: "2.17.0"
   name: penpot-frontend
   cpus: "0.5"
   mem_reservation: 256m
@@ -85,18 +87,21 @@ frontend:
   pids_limit: 256
 backend:
   image: penpotapp/backend
-  version: "2.16.2"
+  version: "2.17.0"
   name: penpot-backend
   cpus: "1.0"
   mem_reservation: 1g
   mem_limit: 2g
   pids_limit: 512
+  healthcheck:
+    flavor: tcp
+    start_period: 5m
   ports:
     internal:
       http: 6060
 exporter:
   image: penpotapp/exporter
-  version: "2.16.2"
+  version: "2.17.0"
   name: penpot-exporter
   cpus: "0.5"
   mem_reservation: 512m

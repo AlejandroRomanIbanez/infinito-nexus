@@ -39,6 +39,11 @@ postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 semaphore:
+  # nocheck: single-replica OSS semaphore is single-instance (HA node registry, schedule dedup and orphan cleaner are pro_impl stubs returning nil); every replica also re-runs `semaphore setup` + db.Migrate on start, and the migration loser deletes the winner's ledger row, poisoning the schema permanently
+  replicas: 1
+  healthcheck:
+    flavor: wget
+    path: api/ping
   modes:
     compose:
       enabled: true
@@ -48,9 +53,9 @@ semaphore:
   mem_reservation: 256m
   mem_limit: 1g
   pids_limit: 1024
-  min_storage: 5GB
+  min_storage: 530MB
   image: semaphoreui/semaphore
-  version: "v2.18.25"
+  version: "v2.19.7"
   backup:
     no_stop_required: true
   name: semaphore

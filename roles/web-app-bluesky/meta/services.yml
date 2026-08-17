@@ -44,6 +44,8 @@ sso:
 # nocheck: playwright-service-flag - internal sub-component (multi-entity role)
 web:
   enabled: true
+  healthcheck:
+    flavor: tcp
   ports:
     local:
       http: 8031
@@ -60,7 +62,7 @@ web:
 view:
   enabled: false
   repository: https://github.com/bluesky-social/social-app.git
-  ref: "1.127.1"
+  ref: "1.130.0"
   ports:
     local:
       http: 8051
@@ -74,7 +76,7 @@ view:
 pds:
   image: ghcr.io/bluesky-social/pds
   version: 0.4.0
-  min_storage: 10GB
+  min_storage: 290MB
   cpus: "1.0"
   mem_reservation: 1g
   mem_limit: 2g
@@ -88,7 +90,7 @@ broker:
       http: 8076
     internal:
       http: 8080
-  min_storage: 1GB
+  min_storage: 263MB
   cpus: "0.2"
   mem_reservation: 128m
   mem_limit: 256m
@@ -109,6 +111,9 @@ prometheus:
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
 api:
+  healthcheck:
+    flavor: wget
+    path: xrpc/_health
   ports:
     local:
       http: 8030

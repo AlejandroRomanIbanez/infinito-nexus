@@ -28,16 +28,18 @@ postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ 'svc-db-postgres' in group_names }}"
 jira:
+  healthcheck:
+    flavor: curl
   modes:
     compose:
       enabled: true
     swarm:
       enabled: true
   image: atlassian/jira-software
-  version: 11.3.8
+  version: 11.3.10
   custom: true
   name: jira
-  min_storage: 20GB
+  min_storage: 1027MB
   cpus: "2.0"
   mem_reservation: 4g
   mem_limit: 6g

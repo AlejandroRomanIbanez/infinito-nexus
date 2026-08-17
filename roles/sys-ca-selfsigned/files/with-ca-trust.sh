@@ -61,13 +61,15 @@ export CURL_CA_BUNDLE="$ca_bundle"
 export NODE_EXTRA_CA_CERTS="$CA_TRUST_CERT"
 
 if [ -n "${CA_TRUST_CERT_EXTRA:-}" ] && [ -r "${CA_TRUST_CERT_EXTRA}" ]; then
-  combined_extra="/tmp/infinito/ca-trust-combined.crt"
-  mkdir -p "$(dirname "$combined_extra")"
-  cat "$ca_bundle" "$CA_TRUST_CERT_EXTRA" > "$combined_extra"
-  export SSL_CERT_FILE="$combined_extra"
-  export REQUESTS_CA_BUNDLE="$combined_extra"
-  export CURL_CA_BUNDLE="$combined_extra"
-  export NODE_EXTRA_CA_CERTS="$combined_extra"
+  combined_extra="/tmp/ca-trust-combined.crt"
+  if cat "$ca_bundle" "$CA_TRUST_CERT_EXTRA" > "$combined_extra" 2>/dev/null; then
+    export SSL_CERT_FILE="$combined_extra"
+    export REQUESTS_CA_BUNDLE="$combined_extra"
+    export CURL_CA_BUNDLE="$combined_extra"
+    export NODE_EXTRA_CA_CERTS="$combined_extra"
+  else
+    log "WARN: cannot write $combined_extra; keeping existing trust env"
+  fi
 fi
 
 install_anchor() {

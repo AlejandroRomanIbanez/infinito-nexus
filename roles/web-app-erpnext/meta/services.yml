@@ -59,9 +59,9 @@ erpnext:
   enabled: true
   shared: true
   image: frappe/erpnext
-  version: "v16.26.2"
+  version: "v16.32.1"
   name: erpnext
-  min_storage: 15GB
+  min_storage: 1017MB
   ports:
     local:
       http: 8079
@@ -82,6 +82,9 @@ erpnext:
   pids_limit: 2048
 backend:
   name: erpnext-backend
+  healthcheck:
+    flavor: tcp
+    start_period: 10m
   ports:
     internal:
       http: 8000

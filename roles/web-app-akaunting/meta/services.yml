@@ -36,6 +36,9 @@ ldap:
   enabled: false
   shared: false
 akaunting:
+  healthcheck:
+    flavor: tcp
+    start_period: 10m
   modes:
     compose:
       enabled: true
@@ -48,7 +51,7 @@ akaunting:
   repository: https://github.com/akaunting/docker.git
   ref: master
   name: akaunting
-  min_storage: 8GB
+  min_storage: 527MB
   company:
     name: Akaunting on {{ DOMAIN_PRIMARY | upper }}
     email: "{{ lookup('users', 'administrator').email }}"

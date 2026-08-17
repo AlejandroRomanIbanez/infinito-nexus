@@ -37,6 +37,9 @@ seaweedfs:
   shared: "{{ 'web-app-seaweedfs' in group_names }}"
 web:
   name: openproject-web
+  healthcheck:
+    flavor: curl
+    path: health_checks/default
   ports:
     internal:
       http: 8080
@@ -49,7 +52,7 @@ web:
   mem_reservation: 3g
   mem_limit: 6g
   pids_limit: 2048
-  min_storage: 5GB
+  min_storage: 1076MB
 seeder:
   name: openproject-seeder
   cpus: "0.3"

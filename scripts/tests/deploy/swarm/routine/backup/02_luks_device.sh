@@ -28,8 +28,42 @@ losetup -ln 2>/dev/null | awk '/\(deleted\)/ {print $1}' | xargs -r -n1 losetup 
 losetup -j "${USB_IMG}" 2>/dev/null | cut -d: -f1 | xargs -r -n1 losetup -d 2>/dev/null || true
 
 truncate -s "${USB_SIZE_MB}M" "${USB_IMG}"
+
+probe=""
+attempt=0
+while [ -z "${probe}" ] && [ "${attempt}" -lt 16 ]; do
+	attempt=$((attempt + 1))
+	[ "${attempt}" -eq 1 ] || sleep 0.5
+	candidate=""
+	candidate="$(losetup -f 2>/dev/null)" || candidate=""
+	candidate="${candidate%% *}"
+	if [ -n "${candidate}" ] && [ ! -b "${candidate}" ]; then
+		mknod "${candidate}" b 7 "${candidate#/dev/loop}" 2>/dev/null || candidate=""
+	fi
+	if attached="$(losetup --find --show "${USB_IMG}" 2>/dev/null)"; then
+		probe="${attached}"
+	fi
+done
+if [ -z "${probe}" ]; then
+	echo "FAILURE: no loop device is available for ${USB_IMG} after ${attempt} attempts." >&2
+	echo "         The rescue artifact carries 'losetup -a' and /dev/loop* for every node." >&2
+	exit 1
+fi
+losetup -d "${probe}"
+
 printf '%s' "${USB_PASS}" | cryptsetup luksFormat --type luks2 --batch-mode "${USB_IMG}" -
+
 printf '%s' "${USB_PASS}" | cryptsetup luksOpen "${USB_IMG}" "${USB_MAPPER}" -
+
+if [ ! -b "/dev/mapper/${USB_MAPPER}" ]; then
+	echo "FAILURE: /dev/mapper/${USB_MAPPER} is not a block device after luksOpen." >&2
+	echo "         udev claimed the mapping and left a symlink to a /dev/dm-N node this" >&2
+	echo "         container's tmpfs /dev never gets. Expected DM_DISABLE_UDEV=1 from the" >&2
+	echo "         node container env and a masked systemd-udevd in the node image." >&2
+	cryptsetup luksClose "${USB_MAPPER}" 2>/dev/null
+	exit 1
+fi
+
 mkfs.ext4 -q "/dev/mapper/${USB_MAPPER}"
 mkdir -p "${MOUNT_DIR}"
 mount "/dev/mapper/${USB_MAPPER}" "${MOUNT_DIR}"

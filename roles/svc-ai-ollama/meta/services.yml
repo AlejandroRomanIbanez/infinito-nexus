@@ -11,9 +11,9 @@ ollama:
   backup:
     no_stop_required: true
   image: ollama/ollama
-  version: 0.31.2
+  version: 0.32.13
   name: ollama
-  min_storage: 20GB
+  min_storage: 3473MB
   cpus: "4.0"
   mem_reservation: 6g
   mem_limit: 8g
@@ -25,6 +25,7 @@ ollama:
     - llama3:latest
     - mistral:latest
     - nomic-embed-text:latest
+  preload_async_time: 3600
   lifecycle: beta
 
 # nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer

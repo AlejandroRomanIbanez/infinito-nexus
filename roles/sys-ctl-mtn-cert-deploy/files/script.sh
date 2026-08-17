@@ -1,7 +1,13 @@
 #!/bin/sh
 set -eu
 
+# Deploy renewed TLS material into a compose project's certs volume and
+# restart the services that consume it.
+#
 # Usage: script.sh <ssl_cert_source_dir> <docker_compose_instance_directory>
+#
+# Requires $compose_cmd: the compose wrapper base command, quoted as needed,
+# e.g. compose_cmd="compose --chdir /opt/compose/mailu --project mailu".
 if [ "$#" -ne 2 ]; then
   echo "Usage: $0 <ssl_cert_source_dir> <docker_compose_instance_directory>" >&2
   exit 1
@@ -10,9 +16,6 @@ fi
 ssl_cert_source_dir="$1"
 docker_compose_instance_directory="$2"
 
-# Compose wrapper base command (must include quoting as needed)
-# Example:
-#   compose_cmd="compose --chdir /opt/compose/mailu --project mailu"
 : "${compose_cmd:=}"
 
 if [ -z "$compose_cmd" ]; then
@@ -21,7 +24,6 @@ if [ -z "$compose_cmd" ]; then
   exit 1
 fi
 
-# Keep your existing target layout (minimal change)
 docker_compose_cert_directory="${docker_compose_instance_directory%/}/volumes/certs"
 
 if [ ! -d "$ssl_cert_source_dir" ]; then
@@ -29,7 +31,6 @@ if [ ! -d "$ssl_cert_source_dir" ]; then
   exit 1
 fi
 
-# Ensure the target cert directory exists
 if [ ! -d "$docker_compose_cert_directory" ]; then
   echo "Creating certs directory: $docker_compose_cert_directory"
   mkdir -p "$docker_compose_cert_directory"
@@ -38,8 +39,8 @@ fi
 echo "Copying certificates from: $ssl_cert_source_dir -> $docker_compose_cert_directory"
 cp -RvL "${ssl_cert_source_dir}/"* "$docker_compose_cert_directory"
 
-# Mailu optimization: create key.pem/cert.pem from whatever exists
-# Prefer LE naming if present
+# Exception: Mailu expects key.pem/cert.pem — map from the LE names
+# (privkey.pem/fullchain.pem) when present, else pass key/cert through.
 if [ -f "${ssl_cert_source_dir}/privkey.pem" ] && [ -f "${ssl_cert_source_dir}/fullchain.pem" ]; then
   cp -v "${ssl_cert_source_dir}/privkey.pem"   "${docker_compose_cert_directory}/key.pem"
   cp -v "${ssl_cert_source_dir}/fullchain.pem" "${docker_compose_cert_directory}/cert.pem"
@@ -52,21 +53,20 @@ else
   exit 1
 fi
 
-# Set correct reading rights
 chmod a+r -v "${docker_compose_cert_directory}/"* || exit 1
 
-# Ensure we can chdir (compose project dir)
 cd "$docker_compose_instance_directory" || exit 1
 
-# List services via wrapper to ensure correct -p/-f/--env-file stack is used
-# IMPORTANT: use "--" to stop wrapper arg parsing (so compose flags like "--services" are passed through)
+# Exception: "--" stops wrapper arg parsing, so compose flags like
+# "--services" pass through to the correct -p/-f/--env-file stack.
 services="$(sh -c "$compose_cmd -- ps --services")"
 
-# Restart every service that consumes the deployed certificate material, i.e.
-# has the cert directory bind-mounted. The TLS terminator differs per provider
-# (Mailu: the nginx front container; Stalwart: the mail server itself), so
-# selection MUST go by consumption, not by which binary a container ships —
-# a service that keeps running with the old cert serves it until expiry.
+# Rationale: restart every service that consumes the deployed certificate
+# material, i.e. has the cert directory bind-mounted. The TLS terminator
+# differs per provider (Mailu: the nginx front container; Stalwart: the mail
+# server itself), so selection MUST go by consumption, not by which binary a
+# container ships — a service that keeps running with the old cert serves it
+# until expiry.
 restart_services=""
 
 for service in $services; do
@@ -78,7 +78,7 @@ for service in $services; do
     continue
   fi
 
-  if docker inspect "$container_id" \
+  if docker inspect --type container "$container_id" \
       --format '{{range .Mounts}}{{println .Source}}{{end}}' \
       | grep -qx "$docker_compose_cert_directory"; then
     echo "Certificate mount found in service: $service"

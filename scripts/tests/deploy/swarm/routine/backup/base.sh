@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Disaster-recovery drill for the swarm test cluster: proves the full
-# backup chain volume + secrets + nfs -> remote -> device through the
-# DEPLOYED systemd units on every host (the backup host runs the real
+# Disaster-recovery drill for the swarm test cluster: proves the backup
+# chain nfs (plus volume + secrets where the app's include closure places a
+# manager repository) -> remote -> device through the
+# DEPLOYED systemd units (the backup host runs the real
 # svc-bkp-remote-2-local and svc-bkp-local-2-device roles; the drill only
 # installs the ssh pull identity and simulates the USB plug via a LUKS
 # loop mount), then tears the stack down completely and recovers the same
@@ -24,9 +25,8 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # shellcheck source=scripts/tests/deploy/swarm/utils/_context.sh
 source "${SCRIPT_DIR}/../../utils/_context.sh"
 
-: "${MGR_IP:?MGR_IP required (01_bootstrap.sh must have run)}"
-: "${NFS_IP:?NFS_IP required (01_bootstrap.sh must have run)}"
 : "${DRILL_EXTRAS:?DRILL_EXTRAS required (matrix passes the round extras)}"
+: "${DISK_FLOOR_MB:?DISK_FLOOR_MB required (matrix passes its watchdog floor)}"
 
 DIR_VAR_LIB="${INFINITO_DIR_VAR_LIB:?INFINITO_DIR_VAR_LIB is not set - source scripts/meta/env/load.sh first}"
 DIR_BACKUPS="${INFINITO_DIR_BACKUPS:?INFINITO_DIR_BACKUPS is not set - regenerate .env via make dotenv}"
@@ -68,6 +68,9 @@ NFS_MID="$(docker exec "${NFS_SERVER}" sha256sum /etc/machine-id | cut -c1-64)"
 echo "==> DR drill for ${APP_ID} (volume '${PRIMARY_NFS_VOLUME}')"
 
 TRIGGER_UNITS="${NODE_SRC}/scripts/tests/deploy/swarm/utils/trigger_units.sh"
+UNIT_DUMPS="${INFINITO_RESCUE_DIAGNOSTICS_DIR:?INFINITO_RESCUE_DIAGNOSTICS_DIR is not set - source scripts/meta/env/load.sh first}"
+
+DRILL_START_TS="$(docker exec "${MGR}" date +%Y%m%d%H%M%S)"
 
 echo "==> [1/9] seed markers (live NFS volume + manager secrets)"
 docker exec "${NFS_SERVER}" sh -c \
@@ -78,16 +81,18 @@ docker exec "${MGR}" sh -c \
 echo "==> [2/9] trigger the deployed backup units (volume + secrets on manager, nfs on the export host)"
 _triggered=0
 SECRETS_TRIGGERED=0
+VOLUME_TRIGGERED=0
 _rc=0
-docker exec "${MGR}" bash "${TRIGGER_UNITS}" 'svc-bkp-volume-2-local*.service' || _rc=$?
+docker exec "${MGR}" bash "${TRIGGER_UNITS}" 'svc-bkp-volume-2-local*.service' "${UNIT_DUMPS}" || _rc=$?
 [ "${_rc}" -eq 0 ] && _triggered=1
+[ "${_rc}" -eq 0 ] && VOLUME_TRIGGERED=1
 [ "${_rc}" -eq 1 ] && exit 1
 _rc=0
-docker exec "${MGR}" bash "${TRIGGER_UNITS}" 'svc-bkp-secrets-2-local*.service' || _rc=$?
+docker exec "${MGR}" bash "${TRIGGER_UNITS}" 'svc-bkp-secrets-2-local*.service' "${UNIT_DUMPS}" || _rc=$?
 [ "${_rc}" -eq 0 ] && SECRETS_TRIGGERED=1
 [ "${_rc}" -eq 1 ] && exit 1
 _rc=0
-docker exec "${NFS_SERVER}" bash "${TRIGGER_UNITS}" 'svc-bkp-nfs-2-local*.service' || _rc=$?
+docker exec "${NFS_SERVER}" bash "${TRIGGER_UNITS}" 'svc-bkp-nfs-2-local*.service' "${UNIT_DUMPS}" || _rc=$?
 [ "${_rc}" -eq 0 ] && _triggered=1
 [ "${_rc}" -eq 1 ] && exit 1
 if [ "${_triggered}" -eq 0 ]; then
@@ -121,9 +126,25 @@ if [ "${SRC_HOST}" != "${MGR}" ]; then
 	[ -n "${_vol_marker}" ] && VOL_MARKER_REL="${_vol_marker#"${DIR_BACKUPS}"/}"
 fi
 
-echo "==> [4/9] pull to ${BACKUP_NODE} via the deployed remote-2-local unit (providers: ${MGR_IP}, ${NFS_IP})"
+echo "==> [3b/9] verify the volume unit captured a fresh, non-empty generation"
+if [ "${VOLUME_TRIGGERED}" -eq 1 ]; then
+	VOL_GEN_LATEST="$(docker exec "${MGR}" sh -c "ls -1 '${DIR_BACKUPS}/${MGR_MID}/${VOLUME_REPO}' 2>/dev/null | sort | tail -1")"
+	if [ -z "${VOL_GEN_LATEST}" ] || [[ "${VOL_GEN_LATEST}" < "${DRILL_START_TS}" ]]; then
+		echo "FAILURE: the volume unit ran but left no generation from this drill under ${DIR_BACKUPS}/${MGR_MID}/${VOLUME_REPO} (latest: '${VOL_GEN_LATEST:-none}', drill started ${DRILL_START_TS})"
+		exit 1
+	fi
+	if ! docker exec "${MGR}" sh -c "find '${DIR_BACKUPS}/${MGR_MID}/${VOLUME_REPO}/${VOL_GEN_LATEST}' -path '*/files/*' -type f -size +0c 2>/dev/null | head -n1 | grep -q ."; then
+		echo "FAILURE: generation ${VOL_GEN_LATEST} of the volume repo holds no non-empty volume file - the unit captured nothing, so the backup exclusion swallowed every volume"
+		exit 1
+	fi
+	echo "    volume repo generation ${VOL_GEN_LATEST} is fresh and holds data"
+else
+	echo "    skipped: no volume unit is deployed on ${MGR}"
+fi
+
+echo "==> [4/9] pull to ${BACKUP_NODE} via the deployed remote-2-local unit (marker expected from ${SRC_HOST})"
 docker exec -i "${BACKUP_NODE}" bash "${BKP_IN_NODE}/01_ssh_trust.sh" <"${BACKUP_KEY_PATH}"
-if ! docker exec "${BACKUP_NODE}" bash "${TRIGGER_UNITS}" 'svc-bkp-remote-2-local*.service'; then
+if ! docker exec "${BACKUP_NODE}" bash "${TRIGGER_UNITS}" 'svc-bkp-remote-2-local*.service' "${UNIT_DUMPS}"; then
 	echo "FAILURE: remote-2-local unit missing or failed on ${BACKUP_NODE} (role not deployed?)"
 	exit 1
 fi
@@ -135,13 +156,48 @@ fi
 echo "    marker present on backup host after pull"
 
 echo "==> [5/9] plug the LUKS 'USB' and sync via the deployed local-2-device unit"
-USB_SIZE_MB="$(docker exec "${BACKUP_NODE}" du -sm "${DIR_BACKUPS}" | awk '{print $1}')"
-USB_SIZE_MB=$((USB_SIZE_MB * 2 + 256))
+PULLED_MB="$(docker exec "${BACKUP_NODE}" du -sm "${DIR_BACKUPS}" | awk '{print $1}')"
+USB_SIZE_MB=$((PULLED_MB * 2 + 256))
 [ "${USB_SIZE_MB}" -lt 2048 ] && USB_SIZE_MB=2048
-echo "    sizing the loop image to ${USB_SIZE_MB}M (2x pulled tree + headroom, floor 2G)"
+echo "    ${PULLED_MB}M pulled; sizing the loop image to ${USB_SIZE_MB}M (2x pulled tree + headroom, floor 2G)"
 docker exec "${BACKUP_NODE}" bash "${BKP_IN_NODE}/02_luks_device.sh" \
 	"${USB_IMG}" "${DEV_MOUNT}" "${DEV_DEST}" "${USB_MAPPER}" "${USB_PASS}" "${USB_SIZE_MB}"
-if ! docker exec "${BACKUP_NODE}" bash "${TRIGGER_UNITS}" 'svc-bkp-local-2-device*.service'; then
+drill_device_teardown() {
+	docker exec "${BACKUP_NODE}" umount "${DEV_MOUNT}" 2>/dev/null || true
+	docker exec "${BACKUP_NODE}" cryptsetup luksClose "${USB_MAPPER}" 2>/dev/null || true
+	docker exec "${BACKUP_NODE}" rm -f "${USB_IMG}" 2>/dev/null || true
+}
+if ! DEVICE_FREE_RAW="$(docker exec "${BACKUP_NODE}" df --output=avail -B1M "${DEV_MOUNT}" 2>/dev/null)"; then
+	DEVICE_FREE_RAW=""
+fi
+DEVICE_FREE_MB="$(printf '%s\n' "${DEVICE_FREE_RAW}" | tail -n1 | tr -d ' ')"
+if ! FREE_RAW="$(docker exec "${BACKUP_NODE}" df --output=avail -B1M "${DIR_BACKUPS}" 2>/dev/null)"; then
+	FREE_RAW=""
+fi
+FREE_MB="$(printf '%s\n' "${FREE_RAW}" | tail -n1 | tr -d ' ')"
+case "${DEVICE_FREE_MB}:${FREE_MB}" in
+*[!0-9:]* | *::* | :* | *:)
+	echo "FAILURE: cannot read free space on ${BACKUP_NODE} — df --output returned device '${DEVICE_FREE_MB}', backup root '${FREE_MB}'"
+	drill_device_teardown
+	exit 1
+	;;
+esac
+if [ "${DEVICE_FREE_MB}" -lt "${PULLED_MB}" ]; then
+	echo "FAILURE: the encrypted device offers ${DEVICE_FREE_MB}M usable after mkfs on a ${USB_SIZE_MB}M image; the ${PULLED_MB}M pulled tree does not fit"
+	drill_device_teardown
+	exit 1
+fi
+NEEDED_MB=$((PULLED_MB + DISK_FLOOR_MB))
+if [ "${FREE_MB}" -lt "${NEEDED_MB}" ]; then
+	echo "FAILURE: the sync holds the ${PULLED_MB}M pulled tree and its device copy at once (the restore root repeats that peak later), so ${NEEDED_MB}M must be free to stay above the ${DISK_FLOOR_MB}M watchdog floor; ${FREE_MB}M free on ${BACKUP_NODE}:${DIR_BACKUPS}"
+	echo "    what fills the pulled tree (MB per machine/repo):"
+	docker exec "${BACKUP_NODE}" sh -c "du -sm ${DIR_BACKUPS}/*/* 2>/dev/null | sort -rn" ||
+		echo "    (du breakdown unavailable)"
+	drill_device_teardown
+	exit 1
+fi
+echo "    device offers ${DEVICE_FREE_MB}M, backup root has ${FREE_MB}M free, ${PULLED_MB}M to place"
+if ! docker exec "${BACKUP_NODE}" bash "${TRIGGER_UNITS}" 'svc-bkp-local-2-device*.service' "${UNIT_DUMPS}"; then
 	echo "FAILURE: local-2-device unit missing or failed on ${BACKUP_NODE} (role not deployed?)"
 	exit 1
 fi
@@ -188,6 +244,7 @@ if ! docker exec "${NFS_SERVER}" test -e "${NFS_VOL_DIR}/${DR_MARKER}"; then
 	exit 1
 fi
 echo "    device-recovered files restored to the live NFS export"
+docker exec "${NFS_SERVER}" rm -rf "${DR_RESTORE_STAGE:?}"
 
 echo "==> [8b/9] restore NFS coherence after the backing-FS restore"
 docker exec "${NFS_SERVER}" timeout 120 sh -c \
@@ -216,15 +273,49 @@ if [ -n "${VOL_MARKER_REL}" ]; then
 	VOL_NAME_DIR="${VOL_SRC_REL%/files}"
 	VOL_NAME="${VOL_NAME_DIR##*/}"
 	VOL_GEN="${VOL_GEN_REL##*/}"
-	DR_VOL_STAGE="/var/tmp/dr-volume-restore"
-	docker exec "${MGR}" bash -c "rm -rf '${DR_VOL_STAGE}'; mkdir -p '${DR_VOL_STAGE}'"
-	docker exec "${BACKUP_NODE}" tar -C "${RESTORE_ROOT}" -cf - "${VOL_SRC_REL}" |
-		docker exec -i "${MGR}" tar --numeric-owner -C "${DR_VOL_STAGE}" -xf -
-	docker exec "${MGR}" sh -c \
-		"PYTHONPATH='${NODE_SRC}' python3 -m cli.administration.recover volume '${DR_VOL_STAGE}/${VOL_SRC_REL}' localhost --no-safety-backup"
-	echo "    volume '${VOL_NAME}' recovered from generation ${VOL_GEN} via the recover CLI"
+	VOL_OPTIONS="$(docker exec "${MGR}" docker volume inspect --format '{{json .Options}}' "${VOL_NAME}")"
+	if [ "${VOL_OPTIONS}" != null ] && [ "${VOL_OPTIONS}" != '{}' ]; then
+		echo "    volume recover skipped: '${VOL_NAME}' declares its own backing store ${VOL_OPTIONS}, which is unmounted while the stack is down - a restore would land on the node disk and be shadowed on redeploy; the [8/9] export restore already carried its data"
+	else
+		DR_VOL_STAGE="/var/tmp/dr-volume-restore"
+		docker exec "${MGR}" bash -c "rm -rf '${DR_VOL_STAGE}'; mkdir -p '${DR_VOL_STAGE}'"
+		docker exec "${BACKUP_NODE}" tar -C "${RESTORE_ROOT}" -cf - "${VOL_SRC_REL}" |
+			docker exec -i "${MGR}" tar --numeric-owner -C "${DR_VOL_STAGE}" -xf -
+		docker exec "${MGR}" sh -c \
+			"PYTHONPATH='${NODE_SRC}' python3 -m cli.administration.recover volume '${DR_VOL_STAGE}/${VOL_SRC_REL}' localhost --no-safety-backup"
+		echo "    volume '${VOL_NAME}' recovered from generation ${VOL_GEN} via the recover CLI"
+		docker exec "${MGR}" rm -rf "${DR_VOL_STAGE:?}"
+	fi
 else
-	echo "    volume recover skipped: the volume-2-local backup on ${MGR} did not capture the NFS-backed marker (chain already proven via the nfs repo)"
+	VOL_PATH="$(docker exec "${MGR}" docker volume inspect --format '{{if .Options}}{{.Options.device}}{{end}}' "${PRIMARY_NFS_VOLUME}" 2>/dev/null || true)"
+	if [ -z "${VOL_PATH}" ]; then
+		echo "    volume recover skipped: ${MGR} exposes no backing store for '${PRIMARY_NFS_VOLUME}' - the volume object is node-local and lives wherever the task ran, and the [8/9] export restore already carried its data"
+	else
+		echo "    volume repo holds no marker by design; proving the volume recover CLI against the bound backing store instead"
+		VOL_MOUNTPOINT="$(docker exec "${MGR}" docker volume inspect --format '{{.Mountpoint}}' "${PRIMARY_NFS_VOLUME}")"
+		docker exec "${NFS_SERVER}" rm -f "${NFS_VOL_DIR}/${DR_MARKER}"
+		DR_VOL_STAGE="/var/tmp/dr-volume-restore"
+		docker exec "${MGR}" bash -c "rm -rf '${DR_VOL_STAGE}'; mkdir -p '${DR_VOL_STAGE}'"
+		docker exec "${BACKUP_NODE}" tar -C "${RESTORE_ROOT}" -cf - "${SRC_REL}" |
+			docker exec -i "${MGR}" tar --numeric-owner -C "${DR_VOL_STAGE}" -xf -
+		docker exec "${MGR}" mkdir -p "${VOL_MOUNTPOINT}"
+		docker exec "${MGR}" mount --bind "${VOL_PATH}" "${VOL_MOUNTPOINT}"
+		_vol_rc=0
+		docker exec "${MGR}" sh -c \
+			"PYTHONPATH='${NODE_SRC}' python3 -m cli.administration.recover volume '${DR_VOL_STAGE}/${SRC_REL}' localhost --no-safety-backup" || _vol_rc=$?
+		docker exec "${MGR}" umount "${VOL_MOUNTPOINT}" ||
+			echo "WARNING: the bind mount at ${VOL_MOUNTPOINT} refused the umount and stays behind"
+		docker exec "${MGR}" rm -rf "${DR_VOL_STAGE:?}"
+		if [ "${_vol_rc}" -ne 0 ]; then
+			echo "FAILURE: the volume recover CLI exited ${_vol_rc} restoring '${PRIMARY_NFS_VOLUME}' through its bound backing store"
+			exit 1
+		fi
+		if ! docker exec "${NFS_SERVER}" test -f "${NFS_VOL_DIR}/${DR_MARKER}"; then
+			echo "FAILURE: the volume recover CLI reported success but the marker did not reach the export on ${NFS_SERVER} (expected ${NFS_VOL_DIR}/${DR_MARKER})"
+			exit 1
+		fi
+		echo "    volume '${PRIMARY_NFS_VOLUME}' recovered through its bound backing store; marker verified server-side"
+	fi
 fi
 
 if [ "${SECRETS_TRIGGERED}" -eq 1 ]; then
@@ -243,6 +334,7 @@ if [ "${SECRETS_TRIGGERED}" -eq 1 ]; then
 			exit 1
 		fi
 		echo "    secrets restored to ${SECRETS_DIR} via the recover CLI"
+		docker exec "${MGR}" rm -rf "${DR_SEC_STAGE:?}"
 	else
 		echo "FAILURE: secrets unit ran but no ${SECRETS_REPO} generation reached the device-recovered tree"
 		exit 1
@@ -251,7 +343,8 @@ else
 	echo "    secrets recover skipped: svc-bkp-secrets-2-local not installed on ${MGR}"
 fi
 
-echo "==> recovery complete: device -> nfs export -> volume -> secrets restored via the recover CLI"
+docker exec "${BACKUP_NODE}" rm -rf "${RESTORE_ROOT:?}"
+echo "==> recovery complete via the recover CLI: device -> nfs export, plus the volume and secrets legs reported above"
 echo "    the matrix update pass boots the stack onto the recovered export; verify_recovered_marker.sh asserts the live marker there"
 printf 'DR_TOKEN=%s\nDR_MARKER=%s\nNFS_SERVER=%s\nNFS_VOL_DIR=%s\n' \
 	"${DR_TOKEN}" "${DR_MARKER}" "${NFS_SERVER}" "${NFS_VOL_DIR}" >"${DR_VERIFY_ENV}"
