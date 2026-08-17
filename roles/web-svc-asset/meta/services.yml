@@ -16,10 +16,11 @@ asset:
   run_after:
     - web-svc-file
   lifecycle: beta
+# nocheck: dynamic-flag — the assets are copied into web-svc-file's webroot and the asset domain redirects onto its domain, so the provider is mandatory rather than group-conditional
 file:
   bond: 1
-  enabled: "{{ 'web-svc-file' in group_names }}"
-  shared: "{{ 'web-svc-file' in group_names }}"
+  enabled: true
+  shared: true
 matomo:
   bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"

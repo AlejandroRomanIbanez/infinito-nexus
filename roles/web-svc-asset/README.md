@@ -18,7 +18,6 @@ flowchart LR
         dep_svc_net_tor["svc-net-tor 🐳🐝"]
         dep_web_app_matomo["web-app-matomo 🐳🐝"]
         dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
-        dep_web_svc_file["web-svc-file 💻"]
     end
     subgraph role [web-svc-asset 💻]
         svc_asset["asset"]
@@ -36,7 +35,6 @@ flowchart LR
     dep_svc_net_tor -. "0..1" .-> svc_tor
     dep_web_app_matomo -. "0..1" .-> svc_matomo
     dep_web_app_prometheus -. "0..1" .-> svc_prometheus
-    dep_web_svc_file -. "0..1" .-> svc_file
     svc_asset -. "0..1" .-> dpt_web_app_dashboard
     svc_asset -. "0..1" .-> dpt_web_app_discourse
     svc_asset -. "0..1" .-> dpt_web_app_listmonk
