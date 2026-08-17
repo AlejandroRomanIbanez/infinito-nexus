@@ -22,7 +22,7 @@ flowchart TD
     COUNT -->|"some, no backup subjects on the host"| EMPTY["exit 0<br>a stamped empty generation is the expected outcome"]
     COUNT -->|some| PASS{"ASYNC_ENABLED"}
     PASS -->|true| ASYNC["verify/backup.sh<br>requires two differential generations"]
-    PASS -->|false| SYNC["verify/backup.sh<br>seed/token.py seed + one more backup<br>restore_cycle.sh<br>sys-ctl-hlth-container's own script"]
+    PASS -->|false| SYNC["verify/backup.sh<br>seed/marker.py seed + one more backup<br>restore_cycle.sh<br>sys-ctl-hlth-container's own script"]
 ```
 
 The sync pass is the whole disaster drill against the host this role deploys on
@@ -129,7 +129,7 @@ flowchart TD
     REC --> DOWN["compose down every project, stop the launcher containers"]
     DOWN --> RM["container volume rm every mounted volume<br>except the engines' own data directories"]
     RM --> CREATE["compose create every project<br>so the volumes exist again, empty"]
-    CREATE --> BLANK["seed/token.py blank:<br>drop the live marker, only a restore returns it"]
+    CREATE --> BLANK["seed/marker.py blank:<br>drop the live marker, only a restore returns it"]
     BLANK --> VOL["recover volume &lt;dir&gt; localhost, per files/ tree"]
     VOL --> DBUP["compose up only the projects that own a dump volume<br>wait for their healthcheck"]
     DBUP --> DB["recover database &lt;generation&gt; localhost"]
@@ -193,7 +193,7 @@ Bringing the apps up **after** the replay also means their healthcheck now runs
 against the restored dump, rather than against the data the drill is about to
 overwrite.
 
-## `seed/token.py`
+## `seed/marker.py`
 
 Health proves the host boots, not that it holds its data. Before the backup the
 drill seeds one token into every subject — a `.dr-drill-marker` file at the root

@@ -12,11 +12,11 @@ location, because it runs from the staged test directory. The marker file
 shares its name with the swarm drill's so one grep finds both.
 
 Usage:
-    seed/token.py seed     GENERATION_DIR TOKEN
-    seed/token.py captured GENERATION_DIR TOKEN
-    seed/token.py blank    GENERATION_DIR TOKEN
-    seed/token.py verify   GENERATION_DIR TOKEN
-    seed/token.py clean    GENERATION_DIR TOKEN
+    seed/marker.py seed     GENERATION_DIR TOKEN
+    seed/marker.py captured GENERATION_DIR TOKEN
+    seed/marker.py blank    GENERATION_DIR TOKEN
+    seed/marker.py verify   GENERATION_DIR TOKEN
+    seed/marker.py clean    GENERATION_DIR TOKEN
 """
 
 from __future__ import annotations

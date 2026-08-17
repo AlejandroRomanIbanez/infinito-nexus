@@ -16,7 +16,7 @@ def load_target_module():
         / "files"
         / "test"
         / "seed"
-        / "token.py"
+        / "marker.py"
     )
     if not script_path.is_file():
         raise FileNotFoundError(f"Target script not found at: {script_path}")

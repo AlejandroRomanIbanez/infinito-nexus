@@ -119,8 +119,8 @@ bash "${DIR}/verify/backup.sh"
 DR_TOKEN="dr-$(date +%s)-$$"
 SEEDED_GENERATION="${REPO_DIR}/${NEWEST_GENERATION}"
 export DR_TOKEN
-python3 "${DIR}/seed/token.py" seed "${SEEDED_GENERATION}" "${DR_TOKEN}"
-trap 'python3 "${DIR}/seed/token.py" clean "${REPO_DIR}/${NEWEST_GENERATION}" "${DR_TOKEN}"' EXIT
+python3 "${DIR}/seed/marker.py" seed "${SEEDED_GENERATION}" "${DR_TOKEN}"
+trap 'python3 "${DIR}/seed/marker.py" clean "${REPO_DIR}/${NEWEST_GENERATION}" "${DR_TOKEN}"' EXIT
 
 echo "Backing up once more so the generation under test carries the marker"
 if ! timeout "${BKP_TEST_HEALTH_TIMEOUT}" systemctl start "${BKP_TEST_SERVICE}"; then
@@ -139,7 +139,7 @@ if ! diff <(subjects "${SEEDED_GENERATION}") <(subjects "${REPO_DIR}/${NEWEST_GE
     exit 1
 fi
 
-python3 "${DIR}/seed/token.py" captured "${REPO_DIR}/${NEWEST_GENERATION}" "${DR_TOKEN}"
+python3 "${DIR}/seed/marker.py" captured "${REPO_DIR}/${NEWEST_GENERATION}" "${DR_TOKEN}"
 
 if [[ "$(container info --format '{{.Swarm.LocalNodeState}}' 2>/dev/null)" == "active" ]]; then
     echo "SKIP: swarm node; the restore half needs compose lifecycle control, so it is drilled by scripts/tests/deploy/swarm/routine/backup"
