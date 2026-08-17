@@ -13,6 +13,7 @@ from .filter import FilterError, compile_predicate
 from .model import (
     TESTED_LIFECYCLES,
     ComplexityRow,
+    attach_siblings,
     compute_complexity_rows,
     compute_variant_complexity_rows,
 )
@@ -343,16 +344,17 @@ def main(argv: list[str] | None = None) -> int:
             lifecycles=lifecycles,
         )
 
-    _apply_sort(rows, sort_spec)
-    rows = _mark_covered(rows)
-    _apply_sort(rows, sort_spec)
-
     if args.filter:
         try:
             predicate = compile_predicate(args.filter, FILTER_FIELDS)
         except FilterError as exc:
             p.error(f"--filter: {exc}")
         rows = [r for r in rows if predicate(_row_fields(r))]
+        rows = attach_siblings(rows)
+
+    _apply_sort(rows, sort_spec)
+    rows = _mark_covered(rows)
+    _apply_sort(rows, sort_spec)
 
     rows = [r._replace(row=line) for line, r in enumerate(rows, start=1)]
 

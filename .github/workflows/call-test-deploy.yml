@@ -117,6 +117,7 @@ env:
   INFINITO_APP_DISCOVERY_RUNNER: host
   INFINITO_DOCKER_FILESYSTEM_ALLOWED: ${{ inputs.filesystem }}
   INFINITO_LIFECYCLES: ${{ inputs.lifecycles }}
+  INFINITO_DISCOVERY_SEED: ${{ github.run_id }}
 
 jobs:
   discover:

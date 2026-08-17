@@ -8,6 +8,7 @@ import subprocess
 from typing import TYPE_CHECKING, Any, NamedTuple
 
 from utils.cache.applications import get_variants
+from utils.env.parser import env_setting
 from utils.roles.lifecycle import tested_lifecycles
 from utils.roles.meta_lookup import (
     MetaServicesShapeError,
@@ -117,6 +118,32 @@ class ComplexityRow(NamedTuple):
     clone: bool = False
 
 
+def _tiebreaker(name: str, variant: int | None) -> int:
+    """The row's last-resort sort key, stable across processes when seeded.
+
+    Discovery and the plan renderer run as separate processes, so a per-process
+    draw lets the rendered plan describe a different assignment than the one
+    deployed. ``INFINITO_DISCOVERY_SEED`` derives the key from the row's own
+    identity instead, which survives a different construction order and still
+    rotates the assignment whenever the seed changes.
+
+    Args:
+        name: the role the row belongs to.
+        variant: its variant index, or None for a variant-free role.
+
+    Returns:
+        A value in the same range the unseeded draw uses, so the sort spec
+        behaves identically either way.
+    """
+    seed = env_setting("INFINITO_DISCOVERY_SEED")
+    if not seed:
+        return random.randint(100000, 999999)  # noqa: S311 - sort tie-breaker, not cryptographic
+    digest = hashlib.sha1(
+        f"{seed}\n{name}\n{variant}".encode(), usedforsecurity=False
+    ).digest()
+    return 100000 + int.from_bytes(digest[:4], "big") % 900000
+
+
 def _dna_hash(name: str, services: list[str]) -> str:
     members = sorted({name, *services})
     return hashlib.sha1(
@@ -124,7 +151,14 @@ def _dna_hash(name: str, services: list[str]) -> str:
     ).hexdigest()
 
 
-def _attach_siblings(rows: list[ComplexityRow]) -> list[ComplexityRow]:
+def attach_siblings(rows: list[ComplexityRow]) -> list[ComplexityRow]:
+    """Group *rows* by dna and elect the heaviest of each group the original,
+    marking the rest ``clone`` so the budget cut keeps one representative.
+
+    Election is relative to the rows handed in, so a caller that filters MUST
+    call this again on the survivors: a stand-in the filter dropped is not
+    deployed, and the row deferring to it is cut in favour of nothing.
+    """
     by_dna: dict[str, list[ComplexityRow]] = {}
     for row in rows:
         by_dna.setdefault(row.dna, []).append(row)
@@ -201,7 +235,7 @@ def _build_row(
         weight=weight,
         dna=_dna_hash(name, services),
         siblings=[],
-        random=random.randint(100000, 999999),  # noqa: S311 - sort tie-breaker, not cryptographic
+        random=_tiebreaker(name, variant),
         variant=variant,
         integrated=any(provider != name for provider in services_direct),
     )
@@ -279,7 +313,7 @@ def compute_complexity_rows(
                 in_main=main_roles is None or name in main_roles,
             )
         )
-    return _attach_siblings(rows)
+    return attach_siblings(rows)
 
 
 def _variant_services_map(variant_config: Any) -> dict[str, Any]:
@@ -349,4 +383,4 @@ def compute_variant_complexity_rows(
                     test_host=host and "host" not in skips,
                 )
             )
-    return _attach_siblings(rows)
+    return attach_siblings(rows)
