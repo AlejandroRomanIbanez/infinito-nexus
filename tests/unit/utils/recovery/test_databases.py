@@ -4,6 +4,7 @@ from pathlib import Path
 from unittest import TestCase, main, mock
 
 from utils.recovery import databases
+from utils.recovery import docker as recovery_docker
 
 APPLICATIONS = {
     "web-app-zammad": {"services": {"postgres": {"enabled": True}}},
@@ -67,12 +68,34 @@ class TestGenerationLayout(TestCase):
         self.assertEqual(parts.repo_name, "backup-docker-to-local")
         self.assertEqual(parts.name, "20260816190906")
 
-    def test_cluster_dumps_stay_out_of_the_replay(self):
+    def test_each_dump_is_sorted_into_the_subcommand_that_replays_it(self):
         dumps, clusters = databases.dumps_of(self.generation)
         self.assertEqual(
             [(d.volume, d.database) for d in dumps], [("postgres", "zammad")]
         )
-        self.assertEqual([path.name for path in clusters], ["all.cluster.backup.sql"])
+        self.assertEqual(
+            [(c.volume, c.instance) for c in clusters], [("postgres", "all")]
+        )
+
+    def test_cluster_argv_matches_the_baudolo_contract(self):
+        cluster = databases.Cluster("postgres", "central-postgres", Path("/x"))
+        argv = databases.cluster_argv(
+            cluster,
+            databases.generation_of(self.generation),
+            "postgres-1",
+            "postgres",
+            "s3cret",
+        )
+        self.assertEqual(
+            argv[:5],
+            ["baudolo-restore", "cluster", "postgres", "abc123", "20260816190906"],
+        )
+        self.assertEqual(argv[argv.index("--instance") + 1], "central-postgres")
+        self.assertEqual(argv[argv.index("--db-user") + 1], "postgres")
+        self.assertIn("--empty", argv)
+        self.assertNotIn(
+            "--db-name", argv, "a cluster dump names an instance, not a database"
+        )
 
     def test_restore_argv_matches_the_baudolo_contract(self):
         dump = databases.Dump("postgres", "zammad", Path("/x"))
@@ -122,45 +145,60 @@ MARIADB_HEADER = """/*M!999999\\- enable the sandbox mode */
 """
 
 
-class TestDumpVersion(TestCase):
-    """Headers captured from postgres:17-alpine and mariadb:11 themselves."""
+CLUSTER_DUMP = """--
+-- PostgreSQL database cluster dump
+--
 
-    def dump(self, header):
-        path = Path(tempfile.mkdtemp()) / "app.backup.sql"
-        path.write_text(header, encoding="utf-8")
-        return databases.Dump("vol", "app", path)
+CREATE ROLE greenlight;
+ALTER ROLE greenlight WITH LOGIN;
 
-    def test_postgres_states_the_source_server_not_the_tool(self):
-        dump = self.dump(POSTGRES_HEADER)
-        self.assertEqual(databases.dump_version(dump, "postgres"), "17.11")
+\\connect template1
 
-    def test_mariadb_ignores_the_tool_version_on_the_first_line(self):
-        dump = self.dump(MARIADB_HEADER)
+\\connect postgres
+
+\\connect greenlight
+
+-- Dumped from database version 17.11
+CREATE TABLE t (v text);
+
+\\connect keycloak
+
+-- Dumped from database version 17.11
+CREATE TABLE t (v text);
+"""
+
+
+class TestClusterDumps(TestCase):
+    def cluster(self, text=CLUSTER_DUMP):
+        path = Path(tempfile.mkdtemp()) / "central-postgres.cluster.backup.sql"
+        path.write_text(text, encoding="utf-8")
+        return databases.Cluster("postgres", "central-postgres", path)
+
+    def test_the_connect_lines_are_the_inventory(self):
         self.assertEqual(
-            databases.dump_version(dump, "mariadb"), "11.8.8-MariaDB-ubu2404"
+            databases.databases_in(self.cluster()), ["greenlight", "keycloak"]
         )
 
-    def test_a_dump_without_a_version_header_aborts(self):
-        dump = self.dump("-- no version here\nSET statement_timeout = 0;\n")
-        with self.assertRaises(databases.RecoveryError):
-            databases.dump_version(dump, "postgres")
+    def test_the_control_databases_are_not_applications(self):
+        found = databases.databases_in(self.cluster())
+        for control in ("postgres", "template0", "template1"):
+            self.assertNotIn(control, found)
 
-    def test_major_of_both_spellings(self):
-        self.assertEqual(databases.major_of("17.11"), 17)
-        self.assertEqual(databases.major_of("11.8.8-MariaDB-ubu2404"), 11)
-        with self.assertRaises(databases.RecoveryError):
-            databases.major_of("unknown")
+    def test_a_quoted_name_loses_its_quotes(self):
+        cluster = self.cluster('\\connect "odd-name"\n')
+        self.assertEqual(databases.databases_in(cluster), ["odd-name"])
 
-    def test_a_newer_dump_refuses_an_older_engine(self):
-        dump = databases.Dump("vol", "app", Path("/x"))
-        with self.assertRaises(databases.RecoveryError) as raised:
-            databases.assert_replayable(dump, "postgres", "17.11", "15.6")
-        self.assertIn("does not replay into an older engine", str(raised.exception))
+    def test_a_quoted_name_keeps_its_spaces(self):
+        cluster = self.cluster('\\connect "odd name"\n')
+        self.assertEqual(databases.databases_in(cluster), ["odd name"])
 
-    def test_forward_and_equal_are_allowed(self):
-        dump = databases.Dump("vol", "app", Path("/x"))
-        databases.assert_replayable(dump, "postgres", "15.6", "17.11")
-        databases.assert_replayable(dump, "mariadb", "11.8.8-MariaDB", "11.4.2-MariaDB")
+    def test_psql_options_are_not_mistaken_for_the_database(self):
+        cluster = self.cluster("\\connect -reuse-previous=on dbname=appdb\n")
+        self.assertEqual(databases.databases_in(cluster), ["appdb"])
+
+    def test_a_database_reconnected_twice_is_listed_once(self):
+        cluster = self.cluster("\\connect app\nSELECT 1;\n\\connect app\n")
+        self.assertEqual(databases.databases_in(cluster), ["app"])
 
 
 class TestCredentials(TestCase):
@@ -189,6 +227,29 @@ class TestCredentials(TestCase):
         with self.assertRaises(databases.RecoveryError):
             databases.credentials_of(Path("/nonexistent/databases.csv"))
 
+    def test_a_cluster_row_is_keyed_by_its_instance(self):
+        path = self.write(
+            "instance;database;username;password\n"
+            "central-postgres;*;postgres;super\n"
+            "bbb-postgres;*;postgres;other\n"
+            "central-postgres;zammad;zammad;secret\n"
+        )
+        self.assertEqual(
+            databases.cluster_credentials_of(path),
+            {
+                "central-postgres": ("postgres", "super"),
+                "bbb-postgres": ("postgres", "other"),
+            },
+        )
+
+    def test_two_instances_would_collide_under_the_database_key(self):
+        path = self.write(
+            "instance;database;username;password\n"
+            "central-postgres;*;postgres;super\n"
+            "bbb-postgres;*;postgres;other\n"
+        )
+        self.assertEqual(databases.credentials_of(path), {"*": ("postgres", "super")})
+
 
 class TestReplay(TestCase):
     def setUp(self):
@@ -208,13 +269,15 @@ class TestReplay(TestCase):
 
         def fake_run(argv, secret=""):
             calls.append(argv)
-            return "17.11\n" if "exec" in argv else ""
+            return ""
 
         with (
-            mock.patch.object(databases, "_run", fake_run),
-            mock.patch.object(databases, "consumers_running", lambda *a, **k: running),
+            mock.patch.object(recovery_docker, "_run", fake_run),
             mock.patch.object(
-                databases, "container_of_volume", lambda *a, **k: "postgres-1"
+                recovery_docker, "consumers_running", lambda *a, **k: running
+            ),
+            mock.patch.object(
+                recovery_docker, "container_of_volume", lambda *a, **k: "postgres-1"
             ),
         ):
             replayed = databases.replay(self.generation, self.csv, engines=self.engines)
@@ -232,13 +295,13 @@ class TestReplay(TestCase):
         self.assertEqual(len(restores), 1)
         self.assertEqual(restores[0][:2], ["baudolo-restore", "postgres"])
 
-    def test_the_version_is_checked_before_anything_is_replayed(self):
+    def test_the_version_check_is_left_to_baudolo(self):
         _, calls = self.replay([])
-        asked = next(i for i, argv in enumerate(calls) if "exec" in argv)
-        replayed = next(
-            i for i, argv in enumerate(calls) if argv[0] == "baudolo-restore"
+        self.assertEqual(
+            [argv for argv in calls if "exec" in argv],
+            [],
+            "the replay must not query the engine version itself",
         )
-        self.assertLess(asked, replayed)
 
     def test_a_generation_without_dumps_is_not_an_error(self):
         empty = generation(Path(tempfile.mkdtemp()))
@@ -249,30 +312,133 @@ class TestReplay(TestCase):
             databases.replay(self.generation / "nope", self.csv, engines=self.engines)
 
     def test_a_stopped_database_container_says_to_start_it(self):
-        with mock.patch.object(databases, "_run", lambda argv, secret="": "postgres\n"):
-            self.assertEqual(databases.container_of_volume("postgres"), "postgres")
+        with mock.patch.object(
+            recovery_docker, "_run", lambda argv, secret="": "postgres\n"
+        ):
+            self.assertEqual(
+                recovery_docker.container_of_volume("postgres"), "postgres"
+            )
 
         def only_ps_all(argv, secret=""):
             return "postgres\n" if "-a" in argv else ""
 
         with (
-            mock.patch.object(databases, "_run", only_ps_all),
+            mock.patch.object(recovery_docker, "_run", only_ps_all),
             self.assertRaises(databases.RecoveryError) as raised,
         ):
-            databases.container_of_volume("postgres")
+            recovery_docker.container_of_volume("postgres")
         self.assertIn("is not running", str(raised.exception))
 
     def test_no_container_at_all_says_to_deploy_first(self):
         with (
-            mock.patch.object(databases, "_run", lambda argv, secret="": ""),
+            mock.patch.object(recovery_docker, "_run", lambda argv, secret="": ""),
             self.assertRaises(databases.RecoveryError) as raised,
         ):
-            databases.container_of_volume("postgres")
+            recovery_docker.container_of_volume("postgres")
         self.assertIn("deploy the stack first", str(raised.exception))
+
+    def test_a_cluster_dump_is_replayed_as_a_whole(self):
+        (self.generation / "postgres/sql/bbb-postgres.cluster.backup.sql").write_text(
+            CLUSTER_DUMP, encoding="utf-8"
+        )
+        self.csv.write_text(
+            "instance;database;username;password\n"
+            "postgres;zammad;zammad;s3cret\n"
+            "bbb-postgres;*;postgres;super\n",
+            encoding="utf-8",
+        )
+        replayed, calls = self.replay([])
+        self.assertEqual(replayed, 2)
+        subcommands = [argv[1] for argv in calls if argv[0] == "baudolo-restore"]
+        self.assertEqual(
+            subcommands,
+            ["cluster", "postgres"],
+            "the cluster goes in first; a single-database dump of the same "
+            "instance is the more specific statement and must land after it",
+        )
+
+    def test_a_cluster_without_a_superuser_row_aborts(self):
+        (self.generation / "postgres/sql/bbb-postgres.cluster.backup.sql").write_text(
+            CLUSTER_DUMP, encoding="utf-8"
+        )
+        with self.assertRaises(databases.RecoveryError) as raised:
+            self.replay([])
+        self.assertIn("bbb-postgres", str(raised.exception))
+
+    def test_a_consumer_of_a_clustered_database_aborts_the_replay(self):
+        (self.generation / "postgres/sql/bbb-postgres.cluster.backup.sql").write_text(
+            CLUSTER_DUMP, encoding="utf-8"
+        )
+        self.csv.write_text(
+            "instance;database;username;password\n"
+            "postgres;zammad;zammad;s3cret\n"
+            "bbb-postgres;*;postgres;super\n",
+            encoding="utf-8",
+        )
+        with (
+            mock.patch.object(recovery_docker, "_run", lambda argv, secret="": ""),
+            mock.patch.object(
+                recovery_docker,
+                "consumers_running",
+                lambda project, *a, **k: (
+                    ["greenlight-web"] if project == "greenlight" else []
+                ),
+            ),
+            mock.patch.object(
+                recovery_docker, "container_of_volume", lambda *a, **k: "postgres-1"
+            ),
+            self.assertRaises(databases.RecoveryError) as raised,
+        ):
+            databases.replay(self.generation, self.csv, engines=self.engines)
+        self.assertIn("greenlight-web", str(raised.exception))
+
+    def cluster_only(self, running_in_project):
+        """A generation holding nothing but one instance's cluster dump."""
+        (self.generation / "postgres/sql/zammad.backup.sql").unlink()
+        (self.generation / "postgres/sql/bbb-postgres.cluster.backup.sql").write_text(
+            CLUSTER_DUMP, encoding="utf-8"
+        )
+        self.csv.write_text(
+            "instance;database;username;password\nbbb-postgres;*;postgres;super\n",
+            encoding="utf-8",
+        )
+        return (
+            mock.patch.object(
+                recovery_docker,
+                "_run",
+                lambda argv, secret="": "bigbluebutton\n" if "inspect" in argv else "",
+            ),
+            mock.patch.object(
+                recovery_docker,
+                "consumers_running",
+                lambda project, *a, **k: running_in_project.get(project, []),
+            ),
+            mock.patch.object(
+                recovery_docker, "container_of_volume", lambda *a, **k: "bbb-postgres-1"
+            ),
+        )
+
+    def test_a_consumer_in_the_engines_own_project_aborts_the_cluster_replay(self):
+        patches = self.cluster_only({"bigbluebutton": ["bigbluebutton-etherpad-1"]})
+        with (
+            patches[0],
+            patches[1],
+            patches[2],
+            self.assertRaises(databases.RecoveryError) as raised,
+        ):
+            databases.replay(self.generation, self.csv, engines=self.engines)
+        self.assertIn("bigbluebutton-etherpad-1", str(raised.exception))
+
+    def test_the_engine_is_not_counted_as_its_own_consumer(self):
+        patches = self.cluster_only({"bigbluebutton": ["bbb-postgres-1"]})
+        with patches[0], patches[1], patches[2]:
+            self.assertEqual(
+                databases.replay(self.generation, self.csv, engines=self.engines), 1
+            )
 
     def test_the_password_is_redacted_from_a_failure(self):
         with self.assertRaises(databases.RecoveryError) as raised:
-            databases._run(["false", "--db-password", "s3cret"], secret="s3cret")
+            recovery_docker._run(["false", "--db-password", "s3cret"], secret="s3cret")
         self.assertNotIn("s3cret", str(raised.exception))
         self.assertIn("***", str(raised.exception))
 

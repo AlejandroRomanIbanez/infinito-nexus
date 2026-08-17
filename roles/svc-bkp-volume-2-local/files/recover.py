@@ -2,24 +2,17 @@
 """Restore a backup-docker-to-local generation: a volume's files, or the
 generation's database dumps.
 
-Both modes run the role's deployed backup unit first (the usual baudolo
-run, storing a fresh differential generation of every volume and
-database) unless ``--no-safety-backup`` says the target holds nothing
-worth saving.
+Both modes run the role's deployed backup unit first, unless
+``--no-safety-backup`` says the target holds nothing worth saving.
 
-Volume mode resolves the volume's mountpoint and mirrors the snapshot
-into it (``rsync -a --delete``). Stop the consuming project first.
+Volume mode mirrors the snapshot into the volume's mountpoint
+(``rsync -a --delete``); stop the consuming project first. With
+``--docker-host ssh://user@host`` it works on a remote host.
 
-Database mode (``--databases``) replays every single-database dump of the
-generation with ``baudolo-restore <engine> --empty``, refusing while a
-consumer of that database still runs - a booting consumer recreates the
-pre-cleaned schema underneath the replay. The engine comes from the
-repository's service definitions, never from a container image.
-
-Host-agnostic in volume mode: with ``--docker-host ssh://user@host`` the
-volume is inspected on that host and the snapshot is rsync-pushed onto
-its mountpoint over ssh. Database mode is local-only, because the
-credentials live in the target host's own databases.csv.
+Database mode (``--databases``) replays every dump with
+``baudolo-restore --empty`` - a single database through its engine's
+subcommand, a ``pg_dumpall`` dump through ``cluster`` - and refuses while a
+consumer runs. Local-only: the credentials live in the target's databases.csv.
 
 Usage:
     recover.py SOURCE_DIR VOLUME [--no-safety-backup] [--docker-host ENDPOINT]

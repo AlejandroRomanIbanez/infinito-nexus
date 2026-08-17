@@ -1,33 +1,29 @@
 """Replay the sql dumps of one backup generation into their databases.
 
-The file counterpart of a backup is a tree; the database counterpart is a
-dump, and the two cannot be restored the same way. ``baudolo-restore
-<engine> --empty`` pre-cleans the schema in one psql session and replays the
-dump in the next, so a consumer that boots in between recreates the schema
-and the replay dies on its own ``CREATE TABLE``. The replay therefore refuses
-to run while a consumer of that database is up.
+``baudolo-restore --empty`` pre-cleans the schema in one psql session and
+replays the dump in the next, so a consumer that boots in between recreates
+the schema and the replay dies on its own ``CREATE TABLE``. Hence the refusal
+while a consumer is up.
 
-The engine is read from the repository, not guessed from a container image:
-the service key under a role's ``meta/services.yml`` is the engine, the same
-value ``lookup('database', id, 'type')`` feeds into the backup seed.
+The engine is read from the repository, not guessed from a container image.
+Whether a dump is readable by that engine is decided by ``baudolo-restore``
+itself, before its pre-clean drops anything.
 
-The engine *version* is read from the dump's own header, because that is the
-only place stating what the dump came out of. Mind which line: postgres says
-``-- Dumped from database version 17.11`` on line 7, while mariadb's line 2
-(``-- MariaDB dump 10.19-11.8.8-MariaDB``) opens with mariadb-dump's own
-version and only the tab-separated ``-- Server version`` line further down
-names the server. Matching the first number in the header reads the tool on
-one engine and the server on the other.
+A ``database = '*'`` row dumps a whole instance with ``pg_dumpall``. It goes
+back through ``baudolo-restore cluster`` with the instance's superuser; its
+``\\connect`` lines name the databases, while the consumers sit in the compose
+project of the engine, so both are checked.
 """
 
 from __future__ import annotations
 
 import csv
 import re
-import subprocess
 from typing import TYPE_CHECKING, NamedTuple
 
 from utils.cache.applications import get_application_defaults
+from utils.recovery import docker as recovery_docker
+from utils.recovery.docker import RecoveryError
 from utils.roles.applications.services.database import (
     RDBMS_SERVICE_KEYS,
     resolve_database_service_key,
@@ -39,39 +35,13 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 RESTORE_BIN = "baudolo-restore"
-DOCKER_BIN = "docker"
 DUMP_SUFFIX = ".backup.sql"
 CLUSTER_SUFFIX = ".cluster.backup.sql"
 DEDICATED_VOLUME_SUFFIX = "_database"
-HEADER_LINES = 20
-VERSION_IN_DUMP = {
-    "postgres": re.compile(r"^-- Dumped from database version (\S+)"),
-    "mariadb": re.compile(r"^-- Server version\s+(\S+)"),
-}
-SERVER_VERSION_QUERY = {
-    "postgres": (
-        "psql",
-        "-U",
-        "{user}",
-        "-d",
-        "{database}",
-        "-tAc",
-        "SHOW server_version",
-    ),
-    "mariadb": (
-        "mariadb",
-        "-u{user}",
-        "-p{password}",
-        "-N",
-        "-B",
-        "-e",
-        "SELECT VERSION()",
-    ),
-}
-
-
-class RecoveryError(Exception):
-    """A condition that makes the replay unprovable."""
+CLUSTER_ENGINE = "postgres"
+CLUSTER_ROW = "*"
+CONNECT_IN_DUMP = re.compile(r"^\\connect\s+(.*)$")
+CONTROL_DATABASES = frozenset({"postgres", "template0", "template1"})
 
 
 class Dump(NamedTuple):
@@ -79,6 +49,14 @@ class Dump(NamedTuple):
 
     volume: str
     database: str
+    path: Path
+
+
+class Cluster(NamedTuple):
+    """One ``pg_dumpall`` dump of a whole instance inside a generation."""
+
+    volume: str
+    instance: str
     path: Path
 
 
@@ -129,21 +107,21 @@ def generation_of(generation_dir: Path) -> Generation:
     )
 
 
-def dumps_of(generation_dir: Path) -> tuple[list[Dump], list[Path]]:
-    """Split a generation's dumps into replayable ones and cluster dumps.
+def dumps_of(generation_dir: Path) -> tuple[list[Dump], list[Cluster]]:
+    """Split a generation's dumps by the subcommand that replays them.
 
     Returns:
-        The single-database dumps, and the cluster dumps (seeded with an
-        empty database name) that ``baudolo-restore`` has no subcommand for.
+        The single-database dumps, and the cluster dumps, which name their
+        instance in the file name and go through ``baudolo-restore cluster``.
     """
     dumps: list[Dump] = []
-    clusters: list[Path] = []
+    clusters: list[Cluster] = []
     for path in sorted(generation_dir.glob("*/sql/*" + DUMP_SUFFIX)):
+        volume = path.parent.parent.name
         if path.name.endswith(CLUSTER_SUFFIX):
-            clusters.append(path)
+            clusters.append(Cluster(volume, path.name[: -len(CLUSTER_SUFFIX)], path))
             continue
-        volume_dir = path.parent.parent
-        dumps.append(Dump(volume_dir.name, path.name[: -len(DUMP_SUFFIX)], path))
+        dumps.append(Dump(volume, path.name[: -len(DUMP_SUFFIX)], path))
     return dumps, clusters
 
 
@@ -176,6 +154,76 @@ def credentials_of(csv_path: Path) -> dict[str, tuple[str, str]]:
     return credentials
 
 
+def cluster_credentials_of(csv_path: Path) -> dict[str, tuple[str, str]]:
+    """Read the superuser of every instance that is dumped as a whole.
+
+    A cluster row states ``*`` where a single-database row names a database,
+    so :func:`credentials_of` would file every instance under the same key and
+    keep only the first. Cluster credentials are therefore keyed by instance.
+
+    Args:
+        csv_path: the host's databases.csv.
+
+    Returns:
+        Instance name to (user, password).
+    """
+    if not csv_path.is_file():
+        raise RecoveryError(f"{csv_path} does not exist")
+    credentials: dict[str, tuple[str, str]] = {}
+    with csv_path.open(newline="", encoding="utf-8") as handle:
+        rows = csv.reader(handle, delimiter=";")
+        next(rows, None)
+        for row in rows:
+            if len(row) >= 4 and row[1].strip() == CLUSTER_ROW:
+                credentials.setdefault(row[0].strip(), (row[2], row[3]))
+    return credentials
+
+
+def databases_in(cluster: Cluster) -> list[str]:
+    """Name the databases a cluster dump recreates.
+
+    The stream reconnects before each one, so its ``\\connect`` lines are the
+    inventory. The control databases are dropped: they exist in every cluster
+    and are not deployed as applications, so nothing consumes them.
+
+    Args:
+        cluster: the dump to read.
+
+    Returns:
+        The database names, in the order the dump recreates them.
+    """
+    found: list[str] = []
+    with cluster.path.open(encoding="utf-8", errors="replace") as handle:
+        for line in handle:
+            match = CONNECT_IN_DUMP.match(line)
+            if not match:
+                continue
+            name = connect_target(match.group(1))
+            if name and name not in CONTROL_DATABASES and name not in found:
+                found.append(name)
+    return found
+
+
+def connect_target(rest: str) -> str | None:
+    """The database a ``\\connect`` line switches to.
+
+    A quoted name may hold spaces, and psql options precede the target
+    (``\\connect -reuse-previous=on dbname=x``), so a pattern that stops at
+    whitespace reads ``"odd name"`` as ``odd`` and an option as a database.
+    """
+    text = rest.strip()
+    for token in text.split():
+        if token.startswith("-"):
+            continue
+        if token.startswith("dbname="):
+            text = token[len("dbname=") :]
+        break
+    if text.startswith('"'):
+        closing = text.find('"', 1)
+        return text[1:closing] if closing > 0 else None
+    return text.split()[0] if text.split() else None
+
+
 def engine_of(dump: Dump, engines: Mapping[str, str]) -> str:
     """Name the engine a dump has to be replayed with.
 
@@ -195,86 +243,6 @@ def engine_of(dump: Dump, engines: Mapping[str, str]) -> str:
         f"no database service in the repository claims volume '{dump.volume}' "
         f"or database '{dump.database}', so its engine is unknown"
     )
-
-
-def major_of(version: str) -> int:
-    """The major number of an engine version string.
-
-    Args:
-        version: as the engine spells it, e.g. ``17.11`` or
-            ``11.8.8-MariaDB-ubu2404``.
-
-    Raises:
-        RecoveryError: the string does not start with a number, so comparing
-            it would be a guess.
-    """
-    leading = re.match(r"(\d+)", version)
-    if not leading:
-        raise RecoveryError(f"cannot read a major version from '{version}'")
-    return int(leading.group(1))
-
-
-def dump_version(dump: Dump, engine: str) -> str:
-    """Read the engine version a dump was taken from, out of its own header.
-
-    The dump is the only place that knows this: databases.csv is written at
-    seed time and would state the version deployed back then, not the one the
-    dump came out of, and a generation copied to another host keeps its header
-    while a csv row stays behind.
-
-    Raises:
-        RecoveryError: the header carries no version line, so the dump cannot
-            be matched against the engine it would be replayed into.
-    """
-    pattern = VERSION_IN_DUMP[engine]
-    with dump.path.open(encoding="utf-8", errors="replace") as handle:
-        for _ in range(HEADER_LINES):
-            line = handle.readline()
-            if not line:
-                break
-            found = pattern.search(line)
-            if found:
-                return found.group(1)
-    raise RecoveryError(
-        f"{dump.path} carries no {engine} version header in its first "
-        f"{HEADER_LINES} lines; refusing to replay a dump of unknown origin"
-    )
-
-
-def server_version(
-    container: str,
-    engine: str,
-    user: str,
-    password: str,
-    database: str,
-    docker_host: str | None = None,
-) -> str:
-    """Ask the running engine which version it is."""
-    query = [
-        part.format(user=user, password=password, database=database)
-        for part in SERVER_VERSION_QUERY[engine]
-    ]
-    return _run(
-        _docker(["exec", container, *query], docker_host), secret=password
-    ).strip()
-
-
-def assert_replayable(dump: Dump, engine: str, dumped: str, serving: str) -> None:
-    """Refuse a dump the target engine is too old to read.
-
-    A dump restores forward across major versions - that is the upgrade path -
-    but not backward: a newer dump uses syntax an older server rejects, and it
-    would fail halfway through an already pre-cleaned schema.
-
-    Raises:
-        RecoveryError: the dump is from a newer major version than the server.
-    """
-    if major_of(dumped) > major_of(serving):
-        raise RecoveryError(
-            f"dump '{dump.database}' came from {engine} {dumped} but "
-            f"{serving} is running; a newer dump does not replay into an older "
-            "engine, and the pre-clean would already have dropped the schema"
-        )
 
 
 def restore_argv(
@@ -308,78 +276,38 @@ def restore_argv(
     ]
 
 
-def _docker(argv: list[str], docker_host: str | None) -> list[str]:
-    return [DOCKER_BIN, *(["-H", docker_host] if docker_host else []), *argv]
+def cluster_argv(
+    cluster: Cluster,
+    generation: Generation,
+    container: str,
+    user: str,
+    password: str,
+) -> list[str]:
+    """Build the baudolo-restore call that replays one instance as a whole.
 
-
-def _run(argv: list[str], secret: str = "") -> str:
-    """Run a command, aborting the replay when it fails.
-
-    Args:
-        argv: the command.
-        secret: a value to redact from the error message.
+    The dump recreates roles and databases, which an application role may not
+    do, so the credentials are the instance's superuser rather than an app's.
     """
-    try:
-        result = subprocess.run(argv, capture_output=True, text=True, check=False)
-    except FileNotFoundError as missing:
-        raise RecoveryError(f"{argv[0]} is not on PATH") from missing
-    if result.returncode != 0:
-        shown = " ".join(argv)
-        if secret:
-            shown = shown.replace(secret, "***")
-        raise RecoveryError(
-            f"command failed ({result.returncode}): {shown}\n{result.stderr.strip()}"
-        )
-    return result.stdout
-
-
-def container_of_volume(volume: str, docker_host: str | None = None) -> str:
-    """Name the running container that mounts a volume.
-
-    Raises:
-        RecoveryError: nothing is running to replay into. A dump reaches its
-            database through ``docker exec``, so unlike a file tree it cannot
-            be restored onto a bare host - the engine has to be up. The two
-            ways to get there differ, so they are reported apart.
-    """
-    listed = _docker(
-        ["ps", "--filter", f"volume={volume}", "--format", "{{.Names}}"], docker_host
-    )
-    running = _run(listed).split()
-    if running:
-        return running[0]
-    known = _run(
-        _docker(
-            ["ps", "-a", "--filter", f"volume={volume}", "--format", "{{.Names}}"],
-            docker_host,
-        )
-    ).split()
-    if known:
-        raise RecoveryError(
-            f"{known[0]} mounts volume {volume} but is not running; the dump is "
-            "replayed through docker exec, so start that container first"
-        )
-    raise RecoveryError(
-        f"no container mounts volume {volume} on this host; a dump can only be "
-        "replayed into a running database service, so deploy the stack first "
-        "and recover with the consumers stopped"
-    )
-
-
-def consumers_running(project: str, docker_host: str | None = None) -> list[str]:
-    """List the running containers of one compose project."""
-    return _run(
-        _docker(
-            [
-                "ps",
-                "--filter",
-                f"label=com.docker.compose.project={project}",
-                "--format",
-                "{{.Names}}",
-            ],
-            docker_host,
-        )
-    ).split()
+    return [
+        RESTORE_BIN,
+        "cluster",
+        cluster.volume,
+        generation.machine_hash,
+        generation.name,
+        "--backups-dir",
+        generation.backups_dir,
+        "--repo-name",
+        generation.repo_name,
+        "--container",
+        container,
+        "--instance",
+        cluster.instance,
+        "--db-user",
+        user,
+        "--db-password",
+        password,
+        "--empty",
+    ]
 
 
 def replay(
@@ -389,7 +317,11 @@ def replay(
     docker_host: str | None = None,
     engines: Mapping[str, str] | None = None,
 ) -> int:
-    """Replay every single-database dump of a generation.
+    """Replay every database dump of a generation, single and cluster alike.
+
+    Whether the dump is readable by the engine it goes into is decided by
+    ``baudolo-restore`` itself, which compares the dump's header against the
+    running server before its pre-clean drops anything.
 
     Args:
         generation_dir: <backups>/<machine-hash>/<repo>/<generation>.
@@ -408,39 +340,56 @@ def replay(
         raise RecoveryError(f"{generation_dir} is not a directory")
     generation = generation_of(generation_dir)
     dumps, clusters = dumps_of(generation_dir)
-    for cluster in clusters:
-        print(f"SKIP: cluster dump {cluster.name} has no single-database replay path")
-    if not dumps:
-        print(f"OK: generation {generation.name} carries no single-database dumps")
+    if not dumps and not clusters:
+        print(f"OK: generation {generation.name} carries no database dumps")
         return 0
 
     engine_map = engine_by_key() if engines is None else engines
     credentials = credentials_of(csv_path)
+    cluster_credentials = cluster_credentials_of(csv_path)
+
     for dump in dumps:
         if dump.database not in credentials:
             raise RecoveryError(f"{csv_path} has no row for database '{dump.database}'")
-        still_up = consumers_running(dump.database, docker_host)
-        if still_up:
+        recovery_docker.assert_no_consumers(dump.database, docker_host)
+    engine_of_cluster: dict[Path, str] = {}
+    for cluster in clusters:
+        if cluster.instance not in cluster_credentials:
             raise RecoveryError(
-                f"project '{dump.database}' still runs {', '.join(still_up)}; a booting "
-                "consumer recreates the pre-cleaned schema under the replay, so stop it first"
+                f"{csv_path} has no '{CLUSTER_ROW}' row for instance "
+                f"'{cluster.instance}', so the superuser of the cluster dump "
+                f"{cluster.path.name} is unknown"
             )
+        engine = recovery_docker.container_of_volume(cluster.volume, docker_host)
+        engine_of_cluster[cluster.path] = engine
+        recovery_docker.assert_no_consumers(
+            recovery_docker.project_of(engine, docker_host),
+            docker_host,
+            ignore=(engine,),
+        )
+        for database in databases_in(cluster):
+            recovery_docker.assert_no_consumers(database, docker_host)
+
+    for cluster in clusters:
+        container = engine_of_cluster[cluster.path]
+        user, password = cluster_credentials[cluster.instance]
+        print(
+            recovery_docker._run(
+                cluster_argv(cluster, generation, container, user, password),
+                secret=password,
+            ).strip()
+        )
+        print(f"OK: replayed cluster dump '{cluster.instance}' into {container}")
 
     for dump in dumps:
         engine = engine_of(dump, engine_map)
-        container = container_of_volume(dump.volume, docker_host)
+        container = recovery_docker.container_of_volume(dump.volume, docker_host)
         user, password = credentials[dump.database]
-        dumped = dump_version(dump, engine)
-        serving = server_version(
-            container, engine, user, password, dump.database, docker_host
-        )
-        assert_replayable(dump, engine, dumped, serving)
         print(
-            f"OK: {dump.database} dumped from {engine} {dumped}, {serving} is serving"
-        )
-        _run(
-            restore_argv(dump, generation, engine, container, user, password),
-            secret=password,
+            recovery_docker._run(
+                restore_argv(dump, generation, engine, container, user, password),
+                secret=password,
+            ).strip()
         )
         print(f"OK: replayed {engine} dump '{dump.database}' into {container}")
-    return len(dumps)
+    return len(dumps) + len(clusters)
