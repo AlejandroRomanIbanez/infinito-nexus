@@ -56,7 +56,7 @@ seaweedfs:
   enabled: true
   shared: true
   image: chrislusf/seaweedfs
-  version: "4.41"
+  version: "4.42"
   name: seaweedfs
   api_port: 8333
   region: us-east-1
