@@ -54,7 +54,7 @@ flowchart LR
     end
     dep_svc_ai_ollama -. "0..1" .-> svc_ollama
     dep_svc_bkp_volume_2_local -. "0..1" .-> svc_container_backup
-    dep_svc_db_openldap -- "1:1" --> svc_ldap
+    dep_svc_db_openldap -- "0..0" --> svc_ldap
     dep_svc_db_postgres -. "0..1" .-> svc_postgres
     dep_svc_db_qdrant -. "0..1" .-> svc_qdrant
     dep_svc_db_redis -. "0..1" .-> svc_redis
@@ -67,9 +67,10 @@ flowchart LR
     dep_web_svc_css -. "0..1" .-> svc_css
     dep_web_svc_logout -. "0..1" .-> svc_logout
     svc_logout -. "0..1" .-> dpt_web_app_nextcloud
+    linkStyle 2 stroke:red;
 ```
 
-Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments). Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
+Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments); red `0..0` edges are turned off in this role. Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
 
 ## Features
 

@@ -20,6 +20,7 @@ flowchart LR
         dep_web_app_matomo["web-app-matomo 🐳🐝"]
         dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
         dep_web_svc_asset["web-svc-asset 💻"]
+        dep_web_svc_cdn["web-svc-cdn 🐳🐝"]
         dep_web_svc_css["web-svc-css 💻"]
         dep_web_svc_logout["web-svc-logout 🐳🐝"]
         dep_web_svc_simpleicons["web-svc-simpleicons 🐳🐝"]
@@ -57,6 +58,7 @@ flowchart LR
     dep_web_app_matomo -. "0..1" .-> svc_matomo
     dep_web_app_prometheus -. "0..1" .-> svc_prometheus
     dep_web_svc_asset -. "0..1" .-> svc_asset
+    dep_web_svc_cdn -- "1:1" --> svc_cdn
     dep_web_svc_css -. "0..1" .-> svc_css
     dep_web_svc_logout -. "0..1" .-> svc_logout
     dep_web_svc_simpleicons -. "0..1" .-> svc_simpleicons
@@ -75,7 +77,7 @@ flowchart LR
     svc_sso -. "0..1" .-> dpt_web_app_erpnext
 ```
 
-Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments). Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
+Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments); red `0..0` edges are turned off in this role. Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
 
 ## Purpose
 

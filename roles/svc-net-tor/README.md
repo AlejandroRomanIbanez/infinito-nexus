@@ -16,6 +16,9 @@ The diagram places Tor Onion Service in the Infinito.Nexus cosmos: the component
 
 ```mermaid
 flowchart LR
+    subgraph deps [Dependencies]
+        dep_web_svc_mirror["web-svc-mirror 💻"]
+    end
     subgraph role [svc-net-tor 🐳🐝]
         svc_mirror["mirror"]
         svc_tor["tor"]
@@ -35,6 +38,7 @@ flowchart LR
         dpt_web_app_baserow["web-app-baserow 🐳🐝"]
         dpt_more["..."]
     end
+    dep_web_svc_mirror -- "1:1" --> svc_mirror
     svc_mirror -- "1:1" --> dpt_more
     svc_mirror -. "0..1" .-> dpt_svc_db_elasticsearch
     svc_mirror -. "0..1" .-> dpt_svc_db_mariadb
@@ -50,7 +54,7 @@ flowchart LR
     svc_mirror -. "0..1" .-> dpt_web_app_baserow
 ```
 
-Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments). Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
+Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments); red `0..0` edges are turned off in this role. Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
 
 ## Features
 

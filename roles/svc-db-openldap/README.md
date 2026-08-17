@@ -41,21 +41,22 @@ flowchart LR
     dep_svc_bkp_volume_2_local -. "0..1" .-> svc_container_backup
     dep_svc_net_tor -. "0..1" .-> svc_tor
     svc_openldap -- "1:1" --> dpt_more
-    svc_openldap -- "1:1" --> dpt_web_app_akaunting
+    svc_openldap -- "0..0" --> dpt_web_app_akaunting
     svc_openldap -- "1:1" --> dpt_web_app_bigbluebutton
-    svc_openldap -- "1:1" --> dpt_web_app_bluesky
+    svc_openldap -- "0..0" --> dpt_web_app_bluesky
     svc_openldap -. "0..1" .-> dpt_web_app_checkmk
-    svc_openldap -- "1:1" --> dpt_web_app_discourse
+    svc_openldap -- "0..0" --> dpt_web_app_discourse
     svc_openldap -. "0..1" .-> dpt_web_app_erpnext
     svc_openldap -. "0..1" .-> dpt_web_app_espocrm
-    svc_openldap -- "1:1" --> dpt_web_app_flowise
+    svc_openldap -- "0..0" --> dpt_web_app_flowise
     svc_openldap -. "0..1" .-> dpt_web_app_friendica
     svc_openldap -. "0..1" .-> dpt_web_app_funkwhale
     svc_openldap -- "1:1" --> dpt_web_app_fusiondirectory
     svc_openldap -. "0..1" .-> dpt_web_app_gitea
+    linkStyle 3,5,7,10 stroke:red;
 ```
 
-Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments). Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
+Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments); red `0..0` edges are turned off in this role. Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
 
 ## Features
 
