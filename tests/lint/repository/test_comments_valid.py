@@ -312,6 +312,23 @@ def _jinja_comments(lines):
     return out
 
 
+def _drop_nested(comments):
+    """Drop comments that another comment already contains.
+
+    Two collectors run over a ``.j2`` template, so the closing ``#}`` of a
+    Jinja block is also a standalone ``#`` comment to the line-based one.
+    Reporting that fragment invites a fix that deletes one delimiter and
+    leaves the other, which comments out the rest of the file while every
+    parser still sees valid syntax.
+    """
+    spans = [set(c[2]) for c in comments]
+    return [
+        c
+        for c, span in zip(comments, spans)
+        if not any(span < other for other in spans)
+    ]
+
+
 def _header_end(lines) -> int:
     end = 0
     for i, line in enumerate(lines, 1):
@@ -403,7 +420,9 @@ def find_invalid_comments(path: Path):
         return []
 
     if ext == ".j2":
-        comments = sorted(comments + _jinja_comments(lines), key=lambda c: c[0])
+        comments = _drop_nested(
+            sorted(comments + _jinja_comments(lines), key=lambda c: c[0])
+        )
 
     header_end = _header_end(lines)
     comment_lines = {ln for c in comments for ln in c[2]}
