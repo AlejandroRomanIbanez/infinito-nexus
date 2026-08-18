@@ -35,7 +35,7 @@ def read(generation_dir: Path | str) -> dict | None:
     if not path.is_file():
         return None
     try:
-        document = json.loads(path.read_text(encoding="utf-8"))
+        document = json.loads(path.read_text(encoding="utf-8"))  # nocheck: cache-read - a backup run writes a new generation the same process then reads back
     except (OSError, json.JSONDecodeError) as error:
         raise ValueError(f"{path} is unreadable: {error}") from error
     schema = document.get("schema")
