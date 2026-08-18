@@ -13,7 +13,7 @@ This Ansible role deploys SuiteCRM using Docker and the Infinito.Nexus shared st
 - Environment variable management through Jinja2 templates  
 - Docker Compose orchestration for the **SuiteCRM** application container  
 - Native **LDAP** authentication via Symfony’s LDAP configuration  
-- SSO integration via SAML / OAuth2 configured inside SuiteCRM’s Administration Panel
+- Declarative **SAML** SSO against Keycloak (`AUTH_TYPE=saml`, wired entirely from env vars — no admin-panel step)
 
 With this role, you get a production-ready CRM environment that plugs into your existing IAM stack.
 
@@ -70,7 +70,7 @@ Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (
 - **Sales & Service CRM:** Accounts, Contacts, Leads, Opportunities, Cases, Campaigns and more 📊  
 - **Workflow Engine:** Automate business processes and notifications 🛠️  
 - **LDAP Authentication:** Centralize user authentication against OpenLDAP 🔐  
-- **SSO-Ready:** Integrates with SAML / OAuth2 providers (e.g. Keycloak as IdP) via SuiteCRM’s admin UI 🌐  
+- **SSO-Ready:** SuiteCRM's own SAML login against Keycloak, configured declaratively from the rendered env 🌐  
 - **Config via Templates:** Fully customizable `.env` and `compose.yml` rendered via Jinja2 ⚙️  
 - **Health Checks & Logging:** Integrates with Infinito.Nexus health checking and journald logging 📈  
 - **Modular Role Composition:** Uses shared roles for DB, proxy and monitoring to keep your stack consistent 🔄  
@@ -140,7 +140,7 @@ docker run --rm -it \
 
 ## Persona contract opt-outs
 
-[`templates/env.j2`](./templates/env.j2) seeds only the administrator into SuiteCRM (`SUITECRM_ADMIN_USERNAME` / `SUITECRM_ADMIN_PASSWORD`); `biber` reaches the app solely through the oauth2-proxy declared in [`meta/services.yml`](./meta/services.yml). In the `services.sso.enabled: false` matrix variants that proxy is absent and `biber` has no native account, so [`templates/playwright.env.j2`](./templates/playwright.env.j2) renders `PERSONA_BIBER_BLOCKED=true`. The `administrator` persona keeps its native login via `ADMIN_NATIVE_PASSWORD` and runs in every variant.
+[`templates/env.j2`](./templates/env.j2) seeds only the administrator into SuiteCRM (`SUITECRM_ADMIN_USERNAME` / `SUITECRM_ADMIN_PASSWORD`); `biber` reaches the app through SuiteCRM's own SAML login against Keycloak, where `SAML_AUTO_CREATE` mints the account on first assertion. In the `services.sso.enabled: false` matrix variants there is no SAML entry point and `biber` has no native account, so [`templates/playwright.env.j2`](./templates/playwright.env.j2) renders `PERSONA_BIBER_BLOCKED=true` for the generic persona journeys (the LDAP spec still signs `biber` in from the directory). The `administrator` persona keeps its native login via `ADMIN_NATIVE_PASSWORD` and runs in every variant.
 
 ## Credits
 
