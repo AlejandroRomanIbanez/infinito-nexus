@@ -3,7 +3,7 @@
 Usage:
   python -m cli.meta.ci.plan --distros "debian" [--whitelist "..."]
       [--priority "..."] [--modes auto] [--lifecycles "..."] [--sweep N]
-      [--chunk N] [--cli]
+      [--cli]
 
 The plan runs the same pipeline the deploy jobs discover through
 (``cli.meta.ci.matrix``), so what the table shows and what CI deploys cannot
@@ -12,15 +12,14 @@ the chunk it falls into and the axes it was assigned.
 
 Status per row: ⭐ a priority row, ✅ deployed by this sweep, ❌ beyond the
 sweep's budget (raise ``--offset`` to reach it), ✂️ cut as redundant coverage —
-a clone or a row an earlier one already embeds, which no sweep deploys. ``--chunk`` marks the
-block the calling job is running, so a chunk's summary shows its own slice in
-the context of the whole chain. ``--cli`` renders fixed-width terminal tables
-instead of Markdown.
+a clone or a row an earlier one already embeds, which no sweep deploys.
+``--cli`` renders fixed-width terminal tables instead of Markdown.
 
 🆔 is the row's discovery id, the same number the complexity matrix prints, and
 🔰 names the id of the earlier row that already embeds this one -- empty when
 nothing does. A row with a 🔰 is redundant coverage: whatever it would prove,
-the row it points at proves first.
+the row it points at proves first. 🐑 marks the other reason a row is cut: it
+shares its service set with an earlier role, which stands in for it.
 """
 
 from __future__ import annotations
@@ -38,14 +37,25 @@ from utils.symbol_glossary import to_emoji
 _STAR = to_emoji("priority")
 _OK = to_emoji("enabled")
 _OFF = to_emoji("disabled")
-_HERE = to_emoji("skip")
 _CUT = to_emoji("redundant")
 
-_COLUMNS = ("chunk", "id", "covered_by", "name", "weight", "variant", "mode", "distros")
-_HEADERS = (
-    *(f"{to_emoji(key)} {key.replace('_', ' ').capitalize()}" for key in _COLUMNS),
-    f"{to_emoji('tor')} Tor",
-    f"{to_emoji('enabled')} Triggered",
+_COLUMNS = (
+    "id",
+    "chunk",
+    "name",
+    "variant",
+    "mode",
+    "distros",
+    "tor",
+    "triggered",
+    "covered_by",
+    "weight",
+    "clone",
+)
+_GLYPH = {"triggered": "enabled"}
+_HEADERS = tuple(
+    f"{to_emoji(_GLYPH.get(key, key))} {key.replace('_', ' ').capitalize()}"
+    for key in _COLUMNS
 )
 
 
@@ -71,7 +81,6 @@ def cells(
     plan: list[list[dict[str, str]]],
     *,
     distros: str,
-    current: int | None,
 ) -> list[tuple[str, ...]]:
     rows = []
     for counter, entry in enumerate(entries, start=1):
@@ -82,20 +91,21 @@ def cells(
             status, where = _OFF, ""
         else:
             status = _STAR if entry["priority"] == "true" else _OK
-            where = f"{chunk}{_HERE}" if chunk == current else str(chunk)
+            where = str(chunk)
         covered = entry.get("covered", "0")
         rows.append(
             (
-                where,
                 entry.get("id") or str(counter),
-                covered if covered not in ("", "0") else "",
+                where,
                 entry["apps"],
-                entry["weight"],
                 entry["variant"],
                 to_emoji(entry["mode"]),
                 distros,
                 to_emoji("tor" if entry["tor"] == "true" else "clearnet"),
                 status,
+                covered if covered not in ("", "0") else "",
+                entry["weight"],
+                to_emoji("clone") if entry.get("clone") == "true" else "",
             )
         )
     return rows
@@ -148,7 +158,6 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--modes", default=query.ALL_MODES)
     parser.add_argument("--lifecycles", default="")
     parser.add_argument("--sweep", type=int, default=None)
-    parser.add_argument("--chunk", type=int, default=None)
     parser.add_argument("--tor", default=None)
     parser.add_argument("--offset", default=None)
     parser.add_argument("--cli", action="store_true")
@@ -168,7 +177,7 @@ def main(argv: list[str] | None = None) -> int:
         tor_mode=axes.resolve_tor_mode(args.tor),
     )
     plan = matrix.chunks_of(entries, matrix.resolve_offset(args.offset))
-    rows = cells(entries, plan, distros=args.distros, current=args.chunk)
+    rows = cells(entries, plan, distros=args.distros)
 
     render = render_cli if args.cli else render_markdown
     print(render(_title(plan, sweep), rows))

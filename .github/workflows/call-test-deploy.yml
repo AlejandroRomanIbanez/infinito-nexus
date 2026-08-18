@@ -189,7 +189,6 @@ jobs:
             --priority "${{ inputs.priority }}" \
             --modes "${{ inputs.modes }}" \
             --lifecycles "${{ inputs.lifecycles }}" \
-            --chunk "${{ inputs.index }}" \
             >> "$GITHUB_STEP_SUMMARY"
 
   deploy:

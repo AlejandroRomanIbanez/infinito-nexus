@@ -42,88 +42,83 @@ _ENTRIES = _PRIORITY + _REGULAR + _CUT
 
 class TestCells(unittest.TestCase):
     def test_a_row_in_a_chunk_reports_that_chunk(self) -> None:
-        rows = plan.cells(
-            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
-        )
-        self.assertEqual([row[0] for row in rows], ["0", "1", "1", ""])
+        rows = plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian")
+        chunk = plan._COLUMNS.index("chunk")
+        self.assertEqual([row[chunk] for row in rows], ["0", "1", "1", ""])
 
     def test_a_priority_row_is_starred_not_ticked(self) -> None:
-        rows = plan.cells(
-            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
-        )
-        self.assertEqual(rows[0][-1], to_emoji("priority"))
-        self.assertEqual(rows[1][-1], to_emoji("enabled"))
+        rows = plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian")
+        status = plan._COLUMNS.index("triggered")
+        self.assertEqual(rows[0][status], to_emoji("priority"))
+        self.assertEqual(rows[1][status], to_emoji("enabled"))
 
     def test_a_row_outside_the_sweep_is_marked_disabled(self) -> None:
-        rows = plan.cells(_ENTRIES, [_PRIORITY], distros="debian", current=None)
-        self.assertEqual(rows[1][-1], to_emoji("disabled"))
-        self.assertEqual(rows[1][0], "")
+        rows = plan.cells(_ENTRIES, [_PRIORITY], distros="debian")
+        self.assertEqual(
+            rows[1][plan._COLUMNS.index("triggered")], to_emoji("disabled")
+        )
+        self.assertEqual(rows[1][plan._COLUMNS.index("chunk")], "")
 
-    def test_the_current_chunk_is_marked(self) -> None:
-        rows = plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=1)
-        self.assertEqual(rows[0][0], "0")
-        self.assertEqual(rows[1][0], f"1{to_emoji('skip')}")
+    def test_a_clone_is_named_in_its_own_column(self) -> None:
+        entries = [*_ENTRIES, _entry("web-app-d", "0", "compose", clone=True)]
+        rows = plan.cells(entries, [_PRIORITY, _REGULAR], distros="debian")
+        clone = plan._COLUMNS.index("clone")
+        self.assertEqual(rows[0][clone], "")
+        self.assertEqual(rows[-1][clone], to_emoji("clone"))
 
     def test_the_mode_is_rendered_as_its_glyph(self) -> None:
-        rows = plan.cells(
-            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
-        )
+        rows = plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian")
         mode = plan._COLUMNS.index("mode")
         self.assertEqual(rows[0][mode], to_emoji("compose"))
         self.assertEqual(rows[1][mode], to_emoji("swarm"))
 
     def test_a_covered_row_names_the_id_that_covers_it(self) -> None:
         covered = plan._COLUMNS.index("covered_by")
-        rows = plan.cells(
-            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
-        )
+        rows = plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian")
         self.assertEqual(rows[0][covered], "")
         self.assertEqual(rows[3][covered], "7")
 
     def test_a_covered_row_is_cut_instead_of_deployed(self) -> None:
-        rows = plan.cells(
-            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
+        rows = plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian")
+        self.assertEqual(
+            rows[3][plan._COLUMNS.index("triggered")], to_emoji("redundant")
         )
-        self.assertEqual(rows[3][-1], to_emoji("redundant"))
-        self.assertEqual(rows[3][0], "")
+        self.assertEqual(rows[3][plan._COLUMNS.index("chunk")], "")
 
     def test_a_clone_is_cut_as_well(self) -> None:
         entries = [*_ENTRIES, _entry("web-app-d", "0", "compose", clone=True)]
-        rows = plan.cells(
-            entries, [_PRIORITY, _REGULAR], distros="debian", current=None
+        rows = plan.cells(entries, [_PRIORITY, _REGULAR], distros="debian")
+        self.assertEqual(
+            rows[-1][plan._COLUMNS.index("triggered")], to_emoji("redundant")
         )
-        self.assertEqual(rows[-1][-1], to_emoji("redundant"))
 
     def test_a_pinned_clone_stays_in_the_run(self) -> None:
         entries = [_entry("web-app-d", "0", "compose", priority=True, clone=True)]
-        rows = plan.cells(entries, [entries], distros="debian", current=None)
-        self.assertEqual(rows[0][-1], to_emoji("priority"))
+        rows = plan.cells(entries, [entries], distros="debian")
+        self.assertEqual(
+            rows[0][plan._COLUMNS.index("triggered")], to_emoji("priority")
+        )
 
     def test_the_id_is_the_discovery_id_the_covered_by_points_at(self) -> None:
         identifier = plan._COLUMNS.index("id")
-        rows = plan.cells(
-            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
-        )
+        rows = plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian")
         self.assertEqual([row[identifier] for row in rows], ["3", "5", "9", "11"])
 
     def test_the_tor_state_is_rendered_as_its_glyph(self) -> None:
-        rows = plan.cells(
-            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=None
-        )
-        self.assertEqual(rows[0][-2], to_emoji("tor"))
-        self.assertEqual(rows[2][-2], to_emoji("clearnet"))
+        rows = plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian")
+        tor = plan._COLUMNS.index("tor")
+        self.assertEqual(rows[0][tor], to_emoji("tor"))
+        self.assertEqual(rows[2][tor], to_emoji("clearnet"))
 
     def test_every_row_carries_the_distro_list(self) -> None:
-        rows = plan.cells(
-            _ENTRIES, [_PRIORITY, _REGULAR], distros="debian arch", current=None
-        )
+        rows = plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian arch")
         distros = plan._COLUMNS.index("distros")
         self.assertTrue(all(row[distros] == "debian arch" for row in rows))
 
 
 class TestRender(unittest.TestCase):
     def _rows(self) -> list[tuple[str, ...]]:
-        return plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian", current=0)
+        return plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian")
 
     def test_markdown_is_one_table_with_a_chunk_column(self) -> None:
         out = plan.render_markdown("sweep 0", self._rows())
