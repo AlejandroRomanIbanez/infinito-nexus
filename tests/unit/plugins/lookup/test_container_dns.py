@@ -53,6 +53,12 @@ class TestResolveContainerDns(unittest.TestCase):
     def test_a_non_tor_node_yields_nothing_without_clearnet(self):
         self.assertEqual(resolve_container_dns(_vars(group_names=[], networks={})), [])
 
+    def test_a_bridge_equal_to_clearnet_is_not_emitted_twice(self):
+        self.assertEqual(
+            resolve_container_dns(_vars(networks={"internet": {"dns": "172.17.0.1"}})),
+            ["172.17.0.1"],
+        )
+
     def test_without_bridge_only_clearnet(self):
         self.assertEqual(
             resolve_container_dns(_vars(ansible_facts={})), ["172.30.0.53"]

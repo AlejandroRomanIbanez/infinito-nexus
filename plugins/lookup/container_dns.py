@@ -20,7 +20,10 @@ def resolve_container_dns(variables: dict[str, Any]) -> list[str]:
     listener in compose and in swarm, so both resolve onions alike.
 
     The clearnet resolver stays as a second entry so that losing dnsmasq costs
-    onion names rather than all name resolution.
+    onion names rather than all name resolution. Duplicates are dropped: where
+    the bridge *is* the clearnet resolver, emitting it twice makes daemon.json
+    differ between a run before and a run after ``docker0`` exists, and that
+    difference restarts the container runtime underneath a live stack.
     """
     facts = variables.get("ansible_facts") or {}
     bridge = ((facts.get("docker0") or {}).get("ipv4") or {}).get("address") or ""
@@ -30,7 +33,8 @@ def resolve_container_dns(variables: dict[str, Any]) -> list[str]:
         "dns"
     ) or ""
 
-    return [str(r) for r in (bridge if on_tor_node else "", clearnet) if r]
+    resolvers = (bridge if on_tor_node else "", clearnet)
+    return list(dict.fromkeys(str(r) for r in resolvers if r))
 
 
 class LookupModule(LookupBase):
