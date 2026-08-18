@@ -35,6 +35,8 @@ keycloak:
     path: health/ready
     port_key: management
     start_period: 180s
+    timeout: 15s
+    retries: 5
   modes:
     compose:
       enabled: true
