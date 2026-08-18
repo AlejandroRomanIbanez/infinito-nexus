@@ -8,8 +8,8 @@
 # Param: resolve_service_name     - explicit swarm service name; overrides container_service(application_id, resolve_service_key) for a service in another stack (e.g. a shared central DB)
 # Param: resolve_output_prefix    - fact prefix; sets <prefix>_HOST_NODE / <prefix>_LOCAL_CID
 # Param: resolve_compose_cid      - container id/name used in compose mode
-# Param: resolve_converge_retries - swarm converge retries (default 600)
-# Param: resolve_converge_delay   - swarm converge delay seconds (default 2)
+# Param: resolve_converge_retries - swarm converge + node/cid resolve retries (default 600)
+# Param: resolve_converge_delay   - swarm converge + node/cid resolve delay seconds (default 2)
 # Param: resolve_cid_filters      - extra `container ps` filters for the cid lookup (default '')
 - name: "🔧 resolve_host_cid | resolve swarm service name for '{{ resolve_service_key }}'"
   ansible.builtin.set_fact:
@@ -31,6 +31,9 @@
       --format '{{ "{{.Node}}" }}' | head -1
   register: _resolve_node
   changed_when: false
+  retries: "{{ resolve_converge_retries | default(600) }}"
+  delay: "{{ resolve_converge_delay | default(2) }}"
+  until: (_resolve_node.stdout | trim) | length > 0
   delegate_to: "{{ STACK_HOST }}"
   when: DEPLOYMENT_MODE == 'swarm'
 
@@ -50,6 +53,9 @@
     {% endif %}
   register: _resolve_cid
   changed_when: false
+  retries: "{{ (resolve_converge_retries | default(600)) if DEPLOYMENT_MODE == 'swarm' else 0 }}"
+  delay: "{{ resolve_converge_delay | default(2) }}"
+  until: (_resolve_cid.stdout | trim) | length > 0
   delegate_to: "{{ lookup('vars', resolve_output_prefix ~ '_HOST_NODE') }}"
 
 - name: "🔧 resolve_host_cid | set {{ resolve_output_prefix }}_LOCAL_CID"
