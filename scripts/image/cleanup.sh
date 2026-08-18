@@ -313,7 +313,6 @@ classify_candidate_versions() {
 		'
 }
 
-
 active_runs="$(list_active_runs)"
 active_run_count="$(echo "${active_runs}" | jq 'length')"
 echo "Active workflow runs: ${active_run_count}"

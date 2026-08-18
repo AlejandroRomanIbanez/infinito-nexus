@@ -53,7 +53,6 @@ class TestVariableDefinitions(unittest.TestCase):
             re.DOTALL,
         )
 
-
         self.simple_var_pattern = re.compile(r"{{\s*([a-zA-Z_]\w*)\s*(?:\|[^}]*)?}}")
 
         self.jinja_set_def = re.compile(r"{%\s*-?\s*set\s+([a-zA-Z_]\w*)\s*=")

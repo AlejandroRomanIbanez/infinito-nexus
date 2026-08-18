@@ -98,9 +98,7 @@ class TestComposeBuildTemplateRequiresImageTag(unittest.TestCase):
                 continue
 
             lines = text.splitlines()
-            checked_services: set[tuple[int, int]] = (
-                set()
-            )
+            checked_services: set[tuple[int, int]] = set()
 
             for idx, line in enumerate(lines):
                 if not BUILD_LOOKUP_RE.search(line):

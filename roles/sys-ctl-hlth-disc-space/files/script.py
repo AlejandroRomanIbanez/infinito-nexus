@@ -39,9 +39,7 @@ def main():
     threshold = args.minimum_percent_cleanup_disk_space
 
     print("Checking disk space usage...")
-    subprocess.run(
-        ["df"], check=False
-    )
+    subprocess.run(["df"], check=False)
 
     errors = 0
     percentages = get_disk_usage_percentages()

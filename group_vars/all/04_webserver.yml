@@ -24,4 +24,3 @@ WEBSERVER_WORKER_CONNECTIONS: >-
       (lookup('applications') | resource_filter(application_id,      'pids_limit', service_name | default(''), RESOURCE_PIDS_LIMIT)) | int
     ] | min
   }}
-

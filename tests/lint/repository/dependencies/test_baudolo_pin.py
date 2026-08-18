@@ -100,8 +100,7 @@ class TestBaudoloPin(unittest.TestCase):
         offenders = [
             line
             for line in source.splitlines()
-            if re.match(r"^\s*(import|from)\s", line)
-            and "__future__" not in line
+            if re.match(r"^\s*(import|from)\s", line) and "__future__" not in line
         ]
         self.assertEqual(
             offenders,

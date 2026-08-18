@@ -194,12 +194,8 @@ class RunOnceGlobalUsageFastTest(unittest.TestCase):
                     )
 
         used_suffixes: set[str] = set()
-        global_defined_suffixes: set[str] = (
-            set()
-        )
-        role_defined_suffixes: dict[str, set[str]] = {
-            role: set() for role in roles
-        }
+        global_defined_suffixes: set[str] = set()
+        role_defined_suffixes: dict[str, set[str]] = {role: set() for role in roles}
 
         for yml in walk_yaml_files(root):
             text = read_text_safe(yml)

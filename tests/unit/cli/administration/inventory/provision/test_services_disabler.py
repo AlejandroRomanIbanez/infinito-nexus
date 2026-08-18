@@ -139,9 +139,7 @@ class TestRemoveRolesFromInventory(unittest.TestCase):
         self._write(
             {"all": {"children": {"web-app-nextcloud": {"hosts": {"localhost": {}}}}}}
         )
-        remove_roles_from_inventory(
-            self.inventory, ["web-app-matomo"]
-        )
+        remove_roles_from_inventory(self.inventory, ["web-app-matomo"])
         result = self._read()
         self.assertIn("web-app-nextcloud", result["all"]["children"])
 

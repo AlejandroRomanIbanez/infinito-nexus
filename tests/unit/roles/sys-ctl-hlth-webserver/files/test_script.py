@@ -95,9 +95,7 @@ class TestStandaloneCheckerScript(unittest.TestCase):
         exp = {
             "bad.example.org": [404],
             "ok301.example.org": [301],
-            "never.example.org": [
-                200
-            ],
+            "never.example.org": [200],
         }
         exit_code, output = self._run_main(
             [

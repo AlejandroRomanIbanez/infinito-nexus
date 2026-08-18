@@ -173,9 +173,7 @@ class TestWebHealthExpectationsFilter(unittest.TestCase):
             {
                 ("app-y", "domains.canonical"): {"web": ["y.example.org"]},
                 ("app-y", "domains.aliases"): [],
-                ("app-y", "server.status_codes"): {
-                    "web": 999
-                },
+                ("app-y", "server.status_codes"): {"web": 999},
             }
         )
         out = self.mod.web_health_expectations(apps, group_names=["app-y"])
@@ -558,7 +556,6 @@ class TestWebHealthExpectationsFilter(unittest.TestCase):
 
         keys = list(out.keys())
         self.assertEqual(keys, sorted(keys))
-
 
     ONION = "abc123def456ghij789klmno000pqrstuvwx111yz222abc333def444gh.onion"
 

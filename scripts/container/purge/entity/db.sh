@@ -228,7 +228,6 @@ purge_db_both_backends_best_effort() {
 	fi
 }
 
-
 overall_rc=0
 
 for STACK_NAME in "$@"; do

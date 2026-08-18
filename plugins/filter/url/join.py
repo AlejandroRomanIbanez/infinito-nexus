@@ -68,9 +68,7 @@ def url_join(parts):
         )
 
     scheme = m.group(1)
-    after_scheme = m.group(2).lstrip(
-        "/"
-    )
+    after_scheme = m.group(2).lstrip("/")
 
     path_parts = []
     query_pairs = []

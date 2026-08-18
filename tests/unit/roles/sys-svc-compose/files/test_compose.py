@@ -13,9 +13,7 @@ def load_script_module():
     Import the script under test from roles/sys-svc-compose/files/compose.py
     """
     test_file = Path(__file__).resolve()
-    repo_root = test_file.parents[
-        5
-    ]
+    repo_root = test_file.parents[5]
     script_path = repo_root / "roles" / "sys-svc-compose" / "files" / "compose.py"
     if not script_path.exists():
         raise FileNotFoundError(f"compose.py not found at {script_path}")

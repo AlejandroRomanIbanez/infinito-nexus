@@ -28,7 +28,6 @@ def _ansible_tag_passthrough(loader: yaml.Loader, tag_prefix: str, node: yaml.No
 yaml.add_multi_constructor("!", _ansible_tag_passthrough, Loader=AnsibleTolerantLoader)
 
 
-
 Yaml = dict[str, Any] | list[Any] | Any
 
 
