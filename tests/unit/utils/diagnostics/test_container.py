@@ -170,8 +170,9 @@ class CollectTests(unittest.TestCase):
             self.assertEqual(mod.daemon_json_dns(), [])
         with mock.patch.object(mod, "run", return_value=_cp([], rc=1)):
             self.assertEqual(mod.daemon_json_dns(), [])
+        daemon_json = b'{"dns": "1.1.1.1"}'  # nocheck: hardcoded-dns-resolver
         with mock.patch.object(
-            mod, "run", return_value=_cp([], rc=0, stdout=b'{"dns": "1.1.1.1"}')  # nocheck: hardcoded-dns-resolver
+            mod, "run", return_value=_cp([], rc=0, stdout=daemon_json)
         ):
             self.assertEqual(mod.daemon_json_dns(), [])
 
