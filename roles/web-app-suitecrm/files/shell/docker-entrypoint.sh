@@ -18,7 +18,7 @@ fi
 
 if [ -n "${SUITECRM_SAML_IDP_DESCRIPTOR_URL:-}" ]; then
   log "Fetching the IdP signing certificate from ${SUITECRM_SAML_IDP_DESCRIPTOR_URL}..."
-  _descriptor=$(wget -qO- --tries=30 --waitretry=5 --retry-connrefused "$SUITECRM_SAML_IDP_DESCRIPTOR_URL")
+  _descriptor=$(curl -fsS --connect-timeout 20 --max-time 25 --retry 20 --retry-all-errors --retry-delay 5 --proxy "${SUITECRM_OIDC_SOCKS_PROXY:-}" "$SUITECRM_SAML_IDP_DESCRIPTOR_URL")
   SAML_IDP_X509CERT=$(printf '%s' "$_descriptor" | sed -n 's:.*X509Certificate>\([^<]*\)</[^>]*X509Certificate>.*:\1:p' | head -n 1)
   if [ -z "$SAML_IDP_X509CERT" ]; then
     log "ERROR: no X509Certificate in the IdP descriptor."

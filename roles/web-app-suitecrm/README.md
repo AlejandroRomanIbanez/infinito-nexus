@@ -134,9 +134,9 @@ docker run --rm -it \
   app renders its own authenticated UI including its logout control. Accounts are created
   on first login from the assertion (`SAML_AUTO_CREATE`), and the IdP signing certificate
   is read from Keycloak's realm descriptor by
-  [`files/docker-entrypoint-suitecrm.sh`](./files/docker-entrypoint-suitecrm.sh) at boot,
-  container to container, because the canonical Keycloak URL is unresolvable from inside
-  the app container under Tor. `/auth` stays reachable as the local break-glass login.
+  [`files/shell/docker-entrypoint.sh`](./files/shell/docker-entrypoint.sh) at boot, over
+  the Tor SOCKS proxy whenever the issuer is an onion, because a `.onion` issuer is
+  unresolvable directly. `/auth` stays reachable as the local break-glass login.
 
 ## Persona contract opt-outs
 

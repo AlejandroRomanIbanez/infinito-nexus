@@ -32,7 +32,8 @@ SUITECRM_LDAP_ENABLED: "{{ lookup('config', application_id, 'services.ldap.enabl
 SUITECRM_LDAP_CONFIG_HOST: "{{ [ lookup('container', application_id, 'directories.config'), 'ldap.yaml'] | path_join }}"
 SUITECRM_LDAP_EXTENSION_DIR: "{{ [SUITECRM_APP_DIR, 'extensions', SUITECRM_WELL_SOFTWARE_NAME, 'config/services/ldap'] | path_join }}"
 
-SUITECRM_ENTRYPOINT_SCRIPT_FILE: "docker-entrypoint-suitecrm.sh"
+SUITECRM_ENTRYPOINT_SCRIPT_FILE: "docker-entrypoint.sh"
+SUITECRM_ENTRYPOINT_SCRIPT_SRC: "shell/{{ SUITECRM_ENTRYPOINT_SCRIPT_FILE }}"
 SUITECRM_ENTRYPOINT_SCRIPT_HOST_ABS: "{{ [ lookup('container', application_id, 'directories.volumes'), SUITECRM_ENTRYPOINT_SCRIPT_FILE ] | path_join }}"
 SUITECRM_ENTRYPOINT_SCRIPT_HOST_REL: "volumes/{{ SUITECRM_ENTRYPOINT_SCRIPT_FILE }}"
 SUITECRM_ENTRYPOINT_SCRIPT_DOCKER: "{{ [ '/usr/local/bin/', SUITECRM_ENTRYPOINT_SCRIPT_FILE ] | path_join }}"

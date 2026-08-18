@@ -9,6 +9,7 @@ RUN rm -rf /var/lib/apt/lists/* \
   && apt-get -o Acquire::Retries=3 update && apt-get -o Acquire::Retries=3 install -y \
       git \
       wget \
+      curl \
       unzip \
       libpng-dev \
       libzip-dev \
