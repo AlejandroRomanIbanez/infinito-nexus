@@ -330,6 +330,16 @@ class TestReplay(TestCase):
             self.replay(["zammad-railsserver"])
         self.assertIn("zammad-railsserver", str(raised.exception))
 
+    def test_the_engine_itself_does_not_block_its_own_replay(self):
+        replayed, _ = self.replay(["postgres-1"])
+        self.assertEqual(replayed, 1)
+
+    def test_a_consumer_beside_the_engine_still_aborts(self):
+        with self.assertRaises(databases.RecoveryError) as raised:
+            self.replay(["postgres-1", "zammad-railsserver"])
+        self.assertIn("zammad-railsserver", str(raised.exception))
+        self.assertNotIn("postgres-1", str(raised.exception))
+
     def test_a_quiesced_host_replays_the_dump(self):
         replayed, calls = self.replay([])
         self.assertEqual(replayed, 1)
