@@ -30,7 +30,7 @@ from pathlib import Path
 sys.path.insert(0, os.environ["BKP_TEST_REPO_ROOT"])
 
 from utils.paths import FILE_DATABASE_SECRETS
-from utils.recovery import databases
+from utils.recovery import databases, manifest
 from utils.recovery import docker as recovery_docker
 
 MARKER_FILE = ".dr-drill-marker"
@@ -98,9 +98,8 @@ def volume_mountpoint(volume: str) -> Path:
 
 def file_volumes(generation_dir: Path) -> list[str]:
     """The volumes this generation stores as a file tree."""
-    return sorted(
-        path.parent.name for path in generation_dir.glob(databases.FILES_GLOB)
-    )
+    files_glob, _dump_glob = manifest.globs_of(manifest.layout_of(generation_dir))
+    return sorted(path.parent.name for path in generation_dir.glob(files_glob))
 
 
 def sql(
@@ -124,7 +123,7 @@ def each_database(generation_dir: Path):
     per database it recreates: the marker has to sit in each of them, or a
     replay that brings back only part of an instance would still pass.
     """
-    engines = databases.engine_by_key()
+    engines = databases.engine_by_key(generation_dir=generation_dir)
     credentials = databases.credentials_of(FILE_DATABASE_SECRETS)
     dumps, clusters = databases.dumps_of(generation_dir)
     for dump in dumps:
@@ -171,8 +170,9 @@ def captured(generation_dir: Path, token: str) -> int:
     the row, fails here - long before anything is torn down.
     """
     missing: list[str] = []
+    files_dir = manifest.layout_of(generation_dir)["files_dir"]
     for volume in file_volumes(generation_dir):
-        marker = generation_dir / volume / databases.FILES_DIR / MARKER_FILE
+        marker = generation_dir / volume / files_dir / MARKER_FILE
         if not marker.is_file() or marker.read_text(encoding="utf-8").strip() != token:
             missing.append(
                 f"volume {volume}: the generation holds no current {MARKER_FILE}"

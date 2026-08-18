@@ -10,10 +10,10 @@ Whether a dump is readable by that engine is decided by ``baudolo-restore``
 itself, before its pre-clean drops anything.
 
 The generation layout belongs to baudolo, which writes it, so the file names
-and subdirectory below are asked of its ``BackupPaths`` instead of restated
-here. Restating them would let a rename on its side leave the globs matching
-nothing, which reads as "this generation holds no databases" rather than as a
-failure.
+and subdirectory below are read from the generation's own manifest rather than
+restated here. Restating them would let a rename on its side leave the globs
+matching nothing, which reads as "this generation holds no databases" rather
+than as a failure.
 
 A ``database = '*'`` row dumps a whole instance with ``pg_dumpall``. It goes
 back through ``baudolo-restore cluster`` with the instance's superuser; its
@@ -23,15 +23,14 @@ project of the engine, so both are checked.
 
 from __future__ import annotations
 
-from pathlib import PurePath
 from typing import TYPE_CHECKING, NamedTuple
 
 from baudolo.databases import CLUSTER_ROW, DatabasesCsvError, Row, read_rows
 from baudolo.restore.db.cluster import dump_inventory
-from baudolo.restore.paths import BackupPaths
 
 from utils.cache.applications import get_application_defaults
 from utils.recovery import docker as recovery_docker
+from utils.recovery import manifest
 from utils.recovery.docker import RecoveryError
 from utils.roles.applications.services.database import (
     RDBMS_SERVICE_KEYS,
@@ -44,14 +43,6 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 RESTORE_BIN = "baudolo-restore"
-
-_LAYOUT = BackupPaths("", "", "", repo_name="", backups_dir="")
-DUMP_SUFFIX = PurePath(_LAYOUT.sql_file("")).name
-CLUSTER_SUFFIX = PurePath(_LAYOUT.cluster_file("")).name
-SQL_DIR = PurePath(_LAYOUT.sql_file("")).parent.name
-FILES_DIR = PurePath(_LAYOUT.files_dir()).name
-DUMP_GLOB = f"*/{SQL_DIR}/*{DUMP_SUFFIX}"
-FILES_GLOB = f"*/{FILES_DIR}"
 
 DEDICATED_VOLUME_SUFFIX = "_database"
 CLUSTER_ENGINE = "postgres"
@@ -83,12 +74,19 @@ class Generation(NamedTuple):
     name: str
 
 
-def engine_by_key(applications: Mapping[str, object] | None = None) -> dict[str, str]:
+def engine_by_key(
+    applications: Mapping[str, object] | None = None,
+    generation_dir: Path | None = None,
+) -> dict[str, str]:
     """Map every name a dump can be addressed by to its database engine.
 
     Args:
         applications: the materialised application payload; loaded from the
             repository when omitted.
+        generation_dir: a generation whose manifest states, per volume, the
+            engine the run actually detected. Those entries win: they are
+            observed, where everything derived from the repository is inferred
+            from naming. A generation without a manifest contributes nothing.
 
     Returns:
         A mapping of docker volume names and database names to ``postgres``
@@ -106,6 +104,8 @@ def engine_by_key(applications: Mapping[str, object] | None = None) -> dict[str,
         entity = get_entity_name(application_id)
         mapping[f"{entity}{DEDICATED_VOLUME_SUFFIX}"] = engine
         mapping[entity] = engine
+    if generation_dir is not None:
+        mapping.update(manifest.engine_by_volume(generation_dir))
     return mapping
 
 
@@ -130,12 +130,16 @@ def dumps_of(generation_dir: Path) -> tuple[list[Dump], list[Cluster]]:
     """
     dumps: list[Dump] = []
     clusters: list[Cluster] = []
-    for path in sorted(generation_dir.glob(DUMP_GLOB)):
+    names = manifest.layout_of(generation_dir)
+    cluster_suffix = names["cluster_suffix"]
+    dump_suffix = names["dump_suffix"]
+    _files_glob, dump_glob = manifest.globs_of(names)
+    for path in sorted(generation_dir.glob(dump_glob)):
         volume = path.parent.parent.name
-        if path.name.endswith(CLUSTER_SUFFIX):
-            clusters.append(Cluster(volume, path.name[: -len(CLUSTER_SUFFIX)], path))
+        if path.name.endswith(cluster_suffix):
+            clusters.append(Cluster(volume, path.name[: -len(cluster_suffix)], path))
             continue
-        dumps.append(Dump(volume, path.name[: -len(DUMP_SUFFIX)], path))
+        dumps.append(Dump(volume, path.name[: -len(dump_suffix)], path))
     return dumps, clusters
 
 

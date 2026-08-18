@@ -27,7 +27,7 @@ class PlanTest(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             root = Path(td)
             self._tree(root)
-            steps = full.plan(root)
+            steps, _unreadable = full.plan(root)
             types = [t for t, _ in steps]
             self.assertEqual(types, ["nfs", "volume", "volume", "secrets"])
             self.assertTrue(
@@ -42,13 +42,13 @@ class PlanTest(unittest.TestCase):
             repo = root / "HASH" / "backup-nfs-to-local"
             (repo / "20260101000000" / "files").mkdir(parents=True)
             (repo / "20260709120000" / "files").mkdir(parents=True)
-            steps = full.plan(root)
+            steps, _unreadable = full.plan(root)
             self.assertEqual(len(steps), 1)
             self.assertIn("20260709120000", steps[0][1])
 
     def test_plan_empty_root(self):
         with tempfile.TemporaryDirectory() as td:
-            self.assertEqual(full.plan(Path(td)), [])
+            self.assertEqual(full.plan(Path(td)), ([], []))
 
 
 class DeviceDetectTest(unittest.TestCase):
@@ -89,3 +89,28 @@ class PullCmdTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestUnreadableManifest(unittest.TestCase):
+    """One corrupt manifest must not block the repos that are intact."""
+
+    def _root(self) -> Path:
+        root = Path(tempfile.mkdtemp())
+        bad = root / "hash" / "backup-nfs-to-local" / "20260101000000"
+        bad.mkdir(parents=True)
+        (bad / "manifest.json").write_text(
+            '{"schema": 99, "layout": {}, "volumes": {}}', encoding="utf-8"
+        )
+        (
+            root / "hash" / "backup-docker-to-local" / "20260101000000" / "v" / "files"
+        ).mkdir(parents=True)
+        return root
+
+    def test_the_intact_repo_is_still_planned(self) -> None:
+        steps, _unreadable = full.plan(self._root())
+        self.assertEqual([rtype for rtype, _src in steps], ["volume"])
+
+    def test_the_skipped_repo_is_named(self) -> None:
+        _steps, unreadable = full.plan(self._root())
+        self.assertEqual(len(unreadable), 1)
+        self.assertIn("backup-nfs-to-local", unreadable[0])
