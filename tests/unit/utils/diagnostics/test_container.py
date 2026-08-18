@@ -133,6 +133,48 @@ class CollectTests(unittest.TestCase):
             self.assertTrue((out / "resolve-ghcr-io-via-10-0-0-2.txt").is_file())
             self.assertTrue((out / "resolve-ghcr-io.txt").is_file())
 
+    def test_daemon_json_dns_servers_are_probed_and_deduped(self):
+        mod = _load()
+
+        def fake_run(cmd, **_kw):
+            if cmd == ["cat", "/etc/resolv.conf"]:
+                return _cp(cmd, stdout=b"nameserver 127.0.0.1\n")
+            if cmd == ["cat", "/etc/docker/daemon.json"]:
+                return _cp(cmd, stdout=b'{"dns": ["172.30.0.53", "127.0.0.1"]}')
+            return _cp(cmd)
+
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            with (
+                mock.patch.object(
+                    mod.shutil, "which", side_effect=lambda b: b == "dig"
+                ),
+                mock.patch.object(mod, "run", side_effect=fake_run) as runner,
+            ):
+                mod.collect_resolver_probes(out)
+            self.assertTrue((out / "resolve-ghcr-io-via-172-30-0-53.txt").is_file())
+            loopback_digs = [
+                c.args[0]
+                for c in runner.call_args_list
+                if c.args[0][:1] == ["dig"]
+                and "@127.0.0.1" in c.args[0]
+                and "ghcr.io" in c.args[0]
+            ]
+            self.assertEqual(len(loopback_digs), 1, loopback_digs)
+
+    def test_a_broken_daemon_json_adds_no_probes(self):
+        mod = _load()
+        with mock.patch.object(
+            mod, "run", return_value=_cp([], rc=0, stdout=b"not json")
+        ):
+            self.assertEqual(mod.daemon_json_dns(), [])
+        with mock.patch.object(mod, "run", return_value=_cp([], rc=1)):
+            self.assertEqual(mod.daemon_json_dns(), [])
+        with mock.patch.object(
+            mod, "run", return_value=_cp([], rc=0, stdout=b'{"dns": "1.1.1.1"}')
+        ):
+            self.assertEqual(mod.daemon_json_dns(), [])
+
     def test_a_distro_without_a_query_tool_still_gets_the_per_name_verdicts(self):
         mod = _load()
         with tempfile.TemporaryDirectory() as td:

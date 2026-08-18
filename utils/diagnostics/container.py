@@ -24,6 +24,7 @@ Usage:
 from __future__ import annotations
 
 import contextlib
+import json
 import os
 import re
 import shutil
@@ -151,6 +152,25 @@ def collect_host(out: Path, app_id: str, context: str, stamp: str) -> None:
     collect_service_state(out)
 
 
+def daemon_json_dns() -> list[str]:
+    """Nameservers pinned under the ``dns`` key of /etc/docker/daemon.json.
+
+    A Tor node's resolv.conf names only the local dnsmasq, so probing its
+    entries alone cannot say whether the pinned upstream was still alive when
+    that dnsmasq went silent. Anything unreadable or keyless yields [].
+    """
+    proc = run(["cat", "/etc/docker/daemon.json"])
+    if proc.returncode != 0:
+        return []
+    try:
+        dns = json.loads(proc.stdout.decode(errors="replace")).get("dns")
+    except ValueError:
+        return []
+    if not isinstance(dns, list):
+        return []
+    return [str(server) for server in dns]
+
+
 def collect_resolver_probes(out: Path) -> None:
     """Resolve each probed name, once through the stack and once per nameserver.
 
@@ -175,6 +195,7 @@ def collect_resolver_probes(out: Path) -> None:
         for parts in (line.split() for line in list_lines(["cat", "/etc/resolv.conf"]))
         if parts[:1] == ["nameserver"] and len(parts) > 1
     ]
+    servers += [server for server in daemon_json_dns() if server not in servers]
     for host in _PROBE_HOSTS:
         capture(out, f"resolve-{source_name(host)}", ["getent", "hosts", host])
         if not tool:
