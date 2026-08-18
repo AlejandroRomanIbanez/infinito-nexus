@@ -33,12 +33,8 @@
           cross-node recovery attempts: {{ ansible_failed_result.msg | default('see above') }}
       when: (kc_update_attempt | int) >= (kc_update_max_attempts | int)
 
-    - name: "🔍 Keycloak updates | Re-resolve hosting node + live container id (recovery)"
-      ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
-      vars:
-        resolve_service_key: "{{ entity_name }}"
-        resolve_output_prefix: KEYCLOAK
-        resolve_compose_cid: "{{ lookup('container_address', application_id, entity_name) }}"
+    - name: "🔑 Keycloak updates | Re-resolve node + re-login on fresh container (recovery)"
+      ansible.builtin.include_tasks: "{{ role_path }}/tasks/utils/login.yml"
 
     - name: "🔁 Keycloak updates | Retry object updates on the freshly resolved node"
       ansible.builtin.include_tasks:
