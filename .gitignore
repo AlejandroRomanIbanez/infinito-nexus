@@ -4,6 +4,7 @@
 
 site.retry
 .cache
+.ansible/
 *__pycache__
 compose.cache.override.yml
 venv
