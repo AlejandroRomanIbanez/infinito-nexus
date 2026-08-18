@@ -33,6 +33,7 @@ funkwhale:
 api:
   healthcheck:
     flavor: curl
+    path: api/v1/instance/nodeinfo/2.0
   image: funkwhale/api
   version: 2.0.9
   min_storage: 588MB
