@@ -13,9 +13,17 @@
          and (groups[lookup('database', _database_consumer_id, 'id')] | default([])) | length > 0 }}
   changed_when: false
 
+- name: "🔍 For '{{ application_id }}': Locate the compose file the engine would be rendered into"
+  ansible.builtin.stat:
+    path: "{{ lookup('path_absolute', 'roles/' ~ application_id ~ '/templates/compose.yml.j2') }}"
+  register: _sys_svc_rdbms_compose_template
+  changed_when: false
+
 - name: "🔧 For '{{ application_id }}/{{ _database_consumer_id }}': Apply dedicated setup"
   include_tasks: dedicated.yml
-  when: _sys_svc_rdbms_consumer_local | bool
+  when:
+    - _sys_svc_rdbms_consumer_local | bool
+    - _sys_svc_rdbms_compose_template.stat.exists
 
 - name: 🗄️ Central Database Logic
   block:
