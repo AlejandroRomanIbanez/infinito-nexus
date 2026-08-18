@@ -31,6 +31,7 @@ set -euo pipefail
 
 GEN_DIR="${REPO_DIR}/${NEWEST_GENERATION}"
 DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TORN_DOWN_MARKER="${BKP_TEST_REPO_ROOT}/.stack-torn-down"
 # shellcheck disable=SC2016
 NETWORK_TEMPLATE='{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}'
 
@@ -186,6 +187,18 @@ for name in "${RUNNING[@]}"; do
     NETWORKS["${name}"]="$(container inspect --type container -f "${NETWORK_TEMPLATE}" "${name}")"
 done
 echo "OK: network attachments recorded for ${#NETWORKS[@]} container(s)"
+
+# Any exit between this teardown and the final restart leaves the host with
+# its subjects down, which is why the marker is written from a trap.
+mark_torn_down() {
+    local code=$?
+    if (( code != 0 )); then
+        printf 'the backup drill tore this host down and exited %s before restarting it\n' \
+            "${code}" >"${TORN_DOWN_MARKER}"
+        echo "FAIL: subjects are left down; recorded in ${TORN_DOWN_MARKER}" >&2
+    fi
+}
+trap mark_torn_down EXIT
 
 echo "Stopping every subject of this host..."
 for project in "${PROJECTS[@]}"; do
@@ -354,4 +367,7 @@ if (( ${#NOHC_NAMES[@]} > 0 )); then
     done
     echo "OK: ${#NOHC_NAMES[@]} container(s) without healthcheck stable for 15s"
 fi
+
+trap - EXIT
+rm -f "${TORN_DOWN_MARKER}"
 echo "OK: all restored containers healthy"

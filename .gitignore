@@ -5,6 +5,7 @@
 site.retry
 .cache
 .ansible/
+.stack-torn-down
 *__pycache__
 compose.cache.override.yml
 venv
