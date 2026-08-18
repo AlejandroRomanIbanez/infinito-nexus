@@ -384,6 +384,31 @@ class DatabaseLookupTests(unittest.TestCase):
         with self.assertRaises(AnsibleError):
             lookup.run(["web-app-foo"], variables=vars_)
 
+    def test_a_dedicated_engine_keeps_the_name_its_role_declares(self):
+        applications = {
+            "web-app-foo": {
+                "services": {
+                    "postgres": {
+                        "enabled": True,
+                        "shared": False,
+                        "name": "foo-postgres-1",
+                    }
+                },
+                "secrets": {"credentials": {"database_password": "pw"}},
+            },
+            "svc-db-postgres": {
+                "services": {
+                    "postgres": {"version": "16", "ports": {"local": {"postgres": ""}}}
+                }
+            },
+        }
+        vars_ = {
+            "applications": applications,
+            "ports": {"localhost": {"database": {"svc-db-postgres": "5432"}}},
+            "DIR_COMPOSITIONS": "/opt/compose/",
+        }
+        self.assertEqual(self._resolve(vars_)["container"], "foo-postgres-1")
+
     def _mode_vars(self, shared, **extra):
         applications = {
             "web-app-foo": {

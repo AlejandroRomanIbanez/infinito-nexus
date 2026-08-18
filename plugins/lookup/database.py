@@ -126,10 +126,22 @@ class LookupModule(LookupBase):
         )
         central_name = (str(central_name) if central_name is not None else "").strip()
 
+        declared_name = get(
+            applications,
+            consumer_id,
+            f"services.{dbtype}.name",
+            strict=False,
+            default="",
+        )
+        declared_name = (
+            str(declared_name) if declared_name is not None else ""
+        ).strip()
+
         name = consumer_entity
         instance = central_name if central_enabled else name
         host = central_name if central_enabled else "database"
-        container = dbtype if central_enabled else f"{consumer_entity}-database"
+        dedicated_container = declared_name or f"{consumer_entity}-database"
+        container = dbtype if central_enabled else dedicated_container
         network = dbtype if central_enabled else consumer_entity
         username = consumer_entity
 
