@@ -89,6 +89,11 @@
     KC_REALM: "{{ KEYCLOAK_REALM }}"
     LDAP_COMPONENT_ID: "{{ ldap_cmp_id | trim }}"
     MAPPER_ID: "{{ (per_app_mapper_id_out.stdout | default('')) | trim }}"
+  register: per_app_sync_out
   changed_when: true
-  failed_when: false
+  timeout: "{{ lookup('timeout', 60) | int }}"
+  retries: 2
+  delay: 20
+  until: per_app_sync_out is succeeded
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+  ignore_errors: true
