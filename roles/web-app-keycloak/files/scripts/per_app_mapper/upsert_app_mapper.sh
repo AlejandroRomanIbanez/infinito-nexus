@@ -27,7 +27,7 @@ container exec -i "$KC_CONTAINER" /opt/keycloak/bin/kcadm.sh get components \
   -r "$KC_REALM" \
   -q "parentId=$LDAP_COMPONENT_ID" \
   -q providerId=group-ldap-mapper \
-  -q max=500 --fields id,name --format csv --noquotes 2>/dev/null \
+  -q max=500 --fields id,name --format csv --noquotes \
   > /tmp/kc_mappers_listing.txt
 
 EXISTING_ID=$(awk -F',' -v n="$MAPPER_NAME" \
@@ -39,11 +39,11 @@ if [ -n "$EXISTING_ID" ]; then
     "$PAYLOAD_FILE" \
     | container exec -i "$KC_CONTAINER" /opt/keycloak/bin/kcadm.sh update \
         "components/$EXISTING_ID" -r "$KC_REALM" -f - \
-    >/dev/null 2>&1 || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
+    >/dev/null || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
   printf '%s\n' "$EXISTING_ID"
 else
   container exec -i "$KC_CONTAINER" /opt/keycloak/bin/kcadm.sh create \
-    components -r "$KC_REALM" -f - -i 2>/dev/null \
+    components -r "$KC_REALM" -f - -i \
     < "$PAYLOAD_FILE" \
     > /tmp/kc_create_mapper.txt
   grep -vE '(^\[|Cgroup)' /tmp/kc_create_mapper.txt \

@@ -18,7 +18,7 @@ container exec -i "$KC_CONTAINER" /opt/keycloak/bin/kcadm.sh get components \
   -r "$KC_REALM" \
   -q "parentId=$LDAP_COMPONENT_ID" \
   -q providerId=group-ldap-mapper \
-  --fields id,name --format csv --noquotes 2>/dev/null \
+  --fields id,name --format csv --noquotes \
   | tr -d '\r' \
   | awk -F',' '$2=="ldap-roles"{print $1}' \
   > /tmp/kc_ldap_roles_ids.txt

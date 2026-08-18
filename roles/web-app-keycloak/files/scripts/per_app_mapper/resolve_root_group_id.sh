@@ -13,7 +13,7 @@ set -o pipefail
 
 container exec -i "$KC_CONTAINER" /opt/keycloak/bin/kcadm.sh get groups \
   -r "$KC_REALM" \
-  -q max=500 --fields id,path --format csv --noquotes 2>/dev/null \
+  -q max=500 --fields id,path --format csv --noquotes \
   > /tmp/kc_groups_top.txt
 
 awk -F',' -v p="$KC_RBAC_ROOT_PATH" \

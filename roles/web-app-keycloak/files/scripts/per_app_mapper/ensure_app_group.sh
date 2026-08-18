@@ -15,7 +15,7 @@ set -o pipefail
 
 container exec -i "$KC_CONTAINER" /opt/keycloak/bin/kcadm.sh get \
   "groups/$ROOT_GROUP_ID/children" -r "$KC_REALM" \
-  -q max=500 --fields id,name --format csv --noquotes 2>/dev/null \
+  -q max=500 --fields id,name --format csv --noquotes \
   > /tmp/kc_children_listing.txt
 
 EXISTING=$(awk -F',' -v n="$APP_ID" \
@@ -28,7 +28,7 @@ if [ -n "$EXISTING" ]; then
 fi
 
 container exec -i "$KC_CONTAINER" /opt/keycloak/bin/kcadm.sh create \
-  "groups/$ROOT_GROUP_ID/children" -r "$KC_REALM" -s "name=$APP_ID" -i 2>/dev/null \
+  "groups/$ROOT_GROUP_ID/children" -r "$KC_REALM" -s "name=$APP_ID" -i \
   > /tmp/kc_create_output.txt
 
 grep -vE '(^\[|Cgroup)' /tmp/kc_create_output.txt \

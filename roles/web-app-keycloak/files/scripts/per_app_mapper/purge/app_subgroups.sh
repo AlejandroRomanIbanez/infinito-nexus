@@ -14,7 +14,7 @@ set -o pipefail
 
 container exec -i "$KC_CONTAINER" /opt/keycloak/bin/kcadm.sh get \
   "groups/$APP_GROUP_ID/children" -r "$KC_REALM" \
-  -q max=500 --fields id,name --format csv --noquotes 2>/dev/null \
+  -q max=500 --fields id,name --format csv --noquotes \
   > /tmp/kc_app_children.txt
 
 awk -F',' '!/^\[/ && !/Cgroup/ && $1 != "" { print $1 }' \
@@ -23,5 +23,5 @@ awk -F',' '!/^\[/ && !/Cgroup/ && $1 != "" { print $1 }' \
 while IFS= read -r stale_id; do
   [ -z "$stale_id" ] && continue
   container exec -i "$KC_CONTAINER" /opt/keycloak/bin/kcadm.sh delete \
-    "groups/$stale_id" -r "$KC_REALM" </dev/null 2>/dev/null || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
+    "groups/$stale_id" -r "$KC_REALM" </dev/null || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 done < /tmp/kc_app_orphans.txt
