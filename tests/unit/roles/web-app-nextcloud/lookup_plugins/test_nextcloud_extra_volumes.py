@@ -71,9 +71,7 @@ class TestNextcloudExtraVolumes(unittest.TestCase):
             [
                 {
                     "whiteboard_tmp": {"name": "nextcloud_whiteboard_tmp"},
-                    "whiteboard_fontcache": {
-                        "name": "nextcloud_whiteboard_fontcache"
-                    },
+                    "whiteboard_fontcache": {"name": "nextcloud_whiteboard_fontcache"},
                 }
             ],
         )

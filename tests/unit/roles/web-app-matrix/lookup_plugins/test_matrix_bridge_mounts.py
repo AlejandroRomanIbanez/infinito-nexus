@@ -12,10 +12,7 @@ from . import PROJECT_ROOT
 
 
 def _load_module():
-    path = (
-        PROJECT_ROOT
-        / "roles/web-app-matrix/lookup_plugins/matrix_bridge_mounts.py"
-    )
+    path = PROJECT_ROOT / "roles/web-app-matrix/lookup_plugins/matrix_bridge_mounts.py"
     spec = importlib.util.spec_from_file_location("matrix_bridge_mounts", str(path))
     mod = importlib.util.module_from_spec(spec)
     assert spec and spec.loader

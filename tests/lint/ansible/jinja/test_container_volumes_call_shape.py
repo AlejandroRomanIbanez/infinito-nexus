@@ -13,8 +13,8 @@ such as ``extra_volumes=...`` stay allowed after ``service_name``.
 
 from __future__ import annotations
 
-import unittest
 import re
+import unittest
 from pathlib import Path
 
 from utils.cache.files import iter_project_files_with_content

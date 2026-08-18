@@ -64,9 +64,7 @@ class TestComposeVolumesLookup(unittest.TestCase):
         lm = self._make(vars_)
         with (
             mock.patch.object(self.module, "lookup_loader") as loader_mock,
-            mock.patch.object(
-                self.module, "compose_volumes", side_effect=render
-            ),
+            mock.patch.object(self.module, "compose_volumes", side_effect=render),
         ):
             loader_mock.get.return_value = mock.MagicMock(
                 run=lambda *_a, **_k: [{"web-app-x": {}}]
@@ -99,9 +97,7 @@ class TestComposeVolumesLookup(unittest.TestCase):
             captured.update(kw)
             return ""
 
-        self._run(
-            _vars(DEPLOYMENT_MODE="swarm", compose_mode_force="compose"), _render
-        )
+        self._run(_vars(DEPLOYMENT_MODE="swarm", compose_mode_force="compose"), _render)
         self.assertEqual(captured.get("deployment_mode"), "compose")
 
     def test_storage_auto_wires_from_vars(self):

@@ -55,15 +55,13 @@ class LookupModule(LookupBase):
             )
 
         instance_dir = str(
-            lookup_loader.get(
-                "container", loader=self._loader, templar=templar
-            ).run([application_id, "directories.instance"], variables=vars_)[0]
+            lookup_loader.get("container", loader=self._loader, templar=templar).run(
+                [application_id, "directories.instance"], variables=vars_
+            )[0]
         )
 
         mounts = []
         for bridge in bridges:
             name = str(bridge["bridge_name"])
-            mounts.append(
-                f"{instance_dir}mautrix/{name}:{reg_folder}mautrix-{name}:ro"
-            )
+            mounts.append(f"{instance_dir}mautrix/{name}:{reg_folder}mautrix-{name}:ro")
         return [mounts]

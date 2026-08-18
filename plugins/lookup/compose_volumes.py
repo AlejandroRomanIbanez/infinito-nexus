@@ -17,6 +17,7 @@ from plugins.filter.docker.service_enabled import (
     FilterModule as _DockerServiceEnabledFilter,
 )
 from plugins.filter.get.entity_name import get_entity_name
+
 # nocheck: lookup-cache-import (raw-volume accessor: canonical meta/volumes.yml shape)
 from utils.cache.applications import get_canonical_volumes
 from utils.cache.yaml import dump_yaml_str
