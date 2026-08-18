@@ -330,7 +330,10 @@ def replay(
     for dump in dumps:
         if dump.database not in credentials:
             raise RecoveryError(f"{csv_path} has no row for database '{dump.database}'")
-        recovery_docker.assert_no_consumers(dump.database, docker_host)
+        engine = recovery_docker.container_of_volume(dump.volume, docker_host)
+        recovery_docker.assert_no_consumers(
+            dump.database, docker_host, ignore=(engine,)
+        )
     engine_of_cluster: dict[Path, str] = {}
     for cluster in clusters:
         if cluster.instance not in cluster_credentials:
