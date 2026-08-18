@@ -16,7 +16,7 @@
   notify:
     - compose-up
 
-- name: "📄 Render adminopenauth.yaml (OIDC client protocols follow the internal hop's scheme)"
+- name: "📄 Render adminopenauth.yaml (protocols follow the internal hop's scheme)"
   stack_host_template:
     src: "adminopenauth.yaml.j2"
     dest: "{{ SHOPWARE_ADMINOPENAUTH_HOST }}"
