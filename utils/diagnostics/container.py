@@ -123,6 +123,7 @@ def collect_host(out: Path, app_id: str, context: str, stamp: str) -> None:
     ):
         capture(out, name, cmd)
     collect_resolver_probes(out)
+    collect_dnsmasq_introspection(out)
     for path in (
         "/etc/os-release",
         "/etc/resolv.conf",
@@ -150,6 +151,18 @@ def collect_host(out: Path, app_id: str, context: str, stamp: str) -> None:
     ):
         capture(out, name, cmd, timeout=_JOURNAL_TIMEOUT)
     collect_service_state(out)
+
+
+def collect_dnsmasq_introspection(out: Path) -> None:
+    """fd table and rlimits of every live dnsmasq process.
+
+    Run 32118850138 caught dnsmasq alive with zero sockets and nothing in
+    the journal; the socket table alone cannot separate closed listeners
+    from an exhausted fd table or a lost netlink watch, the fd list can.
+    """
+    for pid in " ".join(list_lines(["pidof", "dnsmasq"])).split():
+        capture(out, f"dnsmasq-{pid}-fd.txt", ["ls", "-l", f"/proc/{pid}/fd"])
+        capture(out, f"dnsmasq-{pid}-limits.txt", ["cat", f"/proc/{pid}/limits"])
 
 
 def daemon_json_dns() -> list[str]:

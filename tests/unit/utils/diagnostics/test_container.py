@@ -175,6 +175,34 @@ class CollectTests(unittest.TestCase):
         ):
             self.assertEqual(mod.daemon_json_dns(), [])
 
+    def test_dnsmasq_fd_and_limits_are_captured_per_pid(self):
+        mod = _load()
+
+        def fake_run(cmd, **_kw):
+            if cmd == ["pidof", "dnsmasq"]:
+                return _cp(cmd, stdout=b"41 7\n")
+            return _cp(cmd, stdout=b"x\n")
+
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            with mock.patch.object(mod, "run", side_effect=fake_run):
+                mod.collect_dnsmasq_introspection(out)
+            for name in (
+                "dnsmasq-41-fd.txt",
+                "dnsmasq-41-limits.txt",
+                "dnsmasq-7-fd.txt",
+                "dnsmasq-7-limits.txt",
+            ):
+                self.assertTrue((out / name).is_file(), name)
+
+    def test_no_dnsmasq_means_no_introspection_files(self):
+        mod = _load()
+        with tempfile.TemporaryDirectory() as td:
+            out = Path(td)
+            with mock.patch.object(mod, "run", return_value=_cp([], rc=1)):
+                mod.collect_dnsmasq_introspection(out)
+            self.assertEqual(list(out.iterdir()), [])
+
     def test_a_distro_without_a_query_tool_still_gets_the_per_name_verdicts(self):
         mod = _load()
         with tempfile.TemporaryDirectory() as td:

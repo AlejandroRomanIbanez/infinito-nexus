@@ -199,6 +199,12 @@ docker exec "${_up_container}" install -m 755 \
 	/opt/src/infinito/roles/sys-ca-selfsigned/files/with-ca-trust.sh \
 	/usr/bin/ca-trust-wrapper 2>/dev/null || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 
+echo ">>> Starting the :53 listener sampler inside ${_up_container}"
+docker exec -d \
+	-e "INFINITO_RESCUE_DIAGNOSTICS_DIR=${INFINITO_RESCUE_DIAGNOSTICS_DIR}" \
+	"${_up_container}" \
+	sh /opt/src/infinito/scripts/tests/deploy/ci/dns53-sampler.sh
+
 deploy_args=(
 	--apps "${apps}"
 	--inventory-dir "${INFINITO_INVENTORY_DIR}"
