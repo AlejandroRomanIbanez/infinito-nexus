@@ -1,12 +1,13 @@
 #!/bin/bash
 # Resolve the Keycloak group id for the RBAC root path (e.g. /roles).
-# Echoes the id on stdout; nothing on failure.
+# Echoes the id on stdout; empty when the path has no group; exits
+# non-zero when the groups listing itself cannot be fetched.
 #
 # Required env:
 #   KC_CONTAINER         keycloak container name
 #   KC_REALM             realm name
 #   KC_RBAC_ROOT_PATH    e.g. /roles
-set -o pipefail
+set -eo pipefail
 : "${KC_CONTAINER:?KC_CONTAINER is required}"
 : "${KC_REALM:?KC_REALM is required}"
 : "${KC_RBAC_ROOT_PATH:?KC_RBAC_ROOT_PATH is required}"
