@@ -22,6 +22,7 @@
 set -euo pipefail
 
 : "${BKP_TEST_HEALTH_TIMEOUT:?}"
+: "${BKP_TEST_PYTHON:?}"
 : "${BKP_TEST_REPO_ROOT:?}"
 : "${BKP_TEST_SCRATCH_IMAGE:?}"
 : "${DR_TOKEN:?}"
@@ -220,7 +221,7 @@ for volume in "${RESTORABLE[@]-}"; do
     fi
 done
 
-python3 "${DIR}/seed/marker.py" blank "${GEN_DIR}" "${DR_TOKEN}"
+"${BKP_TEST_PYTHON}" "${DIR}/seed/marker.py" blank "${GEN_DIR}" "${DR_TOKEN}"
 
 echo "Restoring ${#VOLUME_DIRS[@]} volume(s) from generation ${NEWEST_GENERATION}"
 for volume_dir in "${VOLUME_DIRS[@]}"; do
@@ -285,7 +286,7 @@ if (( ${#DB_PROJECTS[@]} > 0 )); then
     recover database "${GEN_DIR}"
 fi
 
-python3 "${DIR}/seed/marker.py" verify "${GEN_DIR}" "${DR_TOKEN}"
+"${BKP_TEST_PYTHON}" "${DIR}/seed/marker.py" verify "${GEN_DIR}" "${DR_TOKEN}"
 
 DB_SERVICE=()
 echo "Starting every project to completion..."
