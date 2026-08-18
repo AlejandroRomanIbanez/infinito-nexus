@@ -323,7 +323,9 @@ def replay(
         print(f"OK: generation {generation.name} carries no database dumps")
         return 0
 
-    engine_map = engine_by_key() if engines is None else engines
+    engine_map = (
+        engine_by_key(generation_dir=generation_dir) if engines is None else engines
+    )
     credentials = credentials_of(csv_path)
     cluster_credentials = cluster_credentials_of(csv_path)
 

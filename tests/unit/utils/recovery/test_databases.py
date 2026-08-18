@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+import json
 import tempfile
 from pathlib import Path
 from unittest import TestCase, main, mock
@@ -7,6 +8,7 @@ from baudolo.restore.paths import BackupPaths
 
 from utils.recovery import databases
 from utils.recovery import docker as recovery_docker
+from utils.recovery.layout import MANIFEST_FILE, MANIFEST_SCHEMA
 
 APPLICATIONS = {
     "web-app-zammad": {"services": {"postgres": {"enabled": True}}},
@@ -487,6 +489,42 @@ class TestReplay(TestCase):
             self.assertEqual(
                 databases.replay(self.generation, self.csv, engines=self.engines), 1
             )
+
+    def test_a_dump_only_the_manifest_can_place_is_replayed(self):
+        root = Path(tempfile.mkdtemp())
+        gen = generation(root)
+        (gen / "postgres_data/sql").mkdir(parents=True)
+        (gen / "postgres_data/sql/mautrix_meta_bridge.backup.sql").write_text(
+            POSTGRES_HEADER
+        )
+        (gen / MANIFEST_FILE).write_text(
+            json.dumps(
+                {
+                    "schema": MANIFEST_SCHEMA,
+                    "volumes": {
+                        "postgres_data": {
+                            "database": True,
+                            "dumped": True,
+                            "engine": "postgres",
+                        }
+                    },
+                }
+            )
+        )
+        csv = root / "databases.csv"
+        csv.write_text(
+            "instance;database;username;password\n"
+            "postgres;mautrix_meta_bridge;bridge;pw\n",
+            encoding="utf-8",
+        )
+        with (
+            mock.patch.object(recovery_docker, "_run", lambda argv, secret="": ""),
+            mock.patch.object(recovery_docker, "consumers_running", lambda *a, **k: []),
+            mock.patch.object(
+                recovery_docker, "container_of_volume", lambda *a, **k: "postgres-1"
+            ),
+        ):
+            self.assertEqual(databases.replay(gen, csv), 1)
 
     def test_the_password_is_redacted_from_a_failure(self):
         with self.assertRaises(databases.RecoveryError) as raised:
