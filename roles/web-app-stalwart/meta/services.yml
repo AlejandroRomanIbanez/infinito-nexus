@@ -61,26 +61,24 @@ stalwart:
   # nocheck: min-storage-headroom  Reason: the mail store (maildir blobs, FTS index, queue) lives in this service's volumes and dwarfs the image transfer size
   min_storage: 20GB
   domain: "{{ lookup('email').domain }}"
+  # Exception: no 587/143/110 — Stalwart's default config serves only
+  # implicit-TLS client ports (465/993/995); publishing the STARTTLS
+  # triplet would expose dead ports (the swarm drill's reachability
+  # check fails on them).
   ports:
     local:
       http: 8081
     public:
       smtp: 25
       smtps: 465
-      submission: 587
-      pop3: 110
       pop3s: 995
-      imap: 143
       imaps: 993
       sieve: 4190
     internal:
       http: 8080
       smtp: 25
       smtps: 465
-      submission: 587
-      pop3: 110
       pop3s: 995
-      imap: 143
       imaps: 993
       sieve: 4190
   run_after:

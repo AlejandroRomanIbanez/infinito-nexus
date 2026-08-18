@@ -102,12 +102,17 @@
 - name: "🚿 Flush Docker Compose handlers"
   meta: flush_handlers
 
+# Exception: name the webmail service explicitly — the swarm upstream resolver
+# defaults to the primary entity (stalwart:8080), which serves the mail server
+# instead of Roundcube on the webmail vhost.
 - name: "🌐 Proxy the Roundcube webmail at {{ STALWART_WEBMAIL_DOMAIN }}"
   include_role:
     name: sys-stk-front-proxy
   vars:
     domain: "{{ STALWART_WEBMAIL_DOMAIN }}"
     http_port: "{{ STALWART_WEBMAIL_HTTP_PORT }}"
+    webserver_proxy_service_key: "{{ 'webmail' if DEPLOYMENT_MODE == 'swarm' else (application_id | get_entity_name) }}"
+    proxy_internal_port: "{{ lookup('config', application_id, 'services.webmail.ports.internal.http') if DEPLOYMENT_MODE == 'swarm' else '' }}"
     webserver_vhost_flavour: "basic"
 
 - name: "👔 Stalwart manager-side operations (container exec + provisioning)"
