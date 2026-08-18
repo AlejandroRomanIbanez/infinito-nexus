@@ -198,6 +198,27 @@ async function inAppLogout(page) {
     }
   }
 
+  const _loginSurfaceVisible = await page
+    .locator("input[type='password']")
+    .first()
+    .isVisible()
+    .catch(() => false);
+  if (_loginSurfaceVisible) {
+    expect
+      .soft(false, "session was lost before the logout attempt - a login surface is visible instead of the authenticated app")
+      .toBe(true);
+    return;
+  }
+  const _bodyText = await page
+    .locator("body")
+    .innerText()
+    .catch(() => "");
+  if (_bodyText.trim().length === 0) {
+    expect
+      .soft(false, "session was lost before the logout attempt - the page rendered an empty unauthenticated shell")
+      .toBe(true);
+    return;
+  }
   expect.soft(false, "no in-app logout control reachable on the current authenticated surface").toBe(true);
 }
 
