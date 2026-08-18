@@ -384,6 +384,65 @@ class DatabaseLookupTests(unittest.TestCase):
         with self.assertRaises(AnsibleError):
             lookup.run(["web-app-foo"], variables=vars_)
 
+    def _mode_vars(self, shared, **extra):
+        applications = {
+            "web-app-foo": {
+                "services": {"postgres": {"enabled": True, "shared": shared}},
+                "secrets": {"credentials": {"database_password": "pw"}},
+            },
+            "svc-db-postgres": {
+                "services": {
+                    "postgres": {
+                        "name": "postgres",
+                        "version": "16",
+                        "ports": {"local": {"postgres": ""}},
+                    }
+                }
+            },
+        }
+        return {
+            "applications": applications,
+            "ports": {"localhost": {"database": {"svc-db-postgres": "5432"}}},
+            "DIR_COMPOSITIONS": "/opt/compose/",
+            **extra,
+        }
+
+    def _dedicated_vars(self, **extra):
+        return self._mode_vars(False, **extra)
+
+    def _resolve(self, vars_):
+        lookup = self._make_lookup(vars_)
+        with patch.object(
+            self.db_lookup_mod,
+            "get_entity_name",
+            side_effect=self._fake_get_entity_name,
+        ):
+            return lookup.run(["web-app-foo"], variables=vars_)[0]
+
+    def test_swarm_names_the_service_after_the_stack(self):
+        out = self._resolve(self._dedicated_vars(DEPLOYMENT_MODE="swarm"))
+        self.assertEqual(out["service_name"], "foo_database")
+        self.assertIn("resolve-container-id", out["address"])
+
+    def test_compose_mode_force_beats_the_cluster_mode(self):
+        out = self._resolve(
+            self._dedicated_vars(DEPLOYMENT_MODE="swarm", compose_mode_force="compose")
+        )
+        self.assertEqual(out["service_name"], "database")
+        self.assertEqual(out["address"], out["container"])
+
+    def test_an_empty_force_falls_back_to_the_cluster_mode(self):
+        out = self._resolve(
+            self._dedicated_vars(DEPLOYMENT_MODE="swarm", compose_mode_force="")
+        )
+        self.assertEqual(out["service_name"], "foo_database")
+
+    def test_a_consumers_force_does_not_reach_the_central_engine(self):
+        out = self._resolve(
+            self._mode_vars(True, DEPLOYMENT_MODE="swarm", compose_mode_force="compose")
+        )
+        self.assertEqual(out["service_name"], "postgres_postgres")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -188,12 +188,17 @@ class LookupModule(LookupBase):
         volume_prefix = f"{consumer_entity}_" if not central_enabled else ""
         volume = f"{volume_prefix}{host}"
 
-        raw_mode = vars_.get("DEPLOYMENT_MODE", "compose")
         templar = getattr(self, "_templar", None)
-        if templar is not None:
-            with contextlib.suppress(Exception):
-                raw_mode = templar.template(raw_mode)
-        deployment_mode = str(raw_mode).strip()
+
+        def _templated(value: Any) -> str:
+            if templar is not None:
+                with contextlib.suppress(Exception):
+                    value = templar.template(value)
+            return str(value or "").strip()
+
+        cluster_mode = _templated(vars_.get("DEPLOYMENT_MODE", "compose"))
+        forced = _templated(vars_.get("compose_mode_force", ""))
+        deployment_mode = cluster_mode if central_enabled else (forced or cluster_mode)
 
         db_stack = dbtype if central_enabled else consumer_entity
         db_service_key = dbtype if central_enabled else "database"
