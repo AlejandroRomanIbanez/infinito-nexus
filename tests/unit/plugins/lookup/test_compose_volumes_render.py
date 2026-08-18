@@ -18,7 +18,7 @@ def _ensure_repo_root_on_syspath() -> None:
 
 _ensure_repo_root_on_syspath()
 
-from plugins.filter.compose_volumes import compose_volumes  # noqa: E402
+from plugins.lookup.compose_volumes import compose_volumes  # noqa: E402
 from utils.cache.yaml import load_yaml_str  # noqa: E402
 
 _DIR_VAR_LIB = os.environ["INFINITO_DIR_VAR_LIB"]

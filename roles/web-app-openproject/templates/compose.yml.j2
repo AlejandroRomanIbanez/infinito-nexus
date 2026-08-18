@@ -26,7 +26,7 @@ x-op-app: &app
     environment:
       APP_HOST: {{ OPENPROJECT_WEB_SERVICE }}
     {{ lookup('depends_on', [OPENPROJECT_WEB_SERVICE]) }}
-    {{ lookup('container_volumes', application_id, 'proxy') | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
 
   {% set service_name = OPENPROJECT_WEB_SERVICE %}
   {{ service_name }}:
@@ -40,7 +40,7 @@ x-op-app: &app
   OPENPROJECT_SEEDER_SERVICE: {'condition': 'service_completed_successfully'},
 }) | indent(4) }}
     {{ lookup('container_healthcheck', service_name) | indent(4) }}
-    {{ lookup('container_volumes', application_id, OPENPROJECT_WEB_SERVICE) | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
 
   {% set service_name = 'worker' %}
   {{ service_name }}:
@@ -53,7 +53,7 @@ x-op-app: &app
   'cache': {'condition': 'service_started'},
   OPENPROJECT_SEEDER_SERVICE: {'condition': 'service_completed_successfully'},
 }) | indent(4) }}
-    {{ lookup('container_volumes', application_id, 'worker') | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
 
   {% set service_name = 'cron' %}
   {{ service_name }}:
@@ -66,7 +66,7 @@ x-op-app: &app
   'cache': {'condition': 'service_started'},
   OPENPROJECT_SEEDER_SERVICE: {'condition': 'service_completed_successfully'},
 }) | indent(4) }}
-    {{ lookup('container_volumes', application_id, 'cron') | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
 
   {% set service_name = OPENPROJECT_SEEDER_SERVICE %}
   {% set docker_restart_policy = 'on-failure' %}
@@ -76,7 +76,7 @@ x-op-app: &app
     command: "./docker/prod/seeder"
     {{ lookup('compose_only', 'container_name', OPENPROJECT_SEEDER_CONTAINER) }}
     {{ lookup('container_networks') | indent(4) }}
-    {{ lookup('container_volumes', application_id, OPENPROJECT_SEEDER_SERVICE) | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
 
-{{ lookup('compose_volumes', application_id) }}
+{{ lookup('compose_volumes') }}
 {{ lookup('compose_networks') }}

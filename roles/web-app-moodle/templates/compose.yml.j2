@@ -23,7 +23,7 @@
         MOODLE_AUTH_SUBDIR: "{{ MOODLE_AUTH_SUBDIR }}"
     {{ lookup('container_image', application_id, 'moodle') }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
-    {{ lookup('container_volumes', application_id, 'moodle') | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
     {{ lookup('container_healthcheck', service_name) | indent(4) }}
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_extra_hosts', host_alias=true) | indent(4) }}
@@ -37,7 +37,7 @@
     {{ lookup('depends_on', {'moodle': 'service_healthy'}) }}
     ports:
       - {{ DOCKER_BIND_HOST }}:{{ lookup('config', application_id, 'services.moodle.ports.local.http') }}:{{ MOODLE_NGINX_PORT }}
-    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
     {{ lookup('compose_restart') }}
     {{ lookup('container_networks') | indent(4) }}
 
@@ -48,7 +48,7 @@
     {{ lookup('container_image', application_id, 'cron', version=MOODLE_VERSION) }}
     {{ lookup('compose_only', 'pull_policy', 'never') }}
     {{ lookup('depends_on', {'moodle': 'service_healthy'}) }}
-    {{ lookup('container_volumes', application_id, 'cron') | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
     env_file:
       - .env/env
     entrypoint: ["{{ MOODLE_ENTRYPOINT_PATH }}"]
@@ -64,5 +64,5 @@
     {{ lookup('container_extra_hosts', host_alias=true) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-{{ lookup('compose_volumes', application_id) }}
+{{ lookup('compose_volumes') }}
 {{ lookup('compose_networks') }}

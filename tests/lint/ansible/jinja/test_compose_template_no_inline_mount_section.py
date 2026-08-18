@@ -1,7 +1,7 @@
 """Strict guard for ALL compose templates: inline ``volumes:`` /
 ``configs:`` / ``secrets:`` blocks in ``compose.yml.j2`` are forbidden.
-Every mount surface MUST flow through ``lookup('compose_volumes', ...)``
-(top-level) and ``lookup('container_volumes', application_id, service)``
+Every mount surface MUST flow through ``lookup('compose_volumes')``
+(top-level) and ``lookup('container_volumes', service)``
 (per-service). That makes ``meta/volumes.yml`` the single source for
 NFS opt-in, swarm config/secret distribution, and reschedule-safe
 bind sources.
@@ -148,8 +148,8 @@ class TestComposeTemplateNoInlineMountSection(unittest.TestCase):
                 "plugin output:\n\n"
                 "    services:\n"
                 "      <svc>:\n"
-                "        {{ lookup('container_volumes', application_id, '<svc>') | indent(8) }}\n\n"
-                "    {{ lookup('compose_volumes', application_id) }}\n\n"
+                "        {{ lookup('container_volumes', '<svc>') | indent(8) }}\n\n"
+                "    {{ lookup('compose_volumes') }}\n\n"
                 "Mark with `# nocheck: compose-inline-mount-section` only "
                 "for legitimate exceptions (extra_* injection helpers).\n\n"
                 f"Offenders:\n{formatted}"

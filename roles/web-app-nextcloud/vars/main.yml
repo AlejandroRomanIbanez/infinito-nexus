@@ -38,7 +38,6 @@ NEXTCLOUD_INIT_GATE_FILE: "init-gate.sh"
 NEXTCLOUD_INIT_GATE_SRC: "{{ ['shell', 'utils', NEXTCLOUD_INIT_GATE_FILE] | path_join }}"
 NEXTCLOUD_INIT_GATE_HOST: "{{ [lookup('container', 'web-app-nextcloud', 'directories.instance'), NEXTCLOUD_INIT_GATE_FILE] | path_join }}"
 
-NEXTCLOUD_VOLUME: "{{ lookup('volume', application_id, 'data').name }}"
 NEXTCLOUD_SERVICE: "{{ entity_name }}"
 NEXTCLOUD_VERSION: "{{ lookup('config', application_id, 'services.'~ NEXTCLOUD_SERVICE ~'.version') }}"
 NEXTCLOUD_IMAGE: "{{ lookup('config', application_id, 'services.'~ NEXTCLOUD_SERVICE ~'.image') }}"
@@ -142,8 +141,6 @@ NEXTCLOUD_WHITEBOARD_PORT_INTERNAL: "{{ lookup('config', application_id, 'servic
 NEXTCLOUD_WHITEBOARD_JWT: "{{ lookup('config', application_id, 'secrets.credentials.' ~ NEXTCLOUD_WHITEBOARD_SERVICE ~'_jwt_secret') }}"
 NEXTCLOUD_WHITEBOARD_LOCATION: "/whiteboard/"
 NEXTCLOUD_WHITEBOARD_URL: "{{ [ NEXTCLOUD_URL, NEXTCLOUD_WHITEBOARD_LOCATION ] | url_join }}"
-NEXTCLOUD_WHITEBOARD_TMP_VOLUME: "{{ lookup('volume', application_id, 'whiteboard_tmp').name }}"
-NEXTCLOUD_WHITEBOARD_FRONTCACHE_VOLUME: "{{ lookup('volume', application_id, 'whiteboard_fontcache').name }}"
 NEXTCLOUD_WHITEBOARD_SERVICE_DIRECTORY: "{{ [ lookup('container', application_id, 'directories.services'), 'whiteboard' ] | path_join }}"
 NEXTCLOUD_WHITEBOARD_SERVICE_DOCKERFILE: "{{ [ NEXTCLOUD_WHITEBOARD_SERVICE_DIRECTORY, 'Dockerfile' ] | path_join }}"
 NEXTCLOUD_WHITEBOARD_MAX_OLD_SPACE_SIZE: "{{ lookup('node_max_old_space_size', application_id, NEXTCLOUD_WHITEBOARD_SERVICE) }}"
@@ -153,7 +150,6 @@ NEXTCLOUD_RECORDING_CONTAINER: "{{ lookup('config', application_id, 'services.' 
 NEXTCLOUD_RECORDING_ENABLED: "{{ NEXTCLOUD_HPB_PLUGIN_ENABLED }}"
 NEXTCLOUD_RECORDING_PORT: "{{ lookup('config', application_id, 'services.talk_recording.ports.internal.recording') }}"
 NEXTCLOUD_RECORDING_SECRET: "{{ lookup('config', application_id, 'secrets.credentials.talk_recording_secret') }}"
-NEXTCLOUD_RECORDING_TMP_VOLUME: "{{ lookup('volume', application_id, 'talk_recording_tmp').name }}"
 
 NEXTCLOUD_COLLABORA_URL: "{{ lookup('tls', 'web-svc-collabora', 'url.base') }}"
 

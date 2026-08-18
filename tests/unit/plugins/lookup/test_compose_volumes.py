@@ -1,9 +1,8 @@
 """Unit tests for the compose_volumes lookup plugin.
 
-Pins the contract for the lookup that wraps the underlying
-`compose_volumes` rendering function and auto-wires the `applications`
-registry plus DEPLOYMENT_MODE and `storage` from the templating
-context.
+Pins the contract for the lookup that wraps the `compose_volumes`
+rendering function and auto-wires `application_id`, the `applications`
+registry, DEPLOYMENT_MODE, and `storage` from the templating context.
 """
 
 from __future__ import annotations
@@ -39,6 +38,16 @@ class _DummyTemplar:
         return value
 
 
+def _vars(**extra):
+    base = {
+        "application_id": "web-app-x",
+        "DEPLOYMENT_MODE": "compose",
+        "DIR_VAR_LIB": _DIR_VAR_LIB,
+    }
+    base.update(extra)
+    return base
+
+
 class TestComposeVolumesLookup(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -51,185 +60,113 @@ class TestComposeVolumesLookup(unittest.TestCase):
         lm._loader = None
         return lm
 
-    def test_single_term_renders(self):
-        vars_ = {"DEPLOYMENT_MODE": "compose", "DIR_VAR_LIB": _DIR_VAR_LIB}
+    def _run(self, vars_, render, **kwargs):
         lm = self._make(vars_)
         with (
             mock.patch.object(self.module, "lookup_loader") as loader_mock,
             mock.patch.object(
-                self.module,
-                "_render_compose_volumes",
-                side_effect=lambda apps, app_id, **kw: (
-                    f"called({app_id}, mode={kw.get('deployment_mode')})"
-                ),
+                self.module, "compose_volumes", side_effect=render
             ),
         ):
             loader_mock.get.return_value = mock.MagicMock(
                 run=lambda *_a, **_k: [{"web-app-x": {}}]
             )
-            result = lm.run(["web-app-x"], variables=vars_)
+            return lm.run([], variables=vars_, **kwargs)
+
+    def test_application_id_auto_wires_from_vars(self):
+        result = self._run(
+            _vars(),
+            lambda apps, app_id, **kw: (
+                f"called({app_id}, mode={kw.get('deployment_mode')})"
+            ),
+        )
         self.assertEqual(result, ["called(web-app-x, mode=compose)"])
 
     def test_deployment_mode_auto_wires_from_vars(self):
-        vars_ = {"DEPLOYMENT_MODE": "swarm", "DIR_VAR_LIB": _DIR_VAR_LIB}
-        lm = self._make(vars_)
         captured = {}
 
         def _render(apps, app_id, **kw):
             captured.update(kw)
             return ""
 
-        with (
-            mock.patch.object(self.module, "lookup_loader") as loader_mock,
-            mock.patch.object(
-                self.module, "_render_compose_volumes", side_effect=_render
-            ),
-        ):
-            loader_mock.get.return_value = mock.MagicMock(
-                run=lambda *_a, **_k: [{"web-app-x": {}}]
-            )
-            lm.run(["web-app-x"], variables=vars_)
+        self._run(_vars(DEPLOYMENT_MODE="swarm"), _render)
         self.assertEqual(captured.get("deployment_mode"), "swarm")
 
     def test_compose_mode_force_overrides_deployment_mode(self):
-        vars_ = {
-            "DEPLOYMENT_MODE": "swarm",
-            "compose_mode_force": "compose",
-            "DIR_VAR_LIB": _DIR_VAR_LIB,
-        }
-        lm = self._make(vars_)
         captured = {}
 
         def _render(apps, app_id, **kw):
             captured.update(kw)
             return ""
 
-        with (
-            mock.patch.object(self.module, "lookup_loader") as loader_mock,
-            mock.patch.object(
-                self.module, "_render_compose_volumes", side_effect=_render
-            ),
-        ):
-            loader_mock.get.return_value = mock.MagicMock(
-                run=lambda *_a, **_k: [{"web-app-x": {}}]
-            )
-            lm.run(["web-app-x"], variables=vars_)
+        self._run(
+            _vars(DEPLOYMENT_MODE="swarm", compose_mode_force="compose"), _render
+        )
         self.assertEqual(captured.get("deployment_mode"), "compose")
 
     def test_storage_auto_wires_from_vars(self):
-        vars_ = {
-            "DEPLOYMENT_MODE": "swarm",
-            "DIR_VAR_LIB": _DIR_VAR_LIB,
-            "storage": {"backend": "nfs", "nfs": {"server": "10.0.0.1"}},
-        }
-        lm = self._make(vars_)
         captured = {}
+        storage = {"backend": "nfs", "nfs": {"server": "10.0.0.1"}}
 
         def _render(apps, app_id, **kw):
             captured.update(kw)
             return ""
 
-        with (
-            mock.patch.object(self.module, "lookup_loader") as loader_mock,
-            mock.patch.object(
-                self.module, "_render_compose_volumes", side_effect=_render
-            ),
-        ):
-            loader_mock.get.return_value = mock.MagicMock(
-                run=lambda *_a, **_k: [{"web-app-x": {}}]
-            )
-            lm.run(["web-app-x"], variables=vars_)
-        self.assertEqual(captured.get("storage"), vars_["storage"])
+        self._run(_vars(DEPLOYMENT_MODE="swarm", storage=storage), _render)
+        self.assertEqual(captured.get("storage"), storage)
 
     def test_explicit_kwargs_override_auto_wired(self):
-        vars_ = {"DEPLOYMENT_MODE": "swarm", "DIR_VAR_LIB": _DIR_VAR_LIB}
-        lm = self._make(vars_)
         captured = {}
 
         def _render(apps, app_id, **kw):
             captured.update(kw)
             return ""
 
-        with (
-            mock.patch.object(self.module, "lookup_loader") as loader_mock,
-            mock.patch.object(
-                self.module, "_render_compose_volumes", side_effect=_render
-            ),
-        ):
-            loader_mock.get.return_value = mock.MagicMock(
-                run=lambda *_a, **_k: [{"web-app-x": {}}]
-            )
-            lm.run(
-                ["web-app-x"],
-                variables=vars_,
-                deployment_mode="compose",
-                storage={"backend": "local"},
-            )
+        self._run(
+            _vars(DEPLOYMENT_MODE="swarm"),
+            _render,
+            deployment_mode="compose",
+            storage={"backend": "local"},
+        )
         self.assertEqual(captured.get("deployment_mode"), "compose")
         self.assertEqual(captured.get("storage"), {"backend": "local"})
 
     def test_extra_volumes_kwarg_passes_through(self):
-        vars_ = {"DEPLOYMENT_MODE": "compose", "DIR_VAR_LIB": _DIR_VAR_LIB}
-        lm = self._make(vars_)
         captured = {}
+        extra = {"data": {"name": "my-data"}}
 
         def _render(apps, app_id, **kw):
             captured.update(kw)
             return ""
 
-        extra = {"data": {"name": "my-data"}}
-        with (
-            mock.patch.object(self.module, "lookup_loader") as loader_mock,
-            mock.patch.object(
-                self.module, "_render_compose_volumes", side_effect=_render
-            ),
-        ):
-            loader_mock.get.return_value = mock.MagicMock(
-                run=lambda *_a, **_k: [{"web-app-x": {}}]
-            )
-            lm.run(["web-app-x"], variables=vars_, extra_volumes=extra)
+        self._run(_vars(), _render, extra_volumes=extra)
         self.assertEqual(captured.get("extra_volumes"), extra)
 
     def test_missing_deployment_mode_defaults_to_compose(self):
-        vars_ = {"DIR_VAR_LIB": _DIR_VAR_LIB}
-        lm = self._make(vars_)
         captured = {}
+        vars_ = {"application_id": "web-app-x", "DIR_VAR_LIB": _DIR_VAR_LIB}
 
         def _render(apps, app_id, **kw):
             captured.update(kw)
             return ""
 
-        with (
-            mock.patch.object(self.module, "lookup_loader") as loader_mock,
-            mock.patch.object(
-                self.module, "_render_compose_volumes", side_effect=_render
-            ),
-        ):
-            loader_mock.get.return_value = mock.MagicMock(
-                run=lambda *_a, **_k: [{"web-app-x": {}}]
-            )
-            lm.run(["web-app-x"], variables=vars_)
+        self._run(vars_, _render)
         self.assertEqual(captured.get("deployment_mode"), "compose")
 
-    def test_empty_terms_raises(self):
+    def test_terms_raise(self):
+        lm = self._make(_vars())
+        with self.assertRaises(AnsibleError):
+            lm.run(["web-app-x"], variables=_vars())
+
+    def test_missing_application_id_raises(self):
         lm = self._make({"DEPLOYMENT_MODE": "compose", "DIR_VAR_LIB": _DIR_VAR_LIB})
         with self.assertRaises(AnsibleError):
             lm.run([], variables={"DEPLOYMENT_MODE": "compose"})
 
-    def test_none_terms_raises(self):
-        lm = self._make({"DEPLOYMENT_MODE": "compose"})
-        with self.assertRaises(AnsibleError):
-            lm.run(None, variables={"DEPLOYMENT_MODE": "compose"})
-
-    def test_too_many_terms_raises(self):
-        lm = self._make({"DEPLOYMENT_MODE": "compose"})
-        with self.assertRaises(AnsibleError):
-            lm.run(["a", "b"], variables={"DEPLOYMENT_MODE": "compose"})
-
     def test_empty_application_id_raises(self):
-        lm = self._make({"DEPLOYMENT_MODE": "compose"})
+        lm = self._make(_vars(application_id=""))
         with self.assertRaises(AnsibleError):
-            lm.run([""], variables={"DEPLOYMENT_MODE": "compose"})
+            lm.run([], variables=_vars(application_id=""))
 
 
 if __name__ == "__main__":

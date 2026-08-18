@@ -230,7 +230,6 @@ ignore = [
 "cli/meta/roles/services/called/__init__.py" = ["BLE001"]
 "library/docker_bridge_gateway.py" = ["BLE001"]
 "plugins/filter/active_docker.py" = ["BLE001"]
-"plugins/filter/compose_volumes.py" = ["BLE001"]
 "plugins/filter/docker/service_enabled.py" = ["BLE001"]
 "plugins/filter/dotenv.py" = ["BLE001"]
 "plugins/filter/get/all/application_ids.py" = ["BLE001"]

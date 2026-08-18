@@ -27,11 +27,6 @@ MAILU_FETCHMAIL_CONTAINER_ADDRESS: "{{ lookup('container_address', application_i
 MAILU_WEBMAIL_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'webmail') }}"
 MAILU_REDIS_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'redis') }}"
 MAILU_FRONT_SERVICE: "front"
-MAILU_SMTP_QUEUE_VOLUME: "{{ lookup('volume', application_id, 'smtp_queue').name }}"
-MAILU_ADMIN_DATA_VOLUME: "{{ lookup('volume', application_id, 'admin_data').name }}"
-MAILU_FILTER_VOLUME: "{{ lookup('volume', application_id, 'filter').name }}"
-MAILU_DKIM_VOLUME: "{{ lookup('volume', application_id, 'dkim').name }}"
-MAILU_DOVECOT_MAIL_VOLUME: "{{ lookup('volume', application_id, 'dovecot_mail').name }}"
 MAILU_DNS_RESOLVER: "{{ lookup('config', 'svc-dns-unbound', 'networks.local.dns_resolver') }}"
 MAILU_SWARM_DB_HOST: "{{ lookup('database', application_id, 'host') }}"
 MAILU_SWARM_DB_ENGINE: "{{ lookup('database', application_id, 'type') }}"
@@ -55,6 +50,3 @@ MAILU_RSPAMD_HOST_FILE: "{{ [ MAILU_RSPAMD_HOST_DIR,'ratelimit.conf' ] | path_jo
 MAILU_RSPAMD_LIMITS_DEFAULTS:
   RATE: "30 / 1min"
   BURST: 50
-MAILU_CLAMAV_DB_VOLUME: "{{ lookup('volume', application_id, 'clamav_db').name }}"
-MAILU_WEBDAV_DATA_VOLUME: "{{ lookup('volume', application_id, 'webdav_data').name }}"
-MAILU_WEBMAIL_DATA_VOLUME: "{{ lookup('volume', application_id, 'webmail_data').name }}"

@@ -4,7 +4,7 @@ import unittest
 
 import yaml
 
-from plugins.filter.container_volumes import container_volumes
+from plugins.lookup.container_volumes import container_volumes
 
 
 def _apps(volumes_meta):

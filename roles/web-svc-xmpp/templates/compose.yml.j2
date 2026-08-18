@@ -9,8 +9,8 @@
               ['xmpp', 'http', DOCKER_BIND_HOST],
               ['xmpp', 'c2s'],
               ['xmpp', 's2s']) | indent(4) }}
-    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-{{ lookup('compose_volumes', application_id) }}
+{{ lookup('compose_volumes') }}
 {{ lookup('compose_networks') }}

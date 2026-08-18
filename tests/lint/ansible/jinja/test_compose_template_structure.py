@@ -15,7 +15,7 @@ The house layout for a compose template is:
       {{ service_name }}:
         ...
 
-    {{ lookup('compose_volumes', application_id) }}
+    {{ lookup('compose_volumes') }}
     {{ lookup('compose_networks') }}
 
 The compose renderer runs with ``lstrip_blocks=True`` (set by the

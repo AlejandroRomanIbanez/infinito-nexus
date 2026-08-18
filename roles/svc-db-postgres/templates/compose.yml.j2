@@ -22,8 +22,8 @@
     {% if POSTGRES_EXPOSE_LOCAL %}
     {{ lookup('container_ports', ['postgres', 'postgres', DOCKER_BIND_HOST]) | indent(4) }}
     {% endif %}
-    {{ lookup('container_volumes', application_id, 'postgres') | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-{{ lookup('compose_volumes', application_id) }}
+{{ lookup('compose_volumes') }}
 {{ lookup('compose_networks') }}

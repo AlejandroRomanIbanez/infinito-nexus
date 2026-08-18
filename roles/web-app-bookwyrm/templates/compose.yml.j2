@@ -19,7 +19,7 @@
     {{ lookup('compose_only', 'container_name', BOOKWYRM_CONTAINER) }}
     hostname: "{{ container_hostname }}"
     {{ lookup('container_ports', ['bookwyrm', 'http', DOCKER_BIND_HOST]) | indent(4) }}
-    {{ lookup('container_volumes', application_id, 'bookwyrm') | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
     {{ lookup('container_healthcheck', service_name) | indent(4) }}
     {{ lookup('container_depends_on', application_id, extra={
   'migrate': {'condition': 'service_completed_successfully'},
@@ -33,7 +33,7 @@
     {{ lookup('compose_only', 'container_name', BOOKWYRM_WORKER_CONTAINER) }}
     command: "/venv/bin/celery -A celerywyrm worker -l INFO"
     {{ lookup('compose_only', 'pull_policy', 'never') }}
-    {{ lookup('container_volumes', application_id, 'worker') | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
     {{ lookup('container_depends_on', application_id, extra={
   'migrate': {'condition': 'service_completed_successfully'},
 }) | indent(4) }}
@@ -54,5 +54,5 @@
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
-{{ lookup('compose_volumes', application_id) }}
+{{ lookup('compose_volumes') }}
 {{ lookup('compose_networks') }}

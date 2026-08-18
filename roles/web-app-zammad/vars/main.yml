@@ -36,16 +36,12 @@ ZAMMAD_HTTP_ONLY_ENABLED: "{{ not (lookup('tls', application_id, 'enabled') | bo
 ZAMMAD_VOLUMES_DIR: "{{ lookup('container', application_id, 'directories.volumes') }}"
 ZAMMAD_AUTO_WIZARD_HOST_PATH: "{{ ZAMMAD_VOLUMES_DIR }}auto_wizard.json"
 ZAMMAD_OMNIAUTH_INIT_HOST_PATH: "{{ ZAMMAD_VOLUMES_DIR }}zz_omniauth_allow_get.rb"
-ZAMMAD_OMNIAUTH_INIT_CONTAINER_PATH: "{{ lookup('volume', 'web-app-zammad', 'zammad_omniauth_init').target }}"
 
 ZAMMAD_TELEGRAM_HELPER_HOST_PATH: "{{ ZAMMAD_VOLUMES_DIR }}telegram_helper.rb"
-ZAMMAD_TELEGRAM_HELPER_CONTAINER_PATH: "{{ lookup('volume', 'web-app-zammad', 'zammad_telegram_helper').target }}"
 
 ZAMMAD_OIDC_GROUP_ROLE_MAP_HOST_PATH: "{{ ZAMMAD_VOLUMES_DIR }}zz_oidc_group_role_mapping.rb"
-ZAMMAD_OIDC_GROUP_ROLE_MAP_CONTAINER_PATH: "{{ lookup('volume', 'web-app-zammad', 'zammad_oidc_group_role_map').target }}"
 
 ZAMMAD_OIDC_HTTP_DISCOVERY_HOST_PATH: "{{ ZAMMAD_VOLUMES_DIR }}zz_oidc_http_discovery.rb"
-ZAMMAD_OIDC_HTTP_DISCOVERY_CONTAINER_PATH: "{{ lookup('volume', 'web-app-zammad', 'zammad_oidc_http_discovery').target }}"
 ZAMMAD_OIDC_GROUP_ROLE_MAP:
   "/{{ RBAC.GROUP.NAME | trim('/') }}/{{ application_id }}/administrator": "Admin"
   "/{{ RBAC.GROUP.NAME | trim('/') }}/{{ application_id }}/agent": "Agent"

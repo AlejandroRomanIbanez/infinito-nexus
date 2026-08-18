@@ -19,7 +19,7 @@
     {% else %}
     network_mode: "host"
     {% endif %}
-    {{ lookup('container_volumes', application_id, 'tor') | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
     healthcheck:
       test: ["CMD", "tor", "--verify-config", "-f", "{{ lookup('volume', 'svc-net-tor', 'tor_torrc').target }}"]
       interval: 60s
@@ -27,5 +27,5 @@
       retries: 3
       start_period: {{ '150s' if TOR_FLAVOR == 'chutney' else '10s' }}
 
-{{ lookup('compose_volumes', application_id) }}
+{{ lookup('compose_volumes') }}
 {{ lookup('compose_networks') }}
