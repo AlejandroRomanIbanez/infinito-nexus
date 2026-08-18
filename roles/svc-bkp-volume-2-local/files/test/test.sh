@@ -36,7 +36,11 @@ DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 bash "${DIR}/probe/subvolume.sh"
 bash "${DIR}/probe/snapshot.sh"
 
+# Param $1: when non-empty, a unit already sitting in 'failed' is a verdict
+#           from an earlier deploy rather than this run's, so clear it and
+#           carry on instead of reporting a backup this drill never started.
 wait_service_terminated() {
+    local stale_failure_ok="${1:-}"
     local deadline state
     deadline=$(( $(date +%s) + BKP_TEST_HEALTH_TIMEOUT ))
     while :; do
@@ -50,6 +54,11 @@ wait_service_terminated() {
                 sleep 5
                 ;;
             failed)
+                if [ -n "${stale_failure_ok}" ]; then
+                    echo "OK: clearing a 'failed' state left by an earlier run"
+                    systemctl reset-failed "${BKP_TEST_SERVICE}"
+                    return 0
+                fi
                 echo "FAIL: ${BKP_TEST_SERVICE} terminated in state 'failed'"
                 systemctl status "${BKP_TEST_SERVICE}" --no-pager 2>&1 | tail -20
                 journalctl -u "${BKP_TEST_SERVICE}" --no-pager -n 100 2>&1 || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
@@ -68,7 +77,7 @@ count_generations() {
     COUNT="${#GENERATIONS[@]}"
 }
 
-wait_service_terminated
+wait_service_terminated stale_failure_ok
 
 echo "Forcing a post-deploy backup run (the service-loader pre-state backup can predate the app volumes and be empty)"
 if ! timeout "${BKP_TEST_HEALTH_TIMEOUT}" systemctl start "${BKP_TEST_SERVICE}"; then
