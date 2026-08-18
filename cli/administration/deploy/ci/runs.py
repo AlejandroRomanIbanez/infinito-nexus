@@ -31,7 +31,7 @@ from utils.cache.yaml import load_yaml_any
 from utils.distros import distro_names
 from utils.github import run_name
 from utils.github.variant import axes
-from utils.roles.display import display_names
+from utils.roles.display import display_names, split_axes
 from utils.symbol_glossary import to_emoji
 
 PASS = "✅"  # noqa: S105  emoji glyph, not a credential
@@ -223,38 +223,8 @@ def failed_roles(
 _INPUT_RE = re.compile(r"^\S+\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*): ?(?P<value>.*)$")
 
 
-def inputs_from_jobs(jobs: list[dict], repo: str) -> dict[str, str]:
-    """The dispatch inputs a called job's log records verbatim.
-
-    GitHub cuts ``display_title`` at 512 UTF-8 bytes (measured on two runs,
-    both exactly 512) and closes it with a literal ``...``. The run-name
-    template renders ``priority`` second-to-last and ``whitelist`` last, and
-    on the ``--failed`` path the whitelist is empty, so the cut always lands
-    inside the priority list: measured 21 of 69 roles survived, the 21st a
-    half-token. A CJK display name costs 3 bytes per character, so the budget
-    is ~22 display names against ~28 bare role ids. Every job of the *called*
-    workflow opens its log with an ``##[group] Inputs`` block holding the full
-    values, so that is the SPOT for anything the title cannot hold.
-
-    Args:
-        jobs: the run's jobs. Only depth-1 jobs are read: a deeper one echoes
-            its own workflow's inputs, which carry no ``priority``.
-        repo: ``owner/repo`` the run lives in.
-
-    Returns:
-        input name -> value, empty when the run has no called job.
-    """
-    called = next(
-        (
-            job
-            for job in jobs
-            if str(job.get("name", "")).count(" / ") == 1 and job.get("databaseId")
-        ),
-        None,
-    )
-    if called is None:
-        return {}
-    log = _gh(["api", f"repos/{repo}/actions/jobs/{called['databaseId']}/logs"])
+def _parse_inputs(log: str) -> dict[str, str]:
+    """The ``##[group] Inputs`` block of a job log, as name -> value."""
     inputs: dict[str, str] = {}
     inside = False
     for line in log.splitlines():
@@ -268,6 +238,60 @@ def inputs_from_jobs(jobs: list[dict], repo: str) -> dict[str, str]:
             if match:
                 inputs[match["name"]] = match["value"].strip()
     return inputs
+
+
+def inputs_from_jobs(jobs: list[dict], repo: str) -> dict[str, str]:
+    """The dispatch inputs a called job's log records verbatim.
+
+    GitHub cuts ``display_title`` at 512 UTF-8 bytes (measured on two runs,
+    both exactly 512) and closes it with a literal ``...``. The run-name
+    template renders ``priority`` second-to-last and ``whitelist`` last, and
+    on the ``--failed`` path the whitelist is empty, so the cut always lands
+    inside the priority list: measured 21 of 69 roles survived, the 21st a
+    half-token. A CJK display name costs 3 bytes per character, so the budget
+    is ~22 display names against ~28 bare role ids. Every job of the *called*
+    workflow opens its log with an ``##[group] Inputs`` block holding the full
+    values, so that is the SPOT for anything the title cannot hold.
+
+    Candidates are read shallowest first, because a depth-1 job records the
+    orchestrator's own inputs while a deeper one records what its caller
+    forwarded. Skipped jobs are passed over: they never upload a log blob, so
+    their log endpoint answers ``BlobNotFound`` as a bare HTTP 404 -- and a
+    force-cancelled run can leave every depth-1 job skipped, which is why the
+    deeper jobs are read at all rather than treated as inputs-free.
+
+    Args:
+        jobs: the run's jobs, as ``gh run view --json jobs`` returns them.
+        repo: ``owner/repo`` the run lives in.
+
+    Returns:
+        input name -> value, empty when no job of the run records an ``Inputs``
+        block -- including when the logs have expired.
+    """
+    candidates = sorted(
+        (
+            job
+            for job in jobs
+            if str(job.get("name", "")).count(" / ") >= 1
+            and job.get("databaseId")
+            and job.get("conclusion") != "skipped"
+        ),
+        key=lambda job: str(job["name"]).count(" / "),
+    )
+    for job in candidates:
+        inputs = _parse_inputs(
+            _gh(
+                [
+                    "api",
+                    "--allow-escape-sequences",
+                    f"repos/{repo}/actions/jobs/{job['databaseId']}/logs",
+                ],
+                check=False,
+            )
+        )
+        if inputs:
+            return inputs
+    return {}
 
 
 def dispatched_priority(source: dict, repo: str) -> str:
@@ -302,24 +326,35 @@ def untriggered_priority(
     neither green nor red, it simply never ran. Carrying it into the retrigger
     is the only way it ever gets deployed.
 
+    A priority entry may pin axes (``web-app-zammad#1@compose+tor``), and the
+    pin rides along into the retrigger: the entry never ran, so the run holds
+    no evidence that the axes it named were the wrong ones. Only the name in
+    front of the axis suffix is resolved against the statuses.
+
     Args:
         priority: the raw ``priority`` input, as :func:`inputs_from_jobs` reads
             it back. A truncated value would smuggle a half-token into the
             retrigger's role set, so an undecodable name raises instead.
         statuses: role -> mode -> state, from :func:`parse_role_statuses`.
+
+    Returns:
+        the entries whose role has no job at all in the source run, each with
+        its own axis suffix intact.
     """
     codec = display_names()
-    named = []
-    for name in priority.split():
+    untriggered = []
+    for token in priority.split():
+        name, axes = split_axes(token)
         role = codec.decode(name)
         if role is None:
             raise SystemExit(
-                f"Cannot resolve priority entry {name!r} to a role. The source "
+                f"Cannot resolve priority entry {token!r} to a role. The source "
                 f"run's priority input is corrupt or truncated; retriggering "
                 f"with it would deploy a role set that is silently incomplete."
             )
-        named.append(role)
-    return sorted(role for role in named if role not in statuses)
+        if role not in statuses:
+            untriggered.append(role + axes)
+    return sorted(untriggered)
 
 
 def distros_from_jobs(jobs: list[dict]) -> str:

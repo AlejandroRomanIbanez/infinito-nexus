@@ -25,7 +25,13 @@ def download_log(
 ) -> tuple[str, bool]:
     jitter(delay_max)
     safe = _SAFE.sub("-", job["name"]).strip("-")
-    proc = gh_proc(["api", f"repos/{owner}/{repo}/actions/jobs/{job['id']}/logs"])
+    proc = gh_proc(
+        [
+            "api",
+            "--allow-escape-sequences",
+            f"repos/{owner}/{repo}/actions/jobs/{job['id']}/logs",
+        ]
+    )
     if proc.returncode != 0 or not proc.stdout:
         return job["name"], False
     (dest / f"{job['id']}__{safe}.log").write_text(proc.stdout, encoding="utf-8")

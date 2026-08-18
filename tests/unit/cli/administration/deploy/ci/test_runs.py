@@ -237,29 +237,126 @@ class TestInputsFromJobs(unittest.TestCase):
         ]
     )
 
+    def _read(
+        self, jobs: list[dict], logs: dict[int, str]
+    ) -> tuple[dict[str, str], list[int]]:
+        """Read *jobs* against a fake ``gh`` serving *logs* by job id.
+
+        Args:
+            jobs: the run's jobs.
+            logs: job id -> log body. A missing id stands for a job whose log
+                blob does not exist, which ``gh`` reports as a bare HTTP 404.
+
+        Returns:
+            the parsed inputs and the job ids the reader asked for, in order.
+        """
+        asked: list[int] = []
+
+        def fake_gh(
+            args: list[str], repo: str | None = None, check: bool = True
+        ) -> str:
+            self.assertIn("--allow-escape-sequences", args)
+            self.assertFalse(check)
+            job_id = int(args[-1].split("/")[-2])
+            asked.append(job_id)
+            return logs.get(job_id, "")
+
+        original = runs._gh
+        runs._gh = fake_gh
+        try:
+            return runs.inputs_from_jobs(jobs, "o/r"), asked
+        finally:
+            runs._gh = original
+
     def test_reads_the_full_priority_from_the_first_called_job(self) -> None:
         jobs = [
             {"name": "🎲 Pick distro(s)", "databaseId": 1},
             {"name": "🎛️ Orchestrate CI (manual) / 🏁 Finish pipeline", "databaseId": 2},
         ]
-        seen: list[list[str]] = []
 
-        def fake_gh(args: list[str], repo: str | None = None) -> str:
-            seen.append(args)
-            return self.LOG
+        inputs, asked = self._read(jobs, {2: self.LOG})
 
-        original = runs._gh
-        runs._gh = fake_gh
-        try:
-            inputs = runs.inputs_from_jobs(jobs, "o/r")
-        finally:
-            runs._gh = original
-
-        self.assertEqual(seen, [["api", "repos/o/r/actions/jobs/2/logs"]])
+        self.assertEqual(asked, [2])
         self.assertEqual(len(inputs["priority"].split()), 69)
         self.assertEqual(inputs["distros"], "arch")
         self.assertEqual(inputs["whitelist"], "")
         self.assertEqual(inputs["chunk_gate"], "true")
+
+    def test_skipped_jobs_are_passed_over(self) -> None:
+        """A skipped job uploads no log blob, so reading it is a bare 404."""
+        jobs = [
+            {
+                "name": "🎛️ Orchestrate CI (manual) / test-workspace",
+                "databaseId": 1,
+                "conclusion": "skipped",
+            },
+            {
+                "name": "🎛️ Orchestrate CI (manual) / 🎯 Selection / ✅ Validation",
+                "databaseId": 2,
+                "conclusion": "success",
+            },
+        ]
+
+        inputs, asked = self._read(jobs, {2: self.LOG})
+
+        self.assertEqual(asked, [2])
+        self.assertEqual(len(inputs["priority"].split()), 69)
+
+    def test_shallower_jobs_win_over_deeper_ones(self) -> None:
+        jobs = [
+            {
+                "name": "🎛️ Orchestrate CI (manual) / 🎯 Selection / ✅ Validation",
+                "databaseId": 2,
+                "conclusion": "success",
+            },
+            {
+                "name": "🎛️ Orchestrate CI (manual) / 🏁 Finish pipeline",
+                "databaseId": 1,
+                "conclusion": "success",
+            },
+        ]
+
+        _, asked = self._read(jobs, {1: self.LOG, 2: self.LOG})
+
+        self.assertEqual(asked, [1])
+
+    def test_an_expired_log_falls_through_instead_of_aborting(self) -> None:
+        jobs = [
+            {
+                "name": "🎛️ Orchestrate CI (manual) / 🏁 Finish pipeline",
+                "databaseId": 1,
+                "conclusion": "success",
+            },
+            {
+                "name": "🎛️ Orchestrate CI (manual) / 🎯 Selection / ✅ Validation",
+                "databaseId": 2,
+                "conclusion": "success",
+            },
+        ]
+
+        inputs, asked = self._read(jobs, {2: self.LOG})
+
+        self.assertEqual(asked, [1, 2])
+        self.assertEqual(len(inputs["priority"].split()), 69)
+
+    def test_a_run_whose_logs_are_all_gone_reads_nothing(self) -> None:
+        jobs = [
+            {
+                "name": "🎛️ Orchestrate CI (manual) / test-workspace",
+                "databaseId": 1,
+                "conclusion": "skipped",
+            },
+            {
+                "name": "🎛️ Orchestrate CI (manual) / 🏁 Finish pipeline",
+                "databaseId": 2,
+                "conclusion": "success",
+            },
+        ]
+
+        inputs, asked = self._read(jobs, {})
+
+        self.assertEqual(asked, [2])
+        self.assertEqual(inputs, {})
 
     def test_a_run_without_a_called_job_reads_nothing(self) -> None:
         self.assertEqual(runs.inputs_from_jobs([{"name": "🎲 Pick"}], "o/r"), {})
@@ -325,6 +422,17 @@ class TestConfigFromTitle(unittest.TestCase):
         self.assertEqual(
             runs.untriggered_priority("web-app-a web-app-b web-app-c", statuses),
             ["web-app-b", "web-app-c"],
+        )
+
+    def test_a_pinned_priority_entry_keeps_its_axes(self) -> None:
+        statuses = {"web-app-a": {"swarm": "failure"}}
+        self.assertEqual(
+            runs.untriggered_priority(
+                "web-app-a#1@compose+tor web-app-b#1@compose+tor "
+                "web-app-b#0,2@swarm+clearnet",
+                statuses,
+            ),
+            ["web-app-b#0,2@swarm+clearnet", "web-app-b#1@compose+tor"],
         )
 
     def test_a_run_without_a_priority_line_reports_nothing(self) -> None:

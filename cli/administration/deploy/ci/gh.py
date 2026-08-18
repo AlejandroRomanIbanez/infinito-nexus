@@ -60,12 +60,22 @@ def resolve_repo() -> str:
     return slug_from_url(_run(["git", "remote", "get-url", _branch_remote()]))
 
 
-def _gh(args: list[str], repo: str | None = None) -> str:
+def _gh(args: list[str], repo: str | None = None, check: bool = True) -> str:
+    """Run ``gh`` and return its stdout.
+
+    Args:
+        args: the ``gh`` arguments, without the ``gh`` itself.
+        repo: appended as ``--repo`` when given.
+        check: abort the command on a non-zero exit. Pass ``False`` for calls
+            whose failure the caller handles, which then yields ``""``.
+    """
     cmd = ["gh", *args]
     if repo:
         cmd += ["--repo", repo]
     proc = subprocess.run(cmd, check=False, capture_output=True, text=True)
     if proc.returncode != 0:
+        if not check:
+            return ""
         sys.stderr.write(
             proc.stderr or f"gh exited {proc.returncode}: {' '.join(cmd)}\n"
         )
