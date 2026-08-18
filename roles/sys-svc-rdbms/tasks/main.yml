@@ -15,8 +15,9 @@
 
 - name: "🔍 For '{{ application_id }}': Find the compose file rendering the engine"
   ansible.builtin.stat:
-    path: "{{ lookup('path_absolute', 'roles/' ~ application_id ~ '/templates/compose.yml.j2') }}"
+    path: "{{ lookup('path_absolute', 'roles', application_id, 'templates/compose.yml.j2') }}"
   register: _sys_svc_rdbms_compose_template
+  delegate_to: localhost
   changed_when: false
 
 - name: "🔧 For '{{ application_id }}/{{ _database_consumer_id }}': Apply dedicated setup"
