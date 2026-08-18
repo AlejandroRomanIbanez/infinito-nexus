@@ -324,7 +324,7 @@ def _drop_nested(comments):
     spans = [set(c[2]) for c in comments]
     return [
         c
-        for c, span in zip(comments, spans)
+        for c, span in zip(comments, spans, strict=True)
         if not any(span < other for other in spans)
     ]
 
