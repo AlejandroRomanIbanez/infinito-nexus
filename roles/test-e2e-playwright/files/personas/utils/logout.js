@@ -65,6 +65,7 @@ function logoutCandidatesOn(scope) {
     scope.locator(
       "a[href*='logout' i], a[href*='signout' i], a[href*='sign-out' i], a[href*='end_session' i], a[href*='end-session' i]",
     ),
+    scope.locator("a:not([href])").filter({ hasText: LOGOUT_NAME_RE }),
   ];
 }
 
