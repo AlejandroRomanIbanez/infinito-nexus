@@ -6,5 +6,8 @@ if (($# == 0)); then
 	exit 1
 fi
 
-sudo apt-get update
-sudo apt-get install -y "$@"
+APT_TIMEOUT=10m
+APT_OPTS=(-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
+
+sudo timeout -k 30 "${APT_TIMEOUT}" apt-get "${APT_OPTS[@]}" update
+sudo timeout -k 30 "${APT_TIMEOUT}" apt-get "${APT_OPTS[@]}" install -y "$@"
