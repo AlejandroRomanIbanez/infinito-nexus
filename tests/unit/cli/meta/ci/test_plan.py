@@ -36,7 +36,7 @@ _REGULAR = [
     _entry("web-app-b", "0", "swarm", identifier="5"),
     _entry("web-app-b", "1", "compose", identifier="9"),
 ]
-_CUT = [_entry("web-app-c", "0", "compose", identifier="11", covered="7")]
+_CUT = [_entry("web-app-c", "0", "compose", identifier="11", covered="5")]
 _ENTRIES = _PRIORITY + _REGULAR + _CUT
 
 
@@ -72,11 +72,11 @@ class TestCells(unittest.TestCase):
         self.assertEqual(rows[0][mode], to_emoji("compose"))
         self.assertEqual(rows[1][mode], to_emoji("swarm"))
 
-    def test_a_covered_row_names_the_id_that_covers_it(self) -> None:
+    def test_a_covered_row_names_the_row_number_that_covers_it(self) -> None:
         covered = plan._COLUMNS.index("covered_by")
         rows = plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian")
         self.assertEqual(rows[0][covered], "")
-        self.assertEqual(rows[3][covered], "7")
+        self.assertEqual(rows[3][covered], "2")
 
     def test_a_covered_row_is_cut_instead_of_deployed(self) -> None:
         rows = plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian")
@@ -99,10 +99,11 @@ class TestCells(unittest.TestCase):
             rows[0][plan._COLUMNS.index("triggered")], to_emoji("priority")
         )
 
-    def test_the_id_is_the_discovery_id_the_covered_by_points_at(self) -> None:
+    def test_the_id_counts_the_rows_even_when_discovery_ids_repeat(self) -> None:
         identifier = plan._COLUMNS.index("id")
-        rows = plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian")
-        self.assertEqual([row[identifier] for row in rows], ["3", "5", "9", "11"])
+        entries = [*_ENTRIES, _entry("web-app-a", "0", "swarm", identifier="3")]
+        rows = plan.cells(entries, [_PRIORITY, _REGULAR], distros="debian")
+        self.assertEqual([row[identifier] for row in rows], ["1", "2", "3", "4", "5"])
 
     def test_the_tor_state_is_rendered_as_its_glyph(self) -> None:
         rows = plan.cells(_ENTRIES, [_PRIORITY, _REGULAR], distros="debian")

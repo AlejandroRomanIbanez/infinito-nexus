@@ -15,10 +15,9 @@ sweep's budget (raise ``--offset`` to reach it), ✂️ cut as redundant coverag
 a clone or a row an earlier one already embeds, which no sweep deploys.
 ``--cli`` renders fixed-width terminal tables instead of Markdown.
 
-🆔 is the row's discovery id, the same number the complexity matrix prints, and
-🔰 names the id of the earlier row that already embeds this one -- empty when
-nothing does. A row with a 🔰 is redundant coverage: whatever it would prove,
-the row it points at proves first. 🐑 marks the other reason a row is cut: it
+🆔 numbers the rows of this table, 1..n, and 🔰 names the 🆔 of the earlier row
+that already embeds this one -- empty when nothing does. A row with a 🔰 is
+redundant coverage: whatever it would prove, the row it points at proves first. 🐑 marks the other reason a row is cut: it
 shares its service set with an earlier role, which stands in for it.
 """
 
@@ -83,6 +82,9 @@ def cells(
     distros: str,
 ) -> list[tuple[str, ...]]:
     rows = []
+    positions: dict[str, str] = {}
+    for counter, entry in enumerate(entries, start=1):
+        positions.setdefault(entry.get("id", ""), str(counter))
     for counter, entry in enumerate(entries, start=1):
         chunk = _chunk_of(entry, plan)
         if matrix.redundant(entry):
@@ -95,7 +97,7 @@ def cells(
         covered = entry.get("covered", "0")
         rows.append(
             (
-                entry.get("id") or str(counter),
+                str(counter),
                 where,
                 entry["apps"],
                 entry["variant"],
@@ -103,7 +105,7 @@ def cells(
                 distros,
                 to_emoji("tor" if entry["tor"] == "true" else "clearnet"),
                 status,
-                covered if covered not in ("", "0") else "",
+                positions.get(covered, covered) if covered not in ("", "0") else "",
                 entry["weight"],
                 to_emoji("clone") if entry.get("clone") == "true" else "",
             )
