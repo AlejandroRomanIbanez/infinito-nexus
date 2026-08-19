@@ -2,8 +2,11 @@
 const { test, expect } = require("@playwright/test");
 const { resolveTimeout } = require("./timeouts");
 const {
+  assertCspInjections,
+  assertUnauthenticatedLanding,
   decodeDotenvQuoted,
   gotoOnion,
+  inAppLogout,
   normalizeBaseUrl,
   performKeycloakLoginForm,
   safeIsEnabled,
@@ -83,4 +86,24 @@ test("administrator: the SAML round trip establishes a SuiteCRM session", async 
 
   expect(status.active, "SuiteCRM must own a session after the assertion").toBe(true);
   expect(status.userName).toBe(adminUsername);
+});
+
+test("biber: the authenticated surface carries the injector CSP and the in-app logout ends the session", async ({ page }) => {
+  const before = await samlLogin(page, biberUsername, biberPassword);
+  expect(before.active, "the session must exist before a logout can mean anything").toBe(true);
+
+  await assertCspInjections(page, { isEnabled: safeIsEnabled });
+
+  await inAppLogout(page);
+
+  const response = await page.request.get(`${appBaseUrl}/session-status`, {
+    timeout: resolveTimeout(30_000),
+  });
+  expect(response.status(), "session-status must answer after the logout").toBeLessThan(400);
+  expect(
+    (await response.json()).active,
+    "the in-app logout must end SuiteCRM's own session, not merely the edge one",
+  ).toBe(false);
+
+  await assertUnauthenticatedLanding(page, appBaseUrl);
 });
