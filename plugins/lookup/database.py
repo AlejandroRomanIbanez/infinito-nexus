@@ -82,6 +82,10 @@ class LookupModule(LookupBase):
         database_service = get_database_service_config(applications, consumer_id)
         enabled = bool(database_service.get("enabled", False))
         shared = bool(database_service.get("shared", False))
+        # Exception: a service-level `name:` declares an app-shipped DB container (e.g. upstream
+        # compose bundles) — the platform does not provision it, so convention credentials are fiction.
+        name_override = str(database_service.get("name") or "").strip()
+        managed = bool(enabled and not shared and not name_override)
 
         if not dbtype:
             resolved = {
@@ -89,6 +93,7 @@ class LookupModule(LookupBase):
                 "enabled": enabled,
                 "shared": shared,
                 "local": bool(enabled and not shared),
+                "managed": managed,
                 "type": "",
                 "name": consumer_entity,
                 "instance": "",
@@ -229,6 +234,7 @@ class LookupModule(LookupBase):
             "enabled": enabled,
             "shared": shared,
             "local": bool(enabled and not shared),
+            "managed": managed,
             "type": dbtype,
             "name": name,
             "instance": instance,
