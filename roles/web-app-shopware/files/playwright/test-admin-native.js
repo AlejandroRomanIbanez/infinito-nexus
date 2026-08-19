@@ -77,6 +77,7 @@ test("administrator: admin login → catalogue → in-app logout", async ({ page
   await logout.click();
   await page.waitForLoadState("domcontentloaded", { timeout: resolveTimeout(30_000) }).catch(() => {});
   await confirmKeycloakLogoutIfPrompted(page);
+  await gotoOnion(page, `${appBaseUrl}/admin`, { waitUntil: "domcontentloaded" });
 
   await expect(
     page.locator("input[type='password']:visible").first(),
