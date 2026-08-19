@@ -22,6 +22,11 @@
     matomo:
       enabled: true
       shared: true
+    # Exception: round 0 co-deploys the legacy provider so the role's e2e test can walk the
+    # Mailu→Stalwart migration state machine (deploy-in-deploy); see files/test/test.sh.
+    mailu:
+      enabled: true # nocheck: variants-static-override
+      shared: true # nocheck: variants-static-override
     sso:
       enabled: true
       shared: true

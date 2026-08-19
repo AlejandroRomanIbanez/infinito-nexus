@@ -240,15 +240,15 @@ docker run --rm -it \
 
 ## Migration from Mailu
 
-The provider cutover is a one-line inventory change; mailbox data moves with the bundled migration script.
+The provider cutover is an inventory change; mailbox data moves with it when the migration switch is on.
 
 1. Keep `web-app-mailu` in the host's groups and add `web-app-stalwart` — both MUST be present so Mailu re-renders as a legacy instance (`legacy-mail.<domain>`, no public mail ports) and releases `mail.<domain>` to Stalwart.
-2. Remove `MAIL_PROVIDER` from the inventory (Stalwart is the default) and run the full deploy.
-3. Migrate mailbox data with [`files/migrate_from_mailu.py`](files/migrate_from_mailu.py): it reads Mailu's Dovecot Maildir volume directly (no running Mailu required) and imports messages per account via IMAP APPEND, preserving folders, flags and internal dates. Re-runs are idempotent (Message-ID dedup).
-4. Accounts and aliases are provisioned from the inventory by this role; mailboxes created only inside Mailu's admin UI MUST be added to the inventory first. Sieve filters and CalDAV/CardDAV data are out of scope for the script.
+2. Remove `MAIL_PROVIDER` from the inventory (Stalwart is the default).
+3. Set `applications["web-app-stalwart"].services.stalwart.migration.import_mailu: true` and run the full deploy. The role then reads Mailu's Dovecot Maildir volume and imports every inventory account's messages via IMAP APPEND, preserving folders, flags and internal dates. Re-runs are idempotent (Message-ID dedup), so the switch may stay on across deploys; turn it off once Mailu is retired.
+4. Accounts and aliases are provisioned from the inventory by this role; mailboxes created only inside Mailu's admin UI MUST be added to the inventory first. Sieve filters and CalDAV/CardDAV data are out of scope.
 5. Non-Cloudflare DNS: publish the new DKIM TXT record reported by the deploy; MX and A records keep their hostname.
 
-The migration is covered by [`files/test.sh`](files/test.sh): it seeds a Mailu-layout maildir stump, migrates it into a pinned Stalwart container and verifies contents, flags and idempotency — run it with `make test-migration`, or in CI via the `INFINITO_TEST_MIGRATION` gate (manual-workflow field or GitHub repository variable).
+The cutover is covered end to end by [`files/test/test.sh`](files/test/test.sh), which runs as this role's CLI test whenever `web-app-mailu` is co-deployed (matrix variant 0). It rewinds the stack to the initial state (Mailu active), stores mail in both directions, redeploys into the final state with the migration switch on, and asserts over IMAP that the stored mail survived and that live mail still flows.
 
 ## Further Reading
 

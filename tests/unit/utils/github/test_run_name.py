@@ -93,7 +93,6 @@ class DeclaredTemplateTests(unittest.TestCase):
         dispatched = {
             "sequencing": "serial",
             "mode_fail_fast": "true",
-            "test_migration": "false",
             "workspace": "true",
             "instructions": "false",
             "filesystem": "ext4",

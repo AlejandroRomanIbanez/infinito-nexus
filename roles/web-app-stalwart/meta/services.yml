@@ -54,6 +54,10 @@ stalwart:
   name: stalwart
   backup:
     project_hard_restart: true
+  # Exception: manual cutover switch — imports the legacy Mailu maildirs over IMAP once
+  # Mailu runs as legacy and Stalwart is the active provider; see README "Migrating from Mailu".
+  migration:
+    import_mailu: false
   # nocheck: min-storage-headroom  Reason: the mail store (maildir blobs, FTS index, queue) lives in this service's volumes and dwarfs the image transfer size
   min_storage: 20GB
   domain: "{{ lookup('email').domain }}"
@@ -81,6 +85,13 @@ stalwart:
   mem_reservation: 512m
   mem_limit: 2g
   pids_limit: 1024
+# Exception: literal false — only the migration variant pulls the legacy provider in (variants.yml round 0).
+# nocheck: dynamic-flag
+# nocheck: playwright-service-flag — legacy-provider pull for the migration scenario, no UI surface
+mailu:
+  bond: 1
+  enabled: false
+  shared: false
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
 postgres:
   bond: 1

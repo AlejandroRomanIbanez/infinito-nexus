@@ -61,11 +61,6 @@ on:
         required: false
         type: string
         default: "auto"
-      test_migration:
-        description: "'true' runs the opt-in mail-provider migration scenario (Mailu → Stalwart)."
-        required: false
-        type: string
-        default: "false"
       trusted_pr:
         description: "True when the PR carries the maintainer '🛡️ Trusted' label; skips the fork-prereq wait."
         required: false
@@ -465,15 +460,6 @@ jobs:
       blacklist: ${{ inputs.priority }}
       exclude_compose_covered: ${{ contains(inputs.modes, 'compose') && 'true' || 'false' }}
 
-  test-deploy-migration:
-    if: ${{ inputs.test_migration == 'true' || vars.INFINITO_TEST_MIGRATION == 'true' }}
-    needs:
-      - test-dns
-      - images-mirror-missing
-    uses: ./.github/workflows/call-test-deploy-migration.yml
-    with:
-      test_migration: ${{ inputs.test_migration }}
-
   test-runner-smoke:
     needs:
       - test-deploy-swarm
@@ -552,7 +538,6 @@ jobs:
       - test-deploy-compose
       - test-deploy-host
       - test-deploy-swarm
-      - test-deploy-migration
       - test-runner-smoke
       - test-workspace
       - test-instructions

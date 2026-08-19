@@ -1,5 +1,5 @@
 name: "🕹️ Manual"
-run-name: "🕹️ ${{ inputs.mode_fail_fast && '🛑 ' || '' }}${{ inputs.test_migration && '📧迁 ' || '' }}${{ inputs.sequencing != 'auto' && format('🐛{0} ', inputs.sequencing == 'serial' && '序' || '并') || '' }}${{ inputs.workspace != 'auto' && format('🧑‍💻{0} ', inputs.workspace == 'true' && '是' || '否') || '' }}${{ inputs.instructions != 'auto' && format('📖{0} ', inputs.instructions == 'true' && '是' || '否') || '' }}${{ inputs.filesystem != '' && format('🗄️{0} ', inputs.filesystem) || '' }}${{ inputs.distros != '' && format('🐧{0} ', inputs.distros) || '' }}${{ inputs.lifecycles != '' && format('♻️{0} ', inputs.lifecycles) || '' }}${{ inputs.modes != 'swarm compose host' && format('🚀{0} ', inputs.modes) || '' }}${{ inputs.priority != '' && format('⭐{0} ', inputs.priority) || '' }}${{ inputs.whitelist != '' && format('🎯{0}', inputs.whitelist) || '🔀 diff (origin/main)' }}"
+run-name: "🕹️ ${{ inputs.mode_fail_fast && '🛑 ' || '' }}${{ inputs.sequencing != 'auto' && format('🐛{0} ', inputs.sequencing == 'serial' && '序' || '并') || '' }}${{ inputs.workspace != 'auto' && format('🧑‍💻{0} ', inputs.workspace == 'true' && '是' || '否') || '' }}${{ inputs.instructions != 'auto' && format('📖{0} ', inputs.instructions == 'true' && '是' || '否') || '' }}${{ inputs.filesystem != '' && format('🗄️{0} ', inputs.filesystem) || '' }}${{ inputs.distros != '' && format('🐧{0} ', inputs.distros) || '' }}${{ inputs.lifecycles != '' && format('♻️{0} ', inputs.lifecycles) || '' }}${{ inputs.modes != 'swarm compose host' && format('🚀{0} ', inputs.modes) || '' }}${{ inputs.priority != '' && format('⭐{0} ', inputs.priority) || '' }}${{ inputs.whitelist != '' && format('🎯{0}', inputs.whitelist) || '🔀 diff (origin/main)' }}"
 
 concurrency:
   group: global-ci-${{ github.repository }}-${{ github.ref_name }}
@@ -70,12 +70,6 @@ on:
           - "auto"
           - "true"
           - "false"
-      test_migration:
-        description: "📧 Run the opt-in mail-provider migration scenario (Mailu → Stalwart)."
-        required: false
-        default: false
-        type: boolean
-
 permissions:
   contents: read
   packages: write
@@ -113,6 +107,5 @@ jobs:
       filesystem: ${{ inputs.filesystem }}
       workspace: ${{ inputs.workspace }}
       instructions: ${{ inputs.instructions }}
-      test_migration: ${{ inputs.test_migration && 'true' || 'false' }}
       force_cancel_in_progress: true
     secrets: inherit

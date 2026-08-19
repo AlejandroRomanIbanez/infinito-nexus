@@ -759,14 +759,6 @@ test-main-merged:
 test-merge-signed:
 	@bash scripts/git/assert/merge_signed.sh
 
-.PHONY: test-migration
-# Standalone Mailu->Stalwart data-migration test (seed stump, migrate, verify).
-# Note: gated by INFINITO_TEST_MIGRATION elsewhere; this explicit target enables it.
-# Note: needs docker + python3 only — no platform deploy involved.
-test-migration:
-	@INFINITO_TEST_MIGRATION=true \
-	bash roles/web-app-stalwart/files/test.sh
-
 .PHONY: test-performance
 # Run the runtime-performance suite (not part of the `test` fan-out).
 test-performance: install

@@ -10,6 +10,7 @@ ORGANIZATION: "{{ SOFTWARE_NAME }}"
 
 ENVIRONMENT: "production" # Possible values: production, development
 RUNTIME: "host" # Where does this instance run in? Valid: act, github, dev, host
+TEST_E2E_ENABLED: true # Run the e2e suites on a test RUNTIME; a nested deploy sets it false to avoid recursion
 STORAGE_CONSTRAINED: false # Storage constraint means that Infinito.Nexus prefers free storage space over cache
 
 MASK_CREDENTIALS_IN_LOGS: true

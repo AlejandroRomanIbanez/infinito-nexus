@@ -54,3 +54,5 @@ STALWART_DMARC_RUF: "{{ lookup('config', application_id, 'users.administrator.em
 STALWART_TRUSTED_NETWORKS: "{{ NETWORK_TRUSTED_PROXY_CIDRS }}"
 
 STALWART_SSO_ENABLED: "{{ lookup('sso', application_id, 'is_enabled') | bool }}"
+
+STALWART_IMPORT_MAILU: "{{ lookup('config', application_id, 'services.stalwart.migration.import_mailu') | bool }}"
