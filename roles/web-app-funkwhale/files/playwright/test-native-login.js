@@ -108,7 +108,15 @@ for (const persona of PERSONAS) {
       .then(() => true)
       .catch(() => false);
     if (confirmReachable) {
-      await confirmSignOut.click();
+      await Promise.all([
+        page
+          .waitForResponse(
+            (r) => r.url().includes("/api/v2/users/logout") && r.request().method() === "POST",
+            { timeout: resolveTimeout(15_000) },
+          )
+          .catch(() => null),
+        confirmSignOut.click(),
+      ]);
     }
 
     await gotoOnion(page, appBaseUrl, { waitUntil: "domcontentloaded" });
