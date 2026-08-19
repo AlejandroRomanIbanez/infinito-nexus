@@ -108,7 +108,7 @@ on:
         default: auto
         options: [auto, enforced, exclusive, disabled]
       disable:
-        description: "🚫 Comma-separated provider keys removed from the test inventory; used when the matrix row carries none of its own"
+        description: "🚫 Provider keys removed from the test inventory (comma-separated)"
         required: false
         type: string
         default: ""
