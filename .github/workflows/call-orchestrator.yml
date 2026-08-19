@@ -465,9 +465,8 @@ jobs:
       blacklist: ${{ inputs.priority }}
       exclude_compose_covered: ${{ contains(inputs.modes, 'compose') && 'true' || 'false' }}
 
-  # Exception: opt-in job — the called workflow gates itself on the forwarded
-  # test_migration input or the INFINITO_TEST_MIGRATION repository variable.
   test-deploy-migration:
+    if: ${{ inputs.test_migration == 'true' || vars.INFINITO_TEST_MIGRATION == 'true' }}
     needs:
       - test-dns
       - images-mirror-missing

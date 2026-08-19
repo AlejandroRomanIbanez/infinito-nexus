@@ -12,7 +12,7 @@ def _load_module():
     spec = importlib.util.spec_from_file_location("migrate_from_mailu", str(path))
     mod = importlib.util.module_from_spec(spec)
     assert spec and spec.loader
-    # dataclasses resolve their module via sys.modules — register before exec.
+    # Exception: dataclasses resolve their module via sys.modules — register before exec.
     sys.modules["migrate_from_mailu"] = mod
     spec.loader.exec_module(mod)
     return mod
@@ -65,7 +65,6 @@ class TestFlagAndFolderMapping(unittest.TestCase):
         )
         self.assertEqual(self.m.maildir_flags_to_imap("123.M1.host:2,"), "")
         self.assertEqual(self.m.maildir_flags_to_imap("123.M1.host"), "")
-        # Unknown info letters are ignored, known ones kept.
         self.assertEqual(self.m.maildir_flags_to_imap("a:2,XR"), "(\\Answered)")
 
     def test_maildir_folder_to_imap(self):
@@ -99,7 +98,6 @@ class TestMaildirWalk(unittest.TestCase):
         (self.account / ".Archive" / "cur" / "3.host:2,").write_bytes(
             b"Message-ID: <3@x>\r\n\r\nc"
         )
-        # Non-maildir noise must be ignored.
         (self.account / ".dovecot.sieve.d").mkdir()
 
     def test_iter_maildir_folders_and_messages(self):
@@ -129,7 +127,7 @@ class TestMaildirWalk(unittest.TestCase):
         )
         stats = self.m.AccountStats()
         self.m.migrate_account(imap, self.account, "/", stats)
-        self.assertEqual(stats.folder("INBOX").appended, 1)  # only <2@x>
+        self.assertEqual(stats.folder("INBOX").appended, 1)
         self.assertEqual(stats.folder("INBOX").skipped, 1)
         self.assertEqual(stats.folder("Archive").skipped, 1)
         self.assertEqual(stats.folder("Archive").appended, 0)

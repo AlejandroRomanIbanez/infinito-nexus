@@ -137,8 +137,6 @@ def _suppressed_inline_flags(file_path: Path) -> set[tuple[str, str]]:
     return result
 
 
-# Consumer ``email`` blocks reference the MAIL_PROVIDER indirection variable
-# instead of a concrete provider role (Stalwart <-> Mailu is a one-var switch).
 _MAIL_PROVIDER_INDIRECTION = "MAIL_PROVIDER in group_names"
 
 
@@ -206,7 +204,6 @@ class TestServicesDynamicFlags(unittest.TestCase):
                             f"databases)."
                         )
                         continue
-                    # email slot references MAIL_PROVIDER, not a provider role.
                     if (
                         service_key == "email"
                         and isinstance(value, str)

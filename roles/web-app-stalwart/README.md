@@ -165,6 +165,30 @@ Stalwart serves DAV natively on the mail HTTP listener — no extra container
 `https://mail.<domain>/dav/cal` and `/dav/card`. Authenticate with the mailbox
 account (or the Keycloak SSO token when SSO is enabled).
 
+## Design Decisions
+
+- **Client ports are implicit-TLS only (465/993/995).** Stalwart's default
+  configuration binds no STARTTLS listeners, so the role neither publishes
+  587/143/110 nor advertises them via SRV records.
+- **The WebUI (WebAdmin) bundle is staged by the controller.** Stalwart fetches
+  it from GitHub on first boot, which fails behind restricted egress; the
+  controller downloads it into a host-level cache (matrix rounds purge the
+  instance dir, and per-round downloads hit GitHub rate limits) and bind-mounts
+  it read-only. `webui_version` in `meta/services.yml` MUST be bumped together
+  with the Stalwart `version`.
+- **The embedded PostgreSQL pins the plain `postgres` image** — the platform's
+  postgis default defeats baudolo's substring database detection and would
+  degrade backups to torn live-file snapshots. `backup.project_hard_restart`
+  brings the whole project back through one coherent restart after baudolo's
+  per-volume stop/start cycles.
+- **ClamAV runs fail-open with short milter timeouts** so mail keeps flowing
+  while clamd warms its signature database instead of blocking the DATA stage.
+- **`config.json` is bootstrap-only** (data store selection); all other
+  configuration lives in the database and is provisioned over JMAP
+  (`templates/jmap/*.json.j2`).
+- **Under SSO, trusted internal networks relay without SMTP AUTH** — the
+  no-reply bot has no password once the auth directory is OIDC.
+
 ## Features
 
 - All-in-one mail server (SMTP/IMAP/JMAP/POP3/ManageSieve)

@@ -5,9 +5,6 @@ data:
   mounts:
     - service: stalwart
       target: /var/lib/stalwart
-# Exception: named volume for the image's declared VOLUME /etc/stalwart
-# (config bind mounts overlay it) — prevents a per-deploy anonymous volume
-# that sys-ctl-hlth-volumes flags.
 config:
   type: volume
   name: stalwart_config
@@ -26,21 +23,14 @@ clamav_data:
   mounts:
     - service: clamav
       target: /var/lib/clamav
-# Exception: 0.16 JSON bootstrap (data store); the rest of the config lives in
-# the DB.
 config_file:
   type: config
   source: "{{ [ lookup('container', 'web-app-stalwart', 'directories.volumes'), 'etc/config.json' ] | path_join }}"
-  # Exception: world-readable — the container runs as UID 2000.
   mode: "0444"
   mounts:
     - service: stalwart
       target: /etc/stalwart/config.json
-# Exception: WebUI (WebAdmin) bundle staged by the controller (see
-# tasks/02_webadmin.yml).
-# nocheck: meta-volume-file-bind-should-be-config
-# Exception: multi-MB zip exceeds the docker config size limit; the role is
-# manager-pinned so the bind source is always node-local.
+# nocheck: meta-volume-file-bind-should-be-config — multi-MB zip exceeds the docker config size limit; the role is manager-pinned so the bind source is always node-local
 webui_bundle:
   type: bind
   source: "{{ [ lookup('container', 'web-app-stalwart', 'directories.volumes'), 'etc/webui.zip' ] | path_join }}"
@@ -48,8 +38,6 @@ webui_bundle:
   mounts:
     - service: stalwart
       target: /etc/stalwart/webui.zip
-# Exception: platform TLS cert for the mail listeners (referenced via
-# x:Certificate).
 certs:
   type: bind
   source: "{{ [ lookup('container', 'web-app-stalwart', 'directories.volumes'), 'certs' ] | path_join }}"
@@ -64,12 +52,9 @@ clamav_milter_conf:
   mounts:
     - service: clamav
       target: /etc/clamav/clamav-milter.conf
-# Exception: rendered unconditionally (content self-gates on SSO) so the
-# source always exists.
 webmail_oauth:
   type: config
   source: "{{ [ lookup('container', 'web-app-stalwart', 'directories.volumes'), 'webmail/oauth.inc.php' ] | path_join }}"
-  # Exception: readable by www-data in the roundcube container.
   mode: "0444"
   mounts:
     - service: webmail

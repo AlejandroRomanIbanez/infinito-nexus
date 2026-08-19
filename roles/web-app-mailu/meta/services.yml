@@ -20,10 +20,7 @@ matomo:
   bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
-# Exception: gate on web-app-stalwart, never MAIL_PROVIDER — a Mailu-active
-# deploy must not pull stalwart into the closure. `email` is a covered key of
-# this role, but the entry must never gate on self, so only a legacy-Mailu
-# deploy pulls the active provider in.
+# Exception: gates on the OTHER provider — gating on MAIL_PROVIDER or self would pull Stalwart into a Mailu-active closure.
 # nocheck: dynamic-flag
 email:
   bond: 1
@@ -41,12 +38,6 @@ mailu:
   placement: manager
   enabled: true # nocheck: dynamic-flag
   shared: true
-  # Rationale: the static `email` provider slot belongs to the default
-  # (web-app-stalwart); the registry allows only one. Mailu is selected at
-  # runtime via MAIL_PROVIDER, which routes lookup('email') + consumer mail
-  # flags here instead. `covers` makes the consumers' `services.email`
-  # declaration satisfy their `run_after: web-app-mailu` entry (consumers run
-  # after BOTH providers).
   covers:
     - email
   version: "2024.06"
@@ -81,7 +72,6 @@ mailu:
     service_key: front
   run_after:
     - web-app-matomo
-    # Rationale: the mail provider must preload first (sys-svc-mail asserts its token).
     - web-app-stalwart
   lifecycle: beta
   cpus: "1.0"

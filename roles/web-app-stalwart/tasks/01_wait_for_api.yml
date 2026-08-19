@@ -1,7 +1,4 @@
 ---
-# Wait for readiness (not just liveness): /healthz/ready covers the stores, so
-# directory-backed SMTP checks (e.g. hlth-msmtp right after a restart) cannot
-# race a booting instance whose RCPT lookups still fail closed.
 - name: "⏳ Wait for the stalwart task to converge (swarm; no-op in compose)"
   ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/wait_converged.yml') }}"
   vars:

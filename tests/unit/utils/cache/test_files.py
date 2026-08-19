@@ -57,7 +57,6 @@ class TestReadText(_ProjectRootFixture, unittest.TestCase):
         path = _touch(self.root / "a.txt", "first")
         self.assertEqual(read_text(str(path)), "first")
         path.write_text("changed", encoding="utf-8")
-        # Same string path → cache hit; the on-disk change is not seen.
         self.assertEqual(read_text(str(path)), "first")
 
     def test_reset_invalidates_cache(self) -> None:
@@ -75,7 +74,6 @@ class TestReadText(_ProjectRootFixture, unittest.TestCase):
 class TestIterProjectFiles(_ProjectRootFixture, unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
-        # Build a small synthetic tree.
         _touch(self.root / f"roles/web-app-foo/{ROLE_FILE_META_SERVICES}", "foo: 1")
         _touch(self.root / "roles/web-app-foo/templates/x.j2", "{{ x }}")
         _touch(self.root / "docs/readme.md", "# Hi")
@@ -86,7 +84,6 @@ class TestIterProjectFiles(_ProjectRootFixture, unittest.TestCase):
 
     def test_skip_dirs_pruned(self) -> None:
         all_paths = set(iter_project_files())
-        # The pruned dirs MUST never appear in the walk.
         self.assertFalse(
             any("/.git/" in p for p in all_paths),
             f".git not pruned in {all_paths}",
@@ -105,7 +102,6 @@ class TestIterProjectFiles(_ProjectRootFixture, unittest.TestCase):
         _reset()
         all_paths = set(iter_project_files())
         self.assertFalse(any("/local-tool-out/" in p for p in all_paths))
-        # sanity: normal project files still present
         self.assertTrue(any(p.endswith("readme.md") for p in all_paths))
 
     def test_extensions_filter(self) -> None:
@@ -127,19 +123,15 @@ class TestIterProjectFiles(_ProjectRootFixture, unittest.TestCase):
         self.assertEqual(without_tests, [])
 
     def test_exclude_dirs_path_segment_match(self) -> None:
-        # Excluding "docs" must drop the markdown file under docs/.
         kept = list(iter_project_files(exclude_dirs=("docs",)))
         self.assertFalse(any(p.endswith("readme.md") for p in kept))
 
     def test_walk_is_cached_across_calls(self) -> None:
-        # First call populates the cache, then we add a new file: a fresh
-        # walk would discover it; the cache MUST not.
         first = set(iter_project_files())
         _touch(self.root / "after.txt", "late")
         second = set(iter_project_files())
         self.assertEqual(first, second)
 
-        # _reset() clears the cache → the new file is now visible.
         _reset()
         third = set(iter_project_files())
         self.assertIn(str(self.root / "after.txt"), third)
@@ -172,15 +164,12 @@ class TestIterProjectFilesWithContent(_ProjectRootFixture, unittest.TestCase):
 class TestReset(_ProjectRootFixture, unittest.TestCase):
     def test_reset_clears_both_caches(self) -> None:
         _touch(self.root / "x.txt", "v1")
-        list(iter_project_files())  # populate walk cache
-        read_text(str(self.root / "x.txt"))  # populate text cache
-        # Mutate underlying state.
+        list(iter_project_files())
+        read_text(str(self.root / "x.txt"))
         _touch(self.root / "y.txt", "v2")
         (self.root / "x.txt").write_text("v1-changed", encoding="utf-8")
-        # Cached views still see the OLD state.
         self.assertNotIn(str(self.root / "y.txt"), set(iter_project_files()))
         self.assertEqual(read_text(str(self.root / "x.txt")), "v1")
-        # Reset → fresh views.
         _reset()
         self.assertIn(str(self.root / "y.txt"), set(iter_project_files()))
         self.assertEqual(read_text(str(self.root / "x.txt")), "v1-changed")

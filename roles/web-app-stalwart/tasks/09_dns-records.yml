@@ -35,16 +35,7 @@
         name: "{{ stalwart_dkim_selector }}._domainkey.{{ STALWART_DOMAIN_DNS_ZONE }}"
         solo: true
         value: '"{{ stalwart_dkim_public_key }}"'
-      - type: SRV
-        zone: "{{ STALWART_DOMAIN_DNS_ZONE }}"
-        name: "{{ STALWART_DOMAIN }}"
-        solo: true
-        service: "_submission"
-        proto: "_tcp"
-        priority: 20
-        weight: 1
-        port: 587
-        value: "{{ STALWART_HOSTNAME }}"
+      # Exception: SRV only for the implicit-TLS ports the service binds (no 587/143/110).
       - type: SRV
         zone: "{{ STALWART_DOMAIN_DNS_ZONE }}"
         name: "{{ STALWART_DOMAIN }}"
@@ -69,31 +60,11 @@
         zone: "{{ STALWART_DOMAIN_DNS_ZONE }}"
         name: "{{ STALWART_DOMAIN }}"
         solo: true
-        service: "_imap"
-        proto: "_tcp"
-        priority: 20
-        weight: 1
-        port: 143
-        value: "{{ STALWART_HOSTNAME }}"
-      - type: SRV
-        zone: "{{ STALWART_DOMAIN_DNS_ZONE }}"
-        name: "{{ STALWART_DOMAIN }}"
-        solo: true
         service: "_pop3s"
         proto: "_tcp"
         priority: 20
         weight: 1
         port: 995
-        value: "{{ STALWART_HOSTNAME }}"
-      - type: SRV
-        zone: "{{ STALWART_DOMAIN_DNS_ZONE }}"
-        name: "{{ STALWART_DOMAIN }}"
-        solo: true
-        service: "_pop3"
-        proto: "_tcp"
-        priority: 20
-        weight: 1
-        port: 110
         value: "{{ STALWART_HOSTNAME }}"
       - type: SRV
         zone: "{{ STALWART_DOMAIN_DNS_ZONE }}"

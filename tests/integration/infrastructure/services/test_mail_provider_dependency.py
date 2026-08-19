@@ -8,19 +8,12 @@ from utils.roles.mapping import ROLE_FILE_META_SERVICES
 
 from . import PROJECT_ROOT
 
-# The default email provider is web-app-stalwart; web-app-mailu is a fully
-# supported alternative selected via the MAIL_PROVIDER variable. Both are
-# providers (they call lookup('email') as the source of truth, not as dependent
-# consumers).
 _PROVIDER_ROLES = {"web-app-stalwart", "web-app-mailu"}
 _EMAIL_SERVICE_KEY = "email"
 
-# Patterns that indicate an email dependency on the mail provider — either a
-# direct role ref or the MAIL_PROVIDER selector consumers gate their email on.
 _PROVIDER_REF_RE = re.compile(r"web-app-(?:stalwart|mailu)|MAIL_PROVIDER")
 _EMAIL_LOOKUP_RE = re.compile(r"""lookup\(\s*['"]email['"]""")
 
-# File extensions to scan within a role
 _SCAN_EXTENSIONS = {".yml", ".yaml", ".j2", ".py", ".sh", ".conf", ".env"}
 
 
@@ -105,10 +98,6 @@ class TestMailProviderServiceDependency(unittest.TestCase):
             role_name = role_path.name
             if role_name in _PROVIDER_ROLES:
                 continue
-            # Email transport providers (msmtp, smtp/postfix) and the
-            # email-alerting / mail-health roles implement or directly
-            # service the email subsystem; they call lookup('email') as the
-            # source of truth, not as dependent consumers. Exempt them.
             if role_name.startswith("sys-svc-mail") or role_name in {
                 "sys-ctl-alm-email",
                 "sys-ctl-hlth-msmtp",

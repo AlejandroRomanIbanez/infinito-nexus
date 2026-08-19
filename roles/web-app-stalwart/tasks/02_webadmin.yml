@@ -35,8 +35,7 @@
             {'update': {stalwart_webui_app_id: {'resourceUrl': STALWART_WEBUI_LOCAL_URL}}},
             'c0']]} | to_json }}
 
-# Exception: UpdateApps force-unpacks from resourceUrl (the
-# /api/update/webadmin endpoint is gone).
+# Exception: the /api/update/webadmin endpoint is gone; UpdateApps re-unpacks from resourceUrl.
 - name: "📦 Unpack the WebUI bundle from the local file"
   include_tasks: jmap_call.yml
   vars:

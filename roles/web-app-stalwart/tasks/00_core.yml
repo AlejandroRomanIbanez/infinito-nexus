@@ -1,8 +1,7 @@
 ---
 - include_tasks: utils/once/flag.yml
 
-# Exception: Stalwart's compiled-in validation rejects .example/.invalid
-# (RFC 6761) — fail before any state change.
+# Exception: Stalwart's compiled-in validation rejects RFC 6761 reserved TLDs — fail before any state change.
 - name: "✅ Assert the mail domain is provisionable by Stalwart"
   ansible.builtin.assert:
     that:
@@ -22,9 +21,7 @@
     state: directory
     mode: "0755"
 
-# Exception: swarm does not auto-create a missing bind source — the certs
-# directory must exist before stack-up; sys-ctl-mtn-cert-deploy fills it
-# later (05_tls).
+# Exception: swarm does not auto-create a missing bind source; sys-ctl-mtn-cert-deploy fills the directory later (05_tls).
 - name: ✅ Ensure certs bind-source directory exists (host)
   file:
     path: "{{ [ STALWART_VOLUMES_DIR, 'certs' ] | path_join }}"
@@ -35,22 +32,14 @@
   stack_host_template:
     src: config.json.j2
     dest: "{{ STALWART_CONFIG_FILE }}"
-    # Exception: must be world-readable — the container runs as UID 2000.
     mode: "0644"
 
-# Exception: stage the WebUI bundle before container start so the read-only
-# mount targets a real file. The controller can fetch what Stalwart (pinned CA
-# roots) cannot. A failed download fails the deploy: shipping a 404 WebAdmin
-# silently is worse. Air-gapped hosts override STALWART_WEBUI_RESOURCE_URL to
-# an internal mirror.
 - name: "✅ Ensure the WebUI cache directory exists"
   ansible.builtin.file:
     path: "{{ STALWART_WEBUI_CACHE_FILE | dirname }}"
     state: directory
     mode: "0755"
 
-# Exception: only the stack host needs the bundle (the service is
-# manager-pinned) — N workers hammering GitHub would hit rate limits.
 - name: "⬇️ Download the Stalwart WebUI bundle (skipped when cached)"
   get_url_retry:
     url: "{{ STALWART_WEBUI_RESOURCE_URL }}"
@@ -71,14 +60,10 @@
     state: directory
     mode: "0755"
 
-# Exception: rendered even without SSO — the file is a bind source
-# (meta/volumes.yml) and must exist before container start; its content
-# self-gates on SSO.
 - name: 📄 Render Roundcube OAuth (Keycloak SSO) configuration
   stack_host_template:
     src: roundcube-oauth.inc.php.j2
     dest: "{{ STALWART_WEBMAIL_OAUTH_CONFIG }}"
-    # Exception: included by the roundcube container, which runs as www-data.
     mode: "0644"
   register: stalwart_webmail_conf
 
@@ -102,9 +87,7 @@
 - name: "🚿 Flush Docker Compose handlers"
   meta: flush_handlers
 
-# Exception: name the webmail service explicitly — the swarm upstream resolver
-# defaults to the primary entity (stalwart:8080), which serves the mail server
-# instead of Roundcube on the webmail vhost.
+# Exception: without the explicit service key the swarm upstream resolver picks the primary entity and the webmail vhost serves the mail server.
 - name: "🌐 Proxy the Roundcube webmail at {{ STALWART_WEBMAIL_DOMAIN }}"
   include_role:
     name: sys-stk-front-proxy

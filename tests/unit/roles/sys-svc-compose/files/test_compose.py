@@ -30,8 +30,6 @@ class TestInfinitoComposeWrapper(unittest.TestCase):
         cls.script = load_script_module()
 
     def setUp(self):
-        # Exception: disable the wrapper's cache-override branch; tests use
-        # mocked is_file.
         self._env_patch = patch.dict(
             os.environ, {"INFINITO_CACHE_PACKAGE_FRONTEND_IP": ""}, clear=False
         )
@@ -697,8 +695,6 @@ class TestCaOverrideStaleDetection(unittest.TestCase):
             self.assertFalse(s.ca_override_is_stale(base, override))
 
     def test_fresh_when_override_is_strict_subset(self):
-        # Exception: an override may legitimately wrap only a subset; a subset
-        # MUST NOT be flagged.
         import tempfile
 
         s = self.script

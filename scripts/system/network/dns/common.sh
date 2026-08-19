@@ -9,7 +9,6 @@ DNS_HOSTS_BLOCK_END="# END infinito-dns-fallback"
 DNS_HOSTS_GENERATOR="${DNS_PROJECT_ROOT}/cli/meta/domains/__main__.py"
 DNS_HOSTS_FALLBACK_DEFAULT_RAW="${DNS_DOMAIN} dashboard.${DNS_DOMAIN} matomo.${DNS_DOMAIN}"
 
-# Used by setup.sh/remove.sh after sourcing this shared helper.
 # shellcheck disable=SC2034
 DNS_NM_CONF="/etc/NetworkManager/conf.d/00-infinito-dnsmasq.conf"
 DNS_NM_DNSMASQ_DIR="/etc/NetworkManager/dnsmasq.d"
@@ -101,7 +100,7 @@ dns_read_hosts_fallback_entries() {
 dns_rewrite_hosts_file() {
 	local tmp="$1"
 
-	# Keep the existing inode when the hosts file is bind-mounted (for example /etc/hosts in CI containers).
+	# Exception: replacing the inode breaks a bind-mounted hosts file (/etc/hosts in CI containers) — write in place.
 	if [[ -e "${DNS_HOSTS_FILE}" ]]; then
 		dns_write_file_in_place "${tmp}" "${DNS_HOSTS_FILE}"
 	else
@@ -158,16 +157,24 @@ dns_remove_hosts_fallback() {
 }
 
 dns_test_resolution() {
-	local checked=0 failed=0 host
+	local checked=0 failed=0 host attempt
 
 	echo
 	echo ">>> Testing resolution"
 	if [[ "${DNS_HOSTS_FILE}" == "/etc/hosts" ]]; then
 		while IFS= read -r host; do
-			if ! getent hosts "${host}"; then
-				echo "    FAIL: ${host}"
-				failed=$((failed + 1))
-			fi
+			# Exception: retried — a freshly restarted resolver may need a moment before it answers.
+			for attempt in 1 2 3; do
+				if getent hosts "${host}"; then
+					break
+				fi
+				if [[ "${attempt}" -eq 3 ]]; then
+					echo "    FAIL: ${host}"
+					failed=$((failed + 1))
+				else
+					sleep 1
+				fi
+			done
 			checked=$((checked + 1))
 			if [[ "${checked}" -ge 3 ]]; then
 				break

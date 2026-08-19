@@ -791,10 +791,8 @@
       ]
     },
     {% include "clients/default.json.j2" %}
-{% if KEYCLOAK_STALWART_WEBUI_ENABLED | bool %}
+{% if KEYCLOAK_STALWART_ENABLED | bool %}
     ,{% include "clients/stalwart/webui.json.j2" %}
-{% endif %}
-{% if KEYCLOAK_STALWART_WEBMAIL_ENABLED | bool %}
     ,{% include "clients/stalwart/webmail.json.j2" %}
 {% endif %}
   ],

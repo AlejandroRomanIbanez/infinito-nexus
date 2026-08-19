@@ -47,13 +47,14 @@
   include_tasks: "{{ role_path }}/tasks/update/08_users/email_verified.yml"
   when: KEYCLOAK_USER_EMAILS_VERIFIED | bool
 
-- name: "📂 Ensure the stalwart-webui public client (existing realms)"
-  include_tasks: "{{ role_path }}/tasks/update/09_stalwart_webui_client.yml"
-  when: KEYCLOAK_STALWART_WEBUI_ENABLED | bool
+- name: "📂 Ensure the stalwart clients (existing realms)"
+  when: KEYCLOAK_STALWART_ENABLED | bool
+  block:
+    - name: "📂 Ensure the stalwart-webui public client"
+      include_tasks: "{{ role_path }}/tasks/update/09_stalwart_webui_client.yml"
 
-- name: "📂 Ensure the stalwart-webmail confidential client (existing realms)"
-  include_tasks: "{{ role_path }}/tasks/update/10_stalwart_webmail_client.yml"
-  when: KEYCLOAK_STALWART_WEBMAIL_ENABLED | bool
+    - name: "📂 Ensure the stalwart-webmail confidential client"
+      include_tasks: "{{ role_path }}/tasks/update/10_stalwart_webmail_client.yml"
 
 - name: "⏳ Reap the remaining Keycloak update jobs"
   ansible.builtin.include_tasks: utils/async/reap.yml

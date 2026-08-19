@@ -48,8 +48,7 @@
     compose_handlers_flush: true
     webserver_vhost_flavour: "basic"
     webserver_extra_configuration: "client_max_body_size 31M;"
-    # Exception: own canonical, NOT MAILU_HOSTNAME — in legacy mode the latter
-    # is the active provider's vhost and writing it would clobber that provider.
+    # Exception: MAILU_HOSTNAME here would clobber the active provider's vhost in legacy mode.
     domain: "{{ MAILU_CANONICAL_HOST }}"
 
 - name: "👔 Mailu manager-side operations (file deploys + container exec)"

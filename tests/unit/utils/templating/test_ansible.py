@@ -205,7 +205,6 @@ class TestTemplatingRenderStrict(unittest.TestCase):
         self.assertEqual(out, ca_cert_host("infinito.nexus"))
 
     def test_inline_conditional_with_concat(self):
-        # Mirrors web-app-mailu/meta/server.yml (inline conditional + ~ concat).
         raw = (
             "{{ ('mail.' ~ DOMAIN_PRIMARY) if MAIL_PROVIDER == 'web-app-mailu' "
             "else ('legacy-mail.' ~ DOMAIN_PRIMARY) }}"
@@ -231,7 +230,6 @@ class TestTemplatingRenderStrict(unittest.TestCase):
             ),
             "legacy-mail.example.com",
         )
-        # Unset MAIL_PROVIDER takes the else branch.
         self.assertEqual(
             render_ansible_strict(
                 templar=None,

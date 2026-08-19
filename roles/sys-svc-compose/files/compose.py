@@ -7,8 +7,7 @@ import shlex
 import sys
 from pathlib import Path
 
-# Exception: `utils.cache.yaml` is unavailable here — this file is
-# copy-deployed.
+# `utils.cache.yaml` is unavailable here: this file is copy-deployed.
 import yaml
 
 
@@ -78,9 +77,9 @@ def detect_compose_files(project_dir: Path) -> list[Path]:
     return files
 
 
-# Exception: mirrors that speak HTTP by default in their distro's
-# package-manager config. Alpine 3.18+ defaults to HTTPS and would fail TLS
-# verification inside builds that lack the frontend CA, so it is excluded.
+# Mirrors that speak HTTP by default in their distro's package-manager
+# config. Alpine 3.18+ defaults to HTTPS and would fail TLS verification
+# inside builds that lack the frontend CA, so it is excluded.
 _CACHE_HTTP_HOSTNAMES = (
     "deb.debian.org",
     "archive.ubuntu.com",
@@ -142,18 +141,16 @@ def resolve_files(project_dir: Path, files: list[str]) -> list[Path]:
     return out
 
 
-# Exception: subcommands that parse service `env_file:` values. Compose's env
-# parser rejects $-bearing secrets, but the swarm dotenv keeps $ literal
-# because `docker stack deploy` does NOT parse env_file. build/config need no
-# runtime env, so they get env_file-stripped copies (and no --env-file)
-# instead.
+# Subcommands that parse service `env_file:` values. Compose's env parser
+# rejects $-bearing secrets, but the swarm dotenv keeps $ literal because
+# `docker stack deploy` does NOT parse env_file. build/config need no runtime
+# env, so they get env_file-stripped copies (and no --env-file) instead.
 _ENV_PARSING_SUBCOMMANDS = {"build", "config"}
 
 
 def _subcommand(passthrough: list[str]) -> str:
-    # Exception: the docker compose subcommand is the first passthrough token
-    # (main() strips a leading `--`; the wrapper's own flags are parsed off
-    # earlier).
+    # The docker compose subcommand is the first passthrough token (main()
+    # strips a leading `--`; the wrapper's own flags are parsed off earlier).
     return passthrough[0] if passthrough else ""
 
 
@@ -291,8 +288,8 @@ def main() -> int:
     if args.debug:
         print(">>> " + " ".join(shlex.quote(x) for x in cmd), file=sys.stderr)
 
-    # Exception: execvp preserves signal handling under systemd. The argv list
-    # is built from this script's own argv plus `--env-file` / `--profile`
+    # execvp preserves signal handling under systemd. The argv list is
+    # built from this script's own argv plus `--env-file` / `--profile`
     # additions; no shell parses it.
     os.execvp(cmd[0], cmd)  # noqa: S606
     return 0

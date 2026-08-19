@@ -1,8 +1,6 @@
 {% set email = lookup('email') %}
 defaults
-# Exception: EHLO/HELO identity must be a valid FQDN — strict servers (e.g.
-# Stalwart) reject a bare container hostname on port 25 (rejectNonFqdn), so
-# pin it to the domain.
+# Exception: strict servers (Stalwart rejectNonFqdn) refuse a bare container hostname as EHLO.
 domain              {{ DOMAIN_PRIMARY }}
 logfile             ~/.msmtp.log
 timeout             {{ email.timeout }}

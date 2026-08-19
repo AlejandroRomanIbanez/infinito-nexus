@@ -116,16 +116,10 @@ KEYCLOAK_USER_EMAILS_VERIFIED: "{{ lookup('config', application_id, 'services.ke
 
 KEYCLOAK_MOODLE_ENABLED: "{{ 'web-app-moodle' in group_names }}"
 
-# Exception: the WebAdmin SPA hardcodes its client_id, so provision a matching
-# public (PKCE) client. Client ids are self-declared by web-app-stalwart
-# (services.sso.oidc.*_client_id) — one SPOT for both roles.
 # Todo: replace these gates with self-declaration.
-KEYCLOAK_STALWART_WEBUI_ENABLED: "{{ 'web-app-stalwart' in group_names }}"
+KEYCLOAK_STALWART_ENABLED: "{{ 'web-app-stalwart' in group_names }}"
 KEYCLOAK_STALWART_WEBUI_CLIENT_ID: "{{ lookup('config', 'web-app-stalwart', 'services.sso.oidc.webui_client_id') }}"
 
-# Exception: Roundcube confidential client — needs a small access token (no
-# roles/groups) so its XOAUTH2 SASL line fits Stalwart's 4096-byte SMTP limit.
-KEYCLOAK_STALWART_WEBMAIL_ENABLED: "{{ 'web-app-stalwart' in group_names }}"
 KEYCLOAK_STALWART_WEBMAIL_CLIENT_ID: "{{ lookup('config', 'web-app-stalwart', 'services.sso.oidc.webmail_client_id') }}"
 KEYCLOAK_STALWART_WEBMAIL_BASE: "{{ lookup('tls', 'web-app-stalwart', 'protocols.web') ~ '://' ~ lookup('config', 'web-app-stalwart', 'domains.canonical.webmail') }}"
 KEYCLOAK_STALWART_WEBMAIL_REDIRECT_URIS:

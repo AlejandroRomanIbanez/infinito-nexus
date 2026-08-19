@@ -23,4 +23,3 @@
   # rationale: async; nothing reads the client back in this chain, reaped at the end of update_routines.yml
   async: "{{ ASYNC_TIME if ASYNC_ENABLED | bool else omit }}"
   poll: "{{ ASYNC_POLL if ASYNC_ENABLED | bool else omit }}"
-  when: KEYCLOAK_STALWART_WEBUI_ENABLED | bool

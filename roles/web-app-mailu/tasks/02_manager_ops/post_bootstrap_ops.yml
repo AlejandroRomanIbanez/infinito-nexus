@@ -37,9 +37,6 @@
 - name: "📂 Include Cert deploy service for '{{ role_name }}'"
   include_role:
     name: sys-ctl-mtn-cert-deploy
-  # Exception: active provider only — the cert-deploy unit is shared
-  # (run-once) and a legacy instance runs TLS_FLAVOR=notls behind the proxy
-  # anyway.
   when:
     - lookup('tls', application_id, 'enabled') | bool
     - MAILU_ACTIVE_PROVIDER | bool
@@ -53,8 +50,6 @@
 - name: 🔧 Set Mailu DNS records
   include_tasks: ../08_dns-records.yml
 
-# Exception: refresh-or-defer — a /sso hit before Keycloak is up poisons the
-# cached discovery.
 - name: "🔐 Apply Mailu OIDC provider config"
   include_tasks: ../09_oidc_apply.yml
   when: MAILU_OIDC_ENABLED | bool

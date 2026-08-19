@@ -20,13 +20,6 @@
       --chdir {{ lookup('container', application_id, 'directories.instance') }}
       --project {{ (lookup('container', application_id, 'directories.instance') | regex_replace('/+$', '')) | basename }}
 
-# Exception: local mode checks the material the unit just deployed (parses,
-# key matches, not expiring); remote mode checks live endpoints from
-# CERT_TEST_REMOTE_ENDPOINTS ("host[:port] ...", fed via CI/GitHub variables)
-# so a misconfigured production server fails here.
-# Exception: script (not command) — the play may target a remote swarm
-# manager where the controller-local role_path does not exist; script
-# transfers the file before running it.
 - name: "✅ Verify deployed certificate material"
   ansible.builtin.script:
     cmd: "{{ [ role_path, 'files/test.sh' ] | path_join }} {{ lookup('container', application_id, 'directories.instance') }}"
