@@ -54,6 +54,11 @@ on:
         required: false
         type: string
         default: auto
+      disable:
+        description: "Comma-separated provider keys removed from the test inventory; used when the matrix row carries none of its own."
+        required: false
+        type: string
+        default: ""
   workflow_dispatch:
     inputs:
       distros:
@@ -102,6 +107,11 @@ on:
         type: choice
         default: auto
         options: [auto, enforced, exclusive, disabled]
+      disable:
+        description: "🚫 Comma-separated provider keys removed from the test inventory; used when the matrix row carries none of its own"
+        required: false
+        type: string
+        default: ""
 
 permissions:
   contents: read
@@ -288,7 +298,7 @@ jobs:
         shell: bash
         env:
           variant: ${{ matrix.variant }}
-          disable: ${{ matrix.disable }}
+          disable: ${{ matrix.disable || inputs.disable }}
         run: ./scripts/tests/deploy/distros.sh "${{ env.SCRIPTS }}/00_one.sh" 2>&1 | tee "/tmp/ansible-${{ matrix.apps }}.log"
 
       - name: 🚀 Deploy app
@@ -298,7 +308,7 @@ jobs:
         env:
           apps: ${{ matrix.apps }}
           variant: ${{ matrix.variant }}
-          disable: ${{ matrix.disable }}
+          disable: ${{ matrix.disable || inputs.disable }}
           ANSIBLE_LOG_PATH: /tmp/ansible-${{ matrix.apps }}.log
         run: ./scripts/tests/deploy/ci/all.sh 2>&1 | tee "/tmp/ansible-${{ matrix.apps }}.log"
 
