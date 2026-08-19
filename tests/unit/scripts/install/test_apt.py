@@ -66,8 +66,10 @@ def _run(installed: list[str], packages: list[str]) -> tuple[int, list[str]]:
             capture_output=True,
             text=True,
             env=env,
+            check=False,
         )
-        return proc.returncode, calls_file.read_text().splitlines()
+        text = calls_file.read_text()  # nocheck: cache-read - stub writes it per run
+        return proc.returncode, text.splitlines()
 
 
 class AptShortCircuitTests(unittest.TestCase):
