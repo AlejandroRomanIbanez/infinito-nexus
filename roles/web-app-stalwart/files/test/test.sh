@@ -20,6 +20,7 @@ fi
 : "${BIBER_EMAIL:?missing BIBER_EMAIL}"
 : "${BIBER_IMAP_PASSWORD:?missing BIBER_IMAP_PASSWORD}"
 : "${MAILU_MAILDIR_VOLUME:?missing MAILU_MAILDIR_VOLUME}"
+: "${MAIL_DOMAIN:?missing MAIL_DOMAIN}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUN_ID="$(date +%s)"
@@ -34,10 +35,16 @@ cleanup() { rm -rf "${WORKDIR}"; }
 trap cleanup EXIT
 
 send_mail() {
-	local from="$1" rcpt="$2" subject="$3"
-	printf 'From: %s\r\nTo: %s\r\nSubject: %s\r\nDate: %s\r\n\r\n%s\r\n' \
-		"${from}" "${rcpt}" "${subject}" "$(date -R)" "migration e2e body ${subject}" \
-		>"${WORKDIR}/mail.eml"
+	local from="$1" rcpt="$2" subject="$3" in_reply_to="${4:-}"
+	local message_id="<${subject}@${MAIL_DOMAIN}>"
+	{
+		printf 'From: %s\r\nTo: %s\r\nSubject: %s\r\n' "${from}" "${rcpt}" "${subject}"
+		printf 'Message-ID: %s\r\nDate: %s\r\n' "${message_id}" "$(date -R)"
+		if [[ -n "${in_reply_to}" ]]; then
+			printf 'In-Reply-To: %s\r\nReferences: %s\r\n' "${in_reply_to}" "${in_reply_to}"
+		fi
+		printf '\r\n%s\r\n' "migration e2e body ${subject}"
+	} >"${WORKDIR}/mail.eml"
 	local attempt
 	for attempt in 1 2 3 4 5 6; do
 		if curl -sS --connect-timeout 10 --max-time 60 --url "smtp://127.0.0.1:25" \
@@ -114,9 +121,9 @@ echo "=== [1/5] Rewind to the initial state: Mailu as the active provider ==="
 cp -a "${TEST_INVENTORY_DIR}" "${INV_COPY}"
 nested_deploy "web-app-mailu" "false"
 
-echo "=== [2/5] Store mail in the initial state (A: biber->admin, B: admin->biber) ==="
+echo "=== [2/5] Store mail in the initial state (A: biber->admin, B: admin's reply) ==="
 send_mail "${BIBER_EMAIL}" "${ADMIN_EMAIL}" "${SUBJ_A}"
-send_mail "${ADMIN_EMAIL}" "${BIBER_EMAIL}" "${SUBJ_B}"
+send_mail "${ADMIN_EMAIL}" "${BIBER_EMAIL}" "${SUBJ_B}" "<${SUBJ_A}@${MAIL_DOMAIN}>"
 MAILDIR_MOUNT="$(container volume inspect --format '{{ .Mountpoint }}' "${MAILU_MAILDIR_VOLUME}")"
 wait_stored_in_maildir "${SUBJ_A}" "${MAILDIR_MOUNT}/${ADMIN_EMAIL}"
 wait_stored_in_maildir "${SUBJ_B}" "${MAILDIR_MOUNT}/${BIBER_EMAIL}"
@@ -128,9 +135,9 @@ echo "=== [4/5] Continuity: the stored mail survived the migration ==="
 wait_in_imap "${ADMIN_EMAIL}" "${ADMIN_IMAP_PASSWORD}" "${SUBJ_A}"
 wait_in_imap "${BIBER_EMAIL}" "${BIBER_IMAP_PASSWORD}" "${SUBJ_B}"
 
-echo "=== [5/5] Live flow on the final state (C: biber->admin, D: admin->biber) ==="
+echo "=== [5/5] Live flow on the final state (C: biber->admin, D: admin's reply) ==="
 send_mail "${BIBER_EMAIL}" "${ADMIN_EMAIL}" "${SUBJ_C}"
-send_mail "${ADMIN_EMAIL}" "${BIBER_EMAIL}" "${SUBJ_D}"
+send_mail "${ADMIN_EMAIL}" "${BIBER_EMAIL}" "${SUBJ_D}" "<${SUBJ_C}@${MAIL_DOMAIN}>"
 wait_in_imap "${ADMIN_EMAIL}" "${ADMIN_IMAP_PASSWORD}" "${SUBJ_C}"
 wait_in_imap "${BIBER_EMAIL}" "${BIBER_IMAP_PASSWORD}" "${SUBJ_D}"
 
