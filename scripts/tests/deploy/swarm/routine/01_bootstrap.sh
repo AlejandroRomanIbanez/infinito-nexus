@@ -21,7 +21,13 @@ source "${SCRIPT_DIR}/../../../../../scripts/meta/env/load.sh"
 : "${RUNNER_TEMP:?}" "${APP_ID:?}" "${INFINITO_DOMAIN:?}" "${INFINITO_CONTAINER:?}"
 
 if command -v apt-get >/dev/null 2>&1; then
-	if [ "$(id -u)" -eq 0 ]; then apt-get update -qq || true; else sudo -E apt-get update -qq || true; fi # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
+	APT_TIMEOUT=10m
+	APT_OPTS=(-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
+	if [ "$(id -u)" -eq 0 ]; then
+		timeout -k 30 "${APT_TIMEOUT}" apt-get "${APT_OPTS[@]}" update -qq || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
+	else
+		sudo -E timeout -k 30 "${APT_TIMEOUT}" apt-get "${APT_OPTS[@]}" update -qq || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
+	fi
 fi
 
 if docker exec "${INFINITO_CONTAINER}" docker ps --format '{{.Names}}' 2>/dev/null | grep -qx 'tor'; then
