@@ -9,7 +9,7 @@ The `sys-front-inj-logout` Ansible role automatically embeds a lightweight JavaS
 ## Overview
 
 - **Detection**: Scans the DOM for anchors (`<a>`), buttons, inputs, forms, `use` elements and any attributes indicating logout functionality.  
-- **Override**: Rewrites logout URLs to point at your OIDC provider’s logout endpoint, including a redirect back to the application.  
+- **Override**: Rewrites logout URLs to point at your OIDC provider’s logout endpoint.  
 - **Dynamic content support**: Uses a `MutationObserver` to handle AJAX‑loaded or dynamically injected logout elements.  
 - **CSP integration**: Automatically appends the required script hash into your CSP policy via the role’s CSP helper.
 

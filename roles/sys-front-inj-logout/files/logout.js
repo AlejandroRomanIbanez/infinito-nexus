@@ -3,21 +3,16 @@
 
   /**
    * Initialize the logout patch script.
-   * @param {string} logoutUrlBase - Base logout URL (e.g., from your OIDC client).
-   * @param {string} webProtocol - Protocol to use (e.g., "https").
-   * @param {string} primaryDomain - Primary domain (e.g., "example.com").
+   * @param {string} logoutUrl - Logout URL (e.g., from your OIDC client).
    * @param {boolean} debugMode - If true, debug logging is enabled.
    */
-  function initLogoutPatch(logoutUrlBase, webProtocol, primaryDomain, debugMode) {
+  function initLogoutPatch(logoutUrl, debugMode) {
     const DEBUG = !!debugMode;
 
     function log(reason, el, extra) {
       if (!DEBUG) return;
       console.debug('[logoutPatch]', reason, extra || {}, el || null);
     }
-
-    const redirectUri = encodeURIComponent(`${webProtocol}://${primaryDomain}`);
-    const logoutUrl = `${logoutUrlBase}?redirect_uri=${redirectUri}`;
 
     function matchesLogout(str) {
       const matched = str && /(?:^|\W)log\s*out(?:\W|$)|logout/i.test(str);
@@ -102,7 +97,7 @@
      * – Marks the element as patched to avoid double‐binding
      *
      * @param {Element} el – The element to override (e.g. <a>, <button>, <form>, <input>)
-     * @param {string} logoutUrl – The full logout URL including redirect params
+     * @param {string} logoutUrl – The logout URL to navigate to
      */
     function overrideLogout(el, logoutUrl) {
       // avoid patching the same element twice
