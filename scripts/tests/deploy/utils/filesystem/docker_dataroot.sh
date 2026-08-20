@@ -178,9 +178,10 @@ esac
 install_packages() {
 	if command -v apt-get >/dev/null; then
 		APT_TIMEOUT=10m
+		APT_INSTALL_TIMEOUT=20m
 		APT_OPTS=(-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30)
 		DEBIAN_FRONTEND=noninteractive timeout -k 30 "${APT_TIMEOUT}" apt-get "${APT_OPTS[@]}" update -qq
-		DEBIAN_FRONTEND=noninteractive timeout -k 30 "${APT_TIMEOUT}" apt-get "${APT_OPTS[@]}" install -y --no-install-recommends "$@"
+		DEBIAN_FRONTEND=noninteractive timeout -k 30 "${APT_INSTALL_TIMEOUT}" apt-get "${APT_OPTS[@]}" install -y --no-install-recommends "$@"
 	elif command -v pacman >/dev/null; then
 		pacman -Sy --noconfirm --needed "$@"
 	elif command -v dnf >/dev/null; then
