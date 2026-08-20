@@ -5,7 +5,7 @@
 # prefix / distro list and emits all four as GITHUB_OUTPUT lines.
 #
 # Usage:
-#   release_inputs.sh VERSION_TAG
+#   inputs.sh VERSION_TAG
 # Requires GITHUB_OUTPUT to be exported (provided by the runner).
 set -euo pipefail
 

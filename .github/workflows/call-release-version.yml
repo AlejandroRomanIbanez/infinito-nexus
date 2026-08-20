@@ -50,7 +50,7 @@ jobs:
       - name: 🔍 Resolve release inputs
         id: vars
         shell: bash
-        run: bash _helpers/scripts/github/resolve/release_inputs.sh "${{ inputs.tag || github.event.inputs.tag }}"
+        run: bash _helpers/scripts/github/resolve/release/inputs.sh "${{ inputs.tag || github.event.inputs.tag }}"
 
       - name: ⬇️ Checkout repository at version tag
         uses: actions/checkout@v7.0.0
