@@ -1,17 +1,19 @@
 """Read the deploy axes an operator pins in ``whitelist`` and ``priority``.
 
 A selection token names a role and MAY narrow the axes that role's rows would
-otherwise be assigned: which variants run, which deploy mode, and whether the
-row goes behind the node onion. What a token leaves open stays open -- the
-priority line then covers every combination of it, the whitelist line lets the
-sweep rotation pick one, exactly as an unpinned run does.
+otherwise be assigned: which variants run, which deploy mode, whether the row
+goes behind the node onion, which distribution it deploys on and which
+filesystem its docker data root runs on. What a token leaves open stays open,
+exactly as an unpinned run leaves it: the priority line covers every mode and
+onion state the row can take, and the sweep rotation picks the distro and the
+filesystem on both lines.
 
 Two spellings are accepted, so an operator can either type the token or paste
 back the job title of the run they want repeated:
 
-* the job label CI emits (``🚀🧅网络应用·Nextcloud#2``) -- the glyphs carry
-  mode and onion state, the ``#`` shard the variants;
-* an ASCII form (``web-app-nextcloud#0,2@swarm+tor``).
+* the job label CI emits (``🐳🧅🌀🦓网络应用·Nextcloud#2``) -- the glyphs carry
+  mode, onion state, distro and filesystem, the ``#`` shard the variants;
+* an ASCII form (``web-app-nextcloud#0,2@swarm+tor%debian/zfs``).
 
 The onion state spells out as ``+tor``/``+clearnet`` rather than as a ``-tor``
 suffix: a role id may itself end in ``-tor`` (``svc-net-tor``), and a suffix
@@ -28,7 +30,7 @@ from __future__ import annotations
 import re
 from typing import TYPE_CHECKING, NamedTuple
 
-from utils.github.variant.axes import MODES
+from utils.github.variant.axes import DISTROS, FILESYSTEMS, MODES
 from utils.roles.display import VARIANT_SEPARATOR, display_names
 from utils.symbol_glossary import to_emoji
 
@@ -40,42 +42,69 @@ MODE_SEPARATOR = "@"
 
 TOR_SEPARATOR = "+"
 
+DISTRO_SEPARATOR = "%"
+
+FILESYSTEM_SEPARATOR = "/"
+
 TOR_WORDS = {"tor": True, "clearnet": False}
 
 _STRIPPED_GLYPHS = ("priority", "test_host")
 
 _VARIATION = re.compile("[︎️]")
 
+_SEPARATORS = (
+    VARIANT_SEPARATOR
+    + MODE_SEPARATOR
+    + TOR_SEPARATOR
+    + DISTRO_SEPARATOR
+    + FILESYSTEM_SEPARATOR
+)
+
 _TOKEN = re.compile(
-    r"^(?P<name>[^#@+\s]+)"
+    r"^(?P<name>[^" + re.escape(_SEPARATORS) + r"\s]+)"
     r"(?:" + re.escape(VARIANT_SEPARATOR) + r"(?P<variants>\d+(?:,\d+)*))?"
     r"(?:" + re.escape(MODE_SEPARATOR) + r"(?P<mode>[a-z]+))?"
-    r"(?:" + re.escape(TOR_SEPARATOR) + r"(?P<tor>[a-z]+))?$"
+    r"(?:" + re.escape(TOR_SEPARATOR) + r"(?P<tor>[a-z]+))?"
+    r"(?:" + re.escape(DISTRO_SEPARATOR) + r"(?P<distro>[a-z0-9]+))?"
+    r"(?:" + re.escape(FILESYSTEM_SEPARATOR) + r"(?P<filesystem>[a-z0-9]+))?$"
 )
 
 _SYNTAX = (
     f"<role>[{VARIANT_SEPARATOR}<variant,variant>]"
     f"[{MODE_SEPARATOR}<{'|'.join(MODES)}>]"
     f"[{TOR_SEPARATOR}<{'|'.join(TOR_WORDS)}>]"
+    f"[{DISTRO_SEPARATOR}<{'|'.join(DISTROS)}>]"
+    f"[{FILESYSTEM_SEPARATOR}<{'|'.join(FILESYSTEMS)}>]"
 )
 
 
 class Pin(NamedTuple):
     """One selection token, taken apart.
 
-    ``variants`` empty, ``mode`` or ``tor`` ``None`` each mean "not pinned":
-    that axis keeps whatever the line it stands in would assign.
+    ``variants`` empty and ``mode``/``tor``/``distro``/``filesystem`` ``None``
+    each mean "not pinned": that axis keeps whatever the line it stands in
+    would assign.
     """
 
     app: str
     variants: tuple[int, ...] = ()
     mode: str | None = None
     tor: bool | None = None
+    distro: str | None = None
+    filesystem: str | None = None
 
     @property
     def pinned(self) -> bool:
         """Whether the token narrows anything at all beyond the role name."""
-        return bool(self.variants) or self.mode is not None or self.tor is not None
+        return bool(self.variants) or any(
+            axis is not None
+            for axis in (self.mode, self.tor, self.distro, self.filesystem)
+        )
+
+    @property
+    def axes(self) -> tuple[str | None, bool | None, str | None, str | None]:
+        """What the token narrows, as the key two tokens are equal under."""
+        return (self.mode, self.tor, self.distro, self.filesystem)
 
 
 def describe(pin: Pin) -> str:
@@ -90,24 +119,36 @@ def describe(pin: Pin) -> str:
             if pin.tor is not None
             else ""
         )
+        + (f"{DISTRO_SEPARATOR}{pin.distro}" if pin.distro else "")
+        + (f"{FILESYSTEM_SEPARATOR}{pin.filesystem}" if pin.filesystem else "")
     )
 
 
-def _glyphs(text: str) -> tuple[str, str | None, bool | None]:
-    """Take the label glyphs off a pasted job title and read them as axes."""
-    mode: str | None = None
-    tor: bool | None = None
-    for candidate in MODES:
-        glyph = to_emoji(candidate)
-        if glyph in text:
-            mode, text = candidate, text.replace(glyph, "")
-    for word, state in TOR_WORDS.items():
+def _word_glyph(text: str, words: Iterable[str]) -> tuple[str, str | None]:
+    """Strip whichever of *words* the text carries as a glyph, and name it."""
+    found: str | None = None
+    for word in words:
         glyph = to_emoji(word)
         if glyph in text:
-            tor, text = state, text.replace(glyph, "")
+            found, text = word, text.replace(glyph, "")
+    return text, found
+
+
+def _glyphs(text: str) -> tuple[str, str | None, bool | None, str | None, str | None]:
+    """Take the label glyphs off a pasted job title and read them as axes."""
+    text, mode = _word_glyph(text, MODES)
+    text, onion = _word_glyph(text, TOR_WORDS)
+    text, distro = _word_glyph(text, DISTROS)
+    text, filesystem = _word_glyph(text, FILESYSTEMS)
     for word in _STRIPPED_GLYPHS:
         text = text.replace(to_emoji(word), "")
-    return text.strip(), mode, tor
+    return (
+        text.strip(),
+        mode,
+        None if onion is None else TOR_WORDS[onion],
+        distro,
+        filesystem,
+    )
 
 
 def _agree(pin: Any, glyph: Any, token: str, axis: str) -> Any:
@@ -132,31 +173,36 @@ def parse(token: str) -> Pin:
             that does not exist. A typo must abort the run rather than narrow
             it to nothing.
     """
-    text, glyph_mode, glyph_tor = _glyphs(_VARIATION.sub("", token.strip()))
+    text, glyph_mode, glyph_tor, glyph_distro, glyph_fs = _glyphs(
+        _VARIATION.sub("", token.strip())
+    )
     match = _TOKEN.match(text)
     if match is None:
         raise SystemExit(f"unparsable selection token {token!r}; expected {_SYNTAX}")
 
-    mode = match.group("mode")
-    if mode is not None and mode not in MODES:
-        raise SystemExit(
-            f"selection token {token!r} names unknown deploy mode {mode!r}; "
-            f"expected {', '.join(MODES)}"
-        )
-    word = match.group("tor")
-    if word is not None and word not in TOR_WORDS:
-        raise SystemExit(
-            f"selection token {token!r} names unknown onion state {word!r}; "
-            f"expected {', '.join(TOR_WORDS)}"
-        )
+    for group, axis, declared in (
+        ("mode", "deploy mode", MODES),
+        ("tor", "onion state", TOR_WORDS),
+        ("distro", "distro", DISTROS),
+        ("filesystem", "filesystem", FILESYSTEMS),
+    ):
+        value = match.group(group)
+        if value is not None and value not in declared:
+            raise SystemExit(
+                f"selection token {token!r} names unknown {axis} {value!r}; "
+                f"expected {', '.join(declared)}"
+            )
 
     name = match.group("name")
     variants = match.group("variants")
+    word = match.group("tor")
     return Pin(
         display_names().decode(name) or name,
         tuple(int(index) for index in variants.split(",")) if variants else (),
-        _agree(mode, glyph_mode, token, "mode"),
+        _agree(match.group("mode"), glyph_mode, token, "mode"),
         _agree(TOR_WORDS[word] if word else None, glyph_tor, token, "onion"),
+        _agree(match.group("distro"), glyph_distro, token, "distro"),
+        _agree(match.group("filesystem"), glyph_fs, token, "filesystem"),
     )
 
 
@@ -174,8 +220,13 @@ def covers(pin: Pin, entry: Mapping[str, Any]) -> bool:
         str(index) for index in pin.variants
     }:
         return False
-    if pin.mode is not None and entry.get("mode") != pin.mode:
-        return False
+    for value, key in (
+        (pin.mode, "mode"),
+        (pin.distro, "distro"),
+        (pin.filesystem, "filesystem"),
+    ):
+        if value is not None and entry.get(key) != value:
+            return False
     return pin.tor is None or (entry.get("tor") == "true") == pin.tor
 
 
@@ -203,7 +254,7 @@ def apply(
 
     Returns:
         one entry per (row, pin) the selection asks for, each carrying
-        ``pin_mode`` and ``pin_tor`` for
+        ``pin_mode``, ``pin_tor``, ``pin_distro`` and ``pin_filesystem`` for
         :func:`utils.github.variant.axes.assign` to honour. Order is the
         query's -- a selection narrows what runs, it never re-ranks it.
 
@@ -236,12 +287,20 @@ def apply(
         ]
         matched.update(index for index, _pin in hits)
         narrowing = [(index, pin) for index, pin in hits if pin.pinned]
-        seen: set[tuple[str | None, bool | None]] = set()
+        seen: set[tuple[Any, ...]] = set()
         for _index, pin in narrowing or hits[:1]:
-            if (pin.mode, pin.tor) in seen:
+            if pin.axes in seen:
                 continue
-            seen.add((pin.mode, pin.tor))
-            kept.append({**row, "pin_mode": pin.mode, "pin_tor": pin.tor})
+            seen.add(pin.axes)
+            kept.append(
+                {
+                    **row,
+                    "pin_mode": pin.mode,
+                    "pin_tor": pin.tor,
+                    "pin_distro": pin.distro,
+                    "pin_filesystem": pin.filesystem,
+                }
+            )
     for index, pin in enumerate(pins):
         if index not in matched and pin.pinned:
             raise SystemExit(

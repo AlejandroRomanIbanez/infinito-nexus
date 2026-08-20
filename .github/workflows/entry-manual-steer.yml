@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
     inputs:
       distros:
-        description: "🐧 Distros to sweep. Empty: one at random. Example: 'arch debian'"
+        description: "🐧 Distro pool the rows are spread over. Empty: all five. Example: 'arch debian'"
         required: false
         default: ""
         type: string
@@ -39,7 +39,7 @@ on:
           - "compose"
           - "swarm"
       filesystem:
-        description: "🗄️ Filesystems the per-distro pick draws from. Empty: ext4, btrfs, zfs"
+        description: "🗄️ Filesystem pool the rows are spread over. Empty: ext4, btrfs, zfs"
         required: false
         default: ""
         type: string
@@ -100,23 +100,8 @@ permissions:
   contents: read
 
 jobs:
-  pick-distro:
-    name: 🎲 Pick distro(s)
-    runs-on: ubuntu-latest
-    outputs:
-      distros: ${{ steps.pick.outputs.distros }}
-    steps:
-      - uses: actions/checkout@v7.0.0
-
-      - id: pick
-        shell: bash
-        env:
-          INPUT_DISTROS: ${{ inputs.distros }}
-        run: ./scripts/github/resolve/manual_distros.sh
-
   ci-orchestrator:
     name: 🎛️ Orchestrate CI (manual)
-    needs: pick-distro
     permissions:
       actions: read
       contents: read
@@ -125,7 +110,7 @@ jobs:
       issues: write
     uses: ./.github/workflows/call-orchestrator.yml
     with:
-      distros: ${{ needs.pick-distro.outputs.distros }}
+      distros: ${{ inputs.distros }}
       whitelist: ${{ inputs.whitelist }}
       lifecycles: ${{ inputs.lifecycles }}
       mode: ${{ inputs.mode }}

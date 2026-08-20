@@ -4,7 +4,7 @@ import unittest
 from typing import ClassVar
 
 from cli.administration.deploy.ci import gh, runs
-from tests.utils.ci.job_names import deploy_job_name, discover_job_name
+from tests.utils.ci.job_names import deploy_job_name
 from tests.utils.ci.run_name import render
 from utils.github import run_name
 
@@ -407,16 +407,6 @@ class TestConfigFromTitle(unittest.TestCase):
     def test_a_run_from_another_entry_point_yields_no_override(self) -> None:
         self.assertEqual(runs.config_from_title("CI: Pull Request"), {})
 
-    def test_randomised_distros_are_recovered_from_the_discover_jobs(self) -> None:
-        title = render({"mode": "swarm"})
-        self.assertNotIn("distros", runs.config_from_title(title))
-        for chunk in (0, 1, 2):
-            with self.subTest(chunk=chunk):
-                jobs = [{"name": discover_job_name(chunk, "fedora arch")}]
-                self.assertEqual(
-                    runs.config_from_run(title, jobs)["distros"], "fedora arch"
-                )
-
     def test_priority_roles_without_any_job_are_reported(self) -> None:
         statuses = {"web-app-a": {"swarm": "failure"}}
         self.assertEqual(
@@ -442,23 +432,16 @@ class TestConfigFromTitle(unittest.TestCase):
         with self.assertRaises(SystemExit):
             runs.untriggered_priority("web-app-a 网络应用·Funkwha...", {})
 
-    def test_a_job_list_without_a_distro_group_adds_nothing(self) -> None:
-        title = render({"mode": "swarm"})
-        jobs = [{"name": "🎲 Pick distro(s)"}, {"name": "🧹 Lint"}]
-        self.assertNotIn("distros", runs.config_from_run(title, jobs))
-
     def test_the_tor_mode_is_carried_over_from_the_job_log(self) -> None:
         title = render({"mode": "swarm"})
-        jobs = [{"name": "🎲 Pick distro(s)"}]
         self.assertEqual(
-            runs.config_from_run(title, jobs, {"tor": "exclusive"})["tor"],
-            "exclusive",
+            runs.config_from_run(title, {"tor": "exclusive"})["tor"], "exclusive"
         )
 
     def test_a_run_whose_log_records_no_tor_mode_carries_none(self) -> None:
         title = render({"mode": "swarm"})
-        self.assertNotIn("tor", runs.config_from_run(title, [], {}))
-        self.assertNotIn("tor", runs.config_from_run(title, []))
+        self.assertNotIn("tor", runs.config_from_run(title, {}))
+        self.assertNotIn("tor", runs.config_from_run(title))
 
 
 if __name__ == "__main__":

@@ -716,7 +716,7 @@ swarm-zombie: install-act
 	 INFINITO_DISTROS=$(SWARM_DISTROS)" \
 	 ACT_WORKFLOW=.github/workflows/call-test-deploy.yml \
 	 ACT_JOB=deploy \
-	 ACT_MATRIX='apps:$(app);variant:$(or $(variant),0);mode:swarm' \
+	 ACT_MATRIX="apps:$(app);variant:$(or $(variant),0);mode:swarm" \
 	 ACT_INPUTS="whitelist=$(app) distros=$(SWARM_DISTROS) index=0 sweep=0 modes=swarm disable=$(disable)" \
 	 bash scripts/tests/deploy/act/workflow.sh
 

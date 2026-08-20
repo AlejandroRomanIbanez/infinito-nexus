@@ -1,8 +1,16 @@
 """Turn a run's deploy jobs back into selection tokens.
 
 A deploy job title carries the whole row it deployed -- role, variant, mode,
-onion state -- and :mod:`utils.github.variant.selection` is the grammar that
-writes it back down. Reading the tokens out of a finished run is what lets a
+onion state, distro, filesystem -- and :mod:`utils.github.variant.selection`
+is the grammar that writes it back down.
+
+The filesystem is the one axis a token built here leaves out. The title states
+the kind the matrix *assigned*, which a deploy is allowed to fall back from
+when the host cannot serve it, so the title does not prove what the job ran on.
+Writing it into a token would also state it as named by a human, which makes it
+binding (:func:`utils.github.variant.axes.assign`): a retrigger would then fail
+on the very condition the fallback exists to absorb. The retrigger lets the
+rotation assign it again and reports what it got. Reading the tokens out of a finished run is what lets a
 retrigger replay exactly what failed and start the regular line where that run
 stopped, instead of aggregating to role ids and guessing the rest.
 """
@@ -48,6 +56,7 @@ def failed_selections(jobs: list[dict], *, strict: bool = False) -> list[str]:
                     tuple(int(part) for part in label.variant.split(",") if part),
                     label.mode,
                     label.tor,
+                    label.distro or None,
                 )
             )
         )
@@ -67,6 +76,7 @@ def deployed_selections(jobs: list[dict]) -> set[str]:
                 tuple(int(part) for part in label.variant.split(",") if part),
                 label.mode,
                 label.tor,
+                label.distro or None,
             )
         )
         for app, _mode, job in _iter_deploy_jobs(jobs)
@@ -94,25 +104,33 @@ def resume_offset(regular: list[dict[str, str]], deployed: set[str]) -> str:
         deployed: tokens the source run deployed (:func:`deployed_selections`).
 
     Returns:
-        the token to resume at, or ``''`` when the source run deployed nothing
-        of this line -- then the retrigger starts at the head, as it would
-        without an offset.
+        the ``role#variant`` token to resume at, or ``''`` when the source run
+        deployed nothing of this line -- then the retrigger starts at the head,
+        as it would without an offset.
+
+        The returned token names a place in the ranking, so it carries no axes.
+        Membership is still tested on the full deploy token, because that is
+        what the source run recorded; but every axis rotates with the sweep
+        number, and the retrigger gets a fresh one. An axis-pinned offset would
+        therefore resolve only in the rare sweep whose rotation happens to
+        reproduce the source run's combination, and abort the discovery of
+        every chunk in all the others.
     """
     resume = ""
     for entry in regular:
-        token = selection.describe(
+        variants = tuple(
+            int(part) for part in str(entry.get("variant", "")).split(",") if part
+        )
+        deployment = selection.describe(
             selection.Pin(
                 entry["apps"],
-                tuple(
-                    int(part)
-                    for part in str(entry.get("variant", "")).split(",")
-                    if part
-                ),
+                variants,
                 entry["mode"],
                 entry["tor"] == "true",
+                entry["distro"],
             )
         )
-        if token not in deployed:
+        if deployment not in deployed:
             break
-        resume = token
+        resume = selection.describe(selection.Pin(entry["apps"], variants))
     return resume

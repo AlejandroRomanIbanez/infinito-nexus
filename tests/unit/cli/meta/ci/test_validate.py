@@ -6,6 +6,7 @@ import unittest.mock as mock
 from contextlib import redirect_stderr, redirect_stdout
 
 from cli.meta.ci import validate
+from utils.github.variant import axes
 
 _ROWS = [
     {"name": "web-app-a", "variant": 0, "test_compose": True, "test_swarm": True},
@@ -28,6 +29,8 @@ def _problems(tokens: str, *, tor_mode: str = "auto") -> tuple[list[str], list[s
             tokens,
             modes=("compose", "swarm", "host"),
             tor_mode=tor_mode,
+            distros=axes.DISTROS,
+            filesystems=axes.FILESYSTEMS,
             lifecycles="",
             label="priority",
         )

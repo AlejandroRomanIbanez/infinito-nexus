@@ -11,6 +11,7 @@ from cli.administration.deploy.ci.trigger import __main__ as trigger
 from cli.meta.ci import matrix
 from tests.utils.ci.job_names import deploy_job_name
 from tests.utils.ci.run_name import render
+from utils.github.variant.pools import DISTROS
 
 
 def _job(mode: str, app: str, conclusion: str) -> dict:
@@ -28,9 +29,15 @@ _JOBS = [
     _job("swarm", "web-app-y", "success"),
 ]
 
-_FAILED_TOKENS = "web-app-x#0,1@swarm+clearnet web-app-y#0,1@compose+clearnet"
+_AXES = f"%{DISTROS[0]}"
+"""The distro glyph _JOBS carry, spelled back out as ASCII. The filesystem is
+deliberately absent: a title states the assigned kind, not the effective one."""
+
+_FAILED_TOKENS = (
+    f"web-app-x#0,1@swarm+clearnet{_AXES} web-app-y#0,1@compose+clearnet{_AXES}"
+)
 """What _JOBS failed at, exactly: x in swarm, y in compose, both on variant
-shard 0,1 and both on the clearnet."""
+shard 0,1, both on the clearnet and both on the same distro."""
 
 _RUN_URL = "https://github.com/o/r/actions/runs/55"  # nocheck: url
 _SOURCE_CONFIG = {
@@ -104,7 +111,7 @@ class TestTriggerMain(unittest.TestCase):
         _rc, calls = self._run(["--failed"], run={"_jobs": both})
         self.assertEqual(
             calls[0][3],
-            "web-app-x#0,1@compose+clearnet web-app-x#0,1@swarm+clearnet",
+            f"web-app-x#0,1@compose+clearnet{_AXES} web-app-x#0,1@swarm+clearnet{_AXES}",
         )
 
     def test_never_deployed_priority_roles_join_the_retrigger(self) -> None:
@@ -133,7 +140,7 @@ class TestTriggerMain(unittest.TestCase):
         self.assertEqual(rc, 0)
         self.assertEqual(
             calls[0],
-            "web-app-never web-app-x#0,1@swarm+clearnet web-app-y#0,1@compose+clearnet",
+            f"web-app-never {_FAILED_TOKENS}",
         )
 
     def test_an_unreadable_job_log_aborts_instead_of_dropping_the_priority(

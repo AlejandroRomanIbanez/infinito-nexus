@@ -2,7 +2,8 @@
 
 Usage:
   python -m cli.meta.ci.validate [--whitelist "..."] [--priority "..."]
-      [--modes auto] [--tor auto] [--lifecycles "..."]
+      [--modes auto] [--tor auto] [--distros "..."] [--filesystem "..."]
+      [--lifecycles "..."]
 
 A selection token names a row that has to exist *on this branch*
 (:mod:`utils.github.variant.selection`). Nothing else in the chain can tell
@@ -18,8 +19,9 @@ What makes a token bad, in the order this checks it:
   outside the run's lifecycle envelope, or a role that no longer exists;
 * it pins a variant the role does not declare (any more): the usual case is a
   list carried over from an older run whose variants have since been renumbered;
-* it pins a mode the row cannot take, or an onion state the row, the mode or
-  the run's own tor axis rules out.
+* it pins a mode the row cannot take, an onion state the row, the mode or the
+  run's own tor axis rules out, or a distro or filesystem the run's own pool
+  does not hold.
 
 A bare role name that matches nothing is reported too, but as a warning: the
 diff-derived whitelist legitimately names roles the envelope filters out.
@@ -32,7 +34,7 @@ import sys
 
 from cli.meta.ci import query
 from utils.cache.applications import get_variants
-from utils.github.variant import axes, selection
+from utils.github.variant import axes, pools, selection, tor
 from utils.roles.display import display_names
 
 
@@ -41,6 +43,8 @@ def problems(
     *,
     modes: tuple[str, ...],
     tor_mode: str,
+    distros: tuple[str, ...],
+    filesystems: tuple[str, ...],
     lifecycles: str,
     label: str,
 ) -> tuple[list[str], list[str]]:
@@ -50,6 +54,8 @@ def problems(
         tokens: the raw ``whitelist``/``priority`` value.
         modes: the run's selected deploy modes.
         tor_mode: the run's tor axis.
+        distros: the distro pool the run draws from.
+        filesystems: the filesystem pool the run draws from.
         lifecycles: the run's lifecycle envelope.
         label: the input's name, for the messages.
 
@@ -91,8 +97,12 @@ def problems(
                     offered,
                     pin_mode=pin.mode,
                     pin_tor=pin.tor,
-                    capable=axes.tor_capable(pin.app, variant, declared),
+                    pin_distro=pin.distro,
+                    pin_filesystem=pin.filesystem,
+                    capable=tor.tor_capable(pin.app, variant, declared),
                     tor_mode=tor_mode,
+                    distros=distros,
+                    filesystems=filesystems,
                 )
             except SystemExit as refusal:
                 errors.append(f"{label}: {token!r} {str(refusal).split(': ', 1)[-1]}")
@@ -107,11 +117,15 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--priority", default="")
     parser.add_argument("--modes", default=query.ALL_MODES)
     parser.add_argument("--tor", default=None)
+    parser.add_argument("--distros", default="")
+    parser.add_argument("--filesystem", default="")
     parser.add_argument("--lifecycles", default="")
     args = parser.parse_args(argv)
 
     modes = query.resolve_modes(args.modes)
-    tor_mode = axes.resolve_tor_mode(args.tor)
+    tor_mode = tor.resolve_tor_mode(args.tor)
+    distros = pools.resolve_distros(args.distros)
+    filesystems = pools.resolve_filesystems(args.filesystem)
 
     errors: list[str] = []
     warnings: list[str] = []
@@ -120,6 +134,8 @@ def main(argv: list[str] | None = None) -> int:
             tokens,
             modes=modes,
             tor_mode=tor_mode,
+            distros=distros,
+            filesystems=filesystems,
             lifecycles=args.lifecycles,
             label=label,
         )

@@ -40,17 +40,17 @@ _HEADING = re.compile(r"^#\s+(.+?)\s*$", re.MULTILINE)
 _VARIANT_SUFFIX = re.compile(re.escape(VARIANT_SEPARATOR) + r"[\d,]+$")
 _ROLE_ID = re.compile(r"[a-z0-9]+(?:-[a-z0-9]+)+")
 _VARIATION = re.compile("[︎️]")
-_AXIS_START = re.compile(r"[#@+]")
+_AXIS_START = re.compile(r"[#@+%/]")
 
 
 def split_axes(token: str) -> tuple[str, str]:
     """Split a CI selection token into its name and its axis suffix.
 
-    ``#``, ``@`` and ``+`` introduce an axis and appear in neither a role id
-    nor a display name, so the first of them is the seam.
+    ``#``, ``@``, ``+``, ``%`` and ``/`` introduce an axis and appear in
+    neither a role id nor a display name, so the first of them is the seam.
 
     Args:
-        token: e.g. ``'web-app-nextcloud#0,2@swarm+tor'``.
+        token: e.g. ``'web-app-nextcloud#0,2@swarm+tor%debian/zfs'``.
     """
     match = _AXIS_START.search(token)
     return (token[: match.start()], token[match.start() :]) if match else (token, "")

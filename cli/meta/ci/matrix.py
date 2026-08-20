@@ -3,6 +3,7 @@
 Usage:
   python -m cli.meta.ci.matrix --index N [--sweep S] [--modes auto]
       [--whitelist "..."] [--priority "..."] [--lifecycles "..."] [--tor auto]
+      [--distros "..."] [--filesystem "..."]
 
 This is the pipeline the deploy jobs discover through, and the single place
 the run's shape is decided:
@@ -14,8 +15,8 @@ the run's shape is decided:
    Concatenated, they are the sweep's ordered candidate list. Both lists are
    selection tokens (:mod:`utils.github.variant.selection`): what a token pins
    narrows the row, what it leaves open the line decides as it always did.
-2. Every row is assigned its deploy mode and tor state by its position in
-   that list (:mod:`utils.github.variant.axes`).
+2. Every row is assigned its deploy mode, tor state, distro and filesystem by
+   its position in that list (:mod:`utils.github.variant.axes`).
 3. The list is cut into serial chunks with a hard boundary at the
    priority/regular seam (:mod:`cli.meta.ci.chunks`), sized by the run's job
    and queue budget (:mod:`cli.meta.ci.slots`).
@@ -34,8 +35,12 @@ import sys
 
 from cli.meta.ci import chunks, query, slots
 from utils.cache.applications import get_variants
-from utils.github.variant import axes, selection
+from utils.github.variant import axes, pools, selection, tor
 from utils.roles.display import display_names
+
+DROPPED = ("priority", "weight", "id", "covered", "clone")
+"""Entry keys the plan table reads but the matrix JSON withholds, so a deploy
+job cannot reference one: they describe the row's rank, not its deployment."""
 
 
 def candidates(
@@ -84,6 +89,8 @@ def entries_of(
     lifecycles: str,
     sweep: int,
     tor_mode: str,
+    distros: tuple[str, ...],
+    filesystems: tuple[str, ...],
 ) -> list[dict[str, str]]:
     """Every candidate row of the sweep, axes assigned, in global order."""
     return axes.assign(
@@ -95,6 +102,8 @@ def entries_of(
         ),
         sweep=sweep,
         tor_mode=tor_mode,
+        distros=distros,
+        filesystems=filesystems,
         variants_per_app=get_variants(),
     )
 
@@ -182,6 +191,8 @@ def build_sweep(
     lifecycles: str,
     sweep: int,
     tor_mode: str,
+    distros: tuple[str, ...],
+    filesystems: tuple[str, ...],
     offset: int = 0,
 ) -> list[list[dict[str, str]]]:
     """Every chunk of the sweep, priority blocks first."""
@@ -193,6 +204,8 @@ def build_sweep(
             lifecycles=lifecycles,
             sweep=sweep,
             tor_mode=tor_mode,
+            distros=distros,
+            filesystems=filesystems,
         ),
         offset,
     )
@@ -209,6 +222,8 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--priority", default="")
     parser.add_argument("--lifecycles", default="")
     parser.add_argument("--tor", default=None)
+    parser.add_argument("--distros", default="")
+    parser.add_argument("--filesystem", default="")
     parser.add_argument("--offset", default=None)
     args = parser.parse_args(argv)
 
@@ -223,12 +238,13 @@ def main(argv: list[str] | None = None) -> int:
         priority=codec.decode_list(args.priority),
         lifecycles=args.lifecycles,
         sweep=sweep,
-        tor_mode=axes.resolve_tor_mode(args.tor),
+        tor_mode=tor.resolve_tor_mode(args.tor),
+        distros=pools.resolve_distros(args.distros),
+        filesystems=pools.resolve_filesystems(args.filesystem),
         offset=resolve_offset(args.offset),
     )
     chunk = plan[args.index] if 0 <= args.index < len(plan) else []
-    dropped = ("priority", "weight", "id", "covered", "clone")
-    print(json.dumps([{k: v for k, v in e.items() if k not in dropped} for e in chunk]))
+    print(json.dumps([{k: v for k, v in e.items() if k not in DROPPED} for e in chunk]))
     return 0
 
 

@@ -28,6 +28,7 @@ from cli.administration.deploy.ci import gh, runs
 from cli.administration.deploy.ci.trigger import __main__ as trigger
 from cli.meta.ci import matrix
 from tests.utils.ci.job_names import deploy_job_name
+from utils.github.variant.pools import DISTROS
 
 _REPO = "o/r"
 _BRANCH = "feature/x"
@@ -133,7 +134,7 @@ class TestRecomputedSelection(unittest.TestCase):
         _whitelist, priority, _config = _dispatch(
             ["--failed", "--run", _RUN_URL], {"priority": ""}
         )
-        self.assertEqual(priority, "web-app-x#0@swarm+tor")
+        self.assertEqual(priority, f"web-app-x#0@swarm+tor%{DISTROS[0]}")
 
     def test_a_green_selection_of_the_same_run_is_left_alone(self) -> None:
         _whitelist, priority, _config = _dispatch(

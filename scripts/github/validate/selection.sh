@@ -8,6 +8,8 @@
 #   INPUT_PRIORITY    priority line of the run ('' = nothing to check)
 #   INPUT_MODE        deploy modes the run draws from
 #   INPUT_TOR         tor axis of the run
+#   INPUT_DISTROS     distro pool of the run ('' = every declared distro)
+#   INPUT_FILESYSTEM  filesystem pool of the run ('' = every declared kind)
 #   INPUT_LIFECYCLES  lifecycle envelope of the run
 #
 # Exits non-zero when a token names a row this branch does not have or pins an
@@ -24,4 +26,6 @@ source scripts/meta/env/load.sh
 	--priority "${INPUT_PRIORITY:-}" \
 	--modes "${INPUT_MODE:-auto}" \
 	--tor "${INPUT_TOR:-auto}" \
+	--distros "${INPUT_DISTROS:-}" \
+	--filesystem "${INPUT_FILESYSTEM:-}" \
 	--lifecycles "${INPUT_LIFECYCLES:-}"

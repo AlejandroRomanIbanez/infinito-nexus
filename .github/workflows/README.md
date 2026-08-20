@@ -135,22 +135,37 @@ row would otherwise be assigned. Two spellings are accepted:
 
 | Form | Example |
 |---|---|
-| ASCII | `web-app-nextcloud#0,2@swarm+tor` |
-| the job label, pasted back out of the failed run | `🐳🧅网络应用·Nextcloud#0` |
+| ASCII | `web-app-nextcloud#0,2@swarm+tor%debian/zfs` |
+| the job label, pasted back out of the failed run | `🐳🧅🌀🦓网络应用·Nextcloud#0` |
 
-`#` selects variants (comma-separated), `@` the deploy mode, `+tor` /
-`+clearnet` the onion state. The onion state is spelled `+clearnet` rather than
-`-tor` because a role id may itself end in `-tor`.
+| Separator | Axis | Values |
+|---|---|---|
+| `#` | variants | comma-separated indices |
+| `@` | deploy mode | `compose`, `swarm`, `host` |
+| `+` | onion state | `tor`, `clearnet` |
+| `%` | distro | `arch`, `debian`, `ubuntu`, `fedora`, `centos` |
+| `/` | filesystem | `zfs`, `btrfs`, `ext4` |
+
+The onion state is spelled `+clearnet` rather than `-tor` because a role id may
+itself end in `-tor`.
 
 What a token leaves open belongs to the line it stands in: `priority` covers
 every remaining combination in one sweep, `whitelist` keeps the rotation and
-the row's position in the matrix. A pin the row cannot take — `@swarm` on a
-role without its own stack, `+tor` on a variant that pins
-`services.tor.enabled` false, or an axis that fights the run's own `mode` /
-`tor` input — aborts the matrix rather than dropping the row, because a dropped
-row would report a green run for a combination that never ran.
+the row's position in the matrix. A pin the row cannot take aborts the matrix
+rather than dropping the row, because a dropped row would report a green run
+for a combination that never ran. Such a pin is `@swarm` on a role without its
+own stack, `+tor` on a variant that pins `services.tor.enabled` false, or any
+axis that fights the run's own `mode`, `tor`, `distros` or `filesystem` input.
 
-### Mode and tor
+That is also what a retrigger replays: `--failed` reads the glyphs off the failed
+job's title and writes them back as a token, so the row comes back in the mode,
+onion state and distribution it died on rather than on whatever the rotation
+would pick next. The filesystem is deliberately left out. A title states the
+kind the matrix *assigned*, which a deploy is allowed to fall back from, so
+pinning it would both misstate what the job ran on and turn the kind into a
+demand, failing the retrigger on the very condition the fallback absorbs.
+
+### Mode, tor, distro and filesystem
 
 The `tor` input decides what the onion axis is allowed to do at all:
 
@@ -161,7 +176,44 @@ The `tor` input decides what the onion axis is allowed to do at all:
 | `exclusive` | as `enforced`, and rows that cannot take an onion are dropped |
 | `disabled` | no row takes the onion |
 
-For **regular** rows both axes are a deterministic rotation over the row's
+`distros` and `filesystem` narrow the pools the other two axes draw from. Both
+default to empty, which means the whole declared set. That is what a sweep
+wants, because the rows are spread over the pool rather than all sharing one
+value. Narrowing is for chasing a single distribution or a single filesystem.
+
+Whether the assigned filesystem is binding depends on who chose it:
+
+| How the row got its kind | The kind is | A host that cannot serve it |
+|---|---|---|
+| the rotation, from a pool of two or more (every automatic run) | a preference | falls back inside the pool, and says so in the step summary |
+| the rotation, from a pool of exactly one (`filesystem: zfs`) | a demand | fails the row |
+| a selection token (`role#0/zfs`) | a demand | fails the row |
+
+A pool of two or more stays a preference because the matrix already narrowed
+each row to one kind out of it: falling back to the other kind the run allowed
+is inside what the operator asked for, while failing the row is not. A run whose
+whole pool is unservable fails rather than leaving the pool.
+
+The narrow case is what a deploy job actually sees, because the matrix hands
+every row exactly one kind. Reading that narrowness as a demand would turn every
+condition the applying step tolerates into a red row on every deploy: a loop
+device it could not claim, a pool another job still holds. The run's own input
+decides instead.
+
+A fallback is reported, never silent. The job title and artifact name carry the
+kind the matrix *assigned*, while
+[docker_dataroot.sh](../../scripts/tests/deploy/utils/filesystem/docker_dataroot.sh)
+writes the *effective* filesystem and the reason into the step summary. When a
+run has to prove a filesystem-dependent path, read the summary rather than the
+title, or name the kind on the run to make it a demand. The snapshot mode of
+`svc-bkp-volume-2-local` is the case that matters: it only engages on btrfs and
+zfs.
+
+The userland tools are baked into every distro image by
+[filesystem.sh](../../scripts/install/filesystem.sh); the kernel side comes from
+the host.
+
+For **regular** rows every axis is a deterministic rotation over the row's
 position in the global list and the sweep number, never random, so a red job
 reproduces by re-running the same sweep:
 
@@ -169,17 +221,29 @@ reproduces by re-running the same sweep:
 |---|---|
 | mode | `(position + sweep) % len(modes the role offers)` |
 | tor | `(position + sweep // 2) % 2` |
+| distro | `(position + sweep) % len(distro pool)` |
+| filesystem | `(position // len(distro pool) + sweep) % len(filesystem pool)` |
 
 A role offers at most two modes in practice — swarm needs its own stack, host
 needs the absence of one — so a row flips between its two modes on consecutive
 sweeps. Tor turns on `sweep // 2` so it does not flip in lockstep: a row walks
-all four mode/tor combinations over four sweeps instead of only two. Priority
-rows skip the rotation entirely and take the whole cross-product at once.
+all four mode/tor combinations over four sweeps instead of only two. Distro and
+filesystem read the position like an odometer, the distro as the low digit, so
+consecutive rows walk every pairing of the two pools rather than a diagonal
+through it. Turning both on the position directly would cover only as many
+pairings as the pools are long whenever they happen to be the same length, and
+no sweep would unlock that, because the sweep shifts both by the same amount.
+Priority rows skip the
+mode/tor rotation entirely and take the whole cross-product at once; their
+distro and filesystem walk on across those combinations, so one priority role
+proves several distributions in one sweep.
 
-Because the same variant can now run twice in one sweep, the onion state is
-part of what identifies a job: it is in the job label (`🧅` vs `🌐`), in the
-deploy concurrency group, and in every artifact name. Two jobs uploading under
-one artifact name is a conflict, not an overwrite.
+Because the same variant can run several times in one sweep, the onion state is
+part of what identifies a job: it is in the job label (`🧅` vs `🌐`) and in every
+artifact name. Two jobs uploading under one artifact name is a conflict, not an
+overwrite. The distro and
+filesystem glyphs follow it in the label (`🐳🧅🌀🦓`), so a title says which
+combination died without opening the job.
 
 ### Stopping on failure
 

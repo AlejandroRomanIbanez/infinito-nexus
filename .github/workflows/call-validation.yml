@@ -42,6 +42,16 @@ on:
         required: false
         type: string
         default: "auto"
+      distros:
+        description: "🐧 Distro pool of the run; narrows what a pinned distro may be."
+        required: false
+        type: string
+        default: ""
+      filesystem:
+        description: "🗄️ Filesystem pool of the run; narrows what a pinned filesystem may be."
+        required: false
+        type: string
+        default: ""
       lifecycles:
         description: "♻️ Lifecycle envelope; a role outside it has no row to match."
         required: false
@@ -130,6 +140,8 @@ jobs:
           INPUT_PRIORITY: ${{ inputs.priority }}
           INPUT_MODE: ${{ inputs.mode }}
           INPUT_TOR: ${{ inputs.tor }}
+          INPUT_DISTROS: ${{ inputs.distros }}
+          INPUT_FILESYSTEM: ${{ inputs.filesystem }}
           INPUT_LIFECYCLES: ${{ inputs.lifecycles }}
         run: ./scripts/github/validate/selection.sh
 

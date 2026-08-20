@@ -1,9 +1,9 @@
 """Render the plan of one CI sweep: every candidate row, and where it lands.
 
 Usage:
-  python -m cli.meta.ci.plan --distros "debian" [--whitelist "..."]
-      [--priority "..."] [--modes auto] [--lifecycles "..."] [--sweep N]
-      [--cli]
+  python -m cli.meta.ci.plan [--distros "debian"] [--filesystem "zfs"]
+      [--whitelist "..."] [--priority "..."] [--modes auto]
+      [--lifecycles "..."] [--sweep N] [--cli]
 
 The plan runs the same pipeline the deploy jobs discover through
 (``cli.meta.ci.matrix``), so what the table shows and what CI deploys cannot
@@ -29,7 +29,7 @@ import sys
 
 from cli.meta.ci import matrix, query, slots
 from cli.meta.roles.applications.complexity.render import _dwidth
-from utils.github.variant import axes
+from utils.github.variant import axes, pools, tor
 from utils.roles.display import display_names
 from utils.symbol_glossary import to_emoji
 
@@ -44,25 +44,38 @@ _COLUMNS = (
     "name",
     "variant",
     "mode",
-    "distros",
+    "distro",
+    "filesystem",
     "tor",
     "triggered",
     "covered_by",
     "weight",
     "clone",
 )
-_GLYPH = {"triggered": "enabled"}
+_GLYPH = {"triggered": "enabled", "distro": "distros"}
 _HEADERS = tuple(
     f"{to_emoji(_GLYPH.get(key, key))} {key.replace('_', ' ').capitalize()}"
     for key in _COLUMNS
 )
 
 
-def _key(entry: dict[str, str]) -> tuple[str, str, str, str]:
-    """What identifies one deploy row. Mode and tor belong in it: a priority
-    role runs every combination of its variant, so app+variant alone matches
-    several rows and would report the wrong chunk for all but the first."""
-    return (entry["apps"], entry["variant"], entry["mode"], entry["tor"])
+def _key(entry: dict[str, str]) -> tuple[str, ...]:
+    """What identifies one deploy row: every axis it was assigned.
+
+    A priority role runs every combination of its variant, and a selection can
+    ask for one variant on two distros, so app+variant alone matches several
+    rows and would report the first one's chunk for all of them -- including
+    for rows the budget never reaches, which the table would then mark as
+    deployed.
+    """
+    return (
+        entry["apps"],
+        entry["variant"],
+        entry["mode"],
+        entry["tor"],
+        entry["distro"],
+        entry["filesystem"],
+    )
 
 
 def _chunk_of(entry: dict[str, str], plan: list[list[dict[str, str]]]) -> int | None:
@@ -78,8 +91,6 @@ def _chunk_of(entry: dict[str, str], plan: list[list[dict[str, str]]]) -> int | 
 def cells(
     entries: list[dict[str, str]],
     plan: list[list[dict[str, str]]],
-    *,
-    distros: str,
 ) -> list[tuple[str, ...]]:
     rows = []
     positions: dict[str, str] = {}
@@ -102,7 +113,8 @@ def cells(
                 entry["apps"],
                 entry["variant"],
                 to_emoji(entry["mode"]),
-                distros,
+                to_emoji(entry["distro"]),
+                to_emoji(entry["filesystem"]),
                 to_emoji("tor" if entry["tor"] == "true" else "clearnet"),
                 status,
                 positions.get(covered, covered) if covered not in ("", "0") else "",
@@ -161,6 +173,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--lifecycles", default="")
     parser.add_argument("--sweep", type=int, default=None)
     parser.add_argument("--tor", default=None)
+    parser.add_argument("--filesystem", default="")
     parser.add_argument("--offset", default=None)
     parser.add_argument("--cli", action="store_true")
     args = parser.parse_args(argv)
@@ -176,10 +189,12 @@ def main(argv: list[str] | None = None) -> int:
         priority=codec.decode_list(args.priority),
         lifecycles=args.lifecycles,
         sweep=sweep,
-        tor_mode=axes.resolve_tor_mode(args.tor),
+        tor_mode=tor.resolve_tor_mode(args.tor),
+        distros=pools.resolve_distros(args.distros),
+        filesystems=pools.resolve_filesystems(args.filesystem),
     )
     plan = matrix.chunks_of(entries, matrix.resolve_offset(args.offset))
-    rows = cells(entries, plan, distros=args.distros)
+    rows = cells(entries, plan)
 
     render = render_cli if args.cli else render_markdown
     print(render(_title(plan, sweep), rows))

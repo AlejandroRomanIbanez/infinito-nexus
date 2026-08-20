@@ -7,6 +7,7 @@ import json
 import subprocess
 import sys
 from pathlib import Path
+from typing import NamedTuple
 
 from utils.cache.files import read_text
 from utils.github.variant import axes
@@ -17,17 +18,29 @@ _TITLE = "CI failure: {role}"
 _LABEL = "ci-failure"
 
 
-def failed_roles(jobs: list[dict]) -> dict[str, list[tuple[str, str, bool]]]:
-    """Map role -> [(mode, variant, tor)] for every failed deploy job.
+class Failure(NamedTuple):
+    """The combination one red deploy job died on -- everything the artifact
+    name is built from, so the reporter downloads the run it is reporting."""
 
-    A deploy job is titled ``<mode glyph><tor glyph><display name> <variant>``
-    with an optional trailing ⭐ for a priority row. The middle is resolved
-    through the display-name codec rather than matched as a raw role id: job
-    names carry display names, so a regex over ``web-app-…`` silently matched
-    nothing and every failure went unreported.
+    mode: str
+    variant: str
+    tor: bool
+    distro: str
+    filesystem: str
+
+
+def failed_roles(jobs: list[dict]) -> dict[str, list[Failure]]:
+    """Map role -> [:class:`Failure`] for every failed deploy job.
+
+    A deploy job is titled ``<mode glyph><tor glyph><distro glyph><filesystem
+    glyph><display name> <variant>`` with an optional trailing ⭐ for a
+    priority row. The middle is resolved through the display-name codec rather
+    than matched as a raw role id: job names carry display names, so a regex
+    over ``web-app-…`` silently matched nothing and every failure went
+    unreported.
     """
     codec = display_names()
-    out: dict[str, list[tuple[str, str, bool]]] = {}
+    out: dict[str, list[Failure]] = {}
     for job in jobs:
         if job.get("conclusion") not in ("failure", "timed_out"):
             continue
@@ -38,19 +51,32 @@ def failed_roles(jobs: list[dict]) -> dict[str, list[tuple[str, str, bool]]]:
         if role is None:
             continue
         out.setdefault(role, []).append(
-            (label.mode, label.variant.replace(",", "-"), label.tor)
+            Failure(
+                label.mode,
+                label.variant.replace(",", "-"),
+                label.tor,
+                label.distro,
+                label.filesystem,
+            )
         )
     return out
 
 
-def artifact_name(mode: str, role: str, variant: str, tor: bool = False) -> str:
+def artifact_name(role: str, failure: Failure) -> str:
     """The rescue-diagnostics artifact one deploy job uploads.
 
     The slug comes from :func:`axes.artifact_slug`, the same call the matrix
     entry carries into the workflow, so the name this looks for and the name
     CI uploads cannot drift apart.
     """
-    return f"rescue-diagnostics-{axes.artifact_slug(mode, role, variant, tor)}"
+    return "rescue-diagnostics-" + axes.artifact_slug(
+        failure.mode,
+        role,
+        failure.variant,
+        failure.tor,
+        failure.distro,
+        failure.filesystem,
+    )
 
 
 def decisive_excerpt(rescue_dir: Path, *, max_lines: int = 40) -> str:
@@ -70,17 +96,19 @@ def decisive_excerpt(rescue_dir: Path, *, max_lines: int = 40) -> str:
 
 def issue_body(
     role: str,
-    failures: list[tuple[str, str, bool]],
+    failures: list[Failure],
     *,
     run_url: str,
     excerpt: str,
 ) -> str:
     rows = "\n".join(
-        f"- `{mode}`"
-        + (f" variant `{variant}`" if variant else "")
-        + (" behind the onion" if tor else "")
-        + f" — artifact `{artifact_name(mode, role, variant, tor)}`"
-        for mode, variant, tor in failures
+        f"- `{failure.mode}`"
+        + (f" variant `{failure.variant}`" if failure.variant else "")
+        + (" behind the onion" if failure.tor else "")
+        + (f" on `{failure.distro}`" if failure.distro else "")
+        + (f"/`{failure.filesystem}`" if failure.filesystem else "")
+        + f" — artifact `{artifact_name(role, failure)}`"
+        for failure in failures
     )
     return (
         f"Role **{role}** failed on `main`.\n\n"
@@ -180,10 +208,10 @@ def report(run_id: str, repo: str) -> int:
 
 
 def _download_excerpt(
-    repo: str, run_id: str, role: str, failures: list[tuple[str, str, bool]], dest: Path
+    repo: str, run_id: str, role: str, failures: list[Failure], dest: Path
 ) -> str:
-    for mode, variant, tor in failures:
-        name = artifact_name(mode, role, variant, tor)
+    for failure in failures:
+        name = artifact_name(role, failure)
         try:
             _gh(
                 ["run", "download", run_id, "--repo", repo, "-n", name, "-D", str(dest)]

@@ -2,19 +2,22 @@
 set -euo pipefail
 
 # Resolve the CI deploy matrix for one chunk of one sweep. The pipeline itself
-# (two discovery queries, the mode/tor rotation, the chunk split) lives in
+# (two discovery queries, the axis rotations, the chunk split) lives in
 # cli.meta.ci.matrix, shared with the deploy-plan table, so the matrix this
 # emits and the plan the summary renders can never disagree. Every entry is one
-# role#variant row carrying the deploy mode it was assigned.
+# role#variant row carrying the mode, onion state, distro and filesystem it was
+# assigned.
 #
 # Inputs via env (defaults live in default.env, the single source of truth):
 #   INFINITO_CI_CHUNK              chunk index to emit (required)
-#   INFINITO_CI_SWEEP              sweep number driving the mode/tor rotation
+#   INFINITO_CI_SWEEP              sweep number driving the axis rotations
 #   INFINITO_CI_OFFSET             regular rows to skip before filling the chunks
 #   INFINITO_MODES                 'auto' or a subset of 'host compose swarm'
 #   INFINITO_WHITELIST             optional space-separated app ids to keep
 #   INFINITO_PRIORITY              optional space-separated app ids to lead
 #   INFINITO_TOR                   auto|enforced|exclusive|disabled
+#   INFINITO_DISTROS               distro pool the rows are spread over; empty: all
+#   INFINITO_DOCKER_FILESYSTEM_ALLOWED  filesystem pool; empty: all
 #   INFINITO_LIFECYCLES            lifecycle envelope for discovery
 #   INFINITO_DISCOVERY_SORT        complexity --sort spec (coverage-first)
 #   INFINITO_REQUIRED_STORAGE      per-runner CI storage budget
@@ -63,7 +66,9 @@ matrix_json="$(
 		--whitelist "${INFINITO_WHITELIST}" \
 		--priority "${INFINITO_PRIORITY}" \
 		--lifecycles "${INFINITO_LIFECYCLES}" \
-		--tor "${INFINITO_TOR}"
+		--tor "${INFINITO_TOR}" \
+		--distros "${INFINITO_DISTROS}" \
+		--filesystem "${INFINITO_DOCKER_FILESYSTEM_ALLOWED}"
 )"
 
 if [[ -n "${GITHUB_ACTIONS:-}" && -z "${ACT:-}" ]]; then

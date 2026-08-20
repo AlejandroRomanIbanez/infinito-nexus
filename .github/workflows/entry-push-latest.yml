@@ -84,13 +84,12 @@ jobs:
           echo "Skipping CI for commit ${GITHUB_SHA}."
           echo "Reason: ${{ needs.run-policy.outputs.skip_reason }}"
 
-  pick-distro:
+  detect-release:
     if: needs.run-policy.outputs.should_run == 'true'
     needs: run-policy
-    name: 🎲 Pick distro(s)
+    name: 🏷️ Detect release tag
     runs-on: ubuntu-latest
     outputs:
-      distros: ${{ steps.pick.outputs.distros }}
       is_version: ${{ steps.pick.outputs.is_version }}
       version_tag: ${{ steps.pick.outputs.version_tag }}
     steps:
@@ -102,7 +101,7 @@ jobs:
 
       - id: pick
         shell: bash
-        run: bash scripts/github/resolve/pick_distro.sh
+        run: bash scripts/github/resolve/release/tag.sh
 
   resolve-priority:
     if: needs.run-policy.outputs.should_run == 'true'
@@ -128,7 +127,7 @@ jobs:
     name: 🎶 Orchestrate CI
     needs:
       - run-policy
-      - pick-distro
+      - detect-release
       - resolve-priority
     permissions:
       actions: read
@@ -138,16 +137,15 @@ jobs:
       issues: write
     uses: ./.github/workflows/call-orchestrator.yml
     with:
-      distros: ${{ needs.pick-distro.outputs.distros }}
       priority: ${{ needs.resolve-priority.outputs.priority }}
     secrets: inherit
 
   release-guard:
     name: "🛡️ Guard release"
-    if: needs.run-policy.outputs.should_run == 'true' && needs.pick-distro.outputs.is_version == 'true'
+    if: needs.run-policy.outputs.should_run == 'true' && needs.detect-release.outputs.is_version == 'true'
     needs:
       - run-policy
-      - pick-distro
+      - detect-release
       - ci-orchestrator
     runs-on: ubuntu-latest
     outputs:
@@ -169,14 +167,14 @@ jobs:
         id: guard
         shell: bash
         env:
-          VERSION_TAG: ${{ needs.pick-distro.outputs.version_tag }}
+          VERSION_TAG: ${{ needs.detect-release.outputs.version_tag }}
         run: bash scripts/github/release/guard.sh
 
   release-version:
     name: 🚀 Release version
     needs:
       - run-policy
-      - pick-distro
+      - detect-release
       - release-guard
     if: needs.run-policy.outputs.should_run == 'true' && needs.release-guard.outputs.allowed == 'true'
     permissions:
@@ -184,5 +182,5 @@ jobs:
       packages: write
     uses: ./.github/workflows/call-release-version.yml
     with:
-      tag: ${{ needs.pick-distro.outputs.version_tag }}
+      tag: ${{ needs.detect-release.outputs.version_tag }}
     secrets: inherit

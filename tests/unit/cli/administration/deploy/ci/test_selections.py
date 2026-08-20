@@ -5,6 +5,7 @@ from typing import ClassVar
 
 from cli.administration.deploy.ci import selections
 from tests.utils.ci.job_names import deploy_job_name
+from utils.github.variant.pools import DISTROS, FILESYSTEMS
 
 
 def _job(name: str, conclusion: str | None, status: str = "completed") -> dict:
@@ -17,8 +18,13 @@ def _row(app: str, variant: str, mode: str, tor: bool = False) -> dict:
         "variant": variant,
         "mode": mode,
         "tor": "true" if tor else "false",
+        "distro": DISTROS[0],
+        "filesystem": FILESYSTEMS[0],
         "priority": "false",
     }
+
+
+_AXES = f"%{DISTROS[0]}"
 
 
 class TestResumeOffset(unittest.TestCase):
@@ -34,27 +40,42 @@ class TestResumeOffset(unittest.TestCase):
         self.assertEqual(selections.resume_offset(self._REGULAR, set()), "")
 
     def test_the_offset_is_the_last_row_of_the_leading_run(self) -> None:
-        deployed = {"web-app-a#0@compose+clearnet", "web-app-b#1@swarm+tor"}
+        deployed = {
+            "web-app-a#0@compose+clearnet" + _AXES,
+            "web-app-b#1@swarm+tor" + _AXES,
+        }
         self.assertEqual(
-            selections.resume_offset(self._REGULAR, deployed), "web-app-b#1@swarm+tor"
+            selections.resume_offset(self._REGULAR, deployed), "web-app-b#1"
         )
 
+    def test_the_offset_carries_no_axes_so_it_survives_a_new_sweep(self) -> None:
+        """Every axis rotates with the sweep number and a retrigger gets a
+        fresh one, so an axis-pinned offset would resolve only in the sweep it
+        was computed at and abort every chunk's discovery in the others."""
+        deployed = {"web-app-a#0@compose+clearnet" + _AXES}
+        offset = selections.resume_offset(self._REGULAR, deployed)
+        self.assertNotIn("@", offset)
+        self.assertNotIn("+", offset)
+        self.assertNotIn("%", offset)
+        self.assertNotIn("/", offset)
+
     def test_a_gap_stops_the_scan_rather_than_skipping_past_it(self) -> None:
-        deployed = {"web-app-a#0@compose+clearnet", "web-app-c#0@host+clearnet"}
+        deployed = {
+            "web-app-a#0@compose+clearnet" + _AXES,
+            "web-app-c#0@host+clearnet" + _AXES,
+        }
         self.assertEqual(
-            selections.resume_offset(self._REGULAR, deployed),
-            "web-app-a#0@compose+clearnet",
+            selections.resume_offset(self._REGULAR, deployed), "web-app-a#0"
         )
 
     def test_a_run_that_covered_everything_resumes_at_the_last_row(self) -> None:
         deployed = {
-            "web-app-a#0@compose+clearnet",
-            "web-app-b#1@swarm+tor",
-            "web-app-c#0@host+clearnet",
+            "web-app-a#0@compose+clearnet" + _AXES,
+            "web-app-b#1@swarm+tor" + _AXES,
+            "web-app-c#0@host+clearnet" + _AXES,
         }
         self.assertEqual(
-            selections.resume_offset(self._REGULAR, deployed),
-            "web-app-c#0@host+clearnet",
+            selections.resume_offset(self._REGULAR, deployed), "web-app-c#0"
         )
 
     def test_the_verdict_does_not_matter_only_that_the_row_ran(self) -> None:
@@ -64,5 +85,5 @@ class TestResumeOffset(unittest.TestCase):
         ]
         self.assertEqual(
             selections.deployed_selections(jobs),
-            {"web-app-a#0@compose+clearnet", "web-app-b#1@swarm+tor"},
+            {"web-app-a#0@compose+clearnet" + _AXES, "web-app-b#1@swarm+tor" + _AXES},
         )

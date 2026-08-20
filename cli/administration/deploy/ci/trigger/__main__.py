@@ -6,8 +6,9 @@ deploy across all roles".
 A retrigger differs from its source run in the selection and in nothing else:
 every other dispatch input is carried over (:func:`runs.carried_inputs`, read
 off the workflow itself), and the priority line names the exact selections that
-failed -- role, variant, deploy mode and onion state -- rather than the roles
-they belong to.
+failed -- role, variant, deploy mode, onion state and distro -- rather than the
+roles they belong to. The filesystem is left to the rotation
+(:mod:`cli.administration.deploy.ci.selections` says why).
 """
 
 from __future__ import annotations
@@ -17,7 +18,7 @@ import sys
 
 from cli.administration.deploy.ci import gh, runs, selections
 from cli.meta.ci import matrix, query
-from utils.github.variant import axes
+from utils.github.variant import pools, tor
 
 _WORKFLOW = "entry-manual-steer.yml"
 _ALL = "__ALL__"
@@ -50,7 +51,9 @@ def _resume_offset(source: dict, whitelist: str, config: dict[str, str]) -> str:
         priority="",
         lifecycles=config.get("lifecycles", ""),
         sweep=0,
-        tor_mode=axes.resolve_tor_mode(config.get("tor")),
+        tor_mode=tor.resolve_tor_mode(config.get("tor")),
+        distros=pools.resolve_distros(config.get("distros")),
+        filesystems=pools.resolve_filesystems(config.get("filesystem")),
     )
     return selections.resume_offset(
         entries, selections.deployed_selections(source["jobs"])
@@ -158,7 +161,6 @@ def main(argv: list[str] | None = None) -> int:
     if source is not None:
         config = runs.config_from_run(
             source["displayTitle"],
-            source["jobs"],
             runs.inputs_from_jobs(source["jobs"], repo),
         )
     carried_whitelist = config.pop("whitelist", "")

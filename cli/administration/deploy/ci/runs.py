@@ -28,7 +28,6 @@ from cli.administration.deploy.ci.gh import (
 )
 from utils.cache import PROJECT_ROOT
 from utils.cache.yaml import load_yaml_any
-from utils.distros import distro_names
 from utils.github import run_name
 from utils.github.variant import axes
 from utils.roles.display import display_names, split_axes
@@ -357,24 +356,6 @@ def untriggered_priority(
     return sorted(untriggered)
 
 
-def distros_from_jobs(jobs: list[dict]) -> str:
-    """Distros the run actually swept, read back from its discover job names.
-
-    A manual run dispatched with no distro list resolves one at random, so its
-    title records nothing and only the discover jobs — which name the distros
-    they discovered for — still carry the answer. Matched by content, not by
-    job-name format: the parenthesised group whose every token is a declared
-    distro (meta/distros.yml SPOT) is the list.
-    """
-    known = set(distro_names())
-    for job in jobs:
-        for group in re.findall(r"\(([^()]*)\)", str(job.get("name", ""))):
-            tokens = group.split()
-            if tokens and set(tokens) <= known:
-                return " ".join(tokens)
-    return ""
-
-
 def config_from_title(title: str) -> dict[str, str]:
     """Configuration inputs a manual run was dispatched with, keyed by input
     name. An input left on its workflow default renders no title segment and
@@ -389,15 +370,12 @@ def config_from_title(title: str) -> dict[str, str]:
     return {name: recorded[name] for name in CONFIG_INPUTS if name in recorded}
 
 
-def config_from_run(
-    title: str, jobs: list[dict], logged: dict[str, str] | None = None
-) -> dict[str, str]:
+def config_from_run(title: str, logged: dict[str, str] | None = None) -> dict[str, str]:
     """Every input the source run was dispatched with, except the selection.
 
     The job log is the source: it records all inputs verbatim, including the
     ones the title renders as a glyph and the ones it renders not at all. The
-    title fills the gaps when a log is unreadable, and the distros -- which a
-    randomly picked run records nowhere -- come from the job names.
+    title fills the gaps when a log is unreadable.
 
     An input the source left on its default resolves to empty and is dropped,
     so the retrigger leaves it on that same default rather than pinning
@@ -405,7 +383,6 @@ def config_from_run(
 
     Args:
         title: the source run's display title.
-        jobs: the source run's jobs.
         logged: inputs read verbatim from a called job's log
             (:func:`inputs_from_jobs`).
     """
@@ -414,8 +391,6 @@ def config_from_run(
         name: (logged or {}).get(name) or recorded.get(name, "")
         for name in carried_inputs()
     }
-    if not config.get("distros"):
-        config["distros"] = distros_from_jobs(jobs)
     return {name: value for name, value in config.items() if value}
 
 
