@@ -75,8 +75,12 @@ test("administrator: admin login → catalogue → in-app logout", async ({ page
     timeout: resolveTimeout(15_000),
   });
   await logout.click();
-  await page.waitForLoadState("domcontentloaded", { timeout: resolveTimeout(30_000) }).catch(() => {});
   await confirmKeycloakLogoutIfPrompted(page);
+  await page
+    .waitForFunction(() => !document.cookie.includes("bearerAuth"), null, {
+      timeout: resolveTimeout(30_000),
+    })
+    .catch(() => {});
   await gotoOnion(page, `${appBaseUrl}/admin`, { waitUntil: "domcontentloaded" });
 
   await expect(
