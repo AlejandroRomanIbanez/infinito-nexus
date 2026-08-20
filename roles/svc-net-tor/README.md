@@ -63,7 +63,7 @@ Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (
 - **Offline deterministic minting:** the v3 key/address is generated without running Tor and pinned in the inventory (stable, backupable, restorable).
 - **HTTP on the onion side:** TLS is forced off for `.onion` (no Let's Encrypt possible); onion v3 crypto is the transport auth.
 - **Optional public domains:** extra clearnet domains added to an app keep their own TLS flavor and deploy alongside the onion.
-- **Configurable egress:** inbound is always onion; outbound torification is off by default (`TOR_EGRESS_ENABLED`).
+- **Configurable egress:** inbound is always onion; outbound torification is on by default (`TOR_EGRESS_ROUTER_ENABLED`).
 
 ## Quick Setup
 
