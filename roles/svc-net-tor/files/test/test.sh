@@ -57,9 +57,9 @@ probe() {
 	fi
 	while [[ "${attempt}" -le "${RETRIES}" ]]; do
 		code="$(curl "${curl_proxy[@]}" --silent --show-error --location \
-			--insecure --max-time 30 \
+			--insecure --max-time 60 \
 			-o /dev/null -w '%{http_code}' \
-			"${scheme}://${domain}/" || true)"
+			"${scheme}://${domain}/")"
 		if [[ "${code}" =~ ^[234][0-9][0-9]$ ]]; then
 			echo "${code}"
 			return 0
