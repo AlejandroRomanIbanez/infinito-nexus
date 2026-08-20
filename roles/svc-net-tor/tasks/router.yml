@@ -56,6 +56,7 @@
     dest: /etc/resolv.conf
     content: |
       nameserver 127.0.0.1
+      nameserver {{ networks.internet.dns }}
       options ndots:1
     owner: root
     group: root
