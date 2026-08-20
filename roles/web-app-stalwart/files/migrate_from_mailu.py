@@ -41,7 +41,6 @@ import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
-# Maildir info flags -> IMAP system flags (maildir(5) semantics).
 _MAILDIR_FLAG_MAP = {
     "S": "\\Seen",
     "R": "\\Answered",
@@ -196,11 +195,14 @@ def migrate_account(
 def connect(host: str, port: int, insecure: bool) -> imaplib.IMAP4_SSL:
     context = ssl.create_default_context()
     if insecure:
-        # Test harness / container-internal hop: the fixture Stalwart serves
-        # its built-in bootstrap certificate.
+        # Exception: loopback/container-internal hop — Stalwart answers with its bootstrap certificate, which no hostname matches.
         context.check_hostname = False
         context.verify_mode = ssl.CERT_NONE
-    return imaplib.IMAP4_SSL(host, port, ssl_context=context, timeout=30)
+    imap = imaplib.IMAP4_SSL(host, port, ssl_context=context, timeout=30)
+    # Exception: imaplib encodes command arguments as ASCII, so a mailbox password holding any
+    # non-ASCII character (e.g. '€') raises UnicodeEncodeError before the LOGIN is ever sent.
+    imap._encoding = "utf-8"  # noqa: SLF001
+    return imap
 
 
 def run(args: argparse.Namespace) -> int:
@@ -222,7 +224,7 @@ def run(args: argparse.Namespace) -> int:
             imap.login(address, password)
             migrate_account(imap, account_dir, args.dest_separator, stats)
         finally:
-            # A failed logout is not a migration failure.
+            # Exception: a failed logout must not mask an otherwise successful migration.
             with contextlib.suppress(Exception):
                 imap.logout()
         for mailbox, f in sorted(stats.folders.items()):

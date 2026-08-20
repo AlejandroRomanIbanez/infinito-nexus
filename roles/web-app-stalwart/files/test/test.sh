@@ -1,8 +1,7 @@
 #!/usr/bin/env bash
-# Mailu → Stalwart migration state machine (see the role README):
-#   the leg deploys the final-state topology (Stalwart current, Mailu legacy);
-#   this test rewinds to the initial state (Mailu active), stores mail there,
-#   cuts over with the migration switch on, and proves continuity.
+# Mailu → Stalwart migration, end to end against the deployed stack:
+#   mail is delivered into the legacy Mailu, the role's import switch is turned on and
+#   applied, and the same messages are then read back out of Stalwart over IMAP.
 # nocheck: raw-docker — storage assertions read the maildir volume via the container wrapper
 set -euo pipefail
 
@@ -20,9 +19,9 @@ fi
 : "${BIBER_EMAIL:?missing BIBER_EMAIL}"
 : "${BIBER_IMAP_PASSWORD:?missing BIBER_IMAP_PASSWORD}"
 : "${MAILU_MAILDIR_VOLUME:?missing MAILU_MAILDIR_VOLUME}"
+: "${MAILU_SMTP_CONTAINER:?missing MAILU_SMTP_CONTAINER}"
 : "${MAIL_DOMAIN:?missing MAIL_DOMAIN}"
 
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 RUN_ID="$(date +%s)"
 SUBJ_A="infinito-mig-A-${RUN_ID}"
 SUBJ_B="infinito-mig-B-${RUN_ID}"
@@ -30,39 +29,39 @@ SUBJ_C="infinito-mig-C-${RUN_ID}"
 SUBJ_D="infinito-mig-D-${RUN_ID}"
 
 WORKDIR="$(mktemp -d)"
-INV_COPY="${WORKDIR}/inventory"
 cleanup() { rm -rf "${WORKDIR}"; }
 trap cleanup EXIT
 
-send_mail() {
+compose_mail() {
 	local from="$1" rcpt="$2" subject="$3" in_reply_to="${4:-}"
-	local message_id="<${subject}@${MAIL_DOMAIN}>"
 	{
 		printf 'From: %s\r\nTo: %s\r\nSubject: %s\r\n' "${from}" "${rcpt}" "${subject}"
-		printf 'Message-ID: %s\r\nDate: %s\r\n' "${message_id}" "$(date -R)"
+		printf 'Message-ID: <%s@%s>\r\nDate: %s\r\n' "${subject}" "${MAIL_DOMAIN}" "$(date -R)"
 		if [[ -n "${in_reply_to}" ]]; then
-			printf 'In-Reply-To: %s\r\nReferences: %s\r\n' "${in_reply_to}" "${in_reply_to}"
+			printf 'In-Reply-To: <%s@%s>\r\n' "${in_reply_to}" "${MAIL_DOMAIN}"
 		fi
 		printf '\r\n%s\r\n' "migration e2e body ${subject}"
 	} >"${WORKDIR}/mail.eml"
-	local attempt
+}
+
+send_smtp() {
+	local host="$1" from="$2" rcpt="$3" subject="$4" attempt
 	for attempt in 1 2 3 4 5 6; do
-		if curl -sS --connect-timeout 10 --max-time 60 --url "smtp://127.0.0.1:25" \
+		if curl -sS --connect-timeout 10 --max-time 60 --url "smtp://${host}:25" \
 			--mail-from "${from}" --mail-rcpt "${rcpt}" \
 			--upload-file "${WORKDIR}/mail.eml"; then
-			echo "sent: ${subject} (${from} -> ${rcpt})"
+			echo "sent: ${subject} (${from} -> ${rcpt} via ${host})"
 			return 0
 		fi
-		echo "retry ${attempt}: SMTP submission of ${subject} failed; waiting 10s"
+		echo "retry ${attempt}: submission of ${subject} to ${host} failed; waiting 10s"
 		sleep 10
 	done
-	echo "FAIL: could not submit ${subject} to port 25" >&2
+	echo "FAIL: could not submit ${subject} to ${host}" >&2
 	return 1
 }
 
 wait_stored_in_maildir() {
-	local subject="$1" mountpoint="$2"
-	local attempt
+	local subject="$1" mountpoint="$2" attempt
 	for attempt in $(seq 1 30); do
 		if grep -rqF "Subject: ${subject}" "${mountpoint}" 2>/dev/null; then
 			echo "stored: ${subject} under ${mountpoint}"
@@ -74,22 +73,18 @@ wait_stored_in_maildir() {
 	return 1
 }
 
-imap_search() {
-	local user="$1" password="$2" mailbox="$3" subject="$4"
-	curl -sS --connect-timeout 10 --max-time 60 --insecure \
-		--url "imaps://127.0.0.1:993/${mailbox}" \
-		--user "${user}:${password}" \
-		--request "SEARCH SUBJECT \"${subject}\"" 2>/dev/null |
-		grep -qE 'SEARCH [0-9]'
-}
-
 wait_in_imap() {
-	local user="$1" password="$2" subject="$3"
-	local attempt mailbox
+	local user="$1" password="$2" subject="$3" attempt mailbox
+	# Exception: the .test domain publishes no mail-auth DNS, so Stalwart files authenticated
+	# mail into "Junk Mail" (its \Junk folder) rather than INBOX — both must be searched.
 	for attempt in $(seq 1 30); do
-		for mailbox in INBOX Junk "Junk Mail" Spam; do
-			if imap_search "${user}" "${password}" "${mailbox// /%20}" "${subject}"; then
-				echo "found: ${subject} in ${user}'s '${mailbox}'"
+		for mailbox in INBOX Junk%20Mail; do
+			if curl -sS --connect-timeout 10 --max-time 60 --insecure \
+				--url "imaps://127.0.0.1:993/${mailbox}" \
+				--user "${user}:${password}" \
+				--request "SEARCH SUBJECT \"${subject}\"" 2>/dev/null |
+				grep -qE 'SEARCH [0-9]'; then
+				echo "found: ${subject} in ${user}'s ${mailbox}"
 				return 0
 			fi
 		done
@@ -99,45 +94,44 @@ wait_in_imap() {
 	return 1
 }
 
-nested_deploy() {
-	local provider="$1" import_mailu="$2"
+# Exception: ansible's plugin loader imports the repo's `plugins` package by name, so the
+# nested playbook needs the repo root on PYTHONPATH.
+run_import() {
 	(
 		cd "${REPO_SRC_DIR}"
-		"${PYTHON_BIN}" "${SCRIPT_DIR}/patch_inventory.py" "${INV_COPY}" \
-			--mail-provider "${provider}" --import-mailu "${import_mailu}"
-	)
-	(
-		cd "${REPO_SRC_DIR}"
-		"${PYTHON_BIN}" -m cli.administration.deploy.dedicated \
-			"${INV_COPY}/devices.yml" -p "${INV_COPY}/.password" \
-			-vv --assert true --diff \
-			--id web-app-stalwart,web-app-mailu \
+		PYTHONPATH="${REPO_SRC_DIR}" "${PYTHON_BIN}" -m cli.administration.deploy.dedicated \
+			"${TEST_INVENTORY_DIR}/devices.yml" -p "${TEST_INVENTORY_DIR}/.password" \
+			-vv --diff --skip-backup --skip-cleanup \
+			--id web-app-stalwart \
 			-e 'TEST_E2E_ENABLED=false' \
-			-- --skip-backup --skip-cleanup
+			-e 'STALWART_MIGRATION_NESTED=true' \
+			-e 'STALWART_IMPORT_MAILU=true'
 	)
 }
 
-echo "=== [1/5] Rewind to the initial state: Mailu as the active provider ==="
-cp -a "${TEST_INVENTORY_DIR}" "${INV_COPY}"
-nested_deploy "web-app-mailu" "false"
+echo "=== [1/4] Deliver mail into the legacy Mailu (A: biber->admin, B: admin's reply) ==="
+MAILU_SMTP_IP="$(container inspect --type container -f '{{ range .NetworkSettings.Networks }}{{ .IPAddress }} {{ end }}' "${MAILU_SMTP_CONTAINER}" | awk '{print $1}')"
+echo "mailu smtp at ${MAILU_SMTP_IP}"
+compose_mail "${BIBER_EMAIL}" "${ADMIN_EMAIL}" "${SUBJ_A}"
+send_smtp "${MAILU_SMTP_IP}" "${BIBER_EMAIL}" "${ADMIN_EMAIL}" "${SUBJ_A}"
+compose_mail "${ADMIN_EMAIL}" "${BIBER_EMAIL}" "${SUBJ_B}" "${SUBJ_A}"
+send_smtp "${MAILU_SMTP_IP}" "${ADMIN_EMAIL}" "${BIBER_EMAIL}" "${SUBJ_B}"
 
-echo "=== [2/5] Store mail in the initial state (A: biber->admin, B: admin's reply) ==="
-send_mail "${BIBER_EMAIL}" "${ADMIN_EMAIL}" "${SUBJ_A}"
-send_mail "${ADMIN_EMAIL}" "${BIBER_EMAIL}" "${SUBJ_B}" "<${SUBJ_A}@${MAIL_DOMAIN}>"
+echo "=== [2/4] Confirm the messages are stored in Mailu's maildir ==="
 MAILDIR_MOUNT="$(container volume inspect --format '{{ .Mountpoint }}' "${MAILU_MAILDIR_VOLUME}")"
 wait_stored_in_maildir "${SUBJ_A}" "${MAILDIR_MOUNT}/${ADMIN_EMAIL}"
 wait_stored_in_maildir "${SUBJ_B}" "${MAILDIR_MOUNT}/${BIBER_EMAIL}"
 
-echo "=== [3/5] Cut over: Stalwart current, Mailu legacy, migration switch on ==="
-nested_deploy "web-app-stalwart" "true"
+echo "=== [3/4] Migrate: run the role with the import switch on ==="
+run_import
 
-echo "=== [4/5] Continuity: the stored mail survived the migration ==="
+echo "=== [4/4] Continuity in Stalwart, then live flow (C: biber->admin, D: admin's reply) ==="
 wait_in_imap "${ADMIN_EMAIL}" "${ADMIN_IMAP_PASSWORD}" "${SUBJ_A}"
 wait_in_imap "${BIBER_EMAIL}" "${BIBER_IMAP_PASSWORD}" "${SUBJ_B}"
-
-echo "=== [5/5] Live flow on the final state (C: biber->admin, D: admin's reply) ==="
-send_mail "${BIBER_EMAIL}" "${ADMIN_EMAIL}" "${SUBJ_C}"
-send_mail "${ADMIN_EMAIL}" "${BIBER_EMAIL}" "${SUBJ_D}" "<${SUBJ_C}@${MAIL_DOMAIN}>"
+compose_mail "${BIBER_EMAIL}" "${ADMIN_EMAIL}" "${SUBJ_C}"
+send_smtp "127.0.0.1" "${BIBER_EMAIL}" "${ADMIN_EMAIL}" "${SUBJ_C}"
+compose_mail "${ADMIN_EMAIL}" "${BIBER_EMAIL}" "${SUBJ_D}" "${SUBJ_C}"
+send_smtp "127.0.0.1" "${ADMIN_EMAIL}" "${BIBER_EMAIL}" "${SUBJ_D}"
 wait_in_imap "${ADMIN_EMAIL}" "${ADMIN_IMAP_PASSWORD}" "${SUBJ_C}"
 wait_in_imap "${BIBER_EMAIL}" "${BIBER_IMAP_PASSWORD}" "${SUBJ_D}"
 

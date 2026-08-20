@@ -18,6 +18,10 @@ STALWART_DOMAIN: "{{ lookup('config', application_id, 'services.stalwart.domain'
 STALWART_DOMAIN_DNS_ZONE: "{{ STALWART_DOMAIN | to_zone }}"
 STALWART_EMAIL: "{{ lookup('email', application_id) }}"
 STALWART_HOSTNAME: "{{ STALWART_EMAIL.host }}"
+# Exception: STALWART_HOSTNAME is the ACTIVE provider's mail host (MX/SPF point there); the web
+# vhost must follow this role's own canonical instead, or a legacy Stalwart claims the active
+# provider's domain and never serves its own.
+STALWART_WEB_DOMAIN: "{{ lookup('domain', application_id) }}"
 STALWART_HOSTNAME_DNS_ZONE: "{{ STALWART_HOSTNAME | to_zone }}"
 
 STALWART_CONTAINER: "{{ lookup('config', application_id, 'services.stalwart.name') }}"
@@ -56,3 +60,6 @@ STALWART_TRUSTED_NETWORKS: "{{ NETWORK_TRUSTED_PROXY_CIDRS }}"
 STALWART_SSO_ENABLED: "{{ lookup('sso', application_id, 'is_enabled') | bool }}"
 
 STALWART_IMPORT_MAILU: "{{ lookup('config', application_id, 'services.stalwart.migration.import_mailu') | bool }}"
+# Exception: recursion guard — the migration e2e runs a nested deploy, and test-e2e-cli is
+# required_by every web app there too; the nested run sets this so the test skips itself.
+STALWART_MIGRATION_NESTED: false

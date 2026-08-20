@@ -57,6 +57,8 @@ ASYNC_POLL: "{{ 0 if ASYNC_ENABLED | bool else 10 }}" # Don't wait for task
 
 APPLICATIONS_WHITELIST: [] # nocheck: unused-var
 
+PRIMARY_APPS: [] # Apps this deploy was asked for; the rest of the round is their dependency closure.
+
 RBAC:
   GROUP:
     NAME: "/roles" # Name of the group which holds the RBAC roles
