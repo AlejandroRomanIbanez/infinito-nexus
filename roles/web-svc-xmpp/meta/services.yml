@@ -18,8 +18,9 @@ ldap:
   shared: "{{ 'svc-db-openldap' in group_names }}"
 xmpp:
   healthcheck:
-    flavor: tcp
-    port_key: http
+    test: ["CMD", "ejabberdctl", "status"]
+    timeout: 10s
+    retries: 20
   modes:
     compose:
       enabled: true
