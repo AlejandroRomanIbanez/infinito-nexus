@@ -23,8 +23,10 @@ PREP="$(docker run -d --entrypoint sleep "${GUIDE_RUNTIME_IMAGE}" infinity)"
 docker exec "${PREP}" sh -c '
 	set -e
 	if command -v apt-get >/dev/null 2>&1; then
-		apt-get update
-		DEBIAN_FRONTEND=noninteractive apt-get install -y systemd systemd-sysv libnss-myhostname
+		APT_TIMEOUT=10m
+		APT_OPTS="-o Acquire::Retries=5 -o Acquire::http::Timeout=30 -o Acquire::https::Timeout=30"
+		timeout -k 30 "$APT_TIMEOUT" apt-get $APT_OPTS update
+		DEBIAN_FRONTEND=noninteractive timeout -k 30 "$APT_TIMEOUT" apt-get $APT_OPTS install -y systemd systemd-sysv libnss-myhostname
 	elif command -v dnf >/dev/null 2>&1; then
 		dnf install -y systemd
 	elif command -v pacman >/dev/null 2>&1; then
