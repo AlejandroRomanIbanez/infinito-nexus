@@ -7,7 +7,7 @@
 
 target="/var/www/html"
 lock="${target}/.infinito-init.lock"
-ready="${target}/.infinito-init.ready"
+ready="${JOOMLA_INIT_READY_FILE:?JOOMLA_INIT_READY_FILE must be set}"
 
 if [ ! -e "${ready}" ] && [ ! -e "${target}/configuration.php" ]; then
   if mkdir "${lock}" 2>/dev/null; then
