@@ -76,11 +76,16 @@ test("administrator: admin login → catalogue → in-app logout", async ({ page
   });
   await logout.click();
   await confirmKeycloakLogoutIfPrompted(page);
-  await page
-    .waitForFunction(() => !document.cookie.includes("bearerAuth"), null, {
-      timeout: resolveTimeout(30_000),
-    })
-    .catch(() => {});
+  await expect
+    .poll(
+      async () => (await page.context().cookies()).some((c) => c.name === "bearerAuth"),
+      {
+        message:
+          "web-svc-logout sweeps shop.<domain>/logout from an iframe on Keycloak's logout page; navigating away before that lands leaves the admin cookie alive",
+        timeout: resolveTimeout(30_000),
+      },
+    )
+    .toBe(false);
   await gotoOnion(page, `${appBaseUrl}/admin`, { waitUntil: "domcontentloaded" });
 
   await expect(
