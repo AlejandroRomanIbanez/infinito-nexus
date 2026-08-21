@@ -128,11 +128,11 @@ class TestDistrosLoop(unittest.TestCase):
 
     def test_a_distro_the_budget_kills_mid_run_fails_the_job(self) -> None:
         proc, _record = self._run(
-            DISTROS, "sleep 30", INFINITO_CI_DISTRO_BUDGET_SECONDS="1"
+            DISTROS, "sleep 30", INFINITO_CI_DISTRO_BUDGET_SECONDS="5"
         )
-        self.assertEqual(proc.returncode, 124, proc.stderr)
+        self.assertEqual(proc.returncode, 124, proc.stdout)
         self.assertIn("❌ failed", self.summary)
-        self.assertRegex(self.summary, r"rc=124 after \d+s, with \d+s of the 1s budget")
+        self.assertRegex(self.summary, r"rc=124 after \d+s, with \d+s of the 5s budget")
 
     def test_the_job_summary_tables_every_distro_in_execution_order(self) -> None:
         proc, _record = self._run(
