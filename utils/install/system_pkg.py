@@ -102,6 +102,14 @@ _COMMAND_PACKAGES: dict[str, dict[str, list[str]]] = {
     "shfmt": {m: ["shfmt"] for m in _SUPPORTED},
     "shellcheck": {m: ["shellcheck"] for m in _SUPPORTED},
     "unzip": {m: ["unzip"] for m in _SUPPORTED},
+    "php": {
+        "pacman": ["php"],
+        "apt-get": ["php-cli", "php"],
+        "dnf": ["php-cli", "php"],
+        "yum": ["php-cli", "php"],
+        "brew": ["php"],
+    },
+    "ruby": {m: ["ruby"] for m in _SUPPORTED},
     "npm": {
         "pacman": ["npm", "nodejs"],
         "apt-get": ["npm", "nodejs"],

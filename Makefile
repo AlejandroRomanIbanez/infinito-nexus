@@ -384,15 +384,19 @@ kernel-loop-load:
 lint: install-lint
 	@bash scripts/make/parallel.sh lint-action \
 		lint-ansible \
+		lint-css \
 		lint-dockerfile \
 		lint-javascript \
 		lint-makefile \
 		lint-markdown \
 		lint-mermaid \
 		lint-packages \
+		lint-php \
 		lint-playwright \
 		lint-python \
-		lint-shellcheck
+		lint-ruby \
+		lint-shellcheck \
+		lint-sql
 
 .PHONY: lint-action
 # Run the GitHub Actions lint checks.
@@ -404,6 +408,12 @@ lint-action: install-lint
 # Note: runs ansible's syntax-check plus ansible-lint.
 lint-ansible: install-lint setup
 	@bash scripts/lint/wrapper.sh ansible
+
+.PHONY: lint-css
+# Check that every CSS file parses, via stylelint with an empty rule set.
+lint-css: install-lint
+	@bash scripts/install/wrapper.sh css
+	@bash scripts/lint/wrapper.sh css
 
 .PHONY: lint-dockerfile
 # Run hadolint over the root Dockerfile.
@@ -438,6 +448,13 @@ lint-packages: install-lint
 	@bash scripts/install/wrapper.sh packages
 	@bash scripts/lint/wrapper.sh packages
 
+.PHONY: lint-php
+# Check that every PHP file parses, via `php -l`.
+# Note: provisions the PHP CLI explicitly; an absent interpreter is skipped.
+lint-php: install-lint
+	@bash scripts/install/wrapper.sh php
+	@bash scripts/lint/wrapper.sh php
+
 .PHONY: lint-playwright
 # Verify every role's Playwright spec parses + resolves its helpers.
 # Note: stages the spec like test-e2e-playwright does and runs `npx playwright test --list`.
@@ -449,10 +466,24 @@ lint-playwright: install-lint
 lint-python: install-lint
 	@bash scripts/lint/wrapper.sh python
 
+.PHONY: lint-ruby
+# Check that every Ruby file parses, via `ruby -c`.
+# Note: provisions the Ruby CLI explicitly; an absent interpreter is skipped.
+lint-ruby: install-lint
+	@bash scripts/install/wrapper.sh ruby
+	@bash scripts/lint/wrapper.sh ruby
+
 .PHONY: lint-shellcheck
 # Run shellcheck lint checks.
 lint-shellcheck: install-lint
 	@bash scripts/lint/wrapper.sh shellcheck
+
+.PHONY: lint-sql
+# Check that every SQL file parses, via `sqlfluff parse`.
+# Note: dialect comes from the nearest .sqlfluff; absent tooling is skipped.
+lint-sql: install-lint
+	@bash scripts/install/wrapper.sh sql
+	@bash scripts/lint/wrapper.sh sql
 
 .PHONY: meta-list
 # Print the repository role list.
@@ -784,11 +815,32 @@ test-signed:
 	echo "✅ HEAD commit signature status: $$status"
 
 .PHONY: test-unit
-# Run the unit test suite.
-test-unit: install
+# Run the unit test suite (every language).
+test-unit: test-unit-python test-unit-javascript test-unit-php test-unit-ruby
+
+.PHONY: test-unit-javascript
+# Run the JavaScript unit test suite (node:test, no extra dependency).
+test-unit-javascript:
+	@bash scripts/tests/unit/javascript.sh
+
+.PHONY: test-unit-php
+# Run the PHP unit test suite (PHPUnit).
+# Note: skips loudly while the suite is empty or PHP is absent; see scripts/tests/unit/php.sh.
+test-unit-php:
+	@bash scripts/tests/unit/php.sh
+
+.PHONY: test-unit-python
+# Run the Python unit test suite.
+test-unit-python: install
 	@INFINITO_TEST_TYPE="unit" \
 	INFINITO_COMPILE=0 \
 	bash scripts/tests/code/wrapper.sh
+
+.PHONY: test-unit-ruby
+# Run the Ruby unit test suite (minitest, stdlib).
+# Note: skips loudly while the suite is empty or Ruby is absent; see scripts/tests/unit/ruby.sh.
+test-unit-ruby:
+	@bash scripts/tests/unit/ruby.sh
 
 .PHONY: worktree-down
 # Stop a branch worktree's stack, release the checkout and free its slot.
