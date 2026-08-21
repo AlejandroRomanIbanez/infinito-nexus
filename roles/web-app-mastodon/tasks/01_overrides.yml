@@ -22,7 +22,7 @@
 
     - name: "📦 MASTODON | Install OIDC http-discovery override initializer (HTTP-only)"
       ansible.builtin.copy:
-        src: "00_oidc_http_discovery.rb"
+        src: "ruby/00_oidc_http_discovery.rb"
         dest: "{{ MASTODON_OIDC_HTTP_DISCOVERY_FILE }}"
         mode: "0644"
       notify: compose-up

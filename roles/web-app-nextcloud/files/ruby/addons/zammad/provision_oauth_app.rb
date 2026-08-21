@@ -1,3 +1,5 @@
+# nocheck: mirrored-unit-test - runs in the Zammad console against
+# Doorkeeper::Application; the model only exists once Zammad has booted
 base = ENV.fetch("NC_BASE_URL").sub(%r{/\z}, "")
 path = ENV.fetch("NC_REDIRECT_PATH")
 redirect_uris = ["#{base}#{path}", "#{base}/index.php#{path}"].join("\n")

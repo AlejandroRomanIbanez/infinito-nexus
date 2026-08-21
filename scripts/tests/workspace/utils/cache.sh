@@ -191,7 +191,7 @@ probe_caches() {
 # ``apt-get update`` MUST flow through the package-cache frontend
 # (``deb.debian.org`` is hijacked via ``--add-host`` to the frontend
 # IP, exactly mirroring the runtime override that
-# ``roles/sys-svc-compose/files/compose.py`` injects for app builds).
+# ``roles/sys-svc-compose/files/python/compose.py`` injects for app builds).
 # Verifies the inner-build / DiD cache path, which the
 # Ansible-driven runner-side traffic alone does NOT exercise.
 probe_did_inner_build() {

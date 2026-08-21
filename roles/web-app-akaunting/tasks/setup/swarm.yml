@@ -33,7 +33,7 @@
   changed_when: true
 
 - name: "⏳ Akaunting setup | Wait for install job to complete"
-  ansible.builtin.script: "{{ lookup('path_absolute', 'roles/sys-svc-compose/files/swarm/job_state.sh') }}"
+  ansible.builtin.script: "{{ lookup('path_absolute', 'roles/sys-svc-compose/files/shell/swarm/job_state.sh') }}"
   environment:
     JOB: "{{ AKAUNTING_SETUP_JOB }}"
   register: akaunting_setup_done

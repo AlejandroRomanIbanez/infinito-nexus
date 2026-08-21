@@ -69,7 +69,7 @@ applications:
 |---|---|
 | [applications.py](../../../../../../plugins/lookup/applications.py) | Runtime entry point for the `applications` lookup. |
 | [applications.py (cache)](../../../../../../utils/cache/applications.py) | Shared aggregation helper that builds and caches defaults (`get_application_defaults`, `get_variants`, `get_merged_applications`). |
-| [test_applications.py](../../../../../../tests/unit/plugins/lookup/test_applications.py) | Unit tests covering the full-dict, single-entry, override, strict missing, and non-strict missing cases. |
+| [test_applications.py](../../../../../../tests/unit/python/plugins/lookup/test_applications.py) | Unit tests covering the full-dict, single-entry, override, strict missing, and non-strict missing cases. |
 
 For the related users pattern see [users.md](users.md).
 For the per-role matrix-variant list that backs `applications` when more than one shape exists, see [variants.md](../../../../design/variants.md) (deploy-time mechanism) and [variants.md](../../role/variants.md) (file format).

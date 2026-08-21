@@ -1,7 +1,7 @@
 """Recoverer classes: one per svc-bkp-* recovery type.
 
 Each Recoverer parses and validates its own colon-encoded ``source`` and
-builds the role's ``files/recover.py`` invocation. Colon segments are
+builds the role's ``files/python/recover.py`` invocation. Colon segments are
 classified by shape: an ABSOLUTE path is the restore destination (replacing
 a --target flag); for device a RELATIVE segment is the on-device snapshot
 subpath and an all-digit ``YYYYMMDDHHMMSS`` segment is the generation to
@@ -47,7 +47,7 @@ def remote_target(target: str) -> bool:
 
 
 class Recoverer(ABC):
-    """One recovery type backed by a role's ``files/recover.py``."""
+    """One recovery type backed by a role's ``files/python/recover.py``."""
 
     name: str
     role: str
@@ -55,7 +55,9 @@ class Recoverer(ABC):
     no_backup_flag: bool = True
 
     def script(self) -> str:
-        return str(PROJECT_ROOT / "roles" / self.role / "files" / "recover.py")
+        return str(
+            PROJECT_ROOT / "roles" / self.role / "files" / "python" / "recover.py"
+        )
 
     @abstractmethod
     def args(self, source: str, target: str) -> list[str]:

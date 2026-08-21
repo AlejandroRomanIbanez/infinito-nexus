@@ -108,7 +108,7 @@ infinito administration deploy dedicated "$INVENTORY/devices.yml" \
 
 ## Recover
 
-Run `files/recover.py` on the target host:
+Run `files/python/recover.py` on the target host:
 
 ```
 recover.py <backups>/<machine-hash>/backup-secrets-to-local/<generation>/files [--restore-node-identity]

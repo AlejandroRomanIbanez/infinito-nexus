@@ -23,6 +23,7 @@ flowchart LR
         dep_web_app_matomo["web-app-matomo 🐳🐝"]
         dep_web_app_prometheus["web-app-prometheus 🐳🐝"]
         dep_web_svc_css["web-svc-css 💻"]
+        dep_web_svc_logout["web-svc-logout 🐳🐝"]
     end
     subgraph role [web-app-keycloak 🐳🐝]
         svc_logout["logout ❌"]
@@ -30,6 +31,7 @@ flowchart LR
         svc_dashboard["dashboard"]
         svc_matomo["matomo"]
         svc_email["email"]
+        svc_javascript["javascript"]
         svc_keycloak["keycloak"]
         svc_sso_proxy["sso_proxy"]
         svc_postgres["postgres"]
@@ -61,6 +63,7 @@ flowchart LR
     dep_web_app_matomo -. "0..1" .-> svc_matomo
     dep_web_app_prometheus -. "0..1" .-> svc_prometheus
     dep_web_svc_css -. "0..1" .-> svc_css
+    dep_web_svc_logout -. "0..1" .-> svc_javascript
     svc_keycloak -- "1:1" --> dpt_more
     svc_keycloak -. "0..1" .-> dpt_web_app_akaunting
     svc_keycloak -. "0..1" .-> dpt_web_app_baserow
@@ -74,7 +77,7 @@ flowchart LR
     svc_keycloak -. "0..1" .-> dpt_web_app_dashboard
     svc_keycloak -. "0..1" .-> dpt_web_app_decidim
     svc_keycloak -. "0..1" .-> dpt_web_app_discourse
-    linkStyle 14,16,17 stroke:red;
+    linkStyle 15,17,18 stroke:red;
 ```
 
 Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments); red `0..0` edges are turned off in this role. Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.

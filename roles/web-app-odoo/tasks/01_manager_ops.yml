@@ -24,7 +24,7 @@
 
 - name: "📋 Copy Odoo entrypoint (first-boot db init)"
   copy:
-    src: "docker-entrypoint-odoo.sh"
+    src: "shell/docker-entrypoint-odoo.sh"
     dest: "{{ ODOO_ENTRYPOINT_SCRIPT_HOST_ABS }}"
     mode: "0755"
   notify:

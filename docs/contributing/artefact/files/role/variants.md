@@ -83,7 +83,7 @@ This declares two variants. Variant 0 pins every dynamic service-key from `meta/
 2. Make sure variant 0 pins every dynamic service-key from `meta/services.yml` to `enabled: true, shared: true`.
 3. Append a list entry for the new variant. For every dynamic service-key variant 0 enables, the new entry MUST either keep it on (re-pin `enabled: true, shared: true`) or explicitly disable it (`enabled: false, shared: false`). Add the variant-specific overrides that justify the new entry.
 4. If the new variant relies on cleanup steps that the standard inter-round entity purge does not cover, extend the role's purge handling. The matrix wrapper invokes the standard purge between rounds for every app whose variant changed.
-5. Add or extend the deep-merge edge-case tests in [test_variants.py](../../../../../tests/unit/utils/cache/test_variants.py) when the new variant exercises behaviour beyond the existing fixtures (for example list replacement vs. nested scalar override).
+5. Add or extend the deep-merge edge-case tests in [test_variants.py](../../../../../tests/unit/python/utils/cache/test_variants.py) when the new variant exercises behaviour beyond the existing fixtures (for example list replacement vs. nested scalar override).
 
 ## What Not To Do 🚫
 

@@ -32,7 +32,7 @@ through the recover chain, require the marker and every recorded container
 back, and finally let the host's own container health service judge.
 
 That last step is deliberately the deployed
-[`sys-ctl-hlth-container` script](../../../sys-ctl-hlth-container/files/script.sh)
+[`sys-ctl-hlth-container` script](../../../sys-ctl-hlth-container/files/shell/script.sh)
 rather than a check of the drill's own: it is what watches the host in
 production, it knows swarm services, and it dumps 200 log lines per sick
 container. It is invoked as a script, not as its systemd unit — the unit's

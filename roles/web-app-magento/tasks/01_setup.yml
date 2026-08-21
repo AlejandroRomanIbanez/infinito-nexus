@@ -79,7 +79,7 @@
 
 - name: "📤 Stage Magento's remote-storage configurator into the volume"
   ansible.builtin.copy:
-    src: remote-storage.php
+    src: php/remote-storage.php
     dest: "{{ [ magento_volume_mountpoint.stdout | trim, 'remote-storage.php' ] | path_join }}"
     mode: "0644"
   when: MAGENTO_OBJSTORE_ENABLED | bool

@@ -90,7 +90,7 @@ infinito administration deploy dedicated "$INVENTORY/devices.yml" \
 
 ## Recover
 
-Run `files/recover.py` on the host with the backup device attached:
+Run `files/python/recover.py` on the host with the backup device attached:
 
 ```
 recover.py /dev/sdX1 /mnt/usb-recover /var/lib/infinito/backup [--snapshot <timestamp>]

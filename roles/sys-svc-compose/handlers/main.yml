@@ -2,7 +2,7 @@
 - name: 🧹 Aggressively prune Docker data (keep networks + in-use images)
   become: true
   ansible.builtin.script:
-    cmd: prune.sh
+    cmd: shell/prune.sh
   changed_when: true
   when: STORAGE_CONSTRAINED | bool
   listen:

@@ -97,7 +97,7 @@ infinito administration deploy dedicated "$INVENTORY/devices.yml" \
 
 ## Recover
 
-Run `files/recover.py` on the host that serves the NFS export:
+Run `files/python/recover.py` on the host that serves the NFS export:
 
 ```
 recover.py <backups>/<machine-hash>/backup-nfs-to-local/<generation>/files/<state>/<volume> <export-base>/<state>/<volume>

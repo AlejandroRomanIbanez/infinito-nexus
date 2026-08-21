@@ -1,3 +1,5 @@
+# nocheck: mirrored-unit-test - an indented fragment spliced into decidim-core's
+# omniauth.rb initializer, not a standalone file; it has no top level of its own
     if ENV["OIDC_ENABLED"].to_s == "true"
       require "omniauth_openid_connect"
       ENV["SSL_CERT_FILE"] = ENV["CURL_CA_BUNDLE"] if ENV["CURL_CA_BUNDLE"] && File.exist?(ENV["CURL_CA_BUNDLE"].to_s)

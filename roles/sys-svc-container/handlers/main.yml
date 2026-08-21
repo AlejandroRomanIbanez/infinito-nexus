@@ -7,7 +7,7 @@
   listen: container-manager-restart
 
 - name: 💬 Ensure Docker-In-Docker DNS works
-  ansible.builtin.script: "{{ role_path }}/files/test-dns.sh"
+  ansible.builtin.script: "{{ role_path }}/files/shell/test-dns.sh"
   register: docker_in_docker_dns_check
   until: docker_in_docker_dns_check is succeeded
   retries: 7

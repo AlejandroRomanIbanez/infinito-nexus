@@ -7,7 +7,7 @@
 
 - name: "📋 Copy Joomla entrypoint (first-boot copy serializer)"
   copy:
-    src: "{{ JOOMLA_ENTRYPOINT_SCRIPT_FILE }}"
+    src: "shell/{{ JOOMLA_ENTRYPOINT_SCRIPT_FILE }}"
     dest: "{{ JOOMLA_ENTRYPOINT_SCRIPT_HOST_ABS }}"
     mode: "0755"
   notify:

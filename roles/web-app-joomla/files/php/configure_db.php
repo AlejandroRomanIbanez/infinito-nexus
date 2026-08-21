@@ -1,4 +1,6 @@
 <?php
+// nocheck: mirrored-unit-test - rewrites the Joomla configuration.php named by
+// $J_CONFIG_FILE from environment variables; top-level procedural code with no seam
 $f = getenv('J_CONFIG_FILE');
 if (!file_exists($f)) { exit(0); }
 $c = file_get_contents($f);

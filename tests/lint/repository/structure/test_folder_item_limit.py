@@ -37,9 +37,9 @@ FLAT_STRUCTURE_WHITELIST = {
     "roles",
     "inventories/bundles/servers",
     "inventories/bundles/workstations",
-    "tests/unit/plugins/filter",
-    "tests/unit/roles",
-    "tests/unit/plugins/lookup",
+    "tests/unit/python/plugins/filter",
+    "tests/unit/python/roles",
+    "tests/unit/python/plugins/lookup",
 }
 
 

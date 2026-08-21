@@ -1,4 +1,6 @@
 <?php
+// nocheck: mirrored-unit-test - registers the OIDC client against Shopware's live
+// integration tables; every statement needs the running install
 /**
  * Ensure the Keycloak login provider exists in HEPTACOM AdminOpenAuth.
  * Runs INSIDE the Shopware web container (piped via

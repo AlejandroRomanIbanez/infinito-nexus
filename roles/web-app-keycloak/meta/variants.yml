@@ -19,6 +19,9 @@
     email:
       enabled: true
       shared: true
+    javascript:
+      enabled: true
+      shared: true
     ldap:
       shared: true
       enabled: true
@@ -43,6 +46,9 @@
       enabled: false
       shared: false
     email:
+      enabled: false
+      shared: false
+    javascript:
       enabled: false
       shared: false
     ldap:

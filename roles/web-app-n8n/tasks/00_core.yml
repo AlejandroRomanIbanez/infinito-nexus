@@ -12,7 +12,7 @@
     file: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/render_replicated_templates.yml') }}"
   vars:
     role_templates:
-      - src: "{{ lookup('path_absolute', 'roles/web-app-n8n/files/hooks.js') }}"
+      - src: "{{ lookup('path_absolute', 'roles/web-app-n8n/files/javascript/hooks.js') }}"
         dest: "{{ N8N_HOOKS_FILE_HOST }}"
         mode: "0644"
         notify: ["compose-up"]

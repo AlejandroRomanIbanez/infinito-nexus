@@ -1,4 +1,6 @@
 <?php
+// nocheck: mirrored-unit-test - flips two flags in the Joomla configuration.php named
+// by $J_CONFIG_FILE; top-level procedural code with no seam
 $f = getenv('J_CONFIG_FILE');
 if (!file_exists($f)) { fwrite(STDERR, "configuration.php missing\n"); exit(1); }
 $c = file_get_contents($f);

@@ -10,7 +10,7 @@ default for the shared `groups` client-scope, see
 roles/web-app-keycloak/templates/import/components/...).
 
 The `rbac_group_path` lookup, by historical contract pinned in
-tests/unit/plugins/lookup/test_rbac_group_path.py, returns paths WITHOUT a
+tests/unit/python/plugins/lookup/test_rbac_group_path.py, returns paths WITHOUT a
 leading slash (e.g. `roles/web-app-yourls/administrator`). Plugging that
 value straight into oauth2-proxy's `allowed_groups` produces a silent literal
 mismatch — the `/oauth2/callback` request gets HTTP 403 with

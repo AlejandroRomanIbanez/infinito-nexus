@@ -6,7 +6,7 @@
 #   - dict key is ignored completely
 
 - name: "🔧 Set emailVerified=true for users in realm '{{ KEYCLOAK_REALM }}'"
-  ansible.builtin.script: set_email_verified.sh
+  ansible.builtin.script: shell/set_email_verified.sh
   environment:
     KEYCLOAK_EXEC_CONTAINER: "{{ KEYCLOAK_EXEC_CONTAINER }}"
     KEYCLOAK_KCADM: "{{ KEYCLOAK_KCADM }}"

@@ -1,3 +1,5 @@
+# nocheck: mirrored-unit-test - runs in the GitLab Rails console against
+# Doorkeeper::Application; the model only exists once GitLab has booted
 org = (Organizations::Organization.default_organization rescue nil) ||
       (Organizations::Organization.first rescue nil)
 if org.nil? && defined?(Organizations::Organization)

@@ -14,21 +14,21 @@
 
 - name: "🩹 Vendor the ep_redis_publisher fix mounted over the etherpad plugin"
   stack_host_copy:
-    src: ep_redis_publisher_index.js
+    src: javascript/ep_redis_publisher_index.js
     dest: "{{ [lookup('container', application_id, 'directories.instance'), 'ep_redis_publisher_index.js'] | path_join }}"
     mode: "0444"
   notify: compose-up
 
 - name: "🩹 Vendor the etherpad postgres-DB entrypoint wrapper"
   stack_host_copy:
-    src: etherpad_pg_entrypoint.sh
+    src: shell/etherpad_pg_entrypoint.sh
     dest: "{{ [lookup('container', application_id, 'directories.instance'), 'etherpad_pg_entrypoint.sh'] | path_join }}"
     mode: "0444"
   notify: compose-up
 
 - name: "🩹 Vendor the initdb hook that creates the etherpad database"
   stack_host_copy:
-    src: postgres_initdb_etherpad.sh
+    src: shell/postgres_initdb_etherpad.sh
     dest: "{{ [lookup('container', application_id, 'directories.instance'), 'postgres_initdb_etherpad.sh'] | path_join }}"
     mode: "0555"
   notify: compose-up

@@ -196,7 +196,7 @@ echo ">>> Ensuring stack is up for distro ${INFINITO_DISTRO}"
 
 _up_container="${INFINITO_CONTAINER:?INFINITO_CONTAINER is not set (run make dotenv)}"
 docker exec "${_up_container}" install -m 755 \
-	/opt/src/infinito/roles/sys-ca-selfsigned/files/with-ca-trust.sh \
+	/opt/src/infinito/roles/sys-ca-selfsigned/files/shell/with-ca-trust.sh \
 	/usr/bin/ca-trust-wrapper 2>/dev/null || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 
 echo ">>> Starting the :53 listener sampler inside ${_up_container}"

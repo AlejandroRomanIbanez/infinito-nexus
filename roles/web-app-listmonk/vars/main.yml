@@ -34,7 +34,7 @@ LISTMONK_SETTINGS:
     condition: "{{ LISTMONK_OIDC_ENABLED | bool }}"
 
   - key: "appearance.public.custom_js"
-    value: "{{ lookup('file', lookup('path_absolute', 'roles/web-app-listmonk/files/oidc-autologin.js')) | to_json }}"
+    value: "{{ lookup('file', lookup('path_absolute', 'roles/web-app-listmonk/files/javascript/oidc-autologin.js')) | to_json }}"
     condition: "{{ LISTMONK_OIDC_ENABLED | bool }}"
 
   - key: "security.enable_captcha"

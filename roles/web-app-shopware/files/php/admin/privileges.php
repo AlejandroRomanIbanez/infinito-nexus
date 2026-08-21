@@ -1,4 +1,6 @@
 <?php
+// nocheck: mirrored-unit-test - reads and rewrites the admin role privilege set
+// straight from Shopware's database connection; top-level procedural code
 /**
  * Required env:
  *   DATABASE_URL  connection string of the Shopware database

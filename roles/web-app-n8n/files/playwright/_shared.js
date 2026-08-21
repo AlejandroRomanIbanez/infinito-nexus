@@ -27,7 +27,7 @@ async function n8nLogout(page) {
 }
 
 // Drives the Keycloak SSO round-trip through oauth2-proxy. hooks.js
-// (EXTERNAL_HOOK_FILES, roles/web-app-n8n/files/hooks.js) reads the trusted
+// (EXTERNAL_HOOK_FILES, roles/web-app-n8n/files/javascript/hooks.js) reads the trusted
 // Remote-Email header openresty sets once the oauth2-proxy auth_request gate
 // passes and auto-provisions/issues n8n's own session cookie, so the redirect
 // back lands directly on n8n's authenticated workflow surface — no second,

@@ -39,7 +39,7 @@
 - name: 📥 compose pull
   ansible.builtin.script:
     cmd: >-
-      pull.py
+      python/pull.py
       --chdir {{ lookup('container', application_id, 'directories.instance') }}
       --project {{ application_id | get_entity_name }}
       --compose-files {{ lookup('compose_file_args', application_id, include_ca=False) | quote }}

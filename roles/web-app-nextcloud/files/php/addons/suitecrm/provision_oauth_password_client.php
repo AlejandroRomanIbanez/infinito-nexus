@@ -1,4 +1,7 @@
 <?php
+// nocheck: mirrored-unit-test - runs inside the SuiteCRM container and upserts its
+// legacy oauth2clients table over a PDO connection it opens itself; the credentials it
+// prints come from that live database
 /**
  * Idempotently ensure a SuiteCRM OAuth2 "password" client exists for the
  * Nextcloud integration_suitecrm connector and print its credentials.

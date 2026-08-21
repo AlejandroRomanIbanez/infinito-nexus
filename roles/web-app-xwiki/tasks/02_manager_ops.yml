@@ -18,7 +18,7 @@
 - block:
     - name: "🐛 DEBUG | superadmin check + pw hash compare (condensed)"
       script: >-
-        debug_superadmin.sh
+        shell/debug_superadmin.sh
         "{{ _super_check_ext.status }}"
         "{{ _super_check_ext.redirected | default('n/a') }}"
         "{{ _super_check_ext.url | default('n/a') }}"

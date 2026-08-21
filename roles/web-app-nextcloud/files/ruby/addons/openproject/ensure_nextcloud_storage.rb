@@ -1,3 +1,5 @@
+# nocheck: mirrored-unit-test - runs in the OpenProject console against
+# Storages::NextcloudStorage; the model only exists once OpenProject has booted
 require "json"
 
 host = ENV.fetch("NEXTCLOUD_HOST").sub(%r{/+\z}, "")

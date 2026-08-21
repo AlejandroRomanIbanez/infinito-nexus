@@ -19,7 +19,7 @@
     mode: "0644"
   loop:
     - plugins.txt
-    - "{{ lookup('path_absolute', 'roles/sys-ca-selfsigned/files/java-with-ca-trust.sh') }}"
+    - "{{ lookup('path_absolute', 'roles/sys-ca-selfsigned/files/shell/java-with-ca-trust.sh') }}"
   notify:
     - compose-build
     - compose-up

@@ -1,7 +1,7 @@
 ---
 - name: "🚀 Deploy '{{ ESPOCRM_ENTRYPOINT_SCRIPT_HOST_ABS }}'"
   copy:
-    src: "{{ ESPOCRM_ENTRYPOINT_SCRIPT_FILE }}"
+    src: "shell/{{ ESPOCRM_ENTRYPOINT_SCRIPT_FILE }}"
     dest: "{{ ESPOCRM_ENTRYPOINT_SCRIPT_HOST_ABS }}"
   notify:
     - compose-up
@@ -9,7 +9,7 @@
 
 - name: "🚀 Deploy '{{ ESPOCRM_SCRIPT_SEED_HOST_ABS }}'"
   copy:
-    src: "{{ ESPOCRM_SCRIPT_SEED_FILE }}"
+    src: "php/{{ ESPOCRM_SCRIPT_SEED_FILE }}"
     dest: "{{ ESPOCRM_SCRIPT_SEED_HOST_ABS }}"
   notify:
     - compose-up

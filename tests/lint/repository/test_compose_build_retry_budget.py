@@ -34,7 +34,7 @@ BUILDS = {
 TIMEOUT_LOOKUP = re.compile(r"lookup\('timeout',\s*(\d+)\s*\)")
 
 ROLE = PROJECT_ROOT / "roles" / "sys-svc-compose"
-GATE = "swarm/stack_ready.sh"
+GATE = "shell/swarm/stack_ready.sh"
 
 
 def _tasks(path):

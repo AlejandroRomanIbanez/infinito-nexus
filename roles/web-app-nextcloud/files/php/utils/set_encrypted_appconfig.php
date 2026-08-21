@@ -1,4 +1,6 @@
 <?php
+// nocheck: mirrored-unit-test - writes an encrypted appconfig value through Nextcloud's
+// crypto service, which only exists once the server has booted
 
 define("OC_CONSOLE", 1);
 

@@ -68,7 +68,7 @@
 
 - name: "🚀 Stage the Tor container entrypoint into the build context"
   stack_host_copy:
-    src: "{{ role_path }}/files/entrypoint.sh"
+    src: "{{ role_path }}/files/shell/entrypoint.sh"
     dest: "{{ TOR_ENTRYPOINT_HOST }}"
     mode: "0755"
   become: true

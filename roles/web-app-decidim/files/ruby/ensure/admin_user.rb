@@ -1,3 +1,5 @@
+# nocheck: mirrored-unit-test - runs in the Decidim console against Decidim::User and
+# Devise; the models only exist once Rails has booted
 email    = ENV.fetch("DECIDIM_ADMIN_EMAIL")
 password = ENV.fetch("DECIDIM_ADMIN_PASSWORD")
 organization = Decidim::Organization.first

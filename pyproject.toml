@@ -194,8 +194,8 @@ ignore = [
 # ``patch.object(sut, "os")`` replacements). Converting these call
 # sites to ``pathlib.Path`` would require rewriting every coupled
 # test in lockstep — out of scope for the use-pathlib pass.
-"roles/sys-ctl-rpr-container-hard/files/script.py" = ["PTH"]
-"roles/sys-ctl-rpr-container-soft/files/script.py" = ["PTH"]
+"roles/sys-ctl-rpr-container-hard/files/python/script.py" = ["PTH"]
+"roles/sys-ctl-rpr-container-soft/files/python/script.py" = ["PTH"]
 
 # BLE001 (flake8-blind-except) ratchet.
 # Broad `except Exception:` is now selected project-wide so NEW code is
@@ -264,7 +264,7 @@ ignore = [
 "cli/administration/deploy/development/deploy.py" = ["N806"]
 "cli/administration/deploy/development/init.py" = ["N806"]
 "cli/administration/deploy/development/inventory.py" = ["N806"]
-"tests/unit/cli/administration/deploy/development/test_inventory.py" = ["N806"]
+"tests/unit/python/cli/administration/deploy/development/test_inventory.py" = ["N806"]
 
 # Lazy-loaded class binding: ``ValueGenerator = _value_generator_cls()``
 # rebinds the imported class inside the function. PEP 8 keeps the

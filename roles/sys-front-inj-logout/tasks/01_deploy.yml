@@ -1,6 +1,6 @@
 ---
 - name: 🚀 Deploy logout.js
   copy:
-    src: logout.js
+    src: javascript/logout.js
     dest: "{{ INJ_LOGOUT_JS_DESTINATION }}"
     mode: "0644"

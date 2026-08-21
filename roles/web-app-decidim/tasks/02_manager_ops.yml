@@ -8,7 +8,7 @@
 
 - name: "🚀 Deploy '{{ DECIDIM_PATCH_SCRIPT_HOST_ABS }}'"
   copy:
-    src: "{{ DECIDIM_PATCH_SCRIPT_FILE }}"
+    src: "python/{{ DECIDIM_PATCH_SCRIPT_FILE }}"
     dest: "{{ DECIDIM_PATCH_SCRIPT_HOST_ABS }}"
   notify:
     - compose-build

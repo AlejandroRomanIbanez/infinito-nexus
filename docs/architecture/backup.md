@@ -2,7 +2,7 @@
 
 End-to-end flow of the backup chain and its recover counterparts. Solid
 arrows run on schedule (systemd units + pull); dashed arrows are the
-recover direction (`files/recover.py` of each role, enforced by
+recover direction (`files/python/recover.py` of each role, enforced by
 `tests/lint/ansible/roles/test_bkp_roles_have_recover.py`). The swarm
 test pipeline exercises the full chain in
 `scripts/tests/deploy/swarm/routine/backup/base.sh`.
@@ -65,7 +65,7 @@ underneath the replay.
 
 Per-role recover procedures live in each role's `## Recover` README
 section; `svc-bkp-remote-2-local` documents its one-way opt-out in
-`files/recover.py.nocheck`.
+`files/python/recover.py.nocheck`.
 
 ## Deploy-time trigger flow
 

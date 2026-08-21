@@ -75,7 +75,7 @@ flowchart TD
     BAUDOLO --> CHECK3B["DR drill [3b]<br>newest backup-docker-to-local generation<br>must be fresh + non-empty<br>(catches over-exclusion)"]
     EXPORT["svc-bkp-nfs-2-local<br>on the export host<br>rsyncs the export tree"] --> TREE["backup-nfs-to-local/&lt;generation&gt;<br>the single capture"]
     BAUDOLO -.->|"no second copy<br>through the mount"| TREE
-    TREE --> RECOVER["files/recover.py volume<br>resolves Mountpoint + Options"]
+    TREE --> RECOVER["files/python/recover.py volume<br>resolves Mountpoint + Options"]
     RECOVER -->|"Options set"| PROBE{"mountpoint -q<br>(ssh for --docker-host)"}
     PROBE -->|unmounted| REFUSE["SystemExit: a restore would land<br>on the node disk and be shadowed<br>on the next mount"]
     PROBE -->|mounted| RSYNC["rsync -a --delete through the<br>mounted export onto the server"]
@@ -296,7 +296,7 @@ credentials live in the target host's own `databases.csv`.
 
 ### A single volume
 
-Run `files/recover.py` on the backed-up host to restore one volume's files:
+Run `files/python/recover.py` on the backed-up host to restore one volume's files:
 
 ```
 recover.py <backups>/<machine-hash>/backup-docker-to-local/<generation>/<volume>/files <volume>

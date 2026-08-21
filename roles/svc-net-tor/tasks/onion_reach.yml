@@ -1,7 +1,7 @@
 ---
 - name: "⏳ Wait until the node onion answers internally (loopback fast path)"
   ansible.builtin.script:
-    cmd: "{{ role_path }}/files/onion_self_reach.py {{ TOR_NODE_ONION }}"
+    cmd: "{{ role_path }}/files/python/onion_self_reach.py {{ TOR_NODE_ONION }}"
   register: _tor_self_reach
   retries: 90
   delay: 5

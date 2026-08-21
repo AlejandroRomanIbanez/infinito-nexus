@@ -1,7 +1,7 @@
 ---
 - name: "📄 Deploy '{{ FRIENDICA_INIT_GATE_HOST }}'"
   copy:
-    src: "{{ FRIENDICA_INIT_GATE_FILE }}"
+    src: "shell/{{ FRIENDICA_INIT_GATE_FILE }}"
     dest: "{{ FRIENDICA_INIT_GATE_HOST }}"
     mode: "0755"
   notify:
