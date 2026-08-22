@@ -21,7 +21,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../../../.." && pwd)"
 # shellcheck source=/dev/null
-source <(grep -E '^INFINITO_(PLAYWRIGHT_REPORTS_BASE_DIR|RESCUE_DIAGNOSTICS_DIR|RESCUE_DIAGNOSTICS_BASE)=' "${REPO_ROOT}/.env")
+source <(grep -E '^INFINITO_(PLAYWRIGHT_REPORTS_BASE_DIR|RESCUE_DIAGNOSTICS_DIR|RESCUE_DIAGNOSTICS_BASE|DNS53_SAMPLER_LOG)=' "${REPO_ROOT}/.env")
 : "${INFINITO_RESCUE_DIAGNOSTICS_BASE:?INFINITO_RESCUE_DIAGNOSTICS_BASE must be set}"
 
 apps=""
@@ -77,6 +77,7 @@ cleanup() {
 	echo ">>> Capturing rescue diagnostics inside ${INFINITO_CONTAINER} (recursive DiD snapshot) before teardown removes it"
 	timeout 1500 docker exec \
 		-e "INFINITO_RESCUE_DIAGNOSTICS_DIR=${INFINITO_RESCUE_DIAGNOSTICS_DIR}" \
+		-e "INFINITO_DNS53_SAMPLER_LOG=${INFINITO_DNS53_SAMPLER_LOG}" \
 		"${INFINITO_CONTAINER}" \
 		python3 /opt/src/infinito/utils/diagnostics/container.py \
 		"${apps}" "compose post-deploy failure" 2>/dev/null || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
@@ -199,9 +200,9 @@ docker exec "${_up_container}" install -m 755 \
 	/opt/src/infinito/roles/sys-ca-selfsigned/files/shell/with-ca-trust.sh \
 	/usr/bin/ca-trust-wrapper 2>/dev/null || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 
-echo ">>> Starting the :53 listener sampler inside ${_up_container}"
+echo ">>> Starting the :53 sampler inside ${_up_container}"
 docker exec -d \
-	-e "INFINITO_RESCUE_DIAGNOSTICS_DIR=${INFINITO_RESCUE_DIAGNOSTICS_DIR}" \
+	-e "INFINITO_DNS53_SAMPLER_LOG=${INFINITO_DNS53_SAMPLER_LOG:?INFINITO_DNS53_SAMPLER_LOG must be set (SPOT: group_vars/all/05_paths.yml FILE_DNS53_SAMPLER_LOG); regenerate .env}" \
 	"${_up_container}" \
 	sh /opt/src/infinito/scripts/tests/deploy/ci/dns53-sampler.sh
 

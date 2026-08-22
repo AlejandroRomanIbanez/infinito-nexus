@@ -11,11 +11,10 @@ capture there, pulling each nested snapshot back under
 runtime, however deep the nesting goes. ``RESCUE_SEEN`` carries the ids already
 entered, so a runtime that lists itself is cut as a cycle.
 
-Every collector is best-effort: a missing source must never abort the
-capture. ``INFINITO_RESCUE_DIAGNOSTICS_DIR`` (SPOT:
-``group_vars/all/05_paths.yml`` ``DIR_RESCUE_DIAGNOSTICS``) is the required
-output root; it is never defaulted here so there is one source. Prints one
-condensed summary and ALWAYS exits 1 so a failing pipeline stays failing.
+Every collector is best-effort: a missing source must never abort the capture.
+``INFINITO_RESCUE_DIAGNOSTICS_DIR`` and ``INFINITO_DNS53_SAMPLER_LOG`` are
+required and never defaulted here, so ``group_vars/all/05_paths.yml`` stays the
+one source. Prints one summary and ALWAYS exits 1 so a failure stays a failure.
 
 Usage:
     container.py [APP_ID] [CONTEXT]
@@ -42,6 +41,7 @@ _TAR_TIMEOUT = 300
 _SELF_IN_CONTAINER = "/tmp/rescue-self.py"  # noqa: S108 - fixed staging path inside the inspected container
 _LOCAL_DUMPS_ENV = "INFINITO_RESCUE_LOCAL_DUMPS_DIR"
 _PROBE_HOSTS = ("deb.debian.org", "ghcr.io", "repo.packagist.org")
+_INZONE_PROBE = "getent hosts rescue-probe.$(awk -F/ '/^address=/{print $2;exit}' /etc/dnsmasq.conf)"
 
 
 def runtime_bin() -> str | None:
@@ -118,6 +118,7 @@ def collect_host(out: Path, app_id: str, context: str, stamp: str) -> None:
         ("sockets-tcp.txt", ["ss", "-lntp"]),
         ("processes.txt", ["ps", "-eo", "pid,ppid,stat,etimes,rss,comm"]),
         ("dnsmasq-conf-d.txt", ["grep", "-rH", ".", "/etc/dnsmasq.d"]),
+        ("resolve-inzone.txt", ["sh", "-c", _INZONE_PROBE]),
         ("zfs-dev.txt", ["ls", "-l", "/dev/zfs"]),
         ("zfs-version.txt", ["zfs", "version"]),
     ):
@@ -130,6 +131,7 @@ def collect_host(out: Path, app_id: str, context: str, stamp: str) -> None:
         "/etc/nsswitch.conf",
         "/etc/hosts",
         "/etc/dnsmasq.conf",
+        os.environ["INFINITO_DNS53_SAMPLER_LOG"],
         "/etc/docker/daemon.json",
         "/proc/modules",
         "/proc/devices",
@@ -427,6 +429,8 @@ def recurse(
                 "RESCUE_SEEN=" + ",".join([*seen, cid] if cid else seen),
                 "-e",
                 f"{_LOCAL_DUMPS_ENV}={os.environ.get(_LOCAL_DUMPS_ENV, '')}",
+                "-e",
+                f"INFINITO_DNS53_SAMPLER_LOG={os.environ['INFINITO_DNS53_SAMPLER_LOG']}",
                 name,
                 "python3",
                 _SELF_IN_CONTAINER,

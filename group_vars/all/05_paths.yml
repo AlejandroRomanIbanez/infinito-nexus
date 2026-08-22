@@ -27,5 +27,6 @@ FILE_TOKENS: "{{ [DIR_SECRETS, 'tokens.yml'] | path_join }}"
 FILE_DATABASE_SECRETS: "{{ [DIR_SECRETS, 'databases.csv'] | path_join }}"
 
 DIR_RESCUE_DIAGNOSTICS: "/tmp/infinito-rescue-diagnostics"
+FILE_DNS53_SAMPLER_LOG: "/var/log/infinito/dns53-sampler.log"
 
 FILE_ENVIRONMENT: "/etc/environment" # File to safe environment variables in

@@ -14,9 +14,23 @@ import unittest
 import unittest.mock as mock
 from pathlib import Path
 
+from utils.paths import read_group_path
+
 from . import PROJECT_ROOT
 
 RESCUE = PROJECT_ROOT / "utils" / "diagnostics" / "container.py"
+_ENV = mock.patch.dict(
+    os.environ,
+    {"INFINITO_DNS53_SAMPLER_LOG": read_group_path("FILE_DNS53_SAMPLER_LOG")},
+)
+
+
+def setUpModule():
+    _ENV.start()
+
+
+def tearDownModule():
+    _ENV.stop()
 
 
 def _load():
@@ -99,6 +113,17 @@ class CollectTests(unittest.TestCase):
             self.assertIn("application_id: app", meta)
             self.assertIn("context: ctx", meta)
             self.assertIn("host: myhost", meta)
+
+    def test_collect_host_refuses_to_run_without_the_sampler_log_variable(self):
+        mod = _load()
+        with (
+            tempfile.TemporaryDirectory() as td,
+            mock.patch.dict(os.environ, {}, clear=False),
+            mock.patch.object(mod, "run", return_value=_cp([], stdout=b"h\n")),
+        ):
+            os.environ.pop("INFINITO_DNS53_SAMPLER_LOG", None)
+            with self.assertRaises(KeyError):
+                mod.collect_host(Path(td), "app", "ctx", "STAMP")
 
     def test_each_probed_name_gets_its_own_verdict(self):
         mod = _load()

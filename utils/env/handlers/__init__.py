@@ -41,6 +41,7 @@ from .infinito.package_cache import heap as package_cache_heap
 from .infinito.playwright import reports_base_dir as playwright_reports_base_dir
 from .infinito.playwright import stage_base_dir as playwright_stage_base_dir
 from .infinito.rescue import diagnostics_dir as rescue_diagnostics_dir
+from .infinito.rescue import dns53_sampler_log as rescue_dns53_sampler_log
 from .infinito.rescue import local_dumps_dir as rescue_local_dumps_dir
 from .infinito.running_on import act as running_on_act
 from .infinito.running_on import github as running_on_github
@@ -56,6 +57,7 @@ ORDERED_HANDLERS = [
     dir_backups,
     dir_secrets,
     rescue_diagnostics_dir,
+    rescue_dns53_sampler_log,
     rescue_local_dumps_dir,
     swarm_nfs_export_base,
     swarm_nfs_state_path,

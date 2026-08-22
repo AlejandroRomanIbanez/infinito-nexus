@@ -90,8 +90,10 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          make dotenv
           {
             grep '^INFINITO_RESCUE_DIAGNOSTICS_BASE=' default.env
+            grep '^INFINITO_DNS53_SAMPLER_LOG=' .env
             echo "INFINITO_WORKSPACE_SLUG=$(printf '%s' "${DEV_RUNTIME_IMAGE}" | tr '/:' '--')-${{ matrix.track }}"
           } >> "$GITHUB_ENV"
 

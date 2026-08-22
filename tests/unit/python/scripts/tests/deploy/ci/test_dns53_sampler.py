@@ -57,5 +57,62 @@ class SamplerTickTests(unittest.TestCase):
         self.assertRegex(line, TIMESTAMP + r" none$")
 
 
+class AnswerProbeTests(unittest.TestCase):
+    def _answer(self, name: str) -> str:
+        proc = subprocess.run(
+            [
+                "sh",
+                "-c",
+                'DNS53_SAMPLER_LIB=1 . "$1" && answer_once "$2"',
+                "sh",
+                str(SAMPLER),
+                name,
+            ],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return proc.stdout
+
+    def test_a_resolvable_name_is_reported_ok_with_its_latency(self):
+        self.assertRegex(self._answer("localhost"), r"^ localhost=ok/\d+ms$")
+
+    def test_an_unresolvable_name_is_reported_fail_not_skipped(self):
+        self.assertRegex(
+            self._answer("rescue-probe.invalid"),
+            r"^ rescue-probe\.invalid=fail/\d+ms$",
+        )
+
+
+class ZoneProbeNameTests(unittest.TestCase):
+    def _zone(self, conf: str) -> str:
+        with tempfile.NamedTemporaryFile("w", suffix=".conf") as handle:
+            handle.write(conf)
+            handle.flush()
+            proc = subprocess.run(
+                [
+                    "sh",
+                    "-c",
+                    'DNS53_SAMPLER_LIB=1 . "$1" && zone_probe_name "$2"',
+                    "sh",
+                    str(SAMPLER),
+                    handle.name,
+                ],
+                capture_output=True,
+                text=True,
+                check=True,
+            )
+        return proc.stdout
+
+    def test_the_owned_zone_becomes_a_probe_name(self):
+        self.assertEqual(
+            self._zone("no-resolv\naddress=/infinito.example/192.168.244.10\n"),
+            "rescue-probe.infinito.example",
+        )
+
+    def test_a_config_without_a_zone_yields_nothing(self):
+        self.assertEqual(self._zone("no-resolv\nserver=192.0.2.1\n"), "")
+
+
 if __name__ == "__main__":
     unittest.main()
