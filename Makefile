@@ -785,21 +785,21 @@ test: install
 test-external: install
 	@INFINITO_TEST_TYPE="external" \
 	INFINITO_COMPILE=0 \
-	bash scripts/tests/code/wrapper.sh
+	bash scripts/tests/code/wrapper.sh scripts/tests/code/run.sh
 
 .PHONY: test-integration
 # Run the integration test suite.
 test-integration: install
 	@INFINITO_TEST_TYPE="integration" \
 	INFINITO_COMPILE=0 \
-	bash scripts/tests/code/wrapper.sh
+	bash scripts/tests/code/wrapper.sh scripts/tests/code/run.sh
 
 .PHONY: test-lint
 # Run the lint test suite.
 test-lint: install
 	@INFINITO_TEST_TYPE="lint" \
 	INFINITO_COMPILE=0 \
-	bash scripts/tests/code/wrapper.sh
+	bash scripts/tests/code/wrapper.sh scripts/tests/code/run.sh
 
 .PHONY: test-main-merged
 # Verify upstream main is fully merged into HEAD (pre-push gate); fetches and fails if the branch lags main.
@@ -816,7 +816,7 @@ test-merge-signed:
 test-performance: install
 	@INFINITO_TEST_TYPE="performance" \
 	INFINITO_COMPILE=0 \
-	bash scripts/tests/code/wrapper.sh
+	bash scripts/tests/code/wrapper.sh scripts/tests/code/run.sh
 
 .PHONY: test-signed
 # Verify HEAD is signed.
@@ -835,25 +835,28 @@ test-unit: test-unit-python test-unit-javascript test-unit-php test-unit-ruby
 
 .PHONY: test-unit-javascript
 # Run the JavaScript unit test suite (node:test, no npm dependency).
-test-unit-javascript: install-node
-	@bash scripts/tests/unit/javascript.sh
+test-unit-javascript:
+	@INFINITO_TEST_TYPE="unit-javascript" \
+	bash scripts/tests/code/wrapper.sh scripts/tests/unit/javascript.sh
 
 .PHONY: test-unit-php
 # Run the PHP unit test suite (PHPUnit).
-test-unit-php: install-php
-	@bash scripts/tests/unit/php.sh
+test-unit-php:
+	@INFINITO_TEST_TYPE="unit-php" \
+	bash scripts/tests/code/wrapper.sh scripts/tests/unit/php.sh
 
 .PHONY: test-unit-python
 # Run the Python unit test suite.
 test-unit-python: install
 	@INFINITO_TEST_TYPE="unit" \
 	INFINITO_COMPILE=0 \
-	bash scripts/tests/code/wrapper.sh
+	bash scripts/tests/code/wrapper.sh scripts/tests/code/run.sh
 
 .PHONY: test-unit-ruby
 # Run the Ruby unit test suite (minitest, stdlib).
-test-unit-ruby: install-ruby
-	@bash scripts/tests/unit/ruby.sh
+test-unit-ruby:
+	@INFINITO_TEST_TYPE="unit-ruby" \
+	bash scripts/tests/code/wrapper.sh scripts/tests/unit/ruby.sh
 
 .PHONY: worktree-down
 # Stop a branch worktree's stack, release the checkout and free its slot.
