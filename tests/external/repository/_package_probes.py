@@ -97,6 +97,9 @@ def _get(url: str) -> tuple[int, bytes]:
                     raise
                 if attempt == _RETRY_ATTEMPTS - 1:
                     raise
+            except OSError:
+                if attempt == _RETRY_ATTEMPTS - 1:
+                    raise
             time.sleep(_RETRY_BACKOFF * 2**attempt)
     raise AssertionError("unreachable")
 
