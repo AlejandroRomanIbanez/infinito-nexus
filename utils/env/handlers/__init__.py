@@ -15,6 +15,7 @@ from . import (
     passthrough,
 )
 from .infinito import (
+    ca_bundle_candidates,
     ca_cert_host,
     container,
     distros,
@@ -70,6 +71,7 @@ ORDERED_HANDLERS = [
     running_on_github,
     tor_socks_port,
     is_wsl2,
+    ca_bundle_candidates,
     ca_cert_host,
     outer_network_mtu,
     inventory,
