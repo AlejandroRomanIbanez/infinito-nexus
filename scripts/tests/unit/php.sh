@@ -10,4 +10,9 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
 
 cd "${REPO_ROOT}"
 
-exec vendor/bin/phpunit
+bash scripts/install/php.sh
+
+junit_report="build/test-reports/${INFINITO_TEST_TYPE:?INFINITO_TEST_TYPE must be set}.xml" # nocheck: makefile-supplied
+mkdir -p build/test-reports
+
+exec vendor/bin/phpunit --log-junit "${junit_report}"

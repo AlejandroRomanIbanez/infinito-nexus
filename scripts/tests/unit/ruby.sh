@@ -10,6 +10,8 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
 
 cd "${REPO_ROOT}"
 
+bash scripts/install/ruby.sh
+
 suite="tests/unit/ruby"
 
 mapfile -t tests < <(find "${suite}" -name '*_test.rb' | sort)
@@ -19,4 +21,7 @@ if ((${#tests[@]} == 0)); then
 	exit 1
 fi
 
-exec ruby -I"${suite}" -e 'ARGV.each { |f| require File.expand_path(f) }' "${tests[@]}"
+export INFINITO_JUNIT_REPORT="${REPO_ROOT}/build/test-reports/${INFINITO_TEST_TYPE:?INFINITO_TEST_TYPE must be set}.xml" # nocheck: makefile-supplied
+
+exec ruby -I"${suite}" -r"${REPO_ROOT}/tests/utils/minitest_junit.rb" \
+	-e 'ARGV.each { |f| require File.expand_path(f) }' "${tests[@]}"

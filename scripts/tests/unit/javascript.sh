@@ -10,6 +10,8 @@ REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
 
 cd "${REPO_ROOT}"
 
+bash scripts/install/node.sh
+
 suite="tests/unit/javascript"
 
 mapfile -t tests < <(find "${suite}" -name '*.test.js' | sort)
@@ -19,4 +21,10 @@ if ((${#tests[@]} == 0)); then
 	exit 1
 fi
 
-exec node --test "${tests[@]}"
+junit_report="build/test-reports/${INFINITO_TEST_TYPE:?INFINITO_TEST_TYPE must be set}.xml" # nocheck: makefile-supplied
+mkdir -p build/test-reports
+
+exec node --test \
+	--test-reporter=spec --test-reporter-destination=stdout \
+	--test-reporter=junit --test-reporter-destination="${junit_report}" \
+	"${tests[@]}"
