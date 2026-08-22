@@ -29,6 +29,8 @@ logs/
 job-logs.txt
 *.lock
 node_modules/
+vendor/
+.phpunit.result.cache
 inventories/production/
 /core.*
 
