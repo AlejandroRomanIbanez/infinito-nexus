@@ -1,9 +1,12 @@
 """Lint: every script a role ships has a unit test at the mirrored path.
 
-``roles/<role>/files/<lang>/<rel>`` is tested by
+``roles/<role>/files/<rel>`` is tested by
 ``tests/unit/<lang>/roles/<role>/files/<rel>``, renamed to that language's
-framework convention. The language directory appears once - in ``tests/unit/``
-- because ``tests/unit/python/`` already says what the file is.
+framework convention. The language is read from the file's suffix, not from
+its directory, so a tree that role-files-layout exempts from ``files/<lang>/``
+- an app with its own entry point, a plugin whose import paths are fixed from
+outside - still owes a test. A ``files/<lang>/`` segment is dropped from the
+mirrored path, because ``tests/unit/python/`` already says what the file is.
 
 ::
 
@@ -33,6 +36,10 @@ in whatever comment syntax its language uses::
 A file that has both a mirrored test and an exemption fails: the exemption
 outlived its reason and reads as "untested" to everyone after you.
 
+Test code itself is out of scope, not exempted: a ``test-*`` role, a
+``files/playwright/`` spec suite and a ``files/test/`` fixture tree are the
+tests, so requiring a test of them is circular.
+
 Find every exemption with::
 
     grep -rn 'nocheck: mirrored-unit-test' roles/
@@ -58,6 +65,7 @@ LANGUAGES = {
 }
 
 _MARKER = re.compile(rf"nocheck:\s*{RULE}\b[ \t\-:]*(?P<why>.*)")
+_TEST_TREES = frozenset({"playwright", "test"})
 
 
 def _test_name(language: str, stem: str) -> str:
@@ -77,17 +85,31 @@ def _test_name(language: str, stem: str) -> str:
     return f"{pascal}Test.php"
 
 
+def _is_test_code(role: str, directories: tuple[str, ...]) -> bool:
+    """Report whether a shipped path is itself test code.
+
+    :param role: the role directory name
+    :param directories: path segments below ``files/``, excluding the file
+    :return: ``True`` when requiring a unit test of it would be circular
+    """
+    return role.startswith("test-") or bool(_TEST_TREES.intersection(directories))
+
+
 def _shipped_scripts():
     """Yield ``(source, language, expected_test)`` for every governed script.
 
     :return: iterator over the role scripts this lint requires a test for
     """
     for language, suffix in sorted(LANGUAGES.items()):
-        for source in sorted(ROLES.glob(f"*/files/{language}/**/*{suffix}")):
+        for source in sorted(ROLES.glob(f"*/files/**/*{suffix}")):
             if not source.is_file() or source.name == "__init__.py":
                 continue
             parts = source.relative_to(ROLES).parts
-            role, rel = parts[0], parts[3:]
+            role, rel = parts[0], parts[2:]
+            if _is_test_code(role, rel[:-1]):
+                continue
+            if rel[0] == language:
+                rel = rel[1:]
             expected = UNIT.joinpath(
                 language, "roles", role, "files", *rel[:-1]
             ) / _test_name(language, source.stem)

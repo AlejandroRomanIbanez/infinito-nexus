@@ -1,3 +1,4 @@
+# nocheck: mirrored-unit-test - an Odoo ORM model inheriting res.users; its methods run against a live cursor and recordset
 # Part of Infinito.Nexus. See LICENSE file for full copyright and licensing details.
 
 import logging

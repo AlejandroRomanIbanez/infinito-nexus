@@ -1,4 +1,5 @@
 <?php
+// nocheck: mirrored-unit-test - registers add_action hooks at load and maps roles through WordPress user objects the core supplies
 /**
  * Plugin Name: Infinito.Nexus OIDC RBAC Role Mapper
  * Description: Maps the Keycloak `groups` claim delivered by

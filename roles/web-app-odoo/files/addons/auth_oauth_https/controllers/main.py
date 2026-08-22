@@ -1,3 +1,4 @@
+# nocheck: mirrored-unit-test - subclasses Odoo's OAuthLogin controller; every method needs a live registry, request and http.route dispatch
 # Part of Infinito.Nexus. See LICENSE file for full copyright and licensing details.
 
 import json

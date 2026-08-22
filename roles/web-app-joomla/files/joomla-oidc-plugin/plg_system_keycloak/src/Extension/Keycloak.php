@@ -1,4 +1,5 @@
 <?php
+// nocheck: mirrored-unit-test - extends CMSPlugin, so every method depends on Joomla's dispatcher, application and session being live
 namespace Joomla\Plugin\System\Keycloak\Extension;
 
 defined('_JEXEC') or die;

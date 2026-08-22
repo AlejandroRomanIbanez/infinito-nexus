@@ -1,4 +1,5 @@
 <?php
+// nocheck: mirrored-unit-test - registers add_action('http_api_curl') at load and mutates a live cURL handle passed in by WordPress
 /**
  * Plugin Name: Infinito.Nexus HTTP Onion SOCKS
  * Description: Route server-side wp_remote_* calls to .onion hosts (OIDC discovery and token exchange) through the Tor SOCKS proxy, which libcurl otherwise refuses to resolve.
