@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import json
 import re
-import socket
 import threading
 import time
 import urllib.error
@@ -92,11 +91,6 @@ def _get(url: str) -> tuple[int, bytes]:
             except urllib.error.HTTPError as exc:
                 if exc.code not in _RETRY_STATUS or attempt == _RETRY_ATTEMPTS - 1:
                     return exc.code, b""
-            except urllib.error.URLError as exc:
-                if isinstance(exc.reason, socket.gaierror):
-                    raise
-                if attempt == _RETRY_ATTEMPTS - 1:
-                    raise
             except OSError:
                 if attempt == _RETRY_ATTEMPTS - 1:
                     raise
