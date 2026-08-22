@@ -15,8 +15,6 @@ from . import (
     passthrough,
 )
 from .infinito import (
-    ca_bundle_candidates,
-    ca_cert_host,
     container,
     distros,
     docker_volume,
@@ -30,6 +28,8 @@ from .infinito import (
     registry_cache_max_size,
     tor_socks_port,
 )
+from .infinito.ca import bundle_candidates as ca_bundle_candidates
+from .infinito.ca import cert_host as ca_cert_host
 from .infinito.dir import backups as dir_backups
 from .infinito.dir import secrets as dir_secrets
 from .infinito.dir import var_lib as dir_var_lib

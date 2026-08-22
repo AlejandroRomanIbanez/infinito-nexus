@@ -12,7 +12,7 @@ if TYPE_CHECKING:
     from utils.env.builder import BuildContext, EnvBuilder
 
 KEY = "INFINITO_CA_BUNDLE_CANDIDATES"
-COMMENT = "Extracted CA bundle per distribution layout, most likely first; consumers take the first readable one (SPOT: group_vars/all/05_paths.yml CA_BUNDLE_CANDIDATES)."
+COMMENT = "Extracted CA bundle per distro layout, first readable one wins (SPOT: group_vars/all/05_paths.yml CA_BUNDLE_CANDIDATES)."
 
 
 def apply(eb: EnvBuilder, ctx: BuildContext) -> None:
