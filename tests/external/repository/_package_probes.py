@@ -13,6 +13,9 @@ from __future__ import annotations
 
 import json
 import re
+import socket
+import threading
+import time
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -23,6 +26,11 @@ from utils.packages.schema import SOURCE_AUR
 _TIMEOUT = 20
 _MAX_WORKERS = 16
 _USER_AGENT = "infinito-nexus package availability check"
+_PER_HOST_REQUESTS = 2
+_RETRY_ATTEMPTS = 4
+_RETRY_BACKOFF = 1.0
+_RETRY_STATUS = frozenset({429, 500, 502, 503, 504})
+_HOST_LOCKS: dict[str, threading.Semaphore] = {}
 
 DEBIAN_SUITE = "stable"
 UBUNTU_SUITE = "noble"
@@ -62,15 +70,35 @@ class Outcome(NamedTuple):
     probe: Probe
     available: bool | None
     detail: str
+    declared: bool = False
 
 
 def _get(url: str) -> tuple[int, bytes]:
+    """Fetch one index URL, serialising and retrying per host.
+
+    Args:
+        url: absolute https URL of a package index.
+
+    Returns:
+        The HTTP status and body; the body is empty for an error status.
+    """
     request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})  # noqa: S310 - literal https package index URLs only
-    try:
-        with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:  # noqa: S310 - literal https package index URLs only
-            return response.getcode(), response.read()
-    except urllib.error.HTTPError as exc:
-        return exc.code, b""
+    host = urllib.parse.urlsplit(url).hostname or ""
+    with _HOST_LOCKS.setdefault(host, threading.Semaphore(_PER_HOST_REQUESTS)):
+        for attempt in range(_RETRY_ATTEMPTS):
+            try:
+                with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:  # noqa: S310 - literal https package index URLs only
+                    return response.getcode(), response.read()
+            except urllib.error.HTTPError as exc:
+                if exc.code not in _RETRY_STATUS or attempt == _RETRY_ATTEMPTS - 1:
+                    return exc.code, b""
+            except urllib.error.URLError as exc:
+                if isinstance(exc.reason, socket.gaierror):
+                    raise
+                if attempt == _RETRY_ATTEMPTS - 1:
+                    raise
+            time.sleep(_RETRY_BACKOFF * 2**attempt)
+    raise AssertionError("unreachable")
 
 
 def _probe_arch(name: str) -> tuple[bool | None, str]:
@@ -170,7 +198,7 @@ def _externally_managed(repo: dict | None) -> str | None:
 def _probe(probe: Probe) -> Outcome:
     external = _externally_managed(probe.repo)
     if external:
-        return Outcome(probe, None, f"third-party repository: {external}")
+        return Outcome(probe, None, f"third-party repository: {external}", True)
     try:
         if probe.source == SOURCE_AUR:
             available, detail = _probe_aur(probe.name)
@@ -191,5 +219,7 @@ def _probe(probe: Probe) -> Outcome:
     except Exception as exc:
         return Outcome(probe, None, f"{type(exc).__name__}: {exc}")
     if available is False and probe.virtual:
-        return Outcome(probe, None, f"{detail} lists no such name; declared virtual")
+        return Outcome(
+            probe, None, f"{detail} lists no such name; declared virtual", True
+        )
     return Outcome(probe, available, detail)
