@@ -117,6 +117,13 @@ _COMMAND_PACKAGES: dict[str, dict[str, list[str]]] = {
         "yum": ["npm", "nodejs"],
         "brew": ["node"],
     },
+    "node": {
+        "pacman": ["nodejs"],
+        "apt-get": ["nodejs"],
+        "dnf": ["nodejs"],
+        "yum": ["nodejs"],
+        "brew": ["node"],
+    },
 }
 
 

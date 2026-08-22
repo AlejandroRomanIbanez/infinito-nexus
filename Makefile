@@ -334,6 +334,11 @@ install-ansible:
 install-force:
 	@bash scripts/install/all.sh --force
 
+.PHONY: install-node
+# Install the Node.js runtime the JavaScript unit suite runs on.
+install-node:
+	@bash scripts/install/node.sh
+
 .PHONY: install-lint
 # Install lint dependencies.
 # Note: host or docker selected via INFINITO_LINT_RUNNER; incremental via a per-env stamp.
@@ -819,8 +824,8 @@ test-signed:
 test-unit: test-unit-python test-unit-javascript test-unit-php test-unit-ruby
 
 .PHONY: test-unit-javascript
-# Run the JavaScript unit test suite (node:test, no extra dependency).
-test-unit-javascript:
+# Run the JavaScript unit test suite (node:test, no npm dependency).
+test-unit-javascript: install-node
 	@bash scripts/tests/unit/javascript.sh
 
 .PHONY: test-unit-php
