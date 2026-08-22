@@ -15,6 +15,10 @@ on:
   push:
     branches: [ "main" ]
 
+concurrency:
+  group: scorecard-${{ github.repository }}-${{ github.ref_name }}
+  cancel-in-progress: true
+
 # Declare default permissions as read only.
 permissions: read-all
 
