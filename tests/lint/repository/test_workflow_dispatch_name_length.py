@@ -74,7 +74,8 @@ class TestWorkflowDispatchNameLength(unittest.TestCase):
                 f"there and the menu becomes unreadable exactly where a human "
                 f"picks what to start. Shorten `name:`; the longer, explanatory "
                 f"wording belongs in `run-name:`, which is read on the run itself "
-                f"and MAY be as long as it needs to be:\n" + "\n".join(sorted(offenders))
+                f"and MAY be as long as it needs to be:\n"
+                + "\n".join(sorted(offenders))
             )
 
 

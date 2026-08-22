@@ -60,7 +60,8 @@ def patch_omniauth_rb(content: str) -> str:
     if 'ENV["OIDC_ENABLED"]' in content:
         return content
     content = (
-        re.sub(r"(  end\nend\s*)$", omniauth_injection() + r"\1", content.rstrip()) + "\n"
+        re.sub(r"(  end\nend\s*)$", omniauth_injection() + r"\1", content.rstrip())
+        + "\n"
     )
     return OMNIAUTH_REGISTRATION + content
 
