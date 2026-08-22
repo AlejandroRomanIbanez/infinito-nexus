@@ -184,9 +184,9 @@ class Keycloak extends CMSPlugin
      * The sys-svc-compose-ca override reliably bind-mounts the Infinito
      * root CA and exports CURL_CA_BUNDLE/CA_TRUST_CERT/SSL_CERT_FILE to
      * point at it, even when the CA-trust entrypoint wrapper was not
-     * applied (e.g. locally-built image absent at inject time). Prefer
-     * those over the system bundle, which only carries the Infinito CA
-     * once update-ca-certificates has run inside the container.
+     * applied (e.g. locally-built image absent at inject time). Where
+     * none of them is set there is no internal CA to trust, so the
+     * caller keeps the client's own default rather than the OS bundle.
      */
     private function resolveCaBundlePath(): string
     {
@@ -194,7 +194,6 @@ class Keycloak extends CMSPlugin
             getenv('CURL_CA_BUNDLE') ?: '',
             getenv('CA_TRUST_CERT') ?: '',
             getenv('SSL_CERT_FILE') ?: '',
-            '/etc/ssl/certs/ca-certificates.crt',
         ];
         foreach ($candidates as $candidate) {
             $candidate = (string) $candidate;

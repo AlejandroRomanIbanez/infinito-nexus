@@ -13,7 +13,6 @@ add_filter('http_request_args', static function (array $args): array {
         getenv('CURL_CA_BUNDLE') ?: '',
         getenv('CA_TRUST_CERT') ?: '',
         getenv('SSL_CERT_FILE') ?: '',
-        '/etc/ssl/certs/ca-certificates.crt',
     ];
     foreach ($candidates as $bundle) {
         if ($bundle !== '' && is_readable($bundle)) {
