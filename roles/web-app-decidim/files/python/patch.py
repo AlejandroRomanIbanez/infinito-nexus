@@ -31,6 +31,7 @@ is sourced from runtime ENV vars instead. The patches below:
 """
 
 import glob
+import os
 import re
 from pathlib import Path
 
@@ -44,12 +45,14 @@ end
 """
 
 
-_FRAGMENT = (
-    # nocheck: project-root-import  sibling files/ruby/, not the project root
-    Path(__file__).parent.parent / "ruby" / "omniauth_provider.rb"
-)
+def omniauth_injection() -> str:
+    """Read the provider builder fragment from the ruby directory the build mounts.
 
-OMNIAUTH_INJECTION = "\n" + _FRAGMENT.read_text()
+    Returns:
+        The fragment's content, prefixed with a newline.
+    """
+    fragment = Path(os.environ["DECIDIM_PATCH_RUBY_DOCKER"]) / "omniauth_provider.rb"
+    return "\n" + fragment.read_text()
 
 
 def patch_omniauth_rb(content: str) -> str:
@@ -57,7 +60,7 @@ def patch_omniauth_rb(content: str) -> str:
     if 'ENV["OIDC_ENABLED"]' in content:
         return content
     content = (
-        re.sub(r"(  end\nend\s*)$", OMNIAUTH_INJECTION + r"\1", content.rstrip()) + "\n"
+        re.sub(r"(  end\nend\s*)$", omniauth_injection() + r"\1", content.rstrip()) + "\n"
     )
     return OMNIAUTH_REGISTRATION + content
 

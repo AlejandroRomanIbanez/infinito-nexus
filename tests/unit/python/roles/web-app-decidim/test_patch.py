@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sys
 import unittest
 
@@ -10,6 +11,10 @@ from . import PROJECT_ROOT
 sys.path.insert(0, str(PROJECT_ROOT / "roles" / "web-app-decidim" / "files" / "python"))
 
 from patch import patch_omniauth_helper_rb, patch_omniauth_rb
+
+os.environ["DECIDIM_PATCH_RUBY_DOCKER"] = str(
+    PROJECT_ROOT / "roles" / "web-app-decidim" / "files" / "ruby"
+)
 
 OMNIAUTH_RB_FIXTURE = """\
 Decidim::Auth.setup do |config|
