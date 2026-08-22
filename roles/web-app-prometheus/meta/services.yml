@@ -52,7 +52,7 @@ prometheus:
   provides:
     - prometheus
   image: prom/prometheus
-  version: v3.13.2
+  version: v3.14.0
   name: prometheus
   cpus: "0.5"
   mem_reservation: 512m
@@ -73,7 +73,7 @@ prometheus:
   min_storage: 307MB
 alertmanager:
   image: prom/alertmanager
-  version: v0.33.1
+  version: v0.34.0
   name: prometheus-alertmanager
   cpus: "0.25"
   mem_reservation: 64m
