@@ -334,11 +334,6 @@ install-ansible:
 install-force:
 	@bash scripts/install/all.sh --force
 
-.PHONY: install-node
-# Install the Node.js runtime the JavaScript unit suite runs on.
-install-node:
-	@bash scripts/install/node.sh
-
 .PHONY: install-lint
 # Install lint dependencies.
 # Note: host or docker selected via INFINITO_LINT_RUNNER; incremental via a per-env stamp.
@@ -350,6 +345,11 @@ install-lint:
 # Note: drops the per-env stamp and rebuilds it.
 install-lint-force:
 	@bash scripts/install/wrapper.sh --force
+
+.PHONY: install-node
+# Install the Node.js runtime the JavaScript unit suite runs on.
+install-node:
+	@bash scripts/install/node.sh
 
 .PHONY: install-python
 # Install Python tooling.

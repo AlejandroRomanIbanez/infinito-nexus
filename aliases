@@ -90,6 +90,7 @@ alias i8nilas='i8nila && source ~/.bashrc' # Install aliases and source them
 alias i8nili='m install-lint'
 alias i8nilifo='m install-lint-force'
 alias i8nina='m install-ansible'
+alias i8nino='m install-node'
 alias i8nipo='m install-python'
 alias i8nipode='m install-python-dev'
 alias i8nise='m install-system-python'
