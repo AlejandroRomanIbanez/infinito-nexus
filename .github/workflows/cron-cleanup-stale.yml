@@ -1,4 +1,5 @@
-name: "⏰ Cleanup: Stale Repository Data"
+name: "🧹 Prune stale data"
+run-name: "${{ github.event_name == 'schedule' && '⏰ ' || '' }}🧹 Prune stale data"
 
 on:
   schedule:

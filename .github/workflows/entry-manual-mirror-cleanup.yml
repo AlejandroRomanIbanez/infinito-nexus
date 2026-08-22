@@ -1,4 +1,5 @@
-name: "🧹 Images: Cleanup GHCR (Private)"
+name: "🧹 Images: Cleanup GHCR"
+run-name: "🧹 Images: Cleanup GHCR (Private)"
 
 on:
   workflow_dispatch:

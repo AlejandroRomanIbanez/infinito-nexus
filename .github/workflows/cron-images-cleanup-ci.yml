@@ -1,4 +1,5 @@
-name: "⏰ Images: Cleanup CI (GHCR)"
+name: "🧹 Prune CI images"
+run-name: "${{ github.event_name == 'schedule' && '⏰ ' || '' }}🧹 Prune CI images"
 
 on:
   schedule:

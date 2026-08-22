@@ -1,4 +1,5 @@
-name: "🏃 Test: Runner smoke (self-hosted)"
+name: "🏃 Test: Runner smoke"
+run-name: "🏃 Test: Runner smoke (self-hosted)"
 
 on:
   workflow_dispatch:

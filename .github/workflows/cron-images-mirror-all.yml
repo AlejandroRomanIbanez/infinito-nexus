@@ -1,4 +1,5 @@
-name: "⏰ Mirror: Docker Hub → GHCR"
+name: "🪞 Mirror all images"
+run-name: "${{ github.event_name == 'schedule' && '⏰ ' || '' }}🪞 Mirror all images"
 
 on:
   schedule:

@@ -41,7 +41,7 @@ Trigger column legend: **auto** = fires automatically (push, pull_request, sched
 
 | Workflow | Description | Trigger | Inputs |
 |---|---|---|---|
-| [cron-security-codeql.yml](../../../../../.github/workflows/cron-security-codeql.yml): `⏰ Scan: CodeQL (Advanced)` | CodeQL static analysis. Invoked by [call-orchestrator.yml](../../../../../.github/workflows/call-orchestrator.yml) so every CI run produces a single scan; additionally runs on a weekly cron so coverage does not drop when no pushes land on `main`. See [pipeline.md](../../../artefact/git/pipeline.md) for the gating behaviour. | reusable, auto (`schedule`: weekly Mon 00:00 UTC) | none |
+| [cron-security-codeql.yml](../../../../../.github/workflows/cron-security-codeql.yml): `🔐 Scan with CodeQL` | CodeQL static analysis. Invoked by [call-orchestrator.yml](../../../../../.github/workflows/call-orchestrator.yml) so every CI run produces a single scan; additionally runs on a weekly cron so coverage does not drop when no pushes land on `main`. See [pipeline.md](../../../artefact/git/pipeline.md) for the gating behaviour. | reusable, auto (`schedule`: weekly Mon 00:00 UTC) | none |
 | [call-lint.yml](../../../../../.github/workflows/call-lint.yml): `🧹 Lint` | Runs `make lint` (every lint check in parallel: action, ansible, javascript, makefile, markdown, mermaid, packages, playwright, python, shellcheck) plus a hadolint SARIF job on `Dockerfile`. | reusable, manual | none |
 
 ### CI images 🐳
@@ -49,15 +49,15 @@ Trigger column legend: **auto** = fires automatically (push, pull_request, sched
 | Workflow | Description | Trigger | Inputs |
 |---|---|---|---|
 | [call-images-build-ci.yml](../../../../../.github/workflows/call-images-build-ci.yml): `🖼️ Build: CI Images (all distros)` | Builds the per-distro CI base images consumed by all test jobs. | reusable | `distros` (required), `checkout_ref` (optional), `image_tag` (default `ci-${github.sha}`), `concurrency_channel` (default `default`) |
-| [cron-images-cleanup-ci.yml](../../../../../.github/workflows/cron-images-cleanup-ci.yml): `⏰ Images: Cleanup CI (GHCR)` | Deletes CI images from GHCR older than N days. | auto (`schedule`: weekly Mon 00:00 UTC), manual | `days` (default `7`) |
+| [cron-images-cleanup-ci.yml](../../../../../.github/workflows/cron-images-cleanup-ci.yml): `🧹 Prune CI images` | Deletes CI images from GHCR older than N days. | auto (`schedule`: weekly Mon 00:00 UTC), manual | `days` (default `7`) |
 
 ### Image mirroring 🪞
 
 | Workflow | Description | Trigger | Inputs |
 |---|---|---|---|
 | [call-images-mirror-missing.yml](../../../../../.github/workflows/call-images-mirror-missing.yml): `🪞 Mirror: Docker Hub → GHCR (only missing)` | Mirrors only the upstream images that are not yet in GHCR. Called from the orchestrator before deploy tests. | reusable | `ghcr_namespace`, `ghcr_prefix` (default `mirror`), `repo_root` (default `.`), `source_repository`, `source_ref`, plus throttling knobs |
-| [cron-images-mirror-all.yml](../../../../../.github/workflows/cron-images-mirror-all.yml): `⏰ Mirror: Docker Hub → GHCR` | Full nightly mirror of every referenced upstream image into GHCR. | auto (`schedule`: daily 00:00 UTC), manual | `ghcr_namespace`, `ghcr_prefix` (default `mirror`), `repo_root` (default `.`), `images_per_hour` (throttle) |
-| [entry-manual-mirror-cleanup.yml](../../../../../.github/workflows/entry-manual-mirror-cleanup.yml): `🧹 Images: Cleanup GHCR (Private)` | Deletes GHCR mirror packages by prefix and visibility. Supports `dry_run`. | manual | `ghcr_namespace`, `ghcr_prefix` (default `mirror`), `visibility` (`private`/`public`/`internal`, default `private`), `dry_run` |
+| [cron-images-mirror-all.yml](../../../../../.github/workflows/cron-images-mirror-all.yml): `🪞 Mirror all images` | Full nightly mirror of every referenced upstream image into GHCR. | auto (`schedule`: daily 00:00 UTC), manual | `ghcr_namespace`, `ghcr_prefix` (default `mirror`), `repo_root` (default `.`), `images_per_hour` (throttle) |
+| [entry-manual-mirror-cleanup.yml](../../../../../.github/workflows/entry-manual-mirror-cleanup.yml): `🧹 Images: Cleanup GHCR` | Deletes GHCR mirror packages by prefix and visibility. Supports `dry_run`. | manual | `ghcr_namespace`, `ghcr_prefix` (default `mirror`), `visibility` (`private`/`public`/`internal`, default `private`), `dry_run` |
 
 ### Code tests 🧪
 
@@ -81,9 +81,9 @@ Trigger column legend: **auto** = fires automatically (push, pull_request, sched
 | Workflow | Description | Trigger | Inputs |
 |---|---|---|---|
 | [call-release-version.yml](../../../../../.github/workflows/call-release-version.yml): `🚀 Release: Version Logic` | Releases a specific version tag (build + publish). Called from `entry-push-latest.yml` on tagged pushes. | reusable, manual | `tag` (required, e.g. `v1.2.3`) |
-| [cron-release-highest.yml](../../../../../.github/workflows/cron-release-highest.yml): `⏰ Release: Highest Missing Version` | Scheduled backfill: finds the highest tag without a release and triggers `call-release-version.yml` for it. | auto (`schedule`: daily 00:00 UTC), manual | none |
-| [cron-cleanup-stale.yml](../../../../../.github/workflows/cron-cleanup-stale.yml): `⏰ Cleanup: Stale Repository Data` | Marks and closes stale issues and PRs, deletes inactive branches, and prunes old GHCR CI image versions. | auto (`schedule`: daily 00:00 UTC), manual | none |
-| [cron-update.yml](../../../../../.github/workflows/cron-update.yml): `⏰ Update: Versions` | Updates Docker image versions and other pinned dependencies; opens an update PR via a GitHub App installation token so PR-lifecycle events fire on the resulting PR. Both jobs are gated behind the `CI_ENABLE_AUTO_UPDATES` repository variable, see [configuration.md](configuration.md). Requires the `BOT_APP_CLIENT_ID` and `BOT_APP_PRIVATE_KEY` repository secrets, see [secrets.md](secrets.md). | auto (`push` to `main`, `schedule`: daily 00:30 UTC), manual | none |
+| [cron-release-highest.yml](../../../../../.github/workflows/cron-release-highest.yml): `🚀 Release missing tag` | Scheduled backfill: finds the highest tag without a release and triggers `call-release-version.yml` for it. | auto (`schedule`: daily 00:00 UTC), manual | none |
+| [cron-cleanup-stale.yml](../../../../../.github/workflows/cron-cleanup-stale.yml): `🧹 Prune stale data` | Marks and closes stale issues and PRs, deletes inactive branches, and prunes old GHCR CI image versions. | auto (`schedule`: daily 00:00 UTC), manual | none |
+| [cron-update.yml](../../../../../.github/workflows/cron-update.yml): `🔄 Update versions` | Updates Docker image versions and other pinned dependencies; opens an update PR via a GitHub App installation token so PR-lifecycle events fire on the resulting PR. Both jobs are gated behind the `CI_ENABLE_AUTO_UPDATES` repository variable, see [configuration.md](configuration.md). Requires the `BOT_APP_CLIENT_ID` and `BOT_APP_PRIVATE_KEY` repository secrets, see [secrets.md](secrets.md). | auto (`push` to `main`, `schedule`: daily 00:30 UTC), manual | none |
 | [entry-pr-open-dependabot-close.yml](../../../../../.github/workflows/entry-pr-open-dependabot-close.yml): `🚫 Dependabot: Close while auto-updates disabled` | Auto-closes Dependabot PRs while `CI_ENABLE_AUTO_UPDATES` is not set to `true`, so Dependabot honours the same gate as the workflow-driven update jobs. See [configuration.md](configuration.md). | auto (`pull_request_target`: opened, reopened) | none |
 
 ## Changing workflows ✍️

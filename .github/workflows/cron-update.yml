@@ -1,4 +1,5 @@
-name: "⏰ Update: Versions"
+name: "🔄 Update versions"
+run-name: "${{ github.event_name == 'schedule' && '⏰ ' || '' }}🔄 Update versions"
 
 on:
   push:
