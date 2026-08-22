@@ -2,10 +2,6 @@
 # shellcheck shell=bash
 #
 # Runs the JavaScript unit suite through node:test, Node's built-in runner.
-#
-# The glob is quoted so node expands it, not the shell: passing the bare
-# directory makes the runner resolve test files as module specifiers and fail
-# with MODULE_NOT_FOUND.
 
 set -euo pipefail
 
@@ -16,9 +12,11 @@ cd "${REPO_ROOT}"
 
 suite="tests/unit/javascript"
 
-if [[ -z "$(find "${suite}" -name '*.test.js' 2>/dev/null)" ]]; then
-	printf 'SKIP test-unit-javascript: no JavaScript unit tests in %s\n' "${suite}"
-	exit 0
+mapfile -t tests < <(find "${suite}" -name '*.test.js' | sort)
+
+if ((${#tests[@]} == 0)); then
+	printf 'ERROR test-unit-javascript: no JavaScript unit tests in %s\n' "${suite}" >&2
+	exit 1
 fi
 
-exec node --test "${suite}/**/*.test.js"
+exec node --test "${tests[@]}"
