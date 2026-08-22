@@ -16,7 +16,9 @@ class TestEnsurePhpToolchain(unittest.TestCase):
             mock.patch.object(php_mod.subprocess, "run") as run,
         ):
             php_mod.ensure_php_toolchain()
-        self.assertEqual([c.args[0] for c in ensure.call_args_list], ["php", "composer"])
+        self.assertEqual(
+            [c.args[0] for c in ensure.call_args_list], ["php", "composer"]
+        )
         run.assert_not_called()
 
 
