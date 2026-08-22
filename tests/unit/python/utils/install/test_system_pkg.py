@@ -72,5 +72,34 @@ class TestInstallCommandViaPkg(unittest.TestCase):
             )
 
 
+class TestEnsureCommandPresent(unittest.TestCase):
+    def test_present_noop(self) -> None:
+        with (
+            mock.patch.object(system_pkg.shutil, "which", return_value="/usr/bin/ruby"),
+            mock.patch.object(system_pkg, "install_command_via_pkg") as install_pkg,
+        ):
+            system_pkg.ensure_command_present("ruby")
+        install_pkg.assert_not_called()
+
+    def test_installs_when_absent(self) -> None:
+        whiches = iter([None, "/usr/bin/ruby"])
+        with (
+            mock.patch.object(
+                system_pkg.shutil, "which", side_effect=lambda _x: next(whiches)
+            ),
+            mock.patch.object(system_pkg, "install_command_via_pkg") as install_pkg,
+        ):
+            system_pkg.ensure_command_present("ruby")
+        install_pkg.assert_called_once_with("ruby")
+
+    def test_raises_when_still_missing(self) -> None:
+        with (
+            mock.patch.object(system_pkg.shutil, "which", return_value=None),
+            mock.patch.object(system_pkg, "install_command_via_pkg"),
+            self.assertRaises(RuntimeError),
+        ):
+            system_pkg.ensure_command_present("ruby")
+
+
 if __name__ == "__main__":
     unittest.main()

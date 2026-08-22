@@ -2,9 +2,6 @@
 # shellcheck shell=bash
 #
 # Runs the Ruby unit suite through minitest, which ships with Ruby itself.
-#
-# minitest/autorun has no directory runner, so the suite files are required
-# explicitly and minitest's at_exit hook runs them.
 
 set -euo pipefail
 
@@ -15,14 +12,11 @@ cd "${REPO_ROOT}"
 
 suite="tests/unit/ruby"
 
-if [[ -z "$(find "${suite}" -name '*_test.rb' 2>/dev/null)" ]]; then
-	printf 'SKIP test-unit-ruby: no Ruby unit tests in %s (see lint mirrored-unit-test)\n' "${suite}"
-	exit 0
+mapfile -t tests < <(find "${suite}" -name '*_test.rb' | sort)
+
+if ((${#tests[@]} == 0)); then
+	printf 'ERROR test-unit-ruby: no Ruby unit tests in %s\n' "${suite}" >&2
+	exit 1
 fi
 
-if ! command -v ruby >/dev/null 2>&1; then
-	printf 'SKIP test-unit-ruby: ruby is not installed on this machine\n'
-	exit 0
-fi
-
-exec ruby -I"${suite}" -e 'Dir.glob("'"${suite}"'/**/*_test.rb").each { |f| require File.expand_path(f) }'
+exec ruby -I"${suite}" -e 'ARGV.each { |f| require File.expand_path(f) }' "${tests[@]}"

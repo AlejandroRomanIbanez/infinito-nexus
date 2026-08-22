@@ -9,29 +9,16 @@ from utils.install import node as node_mod
 
 
 class TestEnsureNodePresent(unittest.TestCase):
-    def test_present_noop(self) -> None:
-        with (
-            mock.patch.object(node_mod.shutil, "which", return_value="/usr/bin/node"),
-            mock.patch.object(node_mod, "install_command_via_pkg") as install_pkg,
-        ):
+    def test_delegates_to_the_shared_provisioner(self) -> None:
+        with mock.patch.object(node_mod, "ensure_command_present") as ensure:
             node_mod.ensure_node_present()
-        install_pkg.assert_not_called()
+        ensure.assert_called_once_with("node")
 
-    def test_installs_via_system_pkg(self) -> None:
-        whiches = iter([None, "/usr/bin/node"])
+    def test_propagates_the_hard_failure(self) -> None:
         with (
             mock.patch.object(
-                node_mod.shutil, "which", side_effect=lambda _x: next(whiches)
+                node_mod, "ensure_command_present", side_effect=RuntimeError("boom")
             ),
-            mock.patch.object(node_mod, "install_command_via_pkg") as install_pkg,
-        ):
-            node_mod.ensure_node_present()
-        install_pkg.assert_called_once_with("node")
-
-    def test_raises_when_still_missing(self) -> None:
-        with (
-            mock.patch.object(node_mod.shutil, "which", return_value=None),
-            mock.patch.object(node_mod, "install_command_via_pkg"),
             self.assertRaises(RuntimeError),
         ):
             node_mod.ensure_node_present()

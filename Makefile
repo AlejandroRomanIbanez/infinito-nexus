@@ -351,6 +351,11 @@ install-lint-force:
 install-node:
 	@bash scripts/install/node.sh
 
+.PHONY: install-php
+# Install PHP, Composer and the vendor tree the PHP unit suite runs on.
+install-php:
+	@bash scripts/install/php.sh
+
 .PHONY: install-python
 # Install Python tooling.
 install-python: install-venv
@@ -361,6 +366,11 @@ install-python: install-venv
 install-python-dev: install-python
 	@bash scripts/install/python.sh dev
 	@bash scripts/install/pre-commit.sh
+
+.PHONY: install-ruby
+# Install the Ruby interpreter the Ruby unit suite runs on.
+install-ruby:
+	@bash scripts/install/ruby.sh
 
 .PHONY: install-skills
 # Install the agent skills from INFINITO_SKILLS_REPOSITORY into this project.
@@ -830,8 +840,7 @@ test-unit-javascript: install-node
 
 .PHONY: test-unit-php
 # Run the PHP unit test suite (PHPUnit).
-# Note: skips loudly while the suite is empty or PHP is absent; see scripts/tests/unit/php.sh.
-test-unit-php:
+test-unit-php: install-php
 	@bash scripts/tests/unit/php.sh
 
 .PHONY: test-unit-python
@@ -843,8 +852,7 @@ test-unit-python: install
 
 .PHONY: test-unit-ruby
 # Run the Ruby unit test suite (minitest, stdlib).
-# Note: skips loudly while the suite is empty or Ruby is absent; see scripts/tests/unit/ruby.sh.
-test-unit-ruby:
+test-unit-ruby: install-ruby
 	@bash scripts/tests/unit/ruby.sh
 
 .PHONY: worktree-down

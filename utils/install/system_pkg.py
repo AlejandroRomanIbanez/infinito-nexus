@@ -110,6 +110,7 @@ _COMMAND_PACKAGES: dict[str, dict[str, list[str]]] = {
         "brew": ["php"],
     },
     "ruby": {m: ["ruby"] for m in _SUPPORTED},
+    "composer": {m: ["composer"] for m in _SUPPORTED},
     "npm": {
         "pacman": ["npm", "nodejs"],
         "apt-get": ["npm", "nodejs"],
@@ -127,6 +128,24 @@ _COMMAND_PACKAGES: dict[str, dict[str, list[str]]] = {
 }
 
 
+def ensure_command_present(command_name: str) -> None:
+    """Make a command available, installing it if the host lacks it.
+
+    Args:
+        command_name: executable name, must be a key of the installer mapping.
+
+    Raises:
+        RuntimeError: the command is still absent after the install attempt.
+    """
+    if shutil.which(command_name) is not None:
+        return
+
+    install_command_via_pkg(command_name)
+
+    if shutil.which(command_name) is None:
+        raise RuntimeError(f"{command_name} not found and could not be installed")
+
+
 def install_command_via_pkg(command_name: str) -> None:
     manager = detect_package_manager()
     mapping = _COMMAND_PACKAGES.get(command_name)
@@ -141,6 +160,7 @@ def install_command_via_pkg(command_name: str) -> None:
 
 __all__ = [
     "detect_package_manager",
+    "ensure_command_present",
     "install_command_via_pkg",
     "install_package_candidates",
 ]

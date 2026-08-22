@@ -1,13 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
-#
-# Runs the PHP unit suite through PHPUnit.
-
 set -euo pipefail
-
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../../.." && pwd)"
-
+REPO_ROOT="$(cd -- "${SCRIPT_DIR}/../.." && pwd)"
 cd "${REPO_ROOT}"
-
-exec vendor/bin/phpunit
+exec python3 -m utils.install.php "$@"
