@@ -11,15 +11,24 @@ from utils.install.system_pkg import ensure_command_present
 _PHPUNIT = PROJECT_ROOT / "vendor" / "bin" / "phpunit"
 
 
+def ensure_php_toolchain() -> None:
+    """Install the PHP interpreter and Composer.
+
+    Raises:
+        RuntimeError: php or composer is still absent afterwards.
+    """
+    ensure_command_present("php")
+    ensure_command_present("composer")
+
+
 def ensure_php_present() -> None:
-    """Install PHP, Composer and the Composer vendor tree.
+    """Install the PHP toolchain and the Composer vendor tree.
 
     Raises:
         RuntimeError: php, composer or phpunit is still absent afterwards.
         subprocess.CalledProcessError: ``composer install`` failed.
     """
-    ensure_command_present("php")
-    ensure_command_present("composer")
+    ensure_php_toolchain()
 
     if not _PHPUNIT.is_file():
         log("phpunit missing; running composer install.")

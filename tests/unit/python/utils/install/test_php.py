@@ -9,6 +9,17 @@ import unittest.mock as mock
 from utils.install import php as php_mod
 
 
+class TestEnsurePhpToolchain(unittest.TestCase):
+    def test_installs_the_binaries_only(self) -> None:
+        with (
+            mock.patch.object(php_mod, "ensure_command_present") as ensure,
+            mock.patch.object(php_mod.subprocess, "run") as run,
+        ):
+            php_mod.ensure_php_toolchain()
+        self.assertEqual([c.args[0] for c in ensure.call_args_list], ["php", "composer"])
+        run.assert_not_called()
+
+
 class TestEnsurePhpPresent(unittest.TestCase):
     def test_vendor_tree_present_skips_composer(self) -> None:
         with (
