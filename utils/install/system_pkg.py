@@ -128,6 +128,76 @@ _COMMAND_PACKAGES: dict[str, dict[str, list[str]]] = {
 }
 
 
+_PHP_EXTENSION_PACKAGES: dict[str, dict[str, list[str]]] = {
+    "dom": {
+        "pacman": ["php"],
+        "apt-get": ["php-xml"],
+        "dnf": ["php-xml"],
+        "yum": ["php-xml"],
+        "brew": ["php"],
+    },
+    "mbstring": {
+        "pacman": ["php"],
+        "apt-get": ["php-mbstring"],
+        "dnf": ["php-mbstring"],
+        "yum": ["php-mbstring"],
+        "brew": ["php"],
+    },
+    "xmlwriter": {
+        "pacman": ["php"],
+        "apt-get": ["php-xml"],
+        "dnf": ["php-xml"],
+        "yum": ["php-xml"],
+        "brew": ["php"],
+    },
+}
+
+
+def loaded_php_extensions() -> set[str]:
+    """Return the extensions the php CLI currently loads, lower-cased.
+
+    Returns:
+        the set reported by ``php -m``, empty when php cannot be queried.
+    """
+    result = subprocess.run(["php", "-m"], capture_output=True, text=True, check=False)
+    return {line.strip().lower() for line in result.stdout.splitlines() if line.strip()}
+
+
+def ensure_php_extension_present(extension: str) -> None:
+    """Make a PHP extension available, installing its package if absent.
+
+    A distro ships the interpreter and its extensions as separate packages, so
+    a present ``php`` binary says nothing about them and ``ensure_command_present``
+    returns early on one. The extension is therefore probed against ``php -m``.
+
+    Args:
+        extension: extension name as ``php -m`` reports it.
+
+    Raises:
+        RuntimeError: no mapping for this extension on the detected package
+            manager, or the extension is still absent after the install.
+    """
+    if extension in loaded_php_extensions():
+        return
+
+    manager = detect_package_manager()
+    mapping = _PHP_EXTENSION_PACKAGES.get(extension)
+    if mapping is None or manager not in mapping:
+        raise RuntimeError(
+            f"No installer mapping defined for PHP extension "
+            f"'{extension}' on '{manager}'."
+        )
+
+    log(f"Missing PHP extension '{extension}'. Attempting installation via {manager}.")
+    install_package_candidates(manager, mapping[manager])
+
+    if extension not in loaded_php_extensions():
+        raise RuntimeError(
+            f"PHP extension '{extension}' still absent after installing "
+            f"{mapping[manager]} via {manager}"
+        )
+
+
 def ensure_command_present(command_name: str) -> None:
     """Make a command available, installing it if the host lacks it.
 
@@ -161,6 +231,8 @@ def install_command_via_pkg(command_name: str) -> None:
 __all__ = [
     "detect_package_manager",
     "ensure_command_present",
+    "ensure_php_extension_present",
     "install_command_via_pkg",
     "install_package_candidates",
+    "loaded_php_extensions",
 ]
