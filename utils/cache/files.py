@@ -49,6 +49,7 @@ _DEFAULT_SKIP_DIRS: frozenset[str] = frozenset(
         "venv",
         "__pycache__",
         "node_modules",
+        "vendor",
     }
 )
 

@@ -80,6 +80,7 @@ class TestIterProjectFiles(_ProjectRootFixture, unittest.TestCase):
         _touch(self.root / "tests/unit/test_a.py", "import unittest")
         _touch(self.root / ".git/HEAD", "ref: refs/heads/main")
         _touch(self.root / "node_modules/pkg/index.js", "module.exports = {};")
+        _touch(self.root / "vendor/nette/utils/readme.md", "# vendored")
         _touch(self.root / "__pycache__/dead.pyc", "")
 
     def test_skip_dirs_pruned(self) -> None:
@@ -90,6 +91,7 @@ class TestIterProjectFiles(_ProjectRootFixture, unittest.TestCase):
         )
         self.assertFalse(any("/__pycache__/" in p for p in all_paths))
         self.assertFalse(any("/node_modules/" in p for p in all_paths))
+        self.assertFalse(any("/vendor/" in p for p in all_paths))
 
     def test_extensions_filter(self) -> None:
         ymls = list(iter_project_files(extensions=(".yml",)))
