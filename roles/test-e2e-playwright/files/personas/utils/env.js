@@ -8,6 +8,7 @@
 const { test } = require("@playwright/test");
 const { isServiceEnabled } = require("../../service-gating");
 const { resolveTimeout } = require("../../timeouts");
+const { installCspHeaderRecorder } = require("./csp");
 
 function decodeDotenvQuoted(value) {
   if (typeof value !== "string" || value.length < 2) return value;
@@ -42,6 +43,7 @@ const _ONION_TRANSIENT_RE =
   /ERR_TIMED_OUT|ERR_SOCKS|ERR_CONNECTION_(?:CLOSED|RESET|FAILED)|ERR_PROXY_CONNECTION_FAILED|ERR_EMPTY_RESPONSE|ERR_TUNNEL_CONNECTION_FAILED|NS_ERROR_NET_(?:TIMEOUT|RESET|INTERRUPT)|NS_ERROR_(?:CONNECTION_REFUSED|UNKNOWN_HOST|PROXY_CONNECTION_REFUSED|UNKNOWN_PROXY_HOST)|NS_BINDING_ABORTED|Load request cancelled|page\.goto: Timeout \d+ms exceeded/i;
 
 async function gotoOnion(page, url, opts = {}) {
+  installCspHeaderRecorder(page);
   const isRelative = /^\/(?!\/)/.test(url);
   const isOnion =
     /\.onion(?::\d+)?(?:\/|$|\?)/i.test(url) || (isRelative && isOnionCanonical());
