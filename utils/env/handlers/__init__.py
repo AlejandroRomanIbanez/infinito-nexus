@@ -15,6 +15,7 @@ from . import (
     passthrough,
 )
 from .infinito import (
+    cache_stack,
     container,
     distros,
     docker_volume,
@@ -69,6 +70,7 @@ ORDERED_HANDLERS = [
     container,
     running_on_act,
     running_on_github,
+    cache_stack,
     tor_socks_port,
     is_wsl2,
     ca_bundle_candidates,

@@ -15,6 +15,7 @@ _BLANK_CI_ENV = {
     "INFINITO_INSTANCE": "0",
     "INFINITO_GIT_COMMON_DIR": "",
     "INFINITO_CACHE_NETWORK": "",
+    "INFINITO_CACHE_STACK": "",
 }
 
 
@@ -84,18 +85,6 @@ class TestProfileDeclaredCapabilities(unittest.TestCase):
         p = Profile()
         self.assertTrue(p.is_ci())
         self.assertTrue(p.cache_stack_enabled())
-
-    @patch.dict(os.environ, {**_ON_CI, "INFINITO_IMAGE_MIRROR": "false"}, clear=False)
-    def test_mirror_can_be_declared_off_on_ci(self) -> None:
-        self.assertFalse(Profile().image_mirror_enabled())
-
-    @patch.dict(
-        os.environ,
-        {**_BLANK_CI_ENV, "INFINITO_DOCKER_ROOT_EPHEMERAL": "true"},
-        clear=False,
-    )
-    def test_docker_root_can_be_declared_ephemeral_off_ci(self) -> None:
-        self.assertTrue(Profile().docker_root_ephemeral())
 
     @patch.dict(os.environ, {**_ON_CI, "INFINITO_CACHE_STACK": "yes"}, clear=False)
     def test_a_non_boolean_declaration_falls_back_to_the_default(self) -> None:

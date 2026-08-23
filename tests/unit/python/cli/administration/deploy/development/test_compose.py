@@ -94,6 +94,7 @@ class TestComposeUpRetries(unittest.TestCase):
             "CI": "true",
             "INFINITO_GIT_COMMON_DIR": "",
             "INFINITO_CACHE_NETWORK": "",
+            "INFINITO_CACHE_STACK": "",
         },
         clear=False,
     )
@@ -142,6 +143,7 @@ class TestComposeUpRetries(unittest.TestCase):
             "CI": "",
             "INFINITO_GIT_COMMON_DIR": "",
             "INFINITO_CACHE_NETWORK": "",
+            "INFINITO_CACHE_STACK": "",
         },
         clear=False,
     )
@@ -191,6 +193,7 @@ class TestComposeUpRetries(unittest.TestCase):
             "CI": "true",
             "GITHUB_ACTIONS": "true",
             "INFINITO_RUNNING_ON_GITHUB": "true",
+            "INFINITO_CACHE_STACK": "",
         },
         clear=False,
     )
@@ -217,6 +220,7 @@ class TestComposeUpRetries(unittest.TestCase):
             "CI": "true",
             "GITHUB_ACTIONS": "true",
             "INFINITO_RUNNING_ON_GITHUB": "true",
+            "INFINITO_CACHE_STACK": "",
         },
         clear=False,
     )
@@ -252,6 +256,7 @@ class TestComposeUpRetries(unittest.TestCase):
             "INFINITO_RUNNING_ON_GITHUB": "",
             "INFINITO_GIT_COMMON_DIR": "",
             "INFINITO_CACHE_NETWORK": "",
+            "INFINITO_CACHE_STACK": "",
         },
         clear=False,
     )

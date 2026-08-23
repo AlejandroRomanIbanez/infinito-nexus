@@ -13,8 +13,6 @@ unset GITHUB_ACTIONS
 unset ACT
 unset CI
 export INFINITO_CACHE_STACK=true
-export INFINITO_IMAGE_MIRROR=true
-export INFINITO_DOCKER_ROOT_EPHEMERAL=true
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/tests/workspace/utils/common.sh

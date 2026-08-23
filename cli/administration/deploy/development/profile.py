@@ -37,13 +37,11 @@ class Profile:
 
     def image_mirror_enabled(self) -> bool:
         """True iff image references should be rewritten to the GHCR mirror."""
-        declared = _declared("INFINITO_IMAGE_MIRROR")
-        return self.runs_on_github() if declared is None else declared
+        return self.runs_on_github()
 
     def docker_root_ephemeral(self) -> bool:
         """True iff the docker data root may be wiped when the stack goes down."""
-        declared = _declared("INFINITO_DOCKER_ROOT_EPHEMERAL")
-        return self.runs_on_github() if declared is None else declared
+        return self.runs_on_github()
 
     def instance(self) -> int:
         """Slot index of this checkout; 0 is the primary one.
