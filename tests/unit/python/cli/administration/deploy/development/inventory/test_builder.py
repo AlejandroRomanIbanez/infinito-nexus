@@ -30,7 +30,7 @@ class TestBuildDevInventory(unittest.TestCase):
         },
     )
     @patch(
-        "cli.administration.deploy.development.inventory.builder.should_use_mirrors_on_ci",
+        "cli.administration.deploy.development.inventory.builder.should_use_mirrors",
         autospec=True,
         return_value=False,
     )
@@ -69,7 +69,7 @@ class TestBuildDevInventory(unittest.TestCase):
         },
     )
     @patch(
-        "cli.administration.deploy.development.inventory.builder.should_use_mirrors_on_ci",
+        "cli.administration.deploy.development.inventory.builder.should_use_mirrors",
         autospec=True,
         return_value=False,
     )
@@ -110,7 +110,7 @@ class TestBuildDevInventory(unittest.TestCase):
         return_value={"web-app-keycloak": [{}], "web-app-nextcloud": [{}]},
     )
     @patch(
-        "cli.administration.deploy.development.inventory.builder.should_use_mirrors_on_ci",
+        "cli.administration.deploy.development.inventory.builder.should_use_mirrors",
         autospec=True,
         return_value=True,
     )
@@ -135,7 +135,7 @@ class TestBuildDevInventory(unittest.TestCase):
         return_value={"web-app-keycloak": [{}], "web-app-nextcloud": [{}]},
     )
     @patch(
-        "cli.administration.deploy.development.inventory.builder.should_use_mirrors_on_ci",
+        "cli.administration.deploy.development.inventory.builder.should_use_mirrors",
         autospec=True,
         return_value=False,
     )
@@ -160,7 +160,7 @@ class TestBuildDevInventory(unittest.TestCase):
         return_value={"web-app-keycloak": [{}], "web-app-nextcloud": [{}]},
     )
     @patch(
-        "cli.administration.deploy.development.inventory.builder.should_use_mirrors_on_ci",
+        "cli.administration.deploy.development.inventory.builder.should_use_mirrors",
         autospec=True,
         return_value=False,
     )
@@ -182,7 +182,7 @@ class TestBuildDevInventory(unittest.TestCase):
         },
     )
     @patch(
-        "cli.administration.deploy.development.inventory.builder.should_use_mirrors_on_ci",
+        "cli.administration.deploy.development.inventory.builder.should_use_mirrors",
         autospec=True,
         return_value=False,
     )
@@ -211,7 +211,7 @@ class TestBuildDevInventory(unittest.TestCase):
         return_value={"web-app-keycloak": [{}], "web-app-nextcloud": [{}]},
     )
     @patch(
-        "cli.administration.deploy.development.inventory.builder.should_use_mirrors_on_ci",
+        "cli.administration.deploy.development.inventory.builder.should_use_mirrors",
         autospec=True,
         return_value=False,
     )
@@ -230,7 +230,7 @@ class TestBuildDevInventory(unittest.TestCase):
         return_value={"web-app-keycloak": [{}], "web-app-nextcloud": [{}]},
     )
     @patch(
-        "cli.administration.deploy.development.inventory.builder.should_use_mirrors_on_ci",
+        "cli.administration.deploy.development.inventory.builder.should_use_mirrors",
         autospec=True,
         return_value=False,
     )

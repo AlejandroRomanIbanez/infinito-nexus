@@ -45,7 +45,7 @@ Cert generation runs in a throw-away alpine container driven by [package-fronten
 
 ## Activation 🎚️
 
-The `cache` decision is exposed via `Profile.registry_cache_active()` in [profile.py](../../../cli/administration/deploy/development/profile.py). When active:
+The `cache` decision is exposed via `Profile.cache_stack_enabled()` in [profile.py](../../../cli/administration/deploy/development/profile.py). When active:
 
 - [compose/cache.override.yml](../../../compose/cache.override.yml) is layered on top of the base [compose.yml](../../../compose.yml) by [compose.py](../../../cli/administration/deploy/development/compose.py) and [down.py](../../../cli/administration/deploy/development/down.py) via [common.py](../../../cli/administration/deploy/development/common.py)`compose_file_args`.
 - The cache services are added.

@@ -54,25 +54,73 @@ class TestProfileIsCI(unittest.TestCase):
         self.assertFalse(Profile().is_ci())
 
 
-class TestProfileRegistryCacheActive(unittest.TestCase):
+class TestProfileCacheStackEnabled(unittest.TestCase):
     @patch.dict(os.environ, _BLANK_CI_ENV, clear=False)
     def test_active_locally_when_no_ci_signal_set(self) -> None:
-        self.assertTrue(Profile().registry_cache_active())
+        self.assertTrue(Profile().cache_stack_enabled())
 
     @patch.dict(os.environ, {**_BLANK_CI_ENV, "GITHUB_ACTIONS": "true"}, clear=False)
     def test_inactive_under_github_actions(self) -> None:
-        self.assertFalse(Profile().registry_cache_active())
+        self.assertFalse(Profile().cache_stack_enabled())
 
     @patch.dict(os.environ, {**_BLANK_CI_ENV, "CI": "true"}, clear=False)
     def test_inactive_under_generic_ci_signal(self) -> None:
-        self.assertFalse(Profile().registry_cache_active())
+        self.assertFalse(Profile().cache_stack_enabled())
 
     @patch.dict(
         os.environ, {**_BLANK_CI_ENV, "INFINITO_RUNNING_ON_GITHUB": "true"}, clear=False
     )
-    def test_is_strict_inverse_of_is_ci(self) -> None:
+    def test_defaults_to_the_inverse_of_is_ci(self) -> None:
         p = Profile()
-        self.assertEqual(p.registry_cache_active(), not p.is_ci())
+        self.assertEqual(p.cache_stack_enabled(), not p.is_ci())
+
+
+_ON_CI = {**_BLANK_CI_ENV, "GITHUB_ACTIONS": "true"}
+
+
+class TestProfileDeclaredCapabilities(unittest.TestCase):
+    @patch.dict(os.environ, {**_ON_CI, "INFINITO_CACHE_STACK": "true"}, clear=False)
+    def test_declaration_wins_over_the_ci_default(self) -> None:
+        p = Profile()
+        self.assertTrue(p.is_ci())
+        self.assertTrue(p.cache_stack_enabled())
+
+    @patch.dict(os.environ, {**_ON_CI, "INFINITO_IMAGE_MIRROR": "false"}, clear=False)
+    def test_mirror_can_be_declared_off_on_ci(self) -> None:
+        self.assertFalse(Profile().image_mirror_enabled())
+
+    @patch.dict(
+        os.environ,
+        {**_BLANK_CI_ENV, "INFINITO_DOCKER_ROOT_EPHEMERAL": "true"},
+        clear=False,
+    )
+    def test_docker_root_can_be_declared_ephemeral_off_ci(self) -> None:
+        self.assertTrue(Profile().docker_root_ephemeral())
+
+    @patch.dict(os.environ, {**_ON_CI, "INFINITO_CACHE_STACK": "yes"}, clear=False)
+    def test_a_non_boolean_declaration_falls_back_to_the_default(self) -> None:
+        self.assertFalse(Profile().cache_stack_enabled())
+
+    @patch.dict(os.environ, _ON_CI, clear=False)
+    def test_act_gets_no_mirrors_and_keeps_its_docker_root(self) -> None:
+        p = Profile()
+        self.assertTrue(p.is_ci())
+        self.assertFalse(p.runs_on_github())
+        self.assertFalse(p.cache_stack_enabled())
+        self.assertFalse(p.image_mirror_enabled())
+        self.assertFalse(p.docker_root_ephemeral())
+
+    @patch.dict(
+        os.environ,
+        {**_BLANK_CI_ENV, "INFINITO_RUNNING_ON_GITHUB": "true"},
+        clear=False,
+    )
+    def test_a_real_github_runner_mirrors_and_wipes(self) -> None:
+        p = Profile()
+        self.assertTrue(p.runs_on_github())
+        self.assertFalse(p.cache_stack_enabled())
+        self.assertTrue(p.image_mirror_enabled())
+        self.assertTrue(p.docker_root_ephemeral())
 
 
 class TestProfileInstance(unittest.TestCase):
@@ -104,7 +152,7 @@ class TestProfileOwnsCacheStack(unittest.TestCase):
     def test_shares_instead_of_owning_when_a_network_is_named(self) -> None:
         p = Profile()
         self.assertFalse(p.owns_cache_stack())
-        self.assertTrue(p.registry_cache_active())
+        self.assertTrue(p.cache_stack_enabled())
 
     @patch.dict(os.environ, {**_BLANK_CI_ENV, "INFINITO_INSTANCE": "7"}, clear=False)
     def test_a_stray_slot_alone_does_not_give_the_stack_away(self) -> None:
