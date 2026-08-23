@@ -21,8 +21,8 @@ def warn(msg: str) -> None:
 
 def must_exist(path: str, label: str) -> str:
     p = Path(path)
-    if not p.exists():
-        die(f"{label} does not exist: {path}")
+    if not p.is_file():
+        die(f"{label} is not a regular file: {path}")
     return str(p)
 
 

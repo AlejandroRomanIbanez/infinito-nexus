@@ -292,6 +292,37 @@ class TestContainerWrapper(unittest.TestCase):
             os.environ.clear()
             os.environ.update(old_env)
 
+    def test_require_ca_env_soft_directory_bind_source_returns_none_and_warns(self):
+        """
+        A dockerd-auto-created directory standing in for a CA bind source must
+        disable CA injection, not be mounted over the container path.
+        """
+        old_env = dict(os.environ)
+        try:
+            with tempfile.TemporaryDirectory() as tmp:
+                shadow = Path(tmp) / "with-ca-trust.sh"
+                shadow.mkdir()
+                cert = Path(tmp) / "ca.crt"
+                cert.write_text("cert")
+
+                os.environ["CA_TRUST_CERT_HOST"] = str(cert)
+                os.environ["CA_TRUST_WRAPPER_HOST"] = str(shadow)
+                os.environ["CA_TRUST_NAME"] = "test-ca"
+                os.environ["CA_TRUST_CERT_CONTAINER"] = CA_CERT_CONTAINER
+                os.environ["CA_TRUST_WRAPPER_CONTAINER"] = CA_WRAPPER_CONTAINER
+
+                buf = io.StringIO()
+                with contextlib.redirect_stderr(buf):
+                    res = container.require_ca_env_soft()
+
+                self.assertIsNone(res)
+                self.assertIn(
+                    "CA injection disabled (CA files not found)", buf.getvalue()
+                )
+        finally:
+            os.environ.clear()
+            os.environ.update(old_env)
+
     def test_require_ca_env_soft_ok_returns_tuple(self):
         """
         If env vars and referenced files exist, require_ca_env_soft() should return tuple.
