@@ -114,6 +114,23 @@ has_swarm_service() {
 	printf '%s\n' "${_names}" | grep -qxF "${SERVICE_NAME}"
 }
 
+# Prints the swarm service carrying APP_ID's database. A role that pins its own
+# engine runs it as <entity>_database inside its own stack, a central provider
+# as <dep>_<dep> in its own (plugins/lookup/database.py).
+resolve_db_service() {
+	local _names=""
+	[ "${DB_DEP}" != "none" ] || return 0
+	[ -n "${MGR:-}" ] || return 0
+	if ! _names="$(timeout 30 docker exec "${MGR}" docker service ls --format '{{.Name}}' 2>/dev/null)"; then
+		return 0
+	fi
+	if printf '%s\n' "${_names}" | grep -qxF "${STACK_NAME}_database"; then
+		printf '%s\n' "${STACK_NAME}_database"
+	elif printf '%s\n' "${_names}" | grep -qxF "${DB_DEP}_${DB_DEP}"; then
+		printf '%s\n' "${DB_DEP}_${DB_DEP}"
+	fi
+}
+
 # Exits the calling gate (03/05/06/07) with success when the role deploys no
 # swarm service to converge or drain.
 skip_if_no_swarm_service() {
