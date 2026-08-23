@@ -12,6 +12,8 @@ set -euo pipefail
 # Force local runtime context.
 unset GITHUB_ACTIONS
 unset ACT
+unset CI
+export INFINITO_RUNNING_ON_GITHUB=false
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/tests/workspace/utils/common.sh
