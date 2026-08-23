@@ -1,6 +1,19 @@
 const test = require("node:test");
 const assert = require("node:assert/strict");
 const path = require("node:path");
+const Module = require("node:module");
+
+const playwrightStub = {
+  expect: (actual, message) => ({
+    toBe(expected) {
+      if (actual !== expected) throw new Error(message || `expected ${expected}, got ${actual}`);
+    },
+  }),
+};
+const loadModule = Module._load;
+Module._load = function (request, ...rest) {
+  return request === "@playwright/test" ? playwrightStub : loadModule.call(this, request, ...rest);
+};
 
 const PROJECT_ROOT = path.resolve(__dirname, "../../../../../../../..");
 const { assertCspInjections, installCspHeaderRecorder } = require(
@@ -9,6 +22,8 @@ const { assertCspInjections, installCspHeaderRecorder } = require(
     "roles/test-e2e-playwright/files/personas/utils/csp.js",
   ),
 );
+
+Module._load = loadModule;
 
 const CDN = "https://cdn.example.test";
 const WITH_CDN = `default-src 'self' ${CDN}`;
@@ -207,7 +222,7 @@ test("a gate that throws counts as disabled", async () => {
   );
 });
 
-test("an enabled injector without a base URL is not asserted", async () => {
+test("an enabled injector without a base URL is tolerated", async () => {
   const stub = stubPage();
   installCspHeaderRecorder(stub.page);
   stub.emit(response(stub.mainFrame, { "content-security-policy": WITHOUT_CDN }));
