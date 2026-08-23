@@ -11,6 +11,7 @@ const adminPassword = decodeDotenvQuotedValue(process.env.ADMIN_PASSWORD || "");
 const canonicalDomain = decodeDotenvQuotedValue(process.env.CANONICAL_DOMAIN || "");
 const ssoEnabled = (process.env.SSO_SERVICE_ENABLED || "").toLowerCase() === "true";
 const logoutEnabled = (process.env.LOGOUT_SERVICE_ENABLED || "").toLowerCase() === "true";
+const logoutBaseUrl = normalizeBaseUrl(process.env.LOGOUT_URL || "");
 
 async function signIn(page) {
   expect(adminUsername, "ADMIN_USERNAME must be set").toBeTruthy();
@@ -95,7 +96,7 @@ test("administrator: admin login → catalogue → in-app logout", async ({ page
       async () => (await page.context().cookies()).some((c) => c.name === "bearerAuth"),
       {
         message:
-          "web-svc-logout sweeps shop.<domain>/logout from an iframe on Keycloak's logout page; navigating away before that lands leaves the admin cookie alive",
+          "web-svc-logout clears the cookie with Clear-Site-Data on its conductor page, which Keycloak's logout page frames; navigating away before that page loads leaves the admin cookie alive",
         timeout: resolveTimeout(30_000),
       },
     )
@@ -117,18 +118,23 @@ test("administrator: the admin session outlives a logout whose sweep never lands
     "the sweep only exists where Keycloak frames web-svc-logout",
   );
 
+  const conductorOrigin = logoutBaseUrl ? new URL(logoutBaseUrl).origin : "";
+  const isConductor = (url) =>
+    (conductorOrigin !== "" && url.origin === conductorOrigin) ||
+    (url.pathname === "/" && url.searchParams.has("sid") && url.searchParams.has("iss"));
+
   await signIn(page);
   await dismissFirstRunWizard(page);
 
   const attempted = [];
   const blocked = [];
   page.on("request", (request) => {
-    if (new URL(request.url()).pathname === "/logout") {
+    if (isConductor(new URL(request.url()))) {
       attempted.push(request.url());
     }
   });
   await page.route(
-    (url) => url.pathname === "/logout",
+    (url) => isConductor(url),
     (route) => {
       blocked.push(route.request().url());
       return route.abort();
@@ -145,17 +151,17 @@ test("administrator: the admin session outlives a logout whose sweep never lands
 
   test.skip(
     attempted.length === 0,
-    "the conductor never reached its sweep here, so blocking it proves nothing; making the sweep land is the sibling test's assertion, not this one's",
+    "Keycloak never framed the conductor here, so blocking it proves nothing; making it land is the sibling test's assertion, not this one's",
   );
   expect(
     blocked.length,
-    "requests reached <host>/logout but page.route let them through, so the abort is a no-op and the cookie assertion below would be meaningless",
+    "the conductor was requested but page.route let it through, so the abort is a no-op and the cookie assertion below would be meaningless",
   ).toBeGreaterThan(0);
 
   await gotoOnion(page, `${appBaseUrl}/admin`, { waitUntil: "domcontentloaded" });
 
   expect(
     (await page.context().cookies()).some((c) => c.name === "bearerAuth"),
-    "with every <host>/logout blocked the admin cookie must survive: it is web-svc-logout that clears it, not Shopware's own logout, so the sibling test's wait is load-bearing rather than decorative",
+    "with the conductor blocked the admin cookie must survive: its Clear-Site-Data header is what deletes it across the registrable domain, and the injected logout redirect preempts Shopware's own clearAuthState, so the sibling test's wait is load-bearing rather than decorative",
   ).toBe(true);
 });
