@@ -253,8 +253,12 @@ echo "    device-recovered files restored to the live NFS export"
 docker exec "${NFS_SERVER}" rm -rf "${DR_RESTORE_STAGE:?}"
 
 echo "==> [8b/9] restore NFS coherence after the backing-FS restore"
-docker exec "${NFS_SERVER}" timeout 120 sh -c \
-	"systemctl try-restart nfs-ganesha 2>/dev/null || systemctl try-restart nfs-server"
+if docker exec "${NFS_SERVER}" systemctl cat nfs-ganesha.service >/dev/null 2>&1; then
+	NFS_UNIT=nfs-ganesha
+else
+	NFS_UNIT=nfs-server
+fi
+docker exec "${NFS_SERVER}" timeout 240 systemctl try-restart "${NFS_UNIT}"
 for _node in "${MGR}" "${WRK1}" "${WRK2}"; do
 	docker exec "${_node}" timeout 180 sh -c \
 		"umount -l '${DIR_VAR_LIB}' 2>/dev/null || true; mount '${DIR_VAR_LIB}'" # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
