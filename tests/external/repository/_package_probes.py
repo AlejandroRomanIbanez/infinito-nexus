@@ -11,8 +11,11 @@ mirror says nothing about the declaration.
 
 from __future__ import annotations
 
+import io
 import json
+import lzma
 import re
+import tarfile
 import threading
 import time
 import urllib.error
@@ -76,17 +79,17 @@ def _get(url: str) -> tuple[int, bytes]:
     """Fetch one index URL, serialising and retrying per host.
 
     Args:
-        url: absolute https URL of a package index.
+        url: absolute http(s) URL of a package index.
 
     Returns:
         The HTTP status and body; the body is empty for an error status.
     """
-    request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})  # noqa: S310 - literal https package index URLs only
+    request = urllib.request.Request(url, headers={"User-Agent": _USER_AGENT})  # noqa: S310 - literal http(s) package index URLs only
     host = urllib.parse.urlsplit(url).hostname or ""
     with _HOST_LOCKS.setdefault(host, threading.Semaphore(_PER_HOST_REQUESTS)):
         for attempt in range(_RETRY_ATTEMPTS):
             try:
-                with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:  # noqa: S310 - literal https package index URLs only
+                with urllib.request.urlopen(request, timeout=_TIMEOUT) as response:  # noqa: S310 - literal http(s) package index URLs only
                     return response.getcode(), response.read()
             except urllib.error.HTTPError as exc:
                 if exc.code not in _RETRY_STATUS or attempt == _RETRY_ATTEMPTS - 1:
@@ -98,13 +101,70 @@ def _get(url: str) -> tuple[int, bytes]:
     raise AssertionError("unreachable")
 
 
+ARCH_MIRROR = "geo.mirror.pkgbuild.com"
+_ARCH_REPOS = ("core", "extra", "multilib")
+_ARCH_INDEX_CACHE: dict[str, set[str] | str] = {}
+_ARCH_INDEX_LOCK = threading.Lock()
+
+
+def _desc_names(desc: str) -> set[str]:
+    names: set[str] = set()
+    section = ""
+    for line in desc.splitlines():
+        if line.startswith("%") and line.endswith("%"):
+            section = line
+        elif line and section in ("%NAME%", "%PROVIDES%"):
+            names.add(line.split("=")[0].split("<")[0].strip())
+    return names
+
+
+def _load_arch_index() -> None:
+    names: set[str] = set()
+    for repo in _ARCH_REPOS:
+        url = f"https://{ARCH_MIRROR}/{repo}/os/x86_64/{repo}.db"
+        try:
+            status, body = _get(url)
+        except OSError as exc:
+            _ARCH_INDEX_CACHE["error"] = f"{ARCH_MIRROR}: {exc}"
+            return
+        if status != 200:
+            _ARCH_INDEX_CACHE["error"] = f"{ARCH_MIRROR} returned HTTP {status}"
+            return
+        with tarfile.open(fileobj=io.BytesIO(body), mode="r:*") as archive:
+            for member in archive:
+                if not member.name.endswith("/desc"):
+                    continue
+                handle = archive.extractfile(member)
+                if handle is None:
+                    continue
+                names |= _desc_names(handle.read().decode("utf-8", "replace"))
+    _ARCH_INDEX_CACHE["names"] = names
+
+
+def _arch_index_names() -> tuple[set[str] | None, str]:
+    """Load the Arch repo databases once per run and answer from memory.
+
+    Returns:
+        The set of package and provided names in core, extra and multilib,
+        or None together with the fetch error when a database could not be
+        read.
+    """
+    with _ARCH_INDEX_LOCK:
+        if not _ARCH_INDEX_CACHE:
+            _load_arch_index()
+        error = _ARCH_INDEX_CACHE.get("error")
+        if error is not None:
+            return None, str(error)
+        names = _ARCH_INDEX_CACHE["names"]
+        assert isinstance(names, set)
+        return names, f"{ARCH_MIRROR} core+extra+multilib"
+
+
 def _probe_arch(name: str) -> tuple[bool | None, str]:
-    query = urllib.parse.urlencode({"name": name})
-    status, body = _get(f"https://archlinux.org/packages/search/json/?{query}")
-    if status != 200:
-        return None, f"archlinux.org returned HTTP {status}"
-    payload = json.loads(body or b"{}")
-    return bool(payload.get("results")), "official repositories"
+    names, detail = _arch_index_names()
+    if names is None:
+        return None, detail
+    return name in names, detail
 
 
 def _probe_aur(name: str) -> tuple[bool | None, str]:
@@ -114,6 +174,61 @@ def _probe_aur(name: str) -> tuple[bool | None, str]:
         return None, f"AUR RPC returned HTTP {status}"
     payload = json.loads(body or b"{}")
     return bool(payload.get("results")), "AUR"
+
+
+DEBIAN_MIRROR = "deb.debian.org"
+_DEBIAN_COMPONENTS = ("main", "contrib", "non-free", "non-free-firmware")
+_DEBIAN_INDEX_CACHE: dict[str, set[str] | str] = {}
+_DEBIAN_INDEX_LOCK = threading.Lock()
+
+
+def _load_debian_index() -> None:
+    names: set[str] = set()
+    for component in _DEBIAN_COMPONENTS:
+        url = (
+            f"http://{DEBIAN_MIRROR}/debian/dists/{DEBIAN_SUITE}"
+            f"/{component}/binary-amd64/Packages.xz"
+        )
+        try:
+            status, body = _get(url)
+        except OSError as exc:
+            _DEBIAN_INDEX_CACHE["error"] = f"{DEBIAN_MIRROR}: {exc}"
+            return
+        if status != 200:
+            _DEBIAN_INDEX_CACHE["error"] = f"{DEBIAN_MIRROR} returned HTTP {status}"
+            return
+        for line in lzma.decompress(body).decode("utf-8", "replace").splitlines():
+            if line.startswith("Package: "):
+                names.add(line[len("Package: ") :].strip())
+            elif line.startswith("Provides: "):
+                for entry in line[len("Provides: ") :].split(","):
+                    names.add(entry.split("(")[0].strip())
+    _DEBIAN_INDEX_CACHE["names"] = names
+
+
+def _debian_index_names() -> tuple[set[str] | None, str]:
+    """Load the Debian binary index once per run and answer from memory.
+
+    Returns:
+        The set of binary and virtual package names in the suite, or None
+        together with the fetch error when the mirror could not be read.
+    """
+    with _DEBIAN_INDEX_LOCK:
+        if not _DEBIAN_INDEX_CACHE:
+            _load_debian_index()
+        error = _DEBIAN_INDEX_CACHE.get("error")
+        if error is not None:
+            return None, str(error)
+        names = _DEBIAN_INDEX_CACHE["names"]
+        assert isinstance(names, set)
+        return names, f"{DEBIAN_MIRROR}/{DEBIAN_SUITE}"
+
+
+def _probe_debian(name: str) -> tuple[bool | None, str]:
+    names, detail = _debian_index_names()
+    if names is None:
+        return None, detail
+    return name in names, detail
 
 
 def _probe_debian_like(host: str, suite: str, name: str) -> tuple[bool | None, str]:
@@ -202,9 +317,7 @@ def _probe(probe: Probe) -> Outcome:
         elif probe.distro == "arch":
             available, detail = _probe_arch(probe.name)
         elif probe.distro == "debian":
-            available, detail = _probe_debian_like(
-                "packages.debian.org", DEBIAN_SUITE, probe.name
-            )
+            available, detail = _probe_debian(probe.name)
         elif probe.distro == "ubuntu":
             available, detail = _probe_debian_like(
                 "packages.ubuntu.com", UBUNTU_SUITE, probe.name
