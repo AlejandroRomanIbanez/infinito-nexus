@@ -52,8 +52,6 @@ BOOTSTRAP_BASEURL: dict[str, str] = {
 declaration names the bootstrap package because that is what the install
 needs; only this probe needs the URL behind it."""
 
-_DEBIAN_MISSING_RE = re.compile(r"no such package", re.IGNORECASE)
-
 
 class PackageAvailabilityWarning(UserWarning):
     """An index could not be consulted, so availability stays unknown."""
@@ -177,69 +175,82 @@ def _probe_aur(name: str) -> tuple[bool | None, str]:
 
 
 DEBIAN_MIRROR = "deb.debian.org"
-_DEBIAN_COMPONENTS = ("main", "contrib", "non-free", "non-free-firmware")
-_DEBIAN_INDEX_CACHE: dict[str, set[str] | str] = {}
-_DEBIAN_INDEX_LOCK = threading.Lock()
+UBUNTU_MIRROR = "archive.ubuntu.com"
 
 
-def _load_debian_index() -> None:
+class AptIndex(NamedTuple):
+    mirror: str
+    path: str
+    suites: tuple[str, ...]
+    components: tuple[str, ...]
+
+
+APT_INDEX: dict[str, AptIndex] = {
+    "debian": AptIndex(
+        DEBIAN_MIRROR,
+        "debian",
+        (DEBIAN_SUITE, f"{DEBIAN_SUITE}-updates"),
+        ("main", "contrib", "non-free", "non-free-firmware"),
+    ),
+    "ubuntu": AptIndex(
+        UBUNTU_MIRROR,
+        "ubuntu",
+        (UBUNTU_SUITE, f"{UBUNTU_SUITE}-updates", f"{UBUNTU_SUITE}-security"),
+        ("main", "universe", "restricted", "multiverse"),
+    ),
+}
+"""The pockets a default install actually resolves against. Ubuntu ships
+packages such as 0ad only in -updates, so probing the release pocket alone
+reports a declared package as absent."""
+
+_APT_INDEX_CACHE: dict[str, tuple[set[str] | None, str]] = {}
+_APT_INDEX_LOCK = threading.Lock()
+
+
+def _load_apt_index(index: AptIndex) -> tuple[set[str] | None, str]:
     names: set[str] = set()
-    for component in _DEBIAN_COMPONENTS:
-        url = (
-            f"http://{DEBIAN_MIRROR}/debian/dists/{DEBIAN_SUITE}"
-            f"/{component}/binary-amd64/Packages.xz"
-        )
-        try:
-            status, body = _get(url)
-        except OSError as exc:
-            _DEBIAN_INDEX_CACHE["error"] = f"{DEBIAN_MIRROR}: {exc}"
-            return
-        if status != 200:
-            _DEBIAN_INDEX_CACHE["error"] = f"{DEBIAN_MIRROR} returned HTTP {status}"
-            return
-        for line in lzma.decompress(body).decode("utf-8", "replace").splitlines():
-            if line.startswith("Package: "):
-                names.add(line[len("Package: ") :].strip())
-            elif line.startswith("Provides: "):
-                for entry in line[len("Provides: ") :].split(","):
-                    names.add(entry.split("(")[0].strip())
-    _DEBIAN_INDEX_CACHE["names"] = names
+    for suite in index.suites:
+        for component in index.components:
+            url = (
+                f"http://{index.mirror}/{index.path}/dists/{suite}"
+                f"/{component}/binary-amd64/Packages.xz"
+            )
+            try:
+                status, body = _get(url)
+            except OSError as exc:
+                return None, f"{index.mirror}: {exc}"
+            if status != 200:
+                return None, f"{index.mirror} returned HTTP {status} for {url}"
+            for line in lzma.decompress(body).decode("utf-8", "replace").splitlines():
+                if line.startswith("Package: "):
+                    names.add(line[len("Package: ") :].strip())
+                elif line.startswith("Provides: "):
+                    for entry in line[len("Provides: ") :].split(","):
+                        names.add(entry.split("(")[0].strip())
+    return names, f"{index.mirror}/{index.suites[0]}"
 
 
-def _debian_index_names() -> tuple[set[str] | None, str]:
-    """Load the Debian binary index once per run and answer from memory.
+def _apt_index_names(distro: str) -> tuple[set[str] | None, str]:
+    """Load a distribution's binary index once per run, answer from memory.
+
+    Args:
+        distro: key into APT_INDEX naming the mirror, suite and components.
 
     Returns:
         The set of binary and virtual package names in the suite, or None
         together with the fetch error when the mirror could not be read.
     """
-    with _DEBIAN_INDEX_LOCK:
-        if not _DEBIAN_INDEX_CACHE:
-            _load_debian_index()
-        error = _DEBIAN_INDEX_CACHE.get("error")
-        if error is not None:
-            return None, str(error)
-        names = _DEBIAN_INDEX_CACHE["names"]
-        assert isinstance(names, set)
-        return names, f"{DEBIAN_MIRROR}/{DEBIAN_SUITE}"
+    with _APT_INDEX_LOCK:
+        if distro not in _APT_INDEX_CACHE:
+            _APT_INDEX_CACHE[distro] = _load_apt_index(APT_INDEX[distro])
+        return _APT_INDEX_CACHE[distro]
 
 
-def _probe_debian(name: str) -> tuple[bool | None, str]:
-    names, detail = _debian_index_names()
+def _probe_apt(distro: str, name: str) -> tuple[bool | None, str]:
+    names, detail = _apt_index_names(distro)
     if names is None:
         return None, detail
     return name in names, detail
-
-
-def _probe_debian_like(host: str, suite: str, name: str) -> tuple[bool | None, str]:
-    status, body = _get(f"https://{host}/{suite}/{urllib.parse.quote(name)}")
-    if status == 404:
-        return False, f"{host}/{suite}"
-    if status != 200:
-        return None, f"{host} returned HTTP {status}"
-    if _DEBIAN_MISSING_RE.search(body.decode("utf-8", "replace")):
-        return False, f"{host}/{suite}"
-    return True, f"{host}/{suite}"
 
 
 def _probe_fedora(name: str) -> tuple[bool | None, str]:
@@ -316,12 +327,8 @@ def _probe(probe: Probe) -> Outcome:
             available, detail = _probe_aur(probe.name)
         elif probe.distro == "arch":
             available, detail = _probe_arch(probe.name)
-        elif probe.distro == "debian":
-            available, detail = _probe_debian(probe.name)
-        elif probe.distro == "ubuntu":
-            available, detail = _probe_debian_like(
-                "packages.ubuntu.com", UBUNTU_SUITE, probe.name
-            )
+        elif probe.distro in APT_INDEX:
+            available, detail = _probe_apt(probe.distro, probe.name)
         elif probe.distro == "fedora":
             available, detail = _probe_fedora(probe.name)
         else:
