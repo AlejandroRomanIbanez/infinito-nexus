@@ -87,15 +87,10 @@ on:
         required: false
         type: boolean
         default: false
-      force_cancel_in_progress:
-        description: "When true, a new run always cancels the running orchestrator on the same ref, including on main, which is otherwise never cancelled."
-        required: false
-        type: boolean
-        default: false
 
 concurrency:
   group: infinito-test-${{ github.ref }}
-  cancel-in-progress: ${{ inputs.force_cancel_in_progress || github.ref != 'refs/heads/main' }}
+  cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' || github.ref != 'refs/heads/main' }}
 
 permissions:
   actions: read

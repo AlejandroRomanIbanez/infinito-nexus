@@ -15,7 +15,7 @@ Repository variables are set under **Settings → Secrets and variables → Acti
 
 ## Cancelling in-progress runs 🛑
 
-Not a variable: cancellation is keyed on the ref. Every run on a branch other than `main` is cancelled by a newer run in the same concurrency group; runs on `main` are not, because a half-finished pipeline on the default branch is worse than a queued one. The one exception is a manual dispatch, which supersedes everywhere — see below.
+Not a variable: cancellation is derived from the trigger. Every automatic run on a branch other than `main` is cancelled by a newer run in the same concurrency group; automatic runs on `main` are not, because a half-finished pipeline on the default branch is worse than a queued one. A manual dispatch always supersedes, `main` included: someone typed it, so it is the intent that counts, not the ref.
 
 ```yaml
 cancel-in-progress: ${{ github.ref_name != 'main' }}
@@ -27,7 +27,7 @@ cancel-in-progress: ${{ github.ref_name != 'main' }}
 
 [call-orchestrator.yml](../../../../../.github/workflows/call-orchestrator.yml) compares `github.ref` for the same reason: a called workflow inherits the caller's ref, which is `refs/pull/<n>/merge` for a `pull_request` caller but `refs/heads/main` for a `pull_request_target` one. The `ci-orchestrator` job of `entry-pr-change-orchestrate.yml` is fenced to `github.event_name == 'pull_request'`, so the ref the orchestrator sees from that caller is always the merge ref; widening that fence would silently put fork runs into main's group.
 
-The manual entry workflow overrides the rule deliberately: its own group is `cancel-in-progress: true`, and it passes `force_cancel_in_progress: true` into the orchestrator, so a manual sweep supersedes a running one even on `main`.
+`entry-manual-steer.yml` declares `cancel-in-progress: true` outright on its own group, and the orchestrator reads `github.event_name` — which a called workflow inherits from its caller — so a manual sweep supersedes on both levels without an input to pass down.
 
 ## `CI_SYNC_MAIN_SOURCE_REPOSITORY` 🔄
 
