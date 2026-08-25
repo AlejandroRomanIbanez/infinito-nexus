@@ -41,6 +41,7 @@ jobs:
           BRANCH: ${{ github.ref_name }}
           CURRENT_RUN_ID: ${{ github.run_id }}
           KEEP_NEWEST_PER: all
+          FORCE_CANCEL_AFTER_SECONDS: "60"
           INCLUDE_PATHS: |
             .github/workflows/entry-push-latest.yml
             .github/workflows/entry-manual-steer.yml
@@ -68,6 +69,7 @@ jobs:
           PR_HEAD_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
           CURRENT_RUN_ID: ${{ github.run_id }}
           KEEP_NEWEST_PER: event
+          FORCE_CANCEL_AFTER_SECONDS: "60"
           INCLUDE_PATHS: .github/workflows/entry-pr-change-orchestrate.yml
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           REPOSITORY: ${{ github.repository }}

@@ -34,6 +34,17 @@ validate_include_paths() {
 # Mirrors the key of the concurrency group being backed up: `all` for a group
 # that spans every event on a ref, `event` for one whose key contains the event
 # name. Grouping any finer keeps a run alive that the group would have reaped.
+validate_force_cancel_after() {
+	if [[ -z "${FORCE_CANCEL_AFTER_SECONDS}" ]]; then
+		return 0
+	fi
+
+	if [[ ! "${FORCE_CANCEL_AFTER_SECONDS}" =~ ^[0-9]+$ ]]; then
+		echo "ERROR: FORCE_CANCEL_AFTER_SECONDS must be a whole number of seconds." >&2
+		exit 1
+	fi
+}
+
 validate_keep_newest_per() {
 	case "${KEEP_NEWEST_PER}" in
 	"" | all | event) ;;
@@ -87,6 +98,55 @@ cancel_run() {
 	return 1
 }
 
+# A cancel request does not stop a running step. The runner asks it to end and
+# a step that ignores the signal keeps going, bounded only by its own
+# `timeout-minutes` -- 350 for a deploy. The concurrency group meanwhile holds
+# the newer run on `pending` until the occupant is terminal, not until it is
+# cancel-requested, so a superseded sweep can block the branch for hours after
+# it was told to stop. `force-cancel` is GitHub's escalation for exactly that,
+# and it is worth the skipped cleanup steps here: the artefacts of a run that
+# has already been superseded are of no use to anyone.
+force_cancel_stragglers() {
+	local run_ids="$1"
+	local run_id
+	local state
+	local stragglers=""
+
+	if [[ -z "${FORCE_CANCEL_AFTER_SECONDS}" || -z "${run_ids}" ]]; then
+		return 0
+	fi
+
+	echo "Waiting ${FORCE_CANCEL_AFTER_SECONDS}s for the cancelled runs to end"
+	sleep "${FORCE_CANCEL_AFTER_SECONDS}"
+
+	while read -r run_id; do
+		[[ -n "${run_id}" ]] || continue
+		state="$(
+			gh api \
+				-H "Accept: application/vnd.github+json" \
+				"/repos/${REPOSITORY}/actions/runs/${run_id}" --jq '.status'
+		)" || return 1
+		if [[ "${state}" != "completed" ]]; then
+			stragglers+="${run_id}"$'\n'
+		fi
+	done <<<"${run_ids}"
+
+	if [[ -z "${stragglers}" ]]; then
+		echo "Every cancelled run ended on its own"
+		return 0
+	fi
+
+	while read -r run_id; do
+		[[ -n "${run_id}" ]] || continue
+		echo "Force-cancelling run ${run_id}, still running after the cancel"
+		gh api \
+			-X POST \
+			-H "Accept: application/vnd.github+json" \
+			"/repos/${REPOSITORY}/actions/runs/${run_id}/force-cancel" >/dev/null ||
+			echo "WARNING: force-cancelling run ${run_id} was rejected" >&2
+	done <<<"${stragglers}"
+}
+
 # One transient failure must not abandon the remaining runs: they would keep
 # burning runners. Cancel everything, then report. Only a denied token is
 # fatal — a rate limit or a run that vanished between listing and cancel is
@@ -98,6 +158,7 @@ cancel_all() {
 	local run_id
 	local failures=0
 	local successes=0
+	local cancelled=""
 
 	CANCEL_PERMISSION_DENIED=0
 
@@ -111,10 +172,13 @@ cancel_all() {
 		echo "Cancelling run ${run_id}"
 		if cancel_run "${run_id}"; then
 			successes=$((successes + 1))
+			cancelled+="${run_id}"$'\n'
 		else
 			failures=$((failures + 1))
 		fi
 	done <<<"${run_ids}"
+
+	force_cancel_stragglers "${cancelled}"
 
 	if ((failures == 0)); then
 		return 0

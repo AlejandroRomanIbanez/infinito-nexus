@@ -7,6 +7,7 @@ set -euo pipefail
 CURRENT_RUN_ID="${CURRENT_RUN_ID:-}"
 INCLUDE_PATHS="${INCLUDE_PATHS:-}"
 KEEP_NEWEST_PER="${KEEP_NEWEST_PER:-}"
+FORCE_CANCEL_AFTER_SECONDS="${FORCE_CANCEL_AFTER_SECONDS:-}"
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/github/cancel/lib.sh
@@ -15,6 +16,7 @@ source "${SCRIPT_DIR}/lib.sh"
 require_tools
 validate_include_paths
 validate_keep_newest_per
+validate_force_cancel_after
 
 echo "Searching active workflow runs for branch: ${BRANCH}"
 

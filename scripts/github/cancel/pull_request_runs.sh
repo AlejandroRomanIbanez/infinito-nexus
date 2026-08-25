@@ -10,6 +10,7 @@ PR_HEAD_REPOSITORY="${PR_HEAD_REPOSITORY:-}"
 : "${CURRENT_RUN_ID:?Missing CURRENT_RUN_ID}"
 INCLUDE_PATHS="${INCLUDE_PATHS:-}"
 KEEP_NEWEST_PER="${KEEP_NEWEST_PER:-}"
+FORCE_CANCEL_AFTER_SECONDS="${FORCE_CANCEL_AFTER_SECONDS:-}"
 
 SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/github/cancel/lib.sh
@@ -18,6 +19,7 @@ source "${SCRIPT_DIR}/lib.sh"
 require_tools
 validate_include_paths
 validate_keep_newest_per
+validate_force_cancel_after
 
 # A fork PR's runs carry an empty `pull_requests` array, so the branch matcher
 # is all that is left — and it cannot tell two pull requests apart that share a

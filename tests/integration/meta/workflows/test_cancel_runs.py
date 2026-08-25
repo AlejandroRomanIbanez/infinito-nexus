@@ -54,6 +54,13 @@ class CancelScriptMixin:
                     esac
                 done
 
+                if [[ "${method}" == "POST" && "${url}" == */force-cancel ]]; then
+                    printf '%s\\n' "${url}" \
+                        | sed -E 's#.*/actions/runs/([0-9]+)/force-cancel#\\1#' \
+                        >> "${GH_FAKE_FORCE_LOG}"
+                    exit 0
+                fi
+
                 if [[ "${method}" == "POST" ]]; then
                     run_id="$(printf '%s\\n' "${url}" | sed -E 's#.*/actions/runs/([0-9]+)/cancel#\\1#')"
                     if [[ -n "${GH_FAKE_POST_ERROR:-}" ]]; then
@@ -67,6 +74,11 @@ class CancelScriptMixin:
                         exit 1
                     fi
                     printf '%s\\n' "${run_id}" >> "${GH_FAKE_CANCEL_LOG}"
+                    exit 0
+                fi
+
+                if [[ "${url}" == */actions/runs/[0-9]* ]]; then
+                    printf '%s\\n' "${GH_FAKE_RUN_STATUS:-completed}"
                     exit 0
                 fi
 
@@ -114,6 +126,7 @@ class CancelScriptMixin:
                     "REPOSITORY": "kevinveenbirkenbach/infinito-nexus",
                     "GH_FAKE_RUNS_DIR": str(runs_dir),
                     "GH_FAKE_CANCEL_LOG": str(cancel_log),
+                    "GH_FAKE_FORCE_LOG": str(temp_dir / "force.log"),
                     "PATH": f"{temp_dir}:{env['PATH']}",
                     **env_overrides,
                 }
@@ -133,6 +146,14 @@ class CancelScriptMixin:
                 cancelled = [
                     line.strip()
                     for line in read_text(str(cancel_log)).splitlines()
+                    if line.strip()
+                ]
+            force_log = temp_dir / "force.log"
+            self.forced = []
+            if force_log.exists():
+                self.forced = [
+                    line.strip()
+                    for line in read_text(str(force_log)).splitlines()
                     if line.strip()
                 ]
             return result, cancelled
@@ -497,6 +518,40 @@ class TestCancelBranchRuns(CancelScriptMixin, unittest.TestCase):
     def test_cancels_every_branch_run_without_exclusions(self):
         _, cancelled = self._run_script()
         self.assertEqual(cancelled, ["400", "401", "403"])
+
+    def test_force_cancels_runs_that_ignore_the_cancel(self):
+        _, cancelled = self._run_script(
+            KEEP_NEWEST_PER="all",
+            FORCE_CANCEL_AFTER_SECONDS="0",
+            GH_FAKE_RUN_STATUS="in_progress",
+        )
+        self.assertEqual(sorted(cancelled), ["401", "403"])
+        self.assertEqual(sorted(self.forced), ["401", "403"])
+
+    def test_leaves_runs_that_ended_on_their_own(self):
+        _, cancelled = self._run_script(
+            KEEP_NEWEST_PER="all",
+            FORCE_CANCEL_AFTER_SECONDS="0",
+            GH_FAKE_RUN_STATUS="completed",
+        )
+        self.assertEqual(sorted(cancelled), ["401", "403"])
+        self.assertEqual(self.forced, [])
+
+    def test_never_force_cancels_without_the_knob(self):
+        _, cancelled = self._run_script(
+            KEEP_NEWEST_PER="all",
+            GH_FAKE_RUN_STATUS="in_progress",
+        )
+        self.assertEqual(sorted(cancelled), ["401", "403"])
+        self.assertEqual(self.forced, [])
+
+    def test_rejects_a_non_numeric_force_cancel_delay(self):
+        result, cancelled = self._run_script(
+            check=False, FORCE_CANCEL_AFTER_SECONDS="soon"
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertEqual(cancelled, [])
+        self.assertIn("whole number of seconds", result.stderr)
 
     def test_keeps_runs_outside_the_concurrency_group(self):
         _, cancelled = self._run_script(
