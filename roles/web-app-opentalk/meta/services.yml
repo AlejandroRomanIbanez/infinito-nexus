@@ -129,7 +129,7 @@ seaweedfs:
 rabbit:
   name: opentalk-rabbit
   image: rabbitmq
-  version: 4.3.4
+  version: 4.3.5
   min_storage: 314MB
   cpus: "0.5"
   mem_reservation: 256m
