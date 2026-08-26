@@ -72,7 +72,7 @@ The two deploy-test workflows listed in the `Infrastructure tests` table of [wor
 
 #### Diff-driven app selection 🎯
 
-Both [call-test-deploy-compose.yml](../../../../.github/workflows/call-test-deploy-compose.yml) and [call-test-deploy-swarm.yml](../../../../.github/workflows/call-test-deploy-swarm.yml) narrow their app matrix to the set of roles actually impacted by the branch's diff against `origin/main`. The `discover` job resolves an effective whitelist before [output_apps.sh](../../../../scripts/github/resolve/output_apps.sh) runs, using the following precedence:
+[call-test-deploy.yml](../../../../.github/workflows/call-test-deploy.yml) narrows its app matrix to the set of roles actually impacted by the branch's diff against `origin/main`. The `discover` job resolves an effective whitelist before [output_apps.sh](../../../../scripts/github/resolve/output_apps.sh) runs, using the following precedence:
 
 1. **Sentinel `__ALL__` in the `whitelist` input** (case-insensitive). The diff logic MUST be skipped and an empty whitelist MUST be emitted, which deploys everything in the workflow's scope. This is the explicit opt-out from diff narrowing for manual dispatch.
 2. **Any other non-empty `whitelist`** (forwarded from `entry-manual-steer.yml` and similar). The explicit value MUST win over the diff and is passed through verbatim.
@@ -126,9 +126,9 @@ The final `done` job aggregates all deploy, install, and development gates. CI i
 
 ## Concurrency 🔀
 
-- PR pipelines use `cancel-in-progress: true` so only the newest run per PR and event type is active.
-- The orchestrator and the push entry workflow (`entry-push-latest.yml`) default to `cancel-in-progress: true` and both respect the repository variable `CI_CANCEL_IN_PROGRESS`.
-- The manual entry workflow (`entry-manual-steer.yml`) sets `cancel-in-progress: true` on its own group and passes `force_cancel_in_progress: true` into the orchestrator, so a manual run cancels on both levels regardless of `CI_CANCEL_IN_PROGRESS`.
+- PR pipelines use `cancel-in-progress: true` so only the newest run per PR and event type is active. The group does not always reap a long orchestrator sweep, which then leaves the newer run parked on `pending`; [entry-cancel-superseded.yml](../../../../.github/workflows/entry-cancel-superseded.yml) cancels those leftovers through the API, see [cancel/README.md](../../../../scripts/github/cancel/README.md).
+- The orchestrator and the push entry workflow (`entry-push-latest.yml`) cancel in-progress runs on every ref except `main`, which no automatic trigger cancels. A `pull_request_target` run inherits `refs/heads/main` as its ref, so the orchestrator does not cancel there either; per-PR supersession is handled by the entry workflow's own `pr-ci-*` group. See [configuration.md](../../tools/github/actions/configuration.md).
+- The manual entry workflow (`entry-manual-steer.yml`) sets `cancel-in-progress: true` on its own group, and the orchestrator's group cancels for `workflow_dispatch` regardless of ref, so a manual sweep supersedes on both levels, `main` included.
 
 See [configuration.md](../../tools/github/actions/configuration.md) for all repository variables that control CI behaviour.
 

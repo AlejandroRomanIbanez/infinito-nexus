@@ -1,5 +1,7 @@
 ---
 ollama:
+  healthcheck:
+    flavor: tcp
   modes:
     compose:
       enabled: true
