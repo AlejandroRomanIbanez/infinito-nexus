@@ -96,7 +96,7 @@ controller:
 livekit:
   name: opentalk-livekit
   image: livekit/livekit-server
-  version: v1.13.5
+  version: v1.13.6
   min_storage: 238MB
   cpus: "2.0"
   mem_reservation: 512m
