@@ -1,4 +1,7 @@
 ---
 cli:
-  # Exception: the migration e2e runs two nested full deploys — the default 3600s CLI budget starves it.
-  timeout: 10800
+  # Exception: the migration e2e polls SMTP submission and IMAP delivery for four
+  # messages, each with its own retry budget (curl --max-time 60 × 30 attempts × two
+  # mailboxes). The pathological sum exceeds the default 3600s even though a healthy
+  # run finishes in minutes.
+  timeout: 7200

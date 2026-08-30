@@ -62,3 +62,7 @@
 - name: "🔧 Publish Stalwart DNS records"
   include_tasks: 09_dns-records.yml
   when: stalwart_dkim_selector is defined
+
+- name: "🔎 Verify the production mail server's public configuration"
+  include_tasks: 13_production_facts.yml
+  when: STALWART_PRODUCTION_HOST | length > 0

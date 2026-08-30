@@ -36,9 +36,10 @@
   include_tasks: 10_oidc_apply.yml
   when: STALWART_SSO_ENABLED | bool
 
-- name: "📥 Import legacy Mailu maildirs (manual cutover switch)"
+- name: "📥 Import legacy Mailu maildirs (manual cutover switch, compose only)"
   include_tasks: 12_import_mailu.yml
   when:
     - STALWART_IMPORT_MAILU | bool
     - "'web-app-mailu' in group_names"
     - STALWART_ACTIVE_PROVIDER | bool
+    - DEPLOYMENT_MODE == 'compose'

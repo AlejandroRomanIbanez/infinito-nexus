@@ -242,6 +242,8 @@ docker run --rm -it \
 
 The provider cutover is an inventory change; mailbox data moves with it when the migration switch is on.
 
+> **Compose only.** The import reads the legacy maildir volume on the stack host and submits over the host-published IMAPS port, neither of which holds under swarm. Migrate in compose mode, then move the stack to swarm.
+
 1. Keep `web-app-mailu` in the host's groups and add `web-app-stalwart` — both MUST be present so Mailu re-renders as a legacy instance (`legacy-mail.<domain>`, no public mail ports) and releases `mail.<domain>` to Stalwart.
 2. Remove `MAIL_PROVIDER` from the inventory (Stalwart is the default).
 3. Set `applications["web-app-stalwart"].services.stalwart.migration.import_mailu: true` and run the full deploy. The role then reads Mailu's Dovecot Maildir volume and imports every inventory account's messages via IMAP APPEND, preserving folders, flags and internal dates. Re-runs are idempotent (Message-ID dedup), so the switch may stay on across deploys; turn it off once Mailu is retired.
@@ -249,7 +251,28 @@ The provider cutover is an inventory change; mailbox data moves with it when the
 4. Accounts and aliases are provisioned from the inventory by this role; mailboxes created only inside Mailu's admin UI MUST be added to the inventory first. Sieve filters and CalDAV/CardDAV data are out of scope.
 5. Non-Cloudflare DNS: publish the new DKIM TXT record reported by the deploy; MX and A records keep their hostname.
 
-The cutover is covered end to end by [`files/test/test.sh`](files/test/test.sh), which runs as this role's CLI test whenever `web-app-mailu` is co-deployed (matrix variant 0). It rewinds the stack to the initial state (Mailu active), stores mail in both directions, redeploys into the final state with the migration switch on, and asserts over IMAP that the stored mail survived and that live mail still flows.
+The cutover is covered end to end by [`files/test/test.sh`](files/test/test.sh), which runs as this role's CLI test whenever `web-app-mailu` is co-deployed — matrix **variant 1**, the round where SSO is off, because the import authenticates with per-account passwords. The whole scenario runs inside the deployed host and needs nothing from the environment around it: it stores mail in both directions in the legacy Mailu, confirms it landed in the maildir volume, runs [`files/migrate_from_mailu.py`](files/migrate_from_mailu.py) — the same script and argv a real cutover uses — and then asserts over IMAP that the stored mail survived and that live mail still flows. No redeploy is involved; the cutover is a docker-level data move.
+
+## Verifying a production server
+
+Deploying against a publicly reachable mail server additionally asserts that server's live **hard facts** — the records and listeners either match the deployed configuration or they do not. There is no mail-flow scenario here; that is what the suites above are for.
+
+Set `INFINITO_MAIL_PRODUCTION_HOST` to the server's public FQDN (in CI, a GitHub repository variable of the same name; empty disables the whole check). Optionally set `INFINITO_MAIL_PRODUCTION_RESOLVER` to the address of a public resolver so the records are read from the outside view instead of `/etc/resolv.conf`, which matters on a host whose own resolver answers from a split-horizon zone.
+
+[`files/production_facts.py`](files/production_facts.py) then checks, read-only:
+
+| Fact | Assertion |
+|---|---|
+| A / AAAA | the mail host resolves |
+| MX | the zone's only MX is the mail host (the role publishes it `solo`) |
+| SPF | exactly one `v=spf1` record, authorising `mx` or `a:<mailhost>` |
+| DMARC | `_dmarc` publishes a `v=DMARC1` record with a policy |
+| DKIM | the selector this deploy read back publishes a non-empty `v=DKIM1` key |
+| SRV | `_submissions`/465, `_imaps`/993, `_pop3s`/995 point at the mail host |
+| PTR | rDNS does not contradict the mail host (absent → warning; rDNS is provisioned for Hetzner only) |
+| SMTP | port 25 greets with `220` carrying the FQDN, proving the `rejectNonFqdn` identity |
+
+The same variable points [`sys-ctl-mtn-cert-deploy`](../sys-ctl-mtn-cert-deploy/)'s remote check at `:465` and `:993`, so the live TLS chain and its remaining validity are verified alongside. A misconfigured production server therefore fails the deploy instead of surfacing as an outage.
 
 ## Further Reading
 

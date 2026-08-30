@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
-# Mailu → Stalwart migration, end to end against the deployed stack:
-#   mail is delivered into the legacy Mailu, the role's import switch is turned on and
-#   applied, and the same messages are then read back out of Stalwart over IMAP.
+# Mailu → Stalwart migration, end to end against the deployed stack, entirely inside the
+# DiD host: mail is delivered into the legacy Mailu, the import script moves it into
+# Stalwart, and the same messages are then read back out of Stalwart over IMAP.
+# No redeploy is involved — the cutover is a docker-level data move.
 # nocheck: raw-docker — storage assertions read the maildir volume via the container wrapper
 set -euo pipefail
 
@@ -11,9 +12,8 @@ if [[ "${STALWART_MIGRATION_E2E}" != "true" ]]; then
 	exit 0
 fi
 
-: "${TEST_INVENTORY_DIR:?missing TEST_INVENTORY_DIR}"
 : "${PYTHON_BIN:?missing PYTHON_BIN}"
-: "${REPO_SRC_DIR:?missing REPO_SRC_DIR}"
+: "${MIGRATION_SCRIPT:?missing MIGRATION_SCRIPT}"
 : "${ADMIN_EMAIL:?missing ADMIN_EMAIL}"
 : "${ADMIN_IMAP_PASSWORD:?missing ADMIN_IMAP_PASSWORD}"
 : "${BIBER_EMAIL:?missing BIBER_EMAIL}"
@@ -94,19 +94,26 @@ wait_in_imap() {
 	return 1
 }
 
-# Exception: ansible's plugin loader imports the repo's `plugins` package by name, so the
-# nested playbook needs the repo root on PYTHONPATH.
-run_import() {
-	(
-		cd "${REPO_SRC_DIR}"
-		PYTHONPATH="${REPO_SRC_DIR}" "${PYTHON_BIN}" -m cli.administration.deploy.dedicated \
-			"${TEST_INVENTORY_DIR}/devices.yml" -p "${TEST_INVENTORY_DIR}/.password" \
-			-vv --diff --skip-backup --skip-cleanup \
-			--id web-app-stalwart \
-			-e 'TEST_E2E_ENABLED=false' \
-			-e 'STALWART_MIGRATION_NESTED=true' \
-			-e 'STALWART_IMPORT_MAILU=true'
-	)
+# The migration is a pure docker-level move: read the legacy maildir volume, APPEND over
+# IMAP. No redeploy is involved, so the harness invokes the very same script (and argv
+# shape) that tasks/12_import_mailu.yml runs on a real cutover.
+run_migration() {
+	local maildir="$1"
+	# Exception: built by python, not printf — inventory passwords legitimately contain
+	# quotes and backslashes, which would corrupt hand-rolled JSON.
+	"${PYTHON_BIN}" -c \
+		'import json,sys; json.dump({sys.argv[1]: sys.argv[2], sys.argv[3]: sys.argv[4]}, open(sys.argv[5], "w"))' \
+		"${ADMIN_EMAIL}" "${ADMIN_IMAP_PASSWORD}" \
+		"${BIBER_EMAIL}" "${BIBER_IMAP_PASSWORD}" \
+		"${WORKDIR}/accounts.json"
+	chmod 600 "${WORKDIR}/accounts.json"
+
+	"${PYTHON_BIN}" "${MIGRATION_SCRIPT}" \
+		--maildir-root "${maildir}" \
+		--imap-host 127.0.0.1 --imap-port 993 --imap-insecure \
+		--accounts-file "${WORKDIR}/accounts.json"
+
+	rm -f "${WORKDIR}/accounts.json"
 }
 
 echo "=== [1/4] Deliver mail into the legacy Mailu (A: biber->admin, B: admin's reply) ==="
@@ -122,8 +129,8 @@ MAILDIR_MOUNT="$(container volume inspect --format '{{ .Mountpoint }}' "${MAILU_
 wait_stored_in_maildir "${SUBJ_A}" "${MAILDIR_MOUNT}/${ADMIN_EMAIL}"
 wait_stored_in_maildir "${SUBJ_B}" "${MAILDIR_MOUNT}/${BIBER_EMAIL}"
 
-echo "=== [3/4] Migrate: run the role with the import switch on ==="
-run_import
+echo "=== [3/4] Migrate: run the import script against the deployed stack ==="
+run_migration "${MAILDIR_MOUNT}"
 
 echo "=== [4/4] Continuity in Stalwart, then live flow (C: biber->admin, D: admin's reply) ==="
 wait_in_imap "${ADMIN_EMAIL}" "${ADMIN_IMAP_PASSWORD}" "${SUBJ_A}"

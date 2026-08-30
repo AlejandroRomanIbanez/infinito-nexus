@@ -202,6 +202,21 @@ class TestLifecycleAllowedValues(unittest.TestCase):
                 + "\n".join(f"  - {o}" for o in offenders)
             )
 
+    def test_ci_envelope_only_names_allowed_lifecycles(self):
+        """A typo in ``INFINITO_LIFECYCLES`` silently drops every role of that
+        stage from CI test-deploy discovery instead of failing, so the envelope
+        and the allowed-value set must not be able to drift apart."""
+        from utils.roles.lifecycle import tested_lifecycles
+
+        unknown = sorted(tested_lifecycles() - ALLOWED_LIFECYCLES)
+        self.assertEqual(
+            unknown,
+            [],
+            "default.env INFINITO_LIFECYCLES names stages that are not valid "
+            f"lifecycle values: {unknown}. Roles tagged with a valid stage that "
+            "is missing from the envelope are invisible to the deploy matrix.",
+        )
+
 
 class TestPortShape(unittest.TestCase):
     def test_local_and_public_ports_are_category_keyed_maps(self):

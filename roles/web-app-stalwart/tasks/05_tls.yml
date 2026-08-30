@@ -5,6 +5,12 @@
 - name: "🚀 Deploy the platform TLS certificate into Stalwart's cert dir"
   include_role:
     name: sys-ctl-mtn-cert-deploy
+  vars:
+    # Exception: MAIL_PRODUCTION_HOST is one knob for both halves of the production
+    # check — forwarding it here is what makes the remote TLS probe fire at all.
+    cert_deploy_remote_endpoints: >-
+      {{ (STALWART_PRODUCTION_HOST ~ ':465 ' ~ STALWART_PRODUCTION_HOST ~ ':993')
+         if STALWART_PRODUCTION_HOST | length > 0 else '' }}
 
 - name: "🔍 Check for an existing Stalwart certificate"
   include_tasks: jmap_call.yml

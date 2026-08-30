@@ -1,10 +1,12 @@
 ---
-# include-gated: when: STALWART_IMPORT_MAILU and 'web-app-mailu' in group_names and STALWART_ACTIVE_PROVIDER
-# Exception: the volume name couples to web-app-mailu by design — this task imports
-# that one legacy provider's Dovecot maildirs and dies with it (lifecycle: eol).
+# include-gated: when: STALWART_IMPORT_MAILU and 'web-app-mailu' in group_names
+#                and STALWART_ACTIVE_PROVIDER and DEPLOYMENT_MODE == 'compose'
+# Exception: the volume couples to web-app-mailu by design — this task imports that one
+# legacy provider's Dovecot maildirs and dies with it (lifecycle: maintenance → eol).
 - name: "🔍 Resolve the legacy Mailu maildir volume mountpoint"
   ansible.builtin.command: >-
-    container volume inspect --format "{{ '{{' }} .Mountpoint {{ '}}' }}" mailu_dovecot_mail
+    container volume inspect --format "{{ '{{' }} .Mountpoint {{ '}}' }}"
+    {{ lookup('volume', 'web-app-mailu', 'dovecot_mail').name | quote }}
   register: stalwart_mailu_maildir
   changed_when: false
 
