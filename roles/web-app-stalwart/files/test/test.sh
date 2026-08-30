@@ -118,6 +118,16 @@ run_migration() {
 
 echo "=== [1/4] Deliver mail into the legacy Mailu (A: biber->admin, B: admin's reply) ==="
 MAILU_SMTP_IP="$(container inspect --type container -f '{{ range .NetworkSettings.Networks }}{{ .IPAddress }} {{ end }}' "${MAILU_SMTP_CONTAINER}" | awk '{print $1}')"
+# Exception: a stopped container still inspects, but docker renders its address as the literal
+# "invalid IP" — without this guard the run spends six SMTP retries against a host named
+# "invalid" and reports a delivery failure instead of the stack being down.
+case "${MAILU_SMTP_IP}" in
+[0-9]*.[0-9]*.[0-9]*.[0-9]*) ;;
+*)
+	echo "FAIL: ${MAILU_SMTP_CONTAINER} has no IPv4 address (got '${MAILU_SMTP_IP}'); the legacy Mailu stack is not running" >&2
+	exit 1
+	;;
+esac
 echo "mailu smtp at ${MAILU_SMTP_IP}"
 compose_mail "${BIBER_EMAIL}" "${ADMIN_EMAIL}" "${SUBJ_A}"
 send_smtp "${MAILU_SMTP_IP}" "${BIBER_EMAIL}" "${ADMIN_EMAIL}" "${SUBJ_A}"

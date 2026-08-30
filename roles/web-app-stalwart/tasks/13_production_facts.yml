@@ -6,7 +6,7 @@
 - name: "🔎 Assert the production mail server's public DNS and SMTP facts"
   ansible.builtin.script:
     cmd: >-
-      {{ [ role_path, 'files/production_facts.py' ] | path_join }}
+      {{ [ role_path, 'files/python/production_facts.py' ] | path_join }}
       --mail-host {{ STALWART_PRODUCTION_HOST | quote }}
       --mail-domain {{ STALWART_DOMAIN | quote }}
       {{ ('--dkim-selector ' ~ (stalwart_dkim_selector | quote))

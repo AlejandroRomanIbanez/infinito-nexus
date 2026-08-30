@@ -51,10 +51,9 @@ configure_via_networkmanager_dnsmasq() {
 	echo ">>> Detected NetworkManager -> configuring NM dnsmasq plugin (recommended)"
 	install_dnsmasq_if_missing
 
-	# Avoid port conflicts with a system-wide dnsmasq service
 	if systemctl is-enabled --quiet dnsmasq 2>/dev/null || systemctl is-active --quiet dnsmasq 2>/dev/null; then
 		echo ">>> Disabling system dnsmasq to avoid conflicts with NetworkManager dnsmasq"
-		sudo systemctl disable --now dnsmasq || true
+		sudo systemctl disable --now dnsmasq || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 	fi
 
 	echo ">>> Writing NetworkManager dnsmasq config: ${DNS_NM_CONF}"
@@ -67,7 +66,6 @@ EOF
 	echo ">>> Writing dnsmasq snippet for NetworkManager: ${DNS_NM_DNSMASQ_CONF}"
 	sudo mkdir -p "${DNS_NM_DNSMASQ_DIR}"
 	cat <<EOF | sudo tee "${DNS_NM_DNSMASQ_CONF}" >/dev/null
-# Map the entire zone to localhost (wildcard)
 address=/${DNS_DOMAIN}/127.0.0.1
 address=/${DNS_DOMAIN}/::1
 EOF
@@ -76,7 +74,7 @@ EOF
 	sudo systemctl restart NetworkManager
 
 	echo ">>> Resolver status"
-	cat /etc/resolv.conf || true
+	cat /etc/resolv.conf || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 }
 
 configure_via_system_dnsmasq() {
@@ -94,13 +92,15 @@ EOF
 	sudo systemctl enable dnsmasq --now
 	sudo systemctl restart dnsmasq
 
-	# systemd-resolved rejects per-link DNS on loopback, so route the zone to
-	# dnsmasq via a global drop-in instead of `resolvectl dns lo ...`.
+	# Exception: `resolvectl dns lo ...` is NOT used here — systemd-resolved rejects
+	# per-link DNS on loopback, so the zone is routed to dnsmasq via a global drop-in
+	# instead; the per-link form fails silently and leaves the zone unresolved.
 	if systemctl is-active --quiet systemd-resolved 2>/dev/null; then
 		echo ">>> Routing ${DNS_DOMAIN} to dnsmasq via systemd-resolved drop-in: ${DNS_RESOLVED_DROPIN}"
 		sudo mkdir -p "$(dirname "${DNS_RESOLVED_DROPIN}")"
 		cat <<EOF | sudo tee "${DNS_RESOLVED_DROPIN}" >/dev/null
-# Managed by infinito-nexus (make network-dns-remove) — routes ${DNS_DOMAIN} to local dnsmasq.
+# Attention: managed by infinito-nexus — routes ${DNS_DOMAIN} to local dnsmasq.
+# Edits are overwritten; remove it with \`make network-dns-remove\`.
 [Resolve]
 DNS=127.0.0.1
 Domains=~${DNS_DOMAIN}
@@ -112,7 +112,6 @@ EOF
 	fi
 }
 
-# Prefer NetworkManager path if NM is present+active (your case)
 if systemctl is-active --quiet NetworkManager 2>/dev/null; then
 	configure_via_networkmanager_dnsmasq
 else

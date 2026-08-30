@@ -2,7 +2,7 @@
 application_id: "web-app-stalwart"
 http_port: "{{ lookup('config', application_id, 'services.stalwart.ports.local.http') }}"
 
-database_password: "{{ lookup('config', application_id, 'credentials.database_password') }}"
+database_password: "{{ lookup('config', application_id, 'secrets.credentials.database_password') }}"
 
 STALWART_VOLUMES_DIR: "{{ lookup('container', application_id, 'directories.volumes') }}"
 STALWART_CONFIG_DIR: "{{ [ STALWART_VOLUMES_DIR, 'etc' ] | path_join }}"
@@ -23,6 +23,10 @@ STALWART_HOSTNAME: "{{ STALWART_EMAIL.host }}"
 # provider's domain and never serves its own.
 STALWART_WEB_DOMAIN: "{{ lookup('domain', application_id) }}"
 STALWART_HOSTNAME_DNS_ZONE: "{{ STALWART_HOSTNAME | to_zone }}"
+# Exception: the container's own hostname is NOT STALWART_HOSTNAME — an onion canonical
+# (`mail.<56 chars>.onion`) overflows sethostname(2)'s 64-byte cap and docker refuses to
+# create the container; the lookup falls back to the short entity name in that case.
+container_hostname: "{{ lookup('container_hostname', application_id) }}"
 
 STALWART_CONTAINER: "{{ lookup('config', application_id, 'services.stalwart.name') }}"
 
@@ -43,7 +47,7 @@ STALWART_WEBUI_VERSION: "{{ lookup('config', application_id, 'services.stalwart.
 STALWART_WEBUI_RESOURCE_URL: "https://github.com/stalwartlabs/webui/releases/download/{{ STALWART_WEBUI_VERSION }}/webui.zip"
 STALWART_WEBUI_CACHE_FILE: "/var/cache/infinito/core/cache/package/stalwart-webui/webui-{{ STALWART_WEBUI_VERSION }}.zip"
 STALWART_WEBUI_LOCAL_FILE: "{{ [ STALWART_CONFIG_DIR, 'webui.zip' ] | path_join }}"
-STALWART_WEBUI_CONTAINER_FILE: "/etc/stalwart/webui.zip"
+STALWART_WEBUI_CONTAINER_FILE: "{{ lookup('volume', application_id, 'webui_bundle').target }}"
 STALWART_WEBUI_LOCAL_URL: "file://{{ STALWART_WEBUI_CONTAINER_FILE }}"
 STALWART_WEBUI_APP_DESCRIPTION: "Stalwart Web Interface"
 
@@ -51,7 +55,7 @@ STALWART_IP4_PUBLIC: "{{ DOCKER_PUBLIC_BIND_HOST }}"
 STALWART_ACTIVE_PROVIDER: "{{ MAIL_PROVIDER == application_id }}"
 
 STALWART_ADMIN_USER: "admin"
-STALWART_ADMIN_PASSWORD: "{{ lookup('config', application_id, 'credentials.admin_password') }}"
+STALWART_ADMIN_PASSWORD: "{{ lookup('config', application_id, 'secrets.credentials.admin_password') }}"
 
 STALWART_DMARC_RUF: "{{ lookup('config', application_id, 'users.administrator.email') }}"
 

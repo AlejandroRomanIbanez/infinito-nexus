@@ -33,7 +33,7 @@
 - name: "📥 Import the Mailu maildirs into Stalwart over IMAP"
   ansible.builtin.script:
     cmd: >-
-      {{ [ role_path, 'files/migrate_from_mailu.py' ] | path_join }}
+      {{ [ role_path, 'files/python/migrate_from_mailu.py' ] | path_join }}
       --maildir-root {{ stalwart_mailu_maildir.stdout | trim | quote }}
       --imap-host 127.0.0.1 --imap-port 993 --imap-insecure
       --accounts-file {{ [ lookup('container', application_id, 'directories.instance'), '.migration-accounts.json' ] | path_join | quote }}

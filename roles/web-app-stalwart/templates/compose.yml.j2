@@ -4,7 +4,7 @@
   {{ service_name }}:
     {{ lookup('compose_only', 'container_name', STALWART_CONTAINER) }}
     {{ lookup('container_image', application_id, service_name) }}
-    hostname: {{ STALWART_HOSTNAME }}
+    hostname: {{ container_hostname }}
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {% if STALWART_ACTIVE_PROVIDER | bool %}
     {{ lookup('container_ports',
@@ -23,7 +23,7 @@
       # Exception: pins the break-glass admin (instead of a random one) —
       # API provisioning depends on knowing these credentials.
       STALWART_RECOVERY_ADMIN: "{{ STALWART_ADMIN_USER }}:{{ STALWART_ADMIN_PASSWORD }}"
-    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
     {{ lookup('container_depends_on', application_id) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
 
@@ -46,7 +46,7 @@
       # oauth.inc.php include.
       ROUNDCUBEMAIL_OAUTH_CLIENT_SECRET: "{{ OIDC.CLIENT.SECRET }}"
       {% endif %}
-    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
     {{ lookup('depends_on', ['stalwart']) }}
     {{ lookup('container_networks') | indent(4) }}
   {% if STALWART_ANTIVIRUS_ENABLED | bool %}
@@ -58,9 +58,9 @@
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     environment:
       CLAMAV_NO_MILTERD: "false"
-    {{ lookup('container_volumes', application_id, service_name) | indent(4) }}
+    {{ lookup('container_volumes', service_name) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
   {% endif %}
 
-{{ lookup('compose_volumes', application_id) }}
+{{ lookup('compose_volumes') }}
 {{ lookup('compose_networks') }}

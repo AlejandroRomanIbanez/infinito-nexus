@@ -3,6 +3,7 @@
   {{ service_name }}:
     {{ lookup('template', 'roles/sys-svc-container/templates/build.yml.j2') | indent(4) }}
       args:
+        NODE_BASE: "{{ lookup('config', application_id, 'services.postmarks.image') }}:{{ lookup('config', application_id, 'services.postmarks.version') }}"
         POSTMARKS_REPO_URL: "{{ POSTMARKS_REPO_URL }}"
         POSTMARKS_REF: "{{ POSTMARKS_REF }}"
         CONTAINER_PORT: "{{ container_port | string }}"
@@ -14,7 +15,6 @@
     {% include 'roles/sys-svc-container/templates/base.yml.j2' %}
     {{ lookup('container_networks') | indent(4) }}
 
-{{ lookup('compose_volumes', application_id,
-) }}
+{{ lookup('compose_volumes') }}
 
 {{ lookup('compose_networks') }}

@@ -52,7 +52,6 @@ if TYPE_CHECKING:
 _REPO_ROOT = PROJECT_ROOT
 _ROLES_ROOT = _REPO_ROOT / "roles"
 
-# Exception: collapsing Jinja branches into one text body is correct — any branch shipping an unsafe RUN must fail.
 _J2_CTRL_RE = re.compile(r"\{%-?.*?-?%\}", re.DOTALL)
 
 _RUN_START_RE = re.compile(r"^\s*RUN\b", re.IGNORECASE)

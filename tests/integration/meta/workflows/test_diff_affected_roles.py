@@ -54,8 +54,6 @@ class TestDiffAffectedRoles(unittest.TestCase):
             ["git", "remote", "add", "origin", str(bare)], cwd=repo, check=True
         )
 
-        # Exception: the real script MUST land at its expected relative path —
-        # its SCRIPT_DIR/REPO_ROOT computation must resolve inside the temp repo.
         script_target = repo / SCRIPT_REL
         script_target.parent.mkdir(parents=True)
         shutil.copy2(SCRIPT_PATH, script_target)

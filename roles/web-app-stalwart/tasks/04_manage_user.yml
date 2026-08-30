@@ -8,8 +8,9 @@
       {{ stalwart_user_password | hash('sha256')
          if 'bot' in stalwart_user_roles else stalwart_user_password }}
 
-# Create the account (password = a Password credential keyed by index "0").
-# Idempotent: re-runs return HTTP 200 with notCreated.
+# Exception: the password is a Password credential keyed by the literal index "0", and a
+# re-run answers HTTP 200 with notCreated rather than an error — so neither the shape nor
+# a non-2xx check can be used to tell "created" from "already there".
 - name: "📁 Create Stalwart account '{{ stalwart_user_name }}@{{ STALWART_DOMAIN }}'"
   include_tasks: jmap_call.yml
   vars:
@@ -23,15 +24,16 @@
             'credentials': {'0': {'@type': 'Password', 'secret': stalwart_user_secret}}
           }}}, 'c0']]} | to_json }}
 
-# notCreated(primaryKeyViolation) carries the existing account id.
+# Exception: the id of an already-existing account is only reachable through the
+# notCreated(primaryKeyViolation) payload — there is no lookup-by-name method.
 - name: "🔍 Resolve pre-existing account id for '{{ stalwart_user_name }}'"
   ansible.builtin.set_fact:
     stalwart_existing_account_id: >-
       {{ ((stalwart_jmap.methodResponses[0][1].notCreated | default({}))
           .get('a', {}).get('objectId', {}) or {}).get('id', '') }}
 
-# Converge the password on re-runs: a create-only flow leaves the DB on stale
-# credentials whenever the inventory secret differs (msmtp then fails with 535).
+# Exception: the password must be converged on re-runs — a create-only flow leaves the DB
+# on stale credentials whenever the inventory secret differs, and msmtp then fails with 535.
 - name: "🔄 Update password for existing account '{{ stalwart_user_name }}'"
   include_tasks: jmap_call.yml
   vars:
@@ -42,7 +44,8 @@
           }}}, 'c0']]} | to_json }}
   when: stalwart_existing_account_id | length > 0
 
-# The bot SMTP token is the account's effective secret.
+# Exception: the token stored here is the account's effective secret itself, not a
+# separate credential — a bot's secret is the sha256 of its password (see the fact above).
 - name: "💾 Persist Stalwart submission credential for bot '{{ stalwart_user_name }}'"
   ansible.builtin.include_role:
     name: sys-token-store

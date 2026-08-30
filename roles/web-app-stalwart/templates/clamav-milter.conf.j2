@@ -5,8 +5,9 @@ MilterSocketMode 660
 ClamdSocket unix:/tmp/clamd.sock
 OnInfected Reject
 OnClean Accept
-# Fail-open: if clamd is unavailable/still warming up (freshclam), accept the
-# message rather than deferring — a starting scanner must not block mail.
+# Exception: this fails OPEN — while clamd is unavailable or still warming up
+# (freshclam), mail is accepted unscanned rather than deferred, because a starting
+# scanner must not block delivery.
 OnFail Accept
 AddHeader Replace
 LogSyslog no

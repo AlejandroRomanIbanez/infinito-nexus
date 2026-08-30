@@ -70,8 +70,6 @@ if [[ $# -gt 0 ]]; then
 	exit 2
 fi
 
-# INFINITO_DISTRO is set by scripts/meta/env/load.sh (single SPOT,
-# defaults to debian) — no local fallback here.
 INFINITO_INVENTORY_DIR="${INFINITO_INVENTORY_DIR:-}"
 
 if [[ -z "${INFINITO_INVENTORY_DIR}" ]]; then
@@ -110,15 +108,13 @@ else
 fi
 
 echo ">>> Creating inventory for app '${apps}'"
-# RUNTIME MUST be `dev` here: the host process running this script lives
-# OUTSIDE the development compose stack, so `detect_runtime()` falls back
-# to "host". Without an explicit override the matrix-init step would bake
-# `RUNTIME=host` into host_vars and the Playwright E2E gate
-# (RUNTIME in [dev, act, github]) would never fire — kept-deploys would
-# silently skip the test stage. Mirrors apps/reinstall/selection.sh.
-# Optional caller-supplied inventory vars (JSON object) merged over the
-# defaults — e.g. the migration scenario pins {"MAIL_PROVIDER": "web-app-mailu"}
-# for its legacy leg.
+# Exception: RUNTIME MUST be pinned to `dev` here — the host process running this
+# script lives OUTSIDE the development compose stack, so `detect_runtime()` falls back
+# to "host". Without the override the matrix-init step bakes `RUNTIME=host` into
+# host_vars, the Playwright E2E gate (RUNTIME in [dev, act, github]) never fires, and
+# kept-deploys silently skip the test stage. Mirrors apps/reinstall/selection.sh.
+# INFINITO_INVENTORY_EXTRA_VARS is merged over these defaults — the migration scenario
+# pins {"MAIL_PROVIDER": "web-app-mailu"} for its legacy leg.
 INVENTORY_VARS='{"ASYNC_ENABLED": false, "RUNTIME": "dev"}'
 if [[ -n "${INFINITO_INVENTORY_EXTRA_VARS:-}" ]]; then
 	INVENTORY_VARS="$("${PYTHON}" -c \
@@ -142,7 +138,6 @@ if [[ "${INFINITO_DEBUG}" == "true" ]]; then
 	deploy_cmd+=(--debug)
 fi
 
-# NOTE: --skip-cleanup keeps cleanup routines disabled during this local test run.
 deploy_cmd+=(-- --skip-backup --skip-cleanup --limit "${INFINITO_LIMIT_HOST}")
 
 echo ">>> Deploying app '${apps}'"

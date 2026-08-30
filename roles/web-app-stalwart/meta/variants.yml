@@ -2,6 +2,17 @@
 # Matrix-deploy variant overrides for web-app-stalwart.
 # See docs/contributing/artefact/files/role/variants.md for the file format.
 
+# nocheck: sso-variant-tor — the onion is pinned OFF here, not on. `email.host` resolves to the
+# ACTIVE provider's primary canonical, so an onion-primary Stalwart hands every consumer
+# `mail.<56 chars>.onion`: MX records cannot name a .onion, the role publishes 25/465 (never
+# 587, which the non-TLS branch of the port logic selects), and
+# roles/sys-svc-mail-msmtp/templates/msmtprc.conf.j2 configures no SOCKS proxy, so the system
+# relay cannot route there at all — hlth-msmtp then fails the deploy with EX_TEMPFAIL. The flag
+# is pinned rather than left dynamic because an unrendered `{{ ... in group_names }}` reads
+# truthy to the domain-map injector while the role's own lookup still resolves clearnet, which
+# publishes onion vhost names nothing serves (hlth-webserver: 404). web-app-mailu can pin it on
+# only because it is not the active provider, so its onion never becomes `email.host`.
+
 # Two variants pin every dynamic services.yml flag on then off, so the matrix
 # exercises both the in-group_names and not-in-group_names branches (required by
 # tests/integration/roles/meta/variants/test_coverage.py). For a single-round
@@ -28,6 +39,8 @@
     prometheus:
       enabled: true
       shared: true
+    tor:
+      enabled: false
 - services:
     css:
       enabled: false
@@ -54,3 +67,5 @@
     prometheus:
       enabled: false
       shared: false
+    tor:
+      enabled: false

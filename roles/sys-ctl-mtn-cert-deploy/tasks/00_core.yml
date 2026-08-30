@@ -22,7 +22,7 @@
 
 - name: "✅ Verify deployed certificate material"
   ansible.builtin.script:
-    cmd: "{{ [ role_path, 'files/test.sh' ] | path_join }} {{ lookup('container', application_id, 'directories.instance') }}"
+    cmd: "{{ [ role_path, 'files/shell/test.sh' ] | path_join }} {{ lookup('container', application_id, 'directories.instance') }}"
   environment:
     # Exception: caller-supplied endpoints win so the mail provider can point the remote
     # check at the production server it just configured; the env var stays the fallback

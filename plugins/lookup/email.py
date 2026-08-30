@@ -23,10 +23,11 @@ RESOLUTION_ORDER = (
     "external",
     "environment",
     "domain",
+    "host",
     "tls",
     "port",
-    "host",
     "auth",
+    "auth_mechanism",
     "start_tls",
     "smtp",
     "from",
@@ -154,14 +155,18 @@ class LookupModule(LookupBase):
             external = _as_bool(resolved.get("external"))
             if not external:
                 return False
+            mail_host = str(resolved.get("host") or "").lower()
+            if mail_host.endswith(".onion"):
+                return False
             return _as_bool(variables.get("TLS_ENABLED"))
         if short_key == "port":
             external = _as_bool(resolved.get("external"))
-            tls = _as_bool(resolved.get("tls"))
             # SSO relay: port 25 is the only listener not requiring SMTP AUTH.
             if self._provider_uses_sso_relay(variables):
                 return 25
-            return 465 if (external and tls) else 25
+            if not external:
+                return 25
+            return 465 if _as_bool(resolved.get("tls")) else 587
         if short_key == "host":
             env = resolved.get("environment")
             # `environment` folds TLS_ENABLED into its "external" base, so a
@@ -182,7 +187,11 @@ class LookupModule(LookupBase):
                 return False
             if self._provider_uses_sso_relay(variables):
                 return False
-            return _as_bool(resolved.get("tls"))
+            return _as_bool(resolved.get("external"))
+        if short_key == "auth_mechanism":
+            if not _as_bool(resolved.get("auth")):
+                return "off"
+            return "on" if _as_bool(resolved.get("tls")) else "plain"
         if short_key == "start_tls":
             # SSO relay uses STARTTLS on port 25.
             return self._provider_uses_sso_relay(variables)

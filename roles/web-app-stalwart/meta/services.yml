@@ -119,7 +119,7 @@ webmail:
   pids_limit: 512
   ports:
     local:
-      http: 8089
+      http: 8090
     internal:
       http: 80
 # nocheck: dynamic-flag — role-local sub-component, always deployed with the stack
@@ -146,3 +146,10 @@ prometheus:
   bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
+# nocheck: playwright-service-flag
+# nocheck: variants-coverage — the onion is never pinned on for this role; see the sso-variant-tor note in meta/variants.yml
+# nocheck: bond-baseline — same reason: an onion-primary mail provider hands every consumer a .onion `email.host` that MX cannot name and msmtp cannot route, so no variant may pin it on
+tor:
+  bond: 0.5
+  enabled: "{{ 'svc-net-tor' in group_names }}"
+  shared: true # nocheck: dynamic-flag

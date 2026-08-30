@@ -10,6 +10,7 @@ const {
   biberUsername,
   biberPassword,
 } = require("./env");
+const { resolveTimeout } = require("./timeouts");
 
 // biber -> administrator send/receive through the Roundcube webmail UI.
 // Login is via Keycloak SSO (Roundcube XOAUTH2 -> Stalwart), mirroring
@@ -31,7 +32,7 @@ test("stalwart: biber sends to administrator, administrator receives it", async 
     const biberPage = await biberContext.newPage();
     await roundcubeSsoLogin(biberPage, biberUsername, biberPassword);
     await biberPage.goto(`${webmailBaseUrl}/?_task=mail&_action=compose`);
-    await biberPage.waitForLoadState("networkidle", { timeout: 15_000 }).catch(() => {});
+    await biberPage.waitForLoadState("networkidle", { timeout: resolveTimeout(15_000) }).catch(() => {});
     await biberPage.locator("#_to, input[name='_to']").first().fill(adminEmail);
     await biberPage.locator("#compose-subject, input[name='_subject']").first().fill(testSubject);
     await biberPage.locator("#composebody, textarea[name='_message'], [contenteditable='true']").first()
@@ -41,19 +42,19 @@ test("stalwart: biber sends to administrator, administrator receives it", async 
     // compose URL with only a toast; surface an SMTP error immediately, the
     // real proof of a successful send is receipt in the admin inbox below.
     const sendError = biberPage.locator("#messagestack .error, .toast .error, .toast-error").first();
-    if (await sendError.isVisible({ timeout: 15_000 }).catch(() => false)) {
+    if (await sendError.isVisible().catch(() => false)) {
       throw new Error(`Roundcube reported a send error: ${await sendError.textContent()}`);
     }
     await roundcubeLogout(biberPage);
 
     const adminPage = await adminContext.newPage();
     await roundcubeSsoLogin(adminPage, adminUsername, adminPassword);
-    const emailRow = await waitForEmailInMailbox(adminPage, webmailBaseUrl, testSubject, 90_000);
+    const emailRow = await waitForEmailInMailbox(adminPage, webmailBaseUrl, testSubject, resolveTimeout(90_000));
     await expect(emailRow).toBeVisible();
     await emailRow.click();
     await expect(
       adminPage.locator("#messagecontframe, #mailview-right, .message-part").first()
-    ).toBeVisible({ timeout: 15_000 });
+    ).toBeVisible({ timeout: resolveTimeout(15_000) });
     await roundcubeLogout(adminPage);
   } finally {
     await biberContext.close().catch(() => {});

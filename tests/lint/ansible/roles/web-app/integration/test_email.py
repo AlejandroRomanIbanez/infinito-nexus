@@ -12,14 +12,13 @@ from utils.roles.mapping import ROLE_FILE_META_SERVICES
 from . import PROJECT_ROOT
 
 _ROLE_PREFIX = "web-app-"
-# Email *providers* call lookup('email') as the source of truth, not as
-# dependent consumers, so they are exempt from the consumer rule. Both the
-# active provider (web-app-stalwart) and the deprecated one (web-app-mailu,
-# still in tree) qualify.
 _EMAIL_PROVIDER_ROLES = {"web-app-stalwart", "web-app-mailu"}
+"""Email *providers* call lookup('email') as the source of truth, not as
+dependent consumers, so they are exempt from the consumer rule. Both the
+active provider (web-app-stalwart) and the deprecated one (web-app-mailu,
+still in tree) qualify."""
 _EMAIL_LOOKUP_RE = re.compile(r"""lookup\(\s*['"]email['"]""")
 _SCAN_EXTENSIONS = {".yml", ".yaml", ".j2", ".py", ".sh", ".conf", ".env"}
-# The email block is at the file root (top-level `email:`).
 _EMAIL_KEY_RE = re.compile(r"^(\s*)email:\s*(#.*)?$")
 
 _SILENCER_HINT = (
