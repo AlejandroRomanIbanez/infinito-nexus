@@ -201,7 +201,7 @@ def connect(host: str, port: int, insecure: bool) -> imaplib.IMAP4_SSL:
     imap = imaplib.IMAP4_SSL(host, port, ssl_context=context, timeout=30)
     # Exception: imaplib encodes command arguments as ASCII, so a mailbox password holding any
     # non-ASCII character (e.g. '€') raises UnicodeEncodeError before the LOGIN is ever sent.
-    imap._encoding = "utf-8"  # noqa: SLF001
+    imap._encoding = "utf-8"
     return imap
 
 

@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import re
 import unittest
+from typing import Any, ClassVar
 
 from jinja2 import Environment, StrictUndefined
 
@@ -131,7 +132,9 @@ class TestMsmtprcOnionProxy(unittest.TestCase):
     Connection refused" and the hlth-msmtp unit takes the deploy down with it.
     """
 
-    ONION_EMAIL = dict(EMAIL, host="mail.abc123.onion", tls=False, port=25)
+    ONION_EMAIL: ClassVar[dict[str, Any]] = dict(
+        EMAIL, host="mail.abc123.onion", tls=False, port=25
+    )
 
     def _proxy(self, rendered: str) -> dict[str, str]:
         found = {}
