@@ -1,7 +1,7 @@
 {
   "clientId": "{{ KEYCLOAK_STALWART_WEBUI_CLIENT_ID }}",
   "name": "Stalwart WebAdmin",
-  "description": "Public SPA client for Stalwart WebAdmin (username-first, PKCE S256).",
+  "description": "Public SPA client for Stalwart WebAdmin (username-first).",
   "enabled": true,
   "surrogateAuthRequired": false,
   "alwaysDisplayInConsole": false,
@@ -19,7 +19,11 @@
   "frontchannelLogout": false,
   "protocol": "openid-connect",
   "attributes": {
-    "pkce.code.challenge.method": "S256",
+    {# Exception: `pkce.code.challenge.method` is deliberately NOT pinned. Pinning S256 makes
+       Keycloak reject the WebAdmin's authorize request outright — "Invalid parameter: code
+       challenge method is not matching the configured one" — because the SPA is compiled into
+       the Stalwart image and picks its own method, which this role cannot choose. Left unset,
+       Keycloak accepts whatever the client presents and still enforces the challenge. #}
     "post.logout.redirect.uris": "{{ lookup('tls', 'web-app-stalwart', 'url.base') | regex_replace('/+$', '') }}/*",
     "oauth2.device.authorization.grant.enabled": "false",
     "oidc.ciba.grant.enabled": "false",

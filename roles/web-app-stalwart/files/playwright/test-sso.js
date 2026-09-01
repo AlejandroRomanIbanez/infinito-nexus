@@ -1,6 +1,7 @@
 const { test, expect } = require("@playwright/test");
 
 const { performKeycloakLoginForm, safeSkipUnlessEnabled, gotoOnion } = require("./personas");
+const { isSplitRealmOidc } = require("./timeouts");
 const {
   appBaseUrl,
   canonicalDomain,
@@ -14,6 +15,7 @@ const { resolveTimeout } = require("./timeouts");
 // WebAdmin SSO: a username-first OAuth flow — enter the email, and (the mail
 // domain being bound to our OIDC directory) the webui redirects to Keycloak.
 test("stalwart: sso login, open WebAdmin, logout", async ({ page }) => {
+  test.skip(isSplitRealmOidc(), "clearnet app with an onion OIDC issuer: unreachable from one browser");
   safeSkipUnlessEnabled("sso");
 
   await gotoOnion(page, `${appBaseUrl}/`);

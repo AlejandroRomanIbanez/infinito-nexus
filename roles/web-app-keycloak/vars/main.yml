@@ -130,7 +130,10 @@ KEYCLOAK_STALWART_ENABLED: "{{ 'web-app-stalwart' in group_names }}"
 KEYCLOAK_STALWART_WEBUI_CLIENT_ID: "{{ lookup('config', 'web-app-stalwart', 'services.sso.oidc.webui_client_id') }}"
 
 KEYCLOAK_STALWART_WEBMAIL_CLIENT_ID: "{{ lookup('config', 'web-app-stalwart', 'services.sso.oidc.webmail_client_id') }}"
-KEYCLOAK_STALWART_WEBMAIL_BASE: "{{ lookup('tls', 'web-app-stalwart', 'protocols.web') ~ '://' ~ lookup('config', 'web-app-stalwart', 'domains.canonical.webmail') }}"
+# Exception: canonical_url, not a hand-built scheme ~ '://' ~ raw-canonical — the raw declaration
+# is clearnet-only, so on an onion node the client's redirectUris named a host the browser never
+# arrives from and Keycloak rejected the callback as a redirect_uri mismatch.
+KEYCLOAK_STALWART_WEBMAIL_BASE: "{{ lookup('canonical_url', 'web-app-stalwart', 'webmail') }}"
 KEYCLOAK_STALWART_WEBMAIL_REDIRECT_URIS:
   - "{{ KEYCLOAK_STALWART_WEBMAIL_BASE }}/*"
 KEYCLOAK_STALWART_WEBMAIL_WEB_ORIGINS:

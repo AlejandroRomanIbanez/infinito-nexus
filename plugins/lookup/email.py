@@ -9,6 +9,7 @@ from ansible.plugins.lookup import LookupBase
 from plugins.lookup.applications import LookupModule as ApplicationsLookup
 from plugins.lookup.domain import LookupModule as DomainLookup
 from plugins.lookup.users import LookupModule as UsersLookup
+from utils.roles.entity.name import get_entity_name
 
 SYSTEM_EMAIL_PREFIX = "SYSTEM_EMAIL_"
 
@@ -166,7 +167,17 @@ class LookupModule(LookupBase):
                 return 25
             if not external:
                 return 25
-            return 465 if _as_bool(resolved.get("tls")) else 587
+            ports = self._provider_ports(variables)
+            if _as_bool(resolved.get("tls")):
+                return ports.get("smtps", 465)
+            # Plaintext submission is the onion/no-TLS path, but a provider is
+            # only reachable there if it binds one. Stalwart's default config
+            # binds the implicit-TLS client ports plus the MX, so it advertises
+            # no `submission`; fall back to the MX port rather than a listener
+            # nothing answers on (`auth` drops with it -- an MX takes local
+            # recipients without SMTP AUTH, the same property the SSO relay
+            # above relies on).
+            return ports.get("submission") or ports.get("smtp", 25)
         if short_key == "host":
             env = resolved.get("environment")
             # `environment` folds TLS_ENABLED into its "external" base, so a
@@ -186,6 +197,14 @@ class LookupModule(LookupBase):
             if env in ("external_container", "localhost"):
                 return False
             if self._provider_uses_sso_relay(variables):
+                return False
+            # The MX listener offers no SMTP AUTH: when `port` fell back to it
+            # because the provider binds no plaintext submission, announcing
+            # AUTH aborts msmtp with EX_UNAVAILABLE before it ever sends.
+            ports = self._provider_ports(variables)
+            if not ports.get("submission") and resolved.get("port") == ports.get(
+                "smtp", 25
+            ):
                 return False
             return _as_bool(resolved.get("external"))
         if short_key == "auth_mechanism":
@@ -222,12 +241,10 @@ class LookupModule(LookupBase):
         value = variables.get("MAIL_PROVIDER")
         return str(value).strip() if value else DEFAULT_MAIL_PROVIDER
 
-    def _provider_uses_sso_relay(self, variables: dict[str, Any]) -> bool:
-        """True when the active provider self-declares SSO relay (via
-        ``services.sso.oidc.submission_via_relay``) and Keycloak is deployed."""
-        group_names = variables.get("group_names") or []
-        if "web-app-keycloak" not in group_names:
-            return False
+    def _provider_services(self, variables: dict[str, Any]) -> dict[str, Any]:
+        """The active provider's ``services`` block, or ``{}`` when it cannot be
+        resolved. Both the relay probe and the port probe read the provider's
+        own self-declaration, so the applications lookup is done once here."""
         apps = ApplicationsLookup()
         apps._templar = getattr(self, "_templar", None)
         forwarded = {
@@ -240,10 +257,43 @@ class LookupModule(LookupBase):
                 **forwarded,
             )[0]
         except AnsibleError:
-            return False
+            return {}
         if not isinstance(entry, dict):
-            return False
+            return {}
         services = entry.get("services") or {}
+        return services if isinstance(services, dict) else {}
+
+    def _provider_ports(self, variables: dict[str, Any]) -> dict[str, int]:
+        """The SMTP ports the active provider publishes, keyed by protocol.
+
+        Read from the provider's own ``services.<entity>.ports.public`` rather
+        than assumed, so a provider that binds no plaintext ``submission``
+        (Stalwart) resolves differently from one that does (Mailu) without
+        either being named here.
+        """
+        services = self._provider_services(variables)
+        entity = get_entity_name(self._mail_provider(variables))
+        entry = services.get(entity) or {}
+        if not isinstance(entry, dict):
+            return {}
+        ports = (entry.get("ports") or {}).get("public") or {}
+        if not isinstance(ports, dict):
+            return {}
+        out: dict[str, int] = {}
+        for name, value in ports.items():
+            try:
+                out[str(name)] = int(value)
+            except (TypeError, ValueError):
+                continue
+        return out
+
+    def _provider_uses_sso_relay(self, variables: dict[str, Any]) -> bool:
+        """True when the active provider self-declares SSO relay (via
+        ``services.sso.oidc.submission_via_relay``) and Keycloak is deployed."""
+        group_names = variables.get("group_names") or []
+        if "web-app-keycloak" not in group_names:
+            return False
+        services = self._provider_services(variables)
         sso = services.get("sso") or {} if isinstance(services, dict) else {}
         oidc = sso.get("oidc") or {} if isinstance(sso, dict) else {}
         if not isinstance(oidc, dict):

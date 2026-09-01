@@ -28,6 +28,12 @@ STALWART_HOSTNAME_DNS_ZONE: "{{ STALWART_HOSTNAME | to_zone }}"
 # create the container; the lookup falls back to the short entity name in that case.
 container_hostname: "{{ lookup('container_hostname', application_id) }}"
 
+# Exception: curl refuses to resolve a .onion name at all (RFC 7686), so the extra_hosts pin
+# that fixes the other back-channel callers cannot help it — an onion issuer must be dialled
+# through Tor's SOCKS listener instead. Empty on clearnet, where `--proxy ''` is a curl no-op.
+STALWART_OIDC_ONION_ISSUER: "{{ lookup('tls', 'web-app-keycloak', 'domain').endswith('.onion') }}"
+STALWART_OIDC_SOCKS_PROXY: "{{ lookup('tor_socks_proxy') if STALWART_OIDC_ONION_ISSUER | bool else '' }}"
+
 STALWART_CONTAINER: "{{ lookup('config', application_id, 'services.stalwart.name') }}"
 
 STALWART_ANTIVIRUS_ENABLED: "{{ lookup('config', application_id, 'services.clamav.enabled') | bool }}"
@@ -37,7 +43,12 @@ STALWART_CLAMAV_MILTER_TIMEOUT_CONNECT_MS: 5000
 STALWART_CLAMAV_MILTER_TIMEOUT_COMMAND_MS: 5000
 STALWART_CLAMAV_MILTER_TIMEOUT_DATA_MS: 15000
 STALWART_CLAMAV_MILTER_CONF: "{{ [ STALWART_CONFIG_DIR, 'clamav-milter.conf' ] | path_join }}"
-STALWART_WEBMAIL_DOMAIN: "{{ lookup('config', application_id, 'domains.canonical.webmail') }}"
+# Exception: resolved through canonical_url, NOT `config domains.canonical.webmail` — the raw
+# declaration renders `webmail.<DOMAIN_PRIMARY>` and never sees the onion injection, so on an
+# onion node the vhost was created under a clearnet name while the domain map (and every probe)
+# expected `webmail.<onion>`, which then answered 404.
+STALWART_WEBMAIL_BASE_URL: "{{ lookup('canonical_url', application_id, 'webmail') }}"
+STALWART_WEBMAIL_DOMAIN: "{{ STALWART_WEBMAIL_BASE_URL | regex_replace('^https?://', '') }}"
 STALWART_WEBMAIL_HTTP_PORT: "{{ lookup('config', application_id, 'services.webmail.ports.local.http') }}"
 STALWART_WEBMAIL_CONFIG_DIR: "{{ [ STALWART_VOLUMES_DIR, 'webmail' ] | path_join }}"
 STALWART_WEBMAIL_OAUTH_CONFIG: "{{ [ STALWART_WEBMAIL_CONFIG_DIR, 'oauth.inc.php' ] | path_join }}"

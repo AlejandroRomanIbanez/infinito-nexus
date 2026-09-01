@@ -10,13 +10,14 @@ const {
   biberUsername,
   biberPassword,
 } = require("./env");
-const { resolveTimeout } = require("./timeouts");
+const { resolveTimeout, isSplitRealmOidc } = require("./timeouts");
 
 // biber -> administrator send/receive through the Roundcube webmail UI.
 // Login is via Keycloak SSO (Roundcube XOAUTH2 -> Stalwart), mirroring
 // web-app-mailu. biber and the administrator are separate people: isolated
 // browser contexts.
 test("stalwart: biber sends to administrator, administrator receives it", async ({ browser }) => {
+  test.skip(isSplitRealmOidc(), "clearnet app with an onion OIDC issuer: unreachable from one browser");
   safeSkipUnlessEnabled("sso");
   // Exception: the env template always renders these — a missing value is a
   // rendering regression and MUST fail, not silently skip the flagship scenario.
@@ -25,8 +26,17 @@ test("stalwart: biber sends to administrator, administrator receives it", async 
   expect(adminPassword, "ADMIN_PASSWORD must be set").toBeTruthy();
 
   const testSubject = `Playwright stalwart ${Date.now()}`;
-  const biberContext = await browser.newContext({ ignoreHTTPSErrors: true });
-  const adminContext = await browser.newContext({ ignoreHTTPSErrors: true });
+  // Exception: the proxy has to be repeated here. playwright.config.js sets `use.proxy`,
+  // which reaches the default `page` fixture only — a context built by hand inherits none
+  // of `use`, so on an onion node these two personas had no route to the .onion and every
+  // navigation sat on a blank page until the step timed out.
+  const proxyServer = process.env.PLAYWRIGHT_PROXY;
+  const contextOptions = {
+    ignoreHTTPSErrors: true,
+    ...(proxyServer ? { proxy: { server: proxyServer } } : {}),
+  };
+  const biberContext = await browser.newContext(contextOptions);
+  const adminContext = await browser.newContext(contextOptions);
 
   try {
     const biberPage = await biberContext.newPage();

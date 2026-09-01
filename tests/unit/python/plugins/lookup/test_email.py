@@ -309,6 +309,68 @@ class TestEmailLookup(unittest.TestCase):
         self.assertTrue(result["auth"])
         self.assertFalse(result["start_tls"])
 
+    def test_a_provider_without_plaintext_submission_falls_back_to_its_mx(
+        self,
+    ) -> None:
+        """Stalwart's default config binds the implicit-TLS client ports and the
+        MX, never 587, so the onion path (which drops TLS) has no submission
+        listener to reach. The port follows what the provider declares, and AUTH
+        drops with it: an MX offers none, and announcing it aborts msmtp with
+        EX_UNAVAILABLE before a message is ever sent."""
+        _write_role_config(
+            self._tmp,
+            "web-app-mailprov",
+            {"mailprov": {"ports": {"public": {"smtp": 25, "smtps": 465}}}},
+        )
+        variables = {
+            "MAIL_PROVIDER": "web-app-mailprov",
+            "group_names": ["web-app-mailprov"],
+            "groups": {"web-app-mailprov": ["host1"]},
+            "SYSTEM_EMAIL_HOST": "mail.x.onion",
+            "TLS_ENABLED": True,
+            "DOMAIN_PRIMARY": "x.onion",
+            "inventory_hostname": "host1",
+        }
+        result = self.lookup.run(
+            [], variables=variables, roles_dir=str(self._tmp / "roles")
+        )[0]
+        self.assertFalse(result["tls"])
+        self.assertEqual(result["port"], 25)
+        self.assertFalse(result["auth"])
+        self.assertEqual(result["auth_mechanism"], "off")
+
+    def test_a_provider_declaring_submission_keeps_the_authenticated_path(
+        self,
+    ) -> None:
+        """Mailu binds 587, so the same onion target stays on plaintext
+        submission with AUTH PLAIN. The MX fallback above must not reach a
+        provider that declares a submission listener."""
+        _write_role_config(
+            self._tmp,
+            "web-app-mailprov",
+            {
+                "mailprov": {
+                    "ports": {"public": {"smtp": 25, "smtps": 465, "submission": 587}}
+                }
+            },
+        )
+        variables = {
+            "MAIL_PROVIDER": "web-app-mailprov",
+            "group_names": ["web-app-mailprov"],
+            "groups": {"web-app-mailprov": ["host1"]},
+            "SYSTEM_EMAIL_HOST": "mail.x.onion",
+            "TLS_ENABLED": True,
+            "DOMAIN_PRIMARY": "x.onion",
+            "inventory_hostname": "host1",
+        }
+        result = self.lookup.run(
+            [], variables=variables, roles_dir=str(self._tmp / "roles")
+        )[0]
+        self.assertFalse(result["tls"])
+        self.assertEqual(result["port"], 587)
+        self.assertTrue(result["auth"])
+        self.assertEqual(result["auth_mechanism"], "plain")
+
     def test_sso_relay_active_with_untemplated_enabled_gate(self) -> None:
         # The role default gates sso.enabled on group_names (raw Jinja here);
         # the guard must not treat the untemplated string as false.

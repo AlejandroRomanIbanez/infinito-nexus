@@ -2,7 +2,7 @@ const { test, expect } = require("@playwright/test");
 
 const { appBaseUrl, canonicalDomain } = require("./env");
 const { gotoOnion } = require("./personas");
-const { resolveTimeout } = require("./timeouts");
+const { resolveTimeout, isOnionTarget } = require("./timeouts");
 
 // Baseline reachability: WebAdmin TLS + DAV auto-discovery through the proxy.
 test("stalwart: WebAdmin is served under canonical domain with TLS", async ({ page }) => {
@@ -10,7 +10,11 @@ test("stalwart: WebAdmin is served under canonical domain with TLS", async ({ pa
   expect(response, "Expected Stalwart response").toBeTruthy();
   expect(response.status(), "Expected status < 400").toBeLessThan(400);
   expect(response.url().includes(canonicalDomain), `Expected canonical domain "${canonicalDomain}"`).toBe(true);
-  expect(response.headers()["strict-transport-security"], "Stalwart must emit HSTS").toBeTruthy();
+  // Exception: an onion vhost is plain HTTP — Tor carries the encryption and no authority
+  // issues a certificate for a v3 address — so HSTS is a clearnet-only guarantee.
+  if (!isOnionTarget()) {
+    expect(response.headers()["strict-transport-security"], "Stalwart must emit HSTS").toBeTruthy();
+  }
 });
 
 test("stalwart: CalDAV/CardDAV discovery is reachable", async ({ request }) => {

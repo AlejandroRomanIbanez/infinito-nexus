@@ -148,7 +148,7 @@ prometheus:
   shared: "{{ 'web-app-prometheus' in group_names }}"
 # nocheck: playwright-service-flag
 # nocheck: variants-coverage — the onion is never pinned on for this role; see the sso-variant-tor note in meta/variants.yml
-# nocheck: bond-baseline — same reason: an onion-primary mail provider hands every consumer a .onion `email.host` that MX cannot name and msmtp cannot route, so no variant may pin it on
+# nocheck: bond-baseline — same reason: while the hidden service forwards no mail port, an onion-primary mail provider hands every consumer an `email.host` nothing answers on
 tor:
   bond: 0.5
   enabled: "{{ 'svc-net-tor' in group_names }}"
