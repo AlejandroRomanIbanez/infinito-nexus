@@ -58,7 +58,7 @@ synapse:
 element:
   healthcheck:
     flavor: wget
-  version: v1.12.26
+  version: v1.12.27
   image: vectorim/element-web
   name: matrix-element
   ports:
