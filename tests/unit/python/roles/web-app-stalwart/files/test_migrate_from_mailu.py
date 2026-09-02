@@ -12,7 +12,6 @@ def _load_module():
     spec = importlib.util.spec_from_file_location("migrate_from_mailu", str(path))
     mod = importlib.util.module_from_spec(spec)
     assert spec and spec.loader
-    # Exception: dataclasses resolve their module via sys.modules — register before exec.
     sys.modules["migrate_from_mailu"] = mod
     spec.loader.exec_module(mod)
     return mod

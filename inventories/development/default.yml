@@ -56,8 +56,6 @@ users:
 
     uid: 10001
     gid: 10001
-    # Exception: the mail personas exchange real messages (Playwright webmail flows, the
-    # Stalwart migration e2e), which a role-derived 'identity'-only account cannot receive.
     accounts: ["mailbox", "identity"]
     roles: []
     tokens: {}

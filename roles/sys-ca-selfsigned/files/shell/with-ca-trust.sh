@@ -6,8 +6,6 @@ set -eu
 
 VERBOSE="${VERBOSE:-1}"
 
-# Exception: SPOT — system CA bundle candidates, in preference order
-# (Debian/Ubuntu, RHEL/Fedora, Alpine/openssl default).
 SYS_CA_BUNDLE_CANDIDATES="/etc/ssl/certs/ca-certificates.crt /etc/pki/tls/certs/ca-bundle.crt /etc/ssl/cert.pem"
 
 log() {
@@ -40,9 +38,6 @@ log "Sanitized trust name: $name"
 
 installed=0
 
-# Exception: env-based trust fallback builds a COMBINED bundle (system CAs +
-# our CA) so the env vars don't break public-HTTPS validation; falls back to
-# our CA only if no system bundle is found.
 ca_bundle="$CA_TRUST_CERT"
 combined="/tmp/with-ca-trust-combined.crt"
 # shellcheck disable=SC2086 # intentional word-splitting; paths contain no spaces
@@ -57,7 +52,6 @@ done
 export SSL_CERT_FILE="$ca_bundle"
 export REQUESTS_CA_BUNDLE="$ca_bundle"
 export CURL_CA_BUNDLE="$ca_bundle"
-# Exception: Node already ships public roots; it only needs our CA appended.
 export NODE_EXTRA_CA_CERTS="$CA_TRUST_CERT"
 
 if [ -n "${CA_TRUST_CERT_EXTRA:-}" ] && [ -r "${CA_TRUST_CERT_EXTRA}" ]; then

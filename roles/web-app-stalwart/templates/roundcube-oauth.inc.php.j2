@@ -6,12 +6,6 @@
 // Rendered even without SSO (the bind source must exist); the body self-gates.
 {% if STALWART_SSO_ENABLED | bool %}
 
-// Exception: forced only when the vhost really is https. The proxy speaks HTTP to this
-// container, so without this Roundcube builds the OAuth redirect_uri as http:// and Keycloak
-// rejects it -- but an onion vhost IS plain HTTP (Tor carries the encryption, and no authority
-// issues a certificate for a v3 address), where forcing it sends an https:// redirect_uri that
-// was never registered: "Invalid parameter: redirect_uri". Derived from the same canonical the
-// Keycloak client's redirectUris are built from, so the two cannot drift apart.
 {% if STALWART_WEBMAIL_BASE_URL.startswith('https://') %}
 $_SERVER['HTTPS'] = 'on';
 {% endif %}
@@ -19,7 +13,7 @@ $_SERVER['HTTPS'] = 'on';
 $config['oauth_provider'] = 'generic';
 $config['oauth_provider_name'] = '{{ OIDC.BUTTON_TEXT }}';
 // Minimal-scope client so the access token stays under Stalwart's 4096-byte
-// XOAUTH2 SASL line limit. See roles/web-app-keycloak clients/stalwart_webmail.json.j2.
+// XOAUTH2 SASL line limit. See templates/keycloak/clients.json.j2.
 $config['oauth_client_id'] = '{{ STALWART_WEBMAIL_OIDC_CLIENT_ID }}';
 $config['oauth_auth_uri'] = '{{ OIDC.CLIENT.AUTHORIZE_URL }}';
 $config['oauth_token_uri'] = '{{ OIDC.CLIENT.TOKEN_URL }}';
@@ -27,12 +21,6 @@ $config['oauth_identity_uri'] = '{{ OIDC.CLIENT.USER_INFO_URL }}';
 $config['oauth_logout_uri'] = '{{ OIDC.CLIENT.LOGOUT_URL }}';
 $config['oauth_scope'] = 'openid email profile';
 {% if STALWART_OIDC_SOCKS_PROXY %}
-// Exception: the OAuth back-channel (code->token, JWKS, userinfo) is a server-side cURL call,
-// and cURL hard-refuses to resolve a .onion name (RFC 7686) whatever /etc/hosts says -- the
-// extra_hosts SSO pin fixes the callers that honour /etc/hosts, but cannot help this one. Only
-// socks5h gets it through, by handing the name to Tor to resolve instead of resolving locally.
-// Merged into every Guzzle client (rcube::get_http_client), and the OAuth call sets no `proxy`
-// of its own, so it survives the union. Absent on clearnet, where the gate renders empty.
 $config['http_client'] = ['proxy' => '{{ STALWART_OIDC_SOCKS_PROXY }}'];
 {% endif %}
 $config['oauth_auth_parameters'] = [];

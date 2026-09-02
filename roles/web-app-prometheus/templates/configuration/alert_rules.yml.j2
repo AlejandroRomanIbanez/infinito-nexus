@@ -15,9 +15,6 @@ groups:
             {{ '{{' }} $labels.instance {{ '}}' }} has been unreachable for more than 2 minutes.
             Check the application container and upstream connectivity.
 
-      # Exception: no cert exporter is wired up on purpose — the https:// blackbox
-      # probes above already export probe_ssl_earliest_cert_expiry, so adding one
-      # would double-scrape the same timestamp.
       - alert: TlsCertificateExpiringSoon
         expr: (probe_ssl_earliest_cert_expiry{job="blackbox-healthz"} - time()) < 14 * 86400
         for: 30m

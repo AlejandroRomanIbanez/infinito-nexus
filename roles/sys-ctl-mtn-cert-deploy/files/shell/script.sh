@@ -39,8 +39,6 @@ fi
 echo "Copying certificates from: $ssl_cert_source_dir -> $docker_compose_cert_directory"
 cp -RvL "${ssl_cert_source_dir}/"* "$docker_compose_cert_directory"
 
-# Exception: Mailu expects key.pem/cert.pem — map from the LE names
-# (privkey.pem/fullchain.pem) when present, else pass key/cert through.
 if [ -f "${ssl_cert_source_dir}/privkey.pem" ] && [ -f "${ssl_cert_source_dir}/fullchain.pem" ]; then
   cp -v "${ssl_cert_source_dir}/privkey.pem"   "${docker_compose_cert_directory}/key.pem"
   cp -v "${ssl_cert_source_dir}/fullchain.pem" "${docker_compose_cert_directory}/cert.pem"
@@ -57,16 +55,8 @@ chmod a+r -v "${docker_compose_cert_directory}/"* || exit 1
 
 cd "$docker_compose_instance_directory" || exit 1
 
-# Exception: "--" stops wrapper arg parsing, so compose flags like
-# "--services" pass through to the correct -p/-f/--env-file stack.
 services="$(sh -c "$compose_cmd -- ps --services")"
 
-# Rationale: restart every service that consumes the deployed certificate
-# material, i.e. has the cert directory bind-mounted. The TLS terminator
-# differs per provider (Mailu: the nginx front container; Stalwart: the mail
-# server itself), so selection MUST go by consumption, not by which binary a
-# container ships — a service that keeps running with the old cert serves it
-# until expiry.
 restart_services=""
 
 for service in $services; do

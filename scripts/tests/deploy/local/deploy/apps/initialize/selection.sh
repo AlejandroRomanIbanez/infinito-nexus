@@ -108,13 +108,6 @@ else
 fi
 
 echo ">>> Creating inventory for app '${apps}'"
-# Exception: RUNTIME MUST be pinned to `dev` here — the host process running this
-# script lives OUTSIDE the development compose stack, so `detect_runtime()` falls back
-# to "host". Without the override the matrix-init step bakes `RUNTIME=host` into
-# host_vars, the Playwright E2E gate (RUNTIME in [dev, act, github]) never fires, and
-# kept-deploys silently skip the test stage. Mirrors apps/reinstall/selection.sh.
-# INFINITO_INVENTORY_EXTRA_VARS is merged over these defaults — the migration scenario
-# pins {"MAIL_PROVIDER": "web-app-mailu"} for its legacy leg.
 INVENTORY_VARS='{"ASYNC_ENABLED": false, "RUNTIME": "dev"}'
 if [[ -n "${INFINITO_INVENTORY_EXTRA_VARS:-}" ]]; then
 	INVENTORY_VARS="$("${PYTHON}" -c \

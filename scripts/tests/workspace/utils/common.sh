@@ -53,8 +53,6 @@ load_repo_env() {
 load_repo_env
 ensure_git_safe_directory
 
-# Exception: this re-reads the env files by hand because bare CI containers lack
-# python3, so load_repo_env above may have silently done nothing.
 if [[ -z "${INFINITO_DOMAIN:-}" ]]; then
 	for _env_file in "${REPO_ROOT}/.env" "${REPO_ROOT}/default.env"; do
 		if [[ -f "${_env_file}" ]]; then
@@ -67,9 +65,6 @@ fi
 DASHBOARD_URL="https://dashboard.${INFINITO_DOMAIN:?Missing INFINITO_DOMAIN in .env and default.env}"
 MATOMO_URL="https://matomo.${INFINITO_DOMAIN}"
 
-# Exception: this expansion looks dead but is the interface contract — the constants are
-# consumed by sibling scripts that source this file, and `: "${VAR}"` under `set -u`
-# fails here rather than in whichever script forgot to define one.
 : "${DASHBOARD_APP}" "${MATOMO_APP}" "${MARIADB_APP}" "${POSTGRES_APP}" "${DASHBOARD_URL}" "${MATOMO_URL}"
 
 # Print the generated inventory and host_vars for debugging and verification.

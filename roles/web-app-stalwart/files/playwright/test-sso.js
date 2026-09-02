@@ -41,8 +41,6 @@ test("stalwart: sso login, open WebAdmin, logout", async ({ page }) => {
     page.locator("nav, .sidebar, [class*='menu'], h1, h2").filter({ hasText: /dashboard|domains|account|settings|directory/i }).first()
   ).toBeVisible({ timeout: resolveTimeout(30_000) });
 
-  // Exception: the WebAdmin SPA keeps logout behind its account menu with no
-  // stable direct control; hard logout coverage lives in the Roundcube scenarios.
   const logout = page.locator("a[href*='logout'], button:has-text('Logout')").or(page.getByRole("link", { name: /logout/i }));
   if (await logout.first().isVisible().catch(() => false)) {
     await logout.first().click();

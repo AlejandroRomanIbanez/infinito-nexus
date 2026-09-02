@@ -45,8 +45,6 @@ class TestDiffAffectedRoles(unittest.TestCase):
             check=True,
         )
         subprocess.run(["git", "config", "user.name", "ci"], cwd=repo, check=True)
-        # Exception: hermetic fixture — an operator's global commit.gpgsign=true
-        # would make these scratch commits launch pinentry and fail off-terminal.
         subprocess.run(
             ["git", "config", "commit.gpgsign", "false"], cwd=repo, check=True
         )

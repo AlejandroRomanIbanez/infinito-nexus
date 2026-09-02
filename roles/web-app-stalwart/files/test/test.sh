@@ -28,6 +28,8 @@ SUBJ_B="infinito-mig-B-${RUN_ID}"
 SUBJ_C="infinito-mig-C-${RUN_ID}"
 SUBJ_D="infinito-mig-D-${RUN_ID}"
 
+SCRIPT_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+
 WORKDIR="$(mktemp -d)"
 cleanup() { rm -rf "${WORKDIR}"; }
 trap cleanup EXIT
@@ -47,9 +49,8 @@ compose_mail() {
 send_smtp() {
 	local host="$1" from="$2" rcpt="$3" subject="$4" attempt
 	for attempt in 1 2 3 4 5 6; do
-		if curl -sS --connect-timeout 10 --max-time 60 --url "smtp://${host}:25" \
-			--mail-from "${from}" --mail-rcpt "${rcpt}" \
-			--upload-file "${WORKDIR}/mail.eml"; then
+		if "${PYTHON_BIN}" "${SCRIPT_DIR}/mail_probe.py" send \
+			"${host}" "${from}" "${rcpt}" "${WORKDIR}/mail.eml"; then
 			echo "sent: ${subject} (${from} -> ${rcpt} via ${host})"
 			return 0
 		fi
@@ -74,20 +75,13 @@ wait_stored_in_maildir() {
 }
 
 wait_in_imap() {
-	local user="$1" password="$2" subject="$3" attempt mailbox
-	# Exception: the .test domain publishes no mail-auth DNS, so Stalwart files authenticated
-	# mail into "Junk Mail" (its \Junk folder) rather than INBOX — both must be searched.
+	local user="$1" password="$2" subject="$3" attempt
 	for attempt in $(seq 1 30); do
-		for mailbox in INBOX Junk%20Mail; do
-			if curl -sS --connect-timeout 10 --max-time 60 --insecure \
-				--url "imaps://127.0.0.1:993/${mailbox}" \
-				--user "${user}:${password}" \
-				--request "SEARCH SUBJECT \"${subject}\"" 2>/dev/null |
-				grep -qE 'SEARCH [0-9]'; then
-				echo "found: ${subject} in ${user}'s ${mailbox}"
-				return 0
-			fi
-		done
+		if "${PYTHON_BIN}" "${SCRIPT_DIR}/mail_probe.py" find \
+			127.0.0.1 "${user}" "${password}" "${subject}"; then
+			echo "found: ${subject} in ${user}'s mailbox"
+			return 0
+		fi
 		sleep 5
 	done
 	echo "FAIL: ${subject} not found over IMAP for ${user}" >&2
@@ -99,8 +93,6 @@ wait_in_imap() {
 # shape) that tasks/12_import_mailu.yml runs on a real cutover.
 run_migration() {
 	local maildir="$1"
-	# Exception: built by python, not printf — inventory passwords legitimately contain
-	# quotes and backslashes, which would corrupt hand-rolled JSON.
 	"${PYTHON_BIN}" -c \
 		'import json,sys; json.dump({sys.argv[1]: sys.argv[2], sys.argv[3]: sys.argv[4]}, open(sys.argv[5], "w"))' \
 		"${ADMIN_EMAIL}" "${ADMIN_IMAP_PASSWORD}" \
@@ -118,9 +110,6 @@ run_migration() {
 
 echo "=== [1/4] Deliver mail into the legacy Mailu (A: biber->admin, B: admin's reply) ==="
 MAILU_SMTP_IP="$(container inspect --type container -f '{{ range .NetworkSettings.Networks }}{{ .IPAddress }} {{ end }}' "${MAILU_SMTP_CONTAINER}" | awk '{print $1}')"
-# Exception: a stopped container still inspects, but docker renders its address as the literal
-# "invalid IP" — without this guard the run spends six SMTP retries against a host named
-# "invalid" and reports a delivery failure instead of the stack being down.
 case "${MAILU_SMTP_IP}" in
 [0-9]*.[0-9]*.[0-9]*.[0-9]*) ;;
 *)

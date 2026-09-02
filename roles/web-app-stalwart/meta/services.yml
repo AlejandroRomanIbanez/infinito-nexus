@@ -8,16 +8,10 @@ sso:
   oidc:
     email_by_username: true
     enable_user_creation: true
-    # Exception: under SSO, Stalwart disables password submission, so the
-    # no-reply bot relays without SMTP AUTH (see plugins/lookup/email.py).
-    # Mailu omits this.
     submission_via_relay: true
-    # Exception: Keycloak client ids, self-declared here as the one SPOT —
-    # web-app-keycloak provisions the clients and this role's Roundcube config
-    # consumes them. webui_client_id is fixed by upstream (the WebAdmin SPA
-    # compiles it in).
-    webui_client_id: stalwart-webui
-    webmail_client_id: stalwart-webmail
+    clients:
+      webui: stalwart-webui
+      webmail: stalwart-webmail
 logout:
   bond: 1
   enabled: "{{ 'web-svc-logout' in group_names }}"
@@ -40,6 +34,7 @@ stalwart:
   bond: 1
   enabled: true
   shared: true
+  exposed: public
   provides: email
   modes:
     compose:
@@ -54,14 +49,11 @@ stalwart:
   name: stalwart
   backup:
     project_hard_restart: true
-  # Exception: manual cutover switch — imports the legacy Mailu maildirs over IMAP once
-  # Mailu runs as legacy and Stalwart is the active provider; see README "Migrating from Mailu".
   migration:
     import_mailu: false
   # nocheck: min-storage-headroom  Reason: the mail store (maildir blobs, FTS index, queue) lives in this service's volumes and dwarfs the image transfer size
   min_storage: 20GB
   domain: "{{ lookup('email').domain }}"
-  # Exception: no 587/143/110 — Stalwart's default config binds only the implicit-TLS client ports.
   ports:
     local:
       http: 8081
@@ -85,7 +77,6 @@ stalwart:
   mem_reservation: 512m
   mem_limit: 2g
   pids_limit: 1024
-# Exception: literal false — only the migration variant pulls the legacy provider in (variants.yml round 0).
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — legacy-provider pull for the migration scenario, no UI surface
 mailu:
@@ -97,9 +88,7 @@ mailu:
 postgres:
   bond: 1
   enabled: true # nocheck: dynamic-flag
-  # Exception: embedded in swarm — mailu pins its embedded redis for the same manager-VIP reason.
   shared: "{{ ('svc-db-postgres' in group_names) and (DEPLOYMENT_MODE == 'compose') }}"
-  # Exception: plain postgres, not the postgis default — baudolo's substring detection needs it for sql-dump backups.
   image: postgres
   version: "17"
   cpus: "0.8"
@@ -113,9 +102,6 @@ webmail:
   enabled: true
   shared: true
   image: roundcube/roundcubemail
-  # Exception: the image ships no HEALTHCHECK, and curl is the only probe tool it carries (no
-  # wget, no nc) -- so this flavor and no other. `-f` passes the 302 that oauth_login_redirect
-  # returns from `/` under SSO while still failing a 5xx.
   healthcheck:
     flavor: curl
   version: "1.7.2-apache"
@@ -138,7 +124,6 @@ clamav:
   ports:
     internal:
       milter: 7357
-  # Exception: elevated memory — clamd holds the full signature DB in memory.
   cpus: "1.0"
   mem_reservation: 1g
   mem_limit: 3g

@@ -92,9 +92,6 @@ EOF
 	sudo systemctl enable dnsmasq --now
 	sudo systemctl restart dnsmasq
 
-	# Exception: `resolvectl dns lo ...` is NOT used here — systemd-resolved rejects
-	# per-link DNS on loopback, so the zone is routed to dnsmasq via a global drop-in
-	# instead; the per-link form fails silently and leaves the zone unresolved.
 	if systemctl is-active --quiet systemd-resolved 2>/dev/null; then
 		echo ">>> Routing ${DNS_DOMAIN} to dnsmasq via systemd-resolved drop-in: ${DNS_RESOLVED_DROPIN}"
 		sudo mkdir -p "$(dirname "${DNS_RESOLVED_DROPIN}")"

@@ -1,8 +1,5 @@
 ---
 status_codes:
-  # Exception: 302 is a healthy response here — both canonicals redirect unauthenticated
-  # HEADs, the WebAdmin SPA to /account/login and Roundcube straight to Keycloak
-  # (oauth_login_redirect), so without it every probe reads as down.
   default:
     - 302
     - 301

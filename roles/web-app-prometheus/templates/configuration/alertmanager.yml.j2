@@ -5,8 +5,6 @@
 global:
   smtp_smarthost: "{{ email.host }}:{{ email.port }}"
   smtp_from: "{{ email['from'] }}"
-  # Exception: the EHLO identity is pinned to the mail domain — strict servers
-  # (e.g. Stalwart) reject the bare container hostname on port 25 (rejectNonFqdn).
   smtp_hello: "{{ email.domain }}"
   smtp_require_tls: {{ email.tls | bool | lower }}
 {% if email.auth | bool %}

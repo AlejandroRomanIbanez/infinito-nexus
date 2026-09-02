@@ -106,7 +106,6 @@
 - name: "🧮 TLS | (self_signed) compute wanted/existing SAN sets"
   ansible.builtin.set_fact:
     _ss_wanted_sans: "{{ _ss_san | map('lower') | list | unique | sort }}"
-    # Danger: \\s would put a literal 's' in the class and truncate every SAN.
     _ss_existing_sans: >-
       {{
         (

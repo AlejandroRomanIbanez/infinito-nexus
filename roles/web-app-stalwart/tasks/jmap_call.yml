@@ -10,8 +10,6 @@
     {{ STALWART_JMAP_URL }}
   register: stalwart_jmap_raw
   changed_when: false
-  # Rationale: retried — the container may be mid-(re)start (e.g.
-  # force-recreate or a swarm task reschedule) during provisioning.
   retries: 12
   delay: 5
   until: stalwart_jmap_raw.rc == 0

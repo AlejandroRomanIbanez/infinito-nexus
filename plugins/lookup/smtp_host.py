@@ -80,10 +80,6 @@ class LookupModule(LookupBase):
             raise AnsibleError("smtp_host: the term must be the email mapping.")
         variables = variables or getattr(self._templar, "available_variables", {}) or {}
         in_container = _to_bool(kwargs.get("in_container", False), strict=False)
-        # Exception: these two reach a lookup as raw group_vars templates, and an unrendered
-        # `{{ ... }}` string is neither true nor a known mode — the rig would silently keep the
-        # configured relay domain (a .onion on an onion node, which msmtp cannot route) instead
-        # of the loopback this resolver exists to hand back.
         templar = getattr(self, "_templar", None)
         variables = dict(variables)
         for key in ("DOCKER_IN_CONTAINER", "DEPLOYMENT_MODE"):

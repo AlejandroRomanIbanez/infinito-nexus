@@ -1,8 +1,6 @@
 ---
 # include-gated: when: STALWART_IMPORT_MAILU and 'web-app-mailu' in group_names
 #                and STALWART_ACTIVE_PROVIDER and DEPLOYMENT_MODE == 'compose'
-# Exception: the volume couples to web-app-mailu by design — this task imports that one
-# legacy provider's Dovecot maildirs and dies with it (lifecycle: maintenance → eol).
 - name: "🔍 Resolve the legacy Mailu maildir volume mountpoint"
   ansible.builtin.command: >-
     container volume inspect --format "{{ '{{' }} .Mountpoint {{ '}}' }}"
@@ -28,8 +26,6 @@
     mode: "0600"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-# Exception: --imap-insecure is loopback-only — the published IMAPS port on this host; the
-# dev/CI cert is self-signed and a hostname match is meaningless on 127.0.0.1.
 - name: "📥 Import the Mailu maildirs into Stalwart over IMAP"
   ansible.builtin.script:
     cmd: >-

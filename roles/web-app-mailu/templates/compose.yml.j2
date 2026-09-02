@@ -8,9 +8,6 @@
     {% if MAILU_ACTIVE_PROVIDER | bool %}
     {{ lookup('container_ports_mailu') | indent(4) }}
     {% else %}
-    {# Exception: only the active MAIL_PROVIDER owns the public mail ports — a legacy
-       instance keeps just its reverse-proxied http port, or the two providers
-       collide on 25/465/993 and neither binds. #}
     {{ lookup('container_ports', ['mailu', 'http', DOCKER_BIND_HOST]) | indent(4) }}
     {% endif %}
     {{ lookup('container_volumes', service_name) | indent(4) }}

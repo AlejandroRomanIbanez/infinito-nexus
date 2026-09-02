@@ -15,7 +15,6 @@
   include_tasks: dedicated_postgres.yml
   when: _database_type == 'postgres'
 
-# Exception: without this row baudolo silently falls back to a live-file snapshot and the restore replays a torn data dir.
 - name: "🔧 For '{{ application_id }}/{{ _database_consumer_id }}': Seed the backup entry"
   include_tasks: utils/seed_backup.yml
   when:

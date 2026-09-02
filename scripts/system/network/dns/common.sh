@@ -100,7 +100,6 @@ dns_read_hosts_fallback_entries() {
 dns_rewrite_hosts_file() {
 	local tmp="$1"
 
-	# Exception: replacing the inode breaks a bind-mounted hosts file (/etc/hosts in CI containers) — write in place.
 	if [[ -e "${DNS_HOSTS_FILE}" ]]; then
 		dns_write_file_in_place "${tmp}" "${DNS_HOSTS_FILE}"
 	else
@@ -163,7 +162,6 @@ dns_test_resolution() {
 	echo ">>> Testing resolution"
 	if [[ "${DNS_HOSTS_FILE}" == "/etc/hosts" ]]; then
 		while IFS= read -r host; do
-			# Exception: retried — a freshly restarted resolver may need a moment before it answers.
 			for attempt in 1 2 3; do
 				if getent hosts "${host}"; then
 					break

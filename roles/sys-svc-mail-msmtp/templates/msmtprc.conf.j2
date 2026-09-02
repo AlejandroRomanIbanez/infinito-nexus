@@ -2,7 +2,6 @@
 {% set ca_injected = sys_svc_mail_msmtp_in_container | bool and lookup('ca_injected', application_id) %}
 {% set smtp_target = lookup('smtp_host', email, in_container=sys_svc_mail_msmtp_in_container) %}
 defaults
-# Exception: strict servers (Stalwart rejectNonFqdn) refuse a bare container hostname as EHLO.
 domain              {{ DOMAIN_PRIMARY }}
 logfile             ~/.msmtp.log
 timeout             {{ email.timeout }}
@@ -15,14 +14,6 @@ tls_trust_file      {{ CA_TRUST.inject_cert_container }}
 {% endif %}
 tls_host_override   {{ email.host }}
 {% if smtp_target.endswith('.onion') %}
-{# Exception: gated on the host actually dialled, NOT on email.host — inside the rig
-   smtp_host hands back loopback even when the provider's canonical is an onion, and
-   routing 127.0.0.1 through Tor hangs until the send times out (rc=124). A real .onion
-   peer has no route off the node, so it must go through Tor's SOCKS5 listener. The
-   endpoint comes from lookup('tor_socks_proxy'), which owns the swarm-vs-compose host
-   split, so that policy is not restated here; the host render reaches the same listener
-   on loopback. Both lookups sit inside this branch because they raise when svc-net-tor
-   is absent, which is every clearnet deployment. #}
 {% set socks = (lookup('tor_socks_proxy') | regex_replace('^socks5h://', '')) if sys_svc_mail_msmtp_in_container | bool else lookup('tor_socks') %}
 proxy_host          {{ socks.split(':')[0] }}
 proxy_port          {{ socks.split(':')[1] }}

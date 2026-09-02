@@ -791,10 +791,9 @@
       ]
     },
     {% include "clients/default.json.j2" %}
-{% if KEYCLOAK_STALWART_ENABLED | bool %}
-    ,{% include "clients/stalwart/webui.json.j2" %}
-    ,{% include "clients/stalwart/webmail.json.j2" %}
-{% endif %}
+{% for kc_client_app in KEYCLOAK_DECLARED_CLIENT_APPS %}
+    ,{% include 'roles/' ~ kc_client_app ~ '/templates/keycloak/clients.json.j2' %}
+{% endfor %}
 {% include "clients/saml.json.j2" %}
   ],
   "clientScopes": [

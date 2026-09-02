@@ -92,8 +92,6 @@ def _all_project_files() -> tuple[str, ...]:
     skip_dirs = _DEFAULT_SKIP_DIRS | _local_exclude_dirs()
     paths: list[str] = []
     for dirpath, dirnames, filenames in os.walk(root_str, topdown=True):
-        # Exception: dirnames must be mutated IN PLACE — that is what stops os.walk
-        # descending into the skipped dirs; rebinding the name would walk them anyway.
         dirnames[:] = [d for d in dirnames if d not in skip_dirs]
         paths.extend(str(Path(dirpath) / fn) for fn in filenames)
     return tuple(paths)

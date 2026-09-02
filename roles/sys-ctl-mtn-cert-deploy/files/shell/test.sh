@@ -48,8 +48,6 @@ check_local() {
     return
   fi
 
-  # Exception: compare public keys, not moduli — an EC key has no modulus, so the
-  # conventional `openssl ... -modulus` pairing check silently passes for every EC cert.
   cert_pub="$(openssl x509 -in "$cert" -pubkey -noout 2>/dev/null)"
   key_pub="$(openssl pkey -in "$key" -pubout 2>/dev/null)"
   if [ -z "$key_pub" ] || [ "$cert_pub" != "$key_pub" ]; then

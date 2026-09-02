@@ -1,7 +1,6 @@
 ---
 - include_tasks: utils/once/flag.yml
 
-# Exception: Stalwart's compiled-in validation rejects RFC 6761 reserved TLDs — fail before any state change.
 - name: "✅ Assert the mail domain is provisionable by Stalwart"
   ansible.builtin.assert:
     that:
@@ -21,7 +20,6 @@
     state: directory
     mode: "0755"
 
-# Exception: swarm does not auto-create a missing bind source; sys-ctl-mtn-cert-deploy fills the directory later (05_tls).
 - name: ✅ Ensure certs bind-source directory exists (host)
   file:
     path: "{{ [ STALWART_VOLUMES_DIR, 'certs' ] | path_join }}"
@@ -87,7 +85,6 @@
 - name: "🚿 Flush Docker Compose handlers"
   meta: flush_handlers
 
-# Exception: without the explicit service key the swarm upstream resolver picks the primary entity and the webmail vhost serves the mail server.
 - name: "🌐 Proxy the Roundcube webmail at {{ STALWART_WEBMAIL_DOMAIN }}"
   include_role:
     name: sys-stk-front-proxy

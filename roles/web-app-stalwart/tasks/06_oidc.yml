@@ -28,7 +28,6 @@
     stalwart_oidc_dir_id: "{{ stalwart_jmap.methodResponses[0][1].created.kc.id }}"
   when: stalwart_oidc_dir_id | length == 0
 
-# Exception: Keycloak tokens carry aud=account — pinning requireAudience would reject them as InvalidAudience.
 - name: "🧹 Clear the OIDC directory's required audience"
   include_tasks: jmap_call.yml
   vars:
@@ -52,8 +51,6 @@
     that: stalwart_role_user | length > 0
     fail_msg: "Stalwart built-in 'User' role not found; cannot grant IMAP/SMTP mailbox permissions."
 
-# Exception: a self-created Authentication singleton lands with EMPTY defaultUserRoleIds — User accounts
-# then fail IMAP login with a silent EOF; seed the built-in roles like Stalwart's own bootstrap does.
 - name: "🔧 Assemble default role-id maps for the authentication singleton"
   ansible.builtin.set_fact:
     stalwart_auth_defaults:
@@ -84,7 +81,6 @@
     stalwart_jmap_body: "{{ lookup('template', 'jmap/authentication/update.json.j2') }}"
   when: stalwart_auth_exists | bool
 
-# Exception: the no-reply account has no password under OIDC, so trusted internal nets must relay without SMTP AUTH.
 - name: "⚙️ Build the trusted-network relay expression"
   ansible.builtin.set_fact:
     stalwart_relay_expr: >-

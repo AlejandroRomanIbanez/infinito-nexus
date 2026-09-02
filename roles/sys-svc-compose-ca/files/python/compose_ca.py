@@ -297,12 +297,6 @@ def _gather_one_image(
         ["docker", "image", "inspect", image], cwd=cwd, env=env, timeout=90
     )
     if rc not in {0, TIMEOUT_RC} and pull_if_absent:
-        # Exception: this override is generated before the stack's `compose
-        # pull`, and `docker image inspect` does not pull. Pull an absent
-        # image so the /bin/sh probe (and thus the CA-trust wrapper) is not
-        # skipped. Never pull locally-BUILT tags (pull_if_absent=False): the
-        # registry would serve an unrelated base image whose CMD then gets
-        # pinned into the override, clobbering the built app's entrypoint.
         run(["docker", "pull", image], cwd=cwd, env=env, timeout=600, capture=False)
         rc, out, _err = run(
             ["docker", "image", "inspect", image], cwd=cwd, env=env, timeout=90

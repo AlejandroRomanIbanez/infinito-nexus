@@ -46,8 +46,6 @@ class TestFrontendServiceSpot(unittest.TestCase):
 
     def test_keycloak_respects_run_after_dependencies(self):
         self.assertLess(self._index("web-app-matomo"), self._index("web-app-keycloak"))
-        # Exception: both providers are asserted, not just the default one — either may
-        # be the active MAIL_PROVIDER, so ordering has to hold for both.
         self.assertLess(
             self._index("web-app-stalwart"), self._index("web-app-keycloak")
         )

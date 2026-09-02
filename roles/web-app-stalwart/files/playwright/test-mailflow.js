@@ -19,17 +19,11 @@ const { resolveTimeout, isSplitRealmOidc } = require("./timeouts");
 test("stalwart: biber sends to administrator, administrator receives it", async ({ browser }) => {
   test.skip(isSplitRealmOidc(), "clearnet app with an onion OIDC issuer: unreachable from one browser");
   safeSkipUnlessEnabled("sso");
-  // Exception: the env template always renders these — a missing value is a
-  // rendering regression and MUST fail, not silently skip the flagship scenario.
   expect(webmailBaseUrl, "WEBMAIL_BASE_URL must be set").toBeTruthy();
   expect(biberPassword, "BIBER_PASSWORD must be set").toBeTruthy();
   expect(adminPassword, "ADMIN_PASSWORD must be set").toBeTruthy();
 
   const testSubject = `Playwright stalwart ${Date.now()}`;
-  // Exception: the proxy has to be repeated here. playwright.config.js sets `use.proxy`,
-  // which reaches the default `page` fixture only — a context built by hand inherits none
-  // of `use`, so on an onion node these two personas had no route to the .onion and every
-  // navigation sat on a blank page until the step timed out.
   const proxyServer = process.env.PLAYWRIGHT_PROXY;
   const contextOptions = {
     ignoreHTTPSErrors: true,
@@ -48,9 +42,6 @@ test("stalwart: biber sends to administrator, administrator receives it", async 
     await biberPage.locator("#composebody, textarea[name='_message'], [contenteditable='true']").first()
       .fill("Hello Administrator, this is an automated Playwright test email.");
     await biberPage.locator(".formbuttons .send, button.send, a.send").first().click();
-    // Exception: Roundcube (Elastic, framed) sends via AJAX and may stay on the
-    // compose URL with only a toast; surface an SMTP error immediately, the
-    // real proof of a successful send is receipt in the admin inbox below.
     const sendError = biberPage.locator("#messagestack .error, .toast .error, .toast-error").first();
     if (await sendError.isVisible().catch(() => false)) {
       throw new Error(`Roundcube reported a send error: ${await sendError.textContent()}`);

@@ -1,9 +1,5 @@
 ---
 # include-gated: when: stalwart_cert_missing | bool
-# Exception: a freshly registered certificate is served only after a
-# (re)start; without the restart the listeners keep the built-in rcgen
-# certificate for the rest of the play (nothing else restarts Stalwart in
-# non-SSO mode) and strict TLS verification in consumers (msmtp) fails.
 - name: "🔧 Register the platform TLS certificate with Stalwart"
   include_tasks: "{{ role_path }}/tasks/jmap_call.yml"
   vars:

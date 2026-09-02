@@ -20,7 +20,6 @@ matomo:
   bond: 1
   enabled: "{{ 'web-app-matomo' in group_names }}"
   shared: "{{ 'web-app-matomo' in group_names }}"
-# Exception: gates on the OTHER provider — gating on MAIL_PROVIDER or self would pull Stalwart into a Mailu-active closure.
 # nocheck: dynamic-flag
 email:
   bond: 1
@@ -73,8 +72,6 @@ mailu:
   run_after:
     - web-app-matomo
     - web-app-stalwart
-  # Exception: web-app-stalwart took over as the default mail provider; Mailu is kept
-  # inside the tested envelope so the migration path stays exercised until it goes eol.
   lifecycle: maintenance
   cpus: "1.0"
   mem_reservation: 512m

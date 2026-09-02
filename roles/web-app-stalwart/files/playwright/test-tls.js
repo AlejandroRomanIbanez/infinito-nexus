@@ -10,8 +10,6 @@ test("stalwart: WebAdmin is served under canonical domain with TLS", async ({ pa
   expect(response, "Expected Stalwart response").toBeTruthy();
   expect(response.status(), "Expected status < 400").toBeLessThan(400);
   expect(response.url().includes(canonicalDomain), `Expected canonical domain "${canonicalDomain}"`).toBe(true);
-  // Exception: an onion vhost is plain HTTP — Tor carries the encryption and no authority
-  // issues a certificate for a v3 address — so HSTS is a clearnet-only guarantee.
   if (!isOnionTarget()) {
     expect(response.headers()["strict-transport-security"], "Stalwart must emit HSTS").toBeTruthy();
   }

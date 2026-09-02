@@ -472,8 +472,6 @@ def main(argv: list[str] | None = None) -> int:
     )
     report = Report()
     for attempt in range(1, args.retries + 1):
-        # Exception: an unreachable resolver must be a finding the retry loop can
-        # absorb, not a traceback that aborts the deploy on a transient blip.
         try:
             report = run_checks(args, resolvers)
         except DnsError as exc:

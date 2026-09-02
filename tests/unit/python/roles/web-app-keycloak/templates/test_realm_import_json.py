@@ -50,12 +50,6 @@ CONTEXT = {
     "KEYCLOAK_LDAP_SYNC_CHANGES_PERIOD": "86400",
     "KEYCLOAK_LDAP_SYNC_FULL_PERIOD": "604800",
     "KEYCLOAK_RBAC_GROUP_NAME": "groups",
-    "KEYCLOAK_STALWART_ENABLED": True,
-    "KEYCLOAK_STALWART_WEBUI_CLIENT_ID": "stalwart-webui",
-    "KEYCLOAK_STALWART_WEBMAIL_CLIENT_ID": "stalwart-webmail",
-    "KEYCLOAK_STALWART_WEBMAIL_REDIRECT_URIS": ["https://webmail.example.com/*"],
-    "KEYCLOAK_STALWART_WEBMAIL_WEB_ORIGINS": ["https://webmail.example.com"],
-    "KEYCLOAK_STALWART_WEBMAIL_POST_LOGOUT": "+",
     "LDAP_ONLY": False,
     "OIDC": {
         "CLIENT": {"SECRET": "s3cret", "ID": "example.com"},
@@ -97,12 +91,14 @@ def fake_lookup(name, *_args, **_kwargs):
     """
     if name == "email":
         return {"enabled": False}
+    if name == "config":
+        return str(_args[-1]).rsplit(".", 1)[-1]
     return APP_URL
 
 
-def render(saml_apps: list[str]) -> str:
+def render(saml_apps: list[str], client_apps: list[str] | None = None) -> str:
     env = Environment(
-        loader=FileSystemLoader(str(IMPORT_DIR)),
+        loader=FileSystemLoader([str(IMPORT_DIR), str(PROJECT_ROOT)]),
         trim_blocks=True,
         keep_trailing_newline=True,
         undefined=StrictUndefined,
@@ -117,6 +113,7 @@ def render(saml_apps: list[str]) -> str:
     env.filters.update(role_filters())
     return env.get_template("realm.json.j2").render(
         KEYCLOAK_SAML_APPS=saml_apps,
+        KEYCLOAK_DECLARED_CLIENT_APPS=client_apps or [],
         lookup=fake_lookup,
         application_id="web-app-keycloak",
         DOMAIN_PRIMARY="example.com",
@@ -125,6 +122,18 @@ def render(saml_apps: list[str]) -> str:
 
 
 class TestRealmImportJson(unittest.TestCase):
+    def test_app_declared_clients_join_the_realm(self) -> None:
+        """An app in KEYCLOAK_DECLARED_CLIENT_APPS ships its own client fragment."""
+        realm = json.loads(render([], client_apps=["web-app-stalwart"]))
+        client_ids = [c["clientId"] for c in realm["clients"]]
+        self.assertIn("webui", client_ids)
+        self.assertIn("webmail", client_ids)
+
+    def test_no_declaring_apps_means_no_extra_clients(self) -> None:
+        with_apps = json.loads(render([], client_apps=["web-app-stalwart"]))
+        without = json.loads(render([]))
+        self.assertEqual(len(with_apps["clients"]) - len(without["clients"]), 2)
+
     def test_realm_is_valid_json_without_saml_apps(self) -> None:
         realm = json.loads(render([]))
         client_ids = [c["clientId"] for c in realm["clients"]]
