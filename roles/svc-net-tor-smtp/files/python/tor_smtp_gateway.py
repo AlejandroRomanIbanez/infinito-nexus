@@ -55,7 +55,7 @@ class _SocksSMTP(smtplib.SMTP):
         self._onion_port = port
         super().__init__(local_hostname=HELO_NAME, timeout=timeout)
 
-    def _get_socket(self, host, port, timeout):  # noqa: ARG002 - host/port fixed to the onion
+    def _get_socket(self, host, port, timeout):
         return socks.create_connection(
             (self._onion, self._onion_port),
             timeout=timeout,
@@ -75,7 +75,7 @@ def _deliver(onion: str, mail_from: str, rcpts: list[str], content: bytes) -> No
     finally:
         try:
             smtp.quit()
-        except Exception:  # noqa: BLE001 - a failed QUIT must not mask a successful send
+        except Exception:
             smtp.close()
 
 
@@ -90,30 +90,38 @@ def _group_by_domain(rcpts: list[str]) -> dict[str, list[str]]:
 class OnionRelay:
     """aiosmtpd handler that relays each recipient's message over Tor."""
 
-    async def handle_RCPT(self, server, session, envelope, address, rcpt_options):  # noqa: N802, ARG002 - aiosmtpd hook name
+    async def handle_RCPT(self, server, session, envelope, address, rcpt_options):  # noqa: N802 - aiosmtpd hook name
         if not address.rsplit("@", 1)[-1].lower().endswith(".onion"):
             return "550 5.7.1 tor-smtp-gateway relays .onion recipients only"
         envelope.rcpt_tos.append(address)
         return "250 OK"
 
-    async def handle_DATA(self, server, session, envelope):  # noqa: N802, ARG002 - aiosmtpd hook name
+    async def handle_DATA(self, server, session, envelope):  # noqa: N802 - aiosmtpd hook name
         loop = asyncio.get_running_loop()
         for domain, rcpts in _group_by_domain(envelope.rcpt_tos).items():
             try:
                 await loop.run_in_executor(
                     None, _deliver, domain, envelope.mail_from, rcpts, envelope.content
                 )
-            except Exception as exc:  # noqa: BLE001 - any failure is a transient relay error
+            except Exception as exc:
                 log.warning("onion relay to %s failed: %s", domain, exc)
                 return f"451 4.4.1 onion relay to {domain} failed"
         return "250 2.0.0 accepted for onion delivery"
 
 
 def main() -> None:
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
+    logging.basicConfig(
+        level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s"
+    )
     controller = Controller(OnionRelay(), hostname=LISTEN_HOST, port=LISTEN_PORT)
     controller.start()
-    log.info("tor-smtp-gateway listening on %s:%s → SOCKS %s:%s", LISTEN_HOST, LISTEN_PORT, SOCKS_HOST, SOCKS_PORT)
+    log.info(
+        "tor-smtp-gateway listening on %s:%s → SOCKS %s:%s",
+        LISTEN_HOST,
+        LISTEN_PORT,
+        SOCKS_HOST,
+        SOCKS_PORT,
+    )
     stop = asyncio.Event()
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

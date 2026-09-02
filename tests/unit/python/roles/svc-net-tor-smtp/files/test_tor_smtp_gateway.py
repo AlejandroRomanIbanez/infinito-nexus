@@ -9,7 +9,6 @@ the network.
 
 from __future__ import annotations
 
-import asyncio
 import importlib.util
 import os
 import sys
@@ -19,7 +18,14 @@ from unittest import mock
 
 from . import PROJECT_ROOT
 
-MODULE = PROJECT_ROOT / "roles" / "svc-net-tor-smtp" / "files" / "python" / "tor_smtp_gateway.py"
+MODULE = (
+    PROJECT_ROOT
+    / "roles"
+    / "svc-net-tor-smtp"
+    / "files"
+    / "python"
+    / "tor_smtp_gateway.py"
+)
 
 REQUIRED_ENV = {
     "TOR_SMTP_LISTEN_PORT": "1525",
@@ -40,11 +46,17 @@ def _load(env=None):
     aiosmtpd_pkg = types.ModuleType("aiosmtpd")
     aiosmtpd_pkg.controller = controller_stub
     merged = {k: v for k, v in {**REQUIRED_ENV, **(env or {})}.items() if v is not None}
-    with mock.patch.dict(sys.modules, {
-        "socks": socks_stub,
-        "aiosmtpd": aiosmtpd_pkg,
-        "aiosmtpd.controller": controller_stub,
-    }), mock.patch.dict(os.environ, merged, clear=True):
+    with (
+        mock.patch.dict(
+            sys.modules,
+            {
+                "socks": socks_stub,
+                "aiosmtpd": aiosmtpd_pkg,
+                "aiosmtpd.controller": controller_stub,
+            },
+        ),
+        mock.patch.dict(os.environ, merged, clear=True),
+    ):
         spec = importlib.util.spec_from_file_location("tor_smtp_gateway", MODULE)
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)
@@ -66,7 +78,10 @@ class TestDomainGrouping(unittest.TestCase):
         grouped = self.mod._group_by_domain(
             ["a@one.onion", "b@one.onion", "c@two.onion"]
         )
-        self.assertEqual(grouped, {"one.onion": ["a@one.onion", "b@one.onion"], "two.onion": ["c@two.onion"]})
+        self.assertEqual(
+            grouped,
+            {"one.onion": ["a@one.onion", "b@one.onion"], "two.onion": ["c@two.onion"]},
+        )
 
     def test_domain_match_is_case_insensitive(self):
         grouped = self.mod._group_by_domain(["A@One.Onion"])
@@ -101,7 +116,9 @@ class TestDataDelivery(unittest.IsolatedAsyncioTestCase):
 
     async def test_each_onion_domain_gets_one_delivery(self):
         calls = []
-        with mock.patch.object(self.mod, "_deliver", side_effect=lambda *a: calls.append(a)):
+        with mock.patch.object(
+            self.mod, "_deliver", side_effect=lambda *a: calls.append(a)
+        ):
             env = _Envelope(rcpt_tos=["a@one.onion", "b@one.onion", "c@two.onion"])
             reply = await self.relay.handle_DATA(None, None, env)
         self.assertTrue(reply.startswith("250"))
