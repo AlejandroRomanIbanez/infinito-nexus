@@ -144,3 +144,11 @@ tor:
   bond: 0.5
   enabled: "{{ 'svc-net-tor' in group_names }}"
   shared: true # nocheck: dynamic-flag
+# nocheck: playwright-service-flag — SMTP egress relay for .onion recipients, no UI surface
+# nocheck: variants-coverage — the onion is never pinned on for this role; see the sso-variant-tor note in meta/variants.yml
+# nocheck: bond-baseline — same onion-gated rationale as the tor flag above
+# nocheck: dynamic-flag — gated on the onion (svc-net-tor), not on svc-net-tor-smtp itself: the gateway is a derived companion, never a standalone inventory group
+tor-smtp:
+  bond: 0.5
+  enabled: "{{ 'svc-net-tor' in group_names }}"
+  shared: true # nocheck: dynamic-flag

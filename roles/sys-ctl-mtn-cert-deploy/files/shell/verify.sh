@@ -11,7 +11,7 @@ set -eu
 # servers, so a misconfigured host surfaces in CI instead of in an outage.
 #
 # Usage:
-#   test.sh [<docker_compose_instance_directory>]
+#   verify.sh [<docker_compose_instance_directory>]
 #
 # Environment:
 #   CERT_TEST_REMOTE_ENDPOINTS  Space-separated "host[:port]" list (port

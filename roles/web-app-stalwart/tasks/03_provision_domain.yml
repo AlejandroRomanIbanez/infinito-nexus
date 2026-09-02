@@ -66,3 +66,7 @@
 - name: "🔎 Verify the production mail server's public configuration"
   include_tasks: 13_production_facts.yml
   when: STALWART_PRODUCTION_HOST | length > 0
+
+- name: "🧅 Route .onion recipients through the Tor SMTP gateway"
+  include_tasks: 14_onion_route.yml
+  when: STALWART_ONION_ACTIVE | bool

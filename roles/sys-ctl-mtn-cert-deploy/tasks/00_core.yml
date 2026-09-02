@@ -22,7 +22,7 @@
 
 - name: "✅ Verify deployed certificate material"
   ansible.builtin.script:
-    cmd: "{{ [ role_path, 'files/shell/test.sh' ] | path_join }} {{ lookup('container', application_id, 'directories.instance') }}"
+    cmd: "{{ [ role_path, 'files/shell/verify.sh' ] | path_join }} {{ lookup('container', application_id, 'directories.instance') }}"
   environment:
     CERT_TEST_REMOTE_ENDPOINTS: >-
       {{ cert_deploy_remote_endpoints

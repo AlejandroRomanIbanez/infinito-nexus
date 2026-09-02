@@ -64,3 +64,9 @@ STALWART_IMPORT_MAILU: "{{ lookup('config', application_id, 'services.stalwart.m
 
 STALWART_PRODUCTION_HOST: "{{ MAIL_PRODUCTION_HOST | trim }}"
 STALWART_PRODUCTION_RESOLVER: "{{ MAIL_PRODUCTION_RESOLVER | trim }}"
+
+STALWART_ONION_ACTIVE: "{{ 'svc-net-tor' in group_names }}"
+STALWART_ONION_GATEWAY_ID: "svc-net-tor-smtp"
+STALWART_ONION_ROUTE_NAME: "onion"
+STALWART_ONION_RELAY_HOST: "{{ lookup('config', STALWART_ONION_GATEWAY_ID, 'services.tor-smtp.name') }}"
+STALWART_ONION_RELAY_PORT: "{{ lookup('config', STALWART_ONION_GATEWAY_ID, 'services.tor-smtp.ports.internal.smtp') | int }}"
