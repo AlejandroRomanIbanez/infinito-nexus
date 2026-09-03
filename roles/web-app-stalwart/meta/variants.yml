@@ -2,16 +2,6 @@
 # Matrix-deploy variant overrides for web-app-stalwart.
 # See docs/contributing/artefact/files/role/variants.md for the file format.
 
-# nocheck: sso-variant-tor — the onion is pinned OFF, and pinned rather than left dynamic. Mail
-# reachability over Tor does not need this flag: the stalwart service opts in with `exposed: public`
-# (meta/services.yml), which forwards its mail ports on the node onion whenever svc-net-tor is
-# deployed. The flag itself moves the role's WEB vhosts onto the onion, and that breaks two ways:
-# an onion vhost has no TLS, so 05_tls.yml (and with it sys-ctl-mtn-cert-deploy, whose
-# `required_by: [web-app-stalwart]` guard then fails the deploy) is skipped; and left dynamic, the
-# unrendered flag reads truthy to the domain-map injector while the role's own lookup still
-# resolves clearnet, publishing onion vhost names nothing serves.
-# web-app-mailu can pin it on only because it is never the active provider.
-
 # Two variants pin every dynamic services.yml flag on then off, so the matrix
 # exercises both the in-group_names and not-in-group_names branches (required by
 # tests/integration/roles/meta/variants/test_coverage.py). For a single-round
@@ -39,7 +29,7 @@
       enabled: true
       shared: true
     tor:
-      enabled: false
+      enabled: true
 - services:
     css:
       enabled: false
@@ -65,4 +55,4 @@
       enabled: false
       shared: false
     tor:
-      enabled: false
+      enabled: true

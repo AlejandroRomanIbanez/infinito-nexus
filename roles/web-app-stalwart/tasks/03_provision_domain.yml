@@ -44,9 +44,11 @@
     loop_var: user_item
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
+# Exception: mail listeners need the cert even on an onion vhost, where lookup('tls') is
+# false — and this is the only caller of cert-deploy, whose required_by guard then fails.
 - name: "🔧 Configure Stalwart mail-listener TLS (platform cert)"
   include_tasks: 05_tls.yml
-  when: lookup('tls', application_id, 'enabled') | bool
+  when: (lookup('tls', application_id, 'enabled') | bool) or (STALWART_ACTIVE_PROVIDER | bool)
 
 - name: "🔗 Wire Keycloak as the OIDC authentication directory (SSO)"
   include_tasks: 06_oidc.yml
