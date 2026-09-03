@@ -26,7 +26,9 @@ def named_id_map(run_kcadm, module, cmd):
     }
 
 
-def converge_client_scope_lists(run_kcadm, module, object_id, desired, realm, kcadm_exec):
+def converge_client_scope_lists(
+    run_kcadm, module, object_id, desired, realm, kcadm_exec
+):
     """Converge a client's default/optional client-scope lists to ``desired``."""
     plans = []
     for field, kind in (

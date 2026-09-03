@@ -471,7 +471,9 @@ def run_module():
         )
 
     if object_kind == "client":
-        converge_client_scope_lists(run_kcadm, module, object_id, desired, realm, kcadm_exec)
+        converge_client_scope_lists(
+            run_kcadm, module, object_id, desired, realm, kcadm_exec
+        )
 
     result["changed"] = True
     result["result"] = desired_obj
