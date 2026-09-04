@@ -13,4 +13,6 @@
          if stalwart_dkim_selector is defined else '' }}
       {{ ('--resolver ' ~ (STALWART_PRODUCTION_RESOLVER | quote))
          if STALWART_PRODUCTION_RESOLVER | length > 0 else '' }}
+      {{ ('--metrics-file ' ~ (STALWART_MAIL_FACTS_METRICS_FILE | quote))
+         if STALWART_PROMETHEUS_ENABLED | bool else '' }}
   changed_when: false

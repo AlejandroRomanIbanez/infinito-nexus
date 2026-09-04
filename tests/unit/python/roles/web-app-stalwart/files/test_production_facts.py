@@ -3,7 +3,9 @@ import importlib.util
 import socket
 import struct
 import sys
+import tempfile
 import unittest
+from pathlib import Path
 from unittest import mock
 
 from . import PROJECT_ROOT
@@ -439,6 +441,85 @@ class TestMain(unittest.TestCase):
             )
         self.assertEqual(rc, 1)
         self.assertEqual(runner.call_count, 3)
+
+
+class TestMetricsFile(unittest.TestCase):
+    """The Prometheus textfile is what makes a production run visible after the deploy."""
+
+    @staticmethod
+    def _args(metrics_file=""):
+        return argparse.Namespace(
+            mail_host="mail.example.org",
+            mail_domain="example.org",
+            metrics_file=metrics_file,
+        )
+
+    def test_every_check_becomes_its_own_labelled_series(self):
+        report = _M.Report()
+        report.checks = {"mx": 1, "spf": 0}
+        report.failures = 1
+        report.warnings = 2
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "sub" / "stalwart.prom"
+            _M.write_metrics(report, self._args(), str(target))
+            body = target.read_text(encoding="utf-8")  # nocheck: cache-read — the file was just written in this test; a cached read would serve a stale body
+        self.assertIn(
+            'stalwart_mail_fact_up{host="mail.example.org",domain="example.org",check="mx"} 1',
+            body,
+        )
+        self.assertIn('check="spf"} 0', body)
+        self.assertIn('stalwart_mail_facts_failures{host="mail.example.org",domain="example.org"} 1', body)
+        self.assertIn('stalwart_mail_facts_warnings{host="mail.example.org",domain="example.org"} 2', body)
+        self.assertIn("stalwart_mail_facts_last_run_timestamp_seconds", body)
+
+    def test_no_staging_file_survives_the_write(self):
+        report = _M.Report()
+        report.checks = {"mx": 1}
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "stalwart.prom"
+            _M.write_metrics(report, self._args(), str(target))
+            self.assertEqual([p.name for p in Path(tmp).iterdir()], ["stalwart.prom"])
+
+    def test_a_failing_run_still_publishes_its_metrics(self):
+        broken = _M.Report()
+        broken.failures = 2
+        with tempfile.TemporaryDirectory() as tmp:
+            target = Path(tmp) / "stalwart.prom"
+            with (
+                mock.patch.object(_M, "system_resolvers", return_value=["192.0.2.53"]),
+                mock.patch.object(_M, "run_checks", return_value=broken),
+                mock.patch.object(_M.time, "sleep"),
+            ):
+                rc = _M.main(
+                    [
+                        "--mail-host",
+                        "mail.example.org",
+                        "--mail-domain",
+                        "example.org",
+                        "--retries",
+                        "1",
+                        "--metrics-file",
+                        str(target),
+                    ]
+                )
+            self.assertEqual(rc, 1)
+            self.assertIn(
+                "stalwart_mail_facts_failures",
+                target.read_text(encoding="utf-8"),  # nocheck: cache-read — same run wrote this file; caching would hide the write
+            )
+
+    def test_without_the_flag_nothing_is_written(self):
+        clean = _M.Report()
+        with tempfile.TemporaryDirectory() as tmp:
+            with (
+                mock.patch.object(_M, "system_resolvers", return_value=["192.0.2.53"]),
+                mock.patch.object(_M, "run_checks", return_value=clean),
+            ):
+                rc = _M.main(
+                    ["--mail-host", "mail.example.org", "--mail-domain", "example.org"]
+                )
+            self.assertEqual(rc, 0)
+            self.assertEqual(list(Path(tmp).iterdir()), [])
 
 
 if __name__ == "__main__":

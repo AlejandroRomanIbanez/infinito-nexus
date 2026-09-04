@@ -238,6 +238,11 @@ class Report:
     def __init__(self) -> None:
         self.failures = 0
         self.warnings = 0
+        self.checks: dict[str, int] = {}
+
+    def record(self, name: str, failures_before: int) -> None:
+        """Mark check *name* passed when it added no failure since ``failures_before``."""
+        self.checks[name] = int(self.failures == failures_before)
 
     def ok(self, message: str) -> None:
         print(f"OK:   {message}")
@@ -419,16 +424,59 @@ def check_smtp_banner(args, report: Report) -> None:
 def run_checks(args, resolvers: list[str]) -> Report:
     """Run every hard-fact check once and return the collected report."""
     report = Report()
-    addresses = check_host_address(args, resolvers, report)
-    check_mx(args, resolvers, report)
-    check_spf(args, resolvers, report)
-    check_dmarc(args, resolvers, report)
-    check_dkim(args, resolvers, report)
-    check_srv(args, resolvers, report)
+
+    def run(name: str, fn, *fn_args):
+        before = report.failures
+        result = fn(*fn_args)
+        report.record(name, before)
+        return result
+
+    addresses = run("host_address", check_host_address, args, resolvers, report)
+    run("mx", check_mx, args, resolvers, report)
+    run("spf", check_spf, args, resolvers, report)
+    run("dmarc", check_dmarc, args, resolvers, report)
+    run("dkim", check_dkim, args, resolvers, report)
+    run("srv", check_srv, args, resolvers, report)
     if addresses:
-        check_ptr(args, addresses, resolvers, report)
-    check_smtp_banner(args, report)
+        run("ptr", check_ptr, args, addresses, resolvers, report)
+    run("smtp_banner", check_smtp_banner, args, report)
     return report
+
+
+def _label(value: str) -> str:
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
+def write_metrics(report: Report, args, path: str) -> None:
+    """Render *report* as a Prometheus textfile at *path*.
+
+    Written to a sibling temp file and renamed, because node_exporter's
+    textfile collector reads whole files and would otherwise pick up a
+    half-written scrape.
+    """
+    scope = f'host="{_label(args.mail_host)}",domain="{_label(args.mail_domain)}"'
+    lines = [
+        "# HELP stalwart_mail_fact_up Whether one production mail configuration check passed.",
+        "# TYPE stalwart_mail_fact_up gauge",
+    ]
+    for name, passed in sorted(report.checks.items()):
+        lines.append(f'stalwart_mail_fact_up{{{scope},check="{_label(name)}"}} {passed}')
+    lines += [
+        "# HELP stalwart_mail_facts_failures Failing production mail configuration checks.",
+        "# TYPE stalwart_mail_facts_failures gauge",
+        f"stalwart_mail_facts_failures{{{scope}}} {report.failures}",
+        "# HELP stalwart_mail_facts_warnings Non-fatal findings from the same run.",
+        "# TYPE stalwart_mail_facts_warnings gauge",
+        f"stalwart_mail_facts_warnings{{{scope}}} {report.warnings}",
+        "# HELP stalwart_mail_facts_last_run_timestamp_seconds When the checks last completed.",
+        "# TYPE stalwart_mail_facts_last_run_timestamp_seconds gauge",
+        f"stalwart_mail_facts_last_run_timestamp_seconds{{{scope}}} {int(time.time())}",
+    ]
+    target = Path(path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    staged = target.with_suffix(f"{target.suffix}.{secrets.token_hex(4)}")
+    staged.write_text("\n".join(lines) + "\n", encoding="utf-8")
+    staged.replace(target)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -457,6 +505,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Whole-suite retries; absorbs DNS propagation right after a deploy",
     )
     parser.add_argument("--retry-delay", type=float, default=10.0)
+    parser.add_argument(
+        "--metrics-file",
+        default="",
+        help="Write the outcome as a Prometheus textfile for node_exporter to expose",
+    )
     return parser.parse_args(argv)
 
 
@@ -484,6 +537,9 @@ def main(argv: list[str] | None = None) -> int:
                 f"--- {report.failures} failure(s); retry {attempt}/{args.retries - 1} ---"
             )
             time.sleep(args.retry_delay)
+
+    if args.metrics_file:
+        write_metrics(report, args, args.metrics_file)
 
     if report.failures:
         print(

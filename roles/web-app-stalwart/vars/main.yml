@@ -64,6 +64,8 @@ STALWART_IMPORT_MAILU: "{{ lookup('config', application_id, 'services.stalwart.m
 
 STALWART_PRODUCTION_HOST: "{{ MAIL_PRODUCTION_HOST | trim }}"
 STALWART_PRODUCTION_RESOLVER: "{{ MAIL_PRODUCTION_RESOLVER | trim }}"
+STALWART_PROMETHEUS_ENABLED: "{{ lookup('config', application_id, 'services.prometheus.enabled') | bool }}"
+STALWART_MAIL_FACTS_METRICS_FILE: "{{ [ DIR_METRICS_TEXTFILE, 'stalwart-mail-facts.prom' ] | path_join }}"
 
 STALWART_ONION_ACTIVE: "{{ 'svc-net-tor' in group_names }}"
 STALWART_ONION_GATEWAY_ID: "svc-net-tor-smtp"

@@ -5,7 +5,8 @@
 - name: "⏳ Wait for the OIDC issuer discovery endpoint"
   ansible.builtin.shell: >-
     container exec -i {{ MAILU_ADMIN_CONTAINER_ADDRESS }}
-    {{ 30 | curl }} -ksS -o /dev/null -w "%{http_code}" {{ OIDC.CLIENT.DISCOVERY_DOCUMENT }}
+    {{ 30 | curl }} -ksS -o /dev/null -w "%{http_code}"
+    --proxy {{ MAILU_OIDC_SOCKS_PROXY | quote }} {{ OIDC.CLIENT.DISCOVERY_DOCUMENT }}
   register: mailu_oidc_issuer_probe
   changed_when: false
   retries: 30

@@ -137,7 +137,6 @@ prometheus:
   bond: 1
   enabled: "{{ 'web-app-prometheus' in group_names }}"
   shared: "{{ 'web-app-prometheus' in group_names }}"
-# nocheck: playwright-service-flag
 # nocheck: variants-coverage — test_sso_variant_requires_tor forbids a variant pinning services.tor.enabled false, so the false polarity this rule asks for cannot exist
 tor:
   bond: 0.5
