@@ -460,7 +460,9 @@ def write_metrics(report: Report, args, path: str) -> None:
         "# TYPE stalwart_mail_fact_up gauge",
     ]
     for name, passed in sorted(report.checks.items()):
-        lines.append(f'stalwart_mail_fact_up{{{scope},check="{_label(name)}"}} {passed}')
+        lines.append(
+            f'stalwart_mail_fact_up{{{scope},check="{_label(name)}"}} {passed}'
+        )
     lines += [
         "# HELP stalwart_mail_facts_failures Failing production mail configuration checks.",
         "# TYPE stalwart_mail_facts_failures gauge",

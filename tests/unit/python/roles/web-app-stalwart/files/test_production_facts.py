@@ -462,14 +462,22 @@ class TestMetricsFile(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             target = Path(tmp) / "sub" / "stalwart.prom"
             _M.write_metrics(report, self._args(), str(target))
-            body = target.read_text(encoding="utf-8")  # nocheck: cache-read — the file was just written in this test; a cached read would serve a stale body
+            body = target.read_text(
+                encoding="utf-8"
+            )  # nocheck: cache-read — the file was just written in this test; a cached read would serve a stale body
         self.assertIn(
             'stalwart_mail_fact_up{host="mail.example.org",domain="example.org",check="mx"} 1',
             body,
         )
         self.assertIn('check="spf"} 0', body)
-        self.assertIn('stalwart_mail_facts_failures{host="mail.example.org",domain="example.org"} 1', body)
-        self.assertIn('stalwart_mail_facts_warnings{host="mail.example.org",domain="example.org"} 2', body)
+        self.assertIn(
+            'stalwart_mail_facts_failures{host="mail.example.org",domain="example.org"} 1',
+            body,
+        )
+        self.assertIn(
+            'stalwart_mail_facts_warnings{host="mail.example.org",domain="example.org"} 2',
+            body,
+        )
         self.assertIn("stalwart_mail_facts_last_run_timestamp_seconds", body)
 
     def test_no_staging_file_survives_the_write(self):
@@ -505,7 +513,9 @@ class TestMetricsFile(unittest.TestCase):
             self.assertEqual(rc, 1)
             self.assertIn(
                 "stalwart_mail_facts_failures",
-                target.read_text(encoding="utf-8"),  # nocheck: cache-read — same run wrote this file; caching would hide the write
+                target.read_text(
+                    encoding="utf-8"
+                ),  # nocheck: cache-read — same run wrote this file; caching would hide the write
             )
 
     def test_without_the_flag_nothing_is_written(self):
