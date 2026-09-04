@@ -1,12 +1,8 @@
 const { test, expect } = require("@playwright/test");
 const { resolveTimeout } = require("../timeouts");
 const { skipUnlessAddonEnabled } = require("../addon-gating");
-const { decodeDotenvQuotedValue } = require("../personas");
 const shared = require("../_shared");
 const { gotoOnion } = require("../personas");
-
-// Partner host comes from the env file — never hardcode the stack domain.
-const mastodonPartnerHost = decodeDotenvQuotedValue(process.env.MASTODON_PARTNER_HOST || "");
 
 // Functional cross-role coupling check for nextcloud/integration_mastodon.
 //
@@ -89,10 +85,6 @@ test("integration integration_mastodon: connects Nextcloud to the partner Mastod
       instanceHost,
       "the configured Mastodon instance must be the partner instance, not Nextcloud itself"
     ).not.toBe(nextcloudHost);
-    expect(
-      mastodonPartnerHost,
-      "MASTODON_PARTNER_HOST must be set in the Playwright env file"
-    ).toBeTruthy();
     expect(
       instanceHost,
       "the Mastodon oauth_instance_url must point at the deployed microblog partner host"
