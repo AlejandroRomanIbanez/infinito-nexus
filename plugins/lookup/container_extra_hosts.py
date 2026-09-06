@@ -91,7 +91,7 @@ class LookupModule(LookupBase):
                 "pass application_id= explicitly"
             )
 
-        entries = self._sso_pins(application_id)
+        entries = self._sso_pins(application_id) + self._mail_pins(application_id)
         if _to_bool(self._render(kwargs.get("host_alias", False)), strict=False):
             entries.append(
                 f"{DOCKER_INTERNAL_HOST}:{self._gateway_address(DOCKER_INTERNAL_HOST)}"
@@ -126,6 +126,35 @@ class LookupModule(LookupBase):
         return [
             f"{DOCKER_INTERNAL_HOST}:{HOST_GATEWAY}",
             f"{provider_host}:{self._gateway_address(provider_host)}",
+        ]
+
+    def _mail_pins(self, application_id: str) -> list[str]:
+        """The mail-provider pin, empty unless this is an onion node sending mail.
+
+        Args:
+            application_id: the role whose ``services.email`` gate decides.
+
+        The same unroutability as the SSO pin, one service down: an application
+        dials the relay by the provider's public name, which on an onion
+        deployment resolves only through Tor. ``sys-svc-mail-msmtp`` answers
+        that with a SOCKS proxy, but a client with no proxy setting at all --
+        Ruby's ``Net::SMTP``, so GitLab queues the mail and reports success
+        while nothing leaves -- has no other route to the relay.
+        """
+        if not bool(
+            self._lookup("config", application_id, "services.email.enabled", False)
+        ):
+            return []
+
+        mail_host = str(
+            (self._lookup("email", application_id) or {}).get("host") or ""
+        ).strip()
+        if not mail_host.endswith(".onion"):
+            return []
+
+        return [
+            f"{DOCKER_INTERNAL_HOST}:{HOST_GATEWAY}",
+            f"{mail_host}:{self._gateway_address(mail_host)}",
         ]
 
     def _caller_entries(self, extra_hosts: Any) -> list[str]:

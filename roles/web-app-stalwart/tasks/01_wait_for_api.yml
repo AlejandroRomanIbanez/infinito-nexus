@@ -13,3 +13,24 @@
   delay: 5
   until: stalwart_api_check.rc == 0
   changed_when: false
+
+# Exception: /healthz/ready answers 200 while Stalwart is still in bootstrap
+# mode (measured against v0.16.12), where every x: method is refused with
+# "The server is in bootstrap mode". Readiness for the management ops that
+# follow is therefore a management call, not the health endpoint.
+- name: "⏳ Wait until Stalwart accepts management calls"
+  ansible.builtin.shell: >-
+    container exec -i {{ STALWART_CONTAINER_ADDRESS }}
+    {{ 30 | curl }} -sS -f
+    -u {{ (STALWART_ADMIN_USER ~ ':' ~ STALWART_ADMIN_PASSWORD) | quote }}
+    -H "Content-Type:application/json"
+    --data-binary {{ STALWART_JMAP_APPLICATION_GET | quote }}
+    {{ STALWART_JMAP_URL }}
+  register: stalwart_manage_check
+  retries: 30
+  delay: 5
+  until:
+    - stalwart_manage_check.rc == 0
+    - (stalwart_manage_check.stdout | from_json).methodResponses[0][0] != 'error'
+  changed_when: false
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"

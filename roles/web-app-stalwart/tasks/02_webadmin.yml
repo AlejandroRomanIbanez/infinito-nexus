@@ -5,26 +5,29 @@
 - name: "📖 List Stalwart Application records"
   include_tasks: jmap_call.yml
   vars:
-    stalwart_jmap_body: >-
-      {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
-          'methodCalls': [['x:Application/get', {'ids': none}, 'c0']]} | to_json }}
+    stalwart_jmap_body: "{{ STALWART_JMAP_APPLICATION_GET }}"
 
-- name: "🔍 Resolve the WebUI Application id"
+- name: "🔍 Resolve the WebUI Application record"
   ansible.builtin.set_fact:
-    stalwart_webui_app_id: >-
-      {{ (stalwart_jmap.methodResponses[0][1].list
-          | selectattr('description', 'equalto', STALWART_WEBUI_APP_DESCRIPTION)
-          | map(attribute='id') | first) | default('') }}
+    stalwart_webui_apps: >-
+      {{ stalwart_jmap.methodResponses[0][1].list
+         | selectattr('description', 'equalto', STALWART_WEBUI_APP_DESCRIPTION)
+         | list }}
 
 - name: "✅ Ensure the WebUI Application record was found"
   ansible.builtin.assert:
     that:
-      - stalwart_webui_app_id | length > 0
+      - stalwart_webui_apps | length > 0
     fail_msg: >-
       No Stalwart Application record with description
-      '{{ STALWART_WEBUI_APP_DESCRIPTION }}' found — the JMAP schema changed;
-      re-validate 02_webadmin.yml against this Stalwart version.
+      '{{ STALWART_WEBUI_APP_DESCRIPTION }}' among the records this Stalwart
+      reports:
+      {{ stalwart_jmap.methodResponses[0][1].list | map(attribute='description') | list }}
     quiet: true
+
+- name: "🔍 Resolve the WebUI Application id"
+  ansible.builtin.set_fact:
+    stalwart_webui_app_id: "{{ stalwart_webui_apps[0].id }}"
 
 - name: "🔗 Point the WebUI Application at the locally-staged bundle"
   include_tasks: jmap_call.yml

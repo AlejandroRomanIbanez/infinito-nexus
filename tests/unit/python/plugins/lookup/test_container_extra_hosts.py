@@ -6,6 +6,7 @@ from ansible.errors import AnsibleError
 from plugins.lookup.container_extra_hosts import LookupModule
 
 ONION = "auth." + "b" * 56 + ".onion"
+MAIL_ONION = "mail." + "c" * 56 + ".onion"
 
 
 class TestContainerExtraHostsLookup(unittest.TestCase):
@@ -18,9 +19,13 @@ class TestContainerExtraHostsLookup(unittest.TestCase):
             def _run(terms, variables=None, **_kwargs):
                 vars_ = variables or {}
                 if name == "config":
+                    if "services.email.enabled" in terms:
+                        return [vars_.get("_email_enabled", False)]
                     return [vars_.get("_sso_enabled", False)]
                 if name == "tls":
                     return [vars_.get("_provider_domain", "")]
+                if name == "email":
+                    return [{"host": vars_.get("_mail_host", "")}]
                 raise AssertionError(f"unexpected lookup '{name}'")
 
             plugin.run.side_effect = _run
@@ -42,6 +47,51 @@ class TestContainerExtraHostsLookup(unittest.TestCase):
         variables.update(overrides)
         kwargs = {} if extra_hosts is None else {"extra_hosts": extra_hosts}
         return self.lookup.run(None, variables=variables, **kwargs)[0]
+
+    def test_an_onion_mail_relay_is_pinned_so_a_proxyless_client_can_reach_it(self):
+        """GitLab's Net::SMTP takes no proxy, so an unpinned .onion relay
+        swallows every message: the send is queued and reported successful."""
+        block = self._run(
+            _sso_enabled=False, _email_enabled=True, _mail_host=MAIL_ONION
+        )
+        self.assertEqual(
+            block,
+            'extra_hosts:\n  - "host.docker.internal:host-gateway"\n'
+            f'  - "{MAIL_ONION}:host-gateway"',
+        )
+
+    def test_a_clearnet_mail_relay_is_left_alone(self):
+        self.assertEqual(
+            self._run(
+                _sso_enabled=False, _email_enabled=True, _mail_host="mail.example.org"
+            ),
+            "",
+        )
+
+    def test_mail_disabled_emits_nothing(self):
+        self.assertEqual(
+            self._run(_sso_enabled=False, _email_enabled=False, _mail_host=MAIL_ONION),
+            "",
+        )
+
+    def test_swarm_pins_the_mail_relay_to_the_node_address(self):
+        block = self._run(
+            _sso_enabled=False,
+            _email_enabled=True,
+            _mail_host=MAIL_ONION,
+            DEPLOYMENT_MODE="swarm",
+            ansible_facts={"default_ipv4": {"address": "10.0.0.7"}},
+        )
+        self.assertIn(f'  - "{MAIL_ONION}:10.0.0.7"', block)
+
+    def test_the_sso_and_mail_pins_coexist_without_repeating_the_alias(self):
+        block = self._run(_email_enabled=True, _mail_host=MAIL_ONION)
+        self.assertEqual(
+            block,
+            'extra_hosts:\n  - "host.docker.internal:host-gateway"\n'
+            f'  - "{ONION}:host-gateway"\n'
+            f'  - "{MAIL_ONION}:host-gateway"',
+        )
 
     def test_compose_pins_the_provider_to_the_host_gateway(self):
         self.assertEqual(
@@ -129,7 +179,7 @@ class TestContainerExtraHostsLookup(unittest.TestCase):
                 variables={"application_id": "web-app-joomla"},
                 application_id="web-app-penpot",
             )
-        self.assertEqual(seen, ["web-app-penpot"])
+        self.assertEqual(set(seen), {"web-app-penpot"})
 
     def test_caller_entries_alone_emit_a_block_without_sso(self):
         self.assertEqual(
