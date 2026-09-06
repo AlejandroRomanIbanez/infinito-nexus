@@ -24,6 +24,9 @@
 - name: ⏳ Wait for Stalwart database and management API
   include_tasks: 01_wait_for_api.yml
 
+- name: "🔧 Point Stalwart's file tracer at a writable directory"
+  include_tasks: tracing.yml
+
 - name: "⚙️ Provision the Stalwart WebUI (WebAdmin) bundle"
   include_tasks: 02_webadmin.yml
 

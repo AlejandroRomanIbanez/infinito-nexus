@@ -9,6 +9,18 @@ ActionMailer::Base.smtp_settings = {
   authentication: :login,
 {% endif %}
   domain: {{ GITLAB_EMAIL.domain | ruby_dq }},
+{# Exception: Net::SMTP verifies the STARTTLS peer, and no certificate can ever
+   carry a .onion name, so an onion relay dies with "certificate verify failed"
+   the moment start_tls is on -- it fails in 40ms and the mail is dropped after
+   three retries. Trust our CA where it is mounted; on an onion relay verify
+   nothing, because the hop is the host-local address the extra_hosts pin
+   resolves to and Tor already carries the confidentiality. A clearnet relay
+   keeps full verification. #}
+{% if GITLAB_EMAIL_CA_FILE | length > 0 %}
+  ca_file: {{ GITLAB_EMAIL_CA_FILE | ruby_dq }},
+{% elif GITLAB_EMAIL_ONION_RELAY | bool %}
+  openssl_verify_mode: {{ 'none' | ruby_dq }},
+{% endif %}
   enable_starttls_auto: {{ GITLAB_EMAIL.start_tls | bool | string | lower }},
   tls: {{ ((GITLAB_EMAIL.tls | bool) and not (GITLAB_EMAIL.start_tls | bool)) | string | lower }}
 }
