@@ -213,6 +213,14 @@ class LookupModule(LookupBase):
             return "on" if _as_bool(resolved.get("tls")) else "plain"
         if short_key == "start_tls":
             # SSO relay uses STARTTLS on port 25.
+            # Exception: never on an onion relay. No CA issues a certificate for
+            # a .onion name, so a client that verifies the peer -- Ruby's
+            # Net::SMTP does, and drops the mail after three silent retries --
+            # can never complete the handshake. Tor already carries the
+            # confidentiality STARTTLS would add, and `tls` is False here for
+            # the same reason.
+            if str(resolved.get("host") or "").lower().endswith(".onion"):
+                return False
             return self._provider_uses_sso_relay(variables)
         if short_key == "smtp":
             return True

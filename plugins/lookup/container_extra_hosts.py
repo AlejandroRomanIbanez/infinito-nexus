@@ -101,6 +101,13 @@ class LookupModule(LookupBase):
         if not merged:
             return [""]
 
+        # Exception: Discourse is not described by a compose service -- its own
+        # launcher builds the container from `docker_args`, so the same pins
+        # have to reach it as `docker run` flags. Same emitter, so the two forms
+        # cannot drift.
+        if _to_bool(self._render(kwargs.get("docker_flags", False)), strict=False):
+            return ["\n".join(f"  - --add-host={entry}" for entry in merged)]
+
         lines = ["extra_hosts:"] + [f'  - "{entry}"' for entry in merged]
         return ["\n".join(lines)]
 
