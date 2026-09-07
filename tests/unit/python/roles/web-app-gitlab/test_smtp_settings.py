@@ -67,7 +67,7 @@ class TestGitlabSmtpSettings(unittest.TestCase):
         self.assertNotIn("openssl_verify_mode", _render(RELAY))
 
     def test_our_own_ca_is_trusted_where_it_is_mounted(self):
-        rendered = _render(RELAY, ca_file="/tmp/infinito/ca/root-ca.crt")  # noqa: S108 - container path
+        rendered = _render(RELAY, ca_file="/tmp/infinito/ca/root-ca.crt")
         self.assertIn('ca_file: "/tmp/infinito/ca/root-ca.crt"', rendered)
 
     def test_without_our_ca_no_trust_store_override_is_emitted(self):
