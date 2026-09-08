@@ -22,16 +22,9 @@
     stalwart_jmap: "{{ stalwart_jmap_raw.stdout | from_json }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-# Exception: JMAP reports method-level failures inside a 200 response, so the
-# `-f` above cannot see them. Left unchecked the caller reads a field off the
-# error object, gets undefined, and reports whatever its own fallback says
-# instead of what Stalwart refused.
 - name: "✅ Ensure Stalwart accepted the JMAP call"
   ansible.builtin.assert:
     that:
       - stalwart_jmap.methodResponses[0][0] != 'error'
-    # Exception: assert finalizes fail_msg even when `that` holds, so this
-    # renders the response object whole rather than reaching for the error
-    # keys, which a successful response does not carry.
     fail_msg: "Stalwart refused the JMAP call: {{ stalwart_jmap.methodResponses[0][1] }}"
     quiet: true

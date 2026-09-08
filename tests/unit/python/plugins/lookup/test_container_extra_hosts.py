@@ -37,7 +37,7 @@ class TestContainerExtraHostsLookup(unittest.TestCase):
         patcher.start()
         self.addCleanup(patcher.stop)
 
-    def _run(self, extra_hosts=None, **overrides):
+    def _run(self, extra_hosts=None, docker_flags=None, **overrides):
         variables = {
             "application_id": "web-app-espocrm",
             "_sso_enabled": True,
@@ -46,6 +46,8 @@ class TestContainerExtraHostsLookup(unittest.TestCase):
         }
         variables.update(overrides)
         kwargs = {} if extra_hosts is None else {"extra_hosts": extra_hosts}
+        if docker_flags is not None:
+            kwargs["docker_flags"] = docker_flags
         return self.lookup.run(None, variables=variables, **kwargs)[0]
 
     def test_an_onion_mail_relay_is_pinned_so_a_proxyless_client_can_reach_it(self):
@@ -58,6 +60,26 @@ class TestContainerExtraHostsLookup(unittest.TestCase):
             block,
             'extra_hosts:\n  - "host.docker.internal:host-gateway"\n'
             f'  - "{MAIL_ONION}:host-gateway"',
+        )
+
+    def test_docker_flags_emit_add_host_for_a_launcher_built_container(self):
+        """Discourse has no compose service -- its launcher builds the
+        container from docker_args, so the pins must reach it as run flags."""
+        block = self._run(
+            _sso_enabled=False,
+            _email_enabled=True,
+            _mail_host=MAIL_ONION,
+            docker_flags=True,
+        )
+        self.assertEqual(
+            block,
+            "  - --add-host=host.docker.internal:host-gateway\n"
+            f"  - --add-host={MAIL_ONION}:host-gateway",
+        )
+
+    def test_docker_flags_stay_empty_when_there_is_nothing_to_pin(self):
+        self.assertEqual(
+            self._run(_sso_enabled=False, _email_enabled=False, docker_flags=True), ""
         )
 
     def test_a_clearnet_mail_relay_is_left_alone(self):

@@ -84,8 +84,6 @@ class Recoverer(ABC):
         if not service_backup and self.no_backup_flag:
             argv.append("--no-safety-backup")
         argv += self.extra_flags(passphrase_stdin=passphrase_stdin)
-        # Exception: a bare "python3" resolves through PATH to an interpreter without
-        # baudolo; this process already imported the recovery stack, so reuse it.
         return [sys.executable, self.script(), *argv]
 
 

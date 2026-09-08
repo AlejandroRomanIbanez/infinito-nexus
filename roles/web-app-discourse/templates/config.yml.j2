@@ -232,3 +232,4 @@ docker_args:
   - --network={{ DISCOURSE_PG_NETWORK }}
 {% endif %}
   - --name={{ DISCOURSE_CONTAINER }}
+{{ lookup('container_extra_hosts', docker_flags=true) }}

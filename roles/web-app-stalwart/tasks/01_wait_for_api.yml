@@ -4,7 +4,7 @@
   vars:
     wait_service_key: stalwart
 
-- name: "⏳ Wait until Stalwart management API is ready"
+- name: "⏳ Wait until Stalwart answers /healthz/ready"
   ansible.builtin.shell: >-
     container exec -i {{ STALWART_CONTAINER_ADDRESS }}
     {{ 30 | curl }} -fsS -o /dev/null {{ STALWART_LOCAL_BASE_URL }}/healthz/ready
@@ -14,11 +14,7 @@
   until: stalwart_api_check.rc == 0
   changed_when: false
 
-# Exception: /healthz/ready answers 200 while Stalwart is still in bootstrap
-# mode (measured against v0.16.12), where every x: method is refused with
-# "The server is in bootstrap mode". Readiness for the management ops that
-# follow is therefore a management call, not the health endpoint.
-- name: "⏳ Wait until Stalwart accepts management calls"
+- name: "⏳ Wait until Stalwart leaves bootstrap mode and accepts management calls"
   ansible.builtin.shell: >-
     container exec -i {{ STALWART_CONTAINER_ADDRESS }}
     {{ 30 | curl }} -sS -f

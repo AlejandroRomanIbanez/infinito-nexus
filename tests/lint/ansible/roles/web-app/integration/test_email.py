@@ -18,6 +18,7 @@ dependent consumers, so they are exempt from the consumer rule. Both the
 active provider (web-app-stalwart) and the deprecated one (web-app-mailu,
 still in tree) qualify."""
 _EMAIL_LOOKUP_RE = re.compile(r"""lookup\(\s*['"]email['"]""")
+_EXTRA_HOSTS_RE = re.compile(r"""lookup\(\s*['"]container_extra_hosts['"]""")
 _SCAN_EXTENSIONS = {".yml", ".yaml", ".j2", ".py", ".sh", ".conf", ".env"}
 _EMAIL_KEY_RE = re.compile(r"^(\s*)email:\s*(#.*)?$")
 
@@ -93,6 +94,34 @@ def _has_opt_out(config_path: Path) -> bool:
     return email.get("enabled") is False and email.get("shared") is False
 
 
+def _role_pins_the_mail_relay(role_path: Path) -> bool:
+    """Whether the role's templates emit the onion pin for the mail relay.
+
+    Args:
+        role_path: the ``roles/web-app-*`` directory to scan.
+
+    Any template will do: a compose service emits the ``extra_hosts:`` block,
+    while a launcher-built container (Discourse) takes the same entries as
+    ``--add-host`` run flags through ``docker_flags=true``.
+
+    An onion mail relay resolves through no DNS a container has, so a sender
+    without this pin queues the message, reports success and delivers nothing
+    -- silently, on every onion deploy. Measured on web-app-friendica in CI
+    run 34068442403, where the msmtp healthcheck was the only thing loud
+    enough to notice.
+    """
+    templates = role_path / "templates"
+    if not templates.is_dir():
+        return False
+    for path in templates.rglob("*.j2"):  # nocheck: project-walk
+        try:
+            if _EXTRA_HOSTS_RE.search(read_text(str(path))):
+                return True
+        except (OSError, UnicodeDecodeError):
+            continue
+    return False
+
+
 def _emit_missing_email_warning(root: Path, role_path: Path) -> None:
     config_file = role_path / ROLE_FILE_META_SERVICES
     if config_file.is_file():
@@ -139,6 +168,22 @@ class TestWebAppRolesIntegrateEmail(unittest.TestCase):
                     missing.append("enabled: true")
                 if not is_explicit_truth(svc.get("shared")):
                     missing.append("shared: true")
+                if missing:
+                    rel = (
+                        config.relative_to(root).as_posix()
+                        if config.is_file()
+                        else role_path.relative_to(root).as_posix()
+                    )
+                if not _role_pins_the_mail_relay(role_path):
+                    errors.append(
+                        f"[{role_path.name}]: calls lookup('email', ...) but no "
+                        "template emits lookup('container_extra_hosts'), so on an "
+                        "onion deploy its SMTP client cannot reach the relay and "
+                        "drops every message without an error. Add "
+                        "\"{{ lookup('container_extra_hosts') | indent(4) }}\" to "
+                        "each service that sends mail (or docker_flags=true for a "
+                        "launcher-built container)."
+                    )
                 if missing:
                     rel = (
                         config.relative_to(root).as_posix()

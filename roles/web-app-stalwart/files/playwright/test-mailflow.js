@@ -37,8 +37,6 @@ async function openMail(page, subject) {
   ).toBeVisible({ timeout: resolveTimeout(15_000) });
 }
 
-// Exception: opening a message leaves a jQuery UI dialog behind whose
-// `.ui-widget-overlay` swallows the logout click; going back to the list drops it.
 async function leaveOpenDialogs(page) {
   await gotoOnion(page, `${webmailBaseUrl}/?_task=mail&_mbox=INBOX`);
   await page

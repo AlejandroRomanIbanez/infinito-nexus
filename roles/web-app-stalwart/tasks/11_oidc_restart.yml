@@ -27,16 +27,6 @@
 - name: "⏳ Wait for Stalwart API after the OIDC restart"
   include_tasks: 01_wait_for_api.yml
 
-# Exception: Stalwart builds its directory registry once per start and never
-# rebuilds it. A single failed discovery fetch -- the issuer answering 502 while
-# Keycloak is still settling is enough -- makes the Directory unbuildable, so
-# Authentication drops it ("Default directory with ID ... not found") and the
-# server serves internal auth for the life of the process: WebAdmin SSO and IMAP
-# OAUTHBEARER refuse every Keycloak token while the deploy reports success.
-# Measured: Stalwart does not recover once the issuer returns, only a restart
-# does, so read the binding back and restart until it survives. Re-writing the
-# binding here would be worse than useless: it makes a dead directory read back
-# correct.
 - name: "📖 Read the authentication singleton back"
   include_tasks: jmap_call.yml
   vars:

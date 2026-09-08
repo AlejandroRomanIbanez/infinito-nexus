@@ -2,10 +2,8 @@ const { test, expect } = require("@playwright/test");
 
 const { appBaseUrl, canonicalDomain } = require("./env");
 
-// Aggregator: the runner collects only *.spec.js; the scenarios live in the
-// test-*.js modules required below (TLS/DAV baseline, WebAdmin SSO and native
-// login, the Roundcube mail flow both ways, the .onion outbound route, and the
-// shared persona flows). A module missing from this list is never collected.
+// The runner collects only *.spec.js, so a test-*.js module missing from the
+// list below is never run.
 test.use({ ignoreHTTPSErrors: true });
 
 test.beforeEach(() => {

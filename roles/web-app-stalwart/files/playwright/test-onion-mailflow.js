@@ -47,10 +47,6 @@ test("biber: a .onion recipient is accepted and routed through the Tor gateway",
       throw new Error(`Stalwart refused the .onion recipient: ${await sendError.textContent()}`);
     }
 
-    // Exception: the negative half carries the signal — an unrouted .onion has no MX,
-    // so Stalwart would hand the sender a delivery failure instead of holding the
-    // message for the relay. Landing in Sent proves nothing about routing, so the
-    // assertion is the absence of that bounce rather than the presence of a copy.
     await gotoOnion(page, `${webmailBaseUrl}/?_task=mail&_mbox=INBOX`);
     await page.waitForTimeout(resolveTimeout(10_000));
     await gotoOnion(page, `${webmailBaseUrl}/?_task=mail&_mbox=INBOX`);

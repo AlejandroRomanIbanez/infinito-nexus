@@ -45,7 +45,7 @@ RELAY = {
 SUBMISSION = dict(RELAY, port=465, auth=True, start_tls=False, tls=True)
 
 
-def _render(email: dict, ca_file: str = "", onion_relay: bool = False) -> str:
+def _render(email: dict, ca_file: str = "") -> str:
     env = Environment(
         trim_blocks=True,
         lstrip_blocks=True,
@@ -57,30 +57,21 @@ def _render(email: dict, ca_file: str = "", onion_relay: bool = False) -> str:
     return env.from_string(read_text(TEMPLATE)).render(
         GITLAB_EMAIL=email,
         GITLAB_EMAIL_CA_FILE=ca_file,
-        GITLAB_EMAIL_ONION_RELAY=onion_relay,
     )
 
 
 class TestGitlabSmtpSettings(unittest.TestCase):
-    def test_a_clearnet_relay_keeps_full_certificate_verification(self):
-        rendered = _render(RELAY)
-        self.assertNotIn("openssl_verify_mode", rendered)
-        self.assertNotIn("ca_file", rendered)
+    def test_verification_is_never_weakened(self):
+        """An onion relay is handled by turning start_tls off in the email
+        lookup, not by telling Net::SMTP to skip peer verification."""
+        self.assertNotIn("openssl_verify_mode", _render(RELAY))
 
-    def test_an_onion_relay_stops_verifying_a_name_no_certificate_can_carry(self):
-        """Net::SMTP dies with "certificate verify failed" against a .onion
-        relay, and the send is dropped after three silent retries."""
-        rendered = _render(dict(RELAY, host="mail.abc.onion"), onion_relay=True)
-        self.assertIn('openssl_verify_mode: "none"', rendered)
-
-    def test_our_own_ca_is_trusted_rather_than_skipping_verification(self):
-        rendered = _render(
-            dict(RELAY, host="mail.abc.onion"),
-            ca_file="/tmp/infinito/ca/root-ca.crt",  # noqa: S108 - container path
-            onion_relay=True,
-        )
+    def test_our_own_ca_is_trusted_where_it_is_mounted(self):
+        rendered = _render(RELAY, ca_file="/tmp/infinito/ca/root-ca.crt")
         self.assertIn('ca_file: "/tmp/infinito/ca/root-ca.crt"', rendered)
-        self.assertNotIn("openssl_verify_mode", rendered)
+
+    def test_without_our_ca_no_trust_store_override_is_emitted(self):
+        self.assertNotIn("ca_file", _render(RELAY))
 
     def test_the_relay_carries_no_credentials_at_all(self):
         rendered = _render(RELAY)

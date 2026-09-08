@@ -212,7 +212,8 @@ class LookupModule(LookupBase):
                 return "off"
             return "on" if _as_bool(resolved.get("tls")) else "plain"
         if short_key == "start_tls":
-            # SSO relay uses STARTTLS on port 25.
+            if str(resolved.get("host") or "").lower().endswith(".onion"):
+                return False
             return self._provider_uses_sso_relay(variables)
         if short_key == "smtp":
             return True

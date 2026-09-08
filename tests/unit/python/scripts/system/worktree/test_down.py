@@ -49,8 +49,6 @@ class WorktreeDownFixture:
         self.repo = self.root / "repo"
         self.base = self.root / "worktrees"
         self.checkout = self.base / "feat"
-        # Exception: run from a pre-commit hook, git exports GIT_DIR and GIT_INDEX_FILE,
-        # which would aim every command below at the real repo instead of this throwaway.
         inherited = {k: v for k, v in os.environ.items() if k not in GIT_REPO_SCOPE}
         self.env = {**inherited, **GIT_IDENTITY}
 

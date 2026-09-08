@@ -20,8 +20,6 @@ tor-smtp: # nocheck: category-modes
   ports:
     internal:
       smtp: 1525
-  # Exception: the slim image ships no curl/nc — a stdlib socket connect is the
-  # probe, and it reads the listen port from the same env the daemon binds (SPOT).
   healthcheck:
     test: ["CMD", "python", "-c", "import os,socket; socket.create_connection(('127.0.0.1', int(os.environ['TOR_SMTP_LISTEN_PORT'])), 3).close()"]
   min_storage: 100MB

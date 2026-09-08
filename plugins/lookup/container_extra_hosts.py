@@ -73,6 +73,17 @@ class LookupModule(LookupBase):
         variables: dict[str, Any] | None = None,
         **kwargs: Any,
     ) -> list[str]:
+        """Render the pins this application needs to reach onion-hosted services.
+
+        Kwargs:
+          application_id: role whose pins to resolve; defaults to the play var.
+          extra_hosts:    additional `name:address` entries from the caller.
+          host_alias:     also pin `host.docker.internal` to the gateway.
+          docker_flags:   emit `--add-host=` flags for a `docker run` command
+                          line instead of a compose `extra_hosts:` block.
+
+        Returns a single-element list holding the rendered block, or [""].
+        """
         if terms:
             raise AnsibleError(
                 "container_extra_hosts lookup takes no positional terms; pass "
@@ -100,6 +111,9 @@ class LookupModule(LookupBase):
         merged = list(dict.fromkeys(entries))
         if not merged:
             return [""]
+
+        if _to_bool(self._render(kwargs.get("docker_flags", False)), strict=False):
+            return ["\n".join(f"  - --add-host={entry}" for entry in merged)]
 
         lines = ["extra_hosts:"] + [f'  - "{entry}"' for entry in merged]
         return ["\n".join(lines)]

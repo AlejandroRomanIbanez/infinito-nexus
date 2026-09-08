@@ -244,6 +244,30 @@ class TestEmailLookup(unittest.TestCase):
         with self.assertRaises(AnsibleError):
             self.lookup.run(["a", "b"], variables={})
 
+    def test_an_onion_relay_never_announces_starttls(self) -> None:
+        # No CA issues a certificate for a .onion name, so a client that
+        # verifies the peer can never complete the handshake -- Ruby's
+        # Net::SMTP drops the mail after three silent retries. Tor already
+        # carries the confidentiality, which is why `tls` is False here too.
+        _write_role_config(
+            self._tmp,
+            "web-app-mailprov",
+            {"sso": {"oidc": {"submission_via_relay": True}}},
+        )
+        variables = {
+            "MAIL_PROVIDER": "web-app-mailprov",
+            "group_names": ["web-app-mailprov", "web-app-keycloak"],
+            "groups": {"web-app-mailprov": ["host1"], "web-app-keycloak": ["host1"]},
+            "TLS_ENABLED": True,
+            "SYSTEM_EMAIL_HOST": "mail." + "a" * 56 + ".onion",
+            "inventory_hostname": "host1",
+        }
+        result = self.lookup.run(
+            [], variables=variables, roles_dir=str(self._tmp / "roles")
+        )[0]
+        self.assertFalse(result["start_tls"])
+        self.assertFalse(result["tls"])
+
     def test_sso_relay_provider_disables_auth_and_uses_port_25(self) -> None:
         # submission_via_relay + Keycloak deployed -> relay on 25, no auth, STARTTLS.
         _write_role_config(

@@ -33,9 +33,6 @@ test("administrator: stalwart native login and logout (no sso)", async ({ page }
   await loginField.waitFor({ state: "visible", timeout: resolveTimeout(30_000) });
   await loginField.fill(stalwartAdminUsername);
 
-  // Exception: WebAdmin asks for the account name on its own screen ("Enter your account
-  // name to continue"); the password field only exists after Continue, so waiting for it
-  // on the first screen never resolves.
   await page
     .getByRole("button", { name: /continue/i })
     .or(page.locator("button[type='submit']"))
@@ -51,8 +48,6 @@ test("administrator: stalwart native login and logout (no sso)", async ({ page }
     .first()
     .click();
 
-  // Exception: a rejected credential re-renders the same form rather than erroring, so
-  // without this the run would fail later on the dashboard locator with no reason given.
   await expect(
     page.getByText(/invalid username or password/i)
   ).toBeHidden({ timeout: resolveTimeout(15_000) });
@@ -61,8 +56,6 @@ test("administrator: stalwart native login and logout (no sso)", async ({ page }
     page.locator("nav, .sidebar, [class*='menu'], h1, h2").filter({ hasText: /dashboard|domains|account|settings|directory/i }).first()
   ).toBeVisible({ timeout: resolveTimeout(30_000) });
 
-  // Exception: the whole point of this spec is that the journey stays on Stalwart;
-  // a redirect to the issuer would mean the sso=false variant still hit Keycloak.
   if (oidcIssuerUrl) {
     expect(page.url()).not.toContain(oidcIssuerUrl);
   }
