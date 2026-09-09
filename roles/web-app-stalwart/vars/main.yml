@@ -15,6 +15,9 @@ STALWART_LOG_DIR: "{{ lookup('volume', application_id, 'data').target }}"
 STALWART_JMAP_APPLICATION_GET: >-
   {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
       'methodCalls': [['x:Application/get', {'ids': none}, 'c0']]} | to_json }}
+STALWART_JMAP_TRANSIENT_ERRORS:
+  - serverUnavailable
+  - rateLimit
 STALWART_CONTAINER_ADDRESS: "{{ lookup('container_address', application_id, 'stalwart') }}"
 
 STALWART_DOMAIN: "{{ lookup('config', application_id, 'services.stalwart.domain') }}"

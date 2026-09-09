@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test");
 
-const { safeSkipUnlessEnabled, gotoOnion } = require("./personas");
+const { safeSkipUnlessEnabled, gotoOnion, recordVideoOptions } = require("./personas");
 const { roundcubeSsoLogin, roundcubeLogout } = require("./webmail");
 const { webmailBaseUrl, biberUsername, biberPassword } = require("./env");
 const { resolveTimeout, isSplitRealmOidc } = require("./timeouts");
@@ -17,7 +17,7 @@ const { resolveTimeout, isSplitRealmOidc } = require("./timeouts");
 // and never reach the gateway.
 const FOREIGN_ONION = "recipient@nexusprobe7xk3mjqzvhbnd4rlyugc2pfe6sotai5w.onion";
 
-test("biber: a .onion recipient is accepted and routed through the Tor gateway", async ({ browser }) => {
+test("biber: a .onion recipient is accepted and routed through the Tor gateway", async ({ browser }, testInfo) => {
   test.skip(isSplitRealmOidc(), "clearnet app with an onion OIDC issuer: unreachable from one browser");
   safeSkipUnlessEnabled("tor");
   safeSkipUnlessEnabled("sso");
@@ -29,6 +29,7 @@ test("biber: a .onion recipient is accepted and routed through the Tor gateway",
   const context = await browser.newContext({
     ignoreHTTPSErrors: true,
     ...(proxyServer ? { proxy: { server: proxyServer } } : {}),
+    ...recordVideoOptions(testInfo),
   });
 
   try {

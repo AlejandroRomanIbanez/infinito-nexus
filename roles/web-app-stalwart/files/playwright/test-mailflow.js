@@ -1,6 +1,6 @@
 const { test, expect } = require("@playwright/test");
 
-const { safeSkipUnlessEnabled, gotoOnion } = require("./personas");
+const { safeSkipUnlessEnabled, gotoOnion, recordVideoOptions } = require("./personas");
 const { roundcubeSsoLogin, roundcubeLogout, waitForEmailInMailbox } = require("./webmail");
 const {
   webmailBaseUrl,
@@ -51,7 +51,7 @@ async function leaveOpenDialogs(page) {
 // answer. Login is via Keycloak SSO (Roundcube XOAUTH2 -> Stalwart), mirroring
 // web-app-mailu. They are separate people: isolated browser contexts, and biber stays
 // signed in so the answer lands in a session that never saw the outbound message.
-test("stalwart: biber and the administrator exchange mail both ways", async ({ browser }) => {
+test("stalwart: biber and the administrator exchange mail both ways", async ({ browser }, testInfo) => {
   test.skip(isSplitRealmOidc(), "clearnet app with an onion OIDC issuer: unreachable from one browser");
   safeSkipUnlessEnabled("sso");
   expect(webmailBaseUrl, "WEBMAIL_BASE_URL must be set").toBeTruthy();
@@ -66,6 +66,7 @@ test("stalwart: biber and the administrator exchange mail both ways", async ({ b
   const contextOptions = {
     ignoreHTTPSErrors: true,
     ...(proxyServer ? { proxy: { server: proxyServer } } : {}),
+    ...recordVideoOptions(testInfo),
   };
   const biberContext = await browser.newContext(contextOptions);
   const adminContext = await browser.newContext(contextOptions);

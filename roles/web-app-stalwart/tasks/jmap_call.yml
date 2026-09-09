@@ -12,7 +12,13 @@
   changed_when: false
   retries: 12
   delay: 5
-  until: stalwart_jmap_raw.rc == 0
+  until: >-
+    stalwart_jmap_raw.rc == 0
+    and (
+      (stalwart_jmap_raw.stdout | from_json).methodResponses[0][0] != 'error'
+      or (stalwart_jmap_raw.stdout | from_json).methodResponses[0][1].type
+         not in STALWART_JMAP_TRANSIENT_ERRORS
+    )
   timeout: "{{ lookup('timeout', 120) | int }}"
   # nocheck: include-uniform-apply-keyword — seven call sites include this file; the in-file no_log is the SPOT, per-site apply would repeat it 7×
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
