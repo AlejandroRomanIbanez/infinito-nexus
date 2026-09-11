@@ -56,7 +56,7 @@ STALWART_WEBUI_LOCAL_URL: "file://{{ STALWART_WEBUI_CONTAINER_FILE }}"
 STALWART_WEBUI_APP_DESCRIPTION: "Stalwart Web Interface"
 
 STALWART_IP4_PUBLIC: "{{ DOCKER_PUBLIC_BIND_HOST }}"
-STALWART_ACTIVE_PROVIDER: "{{ MAIL_PROVIDER == application_id }}"
+STALWART_ACTIVE_PROVIDER: "{{ lookup('mail_provider') == application_id }}"
 
 STALWART_ADMIN_USER: "admin"
 STALWART_ADMIN_PASSWORD: "{{ lookup('config', application_id, 'secrets.credentials.admin_password') }}"

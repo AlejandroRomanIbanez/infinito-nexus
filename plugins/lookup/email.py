@@ -1,6 +1,7 @@
 # nocheck: comments-valid  explanatory WHY-comments in this SPOT lookup predate the stricter lint
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from ansible.errors import AnsibleError
@@ -9,6 +10,7 @@ from ansible.plugins.lookup import LookupBase
 from plugins.lookup.applications import LookupModule as ApplicationsLookup
 from plugins.lookup.domain import LookupModule as DomainLookup
 from plugins.lookup.users import LookupModule as UsersLookup
+from utils.mail.provider import resolve_active_provider
 from utils.roles.entity.name import get_entity_name
 
 SYSTEM_EMAIL_PREFIX = "SYSTEM_EMAIL_"
@@ -240,7 +242,12 @@ class LookupModule(LookupBase):
 
     def _mail_provider(self, variables: dict[str, Any]) -> str:
         value = variables.get("MAIL_PROVIDER")
-        return str(value).strip() if value else DEFAULT_MAIL_PROVIDER
+        configured = str(value).strip() if value else DEFAULT_MAIL_PROVIDER
+        return resolve_active_provider(
+            configured,
+            list(variables.get("group_names") or []),
+            Path.cwd() / "roles",
+        )
 
     def _provider_services(self, variables: dict[str, Any]) -> dict[str, Any]:
         """The active provider's ``services`` block, or ``{}`` when it cannot be
