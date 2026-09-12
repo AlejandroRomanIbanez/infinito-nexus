@@ -10,7 +10,11 @@ from __future__ import annotations
 
 import unittest
 
-from utils.mail.provider import declaring_roles, resolve_active_provider
+from utils.mail.provider import (
+    declaring_roles,
+    deployed_roles,
+    resolve_active_provider,
+)
 
 from . import PROJECT_ROOT
 
@@ -73,6 +77,43 @@ class TestResolveActiveProvider(unittest.TestCase):
 
     def test_empty_group_names_keeps_the_configured_value(self):
         self.assertEqual(resolve_active_provider(STALWART, [], ROLES_DIR), STALWART)
+
+
+class TestDeployedRoles(unittest.TestCase):
+    """Resolution is cluster-wide, so it reads ``groups``, not ``group_names``.
+
+    A swarm worker's ``group_names`` lacks the manager-pinned provider. Deriving
+    presence per-host would give workers a different provider than the manager
+    and render their relay config against a server they must not use.
+    """
+
+    def test_only_groups_with_hosts_count_as_deployed(self):
+        groups = {
+            STALWART: ["mgr-01"],
+            MAILU: [],
+            "all": ["mgr-01", "wrk-01"],
+        }
+        result = deployed_roles(groups)
+        self.assertIn(STALWART, result)
+        self.assertNotIn(MAILU, result)
+
+    def test_none_and_empty_are_tolerated(self):
+        self.assertEqual(deployed_roles(None), [])
+        self.assertEqual(deployed_roles({}), [])
+
+    def test_worker_resolves_the_same_provider_as_the_manager(self):
+        groups = {STALWART: ["mgr-01"], "all": ["mgr-01", "wrk-01", "wrk-02"]}
+        self.assertEqual(
+            resolve_active_provider(STALWART, deployed_roles(groups), ROLES_DIR),
+            STALWART,
+            "a manager-pinned provider must still resolve on worker nodes",
+        )
+
+    def test_mailu_only_cluster_resolves_mailu_on_every_node(self):
+        groups = {MAILU: ["mgr-01"], "all": ["mgr-01", "wrk-01"]}
+        self.assertEqual(
+            resolve_active_provider(STALWART, deployed_roles(groups), ROLES_DIR), MAILU
+        )
 
 
 if __name__ == "__main__":

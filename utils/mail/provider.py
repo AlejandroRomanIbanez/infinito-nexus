@@ -57,21 +57,39 @@ def declaring_roles(roles_dir: Path) -> list[str]:
     return ordered
 
 
+def deployed_roles(groups: dict[str, Any] | None) -> list[str]:
+    """Roles with at least one host anywhere in the inventory.
+
+    Cluster-wide, never per-host: in swarm the provider is manager-pinned, so a
+    worker's ``group_names`` lacks it even though the whole cluster relays
+    through it. Resolving from ``group_names`` would hand workers a different
+    provider than the manager and render their relay config against a server
+    they are not supposed to use.
+
+    Args:
+        groups: Ansible's ``groups`` mapping of group name to member hosts.
+
+    Returns:
+        Group names that have members.
+    """
+    return [name for name, hosts in (groups or {}).items() if hosts]
+
+
 def resolve_active_provider(
-    configured: str, group_names: list[str] | tuple[str, ...], roles_dir: Path
+    configured: str, deployed: list[str] | tuple[str, ...], roles_dir: Path
 ) -> str:
     """The role acting as mail provider for this deploy.
 
     Args:
         configured: the ``MAIL_PROVIDER`` value from the inventory.
-        group_names: the roles taking part in this deploy.
+        deployed: roles present cluster-wide, from :func:`deployed_roles`.
         roles_dir: repository ``roles/`` directory.
 
     Returns:
         ``configured`` when that role is deployed, otherwise the
         highest-priority declaring role that is; ``configured`` when none is.
     """
-    present = set(group_names or ())
+    present = set(deployed or ())
     if configured and configured in present:
         return configured
 

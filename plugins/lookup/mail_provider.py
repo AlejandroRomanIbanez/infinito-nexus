@@ -13,7 +13,7 @@ from typing import Any
 
 from ansible.plugins.lookup import LookupBase
 
-from utils.mail.provider import resolve_active_provider
+from utils.mail.provider import deployed_roles, resolve_active_provider
 
 DEFAULT_MAIL_PROVIDER = "web-app-stalwart"
 
@@ -29,6 +29,9 @@ class LookupModule(LookupBase):
         configured = (
             str(vars_.get("MAIL_PROVIDER") or "").strip() or DEFAULT_MAIL_PROVIDER
         )
-        group_names = vars_.get("group_names") or []
         roles_dir = Path(kwargs.get("roles_dir") or Path.cwd() / "roles")
-        return [resolve_active_provider(configured, list(group_names), roles_dir)]
+        return [
+            resolve_active_provider(
+                configured, deployed_roles(vars_.get("groups")), roles_dir
+            )
+        ]

@@ -10,7 +10,7 @@ from ansible.plugins.lookup import LookupBase
 from plugins.lookup.applications import LookupModule as ApplicationsLookup
 from plugins.lookup.domain import LookupModule as DomainLookup
 from plugins.lookup.users import LookupModule as UsersLookup
-from utils.mail.provider import resolve_active_provider
+from utils.mail.provider import deployed_roles, resolve_active_provider
 from utils.roles.entity.name import get_entity_name
 
 SYSTEM_EMAIL_PREFIX = "SYSTEM_EMAIL_"
@@ -245,7 +245,7 @@ class LookupModule(LookupBase):
         configured = str(value).strip() if value else DEFAULT_MAIL_PROVIDER
         return resolve_active_provider(
             configured,
-            list(variables.get("group_names") or []),
+            deployed_roles(variables.get("groups")),
             Path.cwd() / "roles",
         )
 
