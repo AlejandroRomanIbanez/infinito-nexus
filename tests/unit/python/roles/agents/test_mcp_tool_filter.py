@@ -65,12 +65,9 @@ def _filters() -> dict:
     spec = importlib.util.spec_from_file_location("mcp_authorization", FILTERS)
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
-    return {
-        "mcp_authorization": module.mcp_authorization,
-        "mcp_renderable_servers": module.mcp_renderable_servers,
-        "to_json": json.dumps,
-        "bool": bool,
-    }
+    filters = dict(module.FilterModule().filters())
+    filters.update({"to_json": json.dumps, "bool": bool})
+    return filters
 
 
 def _yaml(text: str):
