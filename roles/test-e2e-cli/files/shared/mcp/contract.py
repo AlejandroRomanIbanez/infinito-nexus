@@ -116,7 +116,6 @@ def rpc(method, params=None, authorization=None, url=None, notification=False):
     request.add_header("Accept", "application/json, text/event-stream")
     if HOST_HEADER:
         request.add_header("Host", HOST_HEADER)
-        request.add_header("X-Forwarded-Proto", "https")
     if authorization:
         request.add_header("Authorization", authorization)
     if SESSION["id"]:

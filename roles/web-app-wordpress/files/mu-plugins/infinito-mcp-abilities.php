@@ -60,7 +60,15 @@ add_filter( 'rest_pre_dispatch', 'infinito_mcp_guard_transport', 10, 3 );
  * @param bool $available Whether core already considers them available.
  */
 function infinito_mcp_app_passwords_available( $available ) {
-	return $available || 'https' === wp_parse_url( home_url(), PHP_URL_SCHEME );
+	if ( $available || 'https' === wp_parse_url( home_url(), PHP_URL_SCHEME ) ) {
+		return true;
+	}
+	$internal = getenv( 'WORDPRESS_INTERNAL_HOST' );
+	if ( ! $internal ) {
+		return false;
+	}
+	$host = isset( $_SERVER['HTTP_HOST'] ) ? explode( ':', wp_unslash( $_SERVER['HTTP_HOST'] ) )[0] : '';
+	return $host === $internal;
 }
 
 add_filter( 'wp_is_application_passwords_available', 'infinito_mcp_app_passwords_available' );
