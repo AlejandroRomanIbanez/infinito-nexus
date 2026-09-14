@@ -85,19 +85,20 @@ Run the published image to provision the inventory and deploy OpenBao to a manag
 ```bash
 APP=web-app-openbao
 HOST=<your-server>
+DOMAIN=<your-domain>
 TLS_MODE=self_signed
 SSH_PUBLIC_KEY="<your-ssh-public-key>"
 
 docker run --rm -it \
   -v "$PWD/inventories:/etc/infinito.nexus/inventories" \
-  -e APP="$APP" -e HOST="$HOST" -e TLS_MODE="$TLS_MODE" -e SSH_PUBLIC_KEY="$SSH_PUBLIC_KEY" \
+  -e APP="$APP" -e HOST="$HOST" -e DOMAIN="$DOMAIN" -e TLS_MODE="$TLS_MODE" -e SSH_PUBLIC_KEY="$SSH_PUBLIC_KEY" \
   ghcr.io/infinito-nexus/core/debian bash -c '
     INVENTORY=/etc/infinito.nexus/inventories/production
     infinito administration inventory provision "$INVENTORY" \
       --inventory-file "$INVENTORY/devices.yml" \
       --host "$HOST" \
       --include "$APP" \
-      --vars "{\"TLS_MODE\": \"$TLS_MODE\", \"users\": {\"administrator\": {\"authorized_keys\": [\"$SSH_PUBLIC_KEY\"]}}}" &&
+      --vars "{\"TLS_MODE\": \"$TLS_MODE\", \"DOMAIN_PRIMARY\": \"$DOMAIN\", \"users\": {\"administrator\": {\"authorized_keys\": [\"$SSH_PUBLIC_KEY\"]}}}" &&
     infinito administration deploy dedicated "$INVENTORY/devices.yml" \
       --password-file "$INVENTORY/.password" \
       --diff -vv'
@@ -130,6 +131,6 @@ Backups run through `svc-bkp-volume-2-local` with `backup.no_stop_required: fals
 
 ## Credits
 
-Implemented by **Evangelos Tsakoudis**.
+Implemented by **[Evangelos Tsakoudis](https://github.com/evangelostsak)**.
 Part of the [Infinito.Nexus Project](https://s.infinito.nexus/code) and maintained by [Kevin Veen-Birkenbach](https://www.veen.world).
 Licensed under the [Infinito.Nexus Community License (Non-Commercial)](https://s.infinito.nexus/license).

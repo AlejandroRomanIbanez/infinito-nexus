@@ -27,7 +27,7 @@ css:
   shared: "{{ 'web-svc-css' in group_names }}"
 # nocheck: email, dynamic-flag - OpenBao has no outbound mail surface: it notifies nothing and owns no user mailboxes; audit trails leave through the logging stack.
 email:
-  bond: 1
+  bond: 0
   enabled: false
   shared: false
 prometheus:
@@ -64,7 +64,7 @@ openbao:
     internal:
       http: 8200
     local:
-      http: 8081
+      http: 8093
   healthcheck:
     flavor: wget
     # Exception: an uninitialised container must report healthy or the init task can never reach it.
