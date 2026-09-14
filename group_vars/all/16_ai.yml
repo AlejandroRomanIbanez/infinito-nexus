@@ -35,6 +35,8 @@ LITELLM_CHAT_MODEL_SERVED: >-
                | map(attribute='alias') | reject('search', 'embed') | list) | length > 0))
      or ((OPENROUTER_API_KEY | string) | length > 0) }}
 
+LITELLM_USABLE: "{{ ('svc-ai-litellm' in group_names) and (LITELLM_CHAT_MODEL_SERVED | bool) }}"
+
 OPENROUTER_API_KEY: ""
 
 MCP_DISCOVERY: "{{ lookup('mcp_servers') }}"
