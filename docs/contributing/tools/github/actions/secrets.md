@@ -13,6 +13,8 @@ Repository secrets MUST be set under **Settings → Secrets and variables → Ac
 | `API_OPENAI_KEY` | [call-test-deploy.yml](../../../../../.github/workflows/call-test-deploy.yml) | Publishes the `openai/*` models on the LiteLLM gateway and lets the CLI test exercise the route. | Never. Unset leaves the route unpublished. |
 | `API_ANTHROPIC_KEY` | [call-test-deploy.yml](../../../../../.github/workflows/call-test-deploy.yml) | Publishes the `anthropic/*` models. | Never. |
 | `API_OPENROUTER_KEY` | [call-test-deploy.yml](../../../../../.github/workflows/call-test-deploy.yml) | Publishes `openrouter/auto`. | Never. |
+| `DOCKERHUB_USERNAME` | [cron-images-mirror-all.yml](../../../../../.github/workflows/cron-images-mirror-all.yml), [call-images-mirror-missing.yml](../../../../../.github/workflows/call-images-mirror-missing.yml) | Authenticates the mirror job against Docker Hub, which raises the anonymous pull-rate limit the mirror would otherwise hit. | Never. Both workflows declare the secret `required: false` and gate the login step on both values being non-empty. |
+| `DOCKERHUB_TOKEN` | [cron-images-mirror-all.yml](../../../../../.github/workflows/cron-images-mirror-all.yml), [call-images-mirror-missing.yml](../../../../../.github/workflows/call-images-mirror-missing.yml) | The access token paired with `DOCKERHUB_USERNAME`. | Never, and only together with the username. |
 
 ## `API_OPENAI_KEY`, `API_ANTHROPIC_KEY`, `API_OPENROUTER_KEY` 🤖
 
