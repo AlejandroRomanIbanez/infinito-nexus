@@ -1,6 +1,4 @@
 ---
-# Exception: set_fact outlives the play, so the guard the recreate handler
-# reads has to be cleared per role run or a stale true silently skips it.
 - name: "🧹 Clear the bootstrap marker of an earlier play"
   ansible.builtin.set_fact:
     DISCOURSE_REBUILT: false
@@ -32,8 +30,6 @@
     mode: "0640"
   notify: recreate-discourse
 
-# Exception: launcher reads env: on every docker run but consumes templates,
-# params and hooks only during bootstrap, so only their digest may rebuild.
 - name: "🔑 Record the digest of everything the bootstrap consumes"
   stack_host_copy:
     content: "{{ lookup('template', 'config.yml.j2') | from_yaml | dict2items | rejectattr('key', 'eq', 'env') | items2dict | to_json | hash('sha256') }}"
