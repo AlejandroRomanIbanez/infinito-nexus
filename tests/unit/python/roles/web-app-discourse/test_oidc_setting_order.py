@@ -14,9 +14,7 @@ PREREQUISITES = (
 
 def _line_of(lines: list[str], setting: str) -> int:
     return next(
-        index
-        for index, line in enumerate(lines)
-        if f"SiteSetting.{setting} = " in line
+        index for index, line in enumerate(lines) if f"SiteSetting.{setting} = " in line
     )
 
 

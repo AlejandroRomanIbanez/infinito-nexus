@@ -5,6 +5,7 @@ import unittest
 from pathlib import Path
 
 from utils.cache.files import read_text
+from utils.roles.mapping import ROLE_DIR_META_ADDONS, ROLE_FILE_META_SERVICES
 from utils.update.repository import (
     RepositoryRefEntry,
     RepositoryRefUpdate,
@@ -220,23 +221,19 @@ class TestApplyUpdates(unittest.TestCase):
 class TestCollectEntriesCoversAddons(unittest.TestCase):
     def _role(self, root: Path) -> Path:
         role = root / "roles" / "web-app-example"
-        (role / "meta" / "addons").mkdir(parents=True)
+        (role / ROLE_DIR_META_ADDONS).mkdir(parents=True)
         return role
 
     def test_addon_ref_is_collected_beside_the_service_ref(self) -> None:
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             role = self._role(root)
-            (role / "meta" / "services.yml").write_text(
-                "app:\n"
-                "  repository: https://example.test/app.git\n"
-                "  ref: v1.0.0\n",
+            (role / ROLE_FILE_META_SERVICES).write_text(
+                "app:\n  repository: https://example.test/app.git\n  ref: v1.0.0\n",
                 encoding="utf-8",
             )
-            (role / "meta" / "addons" / "plug.yml").write_text(
-                "config:\n"
-                "  repository: https://example.test/plug.git\n"
-                "  ref: v2.0.0\n",
+            (role / ROLE_DIR_META_ADDONS / "plug.yml").write_text(
+                "config:\n  repository: https://example.test/plug.git\n  ref: v2.0.0\n",
                 encoding="utf-8",
             )
 
@@ -251,7 +248,7 @@ class TestCollectEntriesCoversAddons(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             root = Path(tmpdir)
             role = self._role(root)
-            (role / "meta" / "addons" / "plug.yml").write_text(
+            (role / ROLE_DIR_META_ADDONS / "plug.yml").write_text(
                 "config:\n"
                 "  repository: https://example.test/plug.git\n"
                 "  # nocheck: repository-version\n"
