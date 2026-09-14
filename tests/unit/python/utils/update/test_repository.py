@@ -9,6 +9,7 @@ from utils.update.repository import (
     RepositoryRefEntry,
     RepositoryRefUpdate,
     apply_updates,
+    collect_entries,
     suppressed_ref_lines,
     update_config_refs,
     walk_repo_ref_pairs,
@@ -214,6 +215,51 @@ class TestApplyUpdates(unittest.TestCase):
             self.assertEqual(set(changed), {config_a, config_b})
             self.assertEqual(read_text(str(config_a)), "  ref: v1.1.0\n")
             self.assertEqual(read_text(str(config_b)), "  ref: v2.1.0\n")
+
+
+class TestCollectEntriesCoversAddons(unittest.TestCase):
+    def _role(self, root: Path) -> Path:
+        role = root / "roles" / "web-app-example"
+        (role / "meta" / "addons").mkdir(parents=True)
+        return role
+
+    def test_addon_ref_is_collected_beside_the_service_ref(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            role = self._role(root)
+            (role / "meta" / "services.yml").write_text(
+                "app:\n"
+                "  repository: https://example.test/app.git\n"
+                "  ref: v1.0.0\n",
+                encoding="utf-8",
+            )
+            (role / "meta" / "addons" / "plug.yml").write_text(
+                "config:\n"
+                "  repository: https://example.test/plug.git\n"
+                "  ref: v2.0.0\n",
+                encoding="utf-8",
+            )
+
+            by_ref = {entry.ref: entry for entry in collect_entries(root)}
+
+            self.assertEqual(set(by_ref), {"v1.0.0", "v2.0.0"})
+            addon = by_ref["v2.0.0"]
+            self.assertEqual(addon.entity_path[:2], ("addons", "plug"))
+            self.assertEqual(addon.config_path.name, "plug.yml")
+
+    def test_addon_ref_honours_its_own_suppression_marker(self) -> None:
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            role = self._role(root)
+            (role / "meta" / "addons" / "plug.yml").write_text(
+                "config:\n"
+                "  repository: https://example.test/plug.git\n"
+                "  # nocheck: repository-version\n"
+                "  ref: v2.0.0\n",
+                encoding="utf-8",
+            )
+
+            self.assertEqual(collect_entries(root), [])
 
 
 if __name__ == "__main__":
