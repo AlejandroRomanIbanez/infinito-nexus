@@ -8,7 +8,7 @@
 
 - name: ⬇️ Pre-pull LM Studio models
   ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
-    container exec -i {{ LMSTUDIO_LOCAL_CID | quote }} lms get --yes --gguf {{ model.name | quote }}
+    container exec -i {{ LMSTUDIO_LOCAL_CID | quote }} lms get --yes --gguf {{ model.source | quote }}
   register: lmstudio_pull_result
   loop: "{{ LMSTUDIO_PRELOAD_MODELS }}"
   loop_control:

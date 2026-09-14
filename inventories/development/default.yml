@@ -38,6 +38,7 @@ design:
 AI_LOCAL_MODELS_CI:
   - alias: qwen2.5:0.5b
     name: qwen2.5-0.5b-instruct
+    source: https://huggingface.co/lmstudio-community/Qwen2.5-0.5B-Instruct-GGUF
 
 API:
   openai:

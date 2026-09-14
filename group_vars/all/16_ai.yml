@@ -16,10 +16,13 @@ LITELLM_BACKEND_ROLES: "{{ lookup('deployment').inventory }}"
 AI_LOCAL_MODELS:
   - alias: llama3:latest
     name: llama-3.2-3b-instruct
+    source: https://huggingface.co/lmstudio-community/Llama-3.2-3B-Instruct-GGUF
   - alias: mistral:latest
     name: mistral-7b-instruct-v0.3
+    source: https://huggingface.co/lmstudio-community/Mistral-7B-Instruct-v0.3-GGUF
   - alias: nomic-embed-text:latest
-    name: nomic-embed-text-v1.5
+    name: text-embedding-nomic-embed-text-v1.5
+    source: https://huggingface.co/nomic-ai/nomic-embed-text-v1.5-GGUF
 
 AI_REMOTE_ALIASES: >-
   {{ ['openai/gpt-4o-mini'] * ((API.openai.api_key | string | length > 0) | int)
