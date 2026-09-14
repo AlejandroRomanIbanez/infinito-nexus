@@ -1,4 +1,10 @@
 ---
+# Exception: set_fact outlives the play, so the guard the recreate handler
+# reads has to be cleared per role run or a stale true silently skips it.
+- name: "🧹 Clear the bootstrap marker of an earlier play"
+  ansible.builtin.set_fact:
+    DISCOURSE_REBUILT: false
+
 - name: ⬇️ Pull Discourse docker repository
   git:
     repo: "{{ DISCOURSE_REPOSITORY_URL }}"
@@ -10,7 +16,7 @@
   retries: 12
   delay: 30
   until: discourse_repo_pull is succeeded
-  notify: recreate-discourse
+  notify: rebuild-discourse
   become: true
 
 - name: 🔧 set chmod 700 for '{{ DISCOURSE_CONTAINERS_DIR }}'
@@ -26,6 +32,15 @@
     mode: "0640"
   notify: recreate-discourse
 
+# Exception: launcher reads env: on every docker run but consumes templates,
+# params and hooks only during bootstrap, so only their digest may rebuild.
+- name: "🔑 Record the digest of everything the bootstrap consumes"
+  stack_host_copy:
+    content: "{{ lookup('template', 'config.yml.j2') | from_yaml | dict2items | rejectattr('key', 'eq', 'env') | items2dict | to_json | hash('sha256') }}"
+    dest: "{{ DISCOURSE_BOOTSTRAP_DIGEST_DEST }}"
+    mode: "0640"
+  notify: rebuild-discourse
+
 - name: "✅ Verify that '{{ DISCOURSE_CONTAINER }}' is running"
   ansible.builtin.command:
     argv:
@@ -40,7 +55,7 @@
   register: docker_ps
   changed_when: docker_ps.stdout.strip() == ""
   failed_when: docker_ps.rc != 0
-  notify: recreate-discourse
+  notify: rebuild-discourse
 
 - name: 📂 Load discourse handlers explicitly
   include_tasks: utils/load/handlers.yml
