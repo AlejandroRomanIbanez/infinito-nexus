@@ -15,7 +15,6 @@ endpoint:
   service_key: wordpress
   path: /wp-json/mcp/mcp-adapter-default-server
   port_key: http
-  host_header: true
 limits:
   request_bytes: 65536
   response_bytes: 1048576
