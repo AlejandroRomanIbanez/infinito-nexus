@@ -72,17 +72,6 @@ discourse:
   application:
     repository: https://github.com/discourse/discourse.git
     ref: v2026.8.0
-  plugins:
-    docker_manager:
-      enabled: true
-    discourse-activity-pub:
-      enabled: true
-    discourse-akismet:
-      enabled: true
-    discourse-ldap-auth:
-      enabled: "{{ lookup('config', 'web-app-discourse', 'services.ldap.enabled') | bool }}"
-      repository: https://github.com/jonmbake/discourse-ldap-auth.git
-      ref: master
   ports:
     local:
       http: 8020
