@@ -67,10 +67,13 @@ newsletter:
   uid: 1002
 """
 
-KEYCLOAK_USERS = DECLARED_USERS + """\
+KEYCLOAK_USERS = (
+    DECLARED_USERS
+    + """\
 keycloak-bot:
   uid: 1003
 """
+)
 
 
 class TestResetCredentials(unittest.TestCase):
