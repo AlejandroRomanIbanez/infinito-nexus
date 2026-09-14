@@ -26,6 +26,7 @@ def verdict(**overrides) -> list[str]:
         "ollama_enabled": False,
         "lmstudio_enabled": False,
         "lmstudio_aliases": [LMSTUDIO_ONLY],
+        "remote_aliases": [],
     }
     kwargs.update(overrides)
     return probe.evaluate(**kwargs)
@@ -155,12 +156,54 @@ class TestBothBackendsDeployment(unittest.TestCase):
         )
 
 
+class TestRemoteProviders(unittest.TestCase):
+    """A configured provider key publishes its alias and serves the gateway."""
+
+    def test_a_keyed_provider_is_the_only_backend_needed(self) -> None:
+        self.assertEqual(
+            verdict(
+                served={"openai/gpt-4o-mini"},
+                expected=["openai/gpt-4o-mini"],
+                chat_model="openai/gpt-4o-mini",
+                chat_model_served=True,
+                remote_aliases=["openai/gpt-4o-mini"],
+            ),
+            [],
+        )
+
+    def test_a_remote_alias_is_not_mistaken_for_an_ollama_model(self) -> None:
+        self.assertEqual(
+            verdict(
+                served={"anthropic/claude-sonnet-4-5", ALIAS},
+                expected=["anthropic/claude-sonnet-4-5", ALIAS],
+                chat_model=ALIAS,
+                chat_model_served=True,
+                lmstudio_enabled=True,
+                lmstudio_aliases=[ALIAS],
+                remote_aliases=["anthropic/claude-sonnet-4-5"],
+            ),
+            [],
+        )
+
+    def test_a_declared_provider_the_gateway_dropped_fails(self) -> None:
+        failures = verdict(
+            served=set(),
+            expected=["openrouter/auto"],
+            chat_model="openrouter/auto",
+            chat_model_served=True,
+            remote_aliases=["openrouter/auto"],
+        )
+        self.assertTrue(
+            any("does not serve" in failure for failure in failures), failures
+        )
+
+
 class TestNoBackendDeployment(unittest.TestCase):
     def test_an_empty_gateway_passes(self) -> None:
         self.assertEqual(verdict(), [])
 
     def test_any_published_model_fails(self) -> None:
-        failures = verdict(served={probe.OPENROUTER_MODEL})
+        failures = verdict(served={"openrouter/auto"})
         self.assertTrue(
             any("no backend is deployed" in failure for failure in failures), failures
         )

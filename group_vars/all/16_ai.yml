@@ -21,10 +21,14 @@ AI_LOCAL_MODELS:
   - alias: nomic-embed-text:latest
     name: nomic-embed-text-v1.5
 
+AI_REMOTE_ALIASES: >-
+  {{ ['openai/gpt-4o-mini'] * ((API.openai.api_key | string | length > 0) | int)
+     + ['anthropic/claude-sonnet-4-5'] * ((API.anthropic.api_key | string | length > 0) | int)
+     + ['openrouter/auto'] * ((API.openrouter.api_key | string | length > 0) | int) }}
+
 LITELLM_CHAT_MODEL: "{{ (lookup('config', 'svc-ai-ollama', 'services.ollama.preload_models') | map(attribute='alias') | reject('search', 'embed') | list | first |
   default('')) if 'svc-ai-ollama' in LITELLM_BACKEND_ROLES else ((lookup('config', 'svc-ai-lmstudio', 'services.lmstudio.preload_models') | map(attribute='alias')
-  | reject('search', 'embed') | list | first | default('')) if 'svc-ai-lmstudio' in LITELLM_BACKEND_ROLES else ('openrouter/auto' if ((OPENROUTER_API_KEY | string)
-  | length > 0) else '')) }}"
+  | reject('search', 'embed') | list | first | default('')) if 'svc-ai-lmstudio' in LITELLM_BACKEND_ROLES else (AI_REMOTE_ALIASES | first | default(''))) }}"
 
 LITELLM_CHAT_MODEL_SERVED: >-
   {{ (('svc-ai-ollama' in LITELLM_BACKEND_ROLES)
@@ -33,11 +37,9 @@ LITELLM_CHAT_MODEL_SERVED: >-
      or (('svc-ai-lmstudio' in LITELLM_BACKEND_ROLES)
          and ((lookup('config', 'svc-ai-lmstudio', 'services.lmstudio.preload_models')
                | map(attribute='alias') | reject('search', 'embed') | list) | length > 0))
-     or ((OPENROUTER_API_KEY | string) | length > 0) }}
+     or ((AI_REMOTE_ALIASES | length) > 0) }}
 
 LITELLM_USABLE: "{{ ('svc-ai-litellm' in group_names) and (LITELLM_CHAT_MODEL_SERVED | bool) }}"
-
-OPENROUTER_API_KEY: ""
 
 MCP_DISCOVERY: "{{ lookup('mcp_servers') }}"
 MCP_DISCOVERED_SERVERS: "{{ MCP_DISCOVERY.selected }}"

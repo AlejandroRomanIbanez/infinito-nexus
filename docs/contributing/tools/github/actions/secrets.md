@@ -10,6 +10,29 @@ Repository secrets MUST be set under **Settings → Secrets and variables → Ac
 |---|---|---|---|
 | `BOT_APP_CLIENT_ID` | [cron-update.yml](../../../../../.github/workflows/cron-update.yml) | GitHub App Client ID (OAuth-style `Iv…` identifier shown on the App's General page) used to mint a short-lived installation token for the update PR. | `CI_ENABLE_AUTO_UPDATES == 'true'` |
 | `BOT_APP_PRIVATE_KEY` | [cron-update.yml](../../../../../.github/workflows/cron-update.yml) | PEM-encoded private key of the same GitHub App. Used to sign the JWT that exchanges for the installation token. | `CI_ENABLE_AUTO_UPDATES == 'true'` |
+| `API_OPENAI_KEY` | [call-test-deploy.yml](../../../../../.github/workflows/call-test-deploy.yml) | Publishes the `openai/*` models on the LiteLLM gateway and lets the CLI test exercise the route. | Never. Unset leaves the route unpublished. |
+| `API_ANTHROPIC_KEY` | [call-test-deploy.yml](../../../../../.github/workflows/call-test-deploy.yml) | Publishes the `anthropic/*` models. | Never. |
+| `API_OPENROUTER_KEY` | [call-test-deploy.yml](../../../../../.github/workflows/call-test-deploy.yml) | Publishes `openrouter/auto`. | Never. |
+
+## `API_OPENAI_KEY`, `API_ANTHROPIC_KEY`, `API_OPENROUTER_KEY` 🤖
+
+These are optional and fail soft: unset means the provider's route is never
+published, and the deployment falls back to whatever local backend the round
+deploys. The workflow reads each as `${{ secrets.X || vars.X }}`, so the same
+name works as a repository variable; see
+[configuration.md](configuration.md#provider-keys-variable-or-secret-) for why
+the secret is the better half of that pair.
+
+Set them the same way as the App credentials: **Settings → Secrets and variables
+→ Actions → Secrets → New repository secret**, one per provider, the value being
+the provider's key verbatim.
+
+The shape each key must have is declared per role rather than here, in
+[roles/svc-ai-litellm/meta/secrets.yml](../../../../../roles/svc-ai-litellm/meta/secrets.yml)
+with a `type:` and a `regex:`. The pattern rejects a truncated or
+whitespace-carrying paste and deliberately accepts any vendor prefix, so a
+provider changing its issuance format cannot turn a valid key into a failed
+inventory run.
 
 ## `BOT_APP_CLIENT_ID` and `BOT_APP_PRIVATE_KEY` 🤖
 

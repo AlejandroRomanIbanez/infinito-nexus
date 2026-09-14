@@ -1,6 +1,7 @@
 {% set _ollama_models = lookup('config', 'svc-ai-ollama', 'services.ollama.preload_models') if 'svc-ai-ollama' in group_names else [] %}
 {% set _lmstudio_models = lookup('config', 'svc-ai-lmstudio', 'services.lmstudio.preload_models') if 'svc-ai-lmstudio' in group_names else [] %}
-{% set has_backend = _ollama_models or _lmstudio_models or LITELLM_OPENROUTER_API_KEY %}
+{% set _remote_models = LITELLM_REMOTE_BACKENDS | selectattr('key') | list %}
+{% set has_backend = _ollama_models or _lmstudio_models or _remote_models %}
 model_list:{{ ' []' if not has_backend else '' }}
 {% for _model in _ollama_models %}
   - model_name: "{{ _model.alias }}"
@@ -21,12 +22,14 @@ model_list:{{ ' []' if not has_backend else '' }}
       max_tokens: {{ LITELLM_MAX_OUTPUT_TOKENS }}
       timeout: {{ LITELLM_UPSTREAM_TIMEOUT }}
 {% endfor %}
-{% if LITELLM_OPENROUTER_API_KEY %}
-  - model_name: openrouter/auto
+{% for _backend in _remote_models %}
+  - model_name: "{{ _backend.alias }}"
     litellm_params:
-      model: openrouter/openrouter/auto
-      api_key: os.environ/OPENROUTER_API_KEY
-{% endif %}
+      model: "{{ _backend.model }}"
+      api_key: os.environ/{{ _backend.env }}
+      max_tokens: {{ LITELLM_MAX_OUTPUT_TOKENS }}
+      timeout: {{ LITELLM_UPSTREAM_TIMEOUT }}
+{% endfor %}
 
 litellm_settings:
   drop_params: true

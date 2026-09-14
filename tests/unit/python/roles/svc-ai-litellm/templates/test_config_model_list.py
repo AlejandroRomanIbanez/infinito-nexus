@@ -39,13 +39,32 @@ def _stub_lookup(ollama_models, lmstudio_models):
     return lookup
 
 
-def render(*, ollama=(), lmstudio=(), api_key=""):
+REMOTE_BACKENDS = (
+    ("openai/gpt-4o-mini", "openai/gpt-4o-mini", "OPENAI_API_KEY"),
+    ("anthropic/claude-sonnet-4-5", "anthropic/claude-sonnet-4-5", "ANTHROPIC_API_KEY"),
+    ("openrouter/auto", "openrouter/openrouter/auto", "OPENROUTER_API_KEY"),
+)
+
+
+def _remote(keys):
+    """The LITELLM_REMOTE_BACKENDS list vars/main.yml builds, with these keys.
+
+    Args:
+        keys: env-name -> key value; a provider absent from it stays unkeyed.
+    """
+    return [
+        {"alias": alias, "model": model, "env": env, "key": keys.get(env, "")}
+        for alias, model, env in REMOTE_BACKENDS
+    ]
+
+
+def render(*, ollama=(), lmstudio=(), keys=None):
     """The rendered config as a parsed mapping.
 
     Args:
         ollama: preload entries svc-ai-ollama declares; empty means not deployed.
         lmstudio: preload entries svc-ai-lmstudio declares; empty means not deployed.
-        api_key: the OpenRouter key, empty when none is configured.
+        keys: env-name -> provider key for the remote backends.
     """
     group_names = ["svc-ai-litellm"]
     if ollama:
@@ -60,7 +79,7 @@ def render(*, ollama=(), lmstudio=(), api_key=""):
         LMSTUDIO_BASE_LOCAL_URL=LMSTUDIO_URL,
         LITELLM_MAX_OUTPUT_TOKENS=512,
         LITELLM_UPSTREAM_TIMEOUT=60,
-        LITELLM_OPENROUTER_API_KEY=api_key,
+        LITELLM_REMOTE_BACKENDS=_remote(keys or {}),
     )
     return yaml.safe_load(
         rendered
@@ -119,8 +138,28 @@ class TestNoBackend(unittest.TestCase):
     def test_the_model_list_is_empty(self) -> None:
         self.assertEqual(render()["model_list"], [])
 
-    def test_the_openrouter_key_alone_publishes_its_route(self) -> None:
-        self.assertEqual(set(routes(render(api_key="sk-test"))), {"openrouter/auto"})
+    def test_one_provider_key_alone_publishes_its_route(self) -> None:
+        published = routes(render(keys={"OPENROUTER_API_KEY": "sk-or-test"}))
+        self.assertEqual(set(published), {"openrouter/auto"})
+        self.assertEqual(
+            published["openrouter/auto"]["api_key"], "os.environ/OPENROUTER_API_KEY"
+        )
+
+    def test_each_keyed_provider_gets_its_own_route(self) -> None:
+        published = routes(
+            render(
+                keys={
+                    "OPENAI_API_KEY": "sk-test",
+                    "ANTHROPIC_API_KEY": "sk-ant-test",
+                }
+            )
+        )
+        self.assertEqual(
+            set(published), {"openai/gpt-4o-mini", "anthropic/claude-sonnet-4-5"}
+        )
+
+    def test_an_unkeyed_provider_publishes_nothing(self) -> None:
+        self.assertEqual(render(keys={"OPENAI_API_KEY": ""})["model_list"], [])
 
 
 if __name__ == "__main__":

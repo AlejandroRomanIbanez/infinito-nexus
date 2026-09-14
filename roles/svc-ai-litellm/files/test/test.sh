@@ -13,6 +13,7 @@
 #   LITELLM_CHAT_MODEL_SERVED  true|false
 #   LITELLM_EXPECTED_MODELS    JSON list the config template published
 #   LITELLM_LMSTUDIO_ALIASES   JSON list of aliases only LM Studio provides
+#   LITELLM_REMOTE_ALIASES     JSON list of aliases a configured provider key adds
 #   LITELLM_OLLAMA_ENABLED     true|false
 #   LITELLM_LMSTUDIO_ENABLED   true|false
 #   READY_RETRIES              gateway readiness attempts (default 30)
@@ -54,6 +55,7 @@ probe() {
 		-e "CHAT_MODEL_SERVED=${LITELLM_CHAT_MODEL_SERVED}" \
 		-e "EXPECTED_MODELS=${LITELLM_EXPECTED_MODELS}" \
 		-e "LMSTUDIO_ALIASES=${LITELLM_LMSTUDIO_ALIASES}" \
+		-e "REMOTE_ALIASES=${LITELLM_REMOTE_ALIASES}" \
 		-e "OLLAMA_ENABLED=${LITELLM_OLLAMA_ENABLED}" \
 		-e "LMSTUDIO_ENABLED=${LITELLM_LMSTUDIO_ENABLED}" \
 		"${LITELLM_CONTAINER}" "$(interpreter)" - <"${here}/probe.py"

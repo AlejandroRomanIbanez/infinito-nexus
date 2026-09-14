@@ -13,6 +13,8 @@ Env (rendered into test.env from templates/test.env.j2):
     LMSTUDIO_ALIASES   JSON list of aliases only LM Studio provides, rendered
                        whether or not the backend is deployed so the absent
                        case stays assertable
+    REMOTE_ALIASES     JSON list of aliases a configured provider key publishes
+                       (OpenAI, Anthropic, OpenRouter)
     OLLAMA_ENABLED     true|false
     LMSTUDIO_ENABLED   true|false
     RETRIES            completion attempts (default 10)
@@ -28,8 +30,6 @@ import time
 import urllib.error
 import urllib.request
 
-OPENROUTER_MODEL = "openrouter/auto"
-
 
 def evaluate(
     *,
@@ -40,6 +40,7 @@ def evaluate(
     ollama_enabled: bool,
     lmstudio_enabled: bool,
     lmstudio_aliases: list[str],
+    remote_aliases: list[str],
 ) -> list[str]:
     """Every routing violation the published model list shows, as messages.
 
@@ -51,6 +52,7 @@ def evaluate(
         ollama_enabled: svc-ai-ollama is deployed on the gateway's host.
         lmstudio_enabled: svc-ai-lmstudio is deployed on the gateway's host.
         lmstudio_aliases: aliases only LM Studio provides, whatever is deployed.
+        remote_aliases: aliases a configured remote provider key publishes.
 
     Returns:
         One message per violation; empty when the routing is consistent.
@@ -76,7 +78,7 @@ def evaluate(
             f"{sorted(exclusive & served)}; a route stands without its backend"
         )
 
-    unbacked = sorted(served - exclusive - {OPENROUTER_MODEL})
+    unbacked = sorted(served - exclusive - set(remote_aliases))
     if not ollama_enabled and unbacked:
         failures.append(
             f"svc-ai-ollama is not deployed yet the gateway publishes {unbacked}"
@@ -164,6 +166,7 @@ def main() -> int:
         ollama_enabled=os.environ["OLLAMA_ENABLED"] == "true",
         lmstudio_enabled=os.environ["LMSTUDIO_ENABLED"] == "true",
         lmstudio_aliases=json.loads(os.environ["LMSTUDIO_ALIASES"]),
+        remote_aliases=json.loads(os.environ["REMOTE_ALIASES"]),
     )
 
     if chat_model_served and not failures:

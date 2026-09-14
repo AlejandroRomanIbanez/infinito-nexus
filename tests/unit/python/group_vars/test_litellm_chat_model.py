@@ -45,7 +45,7 @@ class TestLitellmChatModel(unittest.TestCase):
             self.env.from_string(self.source[name])
             .render(
                 LITELLM_BACKEND_ROLES=list(roles),
-                OPENROUTER_API_KEY=api_key,
+                AI_REMOTE_ALIASES=(["openrouter/auto"] if api_key else []),
                 lookup=_stub_lookup(
                     [{"alias": alias, "name": alias} for alias in preload_models],
                     [
