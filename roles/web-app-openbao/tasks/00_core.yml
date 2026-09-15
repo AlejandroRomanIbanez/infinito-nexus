@@ -1,6 +1,27 @@
 ---
 - include_tasks: utils/once/flag.yml
 
+# Exception: must precede sys-stk-backend — that role renders env.j2, which
+# carries the previous seal key the node needs to unseal data the last deploy's
+# key wrapped. Moving it after leaves the node sealed with no way back.
+- name: "🔍 Read the credentials the previous deploy applied"
+  ansible.builtin.slurp:
+    src: "{{ OPENBAO_APPLIED_STATE_HOST }}"
+  register: openbao_applied_raw
+  failed_when: false
+  changed_when: false
+  delegate_to: "{{ STACK_HOST }}"
+  run_once: true
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+- name: "🔧 Keep the previously applied credentials for the rotation path"
+  ansible.builtin.set_fact:
+    openbao_applied_state: >-
+      {{ (openbao_applied_raw.content | b64decode | from_json)
+         if (openbao_applied_raw.content is defined)
+         else {} }}
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
 - name: "🧩 load docker for {{ application_id }}"
   include_role:
     name: sys-stk-backend
