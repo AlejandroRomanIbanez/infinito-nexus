@@ -11,3 +11,7 @@ UNBOUND_VOLUMES_DIR: "{{ lookup('container', application_id, 'directories.volume
 UNBOUND_CONF_FILE: "{{ [ UNBOUND_VOLUMES_DIR, 'unbound.conf' ] | path_join }}"
 
 UNBOUND_FORWARD_DNS: "{{ (DOCKER_IN_CONTAINER | bool) or ('microsoft' in lookup('file', '/proc/version') | lower) }}"
+
+UNBOUND_ONION_FORWARD_ADDR: >-
+  {{ (lookup('subnet_gateway') ~ '@' ~ lookup('config', 'svc-net-tor', 'services.tor.ports.local.dns'))
+     if ('svc-net-tor' in group_names and DEPLOYMENT_MODE == 'compose') else '' }}

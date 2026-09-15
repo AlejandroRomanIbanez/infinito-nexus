@@ -14,7 +14,11 @@
     {% if DEPLOYMENT_MODE == 'swarm' %}
     {{ lookup('container_ports',
               {'service': 'tor', 'protocol': 'socks', 'mode': 'host',
-               'container': 'same'}) | indent(4) }}
+               'container': 'same'},
+              {'service': 'tor', 'protocol': 'dns', 'mode': 'host',
+               'container': 'same', 'transport': ['udp', 'tcp']},
+              {'service': 'tor', 'protocol': 'trans', 'mode': 'host',
+               'container': 'same', 'transport': 'tcp'}) | indent(4) }}
     {{ lookup('container_networks') | indent(4) }}
     {% else %}
     network_mode: "host"

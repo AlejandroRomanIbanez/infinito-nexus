@@ -97,3 +97,92 @@
     jump: REDIRECT
     to_ports: "{{ TOR_TRANS_PORT | string }}"
     comment: "Tor egress router: .onion virtual range -> TransPort"
+
+- name: "🔀 Egress router | Send container .onion traffic to the bridge TransPort"
+  when: TOR_CONTAINER_DNS_HOST | length > 0
+  ansible.builtin.iptables:
+    table: nat
+    chain: PREROUTING
+    protocol: tcp
+    destination: "{{ TOR_EGRESS_VIRTUAL_NET_IPV4 }}"
+    jump: DNAT
+    to_destination: "{{ TOR_CONTAINER_DNS_HOST }}:{{ TOR_TRANS_PORT }}"
+    comment: "Tor egress router: container .onion virtual range -> TransPort"
+
+- name: "🔀 Egress router | Prove the container redirect is installed"
+  when: TOR_CONTAINER_DNS_HOST | length > 0
+  ansible.builtin.command:
+    argv:
+      - iptables
+      - -t
+      - nat
+      - -C
+      - PREROUTING
+      - -p
+      - tcp
+      - -d
+      - "{{ TOR_EGRESS_VIRTUAL_NET_IPV4 }}"
+      - -j
+      - DNAT
+      - --to-destination
+      - "{{ TOR_CONTAINER_DNS_HOST }}:{{ TOR_TRANS_PORT }}"
+  changed_when: false
+
+- name: "🛡️ Egress guard | Stage the guard applier"
+  when: DEPLOYMENT_MODE == 'swarm'
+  ansible.builtin.template:
+    src: tor-egress-guard.sh.j2
+    dest: "{{ TOR_EGRESS_GUARD_SCRIPT }}"
+    owner: root
+    group: root
+    mode: "0750"
+  notify: apply tor egress guard
+
+- name: "🛡️ Egress guard | Install the unit that reapplies it after docker"
+  when: DEPLOYMENT_MODE == 'swarm'
+  ansible.builtin.template:
+    src: tor-egress-guard.service.j2
+    dest: "{{ TOR_EGRESS_GUARD_UNIT }}"
+    owner: root
+    group: root
+    mode: "0644"
+  notify: apply tor egress guard
+
+- name: "🛡️ Egress guard | Enable the guard across reboots"
+  when: DEPLOYMENT_MODE == 'swarm'
+  ansible.builtin.systemd_service:
+    name: "{{ TOR_EGRESS_GUARD_UNIT | basename }}"
+    enabled: true
+    state: started
+    daemon_reload: true
+
+- name: "🛡️ Egress guard | Flush handlers so the guard is live before checking"
+  when: DEPLOYMENT_MODE == 'swarm'
+  ansible.builtin.meta: flush_handlers
+
+- name: "🛡️ Egress guard | Prove the guard rejects everything it must"
+  when: DEPLOYMENT_MODE == 'swarm'
+  ansible.builtin.command:
+    argv:
+      - iptables
+      - -C
+      - "{{ TOR_EGRESS_GUARD_CHAIN }}"
+      - -j
+      - DROP
+  changed_when: false
+
+- name: "🛡️ Egress guard | Prove every guarded port reaches the guard"
+  when: DEPLOYMENT_MODE == 'swarm'
+  ansible.builtin.command:
+    argv:
+      - iptables
+      - -C
+      - "{{ item.0 }}"
+      - -p
+      - "{{ item.1.protocol }}"
+      - --dport
+      - "{{ item.1.port | string }}"
+      - -j
+      - "{{ TOR_EGRESS_GUARD_CHAIN }}"
+  changed_when: false
+  loop: "{{ TOR_EGRESS_GUARD_HOOK_CHAINS | product(TOR_EGRESS_GUARDED_PORTS) | list }}"

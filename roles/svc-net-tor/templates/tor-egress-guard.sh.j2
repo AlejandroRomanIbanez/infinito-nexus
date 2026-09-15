@@ -1,0 +1,21 @@
+#!/bin/bash
+# Managed by Infinito.Nexus (roles/svc-net-tor) — do not edit by hand.
+set -euo pipefail
+
+CHAIN={{ TOR_EGRESS_GUARD_CHAIN | quote }}
+
+iptables -N "${CHAIN}" 2>/dev/null || true
+iptables -F "${CHAIN}"
+
+{% for cidr in TOR_EGRESS_CLIENT_CIDRS %}
+iptables -A "${CHAIN}" -s {{ cidr | quote }} -j ACCEPT
+{% endfor %}
+iptables -A "${CHAIN}" -j DROP
+
+{% for chain in TOR_EGRESS_GUARD_HOOK_CHAINS %}
+iptables -N {{ chain | quote }} 2>/dev/null || true
+{% for entry in TOR_EGRESS_GUARDED_PORTS %}
+iptables -C {{ chain | quote }} -p {{ entry.protocol | quote }} --dport {{ entry.port | quote }} -j "${CHAIN}" 2>/dev/null \
+  || iptables -I {{ chain | quote }} -p {{ entry.protocol | quote }} --dport {{ entry.port | quote }} -j "${CHAIN}"
+{% endfor %}
+{% endfor %}
