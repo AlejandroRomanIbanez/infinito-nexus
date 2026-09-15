@@ -6,7 +6,6 @@ TOR_IMAGE: "{{ lookup('config', application_id, 'services.tor.image') }}"
 TOR_VERSION: "{{ lookup('config', application_id, 'services.tor.version') }}"
 TOR_CONTAINER: "{{ lookup('config', application_id, 'services.tor.name') }}"
 
-TOR_SOCKS_PORT: "{{ lookup('config', application_id, 'services.tor.ports.local.socks') }}"
 TOR_NODE_ONION: "{{ lookup('config', application_id, 'services.tor.node', '') }}"
 TOR_USE_ENTRY_GUARDS: "{{ lookup('config', application_id, 'services.tor.use_entry_guards') | bool }}"
 TOR_FLAVOR: "{{ lookup('config', application_id, 'services.tor.flavor') }}"

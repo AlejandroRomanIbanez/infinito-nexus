@@ -82,6 +82,12 @@ PORT_BANDS: # nocheck: unused-var  # consumed by the port-allocation plugin outs
       start: 9053
       end: 9053
   public:
+    http:
+      start: 80
+      end: 80
+    https:
+      start: 443
+      end: 443
     ssh:
       start: 2201
       end: 2299

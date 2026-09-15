@@ -21,6 +21,8 @@ unbound:
   mem_limit: "512m"
   pids_limit: 256
   ports:
+    internal:
+      unbound: 53
     local:
       unbound: 53
     onion:
