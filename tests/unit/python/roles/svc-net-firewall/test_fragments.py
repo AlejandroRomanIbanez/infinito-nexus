@@ -48,7 +48,14 @@ COMMON = {
     ],
     "TOR_EGRESS_VIRTUAL_NET_IPV4": "10.192.0.0/10",
     "TOR_TRANS_PORT": "9040",
+    "TOR_SOCKS_PORT": "9050",
     "TOR_CONTAINER_DNS_HOST": "172.17.0.1",
+    "NETWORK_INTERNAL_CIDRS": [
+        "127.0.0.0/8",
+        "10.0.0.0/8",
+        "172.16.0.0/12",
+        "192.168.0.0/16",
+    ],
 }
 
 MODES = ("compose", "swarm")
