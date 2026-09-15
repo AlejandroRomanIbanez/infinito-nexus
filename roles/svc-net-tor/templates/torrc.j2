@@ -1,4 +1,4 @@
-# Managed by Infinito.Nexus (roles/svc-net-tor) — do not edit by hand.
+# Managed by {{ SOFTWARE_NAME }} (roles/svc-net-tor) — do not edit by hand.
 RunAsDaemon 0
 Log notice stdout
 DataDirectory {{ lookup('volume', 'svc-net-tor', 'tor_data').target }}
