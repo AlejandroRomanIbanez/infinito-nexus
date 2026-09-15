@@ -13,6 +13,14 @@ LITELLM_OPENAI_BASE_LOCAL_URL: "{{ LITELLM_BASE_LOCAL_URL }}/v1"
 
 LITELLM_BACKEND_ROLES: "{{ lookup('deployment').inventory }}"
 
+LITELLM_OLLAMA_BACKEND: >-
+  {{ (lookup('config', 'svc-ai-litellm', 'services.ollama.enabled') | bool)
+     and (lookup('config', 'svc-ai-litellm', 'services.ollama.shared') | bool) }}
+
+LITELLM_LMSTUDIO_BACKEND: >-
+  {{ (lookup('config', 'svc-ai-litellm', 'services.lmstudio.enabled') | bool)
+     and (lookup('config', 'svc-ai-litellm', 'services.lmstudio.shared') | bool) }}
+
 AI_LOCAL_MODELS:
   - alias: llama3:latest
     name: llama-3.2-3b-instruct
@@ -34,10 +42,10 @@ LITELLM_CHAT_MODEL: "{{ (lookup('config', 'svc-ai-ollama', 'services.ollama.prel
   | reject('search', 'embed') | list | first | default('')) if 'svc-ai-lmstudio' in LITELLM_BACKEND_ROLES else (AI_REMOTE_ALIASES | first | default(''))) }}"
 
 LITELLM_CHAT_MODEL_SERVED: >-
-  {{ (('svc-ai-ollama' in LITELLM_BACKEND_ROLES)
+  {{ ((LITELLM_OLLAMA_BACKEND | bool)
       and ((lookup('config', 'svc-ai-ollama', 'services.ollama.preload_models')
             | map(attribute='alias') | reject('search', 'embed') | list) | length > 0))
-     or (('svc-ai-lmstudio' in LITELLM_BACKEND_ROLES)
+     or ((LITELLM_LMSTUDIO_BACKEND | bool)
          and ((lookup('config', 'svc-ai-lmstudio', 'services.lmstudio.preload_models')
                | map(attribute='alias') | reject('search', 'embed') | list) | length > 0))
      or ((AI_REMOTE_ALIASES | length) > 0) }}
