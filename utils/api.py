@@ -1,13 +1,12 @@
 """Proprietary API credential SPOT, read from group_vars/all/18_api.yml.
 
 ``API`` is a plain mapping, so an inventory that configures three providers
-replaces the whole declaration instead of merging into it -- see
-``inventories/development/default.yml``, which declares openai, anthropic and
-openrouter and therefore hides github, google and jira. Resolving a hidden
-provider then raises, and a raising lookup inside a value the applications
-renderer is templating leaves the raw ``{{ ... }}`` text in place: the consumer
-stores template text, and ``| bool`` coerces it to False with a deprecation
-warning that fails the deploy on the warning gate.
+replaces the whole declaration instead of merging into it, and every provider it
+does not name disappears. Resolving a hidden provider then raises, and a raising
+lookup inside a value the applications renderer is templating leaves the raw
+``{{ ... }}`` text in place: the consumer stores template text, and ``| bool``
+coerces it to False with a deprecation warning that fails the deploy on the
+warning gate.
 
 Merging the scope's override over the declared defaults keeps every declared
 provider resolvable, so an override narrows values, never the provider set.
@@ -18,11 +17,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-import yaml
-
 from utils import PROJECT_ROOT
 from utils.cache.base import _deep_merge
-from utils.cache.files import read_text
+from utils.cache.yaml import load_yaml_any
 
 _API_SPOT_FILE = str(PROJECT_ROOT / "group_vars" / "all" / "18_api.yml")
 
@@ -36,8 +33,8 @@ def declared_api() -> dict[str, Any]:
     Raises:
         TypeError: the SPOT does not declare ``API`` as a mapping.
     """
-    document = yaml.safe_load(read_text(_API_SPOT_FILE)) or {}
-    declared = document.get("API")
+    document = load_yaml_any(_API_SPOT_FILE, default_if_missing={}) or {}
+    declared = document.get("API") if isinstance(document, Mapping) else None
     if not isinstance(declared, Mapping):
         raise TypeError(f"{_API_SPOT_FILE} does not declare 'API' as a mapping.")
     return dict(declared)
@@ -79,6 +76,13 @@ def _templated(templar: Any, value: Any) -> Any:
 
     try:
         return templar.template(value, fail_on_undefined=False)
+    except TypeError:
+        pass
+    except (AnsibleError, ValueError):
+        return value
+
+    try:
+        return templar.template(value)
     except (AnsibleError, TypeError, ValueError):
         return value
 
