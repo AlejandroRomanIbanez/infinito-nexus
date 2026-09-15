@@ -14,11 +14,19 @@ table inet {{ FIREWALL_TABLE }} {
     elements = { {{ NETWORK_INTERNAL_CIDRS | join(', ') }} }
   }
 
+{% set _tcp_guarded = ((TOR_EGRESS_GUARDED_PORTS | selectattr('protocol', 'equalto', 'tcp') | map(attribute='port') | list) + [TOR_SOCKS_PORT]) | unique | list %}
+{% set _udp_guarded = TOR_EGRESS_GUARDED_PORTS | selectattr('protocol', 'equalto', 'udp') | map(attribute='port') | unique | list %}
   chain guard {
 {% for entry in TOR_EGRESS_GUARDED_PORTS %}
     ip saddr != @admitted {{ entry.protocol }} dport {{ entry.port }} drop
 {% endfor %}
     ip saddr != @socks_admitted tcp dport {{ TOR_SOCKS_PORT }} drop
+{% if _tcp_guarded | length > 0 %}
+    fib saddr . iif oif missing tcp dport { {{ _tcp_guarded | join(', ') }} } drop
+{% endif %}
+{% if _udp_guarded | length > 0 %}
+    fib saddr . iif oif missing udp dport { {{ _udp_guarded | join(', ') }} } drop
+{% endif %}
   }
 
   chain input {
