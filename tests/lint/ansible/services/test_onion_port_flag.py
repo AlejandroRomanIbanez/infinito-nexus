@@ -74,18 +74,27 @@ _MARKER_RE = re.compile(
 
 
 def _host_bound_categories(ports: Mapping) -> set[str]:
-    """Category names of *ports* that bind a host address as a single TCP port."""
+    """Category names of *ports* that bind a host address as a single TCP port.
+
+    The proxy-fronted categories are skipped under ``local`` and kept under
+    ``public``, which is the difference between riding behind the edge proxy and
+    being it: 128 roles declare ``http``/``sso``/``websocket`` on the loopback,
+    and exactly one publishes ``http`` on the host.
+    """
     found: set[str] = set()
     for scope in _HOST_BOUND_SCOPES:
         declared = ports.get(scope)
         if not isinstance(declared, Mapping):
             continue
+        skipped = UDP_ONLY_CATEGORIES | _IMPLICIT_TLS_CATEGORIES
+        if scope == "local":
+            skipped = skipped | _PROXY_FRONTED_CATEGORIES
         found.update(
             category
             for category, value in declared.items()
             if isinstance(value, int)
             and not isinstance(value, bool)
-            and category not in _OUT_OF_SCOPE
+            and category not in skipped
         )
     return found
 

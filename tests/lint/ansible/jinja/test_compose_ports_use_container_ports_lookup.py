@@ -138,9 +138,11 @@ class TestComposePortsUseContainerPortsLookup(unittest.TestCase):
             if not _is_scan_target(rel):
                 continue
             lines = content.splitlines()
-            for number in _raw_port_lines(lines):
-                if not is_suppressed_at(lines, number, _RULE, mode="same-or-above"):
-                    findings.append((rel, number, lines[number - 1].strip()))
+            findings.extend(
+                (rel, number, lines[number - 1].strip())
+                for number in _raw_port_lines(lines)
+                if not is_suppressed_at(lines, number, _RULE, mode="same-or-above")
+            )
 
         if findings:
             formatted = "\n".join(
