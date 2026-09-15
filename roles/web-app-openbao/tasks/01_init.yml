@@ -69,15 +69,56 @@
     stdin_add_newline: false
   register: openbao_approle_login
   changed_when: false
+  failed_when: false
   delegate_to: "{{ OPENBAO_HOST_NODE }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+# Rationale: the credentials rotate every deploy, so the values this run was
+# handed are not yet the ones pinned inside OpenBao. Fall back to what the
+# previous deploy applied; 06_rotate.yml then re-pins to this run's values.
+- name: "🔐 Log in with the AppRole the previous deploy applied"
+  ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
+    container exec -i {{ OPENBAO_LOCAL_CID | quote }}
+    bao write -field=token auth/approle/login
+    role_id={{ OPENBAO_APPLIED.approle_role_id | quote }} secret_id=-
+  args:
+    stdin: "{{ OPENBAO_APPLIED.approle_secret_id }}"
+    stdin_add_newline: false
+  register: openbao_approle_login_previous
+  changed_when: false
+  failed_when: false
+  delegate_to: "{{ OPENBAO_HOST_NODE }}"
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+  when:
+    - openbao_approle_login.rc != 0
+    - OPENBAO_APPLIED.approle_role_id is defined
+
+- name: "🔧 Keep whichever AppRole login succeeded"
+  ansible.builtin.set_fact:
+    openbao_approle_token: >-
+      {{ openbao_approle_login.stdout
+         if openbao_approle_login.rc == 0
+         else openbao_approle_login_previous.stdout | default('') }}
+    openbao_secret_id_registered: >-
+      {{ OPENBAO_APPROLE_SECRET_ID
+         if openbao_approle_login.rc == 0
+         else OPENBAO_APPLIED.approle_secret_id | default('') }}
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+- name: "🛑 Fail when neither the current nor the previously applied AppRole is accepted"
+  ansible.builtin.fail:
+    msg: >-
+      Neither the AppRole credentials from the inventory nor the ones recorded in
+      {{ OPENBAO_APPLIED_STATE_HOST }} were accepted. The instance can only be
+      recovered from its volume backup plus the matching seal key.
+  when: (openbao_approle_token | trim) | length == 0
 
 - name: "🔧 Store the AppRole token in the container token helper"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
     container exec -i {{ OPENBAO_LOCAL_CID | quote }}
     bao login -no-print -
   args:
-    stdin: "{{ openbao_approle_login.stdout | trim }}"
+    stdin: "{{ openbao_approle_token | trim }}"
     stdin_add_newline: false
   changed_when: false
   delegate_to: "{{ OPENBAO_HOST_NODE }}"
@@ -98,6 +139,9 @@
     apply:
       delegate_to: "{{ OPENBAO_HOST_NODE }}"
   when: OPENBAO_PKI_ENABLED | bool
+
+- name: "♻️ Re-pin the AppRole and record what this deploy applied"
+  ansible.builtin.include_tasks: 06_rotate.yml
 
 - name: "🧹 Drop the stored reconciliation token from the container"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
