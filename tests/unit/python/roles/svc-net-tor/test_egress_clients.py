@@ -63,7 +63,9 @@ class TestEgressClients(unittest.TestCase):
         lookup._templar = _Templar(self.variables)
         lookup._loader = mock.MagicMock()
         with mock.patch.object(self.module, "lookup_loader") as loader:
-            loader.get.return_value = mock.MagicMock(run=mock.MagicMock(return_value=[[]]))
+            loader.get.return_value = mock.MagicMock(
+                run=mock.MagicMock(return_value=[[]])
+            )
             return lookup.run([], variables=self.variables)[0]
 
     def test_every_docker_address_pool_is_admitted(self) -> None:
