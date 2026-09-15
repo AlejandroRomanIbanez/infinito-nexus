@@ -32,23 +32,46 @@ from pathlib import Path
 import jinja2
 
 from utils.cache.files import iter_project_files, read_text
+from utils.cache.yaml import load_yaml_any
+from utils.roles.mapping import ROLE_FILE_VARS_MAIN
 
 from . import PROJECT_ROOT
 
 FRAGMENT = "templates/nftables.conf.j2"
 TABLE = "infinito_probe"
 
+PROBE_PORTS = {
+    "TOR_TRANS_PORT": "9040",
+    "TOR_DNS_PORT": "9053",
+    "TOR_SOCKS_PORT": "9050",
+    "TOR_DNSMASQ_PORT": "53",
+}
+
+_PORT_VARIABLE = re.compile(r"\{\{\s*([A-Z][A-Z0-9_]*)\s*\}\}")
+
+
+def _guarded_ports() -> list[dict]:
+    """The role's own guard list, with its port variables filled from stand-ins.
+
+    The shape has to come from the declaration: an entry that gains a key, a
+    protocol or a whole port must reach the rendered table here, or this check
+    keeps passing on a fixture the role stopped shipping.
+    """
+    declared = load_yaml_any(
+        str(PROJECT_ROOT / "roles" / "svc-net-tor" / ROLE_FILE_VARS_MAIN)
+    )["TOR_EGRESS_GUARDED_PORTS"]
+    return [
+        {**entry, "port": PROBE_PORTS[_PORT_VARIABLE.search(entry["port"]).group(1)]}
+        for entry in declared
+    ]
+
+
 COMMON = {
     "FIREWALL_TABLE": TABLE,
     "TOR_EGRESS_CLIENT_CIDRS": ["127.0.0.0/8", "172.16.0.0/12", "192.168.0.0/16"],
-    "TOR_EGRESS_GUARDED_PORTS": [
-        {"port": "9040", "protocol": "tcp"},
-        {"port": "9053", "protocol": "tcp"},
-        {"port": "9053", "protocol": "udp"},
-    ],
+    "TOR_EGRESS_GUARDED_PORTS": _guarded_ports(),
     "TOR_EGRESS_VIRTUAL_NET_IPV4": "10.192.0.0/10",
-    "TOR_TRANS_PORT": "9040",
-    "TOR_SOCKS_PORT": "9050",
+    **PROBE_PORTS,
     "TOR_CONTAINER_DNS_HOST": "172.17.0.1",
     "NETWORK_INTERNAL_CIDRS": [
         "127.0.0.0/8",

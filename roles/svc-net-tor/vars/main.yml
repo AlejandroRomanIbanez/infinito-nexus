@@ -12,15 +12,28 @@ TOR_FLAVOR: "{{ lookup('config', application_id, 'services.tor.flavor') }}"
 TOR_TRANS_PORT: "{{ lookup('config', application_id, 'services.tor.ports.local.trans') }}"
 TOR_DNS_PORT: "{{ lookup('config', application_id, 'services.tor.ports.local.dns') }}"
 TOR_SOCKS_PORT: "{{ lookup('config', application_id, 'services.tor.ports.local.socks') }}"
+TOR_DNSMASQ_PORT: "{{ NETWORK_DNS_PORT }}"
 TOR_DNSMASQ_CONF: "/etc/dnsmasq.d/tor-onion.conf"
 
 TOR_EGRESS_GUARDED_PORTS:
   - port: "{{ TOR_TRANS_PORT }}"
     protocol: tcp
+    admitted: containers
   - port: "{{ TOR_DNS_PORT }}"
     protocol: tcp
+    admitted: containers
   - port: "{{ TOR_DNS_PORT }}"
     protocol: udp
+    admitted: containers
+  - port: "{{ TOR_SOCKS_PORT }}"
+    protocol: tcp
+    admitted: internal
+  - port: "{{ TOR_DNSMASQ_PORT }}"
+    protocol: tcp
+    admitted: internal
+  - port: "{{ TOR_DNSMASQ_PORT }}"
+    protocol: udp
+    admitted: internal
 TOR_EGRESS_CLIENT_CIDRS: "{{ lookup('tor_egress_clients') }}"
 TOR_DNSMASQ_DROPIN: "/etc/systemd/system/dnsmasq.service.d/infinito-restart.conf"
 # nocheck: host-local-fact  meta/services.yml pins this role to the manager, so the fact describes the node the hidden service forwards on

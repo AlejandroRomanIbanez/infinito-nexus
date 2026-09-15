@@ -5,6 +5,7 @@ NETWORK_PUBLIC_DNS_RESOLVERS:
   - 8.8.8.8 # nocheck: hardcoded-dns-resolver
   - 1.0.0.1 # nocheck: hardcoded-dns-resolver
 NETWORK_DOCKER_EMBEDDED_DNS_RESOLVER: "127.0.0.11" # nocheck: hardcoded-dns-resolver
+NETWORK_DNS_PORT: 53 # Well-known resolver port a host DNS listener binds
 NETWORK_DOCKER_DNS_NGINX_DIRECTIVE: "resolver {{ NETWORK_DOCKER_EMBEDDED_DNS_RESOLVER }} valid=30s ipv6={{ NETWORK_IPV6_ENABLED | on_off }};"
 NETWORK_LOOPBACK_CIDR: "127.0.0.0/8"
 NETWORK_PRIVATE_CIDRS:
