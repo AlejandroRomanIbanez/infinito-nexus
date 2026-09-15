@@ -46,8 +46,6 @@ COMMON = {
         {"port": "9053", "protocol": "tcp"},
         {"port": "9053", "protocol": "udp"},
     ],
-    "WIREGUARD_CLIENT_INTERFACE": "wg0-client",
-    "WIREGUARD_UPLINK_INTERFACE": "eth0",
     "TOR_EGRESS_VIRTUAL_NET_IPV4": "10.192.0.0/10",
     "TOR_TRANS_PORT": "9040",
     "TOR_CONTAINER_DNS_HOST": "172.17.0.1",

@@ -36,7 +36,9 @@ Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (
 ## Use Cases
 
 - Bounding a service port that carries no access policy of its own, where the packet filter is the only boundary available.
-- Holding a forwarding or masquerade rule that a tunnel needs, without losing it at the next reboot.
+- Redirecting or translating traffic a role owns, scoped to an address range nothing else claims.
+
+A fragment can only ever be stricter than the host already is. In nftables an `accept` terminates its own base chain and nothing more: the packet still traverses every other chain at that hook, and a `drop` in any of them wins. A rule that has to overrule a policy someone else set, such as the `DROP` docker installs on forwarded packets, does not belong in a fragment at all; it belongs in the chain that carries that policy.
 
 ## Quick Setup
 
