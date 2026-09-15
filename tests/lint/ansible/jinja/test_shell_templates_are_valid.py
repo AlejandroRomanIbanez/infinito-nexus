@@ -77,15 +77,7 @@ class _Placeholder(jinja2.Undefined):
         return self
 
 
-_SAMPLE = {
-    "TOR_EGRESS_GUARD_CHAIN": "INFINITO_TOR_EGRESS",
-    "TOR_EGRESS_CLIENT_CIDRS": ["127.0.0.0/8", "10.208.0.0/12"],
-    "TOR_EGRESS_GUARD_HOOK_CHAINS": ["INPUT", "DOCKER-USER"],
-    "TOR_EGRESS_GUARDED_PORTS": [
-        {"port": "9040", "protocol": "tcp"},
-        {"port": "9053", "protocol": "udp"},
-    ],
-}
+_SAMPLE: dict[str, object] = {}
 
 
 def _shell_templates() -> list[Path]:

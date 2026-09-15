@@ -61,15 +61,11 @@ def _required(name: str, hint: str) -> str:
     return value
 
 
-def connect_through_socks(
-    proxy: str, host: str, port: int, timeout: float
-) -> None:
+def connect_through_socks(proxy: str, host: str, port: int, timeout: float) -> None:
     """Open a SOCKS5 CONNECT to ``host:port`` and raise when it is refused."""
     proxy_host, _, proxy_port = proxy.rpartition(":")
     try:
-        sock = socket.create_connection(
-            (proxy_host, int(proxy_port)), timeout=timeout
-        )
+        sock = socket.create_connection((proxy_host, int(proxy_port)), timeout=timeout)
     except OSError as error:
         raise ProbeError(f"socks proxy unreachable: {error}") from None
 

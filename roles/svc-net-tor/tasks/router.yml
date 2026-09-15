@@ -88,101 +88,22 @@
         regexp: "^(hosts:.*\\bresolve)\\s*\\[!UNAVAIL=return\\](.*)$"
         line: "\\1 [SUCCESS=return NOTFOUND=continue TRYAGAIN=return]\\2"
         backrefs: true
-- name: "🔀 Egress router | Redirect .onion virtual-IP TCP to Tor TransPort"
-  ansible.builtin.iptables:
-    table: nat
-    chain: OUTPUT
-    protocol: tcp
-    destination: "{{ TOR_EGRESS_VIRTUAL_NET_IPV4 }}"
-    jump: REDIRECT
-    to_ports: "{{ TOR_TRANS_PORT | string }}"
-    comment: "Tor egress router: .onion virtual range -> TransPort"
+- name: "🔀 Egress router | Route .onion traffic and bound the ports that carry no policy"
+  ansible.builtin.include_role:
+    name: svc-net-firewall
 
-- name: "🔀 Egress router | Send container .onion traffic to the bridge TransPort"
-  when: TOR_CONTAINER_DNS_HOST | length > 0
-  ansible.builtin.iptables:
-    table: nat
-    chain: PREROUTING
-    protocol: tcp
-    destination: "{{ TOR_EGRESS_VIRTUAL_NET_IPV4 }}"
-    jump: DNAT
-    to_destination: "{{ TOR_CONTAINER_DNS_HOST }}:{{ TOR_TRANS_PORT }}"
-    comment: "Tor egress router: container .onion virtual range -> TransPort"
-
-- name: "🔀 Egress router | Prove the container redirect is installed"
-  when: TOR_CONTAINER_DNS_HOST | length > 0
+- name: "🛡️ Egress guard | Read back the chain that bounds the ports"
+  become: true
   ansible.builtin.command:
-    argv:
-      - iptables
-      - -t
-      - nat
-      - -C
-      - PREROUTING
-      - -p
-      - tcp
-      - -d
-      - "{{ TOR_EGRESS_VIRTUAL_NET_IPV4 }}"
-      - -j
-      - DNAT
-      - --to-destination
-      - "{{ TOR_CONTAINER_DNS_HOST }}:{{ TOR_TRANS_PORT }}"
+    argv: [nft, list, chain, inet, "{{ firewall_loaded_table }}", guard]
+  register: tor_egress_guard_chain
   changed_when: false
 
-- name: "🛡️ Egress guard | Stage the guard applier"
-  when: DEPLOYMENT_MODE == 'swarm'
-  ansible.builtin.template:
-    src: tor-egress-guard.sh.j2
-    dest: "{{ TOR_EGRESS_GUARD_SCRIPT }}"
-    owner: root
-    group: root
-    mode: "0750"
-  notify: apply tor egress guard
-
-- name: "🛡️ Egress guard | Install the unit that reapplies it after docker"
-  when: DEPLOYMENT_MODE == 'swarm'
-  ansible.builtin.template:
-    src: tor-egress-guard.service.j2
-    dest: "{{ TOR_EGRESS_GUARD_UNIT }}"
-    owner: root
-    group: root
-    mode: "0644"
-  notify: apply tor egress guard
-
-- name: "🛡️ Egress guard | Enable the guard across reboots"
-  when: DEPLOYMENT_MODE == 'swarm'
-  ansible.builtin.systemd_service:
-    name: "{{ TOR_EGRESS_GUARD_UNIT | basename }}"
-    enabled: true
-    state: started
-    daemon_reload: true
-
-- name: "🛡️ Egress guard | Flush handlers so the guard is live before checking"
-  when: DEPLOYMENT_MODE == 'swarm'
-  ansible.builtin.meta: flush_handlers
-
-- name: "🛡️ Egress guard | Prove the guard rejects everything it must"
-  when: DEPLOYMENT_MODE == 'swarm'
-  ansible.builtin.command:
-    argv:
-      - iptables
-      - -C
-      - "{{ TOR_EGRESS_GUARD_CHAIN }}"
-      - -j
-      - DROP
-  changed_when: false
-
-- name: "🛡️ Egress guard | Prove every guarded port reaches the guard"
-  when: DEPLOYMENT_MODE == 'swarm'
-  ansible.builtin.command:
-    argv:
-      - iptables
-      - -C
-      - "{{ item.0 }}"
-      - -p
-      - "{{ item.1.protocol }}"
-      - --dport
-      - "{{ item.1.port | string }}"
-      - -j
-      - "{{ TOR_EGRESS_GUARD_CHAIN }}"
-  changed_when: false
-  loop: "{{ TOR_EGRESS_GUARD_HOOK_CHAINS | product(TOR_EGRESS_GUARDED_PORTS) | list }}"
+- name: "🛡️ Egress guard | Refuse a guard that drops nothing"
+  ansible.builtin.assert:
+    that:
+      - "'drop' in tor_egress_guard_chain.stdout"
+    fail_msg: >-
+      The guard chain in {{ firewall_loaded_table }} carries no drop, so
+      TransPort and DNSPort are reachable from every source. These two ports
+      have no access policy of their own; this chain is the only boundary.
