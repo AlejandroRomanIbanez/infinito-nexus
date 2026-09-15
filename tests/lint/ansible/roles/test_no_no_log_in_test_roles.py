@@ -83,9 +83,7 @@ class TestNoNoLogInTestRoles(unittest.TestCase):
         if findings:
             self.fail(
                 f"{len(findings)} no_log entr(ies) in roles/test-*:\n"
-                + "\n".join(
-                    f"{f.path}:{f.line}: {_fix_hint(f.path)}" for f in findings
-                )
+                + "\n".join(f"{f.path}:{f.line}: {_fix_hint(f.path)}" for f in findings)
             )
 
     def test_the_scan_reaches_the_test_roles(self) -> None:
