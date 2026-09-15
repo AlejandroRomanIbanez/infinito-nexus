@@ -40,9 +40,11 @@ ENV_CONTEXT = {
 
 def jinja_env(searchpath) -> Environment:
     env = Environment(
-        loader=FileSystemLoader(str(searchpath)), undefined=StrictUndefined
+        loader=FileSystemLoader(str(searchpath)),
+        undefined=StrictUndefined,
+        autoescape=False,  # noqa: S701 - renders HCL and dotenv, not markup
     )
-    env.filters["bool"] = lambda value: bool(value)
+    env.filters["bool"] = bool
     env.filters["dotenv_quote"] = lambda value: f'"{value}"'
     return env
 
@@ -109,9 +111,9 @@ class TestAppliedStateIsReadBeforeTheConfigIsRendered(unittest.TestCase):
         state_read = next(
             i
             for i, task in enumerate(tasks)
-            if task.get("ansible.builtin.slurp", {}).get("src", "").endswith(
-                "OPENBAO_APPLIED_STATE_HOST }}"
-            )
+            if task.get("ansible.builtin.slurp", {})
+            .get("src", "")
+            .endswith("OPENBAO_APPLIED_STATE_HOST }}")
         )
         backend = next(
             i
