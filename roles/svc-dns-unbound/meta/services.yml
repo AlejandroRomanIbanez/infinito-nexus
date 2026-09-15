@@ -23,6 +23,9 @@ unbound:
   ports:
     local:
       unbound: 53
+    onion:
+      # nocheck: onion-flag  a recursive resolver published on the onion is an open resolver, and the containers it serves reach it on the role network
+      unbound: false
   lifecycle: beta
 
 # nocheck: dynamic-flag - the resolver state volume is backup-disabled rebuildable cache, the backup consumer stays permanently off
