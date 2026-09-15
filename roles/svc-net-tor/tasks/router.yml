@@ -68,7 +68,7 @@
   ansible.builtin.systemd:
     name: dnsmasq
     enabled: true
-    daemon_reload: "{{ _tor_dnsmasq_dropin is changed }}"
+    daemon_reload: "{{ TOR_DNSMASQ_OWNS_LISTENER | bool and _tor_dnsmasq_dropin is changed }}"
     state: "{{ 'restarted' if (_tor_dnsmasq_conf is changed or _tor_dnsmasq_confdir is changed) else 'started' }}"
 - name: "🔀 Egress router | Route host name resolution through dnsmasq"
   when: TOR_DNSMASQ_OWNS_LISTENER | bool
