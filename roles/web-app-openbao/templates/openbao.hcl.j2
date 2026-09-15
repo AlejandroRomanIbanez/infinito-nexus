@@ -21,6 +21,10 @@ listener "tcp" {
 seal "static" {
   current_key_id = "{{ OPENBAO_SEAL_KEY_ID }}"
   current_key    = "env://OPENBAO_SEAL_KEY"
+{% if OPENBAO_SEAL_ROTATING | bool %}
+  previous_key_id = "{{ OPENBAO_SEAL_KEY_PREVIOUS_ID }}"
+  previous_key    = "env://OPENBAO_SEAL_KEY_PREVIOUS"
+{% endif %}
 }
 
 telemetry {
