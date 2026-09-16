@@ -12,21 +12,15 @@ if ((${#distros[@]} == 0)); then
 	read -r -a distros <<<"${INFINITO_DISTROS}"
 fi
 
-log_dir="${INFINITO_BUILD_LOG_DIR:-${repo_root}/build/image-logs}"
+log_dir="${BUILD_LOG_DIR:-${repo_root}/build/image-logs}"
 mkdir -p "${log_dir}"
 
-group_open() {
-	if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-		echo "::group::$1"
-	else
-		echo "──────── $1 ────────"
-	fi
-}
-
-group_close() {
-	if [[ -n "${GITHUB_ACTIONS:-}" ]]; then
-		echo "::endgroup::"
-	fi
+stamp() {
+	local distro="$1"
+	local line
+	while IFS= read -r line; do
+		printf '[%s][%(%H:%M:%S)T] %s\n' "${distro}" -1 "${line}"
+	done
 }
 
 # shellcheck source=scripts/meta/env/load.sh
@@ -48,10 +42,13 @@ for distro in "${distros[@]}"; do
 		gap="${gap_next}"
 	fi
 
-	MATRIX_DISTRO="${distro}" \
-		bash "${script_dir}/push.sh" >"${log_dir}/${distro}.log" 2>&1 &
+	(
+		set -o pipefail
+		MATRIX_DISTRO="${distro}" bash "${script_dir}/push.sh" 2>&1 |
+			stamp "${distro}" |
+			tee "${log_dir}/${distro}.log"
+	) &
 	pids+=("$!")
-	echo "    → ${distro} started as pid $!"
 	started=$((started + 1))
 done
 
@@ -66,12 +63,6 @@ for pid in "${pids[@]}"; do
 		failed+=("${distro}")
 	fi
 	index=$((index + 1))
-done
-
-for distro in "${distros[@]}"; do
-	group_open "${distro}"
-	cat "${log_dir}/${distro}.log" || true # nocheck: shell-or-true -- a missing log must not mask the build verdict below
-	group_close
 done
 
 if ((${#failed[@]} > 0)); then

@@ -41,25 +41,8 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  prepare:
-    name: 📋 Build Matrix
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.out.outputs.matrix }}
-      image_tag: ${{ steps.out.outputs.image_tag }}
-    steps:
-      - uses: actions/checkout@v7.0.0
-
-      - name: 📦 Install jq
-        run: ./scripts/install/apt.sh jq
-
-      - name: 🧮 Compute matrix JSON
-        id: out
-        run: scripts/github/runner/images_build_outputs.sh "${{ inputs.distros }}" "${{ inputs.image_tag }}"
-
   build:
     name: 💿 Image
-    needs: prepare
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -80,6 +63,13 @@ jobs:
           path: _src
           persist-credentials: false
           allow-unsafe-pr-checkout: ${{ inputs.allow_unsafe_checkout }}
+
+      - name: 📦 Install jq
+        run: ./scripts/install/apt.sh jq
+
+      - name: 🧮 Compute the distro list and image tag
+        id: out
+        run: scripts/github/runner/images_build_outputs.sh "${{ inputs.distros }}" "${{ inputs.image_tag }}"
 
       - name: 💽 Disk pressure (start)
         shell: bash
@@ -129,8 +119,8 @@ jobs:
         env:
           GITHUB_REPOSITORY_OWNER: ${{ steps.owner.outputs.owner }}
           BUILD_CONTEXT_DIR: _src
-          INFINITO_DISTROS: ${{ join(fromJson(needs.prepare.outputs.matrix), ' ') }}
-          IMAGE_TAG: ${{ needs.prepare.outputs.image_tag }}
+          INFINITO_DISTROS: ${{ join(fromJson(steps.out.outputs.matrix), ' ') }}
+          IMAGE_TAG: ${{ steps.out.outputs.image_tag }}
           USE_NIX_TOKEN: ${{ !(github.event_name == 'pull_request_target' && github.event.pull_request.head.repo.full_name != github.repository) }}
           NIX_GITHUB_TOKEN: ${{ github.token }}
           MAX_ATTEMPTS: "7"
