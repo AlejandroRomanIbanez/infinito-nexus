@@ -58,7 +58,7 @@ def _selection_from(group_names: Any) -> set[str]:
 class LookupModule(LookupBase):
     """Return domains the CSP probe should skip.
 
-    Skips canonical + alias domains of every selected application whose
+    Skips canonical + alias domains of every application whose
     ``server.status_codes.default`` declares any HTTP code >= 400
     (e.g. federation-only roles that legitimately serve 4xx at ``/``).
 
@@ -118,10 +118,8 @@ class LookupModule(LookupBase):
 
         skip: set[str] = set()
         for app_id in applications:
-            if selection and app_id not in selection:
-                continue
-
-            skip |= self._service_disabled_domains(applications, app_id)
+            if not selection or app_id in selection:
+                skip |= self._service_disabled_domains(applications, app_id)
 
             default = get(
                 applications,

@@ -74,7 +74,7 @@ class CspSkipDomainsLookupTests(unittest.TestCase):
         apps = {"web-app-foo": {"domains": {"canonical": ["foo.example.com"]}}}
         self.assertEqual(self._run(apps), [])
 
-    def test_group_names_selection_filters_apps(self):
+    def test_a_declared_4xx_is_honoured_outside_the_selection(self):
         apps = {
             "web-app-bridgy": {
                 "domains": {"canonical": ["bridgy.example.com"]},
@@ -82,8 +82,8 @@ class CspSkipDomainsLookupTests(unittest.TestCase):
                     "status_codes": {"default": [404]},
                 },
             },
-            "web-app-other": {
-                "domains": {"canonical": ["other.example.com"]},
+            "web-svc-mirror": {
+                "domains": {"canonical": ["mirror.example.com"]},
                 "server": {
                     "status_codes": {"default": [404]},
                 },
@@ -91,7 +91,7 @@ class CspSkipDomainsLookupTests(unittest.TestCase):
         }
         self.assertEqual(
             self._run(apps, group_names=["web-app-bridgy"]),
-            ["bridgy.example.com"],
+            ["bridgy.example.com", "mirror.example.com"],
         )
 
     def test_group_names_csv_string_is_accepted(self):
