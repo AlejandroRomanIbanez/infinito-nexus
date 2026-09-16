@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-from utils.install.collections import unsatisfied
+from utils.install.collections import declared_pins, unsatisfied
 
 REQUIREMENTS = """---
 collections:
@@ -27,6 +27,41 @@ def _install(collections_dir: Path, fqcn: str, version: str) -> None:
     (target / "MANIFEST.json").write_text(
         json.dumps({"collection_info": {"version": version}}), encoding="utf-8"
     )
+
+
+class TestDeclaredPins(unittest.TestCase):
+    def test_a_quoted_version_is_read_without_its_quotes(self):
+        body = (
+            "---\ncollections:\n"
+            '  - name: double.quoted\n    version: "13.4.0"\n'
+            "  - name: single.quoted\n    version: '1.0.0'\n"
+            "  - name: commented\n    version: 2.2.2 # pinned\n"
+        )
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            requirements = _write_requirements(root, body)
+
+            self.assertEqual(
+                declared_pins(requirements),
+                [
+                    ("double.quoted", "13.4.0"),
+                    ("single.quoted", "1.0.0"),
+                    ("commented", "2.2.2"),
+                ],
+            )
+
+    def test_an_entry_without_a_version_stays_unpinned(self):
+        body = "---\ncollections:\n  - name: bare.entry\n"
+        with TemporaryDirectory() as tmp:
+            root = Path(tmp)
+
+            self.assertEqual(
+                declared_pins(_write_requirements(root, body)), [("bare.entry", None)]
+            )
+
+    def test_a_missing_file_declares_nothing(self):
+        with TemporaryDirectory() as tmp:
+            self.assertEqual(declared_pins(Path(tmp) / "absent.yml"), [])
 
 
 class TestUnsatisfied(unittest.TestCase):

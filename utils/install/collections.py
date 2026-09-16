@@ -1,12 +1,48 @@
-"""Compare the pinned Galaxy requirements against what is on disk."""
+"""Compare the pinned Galaxy requirements against what is on disk.
+
+Imported by the lint bootstrap, which runs on a bare interpreter before any
+dependency is installed, so this module stays on the standard library. The
+requirements files it reads are this repository's own and hold one shape:
+a ``collections:`` list of ``- name:`` entries with an optional ``version:``.
+A line that does not match that shape leaves the entry unpinned, which the
+caller treats as unsatisfied and installs.
+"""
 
 from __future__ import annotations
 
 import json
+import re
 import sys
 from pathlib import Path
 
-import yaml
+_NAME = re.compile(r"^\s*-\s+name:\s*(?P<name>[A-Za-z0-9_.]+)\s*(?:#.*)?$")
+_VERSION = re.compile(
+    r"^\s*version:\s*(?P<quote>[\"']?)(?P<version>[^\s#\"']+)(?P=quote)\s*(?:#.*)?$"
+)
+
+
+def declared_pins(requirements_file: Path) -> list[tuple[str, str | None]]:
+    """The ``(fqcn, version)`` pairs a requirements file declares, in order.
+
+    Args:
+        requirements_file: the requirements.galaxy.yml to read.
+    """
+    pins: list[tuple[str, str | None]] = []
+    try:
+        lines = requirements_file.read_text(encoding="utf-8").splitlines()
+    except OSError:
+        return pins
+
+    for line in lines:
+        name_match = _NAME.match(line)
+        if name_match:
+            pins.append((name_match.group("name"), None))
+            continue
+        version_match = _VERSION.match(line)
+        if version_match and pins:
+            fqcn, _ = pins[-1]
+            pins[-1] = (fqcn, version_match.group("version"))
+    return pins
 
 
 def _installed_version(collections_dir: Path, namespace: str, name: str) -> str | None:
@@ -38,19 +74,13 @@ def unsatisfied(requirements_file: Path, collections_dir: Path) -> list[str]:
         requirements_file: the requirements.galaxy.yml to read.
         collections_dir: the ``-p`` target ansible-galaxy installs into.
     """
-    declared = yaml.safe_load(requirements_file.read_text(encoding="utf-8")) or {}
     missing: list[str] = []
-    for entry in declared.get("collections") or []:
-        if not isinstance(entry, dict):
-            missing.append(str(entry))
-            continue
-        fqcn = str(entry.get("name", ""))
-        pinned = entry.get("version")
-        if not fqcn or "." not in fqcn or not pinned:
-            missing.append(fqcn or repr(entry))
+    for fqcn, pinned in declared_pins(requirements_file):
+        if "." not in fqcn or not pinned:
+            missing.append(fqcn)
             continue
         namespace, _, name = fqcn.partition(".")
-        if _installed_version(collections_dir, namespace, name) != str(pinned):
+        if _installed_version(collections_dir, namespace, name) != pinned:
             missing.append(f"{fqcn}:{pinned}")
     return missing
 
