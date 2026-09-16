@@ -36,7 +36,9 @@ def read_preferred(env_file: Path) -> str:
     """
     match = re.search(
         rf"^{SETTING}=(\S+)\s*$",
-        env_file.read_text(encoding="utf-8"),  # nocheck: cache-read -- write_preferred rewrites this file in the same run
+        env_file.read_text(
+            encoding="utf-8"
+        ),  # nocheck: cache-read -- write_preferred rewrites this file in the same run
         re.MULTILINE,
     )
     if match is None:
@@ -51,7 +53,9 @@ def write_preferred(env_file: Path, source: str) -> None:
         env_file: the default.env holding the setting.
         source: the source to try first from now on.
     """
-    text = env_file.read_text(encoding="utf-8")  # nocheck: cache-read -- rewritten on the next line
+    text = env_file.read_text(
+        encoding="utf-8"
+    )  # nocheck: cache-read -- rewritten on the next line
     env_file.write_text(
         re.sub(rf"^{SETTING}=\S+$", f"{SETTING}={source}", text, flags=re.MULTILINE),
         encoding="utf-8",

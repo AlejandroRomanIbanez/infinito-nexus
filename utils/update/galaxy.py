@@ -107,7 +107,9 @@ def find_outdated_updates(repo_root: Path) -> list[CollectionPinUpdate]:
 
 
 def _rewrite(path: Path, fqcn: str, old: str, new: str) -> bool:
-    text = path.read_text(encoding="utf-8")  # nocheck: cache-read -- rewritten below, a cached copy would go stale mid-run
+    text = path.read_text(
+        encoding="utf-8"
+    )  # nocheck: cache-read -- rewritten below, a cached copy would go stale mid-run
     pattern = re.compile(
         rf"(name:\s*{re.escape(fqcn)}\b(?:\n(?!\s*-\s).*)*?\n\s*version:\s*){re.escape(old)}\b"
     )
