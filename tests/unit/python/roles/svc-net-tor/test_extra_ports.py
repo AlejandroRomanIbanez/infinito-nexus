@@ -56,8 +56,8 @@ class TestExtraPorts(unittest.TestCase):
 
     def _ports(self, derived: list[dict], **variables) -> list[dict]:
         lookup = self.module.LookupModule()
-        lookup._templar = None  # noqa: SLF001 - the plugin reads variables we pass
-        lookup._loader = None  # noqa: SLF001
+        lookup._templar = None
+        lookup._loader = None
         with mock.patch.object(
             self.module.lookup_loader, "get", return_value=_DerivedPorts(derived)
         ):
@@ -95,7 +95,7 @@ class TestExtraPorts(unittest.TestCase):
 
     def test_an_undeclared_flag_is_refused(self) -> None:
         lookup = self.module.LookupModule()
-        lookup._templar = None  # noqa: SLF001
+        lookup._templar = None
         with self.assertRaises(AnsibleError) as raised:
             lookup.run([], variables={"TOR_ONION_SSH_ENABLED": True})
         self.assertIn("TOR_ONION_HTTP_ENABLED", str(raised.exception))
