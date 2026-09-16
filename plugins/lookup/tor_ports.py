@@ -143,8 +143,8 @@ class LookupModule(LookupBase):
     Both are read from the variant-merged applications view, so a variant that
     drops the opt-in drops the forward with it. The published port binds the
     host interface, so the loopback target reaches it from svc-net-tor's
-    host-network container. Consumed by ``TOR_ONION_EXTRA_PORTS``
-    (group_vars/all/19_tor.yml) and rendered as ``HiddenServicePort`` lines in
+    host-network container. Composed with the flagged forwards by
+    ``lookup('tor_extra_ports')`` and rendered as ``HiddenServicePort`` lines in
     svc-net-tor's torrc.
     """
 

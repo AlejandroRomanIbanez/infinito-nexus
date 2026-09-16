@@ -26,6 +26,11 @@ tor: # nocheck: category-modes
   node: ""
   use_entry_guards: true
   flavor: public
+  forwards:
+    ssh: true
+    http: true
+  egress:
+    enabled: true
   timeout_multipliers:
     chutney: 2
     public: 5
