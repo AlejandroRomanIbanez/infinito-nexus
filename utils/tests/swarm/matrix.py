@@ -385,7 +385,7 @@ def main(argv: list[str] | None = None) -> int:
         round_index,
         inv_dir,
         round_variants,
-        round_include,
+        _round_include,
         round_purge_set,
     ) in enumerate(plan):
         inv_root = inv_dir.rstrip("/")
