@@ -77,7 +77,10 @@ class TestExtraPorts(unittest.TestCase):
         lookup = self.module.LookupModule()
         lookup._templar = _Templar(True)
         lookup._loader = None
-        variables = dict.fromkeys(ENABLED, "{{ lookup('config', application_id, 'services.tor.forwards.x') | bool }}")
+        variables = dict.fromkeys(
+            ENABLED,
+            "{{ lookup('config', application_id, 'services.tor.forwards.x') | bool }}",
+        )
         with mock.patch.object(
             self.module.lookup_loader, "get", return_value=_DerivedPorts([])
         ):
