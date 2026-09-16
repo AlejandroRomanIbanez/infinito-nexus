@@ -7,6 +7,7 @@
   loop_control:
     loop_var: model
     label: "{{ model.alias }}"
+  # rationale: async; the reap below reads every job back before the play continues, so no model is still downloading when playwright starts
   async: "{{ LMSTUDIO_PRELOAD_ASYNC_TIME if ASYNC_ENABLED | bool else omit }}"
   poll: "{{ ASYNC_POLL if ASYNC_ENABLED | bool else omit }}"
   retries: "{{ 0 if ASYNC_ENABLED | bool else 1 }}"
