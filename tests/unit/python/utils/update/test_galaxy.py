@@ -28,8 +28,8 @@ collections:
 
 
 def _read(root: Path, name: str) -> str:
-    # nocheck: cache-read -- apply_updates rewrote this file inside the same test
-    return (root / "requirements" / name).read_text(encoding="utf-8")
+    path = root / "requirements" / name
+    return path.read_text()  # nocheck: cache-read -- rewritten by this test
 
 
 def _repo(root: Path) -> Path:

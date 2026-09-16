@@ -1,9 +1,40 @@
 import json
+import subprocess
+import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
+from utils import PROJECT_ROOT
+from utils.cache.yaml import load_yaml_any
 from utils.install.collections import declared_pins, unsatisfied
+
+_REQUIREMENTS = (
+    PROJECT_ROOT / "requirements" / "requirements.galaxy.yml",
+    PROJECT_ROOT / "requirements" / "requirements.git.yml",
+)
+
+_BOOTSTRAP_PROBE = """
+import sys
+
+
+class _NoPyYAML:
+    def find_spec(self, fullname, path=None, target=None):
+        if fullname == "yaml" or fullname.startswith("yaml."):
+            raise ImportError("PyYAML is absent during the lint bootstrap")
+        return None
+
+
+sys.meta_path.insert(0, _NoPyYAML())
+
+from pathlib import Path
+
+from utils.install.lint.ansible import collections as lint_collections
+from utils.install.collections import declared_pins
+
+for fqcn, version in declared_pins(Path("requirements/requirements.galaxy.yml")):
+    print(fqcn, version)
+"""
 
 REQUIREMENTS = """---
 collections:
@@ -27,6 +58,36 @@ def _install(collections_dir: Path, fqcn: str, version: str) -> None:
     (target / "MANIFEST.json").write_text(
         json.dumps({"collection_info": {"version": version}}), encoding="utf-8"
     )
+
+
+class TestAgainstPyYAML(unittest.TestCase):
+    def test_the_hand_parser_agrees_with_pyyaml(self):
+        for path in _REQUIREMENTS:
+            with self.subTest(requirements=path.name):
+                declared = load_yaml_any(str(path), default_if_missing={}) or {}
+                expected = [
+                    (str(entry.get("name")), entry.get("version"))
+                    for entry in declared.get("collections") or []
+                    if isinstance(entry, dict) and entry.get("name")
+                ]
+                expected = [
+                    (name, None if version is None else str(version))
+                    for name, version in expected
+                ]
+
+                self.assertEqual(declared_pins(path), expected)
+
+    def test_the_parser_runs_with_pyyaml_unimportable(self):
+        result = subprocess.run(
+            [sys.executable, "-c", _BOOTSTRAP_PROBE],
+            cwd=str(PROJECT_ROOT),
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("community.general", result.stdout)
 
 
 class TestDeclaredPins(unittest.TestCase):

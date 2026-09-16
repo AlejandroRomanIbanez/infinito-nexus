@@ -57,9 +57,8 @@ def load_history(path: Path) -> list[dict[str, float | None]]:
         path: JSON file holding the rolling window.
     """
     try:
-        payload = json.loads(
-            path.read_text(encoding="utf-8")
-        )  # nocheck: cache-read -- the history file is rewritten every run, a cached copy would go stale
+        raw = path.read_text()  # nocheck: cache-read -- rewritten every run
+        payload = json.loads(raw)
     except (OSError, ValueError):
         return []
     return payload if isinstance(payload, list) else []
