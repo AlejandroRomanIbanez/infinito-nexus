@@ -27,6 +27,11 @@ collections:
 """
 
 
+def _read(root: Path, name: str) -> str:
+    # nocheck: cache-read -- apply_updates rewrote this file inside the same test
+    return (root / "requirements" / name).read_text(encoding="utf-8")
+
+
 def _repo(root: Path) -> Path:
     (root / "requirements").mkdir()
     (root / "requirements" / "requirements.galaxy.yml").write_text(
@@ -98,12 +103,8 @@ class TestApplyUpdates(unittest.TestCase):
                 changed = apply_updates(root, updates)
 
             self.assertEqual(len(changed), 2)
-            galaxy_text = (root / "requirements" / "requirements.galaxy.yml").read_text(
-                encoding="utf-8"
-            )
-            git_text = (root / "requirements" / "requirements.git.yml").read_text(
-                encoding="utf-8"
-            )
+            galaxy_text = _read(root, "requirements.galaxy.yml")
+            git_text = _read(root, "requirements.git.yml")
             self.assertIn("version: 13.4.0", galaxy_text)
             self.assertIn("version: 13.4.0", git_text)
             self.assertNotIn("13.2.0", galaxy_text)
@@ -118,16 +119,8 @@ class TestApplyUpdates(unittest.TestCase):
             ):
                 apply_updates(root, find_outdated_updates(root))
 
-            git_text = (root / "requirements" / "requirements.git.yml").read_text(
-                encoding="utf-8"
-            )
-            self.assertIn("version: master", git_text)
-            self.assertIn(
-                "version: 0.13.0",
-                (root / "requirements" / "requirements.galaxy.yml").read_text(
-                    encoding="utf-8"
-                ),
-            )
+            self.assertIn("version: master", _read(root, "requirements.git.yml"))
+            self.assertIn("version: 0.13.0", _read(root, "requirements.galaxy.yml"))
 
 
 if __name__ == "__main__":

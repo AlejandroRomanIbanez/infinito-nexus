@@ -25,7 +25,9 @@ if [[ -z "${INFINITO_ANSIBLE_COLLECTIONS_SOURCE:-}" ]]; then
 	source <(grep -E '^INFINITO_ANSIBLE_COLLECTIONS_SOURCE=' default.env)
 fi
 
-case "${INFINITO_ANSIBLE_COLLECTIONS_SOURCE:-galaxy}" in
+: "${INFINITO_ANSIBLE_COLLECTIONS_SOURCE:?not declared in default.env}"
+
+case "${INFINITO_ANSIBLE_COLLECTIONS_SOURCE}" in
 galaxy) SOURCE_ORDER=("Galaxy:${GALAXY_REQ}" "Git:${GIT_REQ}") ;;
 git) SOURCE_ORDER=("Git:${GIT_REQ}" "Galaxy:${GALAXY_REQ}") ;;
 *)

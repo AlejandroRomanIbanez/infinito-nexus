@@ -20,8 +20,7 @@ import re
 from dataclasses import dataclass
 from pathlib import Path
 
-import yaml
-
+from utils.cache.yaml import load_yaml_any
 from utils.update.base import is_semver, version_key
 from utils.update.repository import git_ls_remote_tags
 
@@ -51,7 +50,7 @@ class CollectionPinUpdate:
 
 
 def _entries(path: Path) -> list[dict]:
-    declared = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    declared = load_yaml_any(str(path), default_if_missing={}) or {}
     return [e for e in (declared.get("collections") or []) if isinstance(e, dict)]
 
 
@@ -108,7 +107,7 @@ def find_outdated_updates(repo_root: Path) -> list[CollectionPinUpdate]:
 
 
 def _rewrite(path: Path, fqcn: str, old: str, new: str) -> bool:
-    text = path.read_text(encoding="utf-8")
+    text = path.read_text(encoding="utf-8")  # nocheck: cache-read -- rewritten below, a cached copy would go stale mid-run
     pattern = re.compile(
         rf"(name:\s*{re.escape(fqcn)}\b(?:\n(?!\s*-\s).*)*?\n\s*version:\s*){re.escape(old)}\b"
     )

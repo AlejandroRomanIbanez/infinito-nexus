@@ -1,4 +1,4 @@
-name: "⚖️ Benchmark collection sources"
+name: "⚖️ Source benchmark"
 run-name: "${{ github.event_name == 'schedule' && '⏰ ' || '' }}⚖️ Benchmark collection sources"
 
 on:
