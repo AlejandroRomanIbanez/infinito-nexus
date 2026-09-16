@@ -11,5 +11,5 @@
     - name: "⬇️ Preload the LM Studio models (first pass)"
       ansible.builtin.include_tasks: utils/preload.yml
   rescue:
-    - name: "♻️ Recover the wedged transfer and preload again"
+    - name: "♻️ Recover the wedged transfer and preload again" # nocheck: rescue-recovery a timed-out transfer leaves the daemon reporting 0.00% for every further pull, and only restarting the container it owns clears that; the generic capture cannot restart anything, and the block ends by preloading again so an unrecovered failure still re-raises
       ansible.builtin.include_tasks: utils/recover.yml
