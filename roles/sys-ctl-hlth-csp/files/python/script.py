@@ -131,6 +131,7 @@ def build_docker_cmd(
     use_host_network: bool = True,
     proxy: str = "",
     timeout_ms: int = 0,
+    accept_status: list[str] | None = None,
 ) -> list[str]:
     cmd = ["container", "run", "--rm"]
 
@@ -155,6 +156,12 @@ def build_docker_cmd(
     if ignore_network_blocks_from:
         cmd.append("--ignore-network-blocks-from")
         cmd.extend(ignore_network_blocks_from)
+
+    if accept_status:
+        cmd.append("--accept-status")
+        cmd.extend(accept_status)
+
+    if ignore_network_blocks_from or accept_status:
         cmd.append("--")
 
     cmd.extend(urls)
@@ -170,6 +177,7 @@ def run_checker(
     use_host_network: bool = True,
     proxy: str = "",
     timeout_ms: int = 0,
+    accept_status: list[str] | None = None,
 ) -> int:
     """
     Runs the CSP checker container and returns its exit code.
@@ -186,6 +194,7 @@ def run_checker(
         use_host_network=use_host_network,
         proxy=proxy,
         timeout_ms=timeout_ms,
+        accept_status=accept_status,
     )
 
     try:
@@ -243,6 +252,17 @@ def main() -> None:
             "server.status_codes.default permits a 4xx/5xx response at `/` "
             "(e.g. federation-only apps), which the csp-checker would "
             "otherwise treat as unreachable."
+        ),
+    )
+    parser.add_argument(
+        "--accept-status",
+        nargs="*",
+        default=[],
+        help=(
+            "Per-vhost status codes the probe must treat as healthy, as "
+            "<domain>=<code>[,<code>]. Declared in the role's "
+            "server.status_codes; everything below 300 passes without being "
+            "listed."
         ),
     )
     parser.add_argument(
@@ -322,6 +342,7 @@ def main() -> None:
             use_host_network=not bool(args.no_host_network),
             proxy=batch_proxy,
             timeout_ms=batch_timeout,
+            accept_status=list(args.accept_status or []),
         )
         rc = rc or batch_rc
     sys.exit(rc)
