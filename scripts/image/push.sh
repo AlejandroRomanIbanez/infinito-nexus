@@ -49,7 +49,7 @@ while true; do
 		--build-arg "INFINITO_DOCKER_CLI_INSTALL_SCRIPT=${INFINITO_DOCKER_CLI_INSTALL_SCRIPT:?source scripts/meta/env/load.sh}" \
 		"${nix_arg[@]}" \
 		--cache-from "type=registry,ref=${cache_ref}" \
-		--cache-to "type=registry,mode=max,ignore-error=true,ref=${cache_ref}" \
+		--cache-to "type=registry,mode=max,ref=${cache_ref}" \
 		"${BUILD_CONTEXT_DIR}"; then
 		echo "Build & push succeeded on attempt ${attempt}/${max_attempts}."
 		break
