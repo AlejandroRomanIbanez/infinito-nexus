@@ -11,5 +11,10 @@
     - name: "⬇️ Preload the LM Studio models (first pass)"
       ansible.builtin.include_tasks: utils/preload.yml
   rescue:
-    - name: "♻️ Recover the wedged transfer and preload again" # nocheck: rescue-recovery a timed-out transfer leaves the daemon reporting 0.00% for every further pull, and only restarting the container it owns clears that; the generic capture cannot restart anything, and the block ends by preloading again so an unrecovered failure still re-raises
+    - name: "🐝 Re-raise the preload failure unchanged in swarm" # nocheck: rescue-recovery a timed-out transfer leaves the daemon reporting 0.00% for every further pull, and only restarting the container it owns clears that, which the generic capture cannot do; swarm re-raises here instead, because under any_errors_fatal a rescued host keeps running while every other host is already marked failed, and compose ends the block by preloading again so an unrecovered failure still re-raises
+      ansible.builtin.fail:
+        msg: "{{ ansible_failed_result.msg | default('LM Studio preload failed') }}"
+      when: DEPLOYMENT_MODE == 'swarm'
+
+    - name: "♻️ Recover the wedged transfer and preload again"
       ansible.builtin.include_tasks: utils/recover.yml
