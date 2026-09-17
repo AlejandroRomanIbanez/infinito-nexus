@@ -11,6 +11,7 @@ from __future__ import annotations
 import unittest
 from pathlib import Path
 
+from utils.roles.mapping import ROLE_FILE_META_SERVICES
 from utils.update.docker import (
     DockerImageVersionEntry,
     DockerImageVersionUpdate,
@@ -26,7 +27,7 @@ def _entry(role: str, service: str, image: str, version: str):
         service=service,
         image=image,
         version=version,
-        config_path=Path("meta/services.yml"),
+        config_path=Path(ROLE_FILE_META_SERVICES),
     )
 
 
@@ -56,9 +57,7 @@ class TestReleaseGroupsMoveTogether(unittest.TestCase):
         self.assertEqual(len(held), 4)
 
     def test_a_group_all_publish_moves_to_the_head(self):
-        tags = {
-            f"jitsi/{name}": ["stable-9400", "stable-9700"] for name in JITSI
-        }
+        tags = {f"jitsi/{name}": ["stable-9400", "stable-9700"] for name in JITSI}
         updates = _jitsi_updates("stable-9400", "stable-9700")
 
         held = _held_to_release_groups(updates, tags)
