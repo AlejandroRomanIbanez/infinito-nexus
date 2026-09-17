@@ -47,7 +47,9 @@ class TestRedirectSources(unittest.TestCase):
         self.assertEqual(redirect_sources("  unpkg.com  ")[0], "https://unpkg.com/")
 
     def test_the_host_is_not_otherwise_rewritten(self):
-        self.assertEqual(redirect_sources("CDN.Example.COM")[1], "http://CDN.Example.COM/")
+        self.assertEqual(
+            redirect_sources("CDN.Example.COM")[1], "http://CDN.Example.COM/"
+        )
 
     def test_a_subdomain_host_keeps_every_label(self):
         self.assertEqual(

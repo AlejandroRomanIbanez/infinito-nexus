@@ -57,7 +57,9 @@ class TestPullReference(unittest.TestCase):
 
     def test_a_tag_is_joined_with_a_colon(self):
         self.assertEqual(reference_separator("3.0.1"), ":")
-        self.assertEqual(pull_reference("ghcr.io/owner/app", "3.0.1"), "ghcr.io/owner/app:3.0.1")
+        self.assertEqual(
+            pull_reference("ghcr.io/owner/app", "3.0.1"), "ghcr.io/owner/app:3.0.1"
+        )
 
     def test_is_digest_rejects_a_tag_that_merely_mentions_sha256(self):
         self.assertFalse(is_digest("v2-sha256:abc"))
@@ -73,7 +75,9 @@ class TestSourceKeepsTheDigest(unittest.TestCase):
         )
 
     def test_image_source_still_tags_a_semver(self):
-        self.assertEqual(image_source("ghcr.io/owner/app", "3.0.1"), "ghcr.io/owner/app:3.0.1")
+        self.assertEqual(
+            image_source("ghcr.io/owner/app", "3.0.1"), "ghcr.io/owner/app:3.0.1"
+        )
 
     def test_docker_hub_source_keeps_a_digest(self):
         self.assertEqual(
