@@ -4,3 +4,7 @@ whitelist:
     - "blob:"
   script-src:
     - "blob:"
+  style-src-elem:
+    - https://fonts.googleapis.com # nocheck: external-cdn,url
+  font-src:
+    - https://fonts.gstatic.com # nocheck: external-cdn,url
