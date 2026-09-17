@@ -1,18 +1,24 @@
 """Semver primitives shared by every version-bump backend.
 
 A "version" here is a tag of the shape
-``v?<numeric-semver><patch>?(-<flavor>)?``, where the numeric part has 1 to 5
-dot-separated components, the optional ``<patch>`` is a vendor counter written
-as a letter and a number (e.g. the Checkmk tag ``2.4.0p32``), and the optional
-``-<flavor>`` suffix is an opaque discriminator (e.g. the Docker Official Image
-tag ``5.4.5-php8.3-apache`` or the npm-style ``1.2.3-alpha``).
+``(<channel>-)?v?<numeric-semver><patch>?(-<flavor>)?``, where the numeric part
+has 1 to 5 dot-separated components, the optional leading ``<channel>-`` is a
+release line written before the number (e.g. the LiteLLM tag
+``main-v1.77.7-stable`` or the Jitsi tag ``stable-9646``), the optional
+``<patch>`` is a vendor counter written as a letter and a number (e.g. the
+Checkmk tag ``2.4.0p32``), and the optional ``-<flavor>`` suffix is an opaque
+discriminator (e.g. the Docker Official Image tag ``5.4.5-php8.3-apache`` or
+the npm-style ``1.2.3-alpha``).
 
 Upgrade candidates MUST share the same depth (1 to 5 components) AND the same
 flavor as the current tag, so that ``5.4.5-php8.3-apache`` never silently bumps
 to ``5.4.6-php8.4-apache`` (different runtime) or to ``5.4.6`` (different
-depth). The patch letter joins the flavor and its number joins the ordering
-key, which is what keeps ``2.4.0p32`` ordering against ``2.4.0p33`` and never
-against the four-component ``2.4.0.32``.
+depth). Everything that is not the number folds into the flavor: the leading
+channel, the trailing suffix and the patch letter. That is what keeps
+``main-v1.77.7-stable`` away from ``main-v1.77.7-nightly``, ``stable-9646``
+away from a bare ``9646``, and ``2.4.0p32`` ordering against ``2.4.0p33``
+rather than against the four-component ``2.4.0.32``. Only the patch number
+joins the ordering key, so ``p9`` sorts below ``p10``.
 """
 
 from __future__ import annotations
@@ -22,7 +28,8 @@ import re
 
 _SEMVER_CORE = r"v?\d+(?:\.\d+){0,4}"
 _VERSIONED_TAG_RE = re.compile(
-    rf"^(?P<semver>{_SEMVER_CORE})(?P<patch>[A-Za-z]\d+)?(?P<flavor>-\S+)?$"
+    rf"^(?P<channel>[A-Za-z][A-Za-z0-9]*-)?(?P<semver>{_SEMVER_CORE})"
+    rf"(?P<patch>[A-Za-z]\d+)?(?P<flavor>-\S+)?$"
 )
 
 
@@ -31,7 +38,11 @@ def _parse_versioned_tag(tag: str) -> tuple[str, str, int | None] | None:
     if match is None:
         return None
     patch = match.group("patch")
-    flavor = (match.group("flavor") or "") + (patch[0] if patch else "")
+    flavor = (
+        (match.group("channel") or "")
+        + (match.group("flavor") or "")
+        + (patch[0] if patch else "")
+    )
     return match.group("semver"), flavor, int(patch[1:]) if patch else None
 
 

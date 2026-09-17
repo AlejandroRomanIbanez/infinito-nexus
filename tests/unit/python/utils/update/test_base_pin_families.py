@@ -97,5 +97,47 @@ class TestNothingElseChanged(unittest.TestCase):
         )
 
 
+class TestChannelPrefixedTags(unittest.TestCase):
+    """A release line written before the number is a family, not a version."""
+
+    def test_a_channel_prefixed_tag_is_orderable(self):
+        self.assertTrue(is_semver("main-v1.77.7-stable"))
+        self.assertEqual(version_depth("main-v1.77.7-stable"), 3)
+        self.assertEqual(version_key("main-v1.77.7-stable"), (1, 77, 7, 0))
+
+    def test_it_bumps_inside_its_own_channel(self):
+        tags = ["main-v1.77.7-stable", "main-v1.83.14-stable"]
+        self.assertEqual(_latest("main-v1.77.7-stable", tags), "main-v1.83.14-stable")
+
+    def test_it_never_crosses_into_a_sibling_channel(self):
+        tags = ["main-v1.83.14-nightly", "main-v1.83.14-stable"]
+        self.assertEqual(_latest("main-v1.77.7-stable", tags), "main-v1.83.14-stable")
+        self.assertEqual(_latest("main-v1.77.7-nightly", tags), "main-v1.83.14-nightly")
+
+    def test_a_bare_number_is_a_different_family_than_a_channelled_one(self):
+        self.assertNotEqual(version_flavor("stable-9646"), version_flavor("9646"))
+        self.assertEqual(
+            _latest("stable-9646", ["stable-9646", "9999"]),
+            "stable-9646",
+            "a bare build number leaves the stable channel and would change "
+            "what the role deploys",
+        )
+
+    def test_it_bumps_inside_the_stable_channel(self):
+        self.assertEqual(
+            _latest("stable-9646", ["stable-9646", "stable-9999"]), "stable-9999"
+        )
+
+    def test_a_channel_without_a_number_stays_refused(self):
+        for tag in ("act-latest", "bookworm-slim", "main-latest", "buildx-stable-1"):
+            self.assertFalse(is_semver(tag), tag)
+
+    def test_a_date_stamped_tag_orders_as_one_number(self):
+        self.assertEqual(version_depth("20260917"), 1)
+        self.assertEqual(
+            _latest("20260702", ["20260702", "20260706", "20260917"]), "20260917"
+        )
+
+
 if __name__ == "__main__":
     unittest.main()
