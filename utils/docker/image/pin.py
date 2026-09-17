@@ -7,9 +7,8 @@ DIGEST = "digest"
 REF = "ref"
 
 RULE_BY_CLASS = {
-    SEMVER: "docker-version",
     DIGEST: "docker-digest",
-    REF: "docker-ref",
+    REF: "docker-version",
 }
 
 

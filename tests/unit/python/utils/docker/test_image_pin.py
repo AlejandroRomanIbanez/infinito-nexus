@@ -33,11 +33,18 @@ class TestPinClass(unittest.TestCase):
         self.assertEqual(pin_class(f"  {DIGEST_VALUE}  "), DIGEST)
         self.assertEqual(pin_class("  3.0.1  "), SEMVER)
 
-    def test_every_class_has_its_own_rule(self):
-        rules = [RULE_BY_CLASS[SEMVER], RULE_BY_CLASS[DIGEST], RULE_BY_CLASS[REF]]
+    def test_a_digest_declares_itself_apart_from_a_tag(self):
+        self.assertNotEqual(
+            RULE_BY_CLASS[DIGEST],
+            RULE_BY_CLASS[REF],
+            "a digest is chosen for a reason a non-semver tag never carries, so "
+            "the two cannot share one marker",
+        )
+        self.assertEqual(RULE_BY_CLASS[DIGEST], "docker-digest")
+        self.assertEqual(RULE_BY_CLASS[REF], "docker-version")
 
-        self.assertEqual(len(set(rules)), 3, "a shared rule cannot express intent")
-        self.assertEqual(rules, ["docker-version", "docker-digest", "docker-ref"])
+    def test_a_semver_pin_needs_no_declaration(self):
+        self.assertNotIn(SEMVER, RULE_BY_CLASS)
 
 
 class TestPullReference(unittest.TestCase):
