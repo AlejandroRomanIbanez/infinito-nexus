@@ -100,8 +100,6 @@ exports.register = function (shared) {
       await expect
         .poll(async () => {
           return await biberPage.evaluate(() => {
-            // Pending invites sit in a section that renders collapsed, so the
-            // invite row is absent from the DOM until it is expanded.
             const sections = document.querySelectorAll(
               'button[aria-expanded="false"][aria-label^="Toggle "]',
             );
@@ -109,8 +107,10 @@ exports.register = function (shared) {
               section.click();
             }
 
+            // Not scoped to a row wrapper: the list is virtualised and 1.12.27
+            // renders no role=row, aria-level or aria-expanded at all.
             const roomTiles = document.querySelectorAll(
-              '[role="row"][aria-level="2"] button[aria-label^="Open room"]',
+              'button[aria-label^="Open room"]',
             );
             for (const tile of roomTiles) {
               const name = `${tile.getAttribute("aria-label") || ""} ${tile.textContent || ""}`;
