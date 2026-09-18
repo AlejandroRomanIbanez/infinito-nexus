@@ -53,24 +53,40 @@ RULE = "healthcheck-binary"
 
 PROVIDED: dict[str, frozenset[str]] = {
     "slim": frozenset({"bash", "sh"}),
-    "alpine": frozenset({"sh", "curl", "wget", "nc"}),
+    "alpine": frozenset({"sh", "wget", "nc"}),
 }
 """What each stripped family ships, read out of the images themselves.
 
 Measured with ``docker create`` plus ``docker cp``, which reports a path that is
-absent instead of reporting a shell's opinion of it:
+absent instead of reporting a shell's opinion of it. Every lookup covered
+``/usr/bin``, ``/bin``, ``/usr/local/bin`` and ``/sbin``:
 
-* ``node:26-slim`` and ``python:3.13.15-slim`` carry ``/bin/bash`` at 1298416
-  bytes and none of ``curl``, ``wget`` or ``nc``. The full ``node:26`` variant
-  does carry ``/usr/bin/curl`` at 280800 bytes, which is why moving a role onto
-  the stripped tag takes the program away without touching its healthcheck.
-* ``nginx:1.31.6-alpine`` carries ``/usr/bin/curl`` at 272432 bytes as a real
-  binary, ``/usr/bin/wget`` and ``/usr/bin/nc`` as busybox applets, and has no
-  ``/bin/bash`` at all. Its ``/bin/sh`` is busybox, which does not implement
-  ``/dev/tcp``, so the flavors built on that redirection need the real shell
-  rather than any shell.
+* ``debian:13-slim``, ``node:26-slim`` and ``python:3.13.15-slim`` carry
+  ``/bin/bash`` at 1298416 bytes and none of ``curl``, ``wget`` or ``nc``. bash
+  is Essential in Debian and the other three are not, which is the whole
+  difference between the stripped tag and the full one: the full ``node:26``
+  variant carries ``/usr/bin/curl`` at 280800 bytes.
+* ``redis:8-alpine`` and ``node:26-alpine`` carry ``/usr/bin/wget`` and
+  ``/usr/bin/nc`` as busybox applets, no ``curl``, and no ``/bin/bash`` at all.
+  Their ``/bin/sh`` is busybox, which does not implement ``/dev/tcp``, so the
+  flavors built on that redirection need the real shell rather than any shell.
 
-Adding a family means measuring it the same way, not inferring it from the tag.
+The family is read from the tag, which holds for every image in the tree today:
+every ``slim`` tag here is Debian based and every ``alpine`` tag is Alpine
+based. Adding a family means measuring it the same way, not inferring it.
+"""
+
+IMAGE_PROVIDES: dict[str, frozenset[str]] = {
+    "nginx": frozenset({"curl"}),
+}
+"""Programs an individual image adds on top of what its family ships.
+
+nginx installs curl in both of its variants: ``/usr/bin/curl`` at 272432 bytes
+in ``nginx:1.31.6-alpine`` and at 321880 bytes in the Debian ``nginx:1.31``.
+Base Alpine does not have it at all, measured the same way on ``redis:8-alpine``
+and ``node:26-alpine``. Reading nginx's curl as a property of Alpine would pass
+a ``curl`` flavor on any alpine image, so it is recorded against the image that
+installs it.
 """
 
 SHELL_BUILTINS = frozenset({"exit", "true", "false", "test", "[", ":", "echo"})
@@ -81,6 +97,16 @@ def _families(version: object) -> list[str]:
     """The measured families a version tag names, in declaration order."""
     text = str(version)
     return [family for family in PROVIDED if family in text]
+
+
+def _image_extras(image: object) -> frozenset[str]:
+    """What this particular image adds beyond its family.
+
+    Args:
+        image: the ``image`` value, with or without a registry prefix.
+    """
+    name = str(image).rsplit("/", 1)[-1]
+    return IMAGE_PROVIDES.get(name, frozenset())
 
 
 def _requirements(flavor: object) -> list[list[str]]:
@@ -173,6 +199,7 @@ class TestHealthcheckBinaryOnSlimBase(unittest.TestCase):
                 dockerfile = role_dir / "files" / "Dockerfile"
                 body = read_text(str(dockerfile)) if dockerfile.is_file() else ""
                 available = set().union(*(PROVIDED[family] for family in families))
+                available |= _image_extras(entry.get("image", ""))
                 satisfied = any(
                     all(
                         program in available or _installs(body, program)
