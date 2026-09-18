@@ -1,12 +1,12 @@
-"""A healthcheck that shells out to a binary must find it in the image it runs in.
+"""A healthcheck must find every program it runs in the image it runs in.
 
-A ``-slim`` tag is the upstream's stripped variant: it carries the
-runtime and nothing around it. ``node:26-bookworm`` ships ``/usr/bin/curl``,
-``node:26-slim`` does not, and a ``healthcheck: flavor: curl`` renders
-``CMD curl -f <url>`` either way. The probe then fails from the first beat, and
-the container never reports healthy.
+A stripped base carries the runtime and little else, and which "little else"
+differs per family. The declaration does not know that: ``flavor: curl`` renders
+``CMD curl -f <url>`` and ``flavor: tcp`` renders ``CMD bash -c`` over
+``/dev/tcp`` whatever the image underneath is. Where the program is absent the
+probe fails from its first beat and the container never reports healthy.
 
-The two deploy modes answer differently, and neither answer names the binary.
+The two deploy modes answer differently, and neither answer names the program.
 ``sys-svc-compose`` waits on the database container alone in compose and on
 every stack task in swarm, so a permanently unhealthy service passes unnoticed
 under compose and stops the deploy under swarm: the task dies with ``non-zero
@@ -14,23 +14,26 @@ exit (137): dockerexec: unhealthy container``, is rescheduled, dies again, and
 the wait fails. Every deployment holding the service in its closure fails with
 it, reported against the service that was waited for.
 
-Scope
-=====
-Roles whose ``meta/services.yml`` declares a healthcheck flavor on an image
-whose ``version`` names a stripped variant. The binary is read from the probe
-the declaration renders (:func:`utils.docker.healthcheck.compose.compose`), not
-restated here, so a flavor that changes its command moves this check with it. A
-flavor whose command is a shell builtin or the image's own interpreter needs no
-package and is not checked.
+What is checked
+===============
+Every ``meta/services.yml`` healthcheck whose service sits on a base this file
+has measured. The programs come from the probe the declaration renders
+(:func:`utils.docker.healthcheck.compose.compose`), both its ``CMD`` and its
+``CMD-SHELL`` form, so a flavor that changes its command moves this check with
+it rather than drifting from a table restated here. ``||`` in a shell probe is
+read as alternatives, ``&&`` and ``;`` as a sequence that needs all of its
+parts, and shell builtins are dropped so a trailing ``|| exit 1`` cannot make
+every requirement look satisfiable.
 
-The role's ``files/Dockerfile`` must then install that binary. An image that
-already ships it is not a defence: the tag is a moving target, and the role that
-depends on the binary is the one that should say so.
+A requirement is met when the measured base provides the program or the role's
+``files/Dockerfile`` installs it. A base that is neither family is skipped: a
+vendor image's contents are not knowable from the tree, and for most of them
+there is no Dockerfile of ours to add anything to.
 
-Per-role opt-out
-================
+Per-service opt-out
+===================
 ``# nocheck: healthcheck-binary`` on the ``flavor`` line or the one above it,
-with a reason naming where the binary comes from instead.
+with a reason naming where the program comes from instead.
 """
 
 from __future__ import annotations
@@ -48,49 +51,77 @@ from . import PROJECT_ROOT
 
 RULE = "healthcheck-binary"
 
-STRIPPED = ("slim",)
-"""Tag fragments that name an upstream's stripped variant.
+PROVIDED: dict[str, frozenset[str]] = {
+    "slim": frozenset({"bash", "sh"}),
+    "alpine": frozenset({"sh", "curl", "wget", "nc"}),
+}
+"""What each stripped family ships, read out of the images themselves.
 
-``alpine`` is deliberately out: measured against ``nginx:1.31.6-alpine``, the
-image carries ``/usr/bin/curl`` as a real 272 KB binary and ``wget`` as a
-busybox applet, so the four alpine roles that declare those flavors are served
-by their base today. Widening this tuple to cover them needs that measurement
-repeated per image, not an assumption from the word "alpine".
+Measured with ``docker create`` plus ``docker cp``, which reports a path that is
+absent instead of reporting a shell's opinion of it:
+
+* ``node:26-slim`` and ``python:3.13.15-slim`` carry ``/bin/bash`` at 1298416
+  bytes and none of ``curl``, ``wget`` or ``nc``. The full ``node:26`` variant
+  does carry ``/usr/bin/curl`` at 280800 bytes, which is why moving a role onto
+  the stripped tag takes the program away without touching its healthcheck.
+* ``nginx:1.31.6-alpine`` carries ``/usr/bin/curl`` at 272432 bytes as a real
+  binary, ``/usr/bin/wget`` and ``/usr/bin/nc`` as busybox applets, and has no
+  ``/bin/bash`` at all. Its ``/bin/sh`` is busybox, which does not implement
+  ``/dev/tcp``, so the flavors built on that redirection need the real shell
+  rather than any shell.
+
+Adding a family means measuring it the same way, not inferring it from the tag.
 """
 
-SHELL_BUILTINS = frozenset({"sh", "bash", "test", "true", "exit", "CMD-SHELL"})
-"""Probe commands that need no package: the image's own shell runs them."""
+SHELL_BUILTINS = frozenset({"exit", "true", "false", "test", "[", ":", "echo"})
+"""Words a probe may invoke that no package provides."""
 
 
-def _probe_binary(flavor: object) -> str | None:
-    """The executable a declared flavor asks docker to run, if it is a program.
+def _families(version: object) -> list[str]:
+    """The measured families a version tag names, in declaration order."""
+    text = str(version)
+    return [family for family in PROVIDED if family in text]
+
+
+def _requirements(flavor: object) -> list[list[str]]:
+    """The programs a declared flavor runs, as alternatives of sequences.
+
+    ``[["wget"], ["curl"]]`` means either one satisfies the probe;
+    ``[["msmtp", "curl"]]`` would mean it needs both.
 
     Args:
         flavor: the ``healthcheck.flavor`` value, one name or a list.
     """
     try:
-        probe = compose(flavor, port=80, path="/", hostname="localhost")
-        test = probe.test()
+        test = [
+            str(part)
+            for part in compose(flavor, port=80, path="/", hostname="h").test()
+        ]
     except Exception:
-        return None
-    argv = [str(part) for part in test]
-    if not argv or argv[0] != "CMD" or len(argv) < 2:
-        return None
-    binary = argv[1]
-    return None if binary in SHELL_BUILTINS else binary
+        return []
+    if not test:
+        return []
+    if test[0] == "CMD":
+        return [[test[1]]] if len(test) > 1 else []
+    if len(test) < 2:
+        return []
+    groups: list[list[str]] = []
+    for alternative in re.split(r"\|\|", test[1]):
+        words = [
+            segment.strip().split()[0]
+            for segment in re.split(r"&&|;", alternative)
+            if segment.strip()
+        ]
+        needed = [word for word in words if word not in SHELL_BUILTINS]
+        if needed:
+            groups.append(needed)
+    return groups
 
 
-def _is_stripped(version: object) -> bool:
-    text = str(version)
-    return any(fragment in text for fragment in STRIPPED)
-
-
-def _installs(dockerfile_body: str, binary: str) -> bool:
-    """Whether the Dockerfile names the binary as something it installs."""
-    return (
-        re.search(rf"(?<![\w-]){re.escape(binary)}(?![\w-])", dockerfile_body)
-        is not None
-    )
+def _installs(dockerfile_body: str, program: str) -> bool:
+    """Whether the Dockerfile names the program as something it installs."""
+    pattern = rf"(?<![\w-]){re.escape(program)}(?![\w-])"
+    return re.search(pattern, dockerfile_body) is not None
 
 
 def _flavor_lines(lines: list[str]) -> dict[str, int]:
@@ -116,7 +147,7 @@ def _flavor_lines(lines: list[str]) -> dict[str, int]:
 
 
 class TestHealthcheckBinaryOnSlimBase(unittest.TestCase):
-    def test_a_stripped_base_installs_the_binary_its_healthcheck_runs(self):
+    def test_a_stripped_base_provides_every_program_its_healthcheck_runs(self):
         offenders = []
         for services in sorted(
             (PROJECT_ROOT / "roles").glob(f"*/{ROLE_FILE_META_SERVICES}")
@@ -131,32 +162,49 @@ class TestHealthcheckBinaryOnSlimBase(unittest.TestCase):
                 health = entry.get("healthcheck")
                 if not isinstance(health, dict) or "flavor" not in health:
                     continue
-                if not _is_stripped(entry.get("version", "")):
+                families = _families(entry.get("version", ""))
+                if not families:
                     continue
-                binary = _probe_binary(health["flavor"])
-                if binary is None:
+                groups = _requirements(health["flavor"])
+                if not groups:
                     continue
                 if is_suppressed_at(lines, flavor_lines.get(key, 0), RULE):
                     continue
                 dockerfile = role_dir / "files" / "Dockerfile"
                 body = read_text(str(dockerfile)) if dockerfile.is_file() else ""
-                if _installs(body, binary):
+                available = set().union(*(PROVIDED[family] for family in families))
+                satisfied = any(
+                    all(
+                        program in available or _installs(body, program)
+                        for program in group
+                    )
+                    for group in groups
+                )
+                if satisfied:
                     continue
+                wanted = " or ".join(" and ".join(group) for group in groups)
                 offenders.append(
                     f"{role_dir.name}: service '{key}' declares healthcheck "
-                    f"flavor {health['flavor']!r}, which runs {binary!r}, on the "
-                    f"stripped image {entry.get('image')}:{entry.get('version')}; "
-                    f"{'files/Dockerfile does not install it' if body else 'the role has no files/Dockerfile'}"
+                    f"flavor {health['flavor']!r}, which runs {wanted}, on the "
+                    f"{'/'.join(families)} image {entry.get('image')}:"
+                    f"{entry.get('version')} that provides "
+                    f"{', '.join(sorted(available))}; "
+                    + (
+                        "files/Dockerfile installs none of them"
+                        if body
+                        else "the role has no files/Dockerfile"
+                    )
                 )
 
         self.assertEqual(
             [],
             offenders,
-            "A stripped base carries the runtime and nothing around it, so a "
-            "healthcheck binary has to be installed by the role that depends on "
-            "it. Add it to the role's files/Dockerfile, pick a flavor the image "
-            f"can already run, or mark the line `# nocheck: {RULE}` with a "
-            "reason naming where the binary comes from:\n  " + "\n  ".join(offenders),
+            "A stripped base carries the runtime and little else, so a program a "
+            "healthcheck runs has to come from the base or from the role that "
+            "depends on it. Install it in the role's files/Dockerfile, pick a "
+            "flavor the image can already run, or mark the line "
+            f"`# nocheck: {RULE}` with a reason naming where the program comes "
+            "from:\n  " + "\n  ".join(offenders),
         )
 
 
