@@ -5,3 +5,13 @@ lmstudio_data:
   mounts:
     - service: lmstudio
       target: /root/.lmstudio
+
+lmstudio_internal:
+  type: volume
+  name: lmstudio_internal
+  # nocheck: nfs-false-data-loss  Reason: regenerable per-daemon cache, rebuilt in full on first start against an empty volume; shared, a second daemon overwrites the auth key lms-key-2 and the first one's CLI is rejected
+  nfs: false
+  backup: false
+  mounts:
+    - service: lmstudio
+      target: /root/.lmstudio/.internal
