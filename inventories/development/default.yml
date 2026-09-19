@@ -35,6 +35,14 @@ design:
     colors:
       base: "#FFA500"
 
+API:
+  openai:
+    api_key: "{{ lookup('env', 'INFINITO_API_OPENAI_KEY') }}"
+  anthropic:
+    api_key: "{{ lookup('env', 'INFINITO_API_ANTHROPIC_KEY') }}"
+  openrouter:
+    api_key: "{{ lookup('env', 'INFINITO_API_OPENROUTER_KEY') }}"
+
 OIDC_OVERRIDE:
   CLIENT:
     SECRET: VERYUNSAFESAMPLEPASSWORD1234
@@ -48,7 +56,7 @@ users:
     firstname: "Harry"
     lastname: "Beaver"
     website: "https://www.infinito.nexus/"
-    email: "biber@infinito.example"
+    email: "biber@infinito.test"
     gpg: "DUMMY-GPG-KEY-NOT-SET"
     password: "VeryUnsecurePassword!1"
 

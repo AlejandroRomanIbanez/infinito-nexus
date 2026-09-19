@@ -17,7 +17,6 @@ coturn:
   mem_limit: 1g
   pids_limit: 256
   network_mode: host
-  username: coturnconsumer
   ports:
     internal:
       http: 80
@@ -32,7 +31,7 @@ coturn:
   lifecycle: beta
 gateway:
   image: nginx
-  version: alpine
+  version: 1.31.6-alpine
   cpus: "0.3"
   mem_reservation: 256m
   mem_limit: 512m
@@ -49,7 +48,6 @@ prometheus:
   shared: "{{ 'web-app-prometheus' in group_names }}"
 
 tor:
-  bond: 0.5
   enabled: false # nocheck: dynamic-flag
   shared: false # nocheck: dynamic-flag
 # nocheck: dynamic-flag

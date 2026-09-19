@@ -1,0 +1,39 @@
+{% set _ollama_models = lookup('config', 'svc-ai-ollama', 'services.ollama.preload_models') if LITELLM_OLLAMA_BACKEND | bool else [] %}
+{% set _lmstudio_models = lookup('config', 'svc-ai-lmstudio', 'services.lmstudio.preload_models') if LITELLM_LMSTUDIO_BACKEND | bool else [] %}
+{% set _remote_models = LITELLM_REMOTE_BACKENDS | selectattr('key') | list %}
+{% set has_backend = _ollama_models or _lmstudio_models or _remote_models %}
+model_list:{{ ' []' if not has_backend else '' }}
+{% for _model in _ollama_models %}
+  - model_name: "{{ _model.alias }}"
+    litellm_params:
+      model: "ollama/{{ _model.alias }}"
+      api_base: {{ OLLAMA_BASE_LOCAL_URL }}
+      rpm: 1000
+      max_tokens: {{ LITELLM_MAX_OUTPUT_TOKENS }}
+      timeout: {{ LITELLM_UPSTREAM_TIMEOUT }}
+{% endfor %}
+{% for _model in _lmstudio_models if _model.alias not in (_ollama_models | map(attribute='alias') | list) %}
+  - model_name: "{{ _model.alias }}"
+    litellm_params:
+      model: "openai/{{ _model.name }}"
+      api_base: {{ LMSTUDIO_BASE_LOCAL_URL }}/v1
+      api_key: lm-studio
+      rpm: 1000
+      max_tokens: {{ LITELLM_MAX_OUTPUT_TOKENS }}
+      timeout: {{ LITELLM_UPSTREAM_TIMEOUT }}
+{% endfor %}
+{% for _backend in _remote_models %}
+  - model_name: "{{ _backend.alias }}"
+    litellm_params:
+      model: "{{ _backend.model }}"
+      api_key: os.environ/{{ _backend.env }}
+      max_tokens: {{ LITELLM_MAX_OUTPUT_TOKENS }}
+      timeout: {{ LITELLM_UPSTREAM_TIMEOUT }}
+{% endfor %}
+
+litellm_settings:
+  drop_params: true
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  database_url: os.environ/DATABASE_URL

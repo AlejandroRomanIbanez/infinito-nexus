@@ -7,8 +7,8 @@ compose_mode_force: compose
 domain: "{{ lookup('domain',application_id) }}"
 http_port: "{{ lookup('config', application_id, 'services.bigbluebutton.ports.local.http') }}"
 
-BBB_REPOSITORY: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.repository') }}"
-BBB_REF: "{{ lookup('config', application_id, 'services.' ~ entity_name ~ '.ref') }}"
+BBB_REPOSITORY: "{{ lookup('config', 'web-app-bigbluebutton', 'services.' ~ ('web-app-bigbluebutton' | get_entity_name) ~ '.repository') }}"
+BBB_REF: "{{ lookup('config', 'web-app-bigbluebutton', 'services.' ~ ('web-app-bigbluebutton' | get_entity_name) ~ '.ref') }}"
 
 _BBB_COTURN_ROLE: "web-svc-coturn"
 
@@ -33,7 +33,6 @@ BBB_STUN_PORT: "{{ lookup('config', application_id, 'services.bigbluebutton.port
   'services.coturn.ports.public.stun_turn_tls') }}"
 BBB_RELAY_PORT_START: "{{ lookup('config', application_id, 'services.bigbluebutton.ports.public.relay.start') }}"
 BBB_RELAY_PORT_END: "{{ lookup('config', application_id, 'services.bigbluebutton.ports.public.relay.end') }}"
-BBB_RELAY_PORT_RANGE: "{{ BBB_RELAY_PORT_START }}-{{ BBB_RELAY_PORT_END }}"
 
 BBB_COLLABORA_ENABLED: "{{ not (lookup('config',application_id, 'services.collabora.shared')) }}"
 BBB_COLLABORA_PORT: "{{ lookup('config', 'web-svc-collabora', 'services.collabora.ports.internal.http') }}"

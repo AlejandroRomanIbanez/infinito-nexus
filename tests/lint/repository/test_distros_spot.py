@@ -82,6 +82,8 @@ class TestDistrosSpot(unittest.TestCase):
             for path in sorted(PROJECT_ROOT.glob(f"**/{pattern}")):
                 if {".git", ".claude", "node_modules"} & set(path.parts):
                     continue
+                if not path.is_file():
+                    continue
                 if path.resolve() == this_file:
                     continue
                 rel = path.relative_to(PROJECT_ROOT).as_posix()
@@ -111,7 +113,7 @@ class TestDistrosSpot(unittest.TestCase):
         ref = _MATRIX_REF_RE.match(str(axis))
         self.assertIsNotNone(
             ref,
-            f"test-workspace.yml must derive its matrix from {FILE_META_DISTROS} "
+            f"call-test-workspace.yml must derive its matrix from {FILE_META_DISTROS} "
             f"via fromJson(needs.<job>.outputs.<name>), got {axis!r}.",
         )
         resolver_id, output_name = ref.groups()

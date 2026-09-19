@@ -79,6 +79,9 @@ peertube:
       http: 8011
     public:
       rtmp: 1935
+    onion:
+      # nocheck: onion-flag  RTMP is an ingest the broadcaster pushes in, and the encoders that push it speak no SOCKS
+      rtmp: false
     internal:
       http: 9000
       rtmp: 1935
@@ -99,7 +102,6 @@ prometheus:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — the role never joins the onion topology, so no persona surface can assert it
 tor:
-  bond: 0.5
   enabled: false
   shared: false # nocheck: dynamic-flag
 # nocheck: playwright-service-flag, dynamic-flag infrastructure backup consumer

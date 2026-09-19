@@ -10,19 +10,20 @@ update:
   catalog: nextcloud-appstore
   upstream_id: onlyoffice
 config:
+  archive: "https://github.com/ONLYOFFICE/onlyoffice-nextcloud/releases/download/v10.1.2/onlyoffice.tar.gz"
   incompatible_plugins:
     - richdocuments
     - fileslibreofficeedit
   plugin_configuration:
     - appid: "onlyoffice"
       configkey: "DocumentServerUrl"
-      configvalue: "{{ NEXTCLOUD_ONLYOFFICE_URL }}/"
+      configvalue: "{{ NEXTCLOUD_ONLYOFFICE_URL }}"
     - appid: "onlyoffice"
       configkey: "DocumentServerInternalUrl"
-      configvalue: "{{ NEXTCLOUD_ONLYOFFICE_URL }}/"
+      configvalue: "{{ NEXTCLOUD_ONLYOFFICE_URL }}"
     - appid: "onlyoffice"
       configkey: "StorageUrl"
-      configvalue: "{{ NEXTCLOUD_URL }}/"
+      configvalue: "{{ NEXTCLOUD_URL }}"
     - appid: "onlyoffice"
       configkey: "jwt_secret"
       configvalue: "{{ lookup('config','web-svc-onlyoffice', 'secrets.credentials.onlyoffice_jwt_secret', '') }}"

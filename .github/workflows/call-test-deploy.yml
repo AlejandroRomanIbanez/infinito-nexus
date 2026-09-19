@@ -21,6 +21,11 @@ on:
         required: false
         type: string
         default: "0"
+      chunk_size:
+        description: "Rows one chunk holds; 0 derives it from the runner slots and the queue window."
+        required: false
+        type: string
+        default: "0"
       whitelist:
         description: "Optional space-separated whitelist of app ids"
         required: false
@@ -124,7 +129,10 @@ env:
     access-tokens = github.com=${{ secrets.GITHUB_TOKEN }}
   INFINITO_IMAGE_TAG: ci-${{ github.sha }}
   INFINITO_GHCR_MIRROR_PREFIX: mirror
-  INFINITO_PLAYWRIGHT_KEEP: ${{ vars.INFINITO_PLAYWRIGHT_KEEP }}
+  INFINITO_PLAYWRIGHT_KEEP: ${{ vars.PLAYWRIGHT_KEEP_ALL }}
+  INFINITO_API_OPENAI_KEY: ${{ secrets.API_OPENAI_KEY || vars.API_OPENAI_KEY }}
+  INFINITO_API_ANTHROPIC_KEY: ${{ secrets.API_ANTHROPIC_KEY || vars.API_ANTHROPIC_KEY }}
+  INFINITO_API_OPENROUTER_KEY: ${{ secrets.API_OPENROUTER_KEY || vars.API_OPENROUTER_KEY }}
   INFINITO_APP_DISCOVERY_RUNNER: host
   INFINITO_DOCKER_FILESYSTEM_ALLOWED: ${{ inputs.filesystem }}
   INFINITO_LIFECYCLES: ${{ inputs.lifecycles }}
@@ -149,9 +157,9 @@ jobs:
           set -euo pipefail
           echo "GITHUB_REPOSITORY_OWNER=$(scripts/meta/resolve/repository/owner.sh)" >> "$GITHUB_ENV"
 
-      - name: 📦 Install deps (jq + envsubst)
+      - name: 📦 Install jq
         shell: bash
-        run: ./scripts/install/apt.sh jq gettext-base
+        run: ./scripts/install/apt.sh jq
 
       - name: 🔧 Set up Python
         uses: actions/setup-python@v6
@@ -186,12 +194,14 @@ jobs:
           INFINITO_CI_SWEEP: ${{ inputs.sweep }}
           INFINITO_CI_CHUNK: ${{ inputs.index }}
           INFINITO_CI_OFFSET: ${{ inputs.offset }}
+          INFINITO_CI_CHUNK_SIZE: ${{ inputs.chunk_size }}
         run: ./scripts/github/resolve/output_apps.sh
 
       - name: 🗺️ Render the plan into the run summary
         shell: bash
         env:
           INFINITO_CI_SWEEP: ${{ inputs.sweep }}
+          INFINITO_CI_CHUNK_SIZE: ${{ inputs.chunk_size }}
           PLAN_DISTROS: ${{ inputs.distros }}
           PLAN_FILESYSTEM: ${{ inputs.filesystem }}
           PLAN_WHITELIST: ${{ steps.resolve_wl.outputs.whitelist }}
@@ -417,3 +427,18 @@ jobs:
         if: ${{ always() && matrix.mode == 'swarm' }}
         timeout-minutes: 15
         run: scripts/tests/deploy/swarm/utils/clean/teardown.sh
+
+      - name: "📖 Replay the ${{ matrix.apps }} README instructions"
+        if: ${{ matrix.instructions != '' }}
+        env:
+          GUIDE_ROLE: ${{ matrix.apps }}
+          GUIDE_MODE: ${{ matrix.instructions }}
+        run: ./scripts/tests/deploy/distros.sh scripts/github/guide/one.sh
+
+      - name: "⬆️ Upload instructions rescue diagnostics"
+        if: ${{ always() && matrix.instructions != '' && !env.ACT }}
+        uses: actions/upload-artifact@v7
+        with:
+          name: rescue-diagnostics-instructions-${{ matrix.artifact }}
+          path: ${{ env.INFINITO_RESCUE_DIAGNOSTICS_BASE }}/
+          if-no-files-found: ignore

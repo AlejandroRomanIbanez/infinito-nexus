@@ -5,7 +5,7 @@
 # Keycloak group / LDAP group memberships onto Jenkins authorities.
 
 jenkins:
-  systemMessage: "Managed by Infinito.Nexus."
+  systemMessage: "Managed by {{ SOFTWARE_NAME }}."
   numExecutors: 2
   mode: NORMAL
 
@@ -53,4 +53,4 @@ jenkins:
               - group: "authenticated"
 unclassified:
   location:
-    url: "{{ lookup('tls', application_id, 'url.base') }}/"
+    url: "{{ lookup('tls', application_id, 'url.base') | regex_replace('/+$', '') }}/"
