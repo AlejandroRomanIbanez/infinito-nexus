@@ -251,6 +251,98 @@ class TestTheSecretIdSwapIsGuarded(unittest.TestCase):
         self.assertNotIn("when", task)
 
 
+class TestTheRecoveryKeyIsKeptAndUsable(unittest.TestCase):
+    """The one authority that does not rotate, and the way back it buys.
+
+    `bao operator init` issues a recovery key once and nothing else ever
+    reissues it. Dropping it leaves the AppRole as the only administrative
+    path, so a reset, a replaced manager, or a run that dies between the two
+    pins in 06_rotate.yml locks the instance out for good while its data stays
+    readable. It goes to sys-token-store rather than the inventory: no role
+    writes host_vars, and DIR_SECRETS outlives both DIR_COMPOSITIONS and the
+    node, and is covered by svc-bkp-secrets-2-local.
+    """
+
+    def setUp(self):
+        self.tasks = tasks_of("01_init.yml")
+
+    def _init_block(self) -> list[dict]:
+        return next(
+            task["block"]
+            for task in self.tasks
+            if "block" in task and "openbao_initialized" in str(task.get("when", ""))
+        )
+
+    def test_the_key_is_persisted_on_the_deploy_that_creates_it(self):
+        store = next(
+            task
+            for task in self._init_block()
+            if task.get("ansible.builtin.include_role", {}).get("name")
+            == "sys-token-store"
+        )
+        self.assertEqual(
+            store["ansible.builtin.include_role"]["tasks_from"], "write.yml"
+        )
+        self.assertIn("recovery_keys_b64", store["vars"]["sys_token_store_token"])
+
+    def test_the_key_is_loaded_before_the_logins_that_may_need_it(self):
+        load = next(
+            i
+            for i, task in enumerate(self.tasks)
+            if task.get("ansible.builtin.include_role", {}).get("tasks_from")
+            == "01_load.yml"
+        )
+        login = next(
+            i
+            for i, task in enumerate(self.tasks)
+            if task.get("register") == "openbao_approle_login"
+        )
+        self.assertLess(load, login)
+
+    def test_recovery_runs_only_when_both_logins_failed_and_a_key_exists(self):
+        block = next(
+            task
+            for task in self.tasks
+            if "openbao_approle_login_recovered" in str(task)
+        )
+        conditions = " ".join(block["when"])
+        self.assertIn("openbao_approle_login.rc != 0", conditions)
+        self.assertIn("openbao_approle_login_previous.rc", conditions)
+        self.assertIn("OPENBAO_RECOVERY_KEY", conditions)
+
+    def test_the_rebuilt_approle_is_the_one_the_inventory_holds(self):
+        """Recovering to the recorded pair would strand the deploy again.
+
+        02_auth.yml re-pins both halves to the inventory values, so the login
+        that proves recovery worked has to use those, not the applied ones.
+        """
+        block = next(
+            task
+            for task in self.tasks
+            if "openbao_approle_login_recovered" in str(task)
+        )
+        login = next(
+            task
+            for task in block["block"]
+            if task.get("register") == "openbao_approle_login_recovered"
+        )
+        self.assertIn("OPENBAO_APPROLE_ROLE_ID", login["ansible.builtin.shell"])
+        self.assertIn("OPENBAO_APPROLE_SECRET_ID", login["args"]["stdin"])
+
+    def test_the_recovery_path_ends_by_rebuilding_the_approle(self):
+        tasks = tasks_of("utils/recover.yml")
+        self.assertEqual(
+            tasks[-1]["ansible.builtin.include_tasks"],
+            "../02_auth.yml",
+            "minting a root token without re-pinning leaves the deploy no better off",
+        )
+
+    def test_a_rejected_recovery_key_fails_loudly(self):
+        tasks = tasks_of("utils/recover.yml")
+        guard = next(task for task in tasks if "ansible.builtin.fail" in task)
+        self.assertIn("complete", guard["when"])
+
+
 class TestTheRegisteredSecretIdComesFromTheLogin(unittest.TestCase):
     def test_it_is_the_credential_that_was_just_accepted(self):
         """Deriving it from the state file instead would be wrong.
