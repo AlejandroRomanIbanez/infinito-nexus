@@ -1,8 +1,9 @@
 """Guards for the per-deploy credential rotation path of web-app-openbao.
 
 The platform regenerates generated-algorithm credentials on every deploy, so the
-seal key and AppRole a run is handed differ from the ones the running instance
-was configured with. Three things carry that transition, and each fails silently
+AppRole a run is handed differs from the one the running instance was configured
+with. The seal key is pinned out of that and moves only when an operator changes
+it, but the same transition then has to carry it. Each part fails silently
 rather than loudly when broken -- a sealed node and an unusable AppRole look
 identical to ordinary drift. These tests pin them.
 """
@@ -15,6 +16,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 from utils.cache.files import read_text
 from utils.cache.yaml import load_yaml_any
+from utils.roles.mapping import ROLE_FILE_META_SECRETS
 
 from . import PROJECT_ROOT
 
@@ -51,6 +53,32 @@ def jinja_env(searchpath) -> Environment:
 
 def tasks_of(name: str) -> list[dict]:
     return load_yaml_any(str(TASKS_DIR / name))
+
+
+class TestWhichCredentialsRotate(unittest.TestCase):
+    """The seal key survives a deploy; the AppRole does not.
+
+    Rotating the seal key on every deploy spends the static seal's single
+    generation of slack for nothing. A run that skips a generation, or dies
+    between the two AppRole pins, leaves the raft store readable only from a
+    volume backup plus the key that wrapped it, and the role keeps no recovery
+    keys to fall back on. The AppRole is the opposite case: it is the live
+    authentication path, and absorbing its rotation is what the fallback login
+    in 01_init.yml exists for.
+    """
+
+    def setUp(self):
+        self.credentials = load_yaml_any(str(ROLE_DIR / ROLE_FILE_META_SECRETS))[
+            "credentials"
+        ]
+
+    def test_the_seal_key_is_pinned(self):
+        self.assertIs(self.credentials["seal_key"].get("rotatable"), False)
+
+    def test_both_approle_credentials_still_rotate(self):
+        for name in ("approle_role_id", "approle_secret_id"):
+            with self.subTest(credential=name):
+                self.assertIsNot(self.credentials[name].get("rotatable"), False)
 
 
 class TestSealStanzaRotation(unittest.TestCase):
