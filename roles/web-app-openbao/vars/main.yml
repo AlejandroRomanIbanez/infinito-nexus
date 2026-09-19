@@ -20,9 +20,9 @@ OPENBAO_SEAL_KEY: "{{ lookup('config', application_id, 'secrets.credentials.seal
 OPENBAO_APPROLE_ROLE_ID: "{{ lookup('config', application_id, 'secrets.credentials.approle_role_id') }}"
 OPENBAO_APPROLE_SECRET_ID: "{{ lookup('config', application_id, 'secrets.credentials.approle_secret_id') }}"
 
-# Rationale: the platform rotates every generated credential on each deploy, so
-# the key id is derived from the key instead of counted — upstream requires the
-# identifier to match its key, and a derived id cannot drift out of step with one.
+# Rationale: the key id is derived from the key instead of counted — upstream
+# requires the identifier to match its key, and a derived id cannot drift out of
+# step with one however rarely an operator rotates the key.
 OPENBAO_SEAL_KEY_ID: "{{ (OPENBAO_SEAL_KEY | hash('sha256'))[:16] }}"
 
 # Rationale: what the previous deploy applied, read back before the config is
