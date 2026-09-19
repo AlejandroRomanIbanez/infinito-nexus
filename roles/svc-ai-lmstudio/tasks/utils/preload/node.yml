@@ -4,7 +4,7 @@
 
 - name: "🗄️ Measure the space the model store offers on '{{ lmstudio_node }}'"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
-    container exec {{ LMSTUDIO_LOCAL_CID | quote }} df -P -B1 /root/.lmstudio/models
+    container exec {{ LMSTUDIO_LOCAL_CID | quote }} df -P -B1 {{ LMSTUDIO_MODELS_TARGET | quote }}
   register: lmstudio_store_space
   changed_when: false
   retries: 30

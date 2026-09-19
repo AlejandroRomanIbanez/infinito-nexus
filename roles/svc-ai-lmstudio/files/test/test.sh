@@ -7,6 +7,7 @@
 #   LMSTUDIO_EXPECTED_MODELS  JSON array of model names the daemon must serve
 #   LMSTUDIO_EXPECTED_BLOBS   JSON array of <repo>/<file> paths under models/
 #   LMSTUDIO_EXPECTED_DIGESTS JSON array of sha256, aligned with the blobs
+#   LMSTUDIO_MODELS_DIR       the models mount inside the container
 #   RETRIES                   attempts       (default 30)
 #   SLEEP_SECONDS             wait between   (default 10)
 
@@ -14,7 +15,7 @@ set -uo pipefail
 
 RETRIES="${RETRIES:-30}"
 SLEEP_SECONDS="${SLEEP_SECONDS:-10}"
-MODELS_DIR=/root/.lmstudio/models
+MODELS_DIR="${LMSTUDIO_MODELS_DIR}"
 
 [ -n "${LMSTUDIO_CONTAINER}" ] || {
 	echo "[FATAL] LMSTUDIO_CONTAINER unset; the harness did not resolve a container" >&2
