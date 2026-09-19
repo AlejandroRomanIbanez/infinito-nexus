@@ -18,7 +18,7 @@
   changed_when: false
   failed_when: false
 
-- name: "📋 Hand a warmed model to LM Studio, best effort"
+- name: "📋 Hand the warmed model to LM Studio"
   ansible.builtin.script: shell/import.sh
   environment:
     LMSTUDIO_LOCAL_CID: "{{ LMSTUDIO_LOCAL_CID }}"
@@ -30,4 +30,3 @@
     loop_var: model
     label: "{{ model.file }}"
   changed_when: false
-  failed_when: false
