@@ -41,6 +41,7 @@ Anything else — restating code, section banners, "Note that …", step narrati
 - For ANY non-trivial command (test runs, deploys, long pipelines), you MUST stream the FULL output to a file under `/tmp/` via `… 2>&1 | tee /tmp/<name>.log` and grep / inspect that file repeatedly instead of re-running the command. Reason: re-running `make test` to "find the failure I just lost" costs 2 minutes per cycle; grepping the saved log costs milliseconds.
 - Default the filename to a meaningful slug + monotonically increasing index (`/tmp/make-test-<slug>-<N>.log`, `/tmp/act-<slug>-<N>.log`) so you can compare runs.
 - Tell the operator the exact `tail -f /tmp/<name>.log` command for background runs, per the existing rule.
+- That pipe **destroys the exit status**: `make test | tee` reports `tee`'s success even when make ends with `Error 2`. You MUST judge such a run by its `📊 per-target wall-clock` table and its `FAILED TARGETS:` line, never by the exit code.
 
 ## CI evidence 📊
 
