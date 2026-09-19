@@ -1,8 +1,10 @@
 ---
 # Re-pin the AppRole to the credentials this deploy was handed, then record what
-# was applied. The platform rotates every generated credential per deploy, so the
-# values the next deploy receives will differ from these; the state file is what
-# lets that deploy still authenticate before it re-pins in turn.
+# was applied. The platform rotates the AppRole per deploy, so the values the
+# next deploy receives will differ from these; the state file is what lets that
+# deploy still authenticate before it re-pins in turn. The seal key is pinned
+# and normally repeats, and is recorded for the deploy that follows an operator
+# changing it.
 - name: "🔑 Re-pin the RoleID to the value this deploy was handed"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
     container exec {{ OPENBAO_LOCAL_CID | quote }}
