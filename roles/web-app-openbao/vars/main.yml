@@ -31,6 +31,19 @@ OPENBAO_SEAL_KEY_ID: "{{ (OPENBAO_SEAL_KEY | hash('sha256'))[:16] }}"
 OPENBAO_APPLIED_STATE_HOST: "{{ [lookup('container', application_id, 'directories.instance'), '.applied.json'] | path_join }}"
 OPENBAO_APPLIED: "{{ openbao_applied_state | default({}, true) }}"
 OPENBAO_SEAL_KEY_PREVIOUS: "{{ OPENBAO_APPLIED.seal_key | default('', true) }}"
+
+# Rationale: the recovery key comes from OpenBao at init rather than from the
+# inventory generator, and sys-token-store is where the platform keeps exactly
+# that class of secret. DIR_SECRETS outlives both MODE_RESET and a manager
+# replacement, each of which takes .applied.json with it, and
+# svc-bkp-secrets-2-local already covers it.
+OPENBAO_RECOVERY_USER_KEY: "administrator"
+OPENBAO_RECOVERY_TOKEN_APP: "{{ application_id }}-recovery"
+OPENBAO_RECOVERY_KEY: >-
+  {{ (sys_token_store_users | default({}, true))
+     .get(OPENBAO_RECOVERY_USER_KEY, {})
+     .get('tokens', {})
+     .get(OPENBAO_RECOVERY_TOKEN_APP, '') }}
 OPENBAO_SEAL_KEY_PREVIOUS_ID: "{{ (OPENBAO_SEAL_KEY_PREVIOUS | hash('sha256'))[:16] if OPENBAO_SEAL_KEY_PREVIOUS else '' }}"
 OPENBAO_SEAL_ROTATING: "{{ (OPENBAO_SEAL_KEY_PREVIOUS | length > 0) and (OPENBAO_SEAL_KEY_PREVIOUS != OPENBAO_SEAL_KEY) }}"
 
