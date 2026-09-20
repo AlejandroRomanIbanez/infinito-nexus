@@ -67,7 +67,6 @@ openbao:
       http: 8093
   healthcheck:
     flavor: wget
-    # Exception: an uninitialised container must report healthy or the init task can never reach it.
     path: "v1/sys/health?uninitcode=200&sealedcode=200&standbyok=true"
   run_after:
     - web-app-keycloak

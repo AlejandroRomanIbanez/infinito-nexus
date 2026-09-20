@@ -20,23 +20,14 @@ OPENBAO_SEAL_KEY: "{{ lookup('config', application_id, 'secrets.credentials.seal
 OPENBAO_APPROLE_ROLE_ID: "{{ lookup('config', application_id, 'secrets.credentials.approle_role_id') }}"
 OPENBAO_APPROLE_SECRET_ID: "{{ lookup('config', application_id, 'secrets.credentials.approle_secret_id') }}"
 
-# Rationale: the key id is derived from the key instead of counted — upstream
-# requires the identifier to match its key, and a derived id cannot drift out of
-# step with one however rarely an operator rotates the key.
 OPENBAO_SEAL_KEY_ID: "{{ (OPENBAO_SEAL_KEY | hash('sha256'))[:16] }}"
 
-# Rationale: what the previous deploy applied, read back before the config is
-# rendered so the node can unseal with the old key and rewrap to the new one, and
-# so the AppRole can still authenticate after its credentials rotated.
 OPENBAO_APPLIED_STATE_HOST: "{{ [lookup('container', application_id, 'directories.instance'), '.applied.json'] | path_join }}"
 OPENBAO_APPLIED: "{{ openbao_applied_state | default({}, true) }}"
 OPENBAO_SEAL_KEY_PREVIOUS: "{{ OPENBAO_APPLIED.seal_key | default('', true) }}"
+OPENBAO_SEAL_KEY_PREVIOUS_ID: "{{ (OPENBAO_SEAL_KEY_PREVIOUS | hash('sha256'))[:16] if OPENBAO_SEAL_KEY_PREVIOUS else '' }}"
+OPENBAO_SEAL_ROTATING: "{{ (OPENBAO_SEAL_KEY_PREVIOUS | length > 0) and (OPENBAO_SEAL_KEY_PREVIOUS != OPENBAO_SEAL_KEY) }}"
 
-# Rationale: the recovery key comes from OpenBao at init rather than from the
-# inventory generator, and sys-token-store is where the platform keeps exactly
-# that class of secret. DIR_SECRETS outlives both MODE_RESET and a manager
-# replacement, each of which takes .applied.json with it, and
-# svc-bkp-secrets-2-local already covers it.
 OPENBAO_RECOVERY_USER_KEY: "administrator"
 OPENBAO_RECOVERY_TOKEN_APP: "{{ application_id }}-recovery"
 OPENBAO_RECOVERY_KEY: >-
@@ -44,12 +35,7 @@ OPENBAO_RECOVERY_KEY: >-
      .get(OPENBAO_RECOVERY_USER_KEY, {})
      .get('tokens', {})
      .get(OPENBAO_RECOVERY_TOKEN_APP, '') }}
-OPENBAO_SEAL_KEY_PREVIOUS_ID: "{{ (OPENBAO_SEAL_KEY_PREVIOUS | hash('sha256'))[:16] if OPENBAO_SEAL_KEY_PREVIOUS else '' }}"
-OPENBAO_SEAL_ROTATING: "{{ (OPENBAO_SEAL_KEY_PREVIOUS | length > 0) and (OPENBAO_SEAL_KEY_PREVIOUS != OPENBAO_SEAL_KEY) }}"
 
-# Rationale: resolved from the login rather than from the state file — the
-# SecretID OpenBao actually holds is whichever one was just accepted, and
-# re-registering that same value answers 500, not a no-op.
 OPENBAO_SECRET_ID_REGISTERED: "{{ openbao_secret_id_registered | default('', true) }}"
 OPENBAO_SECRET_ID_ROTATING: "{{ (OPENBAO_SECRET_ID_REGISTERED | length > 0) and (OPENBAO_SECRET_ID_REGISTERED != OPENBAO_APPROLE_SECRET_ID) }}"
 OPENBAO_KV_MOUNT: "infinito"

@@ -58,13 +58,11 @@ def tasks_of(name: str) -> list[dict]:
 class TestWhichCredentialsRotate(unittest.TestCase):
     """The seal key survives a deploy; the AppRole does not.
 
-    Rotating the seal key on every deploy spends the static seal's single
-    generation of slack for nothing. A run that skips a generation, or dies
-    between the two AppRole pins, leaves the raft store readable only from a
-    volume backup plus the key that wrapped it, and the role keeps no recovery
-    keys to fall back on. The AppRole is the opposite case: it is the live
-    authentication path, and absorbing its rotation is what the fallback login
-    in 01_init.yml exists for.
+    The static seal carries one generation of slack, and rotating every deploy
+    spends it continuously: a run that skips a generation leaves the raft store
+    readable only from a volume backup plus the key that wrapped it. The
+    AppRole is the opposite case -- the live authentication path, whose
+    rotation the fallback login in 01_init.yml exists to absorb.
     """
 
     def setUp(self):
@@ -254,13 +252,12 @@ class TestTheSecretIdSwapIsGuarded(unittest.TestCase):
 class TestTheRecoveryKeyIsKeptAndUsable(unittest.TestCase):
     """The one authority that does not rotate, and the way back it buys.
 
-    `bao operator init` issues a recovery key once and nothing else ever
-    reissues it. Dropping it leaves the AppRole as the only administrative
-    path, so a reset, a replaced manager, or a run that dies between the two
-    pins in 06_rotate.yml locks the instance out for good while its data stays
-    readable. It goes to sys-token-store rather than the inventory: no role
-    writes host_vars, and DIR_SECRETS outlives both DIR_COMPOSITIONS and the
-    node, and is covered by svc-bkp-secrets-2-local.
+    `bao operator init` issues a recovery key once and nothing reissues it.
+    Dropping it leaves the AppRole as the only administrative path, so a reset,
+    a replaced manager, or a run that dies between the two pins in
+    06_rotate.yml locks the instance out for good while its data stays
+    readable. sys-token-store holds it rather than the inventory, which no role
+    writes.
     """
 
     def setUp(self):

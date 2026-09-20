@@ -43,11 +43,6 @@
           {{ (openbao_init_raw.stdout | from_json).root_token }}
       no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-    # Exception: the only authority here that never rotates. Without it the
-    # AppRole is the sole administrative path, so losing the recorded pair --
-    # a reset, a replaced manager, a run that dies between the two pins in
-    # 06_rotate.yml -- locks the instance out for good while its data stays
-    # perfectly readable.
     - name: "💾 Persist the recovery key through sys-token-store"
       ansible.builtin.include_role:
         name: sys-token-store
@@ -96,9 +91,6 @@
   delegate_to: "{{ OPENBAO_HOST_NODE }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
 
-# Rationale: the credentials rotate every deploy, so the values this run was
-# handed are not yet the ones pinned inside OpenBao. Fall back to what the
-# previous deploy applied; 06_rotate.yml then re-pins to this run's values.
 - name: "🔐 Log in with the AppRole the previous deploy applied"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
     container exec -i {{ OPENBAO_LOCAL_CID | quote }}
@@ -116,9 +108,6 @@
     - openbao_approle_login.rc != 0
     - OPENBAO_APPLIED.approle_role_id is defined
 
-# Rationale: the AppRole is the only administrative path into the instance, so
-# losing both halves of it used to end the deploy permanently. The recovery key
-# does not rotate, which is what makes it a way back.
 - name: "🚑 Rebuild the AppRole from the recovery key when neither login is accepted"
   when:
     - openbao_approle_login.rc != 0

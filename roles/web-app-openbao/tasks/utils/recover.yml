@@ -1,21 +1,12 @@
 ---
-# Break-glass: mint a root token from the recovery key and rebuild the AppRole
-# from the inventory. Reached only when neither the credentials this deploy was
-# handed nor the ones the previous deploy recorded are accepted, which without
-# this path ends the run with no administrative way into a node whose data is
-# still perfectly readable.
+# Break-glass: mint a root token from the recovery key, then hand to 02_auth.yml
+# to re-pin the AppRole to the inventory values. Reached only when neither the
+# credentials this deploy was handed nor the recorded ones are accepted.
 #
-# The protocol is four steps and the token it yields is XOR-wrapped with a
-# one-time password, so each step runs through the bao CLI and Ansible parses
-# the result -- the image carries no python or jq to do it in-container.
-#
-# The last step hands over to 02_auth.yml, which re-pins both halves to the
-# inventory values and revokes the root token it was given. The AppRole this
-# deploy holds is therefore live on return, and 06_rotate.yml finds nothing
-# left to swap.
+# Each protocol step runs through the bao CLI and Ansible parses the result: the
+# token comes back XOR-wrapped with a one-time password and the image carries
+# neither python nor jq to unwrap it in-container.
 
-# Exception: an attempt left behind by an interrupted run makes -init fail with
-# "root generation already in progress".
 - name: "🧹 Cancel any root generation left in progress"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
     container exec {{ OPENBAO_LOCAL_CID | quote }}
