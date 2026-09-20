@@ -20,11 +20,17 @@ typesense:
   mem_reservation: 512m
   mem_limit: 1g
   pids_limit: 1024
+  healthcheck:
+    test: ["CMD-SHELL", "bash -c 'exec 3<>/dev/tcp/127.0.0.1/8108; printf \"GET /health HTTP/1.0\\r\\n\\r\\n\" >&3; grep -q \"200 OK\" <&3'"]
+    retries: 18
   ports:
     local:
       typesense: 8108
     internal:
       typesense: 8108
+    onion:
+      # nocheck: onion-flag  the search index is queried by the app containers holding its API key, and the apps themselves are served through the onion's port 80
+      typesense: false
   lifecycle: beta
 # nocheck: variants-coverage — sso-variant-tor requires the onion on in every variant, so the false polarity has no variant left to live in
 tor:

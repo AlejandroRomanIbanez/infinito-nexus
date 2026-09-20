@@ -46,29 +46,64 @@
   vars:
     TOR_DNS_UPSTREAMS: "{{ [ networks.internet.dns ] }}"
   register: _tor_dnsmasq_conf
+- name: "🔁 Egress router | Retry dnsmasq until docker0 exists after a boot"
+  when: TOR_DNSMASQ_OWNS_LISTENER | bool
+  block:
+    - name: "📁 Egress router | Ensure the dnsmasq unit drop-in directory exists"
+      ansible.builtin.file:
+        path: "{{ TOR_DNSMASQ_DROPIN | dirname }}"
+        state: directory
+        owner: root
+        group: root
+        mode: "0755"
+    - name: "📝 Egress router | Restart dnsmasq on failure"
+      ansible.builtin.copy:
+        src: dnsmasq-restart.conf
+        dest: "{{ TOR_DNSMASQ_DROPIN }}"
+        owner: root
+        group: root
+        mode: "0644"
+      register: _tor_dnsmasq_dropin
 - name: "🚀 Egress router | Enable + (re)start dnsmasq"
   ansible.builtin.systemd:
     name: dnsmasq
     enabled: true
+    daemon_reload: "{{ TOR_DNSMASQ_OWNS_LISTENER | bool and _tor_dnsmasq_dropin is changed }}"
     state: "{{ 'restarted' if (_tor_dnsmasq_conf is changed or _tor_dnsmasq_confdir is changed) else 'started' }}"
-- name: "🔀 Egress router | Point the host resolver at dnsmasq (127.0.0.1)"
-  ansible.builtin.copy:
-    dest: /etc/resolv.conf
-    content: |
-      nameserver 127.0.0.1
-      nameserver {{ networks.internet.dns }}
-      options ndots:1
-    owner: root
-    group: root
-    mode: "0644"
-    unsafe_writes: true
+- name: "🔀 Egress router | Route host name resolution through dnsmasq"
   when: TOR_DNSMASQ_OWNS_LISTENER | bool
-- name: "🔀 Egress router | Redirect .onion virtual-IP TCP to Tor TransPort"
-  ansible.builtin.iptables:
-    table: nat
-    chain: OUTPUT
-    protocol: tcp
-    destination: "{{ TOR_EGRESS_VIRTUAL_NET_IPV4 }}"
-    jump: REDIRECT
-    to_ports: "{{ TOR_TRANS_PORT | string }}"
-    comment: "Tor egress router: .onion virtual range -> TransPort"
+  block:
+    - name: "🔀 Egress router | Point the host resolver at dnsmasq (127.0.0.1)"
+      ansible.builtin.template: # nocheck: stack-host-template (per-host resolver config in /etc/resolv.conf)
+        src: resolv.conf.j2
+        dest: /etc/resolv.conf
+        owner: root
+        group: root
+        mode: "0644"
+        unsafe_writes: true
+    - name: "🔀 Egress router | Let a name systemd-resolved refuses reach dnsmasq"
+      become: true
+      ansible.builtin.lineinfile:
+        path: /etc/nsswitch.conf
+        regexp: "^(hosts:.*\\bresolve)\\s*\\[!UNAVAIL=return\\](.*)$"
+        line: "\\1 [SUCCESS=return NOTFOUND=continue TRYAGAIN=return]\\2"
+        backrefs: true
+- name: "🔀 Egress router | Route .onion traffic and bound the ports that carry no policy"
+  ansible.builtin.include_role:
+    name: svc-net-firewall
+
+- name: "🛡️ Egress guard | Read back the chain that bounds the ports"
+  become: true
+  ansible.builtin.command:
+    argv: [nft, list, chain, inet, "{{ firewall_loaded_table }}", guard]
+  register: tor_egress_guard_chain
+  changed_when: false
+
+- name: "🛡️ Egress guard | Refuse a guard that drops nothing"
+  ansible.builtin.assert:
+    that:
+      - "'drop' in tor_egress_guard_chain.stdout"
+    fail_msg: >-
+      The guard chain in {{ firewall_loaded_table }} carries no drop, so
+      TransPort and DNSPort are reachable from every source. These two ports
+      have no access policy of their own; this chain is the only boundary.

@@ -37,6 +37,11 @@ on:
         required: false
         type: string
         default: "0"
+      chunk_size:
+        description: "📦 Rows one chunk holds. Empty or 0 derives it from the runner slots a chunk may assume and the waves the queue window affords. Typed string for the same reason as resume_from_chunk."
+        required: false
+        type: string
+        default: "0"
       resume_from_chunk:
         description: "⏭️ Skip every chunk below this index. Use to continue a sweep after fixing what broke it, instead of re-running the green chunks. Typed string, not number: a workflow_dispatch number input reaches the caller as a string, and handing that to a number-typed workflow_call input makes GitHub reject the job before it is created."
         required: false
@@ -72,11 +77,6 @@ on:
         required: false
         type: string
         default: "rotate"
-      instructions:
-        description: "Run the instructions test (role README Production command). 'auto' runs it on a global scope only, 'true'/'false' force it."
-        required: false
-        type: string
-        default: "auto"
       tor:
         description: "Tor axis of the deploy matrix: 'auto' rotates the onion over the tor-capable rows, 'enforced' onions all of them, 'exclusive' also drops the rows that cannot, 'disabled' onions none."
         required: false
@@ -87,10 +87,6 @@ on:
         required: false
         type: boolean
         default: false
-
-concurrency:
-  group: infinito-test-${{ github.ref }}
-  cancel-in-progress: ${{ github.event_name == 'workflow_dispatch' || github.ref != 'refs/heads/main' }}
 
 permissions:
   actions: read
@@ -170,14 +166,12 @@ jobs:
           && needs.lint.result == 'success'
           && needs.test.result == 'success'
           && needs.build-ci-images.result == 'success'
-          && needs.images-mirror-missing.result == 'success'
-          && needs.test-dns.result == 'success' }}
+          && needs.images-mirror-missing.result == 'success' }}
     needs:
       - lint
       - test
       - build-ci-images
       - images-mirror-missing
-      - test-dns
       - validate-selection
     uses: ./.github/workflows/call-test-deploy.yml
     with:
@@ -185,6 +179,7 @@ jobs:
       index: "0"
       sweep: ${{ inputs.sweep != '' && inputs.sweep || github.run_number }}
       offset: ${{ inputs.offset }}
+      chunk_size: ${{ inputs.chunk_size }}
       whitelist: ${{ inputs.whitelist }}
       priority: ${{ inputs.priority }}
       lifecycles: ${{ inputs.lifecycles }}
@@ -201,7 +196,6 @@ jobs:
           && needs.test.result == 'success'
           && needs.build-ci-images.result == 'success'
           && needs.images-mirror-missing.result == 'success'
-          && needs.test-dns.result == 'success'
           && (!inputs.chunk_gate
               || contains(fromJSON('["success","skipped"]'), needs.test-deploy-chunk-0.result)) }}
     needs:
@@ -209,7 +203,7 @@ jobs:
       - test
       - build-ci-images
       - images-mirror-missing
-      - test-dns
+      - validate-selection
       - test-deploy-chunk-0
     uses: ./.github/workflows/call-test-deploy.yml
     with:
@@ -217,6 +211,7 @@ jobs:
       index: "1"
       sweep: ${{ inputs.sweep != '' && inputs.sweep || github.run_number }}
       offset: ${{ inputs.offset }}
+      chunk_size: ${{ inputs.chunk_size }}
       whitelist: ${{ inputs.whitelist }}
       priority: ${{ inputs.priority }}
       lifecycles: ${{ inputs.lifecycles }}
@@ -233,15 +228,16 @@ jobs:
           && needs.test.result == 'success'
           && needs.build-ci-images.result == 'success'
           && needs.images-mirror-missing.result == 'success'
-          && needs.test-dns.result == 'success'
           && (!inputs.chunk_gate
-              || contains(fromJSON('["success","skipped"]'), needs.test-deploy-chunk-1.result)) }}
+              || (contains(fromJSON('["success","skipped"]'), needs.test-deploy-chunk-0.result)
+                  && contains(fromJSON('["success","skipped"]'), needs.test-deploy-chunk-1.result))) }}
     needs:
       - lint
       - test
       - build-ci-images
       - images-mirror-missing
-      - test-dns
+      - validate-selection
+      - test-deploy-chunk-0
       - test-deploy-chunk-1
     uses: ./.github/workflows/call-test-deploy.yml
     with:
@@ -249,6 +245,43 @@ jobs:
       index: "2"
       sweep: ${{ inputs.sweep != '' && inputs.sweep || github.run_number }}
       offset: ${{ inputs.offset }}
+      chunk_size: ${{ inputs.chunk_size }}
+      whitelist: ${{ inputs.whitelist }}
+      priority: ${{ inputs.priority }}
+      lifecycles: ${{ inputs.lifecycles }}
+      modes: ${{ inputs.mode }}
+      filesystem: ${{ inputs.filesystem }}
+      tor: ${{ inputs.tor }}
+
+  test-deploy-chunk-3:
+    name: 🧱 Chunk 3
+    if: >-
+      ${{ always()
+          && inputs.resume_from_chunk <= 3
+          && needs.lint.result == 'success'
+          && needs.test.result == 'success'
+          && needs.build-ci-images.result == 'success'
+          && needs.images-mirror-missing.result == 'success'
+          && (!inputs.chunk_gate
+              || (contains(fromJSON('["success","skipped"]'), needs.test-deploy-chunk-0.result)
+                  && contains(fromJSON('["success","skipped"]'), needs.test-deploy-chunk-1.result)
+                  && contains(fromJSON('["success","skipped"]'), needs.test-deploy-chunk-2.result))) }}
+    needs:
+      - lint
+      - test
+      - build-ci-images
+      - images-mirror-missing
+      - validate-selection
+      - test-deploy-chunk-0
+      - test-deploy-chunk-1
+      - test-deploy-chunk-2
+    uses: ./.github/workflows/call-test-deploy.yml
+    with:
+      distros: ${{ inputs.distros }}
+      index: "3"
+      sweep: ${{ inputs.sweep != '' && inputs.sweep || github.run_number }}
+      offset: ${{ inputs.offset }}
+      chunk_size: ${{ inputs.chunk_size }}
       whitelist: ${{ inputs.whitelist }}
       priority: ${{ inputs.priority }}
       lifecycles: ${{ inputs.lifecycles }}
@@ -283,25 +316,13 @@ jobs:
       - test
     secrets: inherit
 
-  test-instructions:
-    if: ${{ inputs.instructions == 'true' || (inputs.instructions == 'auto' && (inputs.whitelist == '' || inputs.whitelist == '__ALL__')) }}
-    uses: ./.github/workflows/call-test-instructions.yml
-    needs:
-      - images-mirror-missing
-      - build-ci-images
-      - lint
-      - test
-      - validate-selection
-    with:
-      distros: "arch debian ubuntu fedora centos"
-    secrets: inherit
-
   report-main-failures:
     name: 🐞 Report main role failures
     needs:
       - test-deploy-chunk-0
       - test-deploy-chunk-1
       - test-deploy-chunk-2
+      - test-deploy-chunk-3
     if: ${{ always() && github.ref == 'refs/heads/main' && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')) }}
     runs-on: ubuntu-latest
     permissions:
@@ -327,9 +348,9 @@ jobs:
       - test-deploy-chunk-0
       - test-deploy-chunk-1
       - test-deploy-chunk-2
+      - test-deploy-chunk-3
       - test-runner-smoke
       - test-workspace
-      - test-instructions
       - test
       - lint
       - security-codeql

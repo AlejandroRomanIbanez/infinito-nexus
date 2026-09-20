@@ -38,31 +38,40 @@ log "Sanitized trust name: $name"
 
 installed=0
 
-ca_bundle="$CA_TRUST_CERT"
-combined="/tmp/with-ca-trust-combined.crt"
-# shellcheck disable=SC2086 # intentional word-splitting; paths contain no spaces
-for sys_bundle in $SYS_CA_BUNDLE_CANDIDATES; do
-  if [ -r "$sys_bundle" ] && cat "$sys_bundle" "$CA_TRUST_CERT" > "$combined" 2>/dev/null; then
-    ca_bundle="$combined"
-    log "Combined system CA bundle ($sys_bundle) with ${name} -> $combined"
-    break
-  fi
-done
+if [ -n "${CA_TRUST_BUNDLE:-}" ] && [ -r "${CA_TRUST_BUNDLE}" ]; then
+  _ca_trust_verify_file="$CA_TRUST_BUNDLE"
+else
+  _ca_trust_verify_file="$CA_TRUST_CERT"
+  # Exception: validating an external host needs the system roots as well; the
+  # single-CA file on its own rejects every public TLS chain.
+  # shellcheck disable=SC2086 # intentional word-splitting; paths contain no spaces
+  for sys_bundle in $SYS_CA_BUNDLE_CANDIDATES; do
+    if [ -r "$sys_bundle" ] &&
+      _ca_trust_sys_combined="$(mktemp -t with-ca-trust-combined.XXXXXX 2>/dev/null)" &&
+      cat "$sys_bundle" "$CA_TRUST_CERT" > "$_ca_trust_sys_combined" 2>/dev/null
+    then
+      _ca_trust_verify_file="$_ca_trust_sys_combined"
+      log "Combined system CA bundle ($sys_bundle) with ${name} -> $_ca_trust_sys_combined"
+      break
+    fi
+  done
+fi
 
-export SSL_CERT_FILE="$ca_bundle"
-export REQUESTS_CA_BUNDLE="$ca_bundle"
-export CURL_CA_BUNDLE="$ca_bundle"
+export SSL_CERT_FILE="$_ca_trust_verify_file"
+export REQUESTS_CA_BUNDLE="$_ca_trust_verify_file"
+export CURL_CA_BUNDLE="$_ca_trust_verify_file"
 export NODE_EXTRA_CA_CERTS="$CA_TRUST_CERT"
 
 if [ -n "${CA_TRUST_CERT_EXTRA:-}" ] && [ -r "${CA_TRUST_CERT_EXTRA}" ]; then
-  combined_extra="/tmp/ca-trust-combined.crt"
-  if cat "$ca_bundle" "$CA_TRUST_CERT_EXTRA" > "$combined_extra" 2>/dev/null; then
-    export SSL_CERT_FILE="$combined_extra"
-    export REQUESTS_CA_BUNDLE="$combined_extra"
-    export CURL_CA_BUNDLE="$combined_extra"
-    export NODE_EXTRA_CA_CERTS="$combined_extra"
+  if combined="$(mktemp -t ca-trust-combined.XXXXXX 2>/dev/null)" &&
+    cat "$_ca_trust_verify_file" "$CA_TRUST_CERT_EXTRA" > "$combined" 2>/dev/null
+  then
+    export SSL_CERT_FILE="$combined"
+    export REQUESTS_CA_BUNDLE="$combined"
+    export CURL_CA_BUNDLE="$combined"
+    export NODE_EXTRA_CA_CERTS="$combined"
   else
-    log "WARN: cannot write $combined_extra; keeping existing trust env"
+    log "WARN: cannot build combined CA bundle; keeping single-CA trust env"
   fi
 fi
 

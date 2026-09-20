@@ -12,8 +12,6 @@ concurrency:
 
 permissions:
   contents: read
-  packages: read
-  actions: write
 
 env:
   REGISTRY: ghcr.io
@@ -22,6 +20,10 @@ jobs:
   check-and-trigger:
     name: 🔎 Backfill highest missing release tag
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      actions: write
 
     steps:
       - name: ⬇️ Checkout repository (with tags)
@@ -77,4 +79,4 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ steps.pick.outputs.tag }}
-        run: gh workflow run release-version.yml -f tag="${TAG}"
+        run: gh workflow run call-release-version.yml -f tag="${TAG}"

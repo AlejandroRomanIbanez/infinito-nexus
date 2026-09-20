@@ -13,26 +13,27 @@ flowchart TB
     pr["pull_request: opened, synchronize, reopened, ready_for_review"] --> eprc["entry-pr-change-orchestrate.yml"]
     dispatch["workflow_dispatch"] --> eman["entry-manual-steer.yml"]
 
-    epl --> orch["ci-orchestrator.yml"]
-    epl -->|"version tag on main"| relv["release-version.yml"]
+    epl --> orch["call-orchestrator.yml"]
+    epl -->|"version tag on main"| relv["call-release-version.yml"]
     eprc --> orch
-    eprc -->|"fork PRs: privileged prebuild"| imgbuild["images-build-ci.yml"]
-    eprc -->|"fork PRs: privileged prebuild"| imgmirror["images-mirror-missing.yml"]
+    eprc -->|"fork PRs: privileged prebuild"| imgbuild["call-images-build-ci.yml"]
+    eprc -->|"fork PRs: privileged prebuild"| imgmirror["call-images-mirror-missing.yml"]
     eman --> orch
 
-    subgraph orchestrator["ci-orchestrator.yml jobs"]
+    subgraph orchestrator["call-orchestrator.yml jobs"]
         waitfork["wait-fork-prereq-run"] --> forkready["fork-prereqs-ready"]
 
-        lintwf["lint.yml: make lint + hadolint"]
-        testwf["test.yml: make test"]
+        lintwf["call-lint.yml: make lint + hadolint"]
+        testwf["call-test.yml: make test"]
         codeql["cron-security-codeql.yml"]
-        buildci["build-ci-images: images-build-ci.yml"] --> dns["test-dns.yml"]
-        mirror["images-mirror-missing.yml"]
+        buildci["build-ci-images: call-images-build-ci.yml"] --> dns["call-test-dns.yml"]
+        mirror["call-images-mirror-missing.yml"]
 
         subgraph chain["serial chunk chain"]
             chunk0["test-deploy-chunk-0"]
             chunk0 --> chunk1["test-deploy-chunk-1"]
             chunk1 --> chunk2["test-deploy-chunk-2"]
+            chunk2 --> chunk3["test-deploy-chunk-3"]
         end
 
         lintwf --> chain
@@ -41,21 +42,18 @@ flowchart TB
         mirror --> chain
         buildci --> chain
 
-        chunk0 --> smoke["test-runner-smoke.yml"]
+        chunk0 --> smoke["call-test-runner-smoke.yml"]
         chain --> report["report-main-failures"]
 
-        instmake["test-install-make.yml"]
-        instpkgmgr["test-install-pkgmgr.yml"]
-        mirror --> devenv["test-workspace: test-workspace.yml"]
-        buildci --> testguide["test-instructions.yml"]
-        mirror --> testguide
+        instmake["call-test-install-make.yml"]
+        instpkgmgr["call-test-install-pkgmgr.yml"]
+        mirror --> devenv["test-workspace: call-test-workspace.yml"]
 
         chain --> donegate["done"]
         smoke --> donegate
         instmake --> donegate
         instpkgmgr --> donegate
         devenv --> donegate
-        testguide --> donegate
     end
 
     chunk0 --> deploy["call-test-deploy.yml"]
@@ -102,8 +100,11 @@ the whole list instead of re-testing the same head forever.
 GitHub Actions cannot generate a variable number of jobs, so the chunk blocks
 are written out in the orchestrator. `INFINITO_CI_MAX_CHUNKS` must equal how
 many exist there — `slots` plans a sweep against that key, and a sweep planned
-larger than the chain silently drops its tail. Blocks whose slice comes back
-empty skip themselves and cost nothing.
+larger than the chain silently drops its tail. Declare one block more than
+`available` fills (`ceil(available / chunk size) + 1`): the split receives
+every declared block, so after a short priority chunk the regular rows still
+fill the rest of the budget. Blocks whose slice comes back empty skip
+themselves and cost nothing.
 
 Run `python -m cli.meta.ci.slots --matrix` to see the whole budget.
 
@@ -258,7 +259,10 @@ failed chunk:
 `skipped` counts as passed, so an empty chunk never blocks the chain. After
 fixing what broke a sweep, `resume_from_chunk` re-enters at that index instead
 of re-running the green chunks. Both are inputs on `entry-manual-steer.yml`;
-the other entry points take the defaults.
+the other entry points take the defaults. A retrigger carries the source run's
+`chunk_gate` over unless `infinito administration deploy ci trigger
+--chunk-gate false` overrides it; the `i8ciallon` alias is `i8ciall` with that
+override, for sweeps that should report every chunk before anyone looks.
 
 ## Cancellation
 
@@ -277,6 +281,12 @@ run being created and needs no runner. `entry-cancel-superseded.yml` is the
 fallback for the case where it does not, and carries no group of its own,
 because the run holding a group cannot be the run that frees it.
 
+A workflow the entries call declares no `concurrency` of its own: its jobs then
+belong to the entry's group, and the entry's `cancel-in-progress` reaches them.
+`call-images-build-ci.yml` and `call-images-mirror-missing.yml` still declare
+one, so a run whose only live job is theirs stays outside the entry's group and
+waits for the fallback.
+
 ## Scheduled and standalone
 
 ```mermaid
@@ -291,13 +301,12 @@ flowchart TB
     pushmain["push: main"] --> updatewf
     prtarget["pull_request_target: opened, reopened"] --> depclose["entry-pr-open-dependabot-close.yml"]
 
-    relhighest -.->|"gh workflow run"| relver["release-version.yml"]
-    relver --> imgbuildci["images-build-ci.yml"]
-    manual["workflow_dispatch"] --> mirrorcleanup["images-mirror-cleanup.yml"]
-    manual --> deploywf["test-instructions.yml: run a role README Production command"]
+    relhighest -.->|"gh workflow run"| relver["call-release-version.yml"]
+    relver --> imgbuildci["call-images-build-ci.yml"]
+    manual["workflow_dispatch"] --> mirrorcleanup["entry-manual-mirror-cleanup.yml"]
 ```
 
 Also manually dispatchable: `cron-images-mirror-all.yml`, `cron-images-cleanup-ci.yml`,
 `cron-cleanup-stale.yml`, `cron-update.yml`, `cron-release-highest.yml`, `call-release-version.yml`,
 `call-lint.yml`, `call-test.yml`, `call-test-dns.yml`,
-`test-workspace.yml`, `test-runner-smoke.yml`.
+`call-test-workspace.yml`, `call-test-runner-smoke.yml`.

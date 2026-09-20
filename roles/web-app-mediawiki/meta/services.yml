@@ -1,4 +1,9 @@
 ---
+# nocheck: playwright-service-flag, dynamic-flag - shared gateway consumer; inference wiring is covered by the gateway role, and the gateway is a single shared instance
+litellm:
+  bond: 0.5
+  enabled: "{{ LITELLM_USABLE }}"
+  shared: true
 # nocheck: seaweedfs-required — object storage not implemented for this role
 sso:
   bond: 1
@@ -29,7 +34,6 @@ mariadb:
 mediawiki:
   healthcheck:
     flavor: tcp
-    start_period: 5m
   modes:
     compose:
       enabled: true

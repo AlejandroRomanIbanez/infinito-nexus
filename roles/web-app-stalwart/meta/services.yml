@@ -34,7 +34,6 @@ stalwart:
   bond: 1
   enabled: true
   shared: true
-  exposed: public
   provides: email
   modes:
     compose:
@@ -56,13 +55,17 @@ stalwart:
   domain: "{{ lookup('email').domain }}"
   ports:
     local:
-      http: 8081
+      http: 8093
     public:
       smtp: 25
       smtps: 465
       pop3s: 995
       imaps: 993
       sieve: 4190
+    onion:
+      smtp: true
+      # nocheck: onion-flag  ManageSieve edits server-side filters, which is administration rather than the sending and receiving the onion transport is for
+      sieve: false
     internal:
       http: 8080
       smtp: 25
@@ -80,7 +83,6 @@ stalwart:
 # nocheck: dynamic-flag
 # nocheck: playwright-service-flag — legacy-provider pull for the migration scenario, no UI surface
 mailu:
-  bond: 1
   enabled: false
   shared: false
 # nocheck: playwright-service-flag — DB engine, covered by role-local integration tests
@@ -111,7 +113,7 @@ webmail:
   pids_limit: 512
   ports:
     local:
-      http: 8090
+      http: 8094
     internal:
       http: 80
 # nocheck: dynamic-flag — role-local sub-component, always deployed with the stack

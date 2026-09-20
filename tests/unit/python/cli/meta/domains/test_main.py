@@ -70,7 +70,7 @@ class TestCliMetaApplicationsDomains(TestCase):
                 code, out, err = self._run(
                     [
                         "--domain-primary",
-                        "infinito.example",
+                        "infinito.test",
                         "--alias",
                         "--www",
                     ]
@@ -81,12 +81,12 @@ class TestCliMetaApplicationsDomains(TestCase):
         self.assertEqual(
             out.strip().splitlines(),
             [
-                "alias.infinito.example",
-                "dashboard.infinito.example",
-                "test.infinito.example",
-                "www.alias.infinito.example",
-                "www.dashboard.infinito.example",
-                "www.test.infinito.example",
+                "alias.infinito.test",
+                "dashboard.infinito.test",
+                "test.infinito.test",
+                "www.alias.infinito.test",
+                "www.dashboard.infinito.test",
+                "www.test.infinito.test",
             ],
         )
 

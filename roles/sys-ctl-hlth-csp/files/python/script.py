@@ -57,6 +57,33 @@ def is_skipped_domain(domain: str, skip_set: set[str], skip_labels: set[str]) ->
     return domain.endswith(".onion") and domain.split(".", 1)[0] in skip_labels
 
 
+def expand_accept_status(accept_status: list[str], domains: list[str]) -> list[str]:
+    """ACCEPT_STATUS plus the same codes for every ``.onion`` sibling it covers.
+
+    The checker matches accepted codes by hostname, and a clearnet vhost and
+    its onion twin share only the leftmost subdomain label, so a code declared
+    for ``mirror.<primary-domain>`` never reaches ``mirror.<host>.onion`` —
+    which serves that same by-design status and would fail the probe.
+
+    Args:
+        accept_status: ``<domain>=<code>[,<code>]`` entries as declared.
+        domains: every vhost the probe covers, clearnet and onion alike.
+    """
+    onion = [d for d in domains if d.endswith(".onion")]
+    expanded = list(accept_status)
+    for entry in accept_status:
+        host, _, codes = entry.partition("=")
+        if not codes or host.endswith(".onion"):
+            continue
+        label = host.split(".", 1)[0]
+        expanded.extend(
+            f"{sibling}={codes}"
+            for sibling in onion
+            if sibling.split(".", 1)[0] == label
+        )
+    return expanded
+
+
 def detect_scheme_from_conf(conf_path: Path) -> str | None:
     """
     Decide whether this conf listens on HTTP or HTTPS.
@@ -130,6 +157,8 @@ def build_docker_cmd(
     ignore_network_blocks_from: list[str],
     use_host_network: bool = True,
     proxy: str = "",
+    timeout_ms: int = 0,
+    accept_status: list[str] | None = None,
 ) -> list[str]:
     cmd = ["container", "run", "--rm"]
 
@@ -148,9 +177,18 @@ def build_docker_cmd(
     if proxy:
         cmd.extend(["--proxy", proxy])
 
+    if timeout_ms:
+        cmd.extend(["--timeout", str(timeout_ms)])
+
     if ignore_network_blocks_from:
         cmd.append("--ignore-network-blocks-from")
         cmd.extend(ignore_network_blocks_from)
+
+    if accept_status:
+        cmd.append("--accept-status")
+        cmd.extend(accept_status)
+
+    if ignore_network_blocks_from or accept_status:
         cmd.append("--")
 
     cmd.extend(urls)
@@ -165,6 +203,8 @@ def run_checker(
     always_pull: bool,
     use_host_network: bool = True,
     proxy: str = "",
+    timeout_ms: int = 0,
+    accept_status: list[str] | None = None,
 ) -> int:
     """
     Runs the CSP checker container and returns its exit code.
@@ -180,6 +220,8 @@ def run_checker(
         ignore_network_blocks_from=ignore_network_blocks_from,
         use_host_network=use_host_network,
         proxy=proxy,
+        timeout_ms=timeout_ms,
+        accept_status=accept_status,
     )
 
     try:
@@ -240,6 +282,27 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--accept-status",
+        nargs="*",
+        default=[],
+        help=(
+            "Per-vhost status codes the probe must treat as healthy, as "
+            "<domain>=<code>[,<code>]. Declared in the role's "
+            "server.status_codes; everything below 300 passes without being "
+            "listed."
+        ),
+    )
+    parser.add_argument(
+        "--onion-timeout",
+        type=int,
+        default=0,
+        help=(
+            "Navigation budget in milliseconds for the .onion batch, which "
+            "reaches its vhosts over Tor and needs longer than the checker's "
+            "own default. 0 leaves that default in place."
+        ),
+    )
+    parser.add_argument(
         "--tor-proxy",
         default="",
         help=(
@@ -274,6 +337,8 @@ def main() -> None:
                 f"--skip-domain: {skipped_present}"
             )
 
+    accept_status = expand_accept_status(list(args.accept_status or []), domains)
+
     clearnet_domains, onion_domains = split_onion_domains(domains)
     if onion_domains and not args.tor_proxy:
         print(
@@ -287,9 +352,9 @@ def main() -> None:
         sys.exit(0)
 
     rc = 0
-    for batch_domains, batch_proxy in (
-        (clearnet_domains, ""),
-        (onion_domains, args.tor_proxy),
+    for batch_domains, batch_proxy, batch_timeout in (
+        (clearnet_domains, "", 0),
+        (onion_domains, args.tor_proxy, args.onion_timeout),
     ):
         if not batch_domains:
             continue
@@ -305,6 +370,8 @@ def main() -> None:
             always_pull=bool(args.always_pull),
             use_host_network=not bool(args.no_host_network),
             proxy=batch_proxy,
+            timeout_ms=batch_timeout,
+            accept_status=accept_status,
         )
         rc = rc or batch_rc
     sys.exit(rc)

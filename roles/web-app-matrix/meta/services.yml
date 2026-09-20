@@ -1,4 +1,9 @@
 ---
+# nocheck: dynamic-flag - the gateway is a single shared instance, never deployed per consumer
+litellm:
+  bond: 0.5
+  enabled: "{{ LITELLM_USABLE }}"
+  shared: true
 # nocheck: dockerfile-custom
 sso:
   bond: 1
@@ -50,6 +55,9 @@ synapse:
       http: 8021
     public:
       federation: 8448
+    onion:
+      # nocheck: onion-flag  federation is dialled by clearnet homeservers resolving this server_name; serving it on the onion needs an onion server_name, which is a different deployment
+      federation: false
   min_storage: 311MB
   cpus: "1.5"
   mem_reservation: "1g"
@@ -58,7 +66,7 @@ synapse:
 element:
   healthcheck:
     flavor: wget
-  version: v1.12.27
+  version: v1.12.28
   image: vectorim/element-web
   name: matrix-element
   ports:
@@ -105,7 +113,6 @@ matrix:
   healthcheck:
     flavor: http_status
     path: _matrix/client/versions
-    start_period: 10m
     retries: 10
   ports:
     internal:
@@ -124,7 +131,7 @@ matrix:
   flavor: ansible
   upstream:
     repo: https://github.com/spantaleev/matrix-docker-ansible-deploy
-    ref: master
+    ref: 40179e6d4a36513eb77c4ef2eff067716ebb1821
     migration_validated_version: v2026.05.18.0
   runner:
     image: infinito/web-app-matrix-mdad-runner:1
@@ -136,7 +143,7 @@ matrix:
   server_name: "{{ DOMAIN_PRIMARY }}"
   plugins:
     appservice_irc: false
-    chatgpt: false
+    chatgpt: "{{ 'svc-ai-litellm' in group_names }}"
     discord: false
     gitter: false
     heisenbridge: true

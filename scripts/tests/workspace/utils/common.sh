@@ -9,6 +9,10 @@ DASHBOARD_APP="web-app-dashboard"
 MATOMO_APP="web-app-matomo"
 MARIADB_APP="svc-db-mariadb"
 POSTGRES_APP="svc-db-postgres"
+DASHBOARD_URL="https://dashboard.infinito.test"
+MATOMO_URL="https://matomo.infinito.test"
+
+: "${DASHBOARD_APP}" "${MATOMO_APP}" "${MARIADB_APP}" "${POSTGRES_APP}" "${DASHBOARD_URL}" "${MATOMO_URL}"
 
 UTILS_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${UTILS_DIR}/../../../.." && pwd)"

@@ -1,0 +1,34 @@
+---
+# Matrix-deploy variant overrides for this role.
+# See docs/contributing/artefact/files/role/variants.md for the file format.
+
+- services:
+    ollama:
+      enabled: true
+      shared: true
+    lmstudio:
+      enabled: false
+      shared: false
+    postgres:
+      shared: true
+
+- services:
+    postgres:
+      shared: false
+    ollama:
+      enabled: false
+      shared: false # nocheck: variants-static-override backup shared stays literally true
+    lmstudio:
+      enabled: false
+      shared: false # nocheck: variants-static-override backup shared stays literally true
+
+- services:
+    ollama:
+      enabled: false
+      shared: false
+    lmstudio:
+      bond: 0.5
+      enabled: true
+      shared: true
+    postgres:
+      shared: true

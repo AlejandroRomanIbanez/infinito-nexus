@@ -40,6 +40,8 @@ test("GitLab returns HTML content under canonical domain", async ({ request }) =
   ).toBe(true);
 });
 
+require("./test-mcp-guest");
+
 // Outbound mail. `templates/config/smtp_settings.rb.j2` derives ActionMailer's
 // `tls:` from the provider's own declaration, and tls/starttls are mutually
 // exclusive there: implicit TLS on 465, or STARTTLS on the relay port, never
