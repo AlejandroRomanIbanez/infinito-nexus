@@ -71,7 +71,7 @@ openbao:
   run_after:
     - web-app-keycloak
     - svc-db-openldap
-  lifecycle: alpha
+  lifecycle: beta
 
 # nocheck: playwright-service-flag
 # nocheck: variants-coverage — sso-variant-tor requires the onion on in every variant, so the false polarity has no variant left to live in
