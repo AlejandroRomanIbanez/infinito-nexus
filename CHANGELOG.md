@@ -143,6 +143,62 @@
   dash. Documentation generators are gathered under *cli/build/docs*, and a new CLI edits role
   bonds in a matrix instead of hunting through files.
 
+* Image and dependency version jumps (net since 13.0.0):
+  * *svc-ai-ollama*: 0.32.15 to 0.34.0
+  * *svc-db-elasticsearch*: 9.5.2 to 9.5.3
+  * *svc-db-qdrant*: v1.19.0 to v1.19.1
+  * *sys-ctl-hlth-csp* (csp-checker): 2.2.1 to 3.0.4
+  * *sys-lint* (shfmt): v3.13.1 to v3.14.1
+  * *test-e2e-playwright*: v1.62.1-noble to v1.63.0-noble
+  * *web-app-bluesky* (view): 1.131.1 to 1.132.0
+  * *web-app-bookwyrm*: v0.9.2 to v0.9.3
+  * *web-app-confluence*: 10.2.15 to 10.2.18
+  * *web-app-dashboard*: 2.0.0 to 2.1.3
+  * *web-app-erpnext*: v16.32.3 to v16.34.2
+  * *web-app-espocrm*: 10.0.6 to 10.0.8
+  * *web-app-funkwhale*: 2.0.9 to 2.0.10
+  * *web-app-gitea*: 1.27.2 to 1.27.3
+  * *web-app-gitlab* (webservice, sidekiq, workhorse, gitaly, shell, rails): v19.3.0 to v19.3.2
+  * *web-app-jira*: 11.3.10 to 11.3.11
+  * *web-app-keycloak*: 26.7.2 to 26.7.3
+  * *web-app-matrix* (Synapse): v1.159.0 to v1.160.0
+  * *web-app-matrix* (Element): v1.12.26 to v1.12.28
+  * *web-app-mattermost*: 11.10.1 to 11.11.0
+  * *web-app-n8n*: 1.95.3 to 1.100.1
+  * *web-app-nextcloud* (proxy): 1.31.3-alpine to 1.31.5-alpine
+  * *web-app-opentalk* (LiveKit): v1.13.5 to v1.13.6
+  * *web-app-opentalk* (RabbitMQ): 4.3.4 to 4.3.5
+  * *web-app-penpot* (frontend, backend, exporter): 2.17.1 to 2.17.2
+  * *web-app-seaweedfs*: 4.44 to 4.46
+  * *web-app-semaphore*: v2.19.8 to v2.19.14
+  * *web-app-socialhome*: 2026.6.16 to 2026.9.18
+  * *web-app-yourls*: 1.10.4-apache to 1.10.6-apache
+  * *web-app-zammad*: 6.5.0 to 7.1.2
+  * *web-svc-coturn*: 4.17.2 to 4.18.0
+
+* Moving tags that now carry a release, one per role: *web-app-discourse* master to
+  v2026.8.0, *web-app-jenkins* lts to 2.568.3-lts, *web-app-openwebui* main to 0.11.0,
+  *web-app-pretix* stable to 2026.7.0, *web-app-xwiki* lts-postgres-tomcat to
+  17.10.13-postgres-tomcat, *web-app-pixelfed* latest to 20260917, *web-app-matrix* (upstream
+  playbook ref) master to a commit pin, *svc-db-memcached* alpine to 1.6.45-alpine,
+  *svc-db-redis* alpine to 8.10.1-alpine, *svc-prx-openresty* alpine to 1.31.1.1-alpine,
+  *svc-runner* (BuildKit) buildx-stable-1 to v0.33.0, *web-app-bigbluebutton* (dockerize)
+  latest to v0.15.1, and the nginx sidecars of *web-app-fediwall*, *web-app-littlejs*,
+  *web-app-taiga* and *web-svc-coturn* to 1.31.6-alpine. The Debian codename bases became numeric slim tags in
+  *svc-db-openldap* (12.15-slim), *svc-net-tor* (13.6-slim), *web-app-bookwyrm*,
+  *web-app-bridgy-fed*, *web-app-postmarks*, *web-app-roulette-wheel*, *web-svc-cdn* and
+  *web-svc-simpleicons*, and *web-app-flowise* is built from node 24-slim instead of pulled
+  (Flowise itself stays at 3.1.4).
+
+**Contributors**
+
+* [Kevin Veen-Birkenbach](https://veen.world): LLM gateway and model backends, the declared
+  MCP layer and its sidecar, agent employees and the kernel-isolated tier, Home Assistant,
+  credential declaration and rotation, firewall/tor/DNS ownership, variant-dictated provider
+  configuration, the fail-closed lints, CI selection and resume, swarm convergence, and
+  version maintenance
+* [Prageeth Panicker](https://github.com/pragepani): .ansible cache directory ignored
+
 ## [13.0.0] - 2026-08-26
 
 * **Tor as a first-class deployment axis.** The new *svc-net-tor* role routes onion
