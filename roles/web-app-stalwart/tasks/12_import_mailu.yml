@@ -12,7 +12,7 @@
   ansible.builtin.set_fact:
     stalwart_migration_accounts: >-
       {%- set acc = {} -%}
-      {%- for key, u in (lookup('users')).items() -%}
+      {%- for key, u in STALWART_USERS.items() -%}
       {%- set secret = u.password | hash('sha256') if 'bot' in (u.roles | default([])) else u.password -%}
       {%- set _ = acc.update({u.email: secret}) -%}
       {%- endfor -%}

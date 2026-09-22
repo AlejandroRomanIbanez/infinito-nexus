@@ -55,7 +55,7 @@ stalwart:
   domain: "{{ lookup('email').domain }}"
   ports:
     local:
-      http: 8093
+      http: 8095
     public:
       smtp: 25
       smtps: 465

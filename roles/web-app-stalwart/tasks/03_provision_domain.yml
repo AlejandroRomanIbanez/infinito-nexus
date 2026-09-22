@@ -39,7 +39,7 @@
     stalwart_user_name: "{{ user_item.value.username }}"
     stalwart_user_password: "{{ user_item.value.password }}"
     stalwart_user_roles: "{{ user_item.value.roles | default([]) }}"
-  loop: "{{ lookup('users') | dict2items }}"
+  loop: "{{ STALWART_USERS | dict2items }}"
   loop_control:
     loop_var: user_item
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"

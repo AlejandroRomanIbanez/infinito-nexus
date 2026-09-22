@@ -42,8 +42,6 @@ if [ -n "${CA_TRUST_BUNDLE:-}" ] && [ -r "${CA_TRUST_BUNDLE}" ]; then
   _ca_trust_verify_file="$CA_TRUST_BUNDLE"
 else
   _ca_trust_verify_file="$CA_TRUST_CERT"
-  # Exception: validating an external host needs the system roots as well; the
-  # single-CA file on its own rejects every public TLS chain.
   # shellcheck disable=SC2086 # intentional word-splitting; paths contain no spaces
   for sys_bundle in $SYS_CA_BUNDLE_CANDIDATES; do
     if [ -r "$sys_bundle" ] &&
