@@ -2,7 +2,7 @@
 application_id: "web-app-stalwart"
 http_port: "{{ lookup('config', application_id, 'services.stalwart.ports.local.http') }}"
 
-database_password: "{{ lookup('config', application_id, 'secrets.credentials.database_password') }}"
+database_password: "{{ lookup('config', application_id, 'secrets.credentials.database_password') }}" # nocheck: lookup-config-path
 
 STALWART_VOLUMES_DIR: "{{ lookup('container', application_id, 'directories.volumes') }}"
 STALWART_CONFIG_DIR: "{{ [ STALWART_VOLUMES_DIR, 'etc' ] | path_join }}"

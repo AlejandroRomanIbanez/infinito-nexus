@@ -12,6 +12,9 @@ const stalwartAdminPassword = decodeDotenvQuotedValue(process.env.STALWART_ADMIN
 const biberEmail = decodeDotenvQuotedValue(process.env.BIBER_EMAIL || "");
 const biberUsername = decodeDotenvQuotedValue(process.env.BIBER_USERNAME || "");
 const biberPassword = decodeDotenvQuotedValue(process.env.BIBER_PASSWORD || "");
+const mapacheEmail = decodeDotenvQuotedValue(process.env.MAPACHE_EMAIL || "");
+const mapacheUsername = decodeDotenvQuotedValue(process.env.MAPACHE_USERNAME || "");
+const mapachePassword = decodeDotenvQuotedValue(process.env.MAPACHE_PASSWORD || "");
 
 const expectedOidcAuthUrl = `${oidcIssuerUrl.replace(/\/$/, "")}/protocol/openid-connect/auth`;
 
@@ -29,4 +32,7 @@ module.exports = {
   biberEmail,
   biberUsername,
   biberPassword,
+  mapacheEmail,
+  mapacheUsername,
+  mapachePassword,
 };

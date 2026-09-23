@@ -13,6 +13,7 @@ test.beforeEach(() => {
 
 require("./test-tls");
 require("./test-sso");
+require("./test-oidc-provisioning");
 require("./test-login-native");
 require("./test-mailflow");
 require("./test-onion-mailflow");

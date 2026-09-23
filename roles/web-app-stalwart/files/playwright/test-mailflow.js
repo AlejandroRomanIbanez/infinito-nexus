@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 
 const { safeSkipUnlessEnabled, gotoOnion, recordVideoOptions } = require("./personas");
-const { roundcubeSsoLogin, roundcubeLogout, waitForEmailInMailbox } = require("./webmail");
+const { roundcubeSsoLogin, roundcubeLogout, sendMail, waitForEmailInMailbox } = require("./webmail");
 const {
   webmailBaseUrl,
   adminEmail,
@@ -12,20 +12,6 @@ const {
   biberPassword,
 } = require("./env");
 const { resolveTimeout, isSplitRealmOidc } = require("./timeouts");
-
-/** Compose and send one message, failing loudly if Roundcube reports a send error. */
-async function sendMail(page, recipient, subject, body) {
-  await gotoOnion(page, `${webmailBaseUrl}/?_task=mail&_action=compose`);
-  await page.waitForLoadState("networkidle", { timeout: resolveTimeout(15_000) }).catch(() => {});
-  await page.locator("#_to, input[name='_to']").first().fill(recipient);
-  await page.locator("#compose-subject, input[name='_subject']").first().fill(subject);
-  await page.locator("#composebody, textarea[name='_message'], [contenteditable='true']").first().fill(body);
-  await page.locator(".formbuttons .send, button.send, a.send").first().click();
-  const sendError = page.locator("#messagestack .error, .toast .error, .toast-error").first();
-  if (await sendError.isVisible().catch(() => false)) {
-    throw new Error(`Roundcube reported a send error for ${recipient}: ${await sendError.textContent()}`);
-  }
-}
 
 /** Open a delivered message and confirm its body renders. */
 async function openMail(page, subject) {
