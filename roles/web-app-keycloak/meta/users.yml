@@ -3,8 +3,5 @@ mapache:
   username: mapache
   firstname: Infinito
   lastname: Mapache
-  # Exception: identity without mailbox is the point — this persona proves a
-  # directory user with no Ansible-provisioned application account can still
-  # sign in, so the consuming role has to create the account on first login.
   accounts: ["identity"]
   description: OIDC-only persona the identity provider registers and no application pre-provisions

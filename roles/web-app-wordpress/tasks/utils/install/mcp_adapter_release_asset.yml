@@ -14,10 +14,10 @@
   changed_when: >-
     'Plugin installed successfully' in wordpress_mcp_adapter_install.stdout
     or 'Plugin updated successfully' in wordpress_mcp_adapter_install.stdout
-  # Exception: WP-CLI exits 255 *after* a finished install whenever WordPress'
-  # fatal handler runs, because wp_is_maintenance_mode() requires .maintenance
-  # and the install itself has just removed it. The verification below is the
-  # verdict; this exit code is not.
+  # WP-CLI exits 255 after a finished install whenever WordPress' fatal handler
+  # runs, because wp_is_maintenance_mode() requires .maintenance and the install
+  # itself has just removed it. The verification below is the verdict, not this
+  # exit code.
   failed_when: false
 
 - name: "🔎 Verify '{{ plugin_name }}' is installed after the release-asset install"
