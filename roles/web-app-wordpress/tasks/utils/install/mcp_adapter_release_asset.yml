@@ -1,0 +1,62 @@
+---
+- name: "📦 Normalise the install contract for '{{ plugin_name }}'"
+  ansible.builtin.set_fact:
+    wp_plugin_required: "{{ lookup('config', application_id, 'addons.' ~ plugin_name ~ '.required', false) | bool }}"
+  changed_when: false
+
+- name: "📦 Install the pinned WordPress MCP adapter from its release asset"
+  ansible.builtin.shell: >
+    container exec -u {{ WORDPRESS_USER }} {{ WORDPRESS_CONTAINER_ADDRESS }}
+    wp plugin install
+    https://github.com/WordPress/mcp-adapter/releases/download/{{ WORDPRESS_MCP_ADAPTER_VERSION }}/mcp-adapter.zip
+    --force --path={{ WORDPRESS_DOCKER_HTML_PATH }}
+  register: wordpress_mcp_adapter_install
+  changed_when: >-
+    'Plugin installed successfully' in wordpress_mcp_adapter_install.stdout
+    or 'Plugin updated successfully' in wordpress_mcp_adapter_install.stdout
+  # Exception: WP-CLI exits 255 *after* a finished install whenever WordPress'
+  # fatal handler runs, because wp_is_maintenance_mode() requires .maintenance
+  # and the install itself has just removed it. The verification below is the
+  # verdict; this exit code is not.
+  failed_when: false
+
+- name: "🔎 Verify '{{ plugin_name }}' is installed after the release-asset install"
+  ansible.builtin.shell: >
+    container exec -u {{ WORDPRESS_USER }} {{ WORDPRESS_CONTAINER_ADDRESS }}
+    wp plugin is-installed {{ plugin_name }}
+    --path={{ WORDPRESS_DOCKER_HTML_PATH }}
+  register: wordpress_mcp_adapter_present
+  changed_when: false
+  failed_when: false
+
+- name: "🧮 Resolve whether the release-asset install actually landed"
+  ansible.builtin.set_fact:
+    wordpress_mcp_adapter_ok: >-
+      {{
+        ('Success:' in (wordpress_mcp_adapter_install.stdout | default('')))
+        and ((wordpress_mcp_adapter_present.rc | default(1)) == 0)
+      }}
+  changed_when: false
+
+- name: "🛑 Fail because required addon '{{ plugin_name }}' did not install"
+  ansible.builtin.fail:
+    msg: >-
+      {{ application_id }} addon '{{ plugin_name }}'
+      {{ WORDPRESS_MCP_ADAPTER_VERSION }} did not install
+      (install rc={{ wordpress_mcp_adapter_install.rc | default('n/a') }},
+      is-installed rc={{ wordpress_mcp_adapter_present.rc | default('n/a') }})
+  when:
+    - wp_plugin_required | default(false) | bool
+    - not (wordpress_mcp_adapter_ok | default(false) | bool)
+
+- name: "🟡 Skip optional addon '{{ plugin_name }}' after a failed install"
+  ansible.builtin.debug:
+    msg: >-
+      ::warning title=addon install failed::{{ application_id }} addon
+      '{{ plugin_name }}' did not install
+      (install rc={{ wordpress_mcp_adapter_install.rc | default('n/a') }},
+      is-installed rc={{ wordpress_mcp_adapter_present.rc | default('n/a') }});
+      deploy continues because the addon is not required
+  when:
+    - not (wp_plugin_required | default(false) | bool)
+    - not (wordpress_mcp_adapter_ok | default(false) | bool)
