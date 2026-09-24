@@ -1,4 +1,9 @@
 ---
+# Installs the pinned MCP adapter from its GitHub release asset and decides the
+# outcome from the installed state instead of the exit code: WP-CLI exits 255
+# after a finished install whenever WordPress' fatal handler runs, because
+# wp_is_maintenance_mode() requires .maintenance and the install itself has just
+# removed it. A missing plugin fails the deploy only when the addon is required.
 - name: "📦 Normalise the install contract for '{{ plugin_name }}'"
   ansible.builtin.set_fact:
     wp_plugin_required: "{{ lookup('config', application_id, 'addons.' ~ plugin_name ~ '.required', false) | bool }}"
@@ -14,10 +19,6 @@
   changed_when: >-
     'Plugin installed successfully' in wordpress_mcp_adapter_install.stdout
     or 'Plugin updated successfully' in wordpress_mcp_adapter_install.stdout
-  # WP-CLI exits 255 after a finished install whenever WordPress' fatal handler
-  # runs, because wp_is_maintenance_mode() requires .maintenance and the install
-  # itself has just removed it. The verification below is the verdict, not this
-  # exit code.
   failed_when: false
 
 - name: "🔎 Verify '{{ plugin_name }}' is installed after the release-asset install"
