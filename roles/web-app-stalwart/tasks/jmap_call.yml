@@ -1,13 +1,17 @@
 ---
 # Reusable management JMAP call: in `stalwart_jmap_body` (JSON), out `stalwart_jmap`.
+# Param: stalwart_jmap_tolerate_rejected - true when the caller reads a set-level rejection itself (e.g. alreadyExists).
+# Credentials and body travel as a curl config on stdin: on argv they reach the process table, the host journal and the CI rescue artifact.
 - name: "🔧 Stalwart JMAP call"
-  ansible.builtin.shell: >-
-    container exec -i {{ STALWART_CONTAINER_ADDRESS }}
-    {{ 30 | curl }} -sS -f
-    -u {{ (STALWART_ADMIN_USER ~ ':' ~ STALWART_ADMIN_PASSWORD) | quote }}
-    -H "Content-Type:application/json"
-    --data-binary {{ stalwart_jmap_body | quote }}
-    {{ STALWART_JMAP_URL }}
+  ansible.builtin.shell:
+    cmd: >-
+      container exec -i {{ STALWART_CONTAINER_ADDRESS }}
+      {{ 30 | curl }} -sS -f -K -
+      -H "Content-Type:application/json"
+      {{ STALWART_JMAP_URL }}
+    stdin: |-
+      user = {{ (STALWART_ADMIN_USER ~ ':' ~ STALWART_ADMIN_PASSWORD) | to_json(ensure_ascii=False) }}
+      data-binary = {{ stalwart_jmap_body | to_json(ensure_ascii=False) }}
   register: stalwart_jmap_raw
   changed_when: false
   retries: 12
@@ -32,5 +36,11 @@
   ansible.builtin.assert:
     that:
       - stalwart_jmap.methodResponses[0][0] != 'error'
-    fail_msg: "Stalwart refused the JMAP call: {{ stalwart_jmap.methodResponses[0][1] }}"
+      - stalwart_jmap_rejected | length == 0
+    fail_msg: "Stalwart refused the JMAP call {{ stalwart_jmap.methodResponses[0][0] }}: {{ stalwart_jmap_rejected or stalwart_jmap.methodResponses[0][1] }}"
     quiet: true
+  vars:
+    stalwart_jmap_rejected: >-
+      {{ {} if (stalwart_jmap_tolerate_rejected | default(false) | bool)
+         else (stalwart_jmap.methodResponses[0][1].notCreated | default({}, true))
+              | combine(stalwart_jmap.methodResponses[0][1].notUpdated | default({}, true)) }}

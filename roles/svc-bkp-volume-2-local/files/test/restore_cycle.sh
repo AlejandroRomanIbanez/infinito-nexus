@@ -188,15 +188,6 @@ for name in "${RUNNING[@]}"; do
 done
 echo "OK: network attachments recorded for ${#NETWORKS[@]} container(s)"
 
-# A container that never becomes healthy reports only its state here, and the
-# reason dies with the container, so the last log lines are dumped alongside it.
-dump_container_diagnostics() {
-    local name="$1"
-    echo "--- ${name}: last 50 log lines ---"
-    container logs --tail 50 "${name}" 2>&1 || echo "(no logs available for ${name})"
-    echo "--- ${name}: end of logs ---"
-}
-
 # Any exit between this teardown and the final restart leaves the host with
 # its subjects down, which is why the marker is written from a trap.
 mark_torn_down() {
@@ -299,7 +290,6 @@ if (( ${#DB_PROJECTS[@]} > 0 )); then
                 if (( $(date +%s) >= db_deadline )); then
                     echo "FAIL: ${name} is ${status}/${health} after ${BKP_TEST_HEALTH_TIMEOUT}s, the replay would hit an unready engine"
                     container ps -a --format 'table {{.Names}}\t{{.Status}}'
-                    dump_container_diagnostics "${name}"
                     exit 1
                 fi
                 sleep 5
@@ -355,7 +345,6 @@ for name in "${RUNNING[@]}"; do
         if (( $(date +%s) >= DEADLINE )); then
             echo "FAIL: ${name} is ${status}/${health} after ${BKP_TEST_HEALTH_TIMEOUT}s"
             container ps -a --format 'table {{.Names}}\t{{.Status}}'
-            dump_container_diagnostics "${name}"
             exit 1
         fi
         sleep 5
@@ -373,7 +362,6 @@ if (( ${#NOHC_NAMES[@]} > 0 )); then
         fi
         if [[ "${status}" != "running" ]] || [[ "${restarts}" != "${NOHC_RESTARTS[idx]}" ]]; then
             echo "FAIL: ${name} is crash-looping (status ${status}, restarts ${NOHC_RESTARTS[idx]} -> ${restarts})"
-            dump_container_diagnostics "${name}"
             exit 1
         fi
     done

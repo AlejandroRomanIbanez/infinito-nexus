@@ -1,9 +1,4 @@
 ---
-- name: "📦 Install and verify the pinned WordPress MCP adapter"
+- name: "🔑 Issue and persist the credential MCP clients present to this site"
+  ansible.builtin.include_tasks: "{{ role_path }}/tasks/utils/mcp.yml"
   when: IS_STACK_HOST | bool
-  block:
-    - name: "📦 Install '{{ plugin_name }}' from its pinned release asset"
-      ansible.builtin.include_tasks: "{{ role_path }}/tasks/utils/install/mcp_adapter_release_asset.yml"
-
-    - name: "🔑 Issue and persist the credential MCP clients present to this site"
-      ansible.builtin.include_tasks: "{{ role_path }}/tasks/utils/mcp.yml"

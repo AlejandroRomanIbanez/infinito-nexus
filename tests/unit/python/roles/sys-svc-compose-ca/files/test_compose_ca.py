@@ -1000,7 +1000,12 @@ class TestComposeCaInject(unittest.TestCase):
             self.assertIn(
                 f"{Path(tmp) / 'ca-bundle.crt'}:{bundle_container}:ro", out["volumes"]
             )
-            for key in ("SSL_CERT_FILE", "CURL_CA_BUNDLE", "REQUESTS_CA_BUNDLE"):
+            for key in (
+                "SSL_CERT_FILE",
+                "CURL_CA_BUNDLE",
+                "REQUESTS_CA_BUNDLE",
+                "CA_TRUST_BUNDLE",
+            ):
                 self.assertEqual(out["environment"].get(key), bundle_container)
             self.assertEqual(
                 out["environment"].get("NODE_EXTRA_CA_CERTS"), CA_CERT_CONTAINER
@@ -1037,6 +1042,7 @@ class TestComposeCaInject(unittest.TestCase):
         out = doc["services"]["svc"]
         self.assertIn("volumes", out)
         self.assertEqual(out["environment"].get("SSL_CERT_FILE"), CA_CERT_CONTAINER)
+        self.assertNotIn("CA_TRUST_BUNDLE", out["environment"])
         self.assertNotIn("entrypoint", out)
         self.assertNotIn("command", out)
         p_ensure.assert_not_called()

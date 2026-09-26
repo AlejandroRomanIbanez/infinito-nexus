@@ -5,11 +5,13 @@ from pathlib import Path
 from typing import Any
 
 from ansible.errors import AnsibleError
+from ansible.plugins.loader import lookup_loader
 from ansible.plugins.lookup import LookupBase
 
 from plugins.lookup.applications import LookupModule as ApplicationsLookup
 from plugins.lookup.domain import LookupModule as DomainLookup
 from plugins.lookup.users import LookupModule as UsersLookup
+from utils.domains.primary_domain import get_domain
 from utils.mail.provider import deployed_roles, resolve_active_provider
 from utils.roles.entity.name import get_entity_name
 
@@ -159,7 +161,7 @@ class LookupModule(LookupBase):
             if not external:
                 return False
             mail_host = str(resolved.get("host") or "").lower()
-            if mail_host.endswith(".onion"):
+            if mail_host.endswith(".onion") or self._provider_onion_primary(variables):
                 return False
             return _as_bool(variables.get("TLS_ENABLED"))
         if short_key == "port":
@@ -214,7 +216,9 @@ class LookupModule(LookupBase):
                 return "off"
             return "on" if _as_bool(resolved.get("tls")) else "plain"
         if short_key == "start_tls":
-            if str(resolved.get("host") or "").lower().endswith(".onion"):
+            if str(resolved.get("host") or "").lower().endswith(
+                ".onion"
+            ) or self._provider_onion_primary(variables):
                 return False
             return self._provider_uses_sso_relay(variables)
         if short_key == "smtp":
@@ -315,6 +319,45 @@ class LookupModule(LookupBase):
         if enabled is not None and "{{" not in str(enabled) and not _as_bool(enabled):
             return False
         return _as_bool(oidc.get("submission_via_relay"))
+
+    def _provider_onion_primary(self, variables: dict[str, Any]) -> bool:
+        """True when the provider's own host serves it onion-first.
+
+        Resolved from the provider host's ``group_names`` rather than this
+        host's: in swarm only the manager is in ``svc-net-tor``, and the
+        provider's ``tor.enabled`` renders against ``group_names``, so a
+        worker would otherwise see the clearnet name the provider never
+        serves a certificate for.
+        """
+        groups = variables.get("groups") or {}
+        provider = self._mail_provider(variables)
+        tor_hosts = set(groups.get("svc-net-tor") or [])
+        provider_hosts = [h for h in groups.get(provider) or [] if h in tor_hosts]
+        if not provider_hosts:
+            return False
+        own_groups = list(variables.get("group_names") or [])
+        fallback = own_groups + [
+            g for g in ("svc-net-tor", provider) if g not in own_groups
+        ]
+        try:
+            provider_groups = variables["hostvars"][provider_hosts[0]]["group_names"]
+        except (KeyError, TypeError):
+            provider_groups = fallback
+        provider_view = dict(variables)
+        provider_view["group_names"] = list(provider_groups or fallback)
+        forwarded = {
+            k: v for k, v in getattr(self, "_kwargs", {}).items() if k == "roles_dir"
+        }
+        try:
+            domains = lookup_loader.get(
+                "domains",
+                loader=getattr(self, "_loader", None),
+                templar=getattr(self, "_templar", None),
+            ).run([], variables=provider_view, **forwarded)[0]
+            domain = get_domain(domains, provider)
+        except Exception:
+            return False
+        return str(domain or "").lower().endswith(".onion")
 
     def _lookup_mail_provider_domain(self, variables: dict[str, Any]) -> Any:
         domain_lookup = DomainLookup()

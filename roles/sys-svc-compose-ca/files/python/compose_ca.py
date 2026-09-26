@@ -634,6 +634,7 @@ def render_override(
             environment["SSL_CERT_FILE"] = bundle_container
             environment["REQUESTS_CA_BUNDLE"] = bundle_container
             environment["CURL_CA_BUNDLE"] = bundle_container
+            environment["CA_TRUST_BUNDLE"] = bundle_container
         if extra_ca_host:
             extra_ca_container = str(Path(ca_container).parent / "ca-trust-extra.crt")
             volumes.append(f"{extra_ca_host}:{extra_ca_container}:ro")

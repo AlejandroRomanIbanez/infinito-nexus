@@ -14,7 +14,7 @@ from utils.cache import _reset_cache_for_tests
 from utils.cache import base as cache_base
 from utils.cache import users as cache_users
 from utils.cache.yaml import dump_yaml_str
-from utils.roles.mapping import ROLE_FILE_META_SERVICES
+from utils.roles.mapping import ROLE_FILE_META_DOMAINS, ROLE_FILE_META_SERVICES
 
 
 def _write_role_config(base_dir: Path, role_name: str, payload: dict) -> None:
@@ -432,6 +432,150 @@ class TestEmailLookup(unittest.TestCase):
         }
         result = self.lookup.run([], variables=variables)[0]
         self.assertEqual(result["domain"], "mail.example.org")
+
+
+class TestProviderOnionIsClusterWide(unittest.TestCase):
+    """In swarm only the manager is in svc-net-tor, so a worker renders the
+    provider's clearnet name while the provider (onion-primary on the
+    manager) never deployed a certificate for it. TLS must follow the
+    provider host's view, not the worker's."""
+
+    ONION = "a" * 56 + ".onion"
+    TOR_ON = "{{ 'svc-net-tor' in group_names }}"
+    STALWART_PORTS = {"smtp": 25, "smtps": 465}
+    MAILU_PORTS = {"smtp": 25, "smtps": 465, "submission": 587}
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        _reset_cache_for_tests()
+        cls.addClassCleanup(_reset_cache_for_tests)
+
+    def setUp(self) -> None:
+        from ansible.parsing.dataloader import DataLoader
+        from ansible.template import Templar
+
+        cache_base._reset()
+        _reset_cache_for_tests()
+        self.lookup = LookupModule()
+        self.lookup._templar = Templar(loader=DataLoader(), variables={})
+        self._cwd = str(Path.cwd())
+        self._tmpdir = tempfile.TemporaryDirectory()
+        self._tmp = Path(self._tmpdir.name)
+        (self._tmp / "roles").mkdir(parents=True, exist_ok=True)
+        os.chdir(self._tmp)
+        self._tokens_store_patcher = patch.object(
+            cache_users, "_load_store_users", return_value={}
+        )
+        self._tokens_store_patcher.start()
+
+    def tearDown(self) -> None:
+        self._tokens_store_patcher.stop()
+        os.chdir(self._cwd)
+        self._tmpdir.cleanup()
+
+    def _seed(self, *, ports, node=None, provider_tor=None) -> None:
+        """Write the tor provider and the mail provider roles.
+
+        Args:
+            ports: the mail provider's published SMTP ports.
+            node: svc-net-tor's node onion; defaults to ``ONION``.
+            provider_tor: the mail provider's ``tor`` block; defaults to
+                enabled on svc-net-tor hosts, inheriting exclusive/primary.
+        """
+        _write_role_config(
+            self._tmp,
+            "svc-net-tor",
+            {
+                "tor": {
+                    "enabled": True,
+                    "shared": True,
+                    "exclusive": True,
+                    "primary": True,
+                    "node": self.ONION if node is None else node,
+                }
+            },
+        )
+        _write_role_config(
+            self._tmp,
+            "web-app-mailprov",
+            {
+                "mailprov": {"ports": {"public": ports}},
+                "tor": provider_tor or {"enabled": self.TOR_ON},
+            },
+        )
+        domains = self._tmp / "roles" / "web-app-mailprov" / ROLE_FILE_META_DOMAINS
+        domains.write_text(
+            dump_yaml_str({"canonical": {"mail": "mail.x.test"}, "aliases": []}),
+            encoding="utf-8",
+        )
+
+    def _worker(self, *, tor_hosts=("mgr",)) -> dict:
+        return {
+            "MAIL_PROVIDER": "web-app-mailprov",
+            "group_names": ["svc-swarm-node"],
+            "groups": {
+                "web-app-mailprov": ["mgr"],
+                "svc-net-tor": list(tor_hosts),
+            },
+            "hostvars": {
+                "mgr": {"group_names": ["web-app-mailprov", "svc-net-tor"]},
+                "other": {"group_names": ["svc-net-tor"]},
+            },
+            "SYSTEM_EMAIL_HOST": "mail.x.test",
+            "TLS_ENABLED": True,
+            "DOMAIN_PRIMARY": "x.test",
+            "inventory_hostname": "wrk",
+        }
+
+    def _run(self, variables: dict) -> dict:
+        return self.lookup.run(
+            [], variables=variables, roles_dir=str(self._tmp / "roles")
+        )[0]
+
+    def test_worker_of_an_onion_stalwart_drops_tls_and_auth(self) -> None:
+        self._seed(ports=self.STALWART_PORTS)
+
+        result = self._run(self._worker())
+
+        self.assertFalse(result["tls"])
+        self.assertFalse(result["start_tls"])
+        self.assertFalse(result["auth"])
+        self.assertEqual(result["port"], 25)
+
+    def test_worker_of_an_onion_mailu_keeps_plain_submission(self) -> None:
+        self._seed(ports=self.MAILU_PORTS)
+
+        result = self._run(self._worker())
+
+        self.assertFalse(result["tls"])
+        self.assertEqual(result["port"], 587)
+        self.assertTrue(result["auth"])
+        self.assertEqual(result["auth_mechanism"], "plain")
+
+    def test_tor_on_another_host_keeps_tls(self) -> None:
+        self._seed(ports=self.STALWART_PORTS)
+
+        result = self._run(self._worker(tor_hosts=("other",)))
+
+        self.assertTrue(result["tls"])
+        self.assertEqual(result["port"], 465)
+
+    def test_dual_stack_provider_keeps_tls(self) -> None:
+        self._seed(
+            ports=self.STALWART_PORTS,
+            provider_tor={"enabled": self.TOR_ON, "exclusive": False, "primary": False},
+        )
+
+        result = self._run(self._worker())
+
+        self.assertTrue(result["tls"])
+
+    def test_empty_tor_node_keeps_tls(self) -> None:
+        self._seed(ports=self.STALWART_PORTS, node="")
+
+        result = self._run(self._worker())
+
+        self.assertTrue(result["tls"])
 
 
 class _DummyTemplar:
