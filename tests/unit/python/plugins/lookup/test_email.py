@@ -5,6 +5,7 @@ import os
 import tempfile
 import unittest
 from pathlib import Path
+from typing import ClassVar
 from unittest.mock import patch
 
 from ansible.errors import AnsibleError
@@ -442,8 +443,12 @@ class TestProviderOnionIsClusterWide(unittest.TestCase):
 
     ONION = "a" * 56 + ".onion"
     TOR_ON = "{{ 'svc-net-tor' in group_names }}"
-    STALWART_PORTS = {"smtp": 25, "smtps": 465}
-    MAILU_PORTS = {"smtp": 25, "smtps": 465, "submission": 587}
+    STALWART_PORTS: ClassVar[dict[str, int]] = {"smtp": 25, "smtps": 465}
+    MAILU_PORTS: ClassVar[dict[str, int]] = {
+        "smtp": 25,
+        "smtps": 465,
+        "submission": 587,
+    }
 
     @classmethod
     def setUpClass(cls) -> None:
