@@ -287,6 +287,10 @@ belong to the entry's group, and the entry's `cancel-in-progress` reaches them.
 one, so a run whose only live job is theirs stays outside the entry's group and
 waits for the fallback.
 
+On `pull_request` and `pull_request_target` the deploy and workspace matrices
+run `fail-fast`: the first failed row cancels its siblings in that matrix. Push
+and manual runs keep every row.
+
 A job that runs after a failed `needs` guards its `if:` with `!cancelled()`, not
 `always()`, so a cancel stops it. Only `done` and `report-main-failures` keep
 `always()`: they report the cancelled run. Enforced by
