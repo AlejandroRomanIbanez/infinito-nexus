@@ -1,7 +1,6 @@
 ---
 # Reusable management JMAP call: in `stalwart_jmap_body` (JSON), out `stalwart_jmap`.
 # Param: stalwart_jmap_tolerate_rejected - true when the caller reads a set-level rejection itself (e.g. alreadyExists).
-# Credentials and body travel as a curl config on stdin: on argv they reach the process table, the host journal and the CI rescue artifact.
 - name: "🔧 Stalwart JMAP call"
   ansible.builtin.shell:
     cmd: >-

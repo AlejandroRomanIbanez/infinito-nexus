@@ -6,6 +6,8 @@ from typing import TYPE_CHECKING
 
 from ansible.errors import AnsibleFilterError
 
+from utils.roles.order import build_dependency_graph, topological_sort
+
 if TYPE_CHECKING:
     from collections.abc import Iterable
 
@@ -33,6 +35,28 @@ def _to_role_set(raw: Iterable[str] | str | None, var_name: str) -> set[str]:
         ) from exc
 
 
+def _in_run_after_order(roles_dir: Path, roles: list[str]) -> list[str]:
+    """Order *roles* so every role runs after the roles it declares in run_after.
+
+    A spec may rely on state a provider's spec created, so the specs follow the
+    deploy order resolved by ``utils.roles.order`` rather than role names.
+
+    Args:
+        roles_dir: directory holding the role folders.
+        roles: role names to order, alphabetically sorted.
+
+    Returns:
+        The same roles, providers first; roles outside the resolved graph keep
+        their alphabetical order after it.
+    """
+    graph, in_degree, meta = build_dependency_graph(roles_dir)
+    position = {
+        role: index
+        for index, role in enumerate(topological_sort(graph, in_degree, meta))
+    }
+    return sorted(roles, key=lambda role: (position.get(role, len(position)), role))
+
+
 def discover_playwright_roles(
     playbook_dir: str,
     only_roles: Iterable[str] | str | None = None,
@@ -52,7 +76,7 @@ def discover_playwright_roles(
         role_name = env_file.parents[1].name
         found.append(role_name)
 
-    uniq = sorted(set(found))
+    uniq = _in_run_after_order(base, sorted(set(found)))
 
     if only:
         uniq = [role for role in uniq if role in only]

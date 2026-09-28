@@ -3,12 +3,19 @@
 # handler requires the .maintenance file the install has just removed. The
 # install therefore stops retrying on "Success:", and whether the plugin is
 # really there is decided by `wp plugin is-installed` afterwards.
+# Verified by tests/unit/python/roles/web-app-wordpress/test_plugin_install.py.
 - name: "📦 Normalise the install contract for '{{ plugin_name }}'"
   vars:
     wp_plugin_catalog: "{{ lookup('config', application_id, 'addons.' ~ plugin_name ~ '.update.catalog') }}"
   ansible.builtin.set_fact:
     wp_plugin_required: "{{ lookup('config', application_id, 'addons.' ~ plugin_name ~ '.required') | bool }}"
     wp_plugin_pinned: "{{ wp_plugin_catalog == 'github-releases' }}"
+    wp_plugin_pinned_version: >-
+      {{
+        (lookup('config', application_id, 'addons.' ~ plugin_name ~ '.version') | regex_replace('^v', ''))
+        if wp_plugin_catalog == 'github-releases'
+        else ''
+      }}
     wp_plugin_source: >-
       {{
         (
@@ -32,6 +39,17 @@
   changed_when: false
   failed_when: wp_plugin_present.rc not in [0, 1]
 
+- name: "🔎 Read the installed version of pinned WordPress plugin '{{ plugin_name }}'"
+  ansible.builtin.shell: >
+    container exec -u {{ WORDPRESS_USER }} {{ WORDPRESS_CONTAINER_ADDRESS }}
+    wp plugin get {{ plugin_name }} --field=version
+    --path={{ WORDPRESS_DOCKER_HTML_PATH }}
+  register: wp_plugin_installed_version
+  when:
+    - wp_plugin_pinned | bool
+    - wp_plugin_present.rc == 0
+  changed_when: false
+
 - name: "📦 Install WordPress plugin '{{ plugin_name }}' via WP CLI"
   ansible.builtin.shell: >
     container exec -u {{ WORDPRESS_USER }} {{ WORDPRESS_CONTAINER_ADDRESS }}
@@ -39,7 +57,9 @@
     {{ '--force' if (wp_plugin_pinned | bool) else '' }}
     --path={{ WORDPRESS_DOCKER_HTML_PATH }}
   register: wp_plugin_install
-  when: (wp_plugin_pinned | bool) or wp_plugin_present.rc != 0
+  when: >-
+    wp_plugin_present.rc != 0
+    or ((wp_plugin_pinned | bool) and (wp_plugin_installed_version.stdout | trim) != wp_plugin_pinned_version)
   until: wp_plugin_install.rc == 0 or 'Success:' in wp_plugin_install.stdout
   retries: 3
   delay: 10

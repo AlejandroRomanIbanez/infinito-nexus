@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 const { resolveTimeout } = require("./timeouts");
 
-const { assertCspMetaParity, assertCspResponseHeader, decodeDotenvQuotedValue, expectNoCspViolations, gotoOnion, installCspViolationObserver, normalizeBaseUrl, runAdminFlow, runBiberFlow, runGuestFlow, safeSkipUnlessEnabled } = require("./personas");
+const { MAPACHE, assertCspMetaParity, assertCspResponseHeader, decodeDotenvQuotedValue, expectNoCspViolations, gotoOnion, installCspViolationObserver, normalizeBaseUrl, provisionKeycloakUser, runAdminFlow, runBiberFlow, runGuestFlow, safeSkipUnlessEnabled } = require("./personas");
 test.use({ ignoreHTTPSErrors: true });
 
 // -----------------------------------------------------------------------------
@@ -81,8 +81,7 @@ const adminUsername = decodeDotenvQuotedValue(process.env.ADMIN_USERNAME);
 const adminPassword = decodeDotenvQuotedValue(process.env.ADMIN_PASSWORD);
 const biberUsername = decodeDotenvQuotedValue(process.env.BIBER_USERNAME);
 const biberPassword = decodeDotenvQuotedValue(process.env.BIBER_PASSWORD);
-const mapacheUsername = decodeDotenvQuotedValue(process.env.MAPACHE_USERNAME);
-const mapachePassword = decodeDotenvQuotedValue(process.env.MAPACHE_PASSWORD);
+const domainPrimary = decodeDotenvQuotedValue(process.env.DOMAIN_PRIMARY);
 const canonicalDomain = decodeDotenvQuotedValue(process.env.CANONICAL_DOMAIN);
 
 test.beforeEach(async ({ page }) => {
@@ -199,17 +198,20 @@ test("normal-realm administrator logs in through account interface and logs out"
   await expectNoCspViolations(page, diagnostics, "keycloak normal-realm account (administrator)");
 });
 
-// mapache is this role's own meta/users.yml persona, carrying accounts:
-// ["identity"]. It exists to be registered here and nowhere else: consuming
-// roles must provision their application account for it on first OIDC login
-// rather than receive one from Ansible. Asserting the registration here keeps
-// that contract observable at the identity provider, before any consumer runs.
-test("normal-realm mapache is registered and can authenticate", async ({ page }) => {
+test("super administrator onboards mapache in the admin console and mapache signs in", async ({ page, browser }) => {
   safeSkipUnlessEnabled("ldap");
   const diagnostics = attachDiagnostics(page);
 
-  expect(mapacheUsername, "MAPACHE_USERNAME must be set in the Playwright env file").toBeTruthy();
-  expect(mapachePassword, "MAPACHE_PASSWORD must be set in the Playwright env file").toBeTruthy();
+  expect(domainPrimary, "DOMAIN_PRIMARY must be set in the Playwright env file").toBeTruthy();
+
+  const mapacheUsername = MAPACHE.username;
+  const mapachePassword = await provisionKeycloakUser(browser, {
+    baseUrl: appBaseUrl,
+    realm: realmName,
+    adminUsername: superAdminUsername,
+    adminPassword: superAdminPassword,
+    user: { ...MAPACHE, email: `${MAPACHE.username}@${domainPrimary}` },
+  });
 
   const accountUrl = `${appBaseUrl}/realms/${realmName}/account/`;
   const response = await gotoOnion(page, accountUrl);

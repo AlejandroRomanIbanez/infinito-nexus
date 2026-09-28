@@ -1,33 +1,46 @@
 const { test, expect } = require("@playwright/test");
 
-const { safeSkipUnlessEnabled, gotoOnion } = require("./personas");
+const { MAPACHE, provisionKeycloakUser, safeSkipUnlessEnabled, gotoOnion } = require("./personas");
 const { isSplitRealmOidc, resolveTimeout } = require("./timeouts");
 const { roundcubeSsoLogin, roundcubeLogout, sendMail, waitForEmailInMailbox } = require("./webmail");
 const {
   webmailBaseUrl,
-  mapacheEmail,
-  mapacheUsername,
-  mapachePassword,
+  domainPrimary,
+  keycloakBaseUrl,
+  keycloakRealm,
+  keycloakSuperAdminUsername,
+  keycloakSuperAdminPassword,
   biberEmail,
   biberUsername,
   biberPassword,
 } = require("./env");
 
-// mapache is declared in web-app-keycloak/meta/users.yml with accounts:
-// ["identity"] — the directory registers it, lookup('stalwart_users') filters
-// it out, so Ansible never creates its mail account. Everything below is only
-// reachable if services.sso.oidc.enable_user_creation provisions the account
-// on first login, which is the path every user who arrives after the deploy
-// takes.
-test("stalwart: an OIDC user the deploy never provisioned can sign in", async ({ page }) => {
+const mapacheUsername = MAPACHE.username;
+const mapacheEmail = `${MAPACHE.username}@${domainPrimary}`;
+let mapachePassword;
+
+async function onboardMapache(browser) {
+  expect(keycloakBaseUrl, "OIDC_ISSUER_URL must name a Keycloak realm").toBeTruthy();
+  expect(keycloakSuperAdminUsername, "KEYCLOAK_SUPER_ADMIN_USERNAME must be set").toBeTruthy();
+  expect(keycloakSuperAdminPassword, "KEYCLOAK_SUPER_ADMIN_PASSWORD must be set").toBeTruthy();
+  expect(domainPrimary, "DOMAIN_PRIMARY must be set").toBeTruthy();
+  mapachePassword ||= await provisionKeycloakUser(browser, {
+    baseUrl: keycloakBaseUrl,
+    realm: keycloakRealm,
+    adminUsername: keycloakSuperAdminUsername,
+    adminPassword: keycloakSuperAdminPassword,
+    user: { ...MAPACHE, email: mapacheEmail },
+  });
+  return mapachePassword;
+}
+
+test("stalwart: an OIDC user the deploy never provisioned can sign in", async ({ page, browser }) => {
   test.skip(isSplitRealmOidc(), "clearnet app with an onion OIDC issuer: unreachable from one browser");
   safeSkipUnlessEnabled("sso");
 
   expect(webmailBaseUrl, "WEBMAIL_BASE_URL must be set").toBeTruthy();
-  expect(mapacheUsername, "MAPACHE_USERNAME must be set").toBeTruthy();
-  expect(mapachePassword, "MAPACHE_PASSWORD must be set").toBeTruthy();
 
-  await roundcubeSsoLogin(page, mapacheUsername, mapachePassword);
+  await roundcubeSsoLogin(page, mapacheUsername, await onboardMapache(browser));
 
   await gotoOnion(page, `${webmailBaseUrl}/?_task=mail&_mbox=INBOX`);
   await expect(
@@ -52,7 +65,6 @@ test("stalwart: the auto-provisioned OIDC user sends mail that reaches biber", a
   test.skip(isSplitRealmOidc(), "clearnet app with an onion OIDC issuer: unreachable from one browser");
   safeSkipUnlessEnabled("sso");
 
-  expect(mapacheEmail, "MAPACHE_EMAIL must be set").toBeTruthy();
   expect(biberEmail, "BIBER_EMAIL must be set").toBeTruthy();
 
   const subject = `mapache-to-biber-${Date.now()}`;
@@ -60,7 +72,7 @@ test("stalwart: the auto-provisioned OIDC user sends mail that reaches biber", a
   const senderContext = await browser.newContext({ ignoreHTTPSErrors: true });
   const senderPage = await senderContext.newPage();
   try {
-    await roundcubeSsoLogin(senderPage, mapacheUsername, mapachePassword);
+    await roundcubeSsoLogin(senderPage, mapacheUsername, await onboardMapache(browser));
     await sendMail(senderPage, biberEmail, subject, "Sent by an account nobody provisioned.");
   } finally {
     await senderContext.close();

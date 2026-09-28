@@ -1,7 +1,0 @@
----
-mapache:
-  username: mapache
-  firstname: Infinito
-  lastname: Mapache
-  accounts: ["identity"]
-  description: OIDC-only persona the identity provider registers and no application pre-provisions

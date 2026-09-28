@@ -8,8 +8,8 @@ nothing to do with the mail server. Python's stdlib carries both protocols on
 every distro the matrix runs, and the migration script it exercises already
 speaks IMAP through imaplib.
 
-    mail_probe.py send <host> <from> <rcpt> <eml-file>
-    mail_probe.py find <host> <user> <password> <subject>
+    probe_mail.py send <host> <from> <rcpt> <eml-file>
+    probe_mail.py find <host> <user> <password> <subject>
 
 `find` exits 0 when the subject is present in INBOX or Junk, 1 when it is not.
 Both mailboxes are searched because a test domain publishes no mail-auth DNS, so

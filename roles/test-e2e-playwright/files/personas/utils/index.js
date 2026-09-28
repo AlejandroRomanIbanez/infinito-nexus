@@ -15,6 +15,7 @@
 const env = require("./env");
 const tls = require("./tls");
 const keycloak = require("./keycloak");
+const keycloakUsers = require("./keycloak_users");
 const logout = require("./logout");
 const landing = require("./landing");
 const csp = require("./csp");
@@ -28,6 +29,7 @@ module.exports = {
   ...env,
   ...tls,
   ...keycloak,
+  ...keycloakUsers,
   ...logout,
   ...landing,
   ...csp,

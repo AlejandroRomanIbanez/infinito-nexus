@@ -49,7 +49,7 @@ compose_mail() {
 send_smtp() {
 	local host="$1" from="$2" rcpt="$3" subject="$4" attempt
 	for attempt in 1 2 3 4 5 6; do
-		if "${PYTHON_BIN}" "${SCRIPT_DIR}/mail_probe.py" send \
+		if "${PYTHON_BIN}" "${SCRIPT_DIR}/probe_mail.py" send \
 			"${host}" "${from}" "${rcpt}" "${WORKDIR}/mail.eml"; then
 			echo "sent: ${subject} (${from} -> ${rcpt} via ${host})"
 			return 0
@@ -77,7 +77,7 @@ wait_stored_in_maildir() {
 wait_in_imap() {
 	local user="$1" password="$2" subject="$3" attempt
 	for attempt in $(seq 1 30); do
-		if "${PYTHON_BIN}" "${SCRIPT_DIR}/mail_probe.py" find \
+		if "${PYTHON_BIN}" "${SCRIPT_DIR}/probe_mail.py" find \
 			127.0.0.1 "${user}" "${password}" "${subject}"; then
 			echo "found: ${subject} in ${user}'s mailbox"
 			return 0

@@ -5,6 +5,8 @@ from pathlib import Path
 
 from ansible.errors import AnsibleFilterError
 
+from utils.cache.yaml import dump_yaml_str
+
 from . import PROJECT_ROOT
 
 
@@ -55,6 +57,37 @@ class TestDiscoverPlaywrightRoles(unittest.TestCase):
 
         result = _plugin.discover_playwright_roles(str(self.playbook_dir))
         self.assertEqual(result, ["web-app-alpha", "web-app-zeta"])
+
+    def _declare_run_after(self, role_name: str, run_after: list[str]) -> None:
+        meta_dir = self.playbook_dir / "roles" / role_name / "meta"
+        meta_dir.mkdir(parents=True, exist_ok=True)
+        (meta_dir / "main.yml").write_text("---\n", encoding="utf-8")
+        entity = role_name.removeprefix("web-app-")
+        (meta_dir / "services.yml").write_text(
+            dump_yaml_str({entity: {"run_after": run_after}}), encoding="utf-8"
+        )
+
+    def test_a_provider_runs_before_its_consumer_whatever_the_names(self):
+        self._create_role("web-app-alpha", with_marker=True)
+        self._create_role("web-app-zeta", with_marker=True)
+        self._declare_run_after("web-app-alpha", ["web-app-zeta"])
+        self._declare_run_after("web-app-zeta", [])
+
+        result = _plugin.discover_playwright_roles(str(self.playbook_dir))
+        self.assertEqual(result, ["web-app-zeta", "web-app-alpha"])
+
+    def test_the_order_holds_through_a_provider_without_specs(self):
+        self._create_role("web-app-alpha", with_marker=True)
+        self._create_role("web-app-mid", with_marker=False)
+        self._create_role("web-app-zeta", with_marker=True)
+        self._declare_run_after("web-app-alpha", ["web-app-mid"])
+        self._declare_run_after("web-app-mid", ["web-app-zeta"])
+        self._declare_run_after("web-app-zeta", [])
+
+        result = _plugin.discover_playwright_roles(
+            str(self.playbook_dir), only_roles="web-app-alpha,web-app-zeta"
+        )
+        self.assertEqual(result, ["web-app-zeta", "web-app-alpha"])
 
     def test_only_and_skip_accept_csv_and_iterable(self):
         self._create_role("web-app-a", with_marker=True)
