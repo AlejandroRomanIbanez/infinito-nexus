@@ -19,8 +19,10 @@
  *
  *   `provisionKeycloakUser(browser, options)`
  *     Signs the master-realm administrator into the admin console, creates
- *     `options.user` in `options.realm` when it is missing, sets
- *     `options.password` as its permanent password and signs out again.
+ *     `options.user` in `options.realm` when it is missing, and sets
+ *     `options.password` as its permanent password either way: the matrix
+ *     rotates every credential between its two passes, so an existing user
+ *     must take the current value.
  *
  *     Args:
  *       browser: Playwright `Browser`; the flow runs in its own context.
@@ -95,7 +97,7 @@ async function setPassword(page, username, password) {
     .first()
     .setChecked(false, { force: true, timeout: resolveTimeout(30_000) });
   await dialog.getByRole("button", { name: /^save$/i }).click({ timeout: resolveTimeout(30_000) });
-  const confirm = page.getByRole("button", { name: /^(save|reset) password$/i });
+  const confirm = page.getByRole("dialog").getByRole("button", { name: /^(save|reset) password$/i });
   const confirmShown = await confirm
     .waitFor({ state: "visible", timeout: resolveTimeout(5_000) })
     .then(() => true)
