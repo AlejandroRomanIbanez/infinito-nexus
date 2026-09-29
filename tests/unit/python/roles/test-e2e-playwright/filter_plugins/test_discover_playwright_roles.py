@@ -58,14 +58,30 @@ class TestDiscoverPlaywrightRoles(unittest.TestCase):
         result = _plugin.discover_playwright_roles(str(self.playbook_dir))
         self.assertEqual(result, ["web-app-alpha", "web-app-zeta"])
 
-    def _declare_run_after(self, role_name: str, run_after: list[str]) -> None:
+    def _declare_run_after(
+        self, role_name: str, run_after: list[str], provides: str | None = None
+    ) -> None:
         meta_dir = self.playbook_dir / "roles" / role_name / "meta"
         meta_dir.mkdir(parents=True, exist_ok=True)
         (meta_dir / "main.yml").write_text("---\n", encoding="utf-8")
         entity = role_name.removeprefix("web-app-")
+        primary = {"run_after": run_after}
+        if provides:
+            primary["provides"] = provides
         (meta_dir / "services.yml").write_text(
-            dump_yaml_str({entity: {"run_after": run_after}}), encoding="utf-8"
+            dump_yaml_str({entity: primary}), encoding="utf-8"
         )
+
+    def test_the_sso_provider_runs_first_even_after_its_mail_provider(self):
+        self._create_role("web-app-idp", with_marker=True)
+        self._create_role("web-app-mail", with_marker=True)
+        self._create_role("web-app-app", with_marker=True)
+        self._declare_run_after("web-app-idp", ["web-app-mail"], provides="sso")
+        self._declare_run_after("web-app-mail", [])
+        self._declare_run_after("web-app-app", ["web-app-idp"])
+
+        result = _plugin.discover_playwright_roles(str(self.playbook_dir))
+        self.assertEqual(result, ["web-app-idp", "web-app-mail", "web-app-app"])
 
     def test_a_provider_runs_before_its_consumer_whatever_the_names(self):
         self._create_role("web-app-alpha", with_marker=True)

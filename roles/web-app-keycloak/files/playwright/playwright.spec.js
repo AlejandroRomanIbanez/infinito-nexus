@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 const { resolveTimeout } = require("./timeouts");
 
-const { MAPACHE, assertCspMetaParity, assertCspResponseHeader, decodeDotenvQuotedValue, expectNoCspViolations, gotoOnion, installCspViolationObserver, normalizeBaseUrl, provisionKeycloakUser, runAdminFlow, runBiberFlow, runGuestFlow, safeSkipUnlessEnabled } = require("./personas");
+const { MAPACHE, mapachePassword, assertCspMetaParity, assertCspResponseHeader, decodeDotenvQuotedValue, expectNoCspViolations, gotoOnion, installCspViolationObserver, normalizeBaseUrl, provisionKeycloakUser, runAdminFlow, runBiberFlow, runGuestFlow, safeSkipUnlessEnabled } = require("./personas");
 test.use({ ignoreHTTPSErrors: true });
 
 // -----------------------------------------------------------------------------
@@ -82,6 +82,7 @@ const adminPassword = decodeDotenvQuotedValue(process.env.ADMIN_PASSWORD);
 const biberUsername = decodeDotenvQuotedValue(process.env.BIBER_USERNAME);
 const biberPassword = decodeDotenvQuotedValue(process.env.BIBER_PASSWORD);
 const domainPrimary = decodeDotenvQuotedValue(process.env.DOMAIN_PRIMARY);
+const mapacheSecret = decodeDotenvQuotedValue(process.env.MAPACHE_PASSWORD);
 const canonicalDomain = decodeDotenvQuotedValue(process.env.CANONICAL_DOMAIN);
 
 test.beforeEach(async ({ page }) => {
@@ -199,18 +200,20 @@ test("normal-realm administrator logs in through account interface and logs out"
 });
 
 test("super administrator onboards mapache in the admin console and mapache signs in", async ({ page, browser }) => {
-  safeSkipUnlessEnabled("ldap");
   const diagnostics = attachDiagnostics(page);
 
   expect(domainPrimary, "DOMAIN_PRIMARY must be set in the Playwright env file").toBeTruthy();
+  expect(mapacheSecret, "MAPACHE_PASSWORD must be set in the Playwright env file").toBeTruthy();
 
   const mapacheUsername = MAPACHE.username;
-  const mapachePassword = await provisionKeycloakUser(browser, {
+  const mapachePasswordValue = mapachePassword(mapacheSecret);
+  await provisionKeycloakUser(browser, {
     baseUrl: appBaseUrl,
     realm: realmName,
     adminUsername: superAdminUsername,
     adminPassword: superAdminPassword,
     user: { ...MAPACHE, email: `${MAPACHE.username}@${domainPrimary}` },
+    password: mapachePasswordValue,
   });
 
   const accountUrl = `${appBaseUrl}/realms/${realmName}/account/`;
@@ -223,7 +226,7 @@ test("super administrator onboards mapache in the admin console and mapache sign
     await signInButton.click({ timeout: resolveTimeout(30_000) });
   }
 
-  await fillKeycloakLoginForm(page, mapacheUsername, mapachePassword);
+  await fillKeycloakLoginForm(page, mapacheUsername, mapachePasswordValue);
 
   await expect
     .poll(() => page.url(), {

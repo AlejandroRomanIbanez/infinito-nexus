@@ -3,13 +3,24 @@
  *
  *   `MAPACHE`
  *     The OIDC-only persona: a person the administrator onboards in Keycloak
- *     after the deploy, whom no application pre-provisions. Consumers prove
- *     they create the account on first OIDC login.
+ *     after the deploy, whom no application pre-provisions. Keycloak's spec
+ *     provisions it once; consumers prove they create the account on first
+ *     OIDC login.
+ *
+ *   `mapachePassword(secret)`
+ *     The password mapache carries, derived from the generated
+ *     `secrets.credentials.mapache_password` both specs receive, so the
+ *     provisioning spec and every consumer compute the same value.
+ *
+ *     Args:
+ *       secret: the rendered credential (64 hex characters).
+ *
+ *     Returns: the credential extended to satisfy the realm password policy.
  *
  *   `provisionKeycloakUser(browser, options)`
  *     Signs the master-realm administrator into the admin console, creates
- *     `options.user` in `options.realm` when it is missing, sets a fresh
- *     permanent password and signs out again. Returns that password.
+ *     `options.user` in `options.realm` when it is missing, sets
+ *     `options.password` as its permanent password and signs out again.
  *
  *     Args:
  *       browser: Playwright `Browser`; the flow runs in its own context.
@@ -17,11 +28,9 @@
  *       options.realm: realm the user belongs to.
  *       options.adminUsername / options.adminPassword: master-realm admin.
  *       options.user: `{ username, firstName, lastName, email }`.
- *
- *     Returns: the password now set on the user.
+ *       options.password: password to set on the user.
  */
 
-const crypto = require("crypto");
 const { expect } = require("@playwright/test");
 const { resolveTimeout } = require("../../timeouts");
 const { performKeycloakLoginForm } = require("./keycloak");
@@ -33,8 +42,8 @@ const MAPACHE = {
   lastName: "Mapache",
 };
 
-function generatePassword() {
-  return `${crypto.randomBytes(18).toString("base64url")}Aa1!`;
+function mapachePassword(secret) {
+  return `${secret}Aa1!`;
 }
 
 async function openUser(page, username) {
@@ -101,8 +110,7 @@ async function setPassword(page, username, password) {
 }
 
 async function provisionKeycloakUser(browser, options) {
-  const { baseUrl, realm, adminUsername, adminPassword, user } = options;
-  const password = generatePassword();
+  const { baseUrl, realm, adminUsername, adminPassword, user, password } = options;
   const context = await browser.newContext({ ignoreHTTPSErrors: true });
   const page = await context.newPage();
   try {
@@ -118,10 +126,10 @@ async function provisionKeycloakUser(browser, options) {
   } finally {
     await context.close();
   }
-  return password;
 }
 
 module.exports = {
   MAPACHE,
+  mapachePassword,
   provisionKeycloakUser,
 };

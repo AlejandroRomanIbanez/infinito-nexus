@@ -12,13 +12,9 @@ const stalwartAdminPassword = decodeDotenvQuotedValue(process.env.STALWART_ADMIN
 const biberEmail = decodeDotenvQuotedValue(process.env.BIBER_EMAIL || "");
 const biberUsername = decodeDotenvQuotedValue(process.env.BIBER_USERNAME || "");
 const biberPassword = decodeDotenvQuotedValue(process.env.BIBER_PASSWORD || "");
-const domainPrimary = decodeDotenvQuotedValue(process.env.DOMAIN_PRIMARY || "");
-const keycloakSuperAdminUsername = decodeDotenvQuotedValue(process.env.KEYCLOAK_SUPER_ADMIN_USERNAME || "");
-const keycloakSuperAdminPassword = decodeDotenvQuotedValue(process.env.KEYCLOAK_SUPER_ADMIN_PASSWORD || "");
+const mapacheSecret = decodeDotenvQuotedValue(process.env.MAPACHE_PASSWORD || "");
 
 const expectedOidcAuthUrl = `${oidcIssuerUrl.replace(/\/$/, "")}/protocol/openid-connect/auth`;
-const [, keycloakBaseUrl = "", keycloakRealm = ""] =
-  oidcIssuerUrl.replace(/\/$/, "").match(/^(.*)\/realms\/([^/]+)$/) || [];
 
 module.exports = {
   appBaseUrl,
@@ -34,9 +30,5 @@ module.exports = {
   biberEmail,
   biberUsername,
   biberPassword,
-  domainPrimary,
-  keycloakBaseUrl,
-  keycloakRealm,
-  keycloakSuperAdminUsername,
-  keycloakSuperAdminPassword,
+  mapacheSecret,
 };

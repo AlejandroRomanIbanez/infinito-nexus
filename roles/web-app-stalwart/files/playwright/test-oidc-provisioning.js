@@ -1,46 +1,30 @@
 const { test, expect } = require("@playwright/test");
 
-const { MAPACHE, provisionKeycloakUser, safeSkipUnlessEnabled, gotoOnion } = require("./personas");
+const { MAPACHE, mapachePassword, safeSkipUnlessEnabled, gotoOnion } = require("./personas");
 const { isSplitRealmOidc, resolveTimeout } = require("./timeouts");
 const { roundcubeSsoLogin, roundcubeLogout, sendMail, waitForEmailInMailbox } = require("./webmail");
 const {
   webmailBaseUrl,
-  domainPrimary,
-  keycloakBaseUrl,
-  keycloakRealm,
-  keycloakSuperAdminUsername,
-  keycloakSuperAdminPassword,
+  mapacheSecret,
   biberEmail,
   biberUsername,
   biberPassword,
 } = require("./env");
 
 const mapacheUsername = MAPACHE.username;
-const mapacheEmail = `${MAPACHE.username}@${domainPrimary}`;
-let mapachePassword;
 
-async function onboardMapache(browser) {
-  expect(keycloakBaseUrl, "OIDC_ISSUER_URL must name a Keycloak realm").toBeTruthy();
-  expect(keycloakSuperAdminUsername, "KEYCLOAK_SUPER_ADMIN_USERNAME must be set").toBeTruthy();
-  expect(keycloakSuperAdminPassword, "KEYCLOAK_SUPER_ADMIN_PASSWORD must be set").toBeTruthy();
-  expect(domainPrimary, "DOMAIN_PRIMARY must be set").toBeTruthy();
-  mapachePassword ||= await provisionKeycloakUser(browser, {
-    baseUrl: keycloakBaseUrl,
-    realm: keycloakRealm,
-    adminUsername: keycloakSuperAdminUsername,
-    adminPassword: keycloakSuperAdminPassword,
-    user: { ...MAPACHE, email: mapacheEmail },
-  });
-  return mapachePassword;
+function mapacheLoginPassword() {
+  expect(mapacheSecret, "MAPACHE_PASSWORD must be set").toBeTruthy();
+  return mapachePassword(mapacheSecret);
 }
 
-test("stalwart: an OIDC user the deploy never provisioned can sign in", async ({ page, browser }) => {
+test("stalwart: an OIDC user the deploy never provisioned can sign in", async ({ page }) => {
   test.skip(isSplitRealmOidc(), "clearnet app with an onion OIDC issuer: unreachable from one browser");
   safeSkipUnlessEnabled("sso");
 
   expect(webmailBaseUrl, "WEBMAIL_BASE_URL must be set").toBeTruthy();
 
-  await roundcubeSsoLogin(page, mapacheUsername, await onboardMapache(browser));
+  await roundcubeSsoLogin(page, mapacheUsername, mapacheLoginPassword());
 
   await gotoOnion(page, `${webmailBaseUrl}/?_task=mail&_mbox=INBOX`);
   await expect(
@@ -72,7 +56,7 @@ test("stalwart: the auto-provisioned OIDC user sends mail that reaches biber", a
   const senderContext = await browser.newContext({ ignoreHTTPSErrors: true });
   const senderPage = await senderContext.newPage();
   try {
-    await roundcubeSsoLogin(senderPage, mapacheUsername, await onboardMapache(browser));
+    await roundcubeSsoLogin(senderPage, mapacheUsername, mapacheLoginPassword());
     await sendMail(senderPage, biberEmail, subject, "Sent by an account nobody provisioned.");
   } finally {
     await senderContext.close();
@@ -88,7 +72,7 @@ test("stalwart: the auto-provisioned OIDC user sends mail that reaches biber", a
       subject,
       resolveTimeout(90_000),
     );
-    await expect(row, `biber must receive ${subject} from ${mapacheEmail}`).toBeVisible();
+    await expect(row, `biber must receive ${subject} from ${mapacheUsername}`).toBeVisible();
   } finally {
     await recipientContext.close();
   }
