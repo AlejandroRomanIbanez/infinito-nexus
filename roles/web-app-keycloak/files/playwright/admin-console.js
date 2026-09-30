@@ -1,12 +1,6 @@
 /**
  * Keycloak user provisioning through the admin console.
  *
- *   `MAPACHE`
- *     The OIDC-only persona: a person the administrator onboards in Keycloak
- *     after the deploy, whom no application pre-provisions. Keycloak's spec
- *     provisions it once; consumers prove they create the account on first
- *     OIDC login.
- *
  *   `provisionKeycloakUser(browser, options)`
  *     Signs the master-realm administrator into the admin console, creates
  *     `options.user` in `options.realm` when it is missing, and sets
@@ -23,15 +17,8 @@
  */
 
 const { expect } = require("@playwright/test");
-const { resolveTimeout } = require("../../timeouts");
-const { performKeycloakLoginForm } = require("./keycloak");
-const { gotoOnion } = require("./env");
-
-const MAPACHE = {
-  username: "mapache",
-  firstName: "Infinito",
-  lastName: "Mapache",
-};
+const { performKeycloakLoginForm, gotoOnion } = require("./personas");
+const { resolveTimeout } = require("./timeouts");
 
 async function openUser(page, username) {
   const search = page.getByPlaceholder(/search user/i).first();
@@ -116,6 +103,5 @@ async function provisionKeycloakUser(browser, options) {
 }
 
 module.exports = {
-  MAPACHE,
   provisionKeycloakUser,
 };
