@@ -1,7 +1,7 @@
 const { test, expect } = require("@playwright/test");
 const { resolveTimeout } = require("./timeouts");
 
-const { MAPACHE, mapachePassword, assertCspMetaParity, assertCspResponseHeader, decodeDotenvQuotedValue, expectNoCspViolations, gotoOnion, installCspViolationObserver, normalizeBaseUrl, provisionKeycloakUser, runAdminFlow, runBiberFlow, runGuestFlow, safeSkipUnlessEnabled } = require("./personas");
+const { MAPACHE, assertCspMetaParity, assertCspResponseHeader, decodeDotenvQuotedValue, expectNoCspViolations, gotoOnion, installCspViolationObserver, normalizeBaseUrl, provisionKeycloakUser, runAdminFlow, runBiberFlow, runGuestFlow, safeSkipUnlessEnabled } = require("./personas");
 test.use({ ignoreHTTPSErrors: true });
 
 // -----------------------------------------------------------------------------
@@ -82,7 +82,7 @@ const adminPassword = decodeDotenvQuotedValue(process.env.ADMIN_PASSWORD);
 const biberUsername = decodeDotenvQuotedValue(process.env.BIBER_USERNAME);
 const biberPassword = decodeDotenvQuotedValue(process.env.BIBER_PASSWORD);
 const domainPrimary = decodeDotenvQuotedValue(process.env.DOMAIN_PRIMARY);
-const mapacheSecret = decodeDotenvQuotedValue(process.env.MAPACHE_PASSWORD);
+const mapachePassword = decodeDotenvQuotedValue(process.env.MAPACHE_PASSWORD);
 const canonicalDomain = decodeDotenvQuotedValue(process.env.CANONICAL_DOMAIN);
 
 test.beforeEach(async ({ page }) => {
@@ -203,17 +203,16 @@ test("super administrator onboards mapache in the admin console and mapache sign
   const diagnostics = attachDiagnostics(page);
 
   expect(domainPrimary, "DOMAIN_PRIMARY must be set in the Playwright env file").toBeTruthy();
-  expect(mapacheSecret, "MAPACHE_PASSWORD must be set in the Playwright env file").toBeTruthy();
+  expect(mapachePassword, "MAPACHE_PASSWORD must be set in the Playwright env file").toBeTruthy();
 
   const mapacheUsername = MAPACHE.username;
-  const mapachePasswordValue = mapachePassword(mapacheSecret);
   await provisionKeycloakUser(browser, {
     baseUrl: appBaseUrl,
     realm: realmName,
     adminUsername: superAdminUsername,
     adminPassword: superAdminPassword,
     user: { ...MAPACHE, email: `${MAPACHE.username}@${domainPrimary}` },
-    password: mapachePasswordValue,
+    password: mapachePassword,
   });
 
   const accountUrl = `${appBaseUrl}/realms/${realmName}/account/`;
@@ -226,7 +225,7 @@ test("super administrator onboards mapache in the admin console and mapache sign
     await signInButton.click({ timeout: resolveTimeout(30_000) });
   }
 
-  await fillKeycloakLoginForm(page, mapacheUsername, mapachePasswordValue);
+  await fillKeycloakLoginForm(page, mapacheUsername, mapachePassword);
 
   await expect
     .poll(() => page.url(), {

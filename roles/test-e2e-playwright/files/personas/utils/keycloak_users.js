@@ -7,22 +7,11 @@
  *     provisions it once; consumers prove they create the account on first
  *     OIDC login.
  *
- *   `mapachePassword(secret)`
- *     The password mapache carries, derived from the generated
- *     `secrets.credentials.mapache_password` both specs receive, so the
- *     provisioning spec and every consumer compute the same value.
- *
- *     Args:
- *       secret: the rendered credential (64 hex characters).
- *
- *     Returns: the credential extended to satisfy the realm password policy.
- *
  *   `provisionKeycloakUser(browser, options)`
  *     Signs the master-realm administrator into the admin console, creates
  *     `options.user` in `options.realm` when it is missing, and sets
- *     `options.password` as its permanent password either way: the matrix
- *     rotates every credential between its two passes, so an existing user
- *     must take the current value.
+ *     `options.password` as its permanent password either way, so a user
+ *     left on a reused stack always ends up on the inventory's value.
  *
  *     Args:
  *       browser: Playwright `Browser`; the flow runs in its own context.
@@ -43,10 +32,6 @@ const MAPACHE = {
   firstName: "Infinito",
   lastName: "Mapache",
 };
-
-function mapachePassword(secret) {
-  return `${secret}Aa1!`;
-}
 
 async function openUser(page, username) {
   const search = page.getByPlaceholder(/search user/i).first();
@@ -132,6 +117,5 @@ async function provisionKeycloakUser(browser, options) {
 
 module.exports = {
   MAPACHE,
-  mapachePassword,
   provisionKeycloakUser,
 };

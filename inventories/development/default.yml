@@ -48,6 +48,7 @@ API:
 OIDC_OVERRIDE:
   CLIENT:
     SECRET: VERYUNSAFESAMPLEPASSWORD1234
+PLAYWRIGHT_MAPACHE_PASSWORD: "VeryUnsecureMapache!1"
 users:
   administrator:
     authorized_keys:

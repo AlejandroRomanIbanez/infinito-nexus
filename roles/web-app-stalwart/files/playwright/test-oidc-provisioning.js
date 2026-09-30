@@ -1,11 +1,11 @@
 const { test, expect } = require("@playwright/test");
 
-const { MAPACHE, mapachePassword, safeSkipUnlessEnabled, gotoOnion } = require("./personas");
+const { MAPACHE, safeSkipUnlessEnabled, gotoOnion } = require("./personas");
 const { isSplitRealmOidc, resolveTimeout } = require("./timeouts");
 const { roundcubeSsoLogin, roundcubeLogout, sendMail, waitForEmailInMailbox } = require("./webmail");
 const {
   webmailBaseUrl,
-  mapacheSecret,
+  mapachePassword,
   biberEmail,
   biberUsername,
   biberPassword,
@@ -14,8 +14,8 @@ const {
 const mapacheUsername = MAPACHE.username;
 
 function mapacheLoginPassword() {
-  expect(mapacheSecret, "MAPACHE_PASSWORD must be set").toBeTruthy();
-  return mapachePassword(mapacheSecret);
+  expect(mapachePassword, "MAPACHE_PASSWORD must be set").toBeTruthy();
+  return mapachePassword;
 }
 
 test("stalwart: an OIDC user the deploy never provisioned can sign in", async ({ page }) => {
