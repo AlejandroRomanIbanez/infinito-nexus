@@ -75,7 +75,7 @@ The following paths are never readable, even if a task explicitly requests acces
 | `~/.netrc` | Machine credentials read by `curl`, `git`, and `pip`. |
 | `~/.ssh/id_dsa`, `~/.ssh/id_ecdsa`, `~/.ssh/id_ecdsa_sk`, `~/.ssh/id_ed25519`, `~/.ssh/id_ed25519_sk`, `~/.ssh/id_rsa` | The default SSH private keys. |
 
-The rest of `~/.ssh` stays readable, because `ssh` needs `known_hosts` and `config` for `git fetch`; authentication goes through the SSH agent. See [security.md](security.md#assumption-10) (Assumption 10).
+The rest of `~/.ssh` stays readable, because `ssh` needs `known_hosts` and `config` for `git fetch`; authentication goes through the SSH agent. See [security.md](security.md#assumption-10-ssh-stays-readable-except-for-the-default-private-keys-) (Assumption 10).
 
 ## Network 🌐
 
