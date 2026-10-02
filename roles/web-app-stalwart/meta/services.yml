@@ -43,7 +43,7 @@ stalwart:
   # nocheck: default-placement-manager  mail edge at a known IP: MX A-record, PTR and SPF bind to the stack host IP (a floating task's egress IP breaks deliverability); the mail store is NFS-hostile and IS the app — same rationale as web-app-mailu
   placement: manager
   image: stalwartlabs/stalwart
-  version: "v0.16.12"
+  version: "v0.16.24"
   webui_version: "v1.0.5"
   name: stalwart
   backup:
@@ -92,7 +92,7 @@ postgres:
   enabled: true # nocheck: dynamic-flag
   shared: "{{ ('svc-db-postgres' in group_names) and (DEPLOYMENT_MODE == 'compose') }}"
   image: postgres
-  version: "17"
+  version: "18"
   cpus: "0.8"
   mem_reservation: 1g
   mem_limit: 2g
@@ -106,7 +106,7 @@ webmail:
   image: roundcube/roundcubemail
   healthcheck:
     flavor: curl
-  version: "1.7.2-apache"
+  version: "1.7.4-apache"
   cpus: "0.3"
   mem_reservation: 256m
   mem_limit: 1g
@@ -122,7 +122,7 @@ clamav:
   enabled: true
   shared: false
   image: clamav/clamav
-  version: "1.5.3"
+  version: "1.5.4"
   ports:
     internal:
       milter: 7357
