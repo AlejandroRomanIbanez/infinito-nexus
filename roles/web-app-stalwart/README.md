@@ -86,7 +86,6 @@ flowchart LR
         svc_matomo["matomo"]
         svc_container_backup["container_backup"]
         svc_stalwart["stalwart"]
-        svc_mailu["mailu ❌"]
         svc_postgres["postgres"]
         svc_webmail["webmail"]
         svc_clamav["clamav"]
