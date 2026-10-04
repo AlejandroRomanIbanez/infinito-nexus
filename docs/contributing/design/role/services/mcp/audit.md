@@ -31,7 +31,7 @@ not the version the MCP surface was verified against.
 | `web-app-openclaw` | 2026.7.1 | [link](https://openclaw.ai/) | — | — | — | read-only | — | native | — | — |
 | `web-app-openwebui` | 0.11.0 | [link](https://docs.openwebui.com/features/extensibility/mcp/) | — | — | — | read-only | — | native | — | — |
 | `web-app-pretix` | 2026.8.0 | [link](https://s.infinito.nexus/code) | streamable_http | bearer_token | service_account (`mcp-web-app-pretix`) | read-only | 3 | adapter | `web-app-hermes`, `web-app-openclaw`, `web-app-openwebui` | — |
-| `web-app-prometheus` | v3.14.0 | [link](https://s.infinito.nexus/code) | streamable_http | bearer_token | service_account (`mcp-web-app-prometheus`) | read-only | 3 | adapter | `web-app-flowise`, `web-app-hermes`, `web-app-openclaw`, `web-app-openwebui` | — |
+| `web-app-prometheus` | v3.15.0 | [link](https://s.infinito.nexus/code) | streamable_http | bearer_token | service_account (`mcp-web-app-prometheus`) | read-only | 3 | adapter | `web-app-flowise`, `web-app-hermes`, `web-app-openclaw`, `web-app-openwebui` | — |
 | `web-app-snipe-it` | — | [link](https://s.infinito.nexus/code) | streamable_http | bearer_token | service_account (`mcp-web-app-snipe-it`) | read-only | 3 | adapter | `web-app-hermes`, `web-app-openclaw`, `web-app-openwebui` | — |
 | `web-app-wordpress` | 7.1.2 | [link](https://github.com/WordPress/mcp-adapter/tree/v0.5.0) | streamable_http | basic_auth | service_account (`mcp-web-app-wordpress`) | read-only | 3 | plugin | `web-app-hermes`, `web-app-openclaw` | — |
 | `web-app-zammad` | 7.1.2 | [link](https://s.infinito.nexus/code) | streamable_http | bearer_token | service_account (`mcp-web-app-zammad`) | read-only | 3 | adapter | `web-app-hermes`, `web-app-openclaw`, `web-app-openwebui` | — |
