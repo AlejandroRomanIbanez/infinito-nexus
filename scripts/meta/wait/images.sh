@@ -58,9 +58,15 @@ build_image_refs() {
 mapfile -t image_refs < <(build_image_refs)
 
 find_matching_run() {
+	local query="event=${TARGET_EVENT}&per_page=100"
+
+	if [[ -n "${pr_head_sha}" ]]; then
+		query+="&head_sha=${pr_head_sha}"
+	fi
+
 	gh api --paginate \
 		-H "Accept: application/vnd.github+json" \
-		"/repos/${GITHUB_REPOSITORY}/actions/workflows/${WORKFLOW_FILE}/runs?event=${TARGET_EVENT}&per_page=100" |
+		"/repos/${GITHUB_REPOSITORY}/actions/workflows/${WORKFLOW_FILE}/runs?${query}" |
 		jq -sc \
 			--argjson pr_number "${PR_NUMBER}" \
 			--arg pr_head_sha "${pr_head_sha}" \
@@ -68,10 +74,13 @@ find_matching_run() {
         [
           .[]
           | .workflow_runs[]?
-          | select(any(.pull_requests[]?;
-              (.number // -1) == $pr_number
-              and ($pr_head_sha == "" or (.head.sha // $pr_head_sha) == $pr_head_sha)
-            ))
+          | select(
+              if $pr_head_sha != "" then
+                (.head_sha // "") == $pr_head_sha
+              else
+                any(.pull_requests[]?; (.number // -1) == $pr_number)
+              end
+            )
           | select($pr_updated_at_floor == "" or .created_at >= $pr_updated_at_floor)
         ]
         | sort_by(.created_at)
