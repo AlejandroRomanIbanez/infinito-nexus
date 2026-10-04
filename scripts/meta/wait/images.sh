@@ -25,6 +25,8 @@ pr_updated_at="${PR_UPDATED_AT:-}"
 pr_updated_at_floor=""
 last_run_state=""
 last_run_id=""
+lookup_failure_limit=30
+lookup_failures=0
 
 if [[ -n "${pr_updated_at}" ]]; then
 	if ! pr_updated_at_floor="$(date -u -d "${pr_updated_at} - 300 seconds" '+%Y-%m-%dT%H:%M:%SZ' 2>/dev/null)"; then
@@ -105,7 +107,18 @@ for attempt in $(seq 1 "${WAIT_ATTEMPTS}"); do
 		exit 0
 	fi
 
-	run_json="$(find_matching_run)"
+	if run_json="$(find_matching_run)"; then
+		lookup_failures=0
+	else
+		lookup_failures=$((lookup_failures + 1))
+		if [[ "${lookup_failures}" -ge "${lookup_failure_limit}" ]]; then
+			echo "The lookup of the privileged workflow run failed ${lookup_failures} times in a row." >&2
+			exit 1
+		fi
+		echo "[${attempt}/${WAIT_ATTEMPTS}] Lookup of the privileged workflow run failed (${lookup_failures}/${lookup_failure_limit}). Waiting ${WAIT_SLEEP_SECONDS}s..."
+		sleep "${WAIT_SLEEP_SECONDS}"
+		continue
+	fi
 
 	if [[ -n "${run_json}" && "${run_json}" != "null" ]]; then
 		run_id="$(jq -r '.id' <<<"${run_json}")"
