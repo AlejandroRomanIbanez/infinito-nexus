@@ -5,19 +5,24 @@ The Docker updater watches ``image`` plus ``version``, the repository updater
 ``release``, a tag in a registry neither updater speaks - declares where its
 upstream lives::
 
-    lmstudio:
-      app_version: 0.0.25-1
+    stalwart:
+      webui_version: "v1.0.5"
       update:
-        key: app_version
-        type: http_regex
-        url: https://lmstudio.ai/install.sh
-        pattern: 'APP_VERSION="([0-9][0-9.-]*)"'
+        key: webui_version
+        type: git_tags
+        repository: https://github.com/stalwartlabs/webui.git
 
 ``key`` names the pinned key and defaults to ``version``; an entity with
 several pins declares a list of such blocks. The types are
 ``git_tags`` (repository), ``registry_tags`` (image), ``npm`` (package),
 ``http_regex`` (url, pattern) and ``script`` (path, run with the current
 version and printing the latest one).
+
+An addon in ``meta/addons/<id>.yml`` declares the same fields in its
+``update:`` block, beside ``monitored``, ``catalog`` and ``upstream_id``. A
+monitored addon of the ``github-releases`` catalog needs no ``type``: its
+``upstream_id`` already names the repository whose tags are its versions. An
+addon's ``config.archive`` URL carries the pinned version and moves with it.
 """
 
 from __future__ import annotations
@@ -35,6 +40,7 @@ from utils.annotations.suppress import is_suppressed_at
 from utils.cache.files import read_text
 from utils.cache.yaml import load_yaml
 from utils.roles.mapping import ROLE_FILE_META_SERVICES
+from utils.update.addons import GITHUB_RELEASES_CATALOG, iter_addon_files
 from utils.update.base import (
     latest_semver,
     version_depth,
@@ -57,6 +63,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 NOCHECK_MARKER = "version-source"
+UNWATCHED_MARKER = "unwatched-version"
 UPDATE_KEY = "update"
 DEFAULT_KEY = "version"
 TIMEOUT_SECONDS = 30
@@ -66,6 +73,19 @@ USER_AGENT = "infinito-nexus-version-source"
 
 @dataclass(frozen=True)
 class VersionSourceEntry:
+    """One pin and the upstream it declares.
+
+    Args:
+        role: role that carries the pin.
+        entity: service entity in ``meta/services.yml``, or the addon id.
+        key: pinned key.
+        current: pinned version.
+        source: the ``update:`` block.
+        config_path: file that carries the pin.
+        line: 1-indexed line of the pin.
+        addon: whether the pin sits in ``meta/addons/<id>.yml``.
+    """
+
     role: str
     entity: str
     key: str
@@ -73,6 +93,7 @@ class VersionSourceEntry:
     source: dict[str, Any]
     config_path: Path
     line: int
+    addon: bool = False
 
 
 @dataclass(frozen=True)
@@ -233,6 +254,80 @@ def _key_line(lines: list[str], entity: str, key: str) -> int | None:
     return None
 
 
+def _top_level_line(lines: list[str], key: str) -> int | None:
+    """Return the 1-indexed line of ``key`` at the root of an addon file."""
+    for number, line in enumerate(lines, start=1):
+        if re.match(rf"^{re.escape(key)}\s*:", line):
+            return number
+    return None
+
+
+def _archive_index(lines: list[str]) -> int | None:
+    """Return the 0-indexed line of ``config.archive`` in an addon file."""
+    for index, line in enumerate(lines):
+        if re.match(r"^\s+archive\s*:", line):
+            return index
+    return None
+
+
+def _archive(spec: Any) -> str:
+    """Return the ``config.archive`` URL of an addon, or an empty string."""
+    config = spec.get("config") if isinstance(spec, dict) else None
+    return str(config.get("archive", "")) if isinstance(config, dict) else ""
+
+
+def addon_sources(spec: Any) -> list[dict[str, Any]]:
+    """Return the version sources an addon declares.
+
+    Args:
+        spec: root mapping of a ``meta/addons/<id>.yml`` file.
+    """
+    declared = spec.get(UPDATE_KEY) if isinstance(spec, dict) else None
+    if not isinstance(declared, dict):
+        return []
+    if "type" in declared:
+        return [declared]
+    if (
+        declared.get("monitored")
+        and declared.get("catalog") == GITHUB_RELEASES_CATALOG
+        and declared.get("upstream_id")
+    ):
+        repository = f"https://github.com/{declared['upstream_id']}.git"
+        return [{**declared, "type": "git_tags", "repository": repository}]
+    return []
+
+
+def _declaration_problems(
+    label: str, config: dict[str, Any], source: Any, owner: str
+) -> list[str]:
+    """Return what keeps one ``update:`` block from resolving.
+
+    Args:
+        label: ``<role>/<entity>`` as it appears in the message.
+        config: mapping that carries the pin.
+        source: the ``update:`` block.
+        owner: what ``config`` is, ``entity`` or ``addon``.
+    """
+    if not isinstance(source, dict):
+        return [f"{label}: update entry is not a mapping"]
+    problems: list[str] = []
+    key = str(source.get("key", DEFAULT_KEY))
+    if key not in config:
+        problems.append(f"{label}: update.key '{key}' names no key of the {owner}")
+    if source.get("type") not in TYPES:
+        problems.append(
+            f"{label}.{key}: unknown update.type "
+            f"'{source.get('type')}', expected one of {', '.join(TYPES)}"
+        )
+    archive = _archive(config) if owner == "addon" else ""
+    if archive and str(config.get(key, "")) not in archive:
+        problems.append(
+            f"{label}.{key}: config.archive does not carry the pinned version, "
+            "so a bump would move only one of the two"
+        )
+    return problems
+
+
 def invalid_declarations(repo_root: Path) -> list[str]:
     """Return one message per ``update:`` block that cannot be resolved.
 
@@ -253,20 +348,47 @@ def invalid_declarations(repo_root: Path) -> list[str]:
                 continue
             sources = declared if isinstance(declared, list) else [declared]
             for source in sources:
-                if not isinstance(source, dict):
-                    problems.append(f"{role}/{entity}: update entry is not a mapping")
-                    continue
-                key = str(source.get("key", DEFAULT_KEY))
-                if key not in config:
-                    problems.append(
-                        f"{role}/{entity}: update.key '{key}' names no key of the entity"
-                    )
-                if source.get("type") not in TYPES:
-                    problems.append(
-                        f"{role}/{entity}.{key}: unknown update.type "
-                        f"'{source.get('type')}', expected one of {', '.join(TYPES)}"
-                    )
+                problems += _declaration_problems(
+                    f"{role}/{entity}", config, source, "entity"
+                )
+    for role, addon_path in iter_addon_files(repo_root / "roles"):
+        spec = load_yaml(str(addon_path))
+        for source in addon_sources(spec):
+            problems += _declaration_problems(
+                f"{role}/addons/{addon_path.stem}", spec, source, "addon"
+            )
     return problems
+
+
+def _addon_entries(repo_root: Path) -> list[VersionSourceEntry]:
+    entries: list[VersionSourceEntry] = []
+    for role, addon_path in iter_addon_files(repo_root / "roles"):
+        spec = load_yaml(str(addon_path))
+        lines = read_text(str(addon_path)).splitlines()
+        for source in addon_sources(spec):
+            key = str(source.get("key", DEFAULT_KEY))
+            current = str(spec.get(key, "")).strip()
+            line = _top_level_line(lines, key)
+            if not current or line is None:
+                continue
+            if any(
+                is_suppressed_at(lines, line, marker)
+                for marker in (NOCHECK_MARKER, UNWATCHED_MARKER)
+            ):
+                continue
+            entries.append(
+                VersionSourceEntry(
+                    role=role,
+                    entity=addon_path.stem,
+                    key=key,
+                    current=current,
+                    source=source,
+                    config_path=addon_path,
+                    line=line,
+                    addon=True,
+                )
+            )
+    return entries
 
 
 def collect_entries(repo_root: Path) -> list[VersionSourceEntry]:
@@ -301,7 +423,7 @@ def collect_entries(repo_root: Path) -> list[VersionSourceEntry]:
                         line=line,
                     )
                 )
-    return entries
+    return entries + _addon_entries(repo_root)
 
 
 def outdated(
@@ -335,6 +457,11 @@ def apply_updates(updates: Iterable[VersionSourceUpdate]) -> list[Path]:
         ).splitlines(keepends=True)
         index = update.entry.line - 1
         lines[index] = lines[index].replace(update.entry.current, update.latest, 1)
+        archive = _archive_index(lines) if update.entry.addon else None
+        if archive is not None:
+            lines[archive] = lines[archive].replace(
+                update.entry.current, update.latest, 1
+            )
         path.write_text("".join(lines), encoding="utf-8")
         if path not in changed:
             changed.append(path)
