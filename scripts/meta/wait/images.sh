@@ -77,6 +77,7 @@ find_matching_run() {
           | select(
               if $pr_head_sha != "" then
                 (.head_sha // "") == $pr_head_sha
+                and ((.display_title // "") | test("PR #\($pr_number)( |$)"))
               else
                 any(.pull_requests[]?; (.number // -1) == $pr_number)
               end

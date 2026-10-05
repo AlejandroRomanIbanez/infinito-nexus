@@ -11,6 +11,7 @@ from utils.cache.files import PROJECT_ROOT
 
 SCRIPT = PROJECT_ROOT / "scripts" / "meta" / "wait" / "images.sh"
 HEAD_SHA = "5b002678df222f1095fae2f42e3bb10964adb8ef"
+RUN_TITLE = "pull_request_target / PR #1 / synchronize / fork:branch"
 STUBS = {
     "docker": '#!/usr/bin/env bash\n[[ -e "${STUB_DIR}/images-ready" ]]\n',
     "gh": (
@@ -96,6 +97,7 @@ class TestWaitForImages(unittest.TestCase):
             "conclusion": "failure",
             "created_at": "2026-10-04T12:41:18Z",
             "head_sha": HEAD_SHA,
+            "display_title": RUN_TITLE,
             "pull_requests": [],
         }
         with tempfile.TemporaryDirectory() as tmp:
@@ -113,6 +115,7 @@ class TestWaitForImages(unittest.TestCase):
             "conclusion": "failure",
             "created_at": "2026-10-04T12:41:18Z",
             "head_sha": "0" * 40,
+            "display_title": RUN_TITLE,
             "pull_requests": [],
         }
         with tempfile.TemporaryDirectory() as tmp:
@@ -121,6 +124,32 @@ class TestWaitForImages(unittest.TestCase):
             self.assertIn(
                 "No matching privileged workflow run found yet", result.stdout
             )
+            self.assertIn("Timed out waiting for CI images", result.stderr)
+
+    def test_run_of_another_pull_request_on_the_same_head_is_ignored(self) -> None:
+        own_run = {
+            "id": 7,
+            "status": "in_progress",
+            "conclusion": None,
+            "created_at": "2026-10-04T12:41:18Z",
+            "head_sha": HEAD_SHA,
+            "display_title": RUN_TITLE,
+            "pull_requests": [],
+        }
+        other_run = {
+            "id": 9,
+            "status": "completed",
+            "conclusion": "failure",
+            "created_at": "2026-10-04T12:45:00Z",
+            "head_sha": HEAD_SHA,
+            "display_title": "pull_request_target / PR #12 / synchronize / fork:branch",
+            "pull_requests": [],
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            result = wait_for_images(tmp, runs=[own_run, other_run], WAIT_ATTEMPTS="2")
+            self.assertEqual(result.returncode, 1, result.stdout + result.stderr)
+            self.assertIn("Privileged run 7 ", result.stdout)
+            self.assertNotIn("Privileged run 9", result.stdout + result.stderr)
             self.assertIn("Timed out waiting for CI images", result.stderr)
 
 
