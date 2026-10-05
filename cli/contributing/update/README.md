@@ -31,6 +31,10 @@ pins declares a list of such blocks. Types:
 on Docker Hub), `strip: true` removes it again so a pin without the upstream's
 `v` stays without it.
 
+The pinned value is a semver such as `v1.0.5`, `26.04.4.2.1` or `2.4.0p32`. A
+moving tag behind an `update:` block, or as the `version` of a monitored addon,
+fails `tests/lint/ansible/services/test_version_keys.py`.
+
 An addon pins its version at the root of `meta/addons/<id>.yml` and declares
 the same fields in its `update:` block, beside `monitored`, `catalog` and
 `upstream_id`:

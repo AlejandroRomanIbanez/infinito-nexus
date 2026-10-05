@@ -220,5 +220,41 @@ class TestAddons(unittest.TestCase):
         )
 
 
+class TestSemverPins(unittest.TestCase):
+    def test_an_update_block_on_a_moving_tag_is_reported(self) -> None:
+        root = _repo(SERVICES.replace("app_version: 2.0.0", "app_version: latest"))
+
+        self.assertEqual(
+            module.invalid_declarations(root),
+            [
+                (
+                    "web-app-example/app.app_version: 'latest' is not a semver, so "
+                    "no upstream version orders above it and the pin never moves"
+                ),
+            ],
+        )
+
+    def test_a_monitored_addon_on_a_moving_tag_is_reported(self) -> None:
+        root = _addon_repo(
+            {
+                "moving": ADDONS["catalogued"].replace('"1.0.0"', '"master"'),
+                "pinned": ADDONS["catalogued"],
+                "unpinned": ADDONS["catalogued"].replace('version: "1.0.0"\n', ""),
+                "unmonitored": ADDONS["unmonitored"].replace('"1.0.0"', '"master"'),
+            }
+        )
+
+        self.assertEqual(
+            module.invalid_declarations(root),
+            [
+                (
+                    "web-app-example/addons/moving.version: 'master' is not a "
+                    "semver, so no upstream version orders above it and the pin "
+                    "never moves"
+                ),
+            ],
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

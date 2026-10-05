@@ -42,6 +42,7 @@ from utils.cache.yaml import load_yaml
 from utils.roles.mapping import ROLE_FILE_META_SERVICES
 from utils.update.addons import GITHUB_RELEASES_CATALOG, iter_addon_files
 from utils.update.base import (
+    is_semver,
     latest_semver,
     version_depth,
     version_flavor,
@@ -297,6 +298,21 @@ def addon_sources(spec: Any) -> list[dict[str, Any]]:
     return []
 
 
+def _monitored_pin(spec: Any) -> str:
+    """Return the version a monitored addon pins, or an empty string."""
+    declared = spec.get(UPDATE_KEY) if isinstance(spec, dict) else None
+    if not isinstance(declared, dict) or not declared.get("monitored"):
+        return ""
+    return str(spec.get(DEFAULT_KEY) or "").strip()
+
+
+def _not_semver(label: str, pinned: Any) -> str:
+    return (
+        f"{label}: '{pinned}' is not a semver, so no upstream version orders "
+        "above it and the pin never moves"
+    )
+
+
 def _declaration_problems(
     label: str, config: dict[str, Any], source: Any, owner: str
 ) -> list[str]:
@@ -314,6 +330,8 @@ def _declaration_problems(
     key = str(source.get("key", DEFAULT_KEY))
     if key not in config:
         problems.append(f"{label}: update.key '{key}' names no key of the {owner}")
+    elif not is_semver(str(config[key])):
+        problems.append(_not_semver(f"{label}.{key}", config[key]))
     if source.get("type") not in TYPES:
         problems.append(
             f"{label}.{key}: unknown update.type "
@@ -331,8 +349,10 @@ def _declaration_problems(
 def invalid_declarations(repo_root: Path) -> list[str]:
     """Return one message per ``update:`` block that cannot be resolved.
 
-    A block naming a key the entity does not carry, or a type the resolver
-    does not know, would otherwise pin nothing and say nothing.
+    A block naming a key the entity does not carry, a type the resolver does
+    not know, or a pin that is not a semver would otherwise move nothing and
+    say nothing. A monitored addon the resolver does not read is held to the
+    same semver rule.
 
     Args:
         repo_root: repository root.
@@ -353,10 +373,13 @@ def invalid_declarations(repo_root: Path) -> list[str]:
                 )
     for role, addon_path in iter_addon_files(repo_root / "roles"):
         spec = load_yaml(str(addon_path))
-        for source in addon_sources(spec):
-            problems += _declaration_problems(
-                f"{role}/addons/{addon_path.stem}", spec, source, "addon"
-            )
+        label = f"{role}/addons/{addon_path.stem}"
+        sources = addon_sources(spec)
+        for source in sources:
+            problems += _declaration_problems(label, spec, source, "addon")
+        pinned = "" if sources else _monitored_pin(spec)
+        if pinned and not is_semver(pinned):
+            problems.append(_not_semver(f"{label}.{DEFAULT_KEY}", pinned))
     return problems
 
 
