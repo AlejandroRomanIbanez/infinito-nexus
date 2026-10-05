@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from jinja2 import Environment, FileSystemLoader, StrictUndefined
+from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
 
 from utils import PROJECT_ROOT
 
@@ -48,7 +48,7 @@ def rendered_script() -> str:
     env = Environment(
         loader=FileSystemLoader(str(TEMPLATE_DIR)),
         undefined=StrictUndefined,
-        autoescape=False,  # noqa: S701 - shell script, not markup; Ansible renders it the same way
+        autoescape=select_autoescape(),
     )
     return env.get_template("script.sh.j2").render(lookup=lookup, HOST_CS="utf-8")
 
