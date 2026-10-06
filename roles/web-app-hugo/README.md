@@ -96,13 +96,7 @@ docker run --rm -it \
 
 ## Configuration
 
-The default configuration in `meta/services.yml` builds the Hugo documentation:
-
-```yaml
-hugo:
-  source_repository: https://github.com/gohugoio/hugoDocs.git
-  source_version:    v0.148.0
-```
+The default configuration in `meta/services.yml` builds the Hugo documentation from `https://github.com/gohugoio/hugoDocs.git` at the tag pinned as `services.hugo.source_version`.
 
 To host your own Hugo site, override `services.hugo.source_repository` and `services.hugo.source_version` in your inventory. Example:
 
