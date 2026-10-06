@@ -107,7 +107,10 @@ echo "[INFO] ${#domains[@]} probed, ${failed} failed"
 "$(dirname "${BASH_SOURCE[0]}")/onion_ports.py" || failed=$((failed + 1))
 
 if [[ "${TOR_FLAVOR}" == "chutney" ]]; then
-	if ! unbounded="$(container exec "${TOR_CONTAINER}" sh -c 'grep -L "^NumCPUs 1$" /opt/chutney/net/nodes/*/torrc; true')"; then
+	status=0
+	workers="$(container exec "${TOR_CONTAINER}" sh -c 'grep -cH "^NumCPUs 1$" /opt/chutney/net/nodes/*/torrc')" || status=$?
+	unbounded="$(sed -n 's/:0$//p' <<<"${workers}")"
+	if [[ "${status}" -gt 1 || -z "${workers}" ]]; then
 		echo "[FAIL] cannot read the chutney node torrcs in ${TOR_CONTAINER}"
 		failed=$((failed + 1))
 	elif [[ -n "${unbounded}" ]]; then
