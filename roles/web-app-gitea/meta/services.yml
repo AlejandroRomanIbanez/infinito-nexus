@@ -117,6 +117,13 @@ giteamcpupstream:
     type: registry_tags
     image: docker.gitea.com/gitea-mcp-server
   name: gitea-mcp
+  healthcheck:
+    test:
+      - "CMD"
+      - "/app/gitea-mcp"
+      - "-healthcheck"
+      - "--port"
+      - "{{ lookup('config', 'web-app-gitea', 'services.giteamcpupstream.ports.internal.http') | string }}"
   cpus: 0.25
   mem_reservation: 0.1g
   mem_limit: 0.25g
