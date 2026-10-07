@@ -45,6 +45,7 @@ Environment:
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import queue
@@ -320,21 +321,20 @@ class SseSession:
         self.content_type = self._response.headers.get("Content-Type", "")
         event = None
         try:
-            for raw in self._response:
-                line = raw.decode(errors="replace").rstrip("\r\n")
-                if line.startswith("event:"):
-                    event = line.split(":", 1)[1].strip()
-                elif line.startswith("data:"):
-                    data = line.split(":", 1)[1].strip()
-                    if event == "endpoint":
-                        self.endpoint = urllib.parse.urljoin(self.url, data)
-                        self._announced.set()
-                    else:
-                        self._messages.put(data)
-                elif not line:
-                    event = None
-        except (OSError, ValueError):
-            pass
+            with contextlib.suppress(OSError, ValueError):
+                for raw in self._response:
+                    line = raw.decode(errors="replace").rstrip("\r\n")
+                    if line.startswith("event:"):
+                        event = line.split(":", 1)[1].strip()
+                    elif line.startswith("data:"):
+                        data = line.split(":", 1)[1].strip()
+                        if event == "endpoint":
+                            self.endpoint = urllib.parse.urljoin(self.url, data)
+                            self._announced.set()
+                        else:
+                            self._messages.put(data)
+                    elif not line:
+                        event = None
         finally:
             self._announced.set()
 
