@@ -76,7 +76,7 @@ SESSION_TIMEOUT = 20
 WRONG_CREDENTIAL = "Bearer " + "0" * 40
 SESSION_HEADER = "Mcp-Session-Id"
 
-SESSION = {"id": ""}
+SESSION = {"id": "", "protocol": ""}
 
 
 def unguarded_url():
@@ -120,6 +120,8 @@ def rpc(method, params=None, authorization=None, url=None, notification=False):
         request.add_header("Authorization", authorization)
     if SESSION["id"]:
         request.add_header(SESSION_HEADER, SESSION["id"])
+    if SESSION["protocol"]:
+        request.add_header("MCP-Protocol-Version", SESSION["protocol"])
     try:
         with urllib.request.urlopen(request, timeout=TIMEOUT) as response:  # noqa: S310 fixed internal http origin
             session = response.headers.get(SESSION_HEADER)
@@ -463,6 +465,8 @@ def main():
     if status != 200:
         reject(f"authenticated initialize answered {status}: {body[:200]}")
     reject_error("authenticated initialize", rpc_error(body))
+    result = json.loads(body).get("result") or {}
+    SESSION["protocol"] = result.get("protocolVersion", "")
 
     rpc("notifications/initialized", authorization=AUTH, notification=True)
 
