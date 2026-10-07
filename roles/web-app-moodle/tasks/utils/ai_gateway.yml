@@ -13,7 +13,7 @@
     -e AI_IMAGE_ENDPOINT={{ MOODLE_LITELLM_IMAGE_ENDPOINT | quote }}
     {{ MOODLE_CONTAINER_ADDRESS }} php
   args:
-    stdin: "{{ lookup('file', 'php/provision_ai_gateway.php') }}"
+    stdin: "{{ lookup('file', 'php/provision/ai_gateway.php') }}"
   register: moodle_ai_provider
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"

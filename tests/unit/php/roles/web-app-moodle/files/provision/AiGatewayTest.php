@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use PHPUnit\Framework\TestCase;
 
-final class ProvisionAiGatewayTest extends TestCase
+final class AiGatewayTest extends TestCase
 {
     private const NAME = 'LiteLLM gateway';
 
@@ -199,7 +199,7 @@ final class ProvisionAiGatewayTest extends TestCase
      */
     private function runScript(): array
     {
-        $script = dirname(__DIR__, 6) . '/roles/web-app-moodle/files/php/provision_ai_gateway.php';
+        $script = dirname(__DIR__, 7) . '/roles/web-app-moodle/files/php/provision/ai_gateway.php';
         $process = proc_open(
             [PHP_BINARY, $script],
             [1 => ['pipe', 'w'], 2 => ['pipe', 'w']],
