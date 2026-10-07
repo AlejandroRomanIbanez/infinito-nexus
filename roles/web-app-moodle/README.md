@@ -177,7 +177,7 @@ This role builds its own Moodle image from upstream Moodle source on top of the 
 
 ## Updates
 
-The image carries the Moodle release pinned as `services.moodle.app_version` in `meta/services.yml`. On start the entrypoint compares that release with the one recorded in the code volume and replaces the volume's tree with the image's when they differ. `tasks/01_manager_ops.yml` then runs `admin/cli/upgrade.php`, which migrates the database.
+The image carries the Moodle release pinned as `services.moodle.app_version` in `meta/services.yml`. On start the entrypoint compares that release with the one recorded in the code volume. When the image is newer, it copies the image's tree next to the old one and swaps them once the copy is complete. An image that is older than the recorded release refuses to start. `tasks/01_manager_ops.yml` then runs `admin/cli/upgrade.php`, which migrates the database.
 
 Plugins installed through the web interface live only in the code volume and are not carried over to the next release. Declare a plugin under `meta/addons/` so the image ships it.
 

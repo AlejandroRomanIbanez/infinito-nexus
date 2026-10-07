@@ -7,6 +7,7 @@ import unittest
 from pathlib import Path
 
 from utils import PROJECT_ROOT
+from utils.cache.files import read_text
 
 ENTRYPOINT = PROJECT_ROOT / "roles/web-app-moodle/files/build/moodle-entrypoint.sh"
 
@@ -98,6 +99,25 @@ class TestMoodleEntrypoint(unittest.TestCase):
         done = self.run_entrypoint("5.3.0")
         self.assertNotEqual(done.returncode, 0)
         self.assertFalse((self.code / ".bootstrap.done").exists())
+
+    def test_a_failed_copy_keeps_the_tree_the_volume_held(self):
+        self.ship(LAYOUT_4)
+        self.start("4.5.11")
+        shutil.rmtree(self.source)
+        done = self.run_entrypoint("5.3.0")
+        self.assertNotEqual(done.returncode, 0)
+        self.assertEqual(self.shipped_files_in_the_volume(), set(LAYOUT_4))
+        self.assertEqual(read_text(str(self.code / ".bootstrap.done")), "4.5.11")
+
+    def test_an_image_older_than_the_recorded_release_refuses_to_replace_it(self):
+        self.ship(LAYOUT_5)
+        self.start("5.10.0")
+        self.ship(LAYOUT_4)
+        done = self.run_entrypoint("5.9.2")
+        self.assertNotEqual(done.returncode, 0)
+        self.assertIn("5.10.0", done.stderr)
+        self.assertEqual(self.shipped_files_in_the_volume(), set(LAYOUT_5))
+        self.assertEqual(read_text(str(self.code / ".bootstrap.done")), "5.10.0")
 
 
 if __name__ == "__main__":

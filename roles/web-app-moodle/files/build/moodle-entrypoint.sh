@@ -18,6 +18,7 @@ set -euo pipefail
 
 MOODLE_BOOTSTRAP_SENTINEL="${MOODLE_CODE_DIR}/.bootstrap.done"
 MOODLE_BOOTSTRAP_LOCK="${MOODLE_CODE_DIR}/.bootstrap.lock"
+MOODLE_BOOTSTRAP_STAGE="${MOODLE_CODE_DIR}/.bootstrap.stage"
 
 mkdir -p "${MOODLE_DATA_DIR}"
 chown -R "${MOODLE_RUNTIME_USER}:${MOODLE_RUNTIME_USER}" "${MOODLE_DATA_DIR}" || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
@@ -31,12 +32,28 @@ moodle_code_dir_is_current() {
   [ "$(cat "${MOODLE_BOOTSTRAP_SENTINEL}" 2>/dev/null)" = "${MOODLE_RELEASE}" ]
 }
 
+moodle_code_dir_is_newer() {
+  local recorded newest
+  recorded="$(cat "${MOODLE_BOOTSTRAP_SENTINEL}" 2>/dev/null)" || return 1
+  [ -n "${recorded}" ] || return 1
+  newest="$(printf '%s\n' "${recorded}" "${MOODLE_RELEASE}" | sort -V | tail -n 1)"
+  [ "${newest}" = "${recorded}" ] && [ "${recorded}" != "${MOODLE_RELEASE}" ]
+}
+
 moodle_bootstrap_code_dir() {
   if moodle_code_dir_is_current; then
     return 0
   fi
-  find "${MOODLE_CODE_DIR}" -mindepth 1 -maxdepth 1 ! -name "${MOODLE_BOOTSTRAP_LOCK##*/}" -exec rm -rf {} +
-  cp -a "${MOODLE_SOURCE_DIR}/." "${MOODLE_CODE_DIR}/"
+  if moodle_code_dir_is_newer; then
+    echo "The code volume holds Moodle $(cat "${MOODLE_BOOTSTRAP_SENTINEL}"), this image ships the older ${MOODLE_RELEASE}; refusing to replace it." >&2
+    exit 1
+  fi
+  rm -rf "${MOODLE_BOOTSTRAP_STAGE}"
+  mkdir "${MOODLE_BOOTSTRAP_STAGE}"
+  cp -a "${MOODLE_SOURCE_DIR}/." "${MOODLE_BOOTSTRAP_STAGE}/"
+  find "${MOODLE_CODE_DIR}" -mindepth 1 -maxdepth 1 ! -name "${MOODLE_BOOTSTRAP_LOCK##*/}" ! -name "${MOODLE_BOOTSTRAP_STAGE##*/}" -exec rm -rf {} +
+  find "${MOODLE_BOOTSTRAP_STAGE}" -mindepth 1 -maxdepth 1 -exec mv -t "${MOODLE_CODE_DIR}" {} +
+  rmdir "${MOODLE_BOOTSTRAP_STAGE}"
   chown -R "${MOODLE_RUNTIME_USER}:${MOODLE_RUNTIME_USER}" "${MOODLE_CODE_DIR}" || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
   find "${MOODLE_CODE_DIR}" -type d -exec chmod 0755 {} + || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
   find "${MOODLE_CODE_DIR}" -type f -exec chmod 0644 {} + || true  # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
