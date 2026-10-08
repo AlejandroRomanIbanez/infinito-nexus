@@ -6,7 +6,7 @@ As a platform administrator, I want Infinito.Nexus to run its central Postgres, 
 
 ## Context
 
-Today every central engine (`svc-db-postgres`, `svc-db-mariadb`, `svc-db-redis`, `svc-db-openldap`) runs as one container on one host, in compose and in swarm mode alike. Each role's `meta/services.yml` already says it stays "single-node until replication is in scope". Swarm cannot close that gap without writing our own operators. Kubernetes can, because mature operators exist for three of the four engines. The fourth, OpenLDAP, needs only a small writer-election helper inside the slapd image the project already builds.
+Today every central engine (`svc-db-postgres`, `svc-db-mariadb`, `svc-db-redis`, `svc-db-openldap`) runs as one container on one host, in compose and in swarm mode alike. Each role's `meta/services.yml` already says it stays "single-node until replication is in scope". [038](038-database-ha-swarm.md) closes that gap on Swarm first, with off-the-shelf failover tools wired by the project (Patroni, replication-manager, Sentinel) and the project's own writer elector. This requirement brings the same promise to Kubernetes, where mature operators exist for three of the four engines and replace that wiring. The fourth, OpenLDAP, needs only a small writer-election helper inside the slapd image the project already builds.
 
 This requirement brings in `kubernetes` as the third deployment mode (`compose â†’ swarm â†’ kubernetes`, see [023](023-docker-swarm-nfs.md)) and uses it for the data tier only:
 
@@ -23,6 +23,8 @@ This requirement brings in `kubernetes` as the third deployment mode (`compose â
    - the OT redis-operator for Redis with Sentinel;
    - a self-rendered syncrepl StatefulSet for OpenLDAP, with writer election inside each pod.
 3. **Cross-cutting pieces:** backups to a write-only target outside the cluster, NetworkPolicy and Pod Security, and an acceptance suite that proves failover under real faults.
+
+**Reused from [038](038-database-ha-swarm.md):** the lookup contract (`host` names the write endpoint; `address` and `container` mean "exec into the primary"), inventory-owned credentials, the failover suite's shared core, and the writer elector with its pluggable lock backend. This requirement adds the Kubernetes side of each.
 
 **The seam stays unchanged.** Applications keep consuming `lookup('database')` and `lookup('engine')`. In kubernetes mode only `host` changes: it becomes the database cluster's write endpoint. Real applications arrive with the Kubernetes render backend in a later requirement. Until then, the acceptance suite's test client is the only consumer.
 
@@ -169,7 +171,7 @@ This requirement brings in `kubernetes` as the third deployment mode (`compose â
   - The short `.svc` form is used, so a custom cluster domain still resolves.
   - `url_jdbc`, `url_full` and `url` are built from it.
   - `port` keeps the engine default.
-- [ ] In kubernetes mode, the compose-only keys are absent, and any access raises: `address`, `container`, `service_name`, `reach_host`, `network`, `env`, `realign_*`, `initdb_dir`, `build_dir`, `volume`, `image`, and the engine `container`. An embedded engine (`shared: false`) raises.
+- [ ] In kubernetes mode, `address` and `container` resolve to the current primary pod at call time (the pod behind the write endpoint, found by role label), for exec through `kubernetes.core.k8s_exec`, as [038](038-database-ha-swarm.md) defines them for Swarm. The other compose-only keys are absent, and any access raises: `service_name`, `reach_host`, `network`, `env`, `realign_*`, `initdb_dir`, `build_dir`, `volume`, `image`, and the engine `container`. An embedded engine (`shared: false`) raises.
 - [ ] `library/database_query.py` raises "no kubernetes arm" in kubernetes mode.
 - [ ] Every credential is an inventory-owned `kubernetes.io/basic-auth` Secret (keys `username` and `password`) in the engine namespace, applied with `no_log`.
   - One Secret per consumer: `<name>-credentials`.
@@ -253,7 +255,7 @@ This is deliberately not an operator. A central controller cannot fence a writer
   - **On losing the Lease, missing the renew deadline, or receiving SIGTERM,** in this order: it sets `olcReadOnly: TRUE` locally over `ldapi`, removes its own label as a best effort, and releases the Lease.
   - Its timings are the control plane's defaults: a Lease duration of 15 s, a renew deadline of 10 s and a retry period of 2 s.
 - [ ] The elector fails closed. It runs as a second process in the slapd container, under the image's existing `tini` entrypoint. If the elector exits, slapd stops and the container restarts, and slapd comes back read-only. A separate sidecar container is not used, because slapd would keep its last mode if the sidecar crashed.
-- [ ] The elector is Python with the `kubernetes` client: a Lease loop of our own of roughly 300 lines, in `roles/svc-db-openldap/files/elector/`, with pytest unit tests under `tests/unit/python/roles/svc-db-openldap/`.
+- [ ] The elector is the Python package from [038](038-database-ha-swarm.md) in `roles/svc-db-openldap/files/elector/`, with a lock interface and two backends: the etcd lease used on Swarm and a Kubernetes Lease backend (the `kubernetes` client) added here. Its pytest unit tests under `tests/unit/python/roles/svc-db-openldap/` cover both backends.
 - [ ] The write endpoint `openldap` selects `infinito.nexus/ldap-role=writer`, so `host` stays `openldap.svc-db-openldap.svc`. The Service maps port 389 to 1389.
   - There is no read Service in v1. Reads and binds also go to the writer, so logins fail during a write gap as well. This is accepted for v1.
   - Keycloak's LDAP `connection_pooling` stays `false` (`roles/web-app-keycloak/meta/services.yml`), so every operation opens a new connection to the current writer.
@@ -333,6 +335,8 @@ This is deliberately not an operator. A central controller cannot fence a writer
 
 ### Acceptance suite
 
+- [ ] The suite reuses the shared core from [038](038-database-ha-swarm.md) (the write-continuity checker, the audit, the targets and the scenario list). This requirement adds the Kubernetes adapter: lab bring-up on the systemd-container k3s lab, the checker as a pod reading a Secret, and fault injection on the lab's node containers.
+
 - [ ] A new GitHub Actions workflow runs the acceptance suite on a GitHub-hosted `ubuntu-latest` runner.
   - It uses the repo's privileged systemd-container lab running the real `svc-k3s-node` role on 3 servers. k3d is not used.
   - It runs nightly on the default branch, on pull requests that touch data-tier paths, and on manual dispatch.
@@ -400,7 +404,7 @@ Explicitly out of scope for this requirement, and tracked for later:
 - **Application rendering on Kubernetes,** the edge, application storage, and the kubernetes arm of `database_query` and the other exec callers. This is a separate requirement for the render backend.
 - **Migrating data** from existing compose or swarm installs. v1 is greenfield.
 - **Embedded engines** and the engines without v1 HA (Elasticsearch, RabbitMQ, Qdrant, Typesense, SeaweedFS, Memcached).
-- **Database HA on swarm or compose,** and any bridge that lets swarm or compose apps use a database cluster.
+- **Database HA on compose,** and any bridge that lets swarm or compose apps use a Kubernetes database cluster. Database HA on Swarm is [038](038-database-ha-swarm.md).
 - **Sharding,** including Redis Cluster mode.
 - **The shared storage tier** (replicated and shared volume classes), a sibling feature.
 - **Enforced in-cluster TLS** as a per-engine opt-in: `hostnossl â€¦ reject` for Postgres, `tls.required` for MariaDB, a project CA for Redis and OpenLDAP, and TLS fields in the lookup. It is blocked on apps that hard-code `sslmode=disable` or `DB_SSL=false`.
@@ -420,6 +424,8 @@ Explicitly out of scope for this requirement, and tracked for later:
 
 ## Procedure
 
+[038](038-database-ha-swarm.md) is implemented first; its shared parts (the lookup contract, the elector, the failover suite's core) are prerequisites of this requirement.
+
 The implementation follows the [Compose Loop](../agents/action/iteration/compose.md) for role changes and the [Workflow Loop](../agents/action/iteration/workflow.md) for workflow changes, in this order:
 
 1. The foundation: mode trigger, `svc-k3s-node`, the engine-local class, the operator layer, the wait helper, the node reaper with the image workflow that publishes it, and the acceptance workflow skeleton.
@@ -437,6 +443,7 @@ The following rules apply for the entire run:
 ## See Also
 
 - [023 - Docker Swarm Deployment with NFS-backed Shared Volumes](023-docker-swarm-nfs.md)
+- [038 - Database HA on Swarm](038-database-ha-swarm.md)
 - [Compose Loop](../agents/action/iteration/compose.md)
 - [Workflow Loop](../agents/action/iteration/workflow.md)
 - [Per-Role Meta Layout](../contributing/design/role/services/layout.md)
