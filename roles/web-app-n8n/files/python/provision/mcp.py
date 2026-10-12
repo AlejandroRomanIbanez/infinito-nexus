@@ -67,6 +67,36 @@ TOOL_SCHEMA = json.dumps(
 SESSION = {"cookie": ""}
 
 
+def records(body, what):
+    """The records a list endpoint returned, as a list of dicts.
+
+    A 200 whose body is not a list of records used to reach the callers'
+    comprehensions, which iterate a string or a dict key by key and die on
+    ``'str' object has no attribute 'get'`` with nothing naming the endpoint.
+    The shape is reported instead; the body is not, because the credentials
+    listing carries secrets.
+
+    Args:
+        body: decoded response body.
+        what: what was being listed, for the failure message.
+    """
+    data = body.get("data") if isinstance(body, dict) else body
+    if data is None:
+        return []
+    if not isinstance(data, list):
+        sys.exit(
+            f"FAILED listing {what}: expected a list of records, "
+            f"got {type(data).__name__}"
+        )
+    offenders = {type(row).__name__ for row in data if not isinstance(row, dict)}
+    if offenders:
+        sys.exit(
+            f"FAILED listing {what}: expected records, "
+            f"got {', '.join(sorted(offenders))} among {len(data)} entries"
+        )
+    return data
+
+
 def call(path, method="GET", payload=None, api_key=None):
     """Return ``(status, body)`` of one n8n API call.
 
@@ -117,8 +147,9 @@ def api_key():
     if status != 200:
         sys.exit(f"FAILED listing api keys: {status} {body}")
 
-    existing = (body or {}).get("data") if isinstance(body, dict) else body
-    matches = [key for key in existing or [] if key.get("label") == KEY_NAME]
+    matches = [
+        key for key in records(body, "api keys") if key.get("label") == KEY_NAME
+    ]
     if len(matches) > 1:
         sys.exit(f"FAILED: {len(matches)} api keys named {KEY_NAME}")
     for key in matches:
@@ -166,8 +197,11 @@ def bearer_credential():
     if status != 200:
         sys.exit(f"FAILED listing credentials: {status} {body}")
 
-    existing = (body or {}).get("data") if isinstance(body, dict) else body
-    matches = [item for item in existing or [] if item.get("name") == CREDENTIAL_NAME]
+    matches = [
+        item
+        for item in records(body, "credentials")
+        if item.get("name") == CREDENTIAL_NAME
+    ]
     if len(matches) > 1:
         sys.exit(f"FAILED: {len(matches)} credentials named {CREDENTIAL_NAME}")
 
@@ -268,8 +302,11 @@ def upsert_workflow(key, credential):
     if status != 200:
         sys.exit(f"FAILED listing workflows: {status} {body}")
 
-    existing = (body or {}).get("data") if isinstance(body, dict) else body
-    matches = [flow for flow in existing or [] if flow.get("name") == WORKFLOW_NAME]
+    matches = [
+        flow
+        for flow in records(body, "workflows")
+        if flow.get("name") == WORKFLOW_NAME
+    ]
     if len(matches) > 1:
         sys.exit(f"FAILED: {len(matches)} workflows named {WORKFLOW_NAME}")
 
