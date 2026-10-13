@@ -323,6 +323,29 @@ class TestAssign(unittest.TestCase):
                     self.assertNotIn("false", [e["tor"] for e in entries])
 
 
+class TestMeshRotation(unittest.TestCase):
+    _ROWS = tuple(_row("web-app-b", 0, ("compose", "swarm")) for _ in range(8))
+
+    def _entries(self, sweep: int) -> list[dict[str, str]]:
+        return _assign(
+            self._ROWS, sweep=sweep, tor_mode="auto", variants_per_app=_VARIANTS
+        )
+
+    def test_every_sweep_lands_swarm_rows_on_both_arms(self) -> None:
+        for sweep in range(8):
+            with self.subTest(sweep=sweep):
+                arms = {e["vpn"] for e in self._entries(sweep) if e["mode"] == "swarm"}
+                self.assertEqual(arms, {"true", "false"})
+
+    def test_a_compose_row_never_carries_the_mesh(self) -> None:
+        for sweep in range(8):
+            with self.subTest(sweep=sweep):
+                arms = {
+                    e["vpn"] for e in self._entries(sweep) if e["mode"] == "compose"
+                }
+                self.assertEqual(arms, {"false"})
+
+
 class TestPinnedAxes(unittest.TestCase):
     def _entries(self, row: dict) -> list[dict[str, str]]:
         return _assign([row], sweep=0, tor_mode="auto", variants_per_app=_VARIANTS)
