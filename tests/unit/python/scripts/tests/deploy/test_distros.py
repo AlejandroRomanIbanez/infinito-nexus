@@ -76,6 +76,17 @@ class TestDistrosLoop(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, proc.stderr)
         self.assertEqual(sorted(record.split()), sorted(DISTROS.split()))
 
+    def test_every_distro_runs_with_a_parent_image_of_its_own(self) -> None:
+        proc, record = self._run(
+            DISTROS,
+            'echo "${INFINITO_DISTRO} ${INFINITO_PARENT_IMAGE}" >> "${RECORD}"',
+            INFINITO_CI_DISTRO_BUDGET_SECONDS="600",
+        )
+        self.assertEqual(proc.returncode, 0, proc.stderr)
+        images = dict(line.split() for line in record.splitlines())
+        self.assertEqual(sorted(images), sorted(DISTROS.split()))
+        self.assertEqual(len(set(images.values())), len(images), images)
+
     def test_the_command_inherits_the_env_layer(self) -> None:
         proc, record = self._run(
             "debian",
