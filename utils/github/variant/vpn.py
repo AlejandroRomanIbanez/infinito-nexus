@@ -62,8 +62,14 @@ def pinned_vpn_states(
 
 
 def wants_vpn(position: int, sweep: int) -> bool:
-    """Whether a swarm row carries the mesh this sweep."""
-    return (position + sweep // 4) % 2 == 0
+    """Whether a swarm row carries the mesh this sweep.
+
+    Reads the position's second digit. The mode rotation spends the first:
+    ``(position + sweep) % 2`` decides which parity of rows deploys in swarm,
+    so a mesh rotation on the same digit held every swarm row of a sweep on
+    one arm and a default run never compared the two.
+    """
+    return (position // 2 + sweep // 4) % 2 == 0
 
 
 def rotated_vpn(
