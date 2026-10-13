@@ -26,7 +26,7 @@ from cli.administration.inventory.mesh.write import write_mesh
 
 from . import PROJECT_ROOT
 
-GROUP_VARS = PROJECT_ROOT / "group_vars/all/21_wireguard.yml"
+GROUP_VARS = PROJECT_ROOT / "inventories/development/meshes.yml"
 CONTROLLER = "localhost"
 HOSTS = ("swarm-mgr-01", "swarm-wrk-01", "nfs-server", CONTROLLER)
 

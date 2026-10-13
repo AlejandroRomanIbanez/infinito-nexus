@@ -13,12 +13,14 @@ import re
 from pathlib import Path
 from typing import Any
 
+from utils import PROJECT_ROOT
 from utils.cache.yaml import load_yaml_any
 
 from .model import MeshSpec
 
 MESHES_VAR = "WIREGUARD_MESHES"
 POOL_VAR = "WIREGUARD_SUBNET_POOL"
+PLATFORM_POOL_VAR = "NETWORK_MESH_POOL"
 
 
 def groups_of(inventory_files: list[Path]) -> dict[str, list[str]]:
@@ -76,26 +78,54 @@ def specs_of(group_vars_file: Path) -> list[MeshSpec]:
 _REFERENCE = re.compile(r"^\s*\{\{\s*(?P<name>[A-Z0-9_]+)\s*\}\}\s*$")
 
 
-def _resolve_pool(pool: object, group_vars_file: Path) -> str | None:
-    """The literal pool, following one ``{{ VAR }}`` hop into its SPOT.
+def _literal_of(name: str, group_vars_file: Path) -> str | None:
+    """The literal ``name`` holds, from the declarations' neighbours or ours.
 
-    The pool is declared once under ``NETWORK_*`` beside every other range the
-    platform allocates, and referenced from the mesh file. Ansible resolves
-    that at play time; this runs before the play, so the reference is followed
-    here rather than duplicating the value.
+    The declarations do not have to sit in ``group_vars/all``: a deployment
+    declares its own meshes wherever it likes, so the platform's own
+    ``group_vars/all`` is searched after the file's neighbours, and a local
+    declaration still wins.
     """
+    for directory in dict.fromkeys(
+        [Path(group_vars_file).parent, PROJECT_ROOT / "group_vars" / "all"]
+    ):
+        for sibling in sorted(directory.glob("*.yml")):
+            document = load_yaml_any(str(sibling), default_if_missing={})
+            value = (document or {}).get(name)
+            if isinstance(value, str) and not _REFERENCE.match(value):
+                return value
+    return None
+
+
+def _resolve_pool(pool: object, group_vars_file: Path) -> str | None:
+    """The range a spoke routes through its hub.
+
+    Declarations that say nothing about the pool get the platform's, so the
+    range is not restated once per deployment: that is the duplication
+    ``NETWORK_MESH_POOL`` exists to end, and a file that restates it is a
+    second copy to drift. A deployment that wants a different pool declares
+    one, literal or as a ``{{ VAR }}`` hop.
+
+    Resolving to nothing is not silent: ``routed_range`` would narrow from the
+    pool to each mesh's own subnet, and a spoke would stop routing to the
+    planes it is not a member of -- which is the whole reason the hub is in
+    both.
+    """
+    if pool is None:
+        return _literal_of(PLATFORM_POOL_VAR, group_vars_file)
     if not isinstance(pool, str):
         return None
     match = _REFERENCE.match(pool)
     if match is None:
         return pool
     name = match.group("name")
-    for sibling in sorted(Path(group_vars_file).parent.glob("*.yml")):
-        document = load_yaml_any(str(sibling), default_if_missing={})
-        value = (document or {}).get(name)
-        if isinstance(value, str) and not _REFERENCE.match(value):
-            return value
-    raise ValueError(f"{group_vars_file} references {name}, which no sibling defines")
+    literal = _literal_of(name, group_vars_file)
+    if literal is None:
+        raise ValueError(
+            f"{group_vars_file} references {name}, which neither its own "
+            f"directory nor the platform's group_vars/all defines"
+        )
+    return literal
 
 
 def assert_no_subnet_overlap(specs: list[MeshSpec], pool: str | None) -> None:

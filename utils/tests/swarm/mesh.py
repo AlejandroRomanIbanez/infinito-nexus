@@ -16,6 +16,7 @@ _PLAYBOOK = "playbook-mesh.yml"
 _BENCH_PLAYBOOK = "transport-bench.yml"
 _SUDO_PLAYBOOK = "lab-sudo.yml"
 _SWARM_EXTRAS_VARS = "inventories/development/swarm.yml"
+_DECLARATIONS = "inventories/development/meshes.yml"
 _DEFAULT_ADMIN_KEY = "/tmp/swarm-nfs-admin.key"  # noqa: S108 - ephemeral swarm-test path, overridable via KEY_PATH
 
 _LAB_ADDRESSES = {
@@ -49,6 +50,7 @@ def write_mesh(*, inv_dir: str, rotate: bool = False) -> int:
         return 0
     args = ["--inventory", f"{inv_dir}/devices.yml"]
     args += ["--inventory", f"{inv_dir}/backup.yml"]
+    args += ["--group-vars-file", _DECLARATIONS]
     args += ["--host-vars-dir", f"{inv_dir}/host_vars"]
     args += ["--vault-password-file", f"{inv_dir}/.password"]
     args += ["--controller", _CONTROLLER, "--controller-mesh", _MESH_NAME]

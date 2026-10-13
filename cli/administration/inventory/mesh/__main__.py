@@ -9,6 +9,7 @@ from pathlib import Path
 
 from utils import PROJECT_ROOT
 
+from .contract import write_contract
 from .inventory import groups_of, specs_of
 from .plan import plan_mesh
 from .write import (
@@ -19,7 +20,7 @@ from .write import (
     write_mesh,
 )
 
-DEFAULT_GROUP_VARS = PROJECT_ROOT / "group_vars/all/21_wireguard.yml"
+DEFAULT_CONTRACT = PROJECT_ROOT / "roles/svc-net-wireguard/meta/meshes.yml"
 
 
 def parse_endpoints(pairs: list[str]) -> dict[str, str]:
@@ -55,13 +56,24 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--group-vars-file",
-        default=str(DEFAULT_GROUP_VARS),
-        help="file declaring WIREGUARD_MESHES",
+        required=True,
+        help=(
+            "file declaring WIREGUARD_MESHES. The platform ships none: the "
+            "meshes and their members belong to the deployment"
+        ),
     )
     parser.add_argument(
         "--mesh",
         action="append",
         help="restrict to this mesh name; repeatable, default all declared",
+    )
+    parser.add_argument(
+        "--contract-file",
+        default=str(DEFAULT_CONTRACT),
+        help=(
+            "role contract written from the declarations, so a deployment may "
+            "declare meshes this repository never named"
+        ),
     )
     parser.add_argument(
         "--application-id",
@@ -112,7 +124,14 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    specs = specs_of(Path(args.group_vars_file).resolve())
+    declared = specs_of(Path(args.group_vars_file).resolve())
+    if write_contract(declared, Path(args.contract_file).resolve()):
+        print(
+            f"[INFO] contract rewritten for {len(declared)} declared mesh(es): "
+            f"{', '.join(spec.name for spec in declared)}"
+        )
+
+    specs = declared
     if args.mesh:
         wanted = set(args.mesh)
         specs = [spec for spec in specs if spec.name in wanted]

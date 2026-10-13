@@ -293,3 +293,134 @@ class TestSubnetGuards(unittest.TestCase):
 
     def test_the_declared_meshes_pass_their_own_guards(self):
         assert_no_subnet_overlap([SWARM, DATA], "10.100.0.0/16")
+
+
+MESH_POOL = "10.100.0.0/16"
+
+
+def topology(mesh_count: int, seed: int) -> tuple[list[MeshSpec], dict[str, list[str]]]:
+    """A hub-and-spoke topology of ``mesh_count`` meshes around one hub.
+
+    The hub joins every mesh, which is what lets a spoke of one reach a spoke
+    of another; the spokes are dealt out so that a host lands in no mesh, in
+    one, or in several, because a client orients its nodes however it likes.
+
+    Args:
+        mesh_count: how many meshes to declare.
+        seed: picks one arrangement of hosts over the meshes.
+    """
+    hosts = [f"node-{index:02d}" for index in range(12)]
+    groups: dict[str, list[str]] = {"hub-group": ["hub-01"]}
+    specs: list[MeshSpec] = []
+    for index in range(mesh_count):
+        group = f"mesh-{index}-members"
+        groups[group] = [
+            host for position, host in enumerate(hosts) if (position + seed) % (index + 2)
+        ]
+        specs.append(
+            MeshSpec(
+                name=f"mesh-{index}",
+                hub_group="hub-group",
+                spoke_groups=(group,),
+                subnet=f"10.100.{index}.0/24",
+                listen_port=51820 + index,
+            )
+        )
+    return specs, groups
+
+
+class TestAnyNumberOfMeshes(unittest.TestCase):
+    """The guarantees hold for topologies nobody wrote down.
+
+    The declared pair proves two meshes work. A deployment declares its own,
+    so the same invariants are asserted over generated topologies: any mesh
+    count, any arrangement of hosts across them, including hosts that belong
+    to several meshes and hosts that belong to none.
+    """
+
+    COUNTS = range(1, 9)
+    SEEDS = range(3)
+
+    def _planned(self, count: int, seed: int):
+        specs, groups = topology(count, seed)
+        return specs, groups, [plan_mesh(spec, groups) for spec in specs]
+
+    def test_every_declared_count_plans_without_collision(self):
+        for count in self.COUNTS:
+            for seed in self.SEEDS:
+                with self.subTest(meshes=count, seed=seed):
+                    specs, _, meshes = self._planned(count, seed)
+                    assert_no_subnet_overlap(specs, MESH_POOL)
+                    self.assertEqual(len(meshes), count)
+
+    def test_every_member_is_addressed_inside_its_own_subnet(self):
+        for count in self.COUNTS:
+            for seed in self.SEEDS:
+                specs, _, meshes = self._planned(count, seed)
+                for spec, mesh in zip(specs, meshes):
+                    prefix = spec.subnet.rsplit(".", 1)[0] + "."
+                    for member in mesh.members:
+                        with self.subTest(meshes=count, seed=seed, host=member.host):
+                            self.assertTrue(member.address.startswith(prefix))
+
+    def test_no_two_members_of_one_mesh_share_an_address(self):
+        for count in self.COUNTS:
+            for seed in self.SEEDS:
+                _, _, meshes = self._planned(count, seed)
+                for mesh in meshes:
+                    with self.subTest(meshes=count, seed=seed, mesh=mesh.spec.name):
+                        addresses = [member.address for member in mesh.members]
+                        self.assertEqual(len(addresses), len(set(addresses)))
+
+    def test_the_hub_joins_every_mesh_so_the_planes_can_reach_each_other(self):
+        for count in self.COUNTS:
+            for seed in self.SEEDS:
+                _, _, meshes = self._planned(count, seed)
+                for mesh in meshes:
+                    with self.subTest(meshes=count, seed=seed, mesh=mesh.spec.name):
+                        self.assertEqual("hub-01", mesh.hub.host)
+
+    def test_the_hub_peers_with_every_spoke_and_a_spoke_only_with_the_hub(self):
+        for count in self.COUNTS:
+            for seed in self.SEEDS:
+                _, _, meshes = self._planned(count, seed)
+                for mesh in meshes:
+                    with self.subTest(meshes=count, seed=seed, mesh=mesh.spec.name):
+                        self.assertEqual(
+                            sorted(peer.host for peer in mesh.peers_of(mesh.hub.host)),
+                            sorted(spoke.host for spoke in mesh.spokes),
+                        )
+                        for spoke in mesh.spokes:
+                            self.assertEqual(
+                                ["hub-01"],
+                                [peer.host for peer in mesh.peers_of(spoke.host)],
+                            )
+
+    def test_a_host_in_several_meshes_holds_one_address_per_mesh(self):
+        """Overlapping membership is the point: the diagrams overlap."""
+        shared = 0
+        for count in self.COUNTS:
+            for seed in self.SEEDS:
+                _, _, meshes = self._planned(count, seed)
+                held: dict[str, set[str]] = {}
+                for mesh in meshes:
+                    for member in mesh.members:
+                        held.setdefault(member.host, set()).add(member.address)
+                for host, addresses in held.items():
+                    count_in = sum(
+                        1 for mesh in meshes if any(m.host == host for m in mesh.members)
+                    )
+                    if count_in > 1:
+                        shared += 1
+                        with self.subTest(meshes=count, seed=seed, host=host):
+                            self.assertEqual(count_in, len(addresses))
+        self.assertGreater(shared, 0, "no host landed in several meshes")
+
+    def test_every_peer_entry_carries_a_usable_public_key(self):
+        for count in self.COUNTS:
+            _, _, meshes = self._planned(count, 0)
+            for mesh in meshes:
+                for member in mesh.members:
+                    for peer in mesh.peers_of(member.host):
+                        with self.subTest(meshes=count, host=member.host):
+                            self.assertTrue(is_valid_public_key(peer.public_key))

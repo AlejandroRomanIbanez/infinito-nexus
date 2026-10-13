@@ -24,7 +24,7 @@ from utils.cache.yaml import load_yaml_any
 
 from . import PROJECT_ROOT
 
-GROUP_VARS = PROJECT_ROOT / "group_vars/all/21_wireguard.yml"
+GROUP_VARS = PROJECT_ROOT / "inventories/development/meshes.yml"
 
 HOSTS = ("swarm-mgr-01", "swarm-wrk-01", "swarm-wrk-02", "nfs-server", "swarm-bkp-01")
 
