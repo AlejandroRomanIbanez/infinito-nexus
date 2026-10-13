@@ -163,8 +163,13 @@ checked before the directory and keep working, so with SSO enabled the role:
 
 A bot gets a new app password when its entry named
 `STALWART_BOT_APP_PASSWORD_DESCRIPTION` is deleted in Stalwart or its token is
-removed from the token store. Relaying stays limited to authenticated sessions
-in both modes (`STALWART_RELAY_RULE`).
+removed from the token store. The app password it replaces is renamed to
+`STALWART_BOT_APP_PASSWORD_RETIRED_DESCRIPTION` and stays valid until the
+service-loader post-load flush drops it
+(`tasks/04_manage_user/app_password_drop.yml`), or until right after the new
+one is stored when the role runs outside the service loader. A deploy that
+stops before the flush leaves it to the next deploy. Relaying stays limited to
+authenticated sessions in both modes (`STALWART_RELAY_RULE`).
 
 With SSO disabled the role uses the Internal directory and the bot's derived
 account password.
