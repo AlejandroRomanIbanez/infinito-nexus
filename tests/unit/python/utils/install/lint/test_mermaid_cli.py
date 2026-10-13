@@ -46,7 +46,9 @@ class TestBrowserProvisioning(unittest.TestCase):
     def test_root_installs_the_browser_with_its_libraries(self) -> None:
         calls, warnings = self.provision(euid=0, results=[0])
         self.assertEqual(len(calls), 1)
-        self.assertEqual(calls[0].args[0][-2:], ["chrome-headless-shell", "--install-deps"])
+        self.assertEqual(
+            calls[0].args[0][-2:], ["chrome-headless-shell", "--install-deps"]
+        )
         self.assertEqual(warnings, [])
 
     def test_a_user_installs_the_browser_without_libraries(self) -> None:

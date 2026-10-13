@@ -49,7 +49,7 @@ class TestMermaidLint(unittest.TestCase):
                 text=True,
                 check=False,
             )
-            recorded = calls.read_text().split()
+            recorded = calls.read_text().split()  # nocheck: cache-read  stub call log
 
         self.assertEqual(proc.returncode, 1, proc.stderr)
         self.assertIn("cannot render a minimal diagram", proc.stderr)
