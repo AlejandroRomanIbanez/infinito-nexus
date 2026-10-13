@@ -62,7 +62,8 @@ fi
 
 _infinito_env_source="${_infinito_env_dotenv}"
 _infinito_env_scratch=""
-if [[ -f "${_infinito_env_dotenv}" && -n "${INFINITO_DISTRO:-}" && "${INFINITO_DISTRO}" != "$(sed -n 's/^INFINITO_DISTRO=//p' "${_infinito_env_dotenv}")" ]]; then
+_infinito_env_distro="${INFINITO_DISTRO:-}"
+if [[ -f "${_infinito_env_dotenv}" && -n "${_infinito_env_distro}" && "${_infinito_env_distro}" != "$(sed -n 's/^INFINITO_DISTRO=//p' "${_infinito_env_dotenv}")" ]]; then
 	_infinito_env_scratch="$(mktemp -d)"
 	_infinito_env_source="${_infinito_env_scratch}/env"
 fi
@@ -98,7 +99,7 @@ set +a
 if [[ -n "${_infinito_env_scratch}" ]]; then
 	rm -rf "${_infinito_env_scratch}"
 fi
-unset _infinito_env_source _infinito_env_scratch
+unset _infinito_env_source _infinito_env_scratch _infinito_env_distro
 
 for _infinito_env_key in "${!_infinito_env_preserved[@]}"; do
 	declare -gx "${_infinito_env_key}=${_infinito_env_preserved[${_infinito_env_key}]}"

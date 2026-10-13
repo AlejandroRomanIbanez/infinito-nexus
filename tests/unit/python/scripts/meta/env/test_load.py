@@ -8,6 +8,7 @@ stay as it was.
 
 from __future__ import annotations
 
+import filecmp
 import os
 import shutil
 import subprocess
@@ -93,9 +94,13 @@ class TestDistroDerivedKeys(unittest.TestCase):
             shutil.copy(LOADER_DIR / name, checkout / "scripts" / "meta" / "env")
         dotenv = checkout / ".env"
         shutil.copy(self.scratch / "debian.env", dotenv)
-        before = dotenv.read_bytes()
-        shown = bash(f"load() {{ source scripts/meta/env/load.sh; }}\n{steps}", checkout)
-        self.assertEqual(dotenv.read_bytes(), before, ".env was rewritten")
+        shown = bash(
+            f"load() {{ source scripts/meta/env/load.sh; }}\n{steps}", checkout
+        )
+        self.assertTrue(
+            filecmp.cmp(dotenv, self.scratch / "debian.env", shallow=False),
+            ".env was rewritten",
+        )
         return shown
 
     def test_the_two_distros_derive_different_keys(self):
