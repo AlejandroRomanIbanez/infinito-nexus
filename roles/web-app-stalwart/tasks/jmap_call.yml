@@ -43,4 +43,6 @@
     stalwart_jmap_rejected: >-
       {{ {} if (stalwart_jmap_tolerate_rejected | default(false) | bool)
          else (stalwart_jmap.methodResponses[0][1].notCreated | default({}, true))
-              | combine(stalwart_jmap.methodResponses[0][1].notUpdated | default({}, true)) }}
+              | combine(stalwart_jmap.methodResponses[0][1].notUpdated | default({}, true))
+              | combine(stalwart_jmap.methodResponses[0][1].notDestroyed | default({}, true)
+                        | dict2items | rejectattr('value.type', 'equalto', 'notFound') | items2dict) }}

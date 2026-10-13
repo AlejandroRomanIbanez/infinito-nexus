@@ -16,6 +16,7 @@
       {{ stalwart_jmap.methodResponses[0][1].list
          | selectattr('@type', 'equalto', 'Stdout')
          | selectattr('eventsPolicy', 'equalto', 'include')
+         | selectattr('events', 'superset', STALWART_BAN_TRACER.events | list)
          | list }}
 
 - name: "🔧 Point the file tracer at a directory that exists"
