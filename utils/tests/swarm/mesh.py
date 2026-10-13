@@ -180,7 +180,9 @@ def transport_bench(*, inv_dir: str, extras_path: str, label: str) -> int:
             escalated half of the benchmark needs.
         label: which transport the numbers belong to, for the banner.
     """
-    if (os.environ.get("INFINITO_SWARM_TRANSPORT_BENCH") or "").strip().lower() != "true":
+    if (
+        os.environ.get("INFINITO_SWARM_TRANSPORT_BENCH") or ""
+    ).strip().lower() != "true":
         return 0
     run_step(
         [
