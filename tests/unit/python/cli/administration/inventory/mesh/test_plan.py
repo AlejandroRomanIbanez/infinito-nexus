@@ -315,7 +315,9 @@ def topology(mesh_count: int, seed: int) -> tuple[list[MeshSpec], dict[str, list
     for index in range(mesh_count):
         group = f"mesh-{index}-members"
         groups[group] = [
-            host for position, host in enumerate(hosts) if (position + seed) % (index + 2)
+            host
+            for position, host in enumerate(hosts)
+            if (position + seed) % (index + 2)
         ]
         specs.append(
             MeshSpec(
@@ -357,7 +359,7 @@ class TestAnyNumberOfMeshes(unittest.TestCase):
         for count in self.COUNTS:
             for seed in self.SEEDS:
                 specs, _, meshes = self._planned(count, seed)
-                for spec, mesh in zip(specs, meshes):
+                for spec, mesh in zip(specs, meshes, strict=True):
                     prefix = spec.subnet.rsplit(".", 1)[0] + "."
                     for member in mesh.members:
                         with self.subTest(meshes=count, seed=seed, host=member.host):
@@ -408,7 +410,9 @@ class TestAnyNumberOfMeshes(unittest.TestCase):
                         held.setdefault(member.host, set()).add(member.address)
                 for host, addresses in held.items():
                     count_in = sum(
-                        1 for mesh in meshes if any(m.host == host for m in mesh.members)
+                        1
+                        for mesh in meshes
+                        if any(m.host == host for m in mesh.members)
                     )
                     if count_in > 1:
                         shared += 1
