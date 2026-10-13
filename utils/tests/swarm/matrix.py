@@ -290,9 +290,7 @@ def _mesh_prologue(
     if rc == 0:
         rc = mesh_controller(inv_dir=inv_dir)
     if rc == 0:
-        rc = transport_bench(
-            inv_dir=inv_dir, extras_path=extras_path, label="docker"
-        )
+        rc = transport_bench(inv_dir=inv_dir, extras_path=extras_path, label="docker")
     if rc == 0:
         rc = switch_to_mesh_transport(inv_dir=inv_dir)
     if rc == 0:
