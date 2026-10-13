@@ -23,6 +23,7 @@ if TYPE_CHECKING:
 
     from .model import MeshSpec
 
+
 def _shape() -> dict[str, object]:
     """One mesh's empty block.
 
