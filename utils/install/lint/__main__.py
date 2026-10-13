@@ -177,7 +177,10 @@ def _stamp_is_fresh(repo_root: Path) -> bool:
             return False
         if dep_path.stat().st_mtime > stamp_mtime:
             return False
-    return all(shutil.which(tool) is not None for tool in _STAMP_TOOLS)
+    return (
+        all(shutil.which(tool) is not None for tool in _STAMP_TOOLS)
+        and mermaid_cli.browser_installed()
+    )
 
 
 def _touch_stamp(repo_root: Path) -> None:
