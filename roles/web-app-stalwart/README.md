@@ -206,6 +206,9 @@ account (or the Keycloak SSO token when SSO is enabled).
   (`templates/jmap/*.json.j2`).
 - **Only authenticated sessions relay, with or without SSO.** Under SSO a bot
   authenticates with an app password.
+- **Bans and failed logins also go to the container output**
+  (`STALWART_BAN_TRACER`, `tasks/tracing.yml`), next to the daily log file in
+  the data volume.
 
 ## Features
 

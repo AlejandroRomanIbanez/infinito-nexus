@@ -12,6 +12,17 @@ container_port: "{{ lookup('config', application_id, 'services.stalwart.ports.in
 STALWART_LOCAL_BASE_URL: "http://localhost:{{ container_port }}"
 STALWART_JMAP_URL: "{{ STALWART_LOCAL_BASE_URL }}/jmap/"
 STALWART_LOG_DIR: "{{ lookup('volume', application_id, 'data').target }}"
+STALWART_BAN_TRACER:
+  "@type": "Stdout"
+  buffered: false
+  level: "debug"
+  eventsPolicy: "include"
+  events:
+    "security.authentication-ban": true
+    "security.abuse-ban": true
+    "security.scan-ban": true
+    "security.loiter-ban": true
+    "auth.failed": true
 STALWART_JMAP_APPLICATION_GET: >-
   {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
       'methodCalls': [['x:Application/get', {'ids': none}, 'c0']]} | to_json }}
