@@ -1,0 +1,29 @@
+---
+- name: "✅ REDIS | Ensure the HA config directory exists"
+  ansible.builtin.file:
+    path: "{{ REDIS_HA_DIR }}"
+    state: directory
+    mode: "0755"
+
+- name: "📄 REDIS | Render the Ansible-owned include"
+  ansible.builtin.template: # nocheck: stack-host-template (the caller gates on IS_STACK_HOST)
+    src: infinito.conf.j2
+    dest: "{{ [REDIS_HA_DIR, 'infinito.conf'] | path_join }}"
+    mode: "0600"
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+- name: "🔑 REDIS | Write the Sentinel password file"
+  ansible.builtin.copy:
+    content: "{{ REDIS_SENTINEL_PASSWORD }}"
+    dest: "{{ [REDIS_HA_DIR, 'sentinel.pass'] | path_join }}"
+    mode: "0600"
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+- name: "📄 REDIS | Copy the instance and Sentinel start-up wrappers"
+  ansible.builtin.copy:
+    src: "shell/{{ item }}"
+    dest: "{{ [REDIS_HA_DIR, item] | path_join }}"
+    mode: "0644"
+  loop:
+    - ha_start.sh
+    - sentinel_start.sh

@@ -35,6 +35,8 @@ SYMBOLS: dict[str, str] = {
     "tor": "🧅",
     "clearnet": "🌐",
     "stack": "🥞",
+    "ha": "🔱",
+    "standalone": "☝️",
     "host": "💻",
     "row": "🔢",
     "id": "🆔",

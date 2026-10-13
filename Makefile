@@ -27,6 +27,38 @@ act-debug:
 act-runner-image:
 	@bash scripts/tests/deploy/act/build_runner_image.sh
 
+.PHONY: act-swarm-data
+# Run the database failover suite for one engine inside the act runner container, as CI does.
+# Param engine: REQUIRED postgres | mariadb | redis | openldap.
+# Param only: optional space-separated scenario names to run instead of the full set.
+act-swarm-data: install-act
+	@test -n '$(engine)' || { echo 'usage: make act-swarm-data engine=<postgres|mariadb|redis|openldap> [only="<scenario> ..."]'; exit 2; }
+	@SWARM_NAME='data-$(engine)' INFINITO_KEEP_SWARM_NODES=false bash scripts/tests/deploy/swarm/utils/clean/teardown.sh
+	@bash scripts/tests/deploy/swarm/utils/clean/lab_subnet.sh
+	@ACT_OUTER_MATCH='Failover-$(engine)-' bash scripts/tests/deploy/act/down_act_outer.sh
+	@ACT_RM=false \
+	 ACT_BIND=true \
+	 ACT_ENV="INFINITO_KEEP_SWARM_NODES=true; SWARM_NAME=data-$(engine)$(if $(only),; FAILOVER_ONLY=$(only))" \
+	 ACT_WORKFLOW=.github/workflows/call-test-swarm-data.yml \
+	 ACT_JOB=failover \
+	 ACT_MATRIX="engine:$(engine)" \
+	 bash scripts/tests/deploy/act/workflow.sh
+
+.PHONY: act-swarm-data-rerun
+# Rerun failover scenarios on the lab a previous act-swarm-data run kept, without bring-up or deploys.
+# Param engine: REQUIRED engine whose kept lab to reuse (postgres|mariadb|redis|openldap).
+# Param only: optional space-separated scenario names; all scenarios when empty.
+act-swarm-data-rerun: install-act
+	@test -n '$(engine)' || { echo 'usage: make act-swarm-data-rerun engine=<postgres|mariadb|redis|openldap> [only="<scenario> ..."]'; exit 2; }
+	@ACT_OUTER_MATCH='Failover-$(engine)-' bash scripts/tests/deploy/act/down_act_outer.sh
+	@ACT_RM=false \
+	 ACT_BIND=true \
+	 ACT_ENV="INFINITO_KEEP_SWARM_NODES=true; SWARM_DATA_REUSE=true; SWARM_NAME=data-$(engine)$(if $(only),; FAILOVER_ONLY=$(only))" \
+	 ACT_WORKFLOW=.github/workflows/call-test-swarm-data.yml \
+	 ACT_JOB=failover \
+	 ACT_MATRIX="engine:$(engine)" \
+	 bash scripts/tests/deploy/act/workflow.sh
+
 .PHONY: act-workflow
 # Run the act-based workflow deploy check.
 act-workflow: install-act
@@ -755,6 +787,15 @@ swarm-down:
 swarm-exec:
 	@node='$(node)' cmd='$(cmd)' bash scripts/tests/deploy/act/exec/node.sh
 
+.PHONY: swarm-forget-node
+# Forget a permanently lost Swarm node, then re-run the normal swarm deploy against the inventory.
+# Param host: REQUIRED Swarm node hostname of the lost node, already removed from every inventory group.
+# Param inventory: REQUIRED inventory file the chained deploy runs against.
+# Param args: optional extra deploy options forwarded verbatim (e.g. "--password-file <file> --diff").
+swarm-forget-node:
+	@test -n '$(host)' -a -n '$(inventory)' || { echo 'usage: make swarm-forget-node host=<name> inventory=<file> [args="--password-file <file>"]'; exit 2; }
+	@python3 -m cli.administration.swarm.forget_node '$(inventory)' --host '$(host)' $(args)
+
 .PHONY: swarm-playwright
 # Rerun a role-local Playwright spec against the live swarm-test cluster (no redeploy).
 # Note: nodes hold a frozen bootstrap copy (not a compose-style mount), so the working-tree's modified+untracked files are copied into the node before rerunning via the same rerun-spec.sh engine as compose-playwright; solve ALL of a role's tests (no pw= narrowing) before any redeploy.
@@ -868,6 +909,15 @@ test-signed:
 		exit 1; \
 	fi; \
 	echo "✅ HEAD commit signature status: $$status"
+
+.PHONY: test-swarm-data
+# Run the database failover suite for one engine on a 3-manager + spare-worker Swarm DinD lab (not part of the `test` fan-out).
+# Param engine: REQUIRED postgres | mariadb | redis | openldap.
+# Param junit: optional JUnit output file (default /tmp/failover-<engine>.xml).
+# Param keep: true keeps the lab for inspection (release with `make swarm-down name=data-<engine>`).
+test-swarm-data:
+	@test -n '$(engine)' || { echo 'usage: make test-swarm-data engine=<postgres|mariadb|redis|openldap> [junit=<file>] [keep=true]'; exit 2; }
+	@engine='$(engine)' FAILOVER_JUNIT='$(or $(junit),/tmp/failover-$(engine).xml)' INFINITO_KEEP_SWARM_NODES='$(or $(keep),$(INFINITO_KEEP_SWARM_NODES),false)' bash scripts/tests/deploy/swarm/data/run.sh
 
 .PHONY: test-unit
 # Run the unit test suite (every language).

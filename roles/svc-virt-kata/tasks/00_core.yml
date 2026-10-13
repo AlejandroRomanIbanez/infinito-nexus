@@ -42,7 +42,7 @@
   changed_when: false
   when:
     - DEPLOYMENT_MODE == 'swarm'
-    - not (IS_STACK_HOST | bool)
+    - not (IS_SWARM_MANAGER | bool)
 
 - name: "🛑 Refuse a sandbox node that still defaults to the shared kernel"
   ansible.builtin.assert:
@@ -56,7 +56,7 @@
       cannot deliver and the agents would run on the host kernel.
   when:
     - DEPLOYMENT_MODE == 'swarm'
-    - not (IS_STACK_HOST | bool)
+    - not (IS_SWARM_MANAGER | bool)
 
 - name: "🏷️ Label this node as kata-capable"
   ansible.builtin.command: >-
@@ -67,7 +67,7 @@
   delegate_to: "{{ STACK_HOST }}"
   when:
     - DEPLOYMENT_MODE == 'swarm'
-    - not (IS_STACK_HOST | bool)
+    - not (IS_SWARM_MANAGER | bool)
 
 - name: "🔍 Read back the nodes that carry the sandbox label"
   ansible.builtin.command: >-

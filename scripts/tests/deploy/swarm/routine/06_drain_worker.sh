@@ -25,7 +25,8 @@ if [ -z "${IMAGE_TAG}" ]; then
 	echo "    no '${CUSTOM_IMAGE_REPO}:*' image on manager — role uses an upstream image; skipping distribution"
 else
 	echo "    image: ${IMAGE_TAG}"
-	for worker in "${WRK1}" "${WRK2}"; do
+	# shellcheck disable=SC2086  # the lab worker list is space-separated words
+	for worker in ${SWARM_LAB_WORKERS}; do
 		echo "    -> ${worker}"
 		docker exec "${MGR}" docker save "${IMAGE_TAG}" |
 			docker exec -i "${worker}" docker load

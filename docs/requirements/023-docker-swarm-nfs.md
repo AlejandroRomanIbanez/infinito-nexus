@@ -28,7 +28,7 @@ The implementation MUST keep a clean abstraction line between the render backend
 - [x] A new role at `roles/svc-swarm-node/` exists and follows the role-meta layout in [layout.md](../contributing/design/role/services/layout.md) (including `meta/services.yml` with a `lifecycle` key, `meta/secrets.yml`, and `tasks/main.yml`).
 - [x] On first application against the host in `svc-swarm-manager`, the role initialises the cluster (`docker swarm init`) with the configured `advertise_addr`, persists the resulting worker and manager join tokens to a documented secret store, and is idempotent on re-runs.
 - [x] On application against any host in `svc-swarm-node` that is NOT in `svc-swarm-manager`, the role joins the cluster as a worker using the persisted worker token. Joining is idempotent.
-- [x] v1 scope is single-manager. Multi-manager Raft-quorum HA (3+ managers) is explicitly out of scope for this requirement and tracked under [Future Extensions](#future-extensions).
+- [x] v1 scope is single-manager. Multi-manager Raft-quorum HA (3+ managers) is explicitly out of scope for this requirement and tracked under [Future Extensions](#future-extensions). [038](038-database-ha-swarm.md) lifts this: `svc-swarm-manager` now holds 1 host or an odd number of at least 3.
 - [x] Node labels declared for a host in inventory are applied to the joining node (`docker node update --label-add`).
 - [x] The role exposes stack-management primitives (`deploy`, `update`, `remove`) consumable by the deploy pipeline of any role rendering a swarm stack.
 - [x] The role renders a valid `docker-stack.yml` for any role whose target host is in `svc-swarm-node`, derived from the same per-role inputs as today's `docker-compose.yml`.
@@ -186,7 +186,7 @@ Adding a future `kubernetes` backend MUST be additive (new render path consuming
 
 Explicitly out of scope for this requirement, tracked for later:
 
-- **Multi-manager HA.** v1 is single-manager (one host in `svc-swarm-manager`). A follow-up requirement covers 3+ managers with Raft-quorum and the inventory shape that supports it.
+- **Multi-manager HA.** v1 is single-manager (one host in `svc-swarm-manager`). A follow-up requirement covers 3+ managers with Raft-quorum and the inventory shape that supports it: [038](038-database-ha-swarm.md).
 - **Traefik migration / edge HA.** v1 keeps openresty as the swarm edge (pinned to manager) to preserve the `sys-front-inj-*` Lua body-rewriting pipeline unchanged. Migrating to Traefik for true multi-replica edge HA is a follow-up requirement and is gated on porting the body_filter.lua injection logic (CSP-meta stripping + head/body snippet injection for Matomo / CSS / JavaScript / Dashboard / Logout) to a Traefik Yaegi plugin OR introducing a Traefik → openresty chain. Without one of those, switching the edge to Traefik would silently drop the frontend-injection pipeline.
 - **Self-hosted CI runner for the pilot workflow.** v1 pins `test-deploy-swarm-nfs.yml` to GitHub-hosted DinD. Once [014](014-svc-runner-ci.md) is in place, the workflow MAY be migrated to a self-hosted runner for closer-to-production validation.
 - **NFS for stateful databases.** v1 keeps DB data volumes local-only with node-pinning. Reconsidering this requires a separate requirement covering DB-specific NFS semantics (locking, fsync, version compatibility per engine).

@@ -8,7 +8,9 @@ Usage in any service template:
 
 Pass ``provider_self_alias=False`` for a sidecar service that must not carry the
 provider's own alias, and ``own_network_only=True`` for one that must not
-inherit the networks its provider joins as a consumer.
+inherit the networks its provider joins as a consumer. ``internal=True`` adds
+the engine-internal overlay; ``roles_only`` / ``roles_exclude`` filter the
+provider overlays by role id; ``include_default=False`` drops ``default``.
 """
 
 from __future__ import annotations
@@ -52,5 +54,9 @@ class LookupModule(LookupBase):
                 provider_self_alias=bool(kwargs.get("provider_self_alias", True)),
                 node_local=bool(kwargs.get("node_local", False)),
                 own_network_only=bool(kwargs.get("own_network_only", False)),
+                internal=bool(kwargs.get("internal", False)),
+                roles_only=kwargs.get("roles_only"),
+                roles_exclude=kwargs.get("roles_exclude"),
+                include_default=bool(kwargs.get("include_default", True)),
             )
         ]

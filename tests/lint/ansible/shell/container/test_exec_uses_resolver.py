@@ -16,6 +16,14 @@ returns the bare name in compose mode and a runtime-evaluated subshell
 (``"$(/usr/bin/resolve-container-id mattermost)"``) in swarm mode, so
 the same task body works in both deployment modes.
 
+A target that is itself the resolver subshell the lookup emits,
+``"$({{ BIN_RESOLVE_CONTAINER_ID | quote }} <stack> <service-key>)"``
+(or the ``BIN_RESOLVE_DB_PRIMARY`` equivalent), also counts as
+resolved, directly or through a vars/defaults constant whose value is
+that subshell. Swarm-only tasks use it where ``container_address``
+cannot name the service, e.g. per-host HA instance keys such as
+``mariadb-<host-id>``.
+
 ``inspect`` is covered for the same reason, and it fails less
 legibly: the bare name of a role's main service is also the name of
 its overlay network, so a swarm ``docker inspect <name>`` resolves the
@@ -94,6 +102,10 @@ _DIRECT_LOOKUP = re.compile(
     r"|lookup\(\s*['\"]database['\"][^)]*['\"]address['\"]"
 )
 
+_RESOLVER_SUBSHELL = re.compile(
+    r"^\s*\"?\$\(\s*\{\{\s*(?:BIN_RESOLVE_CONTAINER_ID|BIN_RESOLVE_DB_PRIMARY)\b"
+)
+
 _VAR_REFERENCE = re.compile(r"^[A-Za-z_][A-Za-z0-9_]*$")
 
 
@@ -139,13 +151,15 @@ def _collect_approved_variables() -> set[str]:
         for key, value in data.items():
             if not isinstance(key, str) or not isinstance(value, str):
                 continue
-            if _DIRECT_LOOKUP.search(value):
+            if _DIRECT_LOOKUP.search(value) or _RESOLVER_SUBSHELL.match(value):
                 approved.add(key)
     return approved
 
 
 def _classify_target(token: str, approved: set[str]) -> str:
     """Decide whether *token* is OK, an unresolved Jinja, or a literal."""
+    if _RESOLVER_SUBSHELL.match(token):
+        return "ok-resolver-subshell"
     jinja = _JINJA_EXPR.search(token)
     if jinja:
         expr = jinja.group("expr").strip()
@@ -346,6 +360,24 @@ def _scan_line(
 
 
 class TestContainerExecUsesResolver(unittest.TestCase):
+    def test_resolver_subshell_target_is_resolved(self) -> None:
+        line = (
+            '    container exec -i "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} '
+            '{{ entity_name | quote }} {{ item.service | quote }})" sh'
+        )
+        target = _extract_target(line[line.index("exec") + 4 :])
+        self.assertEqual(_classify_target(target, set()), "ok-resolver-subshell")
+        self.assertEqual(
+            _classify_target(
+                "$({{ BIN_RESOLVE_DB_PRIMARY | quote }} {{ stack }} mariadb)", set()
+            ),
+            "ok-resolver-subshell",
+        )
+        self.assertFalse(
+            _classify_target("{{ BIN_RESOLVE_CONTAINER_ID }}", set()).startswith("ok-")
+        )
+        self.assertFalse(_classify_target("$cid", set()).startswith("ok-"))
+
     def test_every_container_exec_routes_through_resolver(self) -> None:
         approved = _collect_approved_variables()
         findings: list[tuple[str, int, str]] = []

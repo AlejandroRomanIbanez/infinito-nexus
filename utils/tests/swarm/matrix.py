@@ -29,6 +29,7 @@ import time
 from utils import PROJECT_ROOT
 from utils.env.runtime import mem_available_mb, mem_stall_pct, mem_total_mb
 from utils.storage.constrained import host_storage_constrained
+from utils.tests.swarm import lab
 from utils.tests.swarm.derive_includes import derive_includes, variant_scope
 from utils.tests.swarm.write.extras import ensure_swarm_keypairs
 
@@ -419,7 +420,10 @@ def main(argv: list[str] | None = None) -> int:
         pubkeys = ensure_swarm_keypairs()
         vars_payload = _bake_overrides(
             base_overrides={
-                "applications": backup_applications_overrides(providers),
+                "applications": {
+                    **backup_applications_overrides(providers),
+                    **lab.application_overrides(),
+                },
                 "users": {
                     name: {"authorized_keys": [key]} for name, key in pubkeys.items()
                 },
@@ -430,6 +434,7 @@ def main(argv: list[str] | None = None) -> int:
             variant_payloads=variant_payloads,
         )
         extras_path = f"{inv_root}/swarm-nfs-extras.yml"
+        drill = round_index == 0
 
         rc = _provision(
             app_id=app_id,
@@ -455,13 +460,13 @@ def main(argv: list[str] | None = None) -> int:
             )
         if rc == 0:
             rc = _converge_and_verify(app_id=app_id)
-        if rc == 0 and round_index == 0:
+        if rc == 0 and drill:
             rc = _deploy_backup_host(
                 app_id=app_id,
                 inv_dir=inv_root,
                 extras_path=f"{inv_root}/swarm-nfs-extras.deploy.yml",
             )
-        if rc == 0 and round_index == 0:
+        if rc == 0 and drill:
             rc = _backup_restore_drill(
                 app_id=app_id, inv_dir=inv_root, extras_path=extras_path
             )
@@ -480,7 +485,7 @@ def main(argv: list[str] | None = None) -> int:
             )
         if rc == 0:
             rc = _converge_and_verify(app_id=app_id)
-        if rc == 0 and round_index == 0:
+        if rc == 0 and drill:
             rc = _verify_recovered_marker(app_id=app_id)
         if rc != 0:
             return rc

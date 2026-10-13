@@ -57,6 +57,8 @@ class TestVolumeLookup(unittest.TestCase):
         self.assertEqual(entry["path"], "")
         self.assertEqual(entry["source"], "")
         self.assertIsNone(entry["nfs"])
+        self.assertIsNone(entry["uid"])
+        self.assertIsNone(entry["gid"])
         self.assertEqual(
             entry["mounts"],
             [{"service": "application", "target": "/mattermost/data"}],

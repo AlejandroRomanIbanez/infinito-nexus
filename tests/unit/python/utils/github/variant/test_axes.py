@@ -4,6 +4,7 @@ import unittest
 import unittest.mock as mock
 
 from utils.github.variant import axes, pools, tor
+from utils.github.variant import topology as topology_axis
 from utils.roles.display import display_names
 from utils.symbol_glossary import to_emoji
 
@@ -613,6 +614,140 @@ class TestEnvironmentReads(unittest.TestCase):
     def test_the_tor_mode_comes_from_the_environment(self) -> None:
         with mock.patch.dict("os.environ", {"INFINITO_TOR": "exclusive"}):
             self.assertEqual(tor.resolve_tor_mode(), "exclusive")
+
+
+_TOPOLOGY_ROWS = [
+    _row(f"web-app-t{index}", 0, ("compose", "swarm")) for index in range(12)
+]
+
+
+class TestDbTopologyAxis(unittest.TestCase):
+    def test_off_by_default(self) -> None:
+        with mock.patch.dict("os.environ", {}, clear=False) as env:
+            env.pop("INFINITO_CI_DB_TOPOLOGY", None)
+            self.assertFalse(topology_axis.resolve_db_topology())
+
+    def test_enabled_by_the_environment(self) -> None:
+        with mock.patch.dict("os.environ", {"INFINITO_CI_DB_TOPOLOGY": "true"}):
+            self.assertTrue(topology_axis.resolve_db_topology())
+
+    def test_explicit_values(self) -> None:
+        for raw in ("true", "on", "1", "enabled", " TRUE "):
+            self.assertTrue(topology_axis.resolve_db_topology(raw), raw)
+        for raw in ("", "false", "off", "0", "nonsense"):
+            self.assertFalse(topology_axis.resolve_db_topology(raw), raw)
+
+    def test_off_keeps_the_pre_existing_keys_unchanged(self) -> None:
+        for sweep in range(8):
+            off = _assign(
+                _TOPOLOGY_ROWS, sweep=sweep, tor_mode="auto", db_topology=False
+            )
+            for entry in off:
+                self.assertEqual(entry["db_topology"], "")
+                self.assertEqual(entry["kill_primary"], "false")
+                self.assertNotIn(to_emoji("ha"), entry["label"])
+                self.assertFalse(entry["artifact"].endswith(("-ha", "-standalone")))
+
+    def test_only_swarm_rows_carry_a_topology(self) -> None:
+        for sweep in range(8):
+            for entry in _assign(
+                _TOPOLOGY_ROWS, sweep=sweep, tor_mode="auto", db_topology=True
+            ):
+                if entry["mode"] == "swarm":
+                    self.assertIn(entry["db_topology"], topology_axis.TOPOLOGIES)
+                else:
+                    self.assertEqual(entry["db_topology"], "")
+                    self.assertEqual(entry["kill_primary"], "false")
+
+    def test_ha_rows_flag_the_kill_primary_probe(self) -> None:
+        for sweep in range(8):
+            for entry in _assign(
+                _TOPOLOGY_ROWS, sweep=sweep, tor_mode="auto", db_topology=True
+            ):
+                self.assertEqual(
+                    entry["kill_primary"],
+                    "true" if entry["db_topology"] == "ha" else "false",
+                )
+
+    def test_rotates_on_its_own_divisor(self) -> None:
+        self.assertEqual(
+            topology_axis.pick_topology(0, 0), topology_axis.pick_topology(0, 3)
+        )
+        self.assertNotEqual(
+            topology_axis.pick_topology(0, 3), topology_axis.pick_topology(0, 4)
+        )
+
+    def test_every_pairing_is_covered_within_eight_sweeps(self) -> None:
+        seen: dict[str, set] = {
+            axis: set() for axis in ("tor", "mode", "distro", "filesystem")
+        }
+        for sweep in range(8):
+            for entry in _assign(
+                _TOPOLOGY_ROWS, sweep=sweep, tor_mode="auto", db_topology=True
+            ):
+                if entry["mode"] != "swarm":
+                    continue
+                topology = entry["db_topology"]
+                for axis in seen:
+                    seen[axis].add((topology, entry[axis]))
+        for topology in topology_axis.TOPOLOGIES:
+            self.assertIn((topology, "true"), seen["tor"])
+            self.assertIn((topology, "false"), seen["tor"])
+            self.assertIn((topology, "swarm"), seen["mode"])
+            for distro in axes.DISTROS:
+                self.assertIn((topology, distro), seen["distro"])
+            for filesystem in axes.FILESYSTEMS:
+                self.assertIn((topology, filesystem), seen["filesystem"])
+
+    def test_mode_tor_topology_cover_every_combination_per_row(self) -> None:
+        row = [_row("web-app-t0", 0, ("compose", "swarm"))]
+        combos = set()
+        for sweep in range(8):
+            for entry in _assign(row, sweep=sweep, tor_mode="auto", db_topology=True):
+                combos.add((entry["mode"], entry["tor"], entry["db_topology"]))
+        self.assertEqual(
+            {c for c in combos if c[0] == "swarm"},
+            {
+                ("swarm", t, h)
+                for t in ("true", "false")
+                for h in topology_axis.TOPOLOGIES
+            },
+        )
+
+    def test_every_application_gets_an_ha_row(self) -> None:
+        ha = set()
+        for sweep in range(8):
+            for entry in _assign(
+                _TOPOLOGY_ROWS, sweep=sweep, tor_mode="auto", db_topology=True
+            ):
+                if entry["db_topology"] == "ha":
+                    ha.add(entry["apps"])
+        self.assertEqual(ha, {row["name"] for row in _TOPOLOGY_ROWS})
+
+    def test_priority_swarm_rows_deploy_both_topologies(self) -> None:
+        rows = [_row("web-app-b", 0, ("swarm",), priority=True)]
+        entries = _assign(rows, sweep=0, tor_mode="disabled", db_topology=True)
+        self.assertEqual(
+            sorted(entry["db_topology"] for entry in entries), ["ha", "standalone"]
+        )
+        self.assertEqual(len({entry["artifact"] for entry in entries}), 2)
+
+    def test_label_carries_and_parses_the_topology_glyph(self) -> None:
+        for sweep in range(8):
+            for entry in _assign(
+                _TOPOLOGY_ROWS, sweep=sweep, tor_mode="auto", db_topology=True
+            ):
+                label = axes.parse_label(entry["label"])
+                self.assertIsNotNone(label)
+                self.assertEqual(label.db_topology, entry["db_topology"])
+                self.assertEqual(label.distro, entry["distro"])
+                self.assertEqual(label.filesystem, entry["filesystem"])
+                if entry["db_topology"]:
+                    self.assertIn(to_emoji(entry["db_topology"]), entry["label"])
+
+    def test_glyphs_are_registered(self) -> None:
+        self.assertEqual(to_emoji("ha"), "🔱")
+        self.assertEqual(to_emoji("standalone"), "☝️")
 
 
 if __name__ == "__main__":

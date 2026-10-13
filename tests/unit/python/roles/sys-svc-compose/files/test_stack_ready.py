@@ -56,6 +56,9 @@ case "$1 $2" in
 		[ -n "${INSPECT_STARTEDAT_FAILS}" ] && exit 1
 		printf '%s' "${SERVICE_INSPECT}"
 		;;
+	*Labels*)
+		printf '%s' "${SERVICE_LABELS}" | awk -F'|' -v s="$5" '$1 == s { print $2 }'
+		;;
 	*) printf '%s' "${SERVICE_INSPECT_PLAIN:-${SERVICE_INSPECT}}" ;;
 	esac
 	;;
@@ -92,6 +95,8 @@ class TestStackReady(unittest.TestCase):
         deployed_services: str = "",
         inspect_startedat_fails: bool = False,
         service_inspect_plain: str = "",
+        service_labels: str = "",
+        seed_wait_label: str = "",
     ) -> subprocess.CompletedProcess:
         """Poll the gate once, ``churning`` seconds into a non-converged deploy.
 
@@ -110,6 +115,8 @@ class TestStackReady(unittest.TestCase):
             inspect_startedat_fails: reject the StartedAt format, as an older
                 docker would.
             service_inspect_plain: rows the fallback format returns.
+            service_labels: ``service|value`` rows of the seed-wait label.
+            seed_wait_label: label name passed as SEED_WAIT_LABEL.
         """
         if updated_at is None:
             updated_at = str(int(time.time()) - churning)
@@ -137,6 +144,8 @@ class TestStackReady(unittest.TestCase):
                 DEPLOYED_SERVICES=deployed_services,
                 INSPECT_STARTEDAT_FAILS="1" if inspect_startedat_fails else "",
                 SERVICE_INSPECT_PLAIN=service_inspect_plain,
+                SERVICE_LABELS=service_labels,
+                SEED_WAIT_LABEL=seed_wait_label,
                 PATH=f"{stub_bin}:{env['PATH']}",
                 BASH_ENV="",
             )
@@ -287,6 +296,49 @@ class TestStackReady(unittest.TestCase):
             service_running=WEB_THREE_RUNNING + "demo_db|Running 4 minutes ago\n",
         )
         self.assertEqual(proc.returncode, 0)
+
+    def test_a_service_with_a_per_node_limit_converges(self) -> None:
+        proc = self._run(
+            "demo_web 3/3 (max 1 per node)\n",
+            service_running=WEB_THREE_RUNNING,
+        )
+        self.assertEqual(proc.returncode, 0)
+
+    def test_a_short_service_with_a_per_node_limit_does_not_converge(self) -> None:
+        proc = self._run("demo_web 2/3 (max 1 per node)\n")
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("not converged", proc.stderr)
+
+    def test_a_seed_waiting_replica_that_started_converges(self) -> None:
+        proc = self._run(
+            "demo_db 0/1\n",
+            service_inspect="demo_db none\n",
+            service_running="demo_db|Starting 4 minutes ago\n",
+            service_labels="demo_db|true\n",
+            seed_wait_label="infinito.seed_wait",
+        )
+        self.assertEqual(proc.returncode, 0)
+
+    def test_a_starting_replica_without_the_label_keeps_waiting(self) -> None:
+        proc = self._run(
+            "demo_db 0/1\n",
+            service_inspect="demo_db none\n",
+            service_running="demo_db|Starting 4 minutes ago\n",
+            service_labels="demo_db|\n",
+            seed_wait_label="infinito.seed_wait",
+        )
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("not converged: demo_db", proc.stderr)
+
+    def test_a_seed_waiting_replica_not_yet_started_keeps_waiting(self) -> None:
+        proc = self._run(
+            "demo_db 0/1\n",
+            service_inspect="demo_db none\n",
+            service_running="demo_db|Preparing 4 seconds ago\n",
+            service_labels="demo_db|true\n",
+            seed_wait_label="infinito.seed_wait",
+        )
+        self.assertEqual(proc.returncode, 1)
 
     def test_a_short_service_does_not_converge(self) -> None:
         proc = self._run("demo_web 2/3\n")

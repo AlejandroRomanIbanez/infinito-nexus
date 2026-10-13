@@ -36,6 +36,7 @@ def _lookup(name, *_args, **_kwargs):
 BASE = {
     "DEPLOYMENT_MODE": "swarm",
     "IS_STACK_HOST": False,
+    "IS_SWARM_MANAGER": False,
     "DOCKER_IN_CONTAINER": True,
     "DOMAIN_PRIMARY": "infinito.test",
     "KATA_SHIM_BINARY": "/usr/bin/containerd-shim-kata-v2",
@@ -43,7 +44,8 @@ BASE = {
     "SANDBOX_RUNTIME": "runsc",
     "SYS_SVC_CONTAINER_DATA_ROOT": "",
     "swarm": {"registry": {"host": "reg", "port": 5000}},
-    "groups": {"svc-registry-cache": []},
+    "inventory_hostname": "wrk-01",
+    "groups": {"svc-registry-cache": [], "svc-swarm-manager": ["mgr-01", "mgr-02", "mgr-03"]},
     "group_names": ["svc-virt-kata"],
     "ansible_facts": {"os_family": "Debian"},
     "SYS_SVC_CONTAINER_DOCKER_FIREWALL_BACKEND_BY_OS_FAMILY": {"Debian": "iptables"},
@@ -80,12 +82,16 @@ class TestSandboxRuntimeRegistration(unittest.TestCase):
         self.assertEqual(sorted(parsed["runtimes"]), ["runsc"])
         self.assertEqual(parsed["default-runtime"], "runsc")
 
-    def test_stack_host_keeps_the_shared_kernel(self):
-        parsed = self._render(
-            IS_STACK_HOST=True, sys_svc_container_runsc_shim=_shim(True)
-        )
-        self.assertIn("runsc", parsed["runtimes"])
-        self.assertNotIn("default-runtime", parsed)
+    def test_every_manager_keeps_the_shared_kernel(self):
+        for host in ("mgr-01", "mgr-03"):
+            with self.subTest(host=host):
+                parsed = self._render(
+                    inventory_hostname=host,
+                    IS_SWARM_MANAGER=True,
+                    sys_svc_container_runsc_shim=_shim(True),
+                )
+                self.assertIn("runsc", parsed["runtimes"])
+                self.assertNotIn("default-runtime", parsed)
 
     def test_compose_mode_never_sets_a_default_runtime(self):
         parsed = self._render(

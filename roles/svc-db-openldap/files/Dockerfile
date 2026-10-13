@@ -7,11 +7,14 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN rm -rf /var/lib/apt/lists/* \
  && apt-get -o Acquire::Retries=3 update \
  && apt-get -o Acquire::Retries=3 install -y --no-install-recommends \
-    slapd slapd-contrib ldap-utils ca-certificates tini \
+    slapd slapd-contrib ldap-utils ca-certificates tini python3 \
  && rm -rf /var/lib/apt/lists/* \
  && rm -rf /etc/ldap/slapd.d/* /var/lib/ldap/* \
  && mkdir -p /run/slapd /var/lib/ldap /etc/ldap/slapd.d \
  && chown -R openldap:openldap /run/slapd /var/lib/ldap /etc/ldap/slapd.d
+
+COPY infinito_elector /opt/elector/infinito_elector
+ENV PYTHONPATH=/opt/elector
 
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh

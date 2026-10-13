@@ -6,6 +6,7 @@ Split by concern (DRY/SPOT/KISS):
 - ``applications``: applications-vs-defaults+variants validation
 - ``users``: user-vs-defaults validation
 - ``hosts``: ``all.children`` host-group validation
+- ``topology``: Swarm manager quorum size and engine-group eligibility
 - ``__main__``: argparse + orchestration
 """
 
@@ -20,6 +21,7 @@ from .applications import compare_application_keys  # noqa: E402
 from .hosts import validate_host_keys  # noqa: E402
 from .keys import recursive_keys  # noqa: E402
 from .loaders import load_inventory_files, load_yaml_file  # noqa: E402
+from .topology import validate_swarm_topology  # noqa: E402
 from .users import compare_user_keys  # noqa: E402
 
 __all__ = [
@@ -31,4 +33,5 @@ __all__ = [
     "main",
     "recursive_keys",
     "validate_host_keys",
+    "validate_swarm_topology",
 ]

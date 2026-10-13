@@ -48,7 +48,7 @@
 
 {% endfor %}
   }
-{% if DEPLOYMENT_MODE == 'swarm' and not (IS_STACK_HOST | bool) and (SANDBOX_RUNTIME | trim) in _present %},
+{% if DEPLOYMENT_MODE == 'swarm' and not (IS_SWARM_MANAGER | bool) and (SANDBOX_RUNTIME | trim) in _present %},
   "default-runtime": "{{ SANDBOX_RUNTIME | trim }}"
 {% endif %}
 {% endif %}

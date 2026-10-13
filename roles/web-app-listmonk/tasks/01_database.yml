@@ -10,8 +10,8 @@
     msg: |
       Listmonk database is not reachable.
 
-      Container: {{ lookup('database', application_id, 'container') }}
-      Database:  {{ lookup('database', application_id, 'name') }}
+      Instance: {{ lookup('database', application_id, 'instance') }}
+      Database: {{ lookup('database', application_id, 'name') }}
 
       Please ensure the shared PostgreSQL stack is running.
   when: listmonk_db_probe.rc != 0

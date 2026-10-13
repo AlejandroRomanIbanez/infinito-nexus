@@ -70,6 +70,22 @@
     group: root
     mode: "0755"
 
+- name: "📁 create {{ BKP_VOLUME_2_LOCAL_HA_GATE_BIN }}"
+  ansible.builtin.copy:
+    src: python/baudolo_ha_gate.py
+    dest: "{{ BKP_VOLUME_2_LOCAL_HA_GATE_BIN }}"
+    owner: root
+    group: root
+    mode: "0755"
+
+- name: "📄 Write the local database HA instances the backup gate probes"
+  ansible.builtin.copy:
+    content: "{{ {'instances': BKP_VOLUME_2_LOCAL_HA_LOCAL} | to_nice_json }}"
+    dest: "{{ BKP_VOLUME_2_LOCAL_HA_GATE_CONFIG }}"
+    owner: root
+    group: root
+    mode: "0600"
+
 - name: "▶️ Execute system service setup for '{{ system_service_id }}'"
   include_role:
     name: sys-service

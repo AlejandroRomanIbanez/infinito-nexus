@@ -1,6 +1,29 @@
 ---
 - include_tasks: utils/once/flag.yml
 
+- include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db_ha_prepare.yml') }}"
+
+- name: "📄 Render the HAProxy write endpoint config"
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db_endpoint.yml') }}"
+  vars:
+    application_id: "svc-db-mariadb"
+
+- name: "🔑 MariaDB HA | Carry rotated passwords into the running cluster"
+  include_tasks:
+    file: ha/00_rotate.yml
+    apply:
+      run_once: true
+  when:
+    - MARIADB_HA | bool
+    - IS_STACK_HOST | bool
+    - not (DB_HA_MIGRATING[application_id] | bool)
+
+- name: "📄 MariaDB HA | Render option files and the image build context"
+  include_tasks: ha/01_files.yml
+  when:
+    - MARIADB_HA | bool
+    - IS_STACK_HOST | bool
+
 - name: "🔧 Setup container network for {{ application_id }}"
   include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/network/routine.yml') }}"
   vars:
@@ -51,7 +74,7 @@
         - mariadb_login_desired.rc != 0
         - "'No such container' not in (mariadb_login_desired.stderr | default(''))"
 
-  when: MARIADB_ALLOW_RESET_WITHOUT_PREVIOUS | bool
+  when: MARIADB_ALLOW_RESET_WITHOUT_PREVIOUS | bool and not (MARIADB_HA | bool)
 
 - name: "⏳ Wait until MariaDB accepts root credentials (inside container)"
   ansible.builtin.shell:
@@ -68,6 +91,7 @@
   retries: 30
   delay: 5
   until: mariadb_cli.rc == 0
+  when: not (MARIADB_HA | bool)
 
 - name: "⏳ Wait until MariaDB accepts root credentials (via mysql_db)"
   ansible.mysql.mysql_db:
@@ -84,3 +108,11 @@
   until: mariadb_ready is succeeded
   changed_when: false
   when: MARIADB_EXPOSE_LOCAL | bool
+
+- name: "🔱 MariaDB HA | Bootstrap, seed and provision the instances"
+  include_tasks: ha/02_instances.yml
+  when:
+    - MARIADB_HA | bool
+    - IS_STACK_HOST | bool
+
+- include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db_ha_health_gate.yml') }}"

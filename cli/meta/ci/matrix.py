@@ -35,7 +35,7 @@ import sys
 
 from cli.meta.ci import chunks, query, slots
 from utils.cache.applications import get_variants
-from utils.github.variant import axes, instructions, pools, selection, tor
+from utils.github.variant import axes, instructions, pools, selection, topology, tor
 from utils.roles.display import display_names
 
 DROPPED = ("priority", "id", "covered", "clone")
@@ -105,6 +105,7 @@ def entries_of(
         distros=distros,
         filesystems=filesystems,
         variants_per_app=get_variants(),
+        db_topology=topology.resolve_db_topology(),
     )
 
 

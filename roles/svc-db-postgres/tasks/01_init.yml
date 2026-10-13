@@ -18,7 +18,7 @@
     resolve_service_key: "{{ entity_name }}"
     resolve_service_name: "{{ lookup('database', database_consumer_id, 'service_name') }}"
     resolve_output_prefix: POSTGRES
-    resolve_compose_cid: "{{ lookup('database', database_consumer_id, 'container') }}"
+    resolve_compose_cid: "{{ lookup('database', database_consumer_id, 'address') }}"
 
 - name: ⏳ Wait until postgres TCP auth works
   block:

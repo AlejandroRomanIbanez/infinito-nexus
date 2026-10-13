@@ -1,0 +1,67 @@
+---
+- name: "⏳ MariaDB HA | Wait until every instance task runs"
+  ansible.builtin.command:
+    argv:
+      - "{{ BIN_RESOLVE_CONTAINER_ID }}"
+      - "{{ entity_name }}"
+      - "{{ item.service }}"
+  register: _mariadb_ha_running
+  until: _mariadb_ha_running.rc == 0
+  retries: 60
+  delay: 5
+  changed_when: false
+  delegate_to: "{{ item.host }}"
+  loop: "{{ MARIADB_INSTANCES.instances }}"
+  loop_control:
+    label: "{{ item.service }}"
+
+- name: "🔍 MariaDB HA | Read each instance's seeding state"
+  ansible.builtin.shell: |
+    container exec "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ item.service | quote }})" sh -c 'if test -e {{ MARIADB_HA_READY_MARKER }}; then echo ready; elif test -d {{ MARIADB_HA_DATADIR }}/mysql; then echo data; else echo empty; fi'
+  register: _mariadb_ha_state
+  changed_when: false
+  delegate_to: "{{ item.host }}"
+  loop: "{{ MARIADB_INSTANCES.instances }}"
+  loop_control:
+    label: "{{ item.service }}"
+
+- name: "🔧 MariaDB HA | Remember ready and pending instances"
+  ansible.builtin.set_fact:
+    _mariadb_ha_ready: "{{ _mariadb_ha_state.results | selectattr('stdout', 'equalto', 'ready') | map(attribute='item') | list }}"
+    _mariadb_ha_pending: "{{ _mariadb_ha_state.results | rejectattr('stdout', 'equalto', 'ready') | list }}"
+    _mariadb_ha_bootstrap: "{{ MARIADB_INSTANCES.instances | selectattr('legacy') | first }}"
+
+- name: "🌱 MariaDB HA | Bootstrap the first writer"
+  include_tasks:
+    file: 03_bootstrap.yml
+    apply:
+      delegate_to: "{{ _mariadb_ha_bootstrap.host }}"
+  when: _mariadb_ha_ready | length == 0
+
+- name: "🔍 MariaDB HA | Resolve the writer"
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_primary.yml') }}"
+  vars:
+    primary_application_id: "svc-db-mariadb"
+    primary_output_prefix: "MARIADB"
+
+- name: "🌱 MariaDB HA | Seed and attach the remaining instances"
+  include_tasks: 04_seed.yml
+  loop: >-
+    {{ (_mariadb_ha_pending | rejectattr('item.service', 'equalto', _mariadb_ha_bootstrap.service) | list)
+       if (_mariadb_ha_ready | length == 0) else _mariadb_ha_pending }}
+  loop_control:
+    loop_var: mariadb_seed
+    label: "{{ mariadb_seed.item.service }}"
+
+- name: "👤 MariaDB HA | Reconcile the replication and elector users on the writer"
+  ansible.builtin.shell: > # nocheck: container-exec-resolver  HA instance keys are mariadb-<host-id>, which container_address cannot name
+    container exec -i {{ MARIADB_PRIMARY_CID | quote }}
+    {{ MARIADB_HA_SQL }}
+  args:
+    stdin: |
+      SET @replication_pwd := '{{ MARIADB_REPLICATION_PWD }}';
+      SET @elector_pwd := '{{ MARIADB_ELECTOR_PWD }}';
+      {{ lookup('template', role_path ~ '/templates/sql/ha/users.sql.j2') }}
+  delegate_to: "{{ MARIADB_PRIMARY_NODE }}"
+  changed_when: false
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"

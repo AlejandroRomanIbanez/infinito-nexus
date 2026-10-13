@@ -1,0 +1,127 @@
+const fs = require("fs");
+const { test } = require("@playwright/test");
+const { biberUsername, biberPassword, mapachePassword } = require("./env");
+
+const NAME = "08-tor-onion";
+const ONION = "4dl6yijmuksgh5bfaf3csqoelji7zptyuo6wy5g5prjpnk6vdbzfwnad.onion";
+const WEBMAIL = `http://webmail.${ONION}`;
+const SUBJECT = "Hello from the onion side";
+
+test.use({
+  viewport: { width: 1920, height: 1080 },
+  video: { mode: "on", size: { width: 1920, height: 1080 } },
+  launchOptions: { slowMo: 200 },
+  proxy: { server: "socks5://host.docker.internal:9050" },
+});
+
+const CURSOR = `
+  window.addEventListener('DOMContentLoaded', () => {
+    const c = document.createElement('div');
+    Object.assign(c.style, { position: 'fixed', zIndex: 2147483647, pointerEvents: 'none', width: '22px', height: '22px',
+      borderRadius: '50%', background: 'rgba(255,200,0,.55)', border: '2px solid #222', transform: 'translate(-50%,-50%)',
+      transition: 'width .15s,height .15s', left: '-50px', top: '-50px' });
+    document.body.appendChild(c);
+    document.addEventListener('mousemove', e => { c.style.left = e.clientX + 'px'; c.style.top = e.clientY + 'px'; }, true);
+    document.addEventListener('mousedown', () => { c.style.width = c.style.height = '38px'; }, true);
+    document.addEventListener('mouseup', () => { c.style.width = c.style.height = '22px'; }, true);
+  });`;
+
+async function click(page, locator, timeout = 180_000) {
+  const el = locator.filter({ visible: true }).first();
+  await el.waitFor({ state: "visible", timeout });
+  const box = await el.boundingBox();
+  if (box) await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2, { steps: 25 });
+  await page.waitForTimeout(300);
+  await el.click();
+}
+
+async function type(page, locator, text, delay = 60) {
+  await click(page, locator);
+  await locator.filter({ visible: true }).first().pressSequentially(text, { delay });
+}
+
+async function login(page, user, pass) {
+  await page.goto(`${WEBMAIL}/`, { timeout: 300_000 });
+  await page.waitForTimeout(1500);
+  const sso = page.getByRole("link", { name: /login with sso|sso login/i });
+  if (await sso.first().isVisible().catch(() => false)) await click(page, sso);
+  await page.locator("#username").waitFor({ state: "visible", timeout: 300_000 });
+  await page.locator("#username").fill("");
+  await type(page, page.locator("#username"), user);
+  await click(page, page.locator("#password"));
+  await page.locator("#password").fill(pass);
+  await click(page, page.locator("#kc-login"));
+  await page.getByRole("button", { name: /compose/i }).filter({ visible: true }).first().waitFor({ timeout: 300_000 });
+  await page.waitForTimeout(2500);
+}
+
+const nav = [];
+const marks = [];
+
+test.afterEach(async ({ page }) => {
+  const video = page.video();
+  await page.context().close();
+  if (video) await video.saveAs(`/reports/${NAME}.webm`);
+  fs.writeFileSync(`/reports/${NAME}.nav.json`, JSON.stringify(nav));
+  fs.writeFileSync(`/reports/${NAME}.marks.json`, JSON.stringify(marks));
+});
+
+test(NAME, async ({ page }) => {
+  test.setTimeout(900_000);
+  const t0 = Date.now();
+  const mark = (label) => marks.push({ t: (Date.now() - t0) / 1000, label });
+  page.on("framenavigated", (f) => {
+    if (f !== page.mainFrame()) return;
+    const u = new URL(f.url());
+    nav.push({ t: (Date.now() - t0) / 1000, url: `${u.protocol}//${u.host}${u.pathname === "/" ? "" : u.pathname}` });
+  });
+  await page.addInitScript(CURSOR);
+
+  mark("sender-login-start");
+  await login(page, biberUsername, biberPassword);
+  mark("sender-inbox");
+
+  await click(page, page.getByRole("button", { name: /compose/i }));
+  await page.waitForURL(/_action=compose/, { timeout: 300_000 });
+  await page.waitForLoadState("networkidle").catch(() => {});
+  mark("compose");
+  const from = page.locator("select#_from, select[name='_from']").first();
+  await click(page, from);
+  await page.waitForTimeout(800);
+  await click(page, page.locator(".popover.select-menu a", { hasText: ONION }));
+  await page.waitForTimeout(1500);
+  mark("from-onion");
+  await type(page, page.getByRole("listitem").getByRole("combobox"), `mapache@${ONION}`, 40);
+  await page.keyboard.press("Enter");
+  await page.waitForTimeout(500);
+  await page.keyboard.press("Escape");
+  mark("to-onion");
+  await type(page, page.getByRole("textbox", { name: "Subject" }), SUBJECT);
+  await type(page, page.getByRole("textbox", { name: "Message Body" }), "Written on an onion address, to an onion address, reached over Tor.", 30);
+  await page.waitForTimeout(1500);
+  mark("send");
+  await click(page, page.getByRole("button", { name: /^\W*Send$/ }));
+  await page.waitForTimeout(4000);
+
+  const logout = page.locator("a[href*='_task=logout'], a.logout").or(page.getByRole("link", { name: /logout|sign out/i }));
+  await click(page, logout);
+  await page.waitForTimeout(3000);
+  await page.context().clearCookies();
+
+  mark("recipient-login-start");
+  await login(page, "mapache", mapachePassword);
+  mark("recipient-inbox");
+  const row = page.locator("#messagelist").getByText(SUBJECT).first();
+  for (let i = 0; i < 20 && !(await row.isVisible().catch(() => false)); i++) {
+    await page.waitForTimeout(3000);
+    await page.goto(`${WEBMAIL}/?_task=mail&_mbox=INBOX`, { timeout: 300_000 });
+  }
+  await page.waitForTimeout(1500);
+  await click(page, row);
+  await page.waitForTimeout(1000);
+  await row.dblclick();
+  mark("open-mail");
+  await page.waitForTimeout(4000);
+  mark("hold");
+  await page.waitForTimeout(8000);
+});

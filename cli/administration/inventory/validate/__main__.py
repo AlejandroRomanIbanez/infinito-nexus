@@ -18,6 +18,9 @@ from cli.administration.inventory.validate.loaders import (  # noqa: E402
     load_inventory_files,
     load_yaml_file,
 )
+from cli.administration.inventory.validate.topology import (  # noqa: E402
+    validate_swarm_topology,
+)
 from cli.administration.inventory.validate.users import compare_user_keys  # noqa: E402
 from utils.cache.applications import (  # noqa: E402
     get_application_defaults,
@@ -67,6 +70,7 @@ def main() -> None:
 
     host_errs = validate_host_keys(set(application_defaults), args.inventory_dir)
     app_errs.extend(host_errs)
+    app_errs.extend(validate_swarm_topology(args.inventory_dir))
 
     if app_errs or user_errs:
         if app_errs:

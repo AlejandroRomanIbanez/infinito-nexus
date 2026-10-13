@@ -21,6 +21,9 @@
       placement:
         constraints:
           - node.role == manager
+{% if (groups['svc-swarm-manager'] | default([]) | length) > 1 %}
+          - node.labels.{{ SWARM_NODE_LABEL_STACK_HOST }} == true
+{% endif %}
 {% endif %}
     {{ lookup('container_extra_hosts', extra_hosts=(
          [] if lookup('domain', 'web-app-keycloak').endswith('.onion')

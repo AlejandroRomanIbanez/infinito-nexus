@@ -2,7 +2,12 @@
 
 ## User Story
 
-As a platform administrator running Infinito.Nexus on Docker Swarm, I want the central Postgres, MariaDB, Redis and OpenLDAP engines to run as highly available database clusters across three managers, so that losing any one node loses no acknowledged Postgres or MariaDB write and stops writes for at most 90 seconds, without changing a single application role.
+As a platform administrator running Infinito.Nexus on Docker Swarm, I want the central Postgres, MariaDB, Redis and OpenLDAP engines to run as database clusters across three managers, without changing a single application role, so that losing any one node:
+
+- for the **durable tier** (Postgres, MariaDB) loses no acknowledged write and stops writes for at most 90 seconds;
+- for the **best-effort tier** (Redis, OpenLDAP) stops writes for at most 90 seconds and loses at most 10 seconds of acknowledged writes.
+
+Losing a second node stops writes and never loses them on the durable tier. Surviving two node losses is not a goal of this requirement.
 
 ## Context
 
@@ -10,7 +15,7 @@ Swarm v1 ([023](023-docker-swarm-nfs.md)) runs one manager, and every central en
 
 Swarm is the mode existing installs run today, and many of them will never move to Kubernetes. This requirement therefore brings database HA to Swarm first. [037](037-database-cluster-kubernetes.md) brings the same promise to Kubernetes afterwards and reuses the mode-agnostic parts built here.
 
-Swarm has no operators, so the failover pieces are off-the-shelf tools wired by the project: Patroni for Postgres, replication-manager for MariaDB, Sentinel for Redis, and the project's own writer elector for OpenLDAP, which 037 also uses. One shared etcd coordinates Patroni and the elector. One HAProxy service per engine is the write endpoint.
+Swarm has no operators, so the failover pieces are off-the-shelf tools wired by the project where a safe one exists: Patroni for Postgres and Sentinel for Redis. MariaDB and OpenLDAP use the project's own writer elector; 037 reuses it for OpenLDAP only. One shared etcd coordinates Patroni and the elector. One HAProxy service per engine is the write endpoint.
 
 This requirement covers:
 
@@ -22,7 +27,7 @@ This requirement covers:
 6. **Operations:** declaring a node dead, migrating existing single-instance installs, backups, security, sizing and version pins.
 7. **Tests for everything:** unit tests, lints, a deterministic CI axis that runs every Swarm deploy row against standalone or HA databases, and a failover suite shared with 037.
 
-**What 038 builds once and 037 reuses:** the lookup contract (`host` names the write endpoint, `address`/`container` mean "exec into the primary"), inventory-owned credentials, the acceptance suite's shared core, the instance list as the mode-agnostic notion of instances, and the OpenLDAP writer elector with a pluggable lock backend.
+**What 038 builds once and 037 reuses:** the lookup contract (`host` names the write endpoint, `address`/`container` mean "exec into the primary"), inventory-owned credentials, the acceptance suite's shared core, the instance list as the mode-agnostic notion of instances, and the writer elector (used by MariaDB and OpenLDAP) with a pluggable lock backend.
 
 **What this requirement does not change:** a host group with one host renders today's exact standalone shape. Existing installs see no change until the administrator adds hosts.
 
@@ -30,10 +35,12 @@ This requirement covers:
 
 - **Local volumes plus engine replication, not NFS.** 023 kept database volumes local and deferred "NFS for stateful databases" because of fsync, locking and per-engine compatibility semantics. A database on one shared NFS export would also keep the NFS server as the single point of failure. Each instance therefore keeps a local volume, the engines replicate between instances, and a lost node's data is re-cloned from a live peer.
 - **Pinning per instance is not the old manager pin.** The old pin put every engine on one node. Here each instance is pinned to its own host so its local data never moves, and the engine runs on three nodes at once.
-- **Off-the-shelf failover where it exists, own code only where it does not.** Patroni (Postgres), replication-manager (MariaDB) and Sentinel (Redis) are maintained upstream tools. OpenLDAP has none, so it uses the project's writer elector, which 037 needs anyway. HAProxy is the one write-endpoint pattern for all four, and etcd the one coordination store. A MariaDB backend of the elector would remove replication-manager but add failover code the project owns; it is kept as the fallback if replication-manager fails its risk below.
+- **Off-the-shelf failover where a safe one exists, own code only where it does not.** Patroni (Postgres) and Sentinel (Redis) are maintained upstream tools. OpenLDAP has none. For MariaDB, the free edition of replication-manager cannot run a safe redundant pair (arbitration is a paid feature), so a single instance would be a single point of failure that needs rescheduling, with no fencing of an isolated old task (see [Alternatives considered](#alternatives-considered)). MariaDB and OpenLDAP therefore use the project's writer elector, which 037 needs anyway. HAProxy is the one write-endpoint pattern for all four, and etcd the one coordination store.
+- **Two guarantee tiers.** Postgres and MariaDB hold source data that applications cannot rebuild, so they wait for a synchronous replica and stall rather than lose a write. Redis is a cache and session store, and OpenLDAP takes few writes, so both trade a bounded loss window for availability instead of a synchronous fence.
+- **High availability is not disaster recovery.** The cluster survives one node loss. Losing the whole cluster is recovered from the last successful dump; see [Backups](#backups).
 - **Standalone stays today's code path.** Running Patroni, Sentinel or the elector at one instance would change every existing install. The HA form is therefore a separate rendering, selected only by the number of hosts in the engine group, and both forms are covered by the CI topology axis.
 - **Tor:** the databases have no onion exposure. The tor and topology CI axes rotate independently, so every engine is deployed with HA under Tor as well.
-- **Licences:** the new components run as separate containers, not copied code: Patroni (MIT), HAProxy (GPL-2.0), replication-manager (GPL-3.0), etcd (Apache-2.0), Redis Sentinel (same image and licence as today's Redis).
+- **Licences:** the new components run as separate containers, not copied code: Patroni (MIT), HAProxy (GPL-2.0), etcd (Apache-2.0), Redis Sentinel (same image and licence as today's Redis).
 
 **Terms used below:**
 
@@ -47,10 +54,38 @@ This requirement covers:
 | **Stack host** | The one host that runs stack-level work. On Swarm it is the first host in `svc-swarm-manager`, even when there are several managers. |
 | **Primary resolver** | The shared task that asks an engine which instance is primary (or writer) and returns the node and container to exec into. |
 | **Coordination store** | The shared etcd that Patroni and the writer elector use for leader election. |
-| **Writer election** | How OpenLDAP keeps exactly one writable instance: instances compete for a lease, and an instance that loses or cannot renew it makes itself read-only. |
+| **Writer election** | How MariaDB and OpenLDAP keep exactly one writable instance: instances compete for a lease, and an instance that loses or cannot renew it makes itself read-only. |
+| **Durable tier** | Postgres and MariaDB: no acknowledged write lost on one node loss; writes stall rather than continue unprotected. |
+| **Best-effort tier** | Redis and OpenLDAP: on one node loss, at most 10 s of acknowledged writes are lost (Redis) or merged last-writer-wins by `entryCSN` (OpenLDAP). |
+| **Failover budget** | The documented worst-case write gap per engine and fault, built from the configured timings. Each line is a failover suite assertion. |
 | **Forgetting a node** | Declaring a lost node permanently gone. The administrator makes that one decision, because a partition looks the same as a dead node; everything after it is automatic. |
 
 ## Acceptance Criteria
+
+### Guarantees
+
+- [ ] Each `svc-db-*` README carries its row of this table and nothing stronger:
+
+  | Engine | Tier | One node lost | Two nodes lost | Isolated old primary or writer |
+  |---|---|---|---|---|
+  | Postgres | durable | 0 acknowledged writes lost | writes stop, nothing lost | cannot commit: no synchronous standby acknowledges |
+  | MariaDB | durable | 0 acknowledged writes lost | writes stop, nothing lost | cannot commit: semi-sync waits for a replica forever; set read-only on losing the lease |
+  | Redis | best-effort | ≤ 10 s of acknowledged writes lost | writes stop | stops writing after `min-replicas-max-lag` 10 s |
+  | OpenLDAP | best-effort | ≤ 10 s of writes merged last-writer-wins by `entryCSN` | writes stop | read-only at the renew deadline, 10 s |
+
+- [ ] Two node losses stop writes on purpose: etcd, Swarm Raft and the synchronous fences all need a majority of three, and that majority is what prevents split-brain. A 5-manager profile that survives two losses is a [Future Extension](#future-extensions).
+- [ ] The failover budget below is part of the design. Every value is derived from the configured timings and documented sources, is a failover suite assertion, and is updated in this document when a measured value differs:
+
+  | Engine | Instance kill (ceiling 30 s) | Node crash, hang or partition (ceiling 90 s) | Rolling change (ceiling 10 s, goal 5 s) |
+  |---|---|---|---|
+  | Postgres | ≈ 28 s | ≈ 30 s | ≈ 4–6 s |
+  | MariaDB | ≈ 25 s | ≈ 27 s | ≈ 4–6 s |
+  | Redis | ≈ 11 s | ≈ 11 s, ≈ 31 s on a split Sentinel vote | ≈ 4–5 s |
+  | OpenLDAP | ≈ 21 s | ≈ 23 s | ≈ 4 s |
+
+  The components are lock or lease expiry, promotion, HAProxy marking the new primary up, and client reconnect. Promotion times and Swarm's removal of a dead node's HAProxy replica from the virtual IP are assumptions until measured; see [Risks](#risks-to-settle-during-implementation).
+- [ ] Failover never depends on `STACK_HOST` or its image registry: instances are pinned to their hosts and run from cached images, and HAProxy, etcd and the electors need nothing from the stack host to fail over. Only re-cloning onto a replacement host and re-running a deploy need `STACK_HOST`, and both are manual steps in this requirement.
+- [ ] The recovery point after losing the whole cluster is the last successful dump. Each README states the dump interval as the worst-case loss for a full disaster.
 
 ### Swarm foundation: three managers
 
@@ -81,33 +116,33 @@ This requirement covers:
 - [ ] A new role (working name `svc-dcs-etcd`) runs one shared etcd for Patroni, the writer elector and any later elector. It starts at `lifecycle: alpha` and is promoted to beta only when the failover suite and the HA rows of the CI topology axis are green, with Tor, at the HA size.
 - [ ] etcd uses the instance model: one member per host in the `svc-dcs-etcd` group, named after and pinned to the host. By default the group is the managers. A validator allows 1 or an odd number of at least 3 members.
 - [ ] etcd is deployed only when at least one engine runs in HA form. Standalone installs get no etcd.
-- [ ] The version is an exact pin, starting from the latest 3.6.x patch.
+- [ ] The version is an exact pin of the etcd project's official image, starting from `gcr.io/etcd-development/etcd:v3.6.15`.
 - [ ] Security:
   - peer and client TLS from a project CA that Ansible generates;
   - authentication on, with a root password from the inventory;
-  - one user per consumer, restricted to its key prefix (Patroni `/service/`, the elector `/infinito/openldap/`);
+  - one user per consumer, restricted to its key prefix (Patroni `/service/`, the MariaDB elector `/infinito/mariadb/`, the OpenLDAP elector `/infinito/openldap/`), with one etcd user per engine elector;
   - its own encrypted overlay network, which only the database stacks join;
-  - the root and consumer passwords declared in `meta/secrets.yml` `credentials:` and delivered as `type: secret` entries in `meta/volumes.yml`.
+  - the root and every consumer password (Patroni and each engine elector) declared once in `roles/svc-dcs-etcd/meta/secrets.yml` `credentials:`, the single owner; the engine roles read their consumer password from there and deliver it as a `type: secret` entry in their own `meta/volumes.yml`.
 - [ ] etcd is not backed up: it holds no source data. Ansible re-applies Patroni's configuration on every run, and leader keys rebuild themselves. The disaster-recovery runbook is "bootstrap an empty etcd, re-run".
-- [ ] When etcd loses quorum, Patroni keeps its primary through `failsafe_mode` where it can still reach every member, and the writer elector fails closed (OpenLDAP read-only).
+- [ ] When etcd loses quorum, Patroni keeps its primary through `failsafe_mode` where it can still reach every member, and the writer elector fails closed (MariaDB `read_only=1`, OpenLDAP `olcReadOnly: TRUE`).
 - [ ] The forget-node target removes the dead host's etcd member; the following re-run adds the replacement's member.
 - [ ] The role README states that etcd is Swarm-only infrastructure the project owns; on Kubernetes the operators and Lease objects replace it.
 
 ### The write endpoint and the lookup seam
 
-- [ ] Each engine in HA form has one HAProxy service in its own stack, with an engine-specific health check:
+- [ ] Each engine in HA form has one HAProxy service in the engine's existing stack, rendered under today's service key, with an engine-specific health check:
   - Postgres: Patroni's `GET /primary` on port 8008;
-  - MariaDB: a per-instance HTTP check that answers 200 only when the server is up and `@@read_only = 0`;
+  - MariaDB: the writer elector's `GET /writer`, which answers 200 only while it holds the lease and the server reports `@@read_only = 0`;
   - Redis: a TCP check that logs in as a dedicated check user and expects `role:master` and `connected_slaves:[1-9]`;
   - OpenLDAP: the writer elector's `GET /writer`.
 
-  Every check uses `on-marked-down shutdown-sessions`.
+  Every server uses `inter 1s fastinter 500ms downinter 1s fall 2 rise 1 on-marked-down shutdown-sessions`, with `timeout check 1s`. These timings are part of the failover budget.
 - [ ] HAProxy runs 2 replicas with `max_replicas_per_node: 1`, unpinned, so it survives the loss of the node one replica runs on.
 - [ ] In HA form the write endpoint takes over today's service name and alias (`postgres`, `mariadb`, `redis-central`, `openldap`). Applications keep the same `host` and need no change.
 - [ ] Ansible reaches the primary only by exec into the current primary instance, delegated to the node it runs on. In HA form no database port is published, because Swarm ingress publishing cannot bind to `127.0.0.1`.
 - [ ] A shared task (working name `resolve_primary.yml`, generalising today's `resolve_host_cid.yml`) only dispatches: it includes the engine role's own primary query and sets `<ENGINE>_PRIMARY_NODE` plus the container to exec into. Each `svc-db-*` role owns its query file:
   - Postgres: Patroni's REST `/cluster`;
-  - MariaDB: replication-manager's API, or replication status;
+  - MariaDB: the elector's `/writer`;
   - Redis: Sentinel `get-master-addr-by-name`;
   - OpenLDAP: the elector's `/writer`.
 - [ ] `lookup('database')` and `lookup('engine')` keep their shape in every mode. In HA form:
@@ -124,23 +159,27 @@ This requirement covers:
 
 - [ ] One image serves both forms: the project's `postgres:18` + PGDG image gains `patroni` (≥ 4.1.5, exact apt version pinned in `Dockerfile.j2`) and `python3-etcd`. In HA form Patroni is the entrypoint; the standalone form runs plain `postgres` as today.
 - [ ] Patroni settings:
-  - `synchronous_mode: quorum`, `synchronous_node_count: 1`, `synchronous_mode_strict: false`;
+  - `synchronous_mode: quorum`, `synchronous_node_count: 1`, `synchronous_mode_strict: true`, so writes stall when no synchronous standby is left instead of continuing unprotected;
   - `failsafe_mode: true`;
-  - `primary_start_timeout: 30` (the default of 300 s would break the 90 s target when Postgres itself crashes);
-  - `use_pg_rewind: true` with `wal_log_hints: on`;
-  - the default `ttl` 30, `loop_wait` 10 and `retry_timeout` 10.
+  - `ttl: 20`, `loop_wait: 5`, `retry_timeout: 7` (satisfying `loop_wait + 2 × retry_timeout ≤ ttl`);
+  - `primary_start_timeout: 10` (the default of 300 s would break the 30 s instance target when Postgres itself crashes);
+  - `use_pg_rewind: true` with `wal_log_hints: on`.
 - [ ] In HA form the tuning that is passed as `-c` flags today (`max_connections`, `shared_buffers`, …) moves into Patroni's cluster configuration. Ansible re-applies it on every run; Patroni restarts members only when a setting requires it. The standalone form keeps the flags.
 - [ ] Provisioning in HA form renders today's `01_init.yml` statements (database, user, grants, `ALTER DEFAULT PRIVILEGES`, extensions) as idempotent SQL and applies it with `psql -v ON_ERROR_STOP=1` by exec into the primary, with peer authentication as `postgres` and no password in argv. The grants stay.
 - [ ] Extensions are unchanged: built into the image from `postgres_libraries`, created per consumer inside that SQL.
-- [ ] New credentials `POSTGRES_REPLICATION_PASSWORD`, `POSTGRES_REWIND_PASSWORD` and Patroni's etcd password are declared in `roles/svc-db-postgres/meta/secrets.yml` `credentials:` (with `algorithm` and `validation`, like `POSTGRES_PASSWORD`) and read once in `vars/main.yml` via `lookup('config', application_id, 'secrets.credentials.<KEY>')`.
+- [ ] New credentials `POSTGRES_REPLICATION_PASSWORD` and `POSTGRES_REWIND_PASSWORD` are declared in `roles/svc-db-postgres/meta/secrets.yml` `credentials:` (with `algorithm` and `validation`, like `POSTGRES_PASSWORD`) and read once in `vars/main.yml` via `lookup('config', application_id, 'secrets.credentials.<KEY>')`.
 - [ ] `pg_hba` allows replication and rewind only from the engine-internal overlay, application logins with `scram-sha-256`, and local peer authentication for Ansible's exec. Patroni renders it from Ansible-owned configuration.
 - [ ] A rolling change updates replicas one at a time (each healthy and streaming before the next), then runs `patronictl switchover` to a synchronous replica, then updates the old primary. Ansible orders it, because Swarm's `update_config` does not span services.
-- [ ] The README states the durability promise precisely: no acknowledged write lost on one node loss, and writes continue after two **instance** failures but not after two **node** failures, because etcd on the same three nodes loses quorum.
+- [ ] The README states the durability promise precisely: no acknowledged write lost on one node loss; writes stop, and nothing is lost, once no synchronous standby is left. On etcd quorum loss the primary keeps serving only through `failsafe_mode` while it reaches every member, and otherwise demotes.
 
-### MariaDB: `svc-db-mariadb` with replication-manager
+### MariaDB: `svc-db-mariadb` with writer election
 
-- [ ] Failover is done by replication-manager (GPL-3.0): one free-plan instance, unpinned, rescheduled by Swarm when its node dies. It only promotes; it does not route.
-- [ ] HAProxy follows each instance's `read_only` health check, so routing keeps working while replication-manager is down or being rescheduled.
+- [ ] Failover is done by the writer elector with a MariaDB role backend, the same package and etcd lock backend as OpenLDAP. Every instance runs the elector as a second process; there is no separate failover service to reschedule. If the elector exits, mariadbd stops and the container restarts with `read_only=1`.
+- [ ] Lease, renew deadline and retry are the same as OpenLDAP's (15 s, 10 s, 2 s).
+  - **On winning:** the elector keeps the lease only if its instance has the highest `@@gtid_current_pos` among reachable instances (not `gtid_slave_pos`, which stays stale on a former primary), ties broken by host-id (otherwise it releases and lets that instance win), waits until its relay log is applied, stops replication, sets `read_only=0`, and announces itself in etcd.
+  - **On losing the lease, missing the renew deadline, or SIGTERM:** set `read_only=1` first, without needing the network, then release the lease.
+  - **Following:** an instance that does not hold the lease points itself at the announced writer with `CHANGE MASTER TO … MASTER_USE_GTID=slave_pos`.
+- [ ] An isolated old primary cannot acknowledge a write even before it turns read-only, because semi-sync with the maximal timeout waits for a replica that it cannot reach.
 - [ ] The HA server profile:
   - semi-sync with `rpl_semi_sync_master_wait_point=AFTER_SYNC`;
   - a maximal `rpl_semi_sync_master_timeout`, so writes stall rather than silently going async;
@@ -153,22 +192,22 @@ This requirement covers:
 - [ ] The version stays on the role's rolling 13.x pin, with the same image in both forms. There is no downgrade.
 - [ ] Provisioning in HA form renders `01_init.yml` (database, user, grant, character set and collation from `MARIADB_ENCODING` / `MARIADB_COLLATION`) as idempotent SQL, applied by exec into the primary over the local socket. Credentials come from a mounted defaults file, never argv.
 - [ ] `02_reset_root_password.yml` (which scales the service to 0 and back) is not supported in HA form. A root password change is an `ALTER USER` on the primary, which replicates.
-- [ ] On a re-run, an instance with an empty volume is seeded by Ansible: a `mariadb-backup` stream from a healthy replica (or the primary if none is healthy), then `gtid_slave_pos` and `CHANGE MASTER TO … MASTER_USE_GTID=slave_pos`. replication-manager's own rebuild, which needs SSH and sudo into hosts, is not used.
-- [ ] New credentials for the replication user and the replication-manager user are declared in `roles/svc-db-mariadb/meta/secrets.yml` `credentials:` and read once in `vars/main.yml`.
+- [ ] On a re-run, an instance with an empty volume is seeded by Ansible: a `mariadb-backup` stream from a healthy replica (or the primary if none is healthy), then `gtid_slave_pos` and `CHANGE MASTER TO … MASTER_USE_GTID=slave_pos`. Its elector competes only after it has caught up.
+- [ ] New credentials for the replication user and the elector's SQL user are declared in `roles/svc-db-mariadb/meta/secrets.yml` `credentials:` and read once in `vars/main.yml`. The elector's etcd password is read from `svc-dcs-etcd`.
 
 #### Alternatives considered
 
+- **replication-manager (GPL-3.0):** rejected. The free edition cannot run a safe redundant pair, because arbitration between two instances is a paid feature, so one instance would have to be rescheduled by Swarm after dying with the primary's node (≈ 76 s when that node was also the Raft leader). It does not fence an isolated old task, its automatic failover is off by default and stops after five failovers by default, and no release note confirms MariaDB 13.x.
 - **MaxScale:** rejected as the default. Only the 23.08 line became GPL (2026-09-21), and its public builds stop at 23.08.13, without later safety fixes. The current line is proprietary and needs a licence key; 24.02 and 24.08 remain BSL, limited below 3 servers, until 2027. A frozen proxy that carries every byte fails the production-grade bar.
 - **Orchestrator:** the upstream repository is archived.
 - **Galera:** restricts applications (primary keys for `DELETE`, no `LOCK TABLES`), a risk across 19 unchanged MariaDB consumers.
-- **Our own elector for MariaDB:** kept as the fallback if replication-manager fails the risk below.
 
 ### Redis: `svc-db-redis` with Sentinel
 
 - [ ] The HA form runs 3 Redis instances and 3 Sentinels, one Sentinel pinned to each instance host, each with a small pinned volume for its own configuration file.
 - [ ] Sentinel settings: quorum 2, `down-after-milliseconds 5000`, `failover-timeout 10000`, `parallel-syncs 1`, `resolve-hostnames yes`, `announce-hostnames yes`. Each instance and Sentinel announces itself by its own service name.
 - [ ] HAProxy keeps the `redis-central` alias; the ~80 `lookup('engine', 'redis', …)` uses are unchanged.
-- [ ] A start-up wrapper asks the Sentinels for the current master. If another instance is master, this instance starts as its replica. `min-replicas-to-write` is not set (same async stance as 037); it is reopened only if the failover suite still shows split writes.
+- [ ] A start-up wrapper asks the Sentinels for the current master. If another instance is master, this instance starts as its replica. Replication stays async, with `min-replicas-to-write 1` and `min-replicas-max-lag 10` (as in 037): a partitioned old master stops taking writes within 10 s, and writes stop while no replica is connected.
 - [ ] Configuration has two owners in two files:
   - an Ansible-owned include (password, `maxmemory`, ACL users, persistence), re-rendered on every run;
   - a writable main `/data/redis.conf` that includes it, seeded only when absent, so Sentinel's `replicaof` rewrites persist across redeploys.
@@ -181,7 +220,7 @@ This requirement covers:
 ### OpenLDAP: `svc-db-openldap` with writer election
 
 - [ ] The HA form runs N-way multi-provider syncrepl across all instances (`olcMultiProvider: TRUE`, syncrepl to every peer). Only one instance takes writes at a time.
-- [ ] Each instance runs the writer elector, a Python package in `roles/svc-db-openldap/files/elector/` with a lock interface and two backends: an etcd lease on Swarm and a Kubernetes Lease for 037. It runs as a second process under the image's `tini`; if it exits, slapd stops and the container restarts read-only.
+- [ ] Each instance runs the writer elector, a shared Python package used by MariaDB and OpenLDAP, with a lock interface (an etcd lease on Swarm, a Kubernetes Lease for 037) and a role interface (MariaDB, OpenLDAP). It lives in `files/db-elector/`, outside the engine roles, and both images copy it at build time; its unit tests live beside that path. It runs as a second process under the image's `tini`; if it exits, slapd stops and the container restarts read-only.
 - [ ] The elector competes only after the instance's initial syncrepl refresh is complete (its contextCSN equals a peer's). Lease 15 s, renew deadline 10 s, retry 2 s.
   - **On winning:** set `olcReadOnly: FALSE` over `ldapi`.
   - **On losing the lease, missing the renew deadline, or SIGTERM:** set `olcReadOnly: TRUE` first, without needing the network, then release the lease.
@@ -192,14 +231,14 @@ This requirement covers:
   2. HAProxy marking it down;
   3. a new writer counting only once it holds the lease.
 
-  The README documents the accepted residual risk: a frozen old writer may accept writes for a few seconds, merged last-writer-wins by `entryCSN`.
+  The README documents the accepted residual risk: a frozen old writer may accept up to 10 s (the renew deadline) of writes, merged last-writer-wins by `entryCSN`.
 - [ ] Ansible renders `cn=config` per instance as LDIF: schemas (including those `ldapsm` adds today, now as static LDIF), the memberof and refint overlays, syncrepl to every peer, `olcServerID`, and the data database read-only at boot. It is delivered as a `type: config` entry in `roles/svc-db-openldap/meta/volumes.yml`, which `compose_volumes` renders as a versioned Swarm config; a change rolls the instance. A re-cloned instance configures itself with no Ansible run.
-- [ ] The elector's etcd password is declared in `roles/svc-db-openldap/meta/secrets.yml` `credentials:` and delivered as a `type: secret` entry.
+- [ ] The elector's etcd password is read from `roles/svc-dcs-etcd/meta/secrets.yml` and delivered as a `type: secret` entry.
 - [ ] `olcServerID` is derived deterministically from the host-id (a hash mapped into 1–4095). A validator fails on a collision inside the group.
 - [ ] In HA form, `ldapsm` over the network and the host-only `ldif` bind mount are gone. Data LDIF is piped into `ldapmodify -Y EXTERNAL -H ldapi:///` by exec into the writer, tolerating the same return codes as today.
 - [ ] memberof and refint run on every instance, with `olcMemberOfAddCheck: TRUE`; `memberOf` stays excluded from replication.
 - [ ] ppolicy and `olcLastBind` MUST NOT be enabled while more than one instance serves, because both turn binds into writes that bypass `olcReadOnly`.
-- [ ] Keycloak's LDAP `connection_pooling` stays `false`. Logins fail during the writer gap (≈15–20 s on a node crash), accepted for v1.
+- [ ] Keycloak's LDAP `connection_pooling` stays `false`. Logins fail during the writer gap (the OpenLDAP node-crash value of the [failover budget](#guarantees)), accepted for v1.
 - [ ] The standalone form is unchanged: no elector, no etcd.
 
 ### Forgetting a node and re-cloning
@@ -240,48 +279,47 @@ This requirement covers:
 
 ### Backups
 
-- [ ] Backups stay baudolo SQL dumps (per-database restore, `databases.csv`, the existing pull chain and the DR drill).
+- [ ] Postgres and MariaDB backups stay baudolo SQL dumps (per-database restore, `databases.csv`, the existing pull chain and the DR drill). OpenLDAP is never SQL-dumped: baudolo copies its volume as files, as today.
 - [ ] The backup unit is installed on every instance host. When it fires, it asks the local instance whether it is the primary or writer; only that host dumps, the others exit cleanly. A failover moves the dump with the primary.
 - [ ] HA instance names keep the engine word, enforced by a lint, because baudolo matches containers by it.
 - [ ] The backup unit fails loudly when an expected SQL dump is missing; it never falls back to a file copy of a database volume.
-- [ ] Database data volumes are excluded from file-level backups in HA form.
+- [ ] Postgres and MariaDB data volumes are excluded from file-level backups in HA form.
 - [ ] `databases.csv` is seeded on every instance host, and the backup host pulls from every instance host.
 - [ ] One database is restored by exec into the primary through baudolo's restore; it replicates. A full disaster is restored into the standalone form, then grown back to 3 through the migration path.
 - [ ] Before a migration or a restart-requiring engine change, Ansible fires the backup unit on the primary's host, waits for it, and aborts the deploy on failure.
-- [ ] Redis, etcd and database volumes as files are not backed up.
+- [ ] Redis, etcd, and Postgres and MariaDB volumes as files are not backed up.
 
 ### Security
 
 - [ ] In-engine TLS is not enforced in v1, as in 037. All database traffic (application to proxy to instance, and replication) runs only over encrypted overlays.
 - [ ] Each engine in HA form uses three encrypted overlays:
   - the existing application-facing overlay, joined only by HAProxy, so applications reach only the write endpoint;
-  - an engine-internal overlay for instances, HAProxy, Sentinels, replication-manager and the health routes;
+  - an engine-internal overlay for instances, HAProxy, Sentinels and the health routes;
   - the etcd overlay.
 
   Every new overlay is declared in the owning role's `meta/networks.yml` and its subnet allocated with `cli contributing network address suggest`; no subnet is hand-written.
-- [ ] Every new port is declared in the owning role's `meta/services.yml` `ports.internal` and allocated with `cli contributing network ports suggest`: Patroni REST (8008), the elector's `/writer`, the MariaDB health check, Sentinel (26379), etcd client and peer (2379, 2380), and HAProxy's listeners. The host-port collision lint covers them.
+- [ ] Every new port is declared in the owning role's `meta/services.yml` `ports.internal` and allocated with `cli contributing network ports suggest`: Patroni REST (8008), the elector's `/writer`, Sentinel (26379), etcd client and peer (2379, 2380), and HAProxy's listeners. The host-port collision lint covers them.
 - [ ] HAProxy's stats page is off or bound to the engine-internal overlay; its admin socket is a local unix socket; no HAProxy port is published.
-- [ ] Patroni REST, the elector's `/writer` and the MariaDB check are reachable only on the engine-internal overlay. Patroni's REST API requires authentication for state-changing calls.
-- [ ] The new HA credentials (replication, rewind, check users, replication-manager, etcd users) are declared in the owning role's `meta/secrets.yml` and delivered as `type: secret` entries in its `meta/volumes.yml`, which `compose_volumes` already renders as Docker secrets mounted as files. Application-facing passwords stay in env files, so no application changes.
-- [ ] The new containers (HAProxy, Sentinel, replication-manager, etcd, the elector) run as non-root, with a read-only root filesystem where the image allows it, no Docker socket and no extra capabilities. Any exception is documented in the role's README.
+- [ ] Patroni REST and the elector's `/writer` are reachable only on the engine-internal overlay. Patroni's REST API requires authentication for state-changing calls.
+- [ ] The new HA credentials (replication, rewind, check users, the MariaDB elector's SQL user, etcd users) are declared in the owning role's `meta/secrets.yml` and delivered as `type: secret` entries in its `meta/volumes.yml`, which `compose_volumes` already renders as Docker secrets mounted as files. Application-facing passwords stay in env files, so no application changes.
+- [ ] The new containers (HAProxy, Sentinel, etcd, the elector) run as non-root, with a read-only root filesystem where the image allows it, no Docker socket and no extra capabilities. Any exception is documented in the role's README.
 
 ### Sizing, resources and version pins
 
-- [ ] The minimum documented node size for the HA claim is 4 vCPU, 16 GiB RAM and SSD or NVMe per manager. The README shows the per-node arithmetic: one instance of each engine reserves ≈ 6.1 GiB (Postgres 3g, MariaDB 2g, Redis 128m, OpenLDAP 1g), the new services ≈ 0.6 GiB, the OS and dockerd ≈ 1 GiB, so ≈ 8 GiB per node before any application. Applications on the same managers need room on top; larger installs move applications to workers.
+- [ ] The minimum documented node size for the HA claim is 4 vCPU, 16 GiB RAM and SSD or NVMe per manager. The README shows the per-node arithmetic: one instance of each engine reserves ≈ 6.1 GiB (Postgres 3g, MariaDB 2g, Redis 128m, OpenLDAP 1g), the new services ≈ 0.6 GiB (the elector counts inside the MariaDB and OpenLDAP limits), the OS and dockerd ≈ 1 GiB, so ≈ 8 GiB per node before any application. Applications on the same managers need room on top; larger installs move applications to workers.
 - [ ] The new services declare resources in role meta (`cpus` / `mem_reservation` / `mem_limit`):
   - etcd 0.5 / 256m / 512m;
   - HAProxy 0.25 / 64m / 128m;
-  - Sentinel 0.1 / 32m / 64m;
-  - replication-manager 0.25 / 128m / 256m.
-- [ ] Every new image comes from its official upstream source and is declared in the owning role's `meta/services.yml` (`image` and exact `version`): etcd (the etcd project's official image), HAProxy (the Docker official `haproxy` image), replication-manager (the vendor's `signal18/replication-manager`), and Sentinel (the same `redis` image the role already uses). Because they are role-declared, `cron-images-mirror-all.yml` mirrors them to GHCR and the existing image-update workflow opens their bump pull requests. The Patroni apt package version is pinned in `Dockerfile.j2`.
+  - Sentinel 0.1 / 32m / 64m.
+- [ ] Every new image comes from its official upstream source and is declared in the owning role's `meta/services.yml` (`image` and exact `version`): etcd (the etcd project's official image), HAProxy (the Docker official `haproxy` image), and Sentinel (the same `redis` image the role already uses). Because they are role-declared, `cron-images-mirror-all.yml` mirrors them to GHCR and the existing image-update workflow opens their bump pull requests. The Patroni apt package version is pinned in `Dockerfile.j2`.
 - [ ] A bump merges only when that engine's failover suite is green.
 - [ ] Rolling upgrades follow one rule: replicas first, then a planned handover, then the old primary or writer:
   - Postgres: `patronictl switchover`;
-  - MariaDB: replication-manager switchover;
+  - MariaDB: the writer receives SIGTERM, turns read-only, releases the lease, and the most advanced replica takes over;
   - Redis: `SENTINEL FAILOVER`;
   - OpenLDAP: the writer receives SIGTERM, releases the lease, and a peer takes over.
 
-  Stateless services (HAProxy, replication-manager) roll one replica at a time; etcd and Sentinels roll one member at a time behind a health gate.
+  HAProxy rolls one replica at a time; etcd and Sentinels roll one member at a time behind a health gate.
 
 ### Tests
 
@@ -292,7 +330,7 @@ This requirement covers:
   - the HA arms of `lookup('database')` and `lookup('engine')`;
   - the primary resolver;
   - the validators (manager count, unique `IS_STACK_HOST`, eligible hosts, `olcServerID` collisions);
-  - the elector against both lock backends;
+  - the elector against both lock backends and both role backends, including the MariaDB GTID choice;
   - Redis's start-up guard;
   - the backup unit's primary check;
   - the forget-node target's refusals.
@@ -317,9 +355,10 @@ This requirement covers:
 #### The failover suite
 
 - [ ] The failover suite has one core used by both modes: the write-continuity checker, the audit, the targets and the scenario list. Lab bring-up, checker configuration and fault injection are per-mode adapters. This requirement builds the core and the Swarm adapter; 037 adds the Kubernetes adapter.
-- [ ] A new workflow (working name `test-swarm-data`) runs:
-  - **when:** on manual dispatch always; nightly on the default branch and on pull requests that touch data-tier paths only when a GitHub repository variable enables it (off by default, because runner resources are limited);
-  - **matrix:** one engine per job, each job with 3 managers, 1 spare worker, etcd and that engine, on `ubuntu-latest`;
+- [ ] A reusable workflow, `.github/workflows/call-test-swarm-data.yml`, runs:
+  - **when:** inside the orchestrator (pull requests, pushes, manual sweeps, with the entry's draft gating, job budget and superseded-run cancellation) while the `INFINITO_CI_SWARM_DATA` repository variable is `true`, off by default; through `.github/workflows/cron-test-swarm-data.yml` on manual dispatch always, and nightly on the default branch only while `INFINITO_CI_SWARM_DATA_NIGHTLY` is `true`;
+  - **matrix:** one engine per job, each job with 3 managers, 1 spare worker, etcd and that engine, on the free `ubuntu-latest` runner;
+  - **lab sizes:** an inventory override used only by the suite sets lab memory limits (Postgres 768m, MariaDB 512m, OpenLDAP 256m, Redis 128m, etcd 256m, HAProxy 64m); etcd keeps its production election timeouts, and the documented production sizes stay unchanged. If the runs show out-of-memory kills or flapping elections, the suite moves to a larger hosted runner. It never runs on a self-hosted runner, because a required check would run fork pull request code in privileged containers;
   - **locally:** `make test-swarm-data engine=<name>`;
   - **output:** JUnit, separate from `make test`.
 - [ ] Each engine has a write-continuity checker service:
@@ -332,7 +371,7 @@ This requirement covers:
   2. crash the primary's node (`docker kill`);
   3. hang the primary's node (`docker pause`);
   4. partition the primary's node (`docker network disconnect`);
-  5. lose the node holding the Raft leader, the etcd leader and (for MariaDB) replication-manager at once;
+  5. lose the node that is `STACK_HOST` and holds the Raft leader, the etcd leader and the primary at once;
   6. apply a rolling, restart-requiring change;
   7. forget a dead node and re-clone onto a replacement;
   8. back up with baudolo on the primary, restore into a scratch instance, and assert a seeded marker;
@@ -346,13 +385,17 @@ This requirement covers:
   - the OpenLDAP writer moves within the target time;
   - a demoted OpenLDAP instance rejects writes with `unwillingToPerform`;
   - `memberOf` matches across instances after a re-clone;
-  - no two OpenLDAP instances answer `/writer` with 200 for longer than the renew deadline.
-- [ ] Targets, at default timings:
-  - **Postgres and MariaDB:** 0 acknowledged writes lost on every single-node fault.
-  - **Every engine:** a write gap of ≤ 90 s on a node crash, hang or partition; ≤ 30 s on an instance restart; ≤ 5 s on a rolling change.
-  - **Redis and OpenLDAP:** losses are reported, and the run fails only above 10 s worth of writes.
-  - **Re-clone:** full strength within 15 minutes at lab sizes.
+  - no two OpenLDAP or MariaDB instances answer `/writer` with 200 for longer than the renew deadline;
+  - a MariaDB elector never promotes an instance behind the most advanced reachable GTID position;
+  - with both replicas stopped, Postgres and MariaDB stall writes and lose none;
+  - a partitioned Redis master stops taking writes within `min-replicas-max-lag`.
+- [ ] Targets, at the timings in this document:
+  - **Durable tier:** 0 acknowledged writes lost on every single-node fault.
+  - **Every engine:** each value of the [failover budget](#guarantees) is asserted; the ceilings are ≤ 90 s on a node crash, hang or partition, ≤ 30 s on an instance kill and ≤ 10 s on a rolling change. 5 s on a rolling change is a goal that is reported but does not fail the run.
+  - **Best-effort tier:** losses are reported, and the run fails only above 10 s worth of writes.
+  - **Re-clone:** full strength within 45 minutes at lab sizes, counted from the node loss and including the redeploy that places the replacement instance.
 - [ ] The workflow reports `failure` when any assertion fails.
+- [ ] An image bump of an engine or HA component, and any HA-form lifecycle promotion, merges only with a linked green run of that engine's failover suite. This covers bump pull requests opened by the image-update workflow.
 
 #### Documentation
 
@@ -366,18 +409,19 @@ This requirement covers:
 
 Primary-source research could not settle these, and this effort was planned without a lab. The failover suite and the Postgres pilot MUST settle each one, and the outcome MUST be recorded in the affected role's README:
 
-- **Lab topology:** the 3-manager lab forms a Raft quorum through the real `svc-swarm-node` join path, and the 3+1 lab fits hosted runners. If it does not fit, HA rows run only on priority rows or on self-hosted runners; the tests are never dropped.
-- **Measured numbers:** the write gap and acknowledged-write loss per engine on crash, hang, partition and rolling change. The ≤ 5 s rolling target is tight for every engine.
+- **Lab topology:** the 3-manager lab forms a Raft quorum through the real `svc-swarm-node` join path, and the 3+1 lab fits the free hosted runner at the lab sizes (≈ 7 GiB estimated, not measured). The first run logs memory per node. If it does not fit, the suite moves to a larger hosted runner; the tests are never dropped.
+- **Measured numbers:** the write gap and acknowledged-write loss per engine on crash, hang, partition and rolling change, against the failover budget. Promotion times (assumed 1–5 s) and how fast Swarm removes a dead node's HAProxy replica from the virtual IP are the main assumptions. The 5 s rolling goal holds only if promotion takes 2 s or less.
+- **Shorter Patroni timings:** `ttl 20` and `loop_wait 5` cause no spurious failover on a loaded node.
+- **The MariaDB elector:** choosing the most advanced replica by GTID, waiting for the relay log, and following a new writer behave correctly in every scenario, including a cold start of all three instances.
 - **HAProxy endpoint mode:** VIP or `dnsrr`, given the reported 900 s idle-connection drop on Swarm's load balancer, and whether a service keeps its VIP when its task is re-created.
 - **Exec provisioning** through the primary resolver for every engine.
 - **etcd disaster recovery:** an empty etcd plus a re-run recovers Patroni with no data loss.
 - **Adoption at migration:** Patroni adopting an existing data directory, MariaDB enabling binary logging with one restart, Redis keeping its data in place.
-- **replication-manager:** whether one free-plan instance fails over within 90 s after dying on the primary's node, and whether it supports MariaDB 13.x. If either fails, MariaDB failover moves to a MariaDB backend of the writer elector (Patroni pattern).
 - **MariaDB 13.0 community end of life** (Q4 2026): the role's rolling pin must move on in time.
 - **Semi-sync guarantees** with the maximal timeout, including the both-replicas-down stall.
-- **Redis:** the start-up guard and the `connected_slaves` check close the dual-master window after a restart.
+- **Redis:** the start-up guard, the `connected_slaves` check and `min-replicas-max-lag` close the dual-master window after a restart or a partition.
 - **Resource starting values** for the new services.
-- **Image names:** the exact official image references for etcd and replication-manager, and that the mirror workflow discovers them from role meta.
+- **Image names:** the exact official image reference for etcd, and that the mirror workflow discovers them from role meta.
 - **Swarm platform behaviour** from the node-loss research: client behaviour when a service name stops resolving, how fast a dead node's backends leave DNS and IPVS, whether a paused node behaves like a partition, `pg_dump` on a standby, and Raft election timing.
 
 ## Future Extensions
@@ -390,7 +434,7 @@ Explicitly out of scope for this requirement, and tracked for later:
 - **Shrinking from HA to standalone in place.**
 - **Enforced in-engine TLS**, shared with 037. It is blocked on applications that hard-code `sslmode=disable` or `DB_SSL=false`.
 - **Monitoring and alerting** for failover and replica lag.
-- **A self-hosted runner** for the 3+1 lab if hosted runners prove too small.
+- **A 5-manager profile** that survives two node losses.
 - **Docker secrets for application-facing credentials** (023's deferred item).
 - **Edge HA** (openresty, Traefik) and the other manager-pinned roles (tor, mail, SeaweedFS, prometheus, …): 023's separate follow-up.
 - **The engines without v1 HA** (Elasticsearch, RabbitMQ, Qdrant, Typesense, SeaweedFS, Memcached) and embedded engines.
@@ -399,12 +443,12 @@ Explicitly out of scope for this requirement, and tracked for later:
 
 ## Procedure
 
-The implementation follows the [Compose Loop](../agents/action/iteration/compose.md) for role changes and the [Workflow Loop](../agents/action/iteration/workflow.md) for workflow changes, in this order:
+The implementation follows the [Compose Loop](../agents/action/iteration/compose.md) for role changes and the [Workflow Loop](../agents/action/iteration/workflow.md) for workflow changes. It is delivered in six stages, each its own pull request, in this order:
 
-1. The foundation: the manager-count validator, the single `IS_STACK_HOST`, the Raft checks, the instance model and its renderer, the 3+1 lab, and the failover suite's core with the Swarm adapter.
+1. The foundation: the manager-count validator, the single `IS_STACK_HOST`, the Raft checks, the instance model and its renderer, the 3+1 lab, and the failover suite's core with the Swarm adapter and its required check, which runs only the standalone scenario until the Postgres pilot lands.
 2. The coordination store, the write endpoint and the primary resolver.
-3. Postgres, as the pilot engine, with its scenarios green. The pilot settles the HAProxy endpoint mode and the measured numbers for the other engines.
-4. OpenLDAP (including the elector's etcd backend), then MariaDB, then Redis, each with its scenarios green.
+3. Postgres, as the pilot engine, with its scenarios green. The pilot settles the HAProxy endpoint mode and the measured numbers for the other engines, and updates the failover budget.
+4. The elector with its etcd backend, then OpenLDAP, then MariaDB, then Redis, each with its scenarios green.
 5. Forgetting a node, migration and backups, each with its scenarios green.
 6. Security, sizing and pins, then the db topology CI axis, re-running the full suite.
 
@@ -412,7 +456,7 @@ The following rules apply for the entire run:
 
 - [ ] Clarifying questions are raised once, at the start, in a single batched round. Ambiguities found mid-run are resolved by the agent, recorded in the affected README, and revisited at review.
 - [ ] Every failure is fixed at its root within the run. Skips, retry-until-green loops and "follow-up" deferrals are not used.
-- [ ] No intermediate commits. All changes and the ticked checkboxes in this document land in one commit, once every criterion is checked, `make test` is green, and the failover workflow is green. The agent does not push; the operator runs `git-sign-push` outside the sandbox per [AGENTS.md](../../AGENTS.md).
+- [ ] One commit per stage. Each stage lands its changes and ticks its own checkboxes in this document only once `make test` and the failover workflow for everything built so far are green. The HA form stays alpha until the last stage lands. The agent does not push; the operator runs `git-sign-push` outside the sandbox per [AGENTS.md](../../AGENTS.md).
 
 ## See Also
 

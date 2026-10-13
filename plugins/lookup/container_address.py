@@ -24,8 +24,8 @@ Because the lookup emits ``$(...)`` shell syntax, callers MUST use the
 The helper script `BIN_RESOLVE_CONTAINER_ID` is deployed by
 sys-svc-compose during the constructor stage. It refuses to run on
 non-manager nodes (exit 64) and reports clear errors when the service
-has no running task (exit 65) or the task is not yet bound to a
-container (exit 66).
+has no running task (exit 65), the task is not yet bound to a
+container (exit 66) or no service of that name exists (exit 67).
 
 Examples:
 

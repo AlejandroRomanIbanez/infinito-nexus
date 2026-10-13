@@ -6,7 +6,7 @@ As a platform administrator, I want Infinito.Nexus to run its central Postgres, 
 
 ## Context
 
-Today every central engine (`svc-db-postgres`, `svc-db-mariadb`, `svc-db-redis`, `svc-db-openldap`) runs as one container on one host, in compose and in swarm mode alike. Each role's `meta/services.yml` already says it stays "single-node until replication is in scope". [038](038-database-ha-swarm.md) closes that gap on Swarm first, with off-the-shelf failover tools wired by the project (Patroni, replication-manager, Sentinel) and the project's own writer elector. This requirement brings the same promise to Kubernetes, where mature operators exist for three of the four engines and replace that wiring. The fourth, OpenLDAP, needs only a small writer-election helper inside the slapd image the project already builds.
+Today every central engine (`svc-db-postgres`, `svc-db-mariadb`, `svc-db-redis`, `svc-db-openldap`) runs as one container on one host, in compose and in swarm mode alike. Each role's `meta/services.yml` already says it stays "single-node until replication is in scope". [038](038-database-ha-swarm.md) closes that gap on Swarm first, with off-the-shelf failover tools wired by the project (Patroni, Sentinel) and the project's own writer elector for MariaDB and OpenLDAP. This requirement brings the same promise to Kubernetes, where mature operators exist for three of the four engines and replace that wiring. The fourth, OpenLDAP, needs only a small writer-election helper inside the slapd image the project already builds.
 
 This requirement brings in `kubernetes` as the third deployment mode (`compose → swarm → kubernetes`, see [023](023-docker-swarm-nfs.md)) and uses it for the data tier only:
 
@@ -157,7 +157,7 @@ This requirement brings in `kubernetes` as the third deployment mode (`compose �
 ### Images
 
 - [ ] The project builds exactly two images for kubernetes mode:
-  - **slapd,** from `roles/svc-db-openldap/files/Dockerfile`. It gains `python3`, the `kubernetes` client and the writer elector, whose code lives in `roles/svc-db-openldap/files/elector/`. Its version is the upstream slapd version plus a build suffix.
+  - **slapd,** from `roles/svc-db-openldap/files/Dockerfile`. It gains `python3`, the `kubernetes` client and the writer elector, copied at build time from the shared path that [038](038-database-ha-swarm.md) defines. Its version is the upstream slapd version plus a build suffix.
   - **The node reaper,** from its role's `files/`. Its version is the reaper's own version.
 - [ ] Both images follow one tag rule: every build is published under a git-sha tag and a version tag. The role meta of `svc-db-openldap` and of the node reaper role pins the exact version tag.
 - [ ] A new CI workflow builds both images for amd64 and arm64 and publishes them to GHCR under the project namespace.
@@ -195,6 +195,7 @@ This requirement brings in `kubernetes` as the third deployment mode (`compose �
 
 ### Postgres: `svc-db-postgres` on CloudNativePG
 
+<!-- # nocheck: debian-codename  CloudNativePG tags its PostGIS images by Debian codename only -->
 - [ ] The kubernetes arm renders a CNPG `Cluster` named `postgres` on CNPG 1.30.x, with image `ghcr.io/cloudnative-pg/postgis:18-3-standard-trixie` pinned to an exact tag. The project builds no Postgres image for kubernetes mode.
 - [ ] The write endpoint is `postgres-rw`, so `host` is `postgres-rw.svc-db-postgres.svc`.
 - [ ] Durability is `synchronous: {method: any, number: 1, dataDurability: preferred}`. At 1 instance, no `synchronous` block is rendered.
@@ -227,7 +228,7 @@ This requirement brings in `kubernetes` as the third deployment mode (`compose �
 - [ ] The write endpoint is `redis-master`, so `host` is `redis-master.svc-db-redis.svc`. Clients keep a plain `redis://` URL.
 - [ ] Authentication uses `redisSecret` from `redis-superuser`. Consumers keep the shared `default` user. No per-consumer ACL user or Secret is applied.
 - [ ] RDB and AOF persistence stay on. `maxmemory` is 80 % of the memory limit, with `allkeys-lru`.
-- [ ] Replication is async, with no `min-replicas-to-write`. Redis keeps `backup.disabled: true`.
+- [ ] Replication is async, with `min-replicas-to-write 1` and `min-replicas-max-lag 10`, as in [038](038-database-ha-swarm.md): a partitioned old master stops taking writes within 10 s, and writes stop while no replica is connected. Redis keeps `backup.disabled: true`.
 - [ ] The standalone form is a `RedisReplication` of size 1 without Sentinel, if the operator accepts that size. Otherwise it is a `Redis` CR, and the lookup returns `redis` at 1 instance.
 
 ### OpenLDAP: `svc-db-openldap` as a StatefulSet with writer election
@@ -255,7 +256,7 @@ This is deliberately not an operator. A central controller cannot fence a writer
   - **On losing the Lease, missing the renew deadline, or receiving SIGTERM,** in this order: it sets `olcReadOnly: TRUE` locally over `ldapi`, removes its own label as a best effort, and releases the Lease.
   - Its timings are the control plane's defaults: a Lease duration of 15 s, a renew deadline of 10 s and a retry period of 2 s.
 - [ ] The elector fails closed. It runs as a second process in the slapd container, under the image's existing `tini` entrypoint. If the elector exits, slapd stops and the container restarts, and slapd comes back read-only. A separate sidecar container is not used, because slapd would keep its last mode if the sidecar crashed.
-- [ ] The elector is the Python package from [038](038-database-ha-swarm.md) in `roles/svc-db-openldap/files/elector/`, with a lock interface and two backends: the etcd lease used on Swarm and a Kubernetes Lease backend (the `kubernetes` client) added here. Its pytest unit tests under `tests/unit/python/roles/svc-db-openldap/` cover both backends.
+- [ ] The elector is the shared Python package from [038](038-database-ha-swarm.md), with a lock interface and two backends: the etcd lease used on Swarm and a Kubernetes Lease backend (the `kubernetes` client) added here. Its pytest unit tests, beside 038's shared path, cover both lock backends.
 - [ ] The write endpoint `openldap` selects `infinito.nexus/ldap-role=writer`, so `host` stays `openldap.svc-db-openldap.svc`. The Service maps port 389 to 1389.
   - There is no read Service in v1. Reads and binds also go to the writer, so logins fail during a write gap as well. This is accepted for v1.
   - Keycloak's LDAP `connection_pooling` stays `false` (`roles/web-app-keycloak/meta/services.yml`), so every operation opens a new connection to the current writer.
@@ -368,7 +369,7 @@ This is deliberately not an operator. A central controller cannot fence a writer
   5. During a partition, the OpenLDAP writer label never stays on two pods for longer than the renew deadline.
 - [ ] The targets, at default Kubernetes timings:
   - **Postgres and MariaDB:** 0 acknowledged writes lost on every single-node fault.
-  - **Every engine:** a write gap of ≤ 90 s on a node crash, hang or partition; ≤ 30 s on a pod delete; ≤ 5 s on a rolling change.
+  - **Every engine:** a write gap of ≤ 90 s on a node crash, hang or partition; ≤ 30 s on a pod delete; ≤ 10 s on a rolling change, with 5 s reported as a goal that does not fail the run.
   - **Redis and OpenLDAP:** losses are reported, and the run fails only above 10 s worth of writes.
   - **Re-clone:** full strength within 15 minutes on the 4-node lab.
 - [ ] The workflow reports `failure` when any assertion fails.

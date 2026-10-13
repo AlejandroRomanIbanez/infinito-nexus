@@ -121,6 +121,33 @@ class TestContainerVolumesConfigSecret(unittest.TestCase):
             },
         )
 
+    def test_secret_owner_renders_as_numeric_strings(self) -> None:
+        meta = {
+            "tlskey": {
+                "type": "secret",
+                "source": "/etc/ssl/key.pem",
+                "mode": "0400",
+                "uid": 65532,
+                "gid": "65532",
+                "mounts": [{"service": "app", "target": "/run/secrets/key"}],
+            }
+        }
+        data = _parse(container_volumes(_apps(meta), "my-app", "app"))
+        self.assertEqual(data["secrets"][0]["uid"], "65532")
+        self.assertEqual(data["secrets"][0]["gid"], "65532")
+
+    def test_non_numeric_owner_is_refused(self) -> None:
+        meta = {
+            "tlskey": {
+                "type": "secret",
+                "source": "/etc/ssl/key.pem",
+                "uid": "etcd",
+                "mounts": [{"service": "app", "target": "/run/secrets/key"}],
+            }
+        }
+        with self.assertRaises(Exception):
+            container_volumes(_apps(meta), "my-app", "app")
+
 
 class TestContainerVolumesTmpfs(unittest.TestCase):
     def test_tmpfs_size_renders_as_the_byte_count_the_long_form_takes(self) -> None:

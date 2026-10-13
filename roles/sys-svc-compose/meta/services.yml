@@ -8,3 +8,8 @@ svc-compose:
       categories: [web]
     swarm:
       categories: [web]
+haproxy:
+  image: haproxy
+  version: 3.2.25-alpine
+  backup:
+    no_stop_required: true

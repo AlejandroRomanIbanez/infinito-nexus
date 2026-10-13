@@ -37,7 +37,7 @@ fi
 
 bash "${SCRIPT_DIR}/../utils/unmount/nfs_mounts.sh" "${NFS_SERVER}" >/dev/null 2>&1 || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 bash "${SCRIPT_DIR}/../utils/unmount/host_state.sh" "${INFINITO_DIR_VAR_LIB:?}"
-for node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}" "${BACKUP_NODE}"; do
+for node in ${SWARM_LAB_ALL_NODES}; do
 	docker rm -f "${node}" >/dev/null 2>&1 || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
 done
 docker volume rm "${SWARM_NAME}_nfs-export" >/dev/null 2>&1 || true # nocheck: shell-or-true -- grandfathered: worked in practice; TODO: sharpen to catch only the exact tolerated error
@@ -54,6 +54,10 @@ fi
 
 COMPOSE_FILE="${SCRIPT_DIR}/../../../../../compose/swarm/compose.yml"
 COMPOSE_ARGS=(-f "${COMPOSE_FILE}")
+PROFILE_ARGS=(--profile drill)
+if [ "${INFINITO_SWARM_DB_TOPOLOGY}" = "ha" ]; then
+	COMPOSE_ARGS+=(-f "${SCRIPT_DIR}/../../../../../compose/swarm/ha.override.yml")
+fi
 CACHE_FRONTEND="infinito-package-cache-frontend"
 REGISTRY_CACHE="infinito-registry-cache"
 CACHE_NET=""
@@ -69,11 +73,14 @@ if docker inspect "${CACHE_FRONTEND}" >/dev/null 2>&1; then
 	export INFINITO_CACHE_REGISTRY_CA_HOST_PATH="${registry_ca_src}"
 	echo "==> registry-cache CA source: ${INFINITO_CACHE_REGISTRY_CA_HOST_PATH}"
 	COMPOSE_ARGS+=(-f "${SCRIPT_DIR}/../../../../../compose/swarm/cache.override.yml")
+	if [ "${INFINITO_SWARM_DB_TOPOLOGY}" = "ha" ]; then
+		COMPOSE_ARGS+=(-f "${SCRIPT_DIR}/../../../../../compose/swarm/ha-cache.override.yml")
+	fi
 fi
 
 build_attempts=3
 for attempt in $(seq 1 "${build_attempts}"); do
-	docker compose "${COMPOSE_ARGS[@]}" -p "${SWARM_NAME}" --profile drill build && break
+	docker compose "${COMPOSE_ARGS[@]}" -p "${SWARM_NAME}" "${PROFILE_ARGS[@]}" build && break
 	if [ "${attempt}" -eq "${build_attempts}" ]; then
 		echo "FAILURE: node image build failed after ${build_attempts} attempts" >&2
 		exit 1
@@ -81,7 +88,7 @@ for attempt in $(seq 1 "${build_attempts}"); do
 	sleep $((attempt * 5))
 done
 
-docker compose "${COMPOSE_ARGS[@]}" -p "${SWARM_NAME}" --profile drill up -d
+docker compose "${COMPOSE_ARGS[@]}" -p "${SWARM_NAME}" "${PROFILE_ARGS[@]}" up -d
 
 if [ -n "${CACHE_NET}" ]; then
 	cache_subnet="$(docker network inspect "${CACHE_NET}" \
@@ -96,13 +103,15 @@ if [ -n "${CACHE_NET}" ]; then
 	esac
 	cache_prefix="${cache_subnet%.0/24}"
 
-	node_octet=$((200 + INFINITO_INSTANCE * 5))
-	if [ "$((node_octet + 4))" -gt 254 ]; then
+	read -ra all_nodes <<<"${SWARM_LAB_ALL_NODES}"
+	node_band="${#all_nodes[@]}"
+	node_octet=$((200 + INFINITO_INSTANCE * node_band))
+	if [ "$((node_octet + node_band - 1))" -gt 254 ]; then
 		echo "FAILURE: INFINITO_INSTANCE=${INFINITO_INSTANCE} pushes the node band past ${cache_prefix}.254" >&2
 		exit 1
 	fi
 
-	for node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}" "${BACKUP_NODE}"; do
+	for node in ${SWARM_LAB_NODES}; do
 		if ! connect_err="$(docker network connect --ip "${cache_prefix}.${node_octet}" "${CACHE_NET}" "${node}" 2>&1)"; then
 			case "${connect_err}" in
 			*"already exists in network"* | *"already attached to network"*)
@@ -119,6 +128,6 @@ if [ -n "${CACHE_NET}" ]; then
 fi
 
 ansible-playbook \
-	-i "${MGR},${WRK1},${WRK2},${NFS_SERVER},${BACKUP_NODE}," \
+	-i "${SWARM_LAB_NODES// /,}," \
 	-c docker \
 	"${SCRIPT_DIR}/../../../../../compose/swarm/playbook.yml"

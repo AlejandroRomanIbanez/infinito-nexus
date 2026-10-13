@@ -16,6 +16,8 @@ from utils.roles.applications.services.database import (
     get_database_service_config,
     resolve_database_service_key,
 )
+from utils.roles.db_instances import DbInstancesError
+from utils.roles.db_primary import ha_primary_address
 from utils.roles.entity.name import get_entity_name
 
 
@@ -251,6 +253,39 @@ class LookupModule(LookupBase):
         else:
             address = container
 
+        try:
+            primary = (
+                ha_primary_address(
+                    db_id,
+                    vars_.get("groups"),
+                    deployment_mode,
+                    bin_resolver=_templated(vars_.get("BIN_RESOLVE_DB_PRIMARY", "")),
+                    stack=db_stack,
+                    engine=dbtype,
+                )
+                if central_enabled
+                else None
+            )
+        except DbInstancesError as exc:
+            raise AnsibleError(f"database: {exc}") from exc
+        reach_host = "127.0.0.1"
+        if primary is not None:
+            if want == "reach_host":
+                raise AnsibleError(
+                    f"database: reach_host is unavailable for {db_id} in HA form; "
+                    "no database port is published, exec into 'address' instead"
+                )
+            if want == "service_name":
+                raise AnsibleError(
+                    f"database: service_name is unavailable for {db_id} in HA form; "
+                    "it would name the HAProxy endpoint, resolve the primary via "
+                    "roles/sys-svc-compose/tasks/utils/swarm/resolve_primary.yml instead"
+                )
+            address = primary
+            container = address
+            reach_host = ""
+            service_name = ""
+
         resolved = {
             "id": db_id,
             "enabled": enabled,
@@ -279,7 +314,7 @@ class LookupModule(LookupBase):
             "volume": volume,
             "image": image,
             "version": version,
-            "reach_host": "127.0.0.1",
+            "reach_host": reach_host,
         }
 
         return [resolved if want == "all" else resolved.get(want, "")]

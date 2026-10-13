@@ -1,0 +1,44 @@
+---
+# Param: etcd_forget_member - member name of the forgotten host, etcd-<host-id>
+- name: "🔍 ETCD | Ask each remaining member for the member list"
+  ansible.builtin.shell: >
+    container exec -e ETCDCTL_USER
+    "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ item.service | quote }})"
+    {{ ETCDCTL }} member list -w simple
+  environment:
+    ETCDCTL_USER: "root:{{ ETCD_ROOT_PASSWORD }}"
+  register: etcd_forget_probe
+  delegate_to: "{{ item.host }}"
+  loop: "{{ ETCD_INSTANCES.instances }}"
+  loop_control:
+    label: "{{ item.service }}"
+  changed_when: false
+  failed_when: false
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+
+- name: "🤔 ETCD | Find the forgotten member on a live member"
+  ansible.builtin.set_fact:
+    etcd_forget_live: "{{ _live }}"
+    etcd_forget_ids: >-
+      {{ (_live.stdout_lines | default([]))
+         | select('search', '://' ~ etcd_forget_member ~ ':')
+         | map('split', ', ') | map(attribute=0) | list }}
+  vars:
+    _live: "{{ etcd_forget_probe.results | selectattr('rc', 'equalto', 0) | list | first | default({}) }}"
+
+- name: "🛡️ ETCD | Fail when no remaining member answers"
+  ansible.builtin.assert:
+    that:
+      - etcd_forget_live | length > 0
+    fail_msg: "No remaining etcd member answered; cannot remove {{ etcd_forget_member }}."
+
+- name: "🗑️ ETCD | Remove the forgotten member"
+  ansible.builtin.shell: >
+    container exec -e ETCDCTL_USER
+    "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ etcd_forget_live.item.service | quote }})"
+    {{ ETCDCTL }} member remove {{ item | quote }}
+  environment:
+    ETCDCTL_USER: "root:{{ ETCD_ROOT_PASSWORD }}"
+  delegate_to: "{{ etcd_forget_live.item.host }}"
+  loop: "{{ etcd_forget_ids }}"
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"

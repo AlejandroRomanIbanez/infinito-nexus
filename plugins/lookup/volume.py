@@ -15,6 +15,7 @@ Two call forms:
                          | ``tmpfs``, defaults to ``volume``
     - ``source``         for binds / configs / secrets, ``''`` if absent
     - ``nfs``            NFS opt-in (bool or dict), ``None`` if absent
+    - ``uid`` / ``gid``  numeric owner of a config or secret, ``None`` if absent
     - ``mounts``         the raw mounts list, ``[]`` if absent
     - ``targets``        ``{service: container path}`` built from ``mounts``
     - ``target``         the one container path this entry mounts at, present
@@ -98,6 +99,8 @@ class LookupModule(LookupBase):
             "type": entry.get("type", "volume"),
             "source": entry.get("source", ""),
             "nfs": entry.get("nfs", None),
+            "uid": entry.get("uid", None),
+            "gid": entry.get("gid", None),
             "mounts": mounts,
             "targets": _targets(mounts),
         }

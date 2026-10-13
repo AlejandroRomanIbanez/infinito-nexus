@@ -33,7 +33,7 @@ A row's position is its index in the uncapped discovery order, not its index
 inside a chunk, so slicing the list into chunks never changes what a row is
 assigned. A priority row, which deploys several mode/tor combinations at once,
 walks the distro and filesystem rotations across those combinations rather
-than repeating one pair.
+than repeating one pair. The db topology axis lives in :mod:`.topology`.
 """
 
 from __future__ import annotations
@@ -44,6 +44,11 @@ from typing import TYPE_CHECKING, NamedTuple
 
 from utils.github.variant import instructions
 from utils.github.variant.pools import DISTROS, FILESYSTEMS, rotate
+from utils.github.variant.topology import (
+    TOPOLOGIES,
+    matrix_keys,
+    topologies,
+)
 from utils.github.variant.tor import (
     TOR_DEPLOY_MODES,
     combinations,
@@ -80,6 +85,7 @@ LABEL_RE = re.compile(
     r"(?:" + re.escape(to_emoji("clearnet")) + r"|" + re.escape(LOCAL_GLYPH) + r")?️?"
     r"(?P<distro>" + _alternation(DISTROS) + r")?️?"
     r"(?P<filesystem>" + _alternation(FILESYSTEMS) + r")?️?"
+    r"(?P<topology>" + _alternation(TOPOLOGIES) + r")?️?"
     r"[" + re.escape(_AXIS_GLYPHS) + r"️\s]*"
     r"(?P<name>.+?)"
     r"(?:" + re.escape(VARIANT_SEPARATOR) + r"(?P<variant>[0-9,]+))?"
@@ -100,6 +106,7 @@ class Label(NamedTuple):
     tor: bool
     distro: str = ""
     filesystem: str = ""
+    db_topology: str = ""
 
 
 def parse_label(name: str) -> Label | None:
@@ -133,6 +140,7 @@ def parse_label(name: str) -> Label | None:
         match.group("tor") is not None,
         to_word(match.group("distro") or ""),
         to_word(match.group("filesystem") or ""),
+        to_word(match.group("topology") or ""),
     )
 
 
@@ -165,7 +173,13 @@ def pick_mode(offered: Sequence[str], position: int, sweep: int) -> str:
 
 
 def artifact_slug(
-    mode: str, app: str, variant: str, tor: bool, distro: str = "", filesystem: str = ""
+    mode: str,
+    app: str,
+    variant: str,
+    tor: bool,
+    distro: str = "",
+    filesystem: str = "",
+    db_topology: str = "",
 ) -> str:
     """What identifies one deploy job's artifacts.
 
@@ -177,7 +191,7 @@ def artifact_slug(
     name one row on two distros (``role#0%debian role#0%fedora``), and those
     are two deploys of one mode, variant and onion state.
     """
-    shards = (variant, "tor" if tor else "", distro, filesystem)
+    shards = (variant, "tor" if tor else "", distro, filesystem, db_topology)
     return f"{mode}-{app}" + "".join(f"-{shard}" for shard in shards if shard)
 
 
@@ -270,6 +284,7 @@ def assign(
     distros: Sequence[str],
     filesystems: Sequence[str],
     variants_per_app: Mapping[str, Sequence[Mapping[str, Any]]] | None = None,
+    db_topology: bool = False,
 ) -> list[dict[str, str]]:
     """Turn ordered discovery rows into CI matrix entries.
 
@@ -295,6 +310,10 @@ def assign(
             for conditions the applying step is built to tolerate.
         variants_per_app: rendered variant configs per app, so a variant that
             switches the tor gate off is never counted capable.
+        db_topology: whether the db topology axis is on
+            (:func:`resolve_db_topology`). Every entry carries
+            ``db_topology`` (empty off the axis or outside swarm) and
+            ``kill_primary``.
 
     Returns:
         one entry per (row, mode, tor) the run deploys, each stamped with the
@@ -367,7 +386,18 @@ def assign(
         if app == provider:
             picked = [(mode, enabled) for mode, enabled in picked if enabled]
         label = codec.encode(app, variant_csv)
-        for step, (mode, enabled) in enumerate(picked):
+        staged = [
+            (mode, enabled, topology)
+            for mode, enabled in picked
+            for topology in topologies(
+                mode,
+                enabled=db_topology,
+                priority=priority,
+                position=position,
+                sweep=sweep,
+            )
+        ]
+        for step, (mode, enabled, topology) in enumerate(staged):
             distro = pin_distro or rotate(distros, position + step, sweep)
             filesystem = pin_filesystem or rotate(
                 filesystems, (position + step) // len(distros), sweep
@@ -381,9 +411,11 @@ def assign(
                 )
                 + to_emoji(distro)
                 + to_emoji(filesystem)
+                + (to_emoji(topology) if topology else "")
             )
             entries.append(
                 {
+                    **matrix_keys(topology),
                     "apps": app,
                     "variant": variant_csv,
                     "mode": mode,
@@ -400,7 +432,7 @@ def assign(
                     "covered": str(row.get("covered_by", 0)),
                     "clone": "true" if row.get("clone") else "false",
                     "artifact": artifact_slug(
-                        mode, app, variant_csv, enabled, distro, filesystem
+                        mode, app, variant_csv, enabled, distro, filesystem, topology
                     ),
                     "label": f"{glyphs}{label}"
                     + (f" {to_emoji('priority')}" if priority else ""),

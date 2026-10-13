@@ -5,6 +5,7 @@ set -euo pipefail
 : "${FATAL_GRACE:?FATAL_GRACE env var is required}"
 : "${DEPLOY_SINCE:=}"
 : "${DEPLOYED_SERVICES:=}"
+: "${SEED_WAIT_LABEL:=}"
 
 is_completed_oneshot() {
 	local ps
@@ -111,6 +112,22 @@ running_current_spec() {
 	printf '%s\n' "$states" | awk '/^Running/ { n++ } END { print n + 0 }'
 }
 
+waits_for_seed() {
+	local label
+	[ -n "${SEED_WAIT_LABEL}" ] || return 1
+	label=$(timeout 15 docker service inspect \
+		--format "{{index .Spec.Labels \"${SEED_WAIT_LABEL}\"}}" "$1" 2>/dev/null) || return 1
+	[ "$label" = "true" ]
+}
+
+started_awaiting_seed() {
+	local states
+	states=$(timeout 15 docker service ps "$1" \
+		--filter desired-state=running \
+		--format '{{.CurrentState}}' 2>/dev/null) || return 1
+	printf '%s\n' "$states" | awk '/^(Running|Starting)/ { n++ } END { print n + 0 }'
+}
+
 if ! services=$(timeout 15 docker stack services --format '{{.Name}} {{.Replicas}}' "$STACK"); then
 	echo "not converged: docker stack services failed or timed out for ${STACK}" >&2
 	exit 1
@@ -176,9 +193,14 @@ fi
 not_running=""
 while read -r name reps; do
 	[ -n "$name" ] || continue
+	reps="${reps%% *}"
 	if awk -v r="$reps" 'BEGIN { split(r, a, "/"); exit (a[1] == a[2]) ? 0 : 1 }'; then
 		desired=$(awk -v r="$reps" 'BEGIN { split(r, a, "/"); print a[2] }')
 		[ "$(running_current_spec "$name")" = "$desired" ] && continue
+	fi
+	if waits_for_seed "$name"; then
+		desired=$(awk -v r="$reps" 'BEGIN { split(r, a, "/"); print a[2] }')
+		[ "$(started_awaiting_seed "$name")" = "$desired" ] && continue
 	fi
 	is_completed_oneshot "$name" && continue
 	not_running="$not_running $name"

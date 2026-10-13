@@ -298,6 +298,11 @@ jobs:
       ref: ${{ github.sha }}
     secrets: inherit
 
+  test-swarm-data:
+    needs: validate-selection
+    if: ${{ vars.INFINITO_CI_SWARM_DATA == 'true' }}
+    uses: ./.github/workflows/call-test-swarm-data.yml
+
   test-install-make:
     needs: validate-selection
     uses: ./.github/workflows/call-test-install-make.yml
@@ -350,6 +355,7 @@ jobs:
       - test-deploy-chunk-2
       - test-deploy-chunk-3
       - test-runner-smoke
+      - test-swarm-data
       - test-workspace
       - test
       - lint

@@ -70,6 +70,8 @@ INFINITO_SWARM_WRK1_IP=192.168.${lab_octet}.11
 INFINITO_SWARM_WRK2_IP=192.168.${lab_octet}.12
 INFINITO_SWARM_NFS_IP=192.168.${lab_octet}.13
 INFINITO_SWARM_BACKUP_IP=192.168.${lab_octet}.14
+INFINITO_SWARM_MGR2_IP=192.168.${lab_octet}.15
+INFINITO_SWARM_MGR3_IP=192.168.${lab_octet}.16
 INFINITO_RUNNER_PREFIX=infinito-${slug}
 INFINITO_CONTAINER=infinito_nexus_${slug//[.-]/_}
 INFINITO_CACHE_NETWORK=${cache_network}
@@ -92,6 +94,8 @@ env -i -C "${path}" \
 	INFINITO_SWARM_WRK2_IP="192.168.${lab_octet}.12" \
 	INFINITO_SWARM_NFS_IP="192.168.${lab_octet}.13" \
 	INFINITO_SWARM_BACKUP_IP="192.168.${lab_octet}.14" \
+	INFINITO_SWARM_MGR2_IP="192.168.${lab_octet}.15" \
+	INFINITO_SWARM_MGR3_IP="192.168.${lab_octet}.16" \
 	INFINITO_RUNNER_PREFIX="infinito-${slug}" \
 	INFINITO_CACHE_NETWORK="${cache_network}" \
 	python3 -m cli.meta.env

@@ -24,6 +24,7 @@ BASE = {
     "compose_mode": "swarm",
     "application_id": "web-app-hermes",
     "service_name": "hermes",
+    "db_instance": None,
     "RUNTIME": "local",
     "SANDBOX_NODE_LABEL": SANDBOX_LABEL,
     "DOCKER_RESTART_POLICY": "unless-stopped",

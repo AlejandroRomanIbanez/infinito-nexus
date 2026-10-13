@@ -47,10 +47,12 @@ flowchart TB
 
         instmake["call-test-install-make.yml"]
         instpkgmgr["call-test-install-pkgmgr.yml"]
+        swarmdata["test-swarm-data: call-test-swarm-data.yml (INFINITO_CI_SWARM_DATA)"]
         mirror --> devenv["test-workspace: call-test-workspace.yml"]
 
         chain --> donegate["done"]
         smoke --> donegate
+        swarmdata --> donegate
         instmake --> donegate
         instpkgmgr --> donegate
         devenv --> donegate
@@ -224,6 +226,20 @@ reproduces by re-running the same sweep:
 | tor | `(position + sweep // 2) % 2` |
 | distro | `(position + sweep) % len(distro pool)` |
 | filesystem | `(position // len(distro pool) + sweep) % len(filesystem pool)` |
+| db topology (swarm rows, opt-in) | `(position + sweep // 4) % 2` over `standalone`, `ha` |
+
+The db topology axis is off by default because the HA lab (3 managers, 1 worker, 1 backup host) needs more runner resources than the 1+2 lab.
+Enable it with the `db_topology` dispatch input of `call-test-deploy.yml` or the `INFINITO_CI_DB_TOPOLOGY` repository variable.
+While it is off, the matrix is byte-identical to a run without the axis.
+While it is on, every swarm row carries `db_topology` (exported to the deploy as `INFINITO_SWARM_DB_TOPOLOGY`) and its glyph (`🔱` HA, `☝️` standalone) after the filesystem glyph.
+Priority swarm rows deploy both topologies, and HA rows set `kill_primary` (`INFINITO_CI_KILL_PRIMARY`) for the kill-the-primary-node probe.
+On `sweep // 4` the axis never moves in lockstep with mode or tor, so a row walks all eight mode/tor/topology combinations over eight sweeps.
+
+The HA database stack has its own gate, `call-test-swarm-data.yml`, which injects real faults (primary container kill, node crash, node hang, node partition) into each engine's HA form and checks the write gap and acknowledged-write loss against the failover budget.
+The orchestrator runs it on every pull request, push and manual sweep when the `INFINITO_CI_SWARM_DATA` repository variable is `true`, so it inherits the entry's draft gating, job budget and superseded-run cancellation.
+It is off by default because its four engine jobs each hold a runner for up to two hours.
+`cron-test-swarm-data.yml` runs the same suite nightly on the default branch when `INFINITO_CI_SWARM_DATA_NIGHTLY` is `true`, and on manual dispatch.
+Image bumps of the HA database stack (the engine images and the `haproxy`, `sentinel` and `etcd` pins in `svc-db-*` and `svc-dcs-etcd` `meta/services.yml`) arrive through `cron-update.yml` like any other bump and pass that gate whenever it is switched on.
 
 A role offers at most two modes in practice — swarm needs its own stack, host
 needs the absence of one — so a row flips between its two modes on consecutive
@@ -312,6 +328,8 @@ flowchart TB
     weekly["schedule: weekly Sat 00:00 UTC"] --> updatewf["cron-update.yml"]
     weekly --> cleanupci["cron-images-cleanup-ci.yml"]
     weeklymon["schedule: weekly Mon 00:00 UTC"] --> scorecard["cron-security-scorecard.yml"]
+    nightly["schedule: daily 02:30 UTC (INFINITO_CI_SWARM_DATA_NIGHTLY)"] --> cronswarm["cron-test-swarm-data.yml"]
+    cronswarm --> callswarm["call-test-swarm-data.yml"]
     branchprot["branch_protection_rule"] --> scorecard
     pushmain["push: main"] --> updatewf
     prtarget["pull_request_target: opened, reopened"] --> depclose["entry-pr-open-dependabot-close.yml"]
@@ -322,6 +340,6 @@ flowchart TB
 ```
 
 Also manually dispatchable: `cron-images-mirror-all.yml`, `cron-images-cleanup-ci.yml`,
-`cron-cleanup-stale.yml`, `cron-update.yml`, `cron-release-highest.yml`, `call-release-version.yml`,
+`cron-cleanup-stale.yml`, `cron-update.yml`, `cron-release-highest.yml`, `cron-test-swarm-data.yml`, `call-release-version.yml`,
 `call-lint.yml`, `call-test.yml`, `call-test-dns.yml`,
 `call-test-workspace.yml`, `call-test-runner-smoke.yml`.

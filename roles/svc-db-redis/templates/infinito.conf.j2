@@ -1,0 +1,12 @@
+dir /data
+user default on >{{ REDIS_PASSWORD }} ~* &* +@all
+user {{ REDIS_SENTINEL_USER }} on >{{ REDIS_SENTINEL_PASSWORD }} allchannels +multi +exec +slaveof +replicaof +ping +subscribe +publish +config|rewrite +role +info +client|setname +client|kill +script|kill
+user {{ REDIS_HAPROXY_CHECK_USER }} on >{{ REDIS_HAPROXY_CHECK_PASSWORD }} -@all +auth +ping +info +quit
+masteruser default
+masterauth {{ REDIS_PASSWORD }}
+maxmemory {{ REDIS_MAXMEMORY_MB }}mb
+maxmemory-policy allkeys-lru
+appendonly yes
+save 3600 1 300 100 60 10000
+min-replicas-to-write {{ REDIS_MIN_REPLICAS_TO_WRITE }}
+min-replicas-max-lag {{ REDIS_MIN_REPLICAS_MAX_LAG }}

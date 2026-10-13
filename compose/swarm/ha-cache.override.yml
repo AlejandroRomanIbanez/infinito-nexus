@@ -1,0 +1,20 @@
+# Package-cache wiring of the extra HA managers; 01_bootstrap.sh passes it only with both
+# ha.override.yml and cache.override.yml, because `extends` copies swarm-mgr-01 from
+# compose.yml alone and so leaves these managers without the cache wiring.
+---
+x-cache: &cache
+  extra_hosts:
+    - "deb.debian.org:${INFINITO_CACHE_PACKAGE_FRONTEND_IP}"
+    - "archive.ubuntu.com:${INFINITO_CACHE_PACKAGE_FRONTEND_IP}"
+    - "security.ubuntu.com:${INFINITO_CACHE_PACKAGE_FRONTEND_IP}"
+    - "infinito-registry-cache:${INFINITO_CACHE_REGISTRY_IP:?Run 'make dotenv' to generate the .env single source of truth}"
+  volumes:
+    - ../package-cache/apt/${INFINITO_DISTRO:?Run 'make dotenv' to generate the .env single source of truth}.list:/etc/apt/sources.list.d/package-cache.list:ro
+    - ${INFINITO_CACHE_REGISTRY_CA_HOST_PATH:?Run 'make dotenv' to generate the .env single source of truth}:/opt/registry-cache-ca:ro
+    - ../../scripts/docker/cache/registry-ca.sh:/usr/local/bin/registry-cache-ca.sh:ro
+
+services:
+  swarm-mgr-02:
+    <<: *cache
+  swarm-mgr-03:
+    <<: *cache

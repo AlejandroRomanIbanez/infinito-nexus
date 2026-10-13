@@ -1,0 +1,171 @@
+"""Engine-level queries and writes of the Swarm lab adapter."""
+
+from __future__ import annotations
+
+from utils.failover import engines
+from utils.failover.inventory import (
+    group_hosts,
+)
+from utils.failover.swarm import shell
+from utils.failover.swarm.commands import (
+    SETTLE_TIMEOUT_S,
+    node_status,
+    raft_leader,
+)
+
+
+class EngineOps:
+    """Mixin of ``SwarmLabBase``: direct instance writes, LDAP views and strength."""
+
+    def local_write(self, service: str, key: str) -> tuple[bool, str]:
+        """Write straight into one instance, bypassing the endpoint.
+
+        Returns ``(accepted, output)``; Redis sets a key, OpenLDAP adds an entry.
+        """
+        if self.engine == "redis":
+            proc = self._in(
+                service,
+                engines.redis_cli("SET", f"failover:local:{key}", "1"),
+                timeout=10,
+            )
+            return engines.redis_write_accepted(proc.stdout), proc.stdout.strip()
+        if self.engine == "openldap":
+            suffix = self.ldap_suffix(service)
+            argv, stdin = engines.ldap_add_entry(
+                f"cn=local-{key},ou=failover-check,{suffix}"
+            )
+            proc = self._in(service, argv, stdin=stdin, timeout=10)
+            output = f"{proc.stdout}{proc.stderr}".strip()
+            return proc.returncode == 0, f"rc={proc.returncode} {output}"
+        raise ValueError(f"local_write: {self.engine} is written through SQL")
+
+    def ldap_unwilling(self, service: str, key: str) -> tuple[bool, str]:
+        suffix = self.ldap_suffix(service)
+        argv, stdin = engines.ldap_add_entry(
+            f"cn=demoted-{key},ou=failover-check,{suffix}"
+        )
+        proc = self._in(service, argv, stdin=stdin, timeout=10)
+        output = f"{proc.stdout}{proc.stderr}".strip()
+        return engines.ldap_unwilling(
+            proc.returncode, output
+        ), f"rc={proc.returncode} {output}"
+
+    def ldap_suffix(self, service: str) -> str:
+        proc = self._in(service, engines.ldap_suffix())
+        values = engines.ldap_values(proc.stdout, "olcSuffix")
+        if not values:
+            raise RuntimeError(f"{service}: no olcSuffix on its data database")
+        return values[0]
+
+    def memberof_views(self) -> dict[str, list[str]]:
+        views: dict[str, list[str]] = {}
+        for service in self._instances():
+            suffix = self.ldap_suffix(service)
+            proc = self._in(
+                service,
+                engines.ldapi(
+                    "ldapsearch", "-LLL", "-b", suffix, "(memberOf=*)", "memberOf"
+                ),
+            )
+            views[service] = sorted(engines.ldap_values(proc.stdout, "memberOf"))
+        return views
+
+    def engine_hosts(self) -> list[str]:
+        return group_hosts(self._inventory().load(), self.role)
+
+    def full_strength(self) -> tuple[bool, str]:
+        """Return whether every listed instance runs and replicates, with detail."""
+        expected = len(self.engine_hosts())
+        services = self._instances()
+        if len(services) != expected or not all(self.running(s) for s in services):
+            return False, f"{len(services)} of {expected} instances running"
+        primary = self.primary_instance()
+        if self.engine == "postgres":
+            user, argv = engines.patroni_list()
+            proc = self._in(primary, argv, user=user)
+            return engines.patroni_strength(proc.stdout, expected)
+        if self.engine == "redis":
+            proc = self._in(primary, engines.redis_cli("INFO", "replication"))
+            slaves = engines.redis_connected_slaves(proc.stdout)
+            return slaves == expected - 1, f"master {primary} has {slaves} replicas"
+        if self.engine == "mariadb":
+            lagging = []
+            for service in services:
+                if service == primary:
+                    continue
+                proc = self._in(service, engines.slave_status())
+                if not engines.replica_running(engines.parse_slave_status(proc.stdout)):
+                    lagging.append(service)
+            return (
+                not lagging,
+                f"replication stopped on {lagging}" if lagging else "all replicating",
+            )
+        csns = {}
+        for service in services:
+            suffix = self.ldap_suffix(service)
+            proc = self._in(
+                service,
+                engines.ldapi(
+                    "ldapsearch", "-LLL", "-s", "base", "-b", suffix, "contextCSN"
+                ),
+            )
+            csns[service] = tuple(
+                sorted(engines.ldap_values(proc.stdout, "contextCSN"))
+            )
+        same = len(set(csns.values())) == 1 and bool(next(iter(csns.values())))
+        return same, f"contextCSN per instance: {csns}"
+
+    def wait_full_strength(self, timeout_s: float) -> tuple[bool, str]:
+        detail: list[str] = []
+
+        def strong() -> bool:
+            ok, text = self.full_strength()
+            detail.append(text)
+            return ok
+
+        ok = shell.wait_until(strong, timeout_s=timeout_s, interval_s=15)
+        return ok, detail[-1] if detail else "never checked"
+
+    def wait_ready_for_case(self, timeout_s: float) -> tuple[bool, str]:
+        """Wait for full strength when the engine runs in HA form.
+
+        A standalone engine, or a lab without its inventory, counts as ready.
+        """
+        if self.inventory is None or self.form() != "ha":
+            return True, "no HA form to check"
+        return self.wait_full_strength(timeout_s)
+
+    def _node_listing(self, fmt: str) -> str:
+        return self._on_manager("docker", "node", "ls", "--format", fmt)
+
+    def raft_leader(self) -> str | None:
+        return raft_leader(self._node_listing("{{.Hostname}} {{.ManagerStatus}}"))
+
+    def wait_node_status(
+        self, node: str, status: str, timeout_s: float = SETTLE_TIMEOUT_S
+    ) -> bool:
+        return shell.wait_until(
+            lambda: (
+                node_status(self._node_listing("{{.Hostname}} {{.Status}}"), node)
+                == status
+            ),
+            timeout_s=timeout_s,
+        )
+
+    def form(self) -> str:
+        """Return ``ha`` when instance services exist, ``standalone`` otherwise."""
+        try:
+            self._instances()
+        except RuntimeError:
+            return "standalone"
+        return "ha"
+
+    def endpoint_mode(self) -> str:
+        return self._on_manager(
+            "docker",
+            "service",
+            "inspect",
+            f"{self.stack}_{self.stack}",
+            "--format",
+            "{{.Spec.EndpointSpec.Mode}}",
+        ).strip()

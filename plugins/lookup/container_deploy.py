@@ -73,4 +73,10 @@ class LookupModule(LookupBase):
                 "    constraints:",
                 f"      - node.role == {placement}",
             ]
+            managers = (vars_.get("groups") or {}).get("svc-swarm-manager") or []
+            if placement == "manager" and len(managers) > 1:
+                label = vars_["SWARM_NODE_LABEL_STACK_HOST"]
+                if templar is not None:
+                    label = templar.template(label)
+                lines.append(f"      - node.labels.{label} == true")
         return ["\n".join(lines)]

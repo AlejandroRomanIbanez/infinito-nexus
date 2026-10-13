@@ -45,6 +45,27 @@
     owner: root
     group: root
 
+- name: 📦 Install resolve-db-primary helper (HA database → primary container ID)
+  become: true
+  ansible.builtin.copy:
+    src: "shell/resolve_db_primary.sh"
+    dest: "{{ BIN_RESOLVE_DB_PRIMARY }}"
+    mode: "0755"
+    owner: root
+    group: root
+
+- name: 📦 Install each HA engine's primary probe next to resolve-db-primary
+  become: true
+  ansible.builtin.copy:
+    src: "{{ lookup('path_absolute', item.src) }}"
+    dest: "{{ [DIR_BIN, item.name] | path_join }}"
+    mode: "0755"
+    owner: root
+    group: root
+  loop: "{{ lookup('db_instances', primary_probes=true) }}"
+  loop_control:
+    label: "{{ item.name }}"
+
 - name: "🛡️ Assert the NFS client mount is active on this swarm node"
   ansible.builtin.command: "mountpoint -q {{ DIR_VAR_LIB }}"
   changed_when: false
