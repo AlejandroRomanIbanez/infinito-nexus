@@ -88,7 +88,7 @@ on:
         type: string
         default: "auto"
       meshes:
-        description: "Mesh declarations a meshed swarm row deploys, e.g. an inventories/examples/*/meshes.yml. Empty: INFINITO_SWARM_MESHES from default.env."
+        description: "WireGuard layout a meshed swarm row deploys, e.g. an inventories/examples/*/wireguard.yml. Empty: INFINITO_SWARM_MESHES from default.env."
         required: false
         type: string
         default: ""
