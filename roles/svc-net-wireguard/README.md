@@ -11,10 +11,13 @@ daemon of its own.
 
 This role puts WireGuard under a swarm deployment so that swarm control,
 overlay and storage traffic never crosses an untunnelled network. It configures
-two hub-and-spoke meshes whose only shared member is the swarm manager: the
-`swarm` mesh joins the manager to the worker nodes, and the `data` mesh joins it
-to the NFS and backup hosts. The manager forwards between them, which is how a
-worker reaches an NFS export it is not a data-plane member of.
+the hub-and-spoke meshes the deployment declares, any number of them, with the
+swarm manager as the hub of each. The manager forwards between them, which is
+how a worker reaches an NFS export it is not a member of. The development lab
+declares two, `swarm` and `data`, in
+[meshes.yml](../../inventories/development/meshes.yml);
+[wireguard-three-meshes](../../inventories/examples/wireguard-three-meshes/README.md)
+declares three.
 
 The role plans nothing. Every key, address and peer list is written into the
 inventory beforehand by `cli.administration.inventory.mesh`, the one pass that
@@ -40,12 +43,15 @@ Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (
 
 ## Features
 
-- Two hub-and-spoke meshes with the manager as the only member of both, so the
-  two planes stay separate while remaining mutually reachable.
+- Any number of hub-and-spoke meshes around one hub, so the planes stay
+  separate while remaining mutually reachable.
+- A host may be a spoke of several meshes: it routes the pool through its
+  first declared one and only the mesh subnet through the others, so no two
+  interfaces claim one route.
 - Per-host interfaces rendered from inventory state, with each private key
   vault-encrypted in exactly one host's `host_vars`.
 - Forwarding enabled only on the hub, which is the only member with peers in
-  both planes.
+  every plane.
 - A hard gate that fails the deploy before swarm initialises when any peer is
   unreachable or the path will not carry a full-size payload.
 
@@ -98,9 +104,12 @@ cluster inventory does not:
 python3 -m cli.administration.inventory.mesh \
   --inventory /tmp/inv/devices.yml \
   --inventory /tmp/inv/backup.yml \
+  --group-vars-file inventories/development/meshes.yml \
   --host-vars-dir /tmp/inv/host_vars \
   --vault-password-file /tmp/inv/.password
 ```
+
+`--group-vars-file` names the declarations; the platform ships none of its own.
 
 Re-running is a no-op. To replace every keypair, add `--rotate`; that rewrites
 the whole mesh in one pass, because rotating one member alone partitions it.
@@ -108,7 +117,7 @@ the whole mesh in one pass, because rotating one member alone partitions it.
 Inspect a live interface on any member:
 
 ```bash
-wg show swarm
+wg show <mesh-name>
 ```
 
 A peer with no recent handshake is either unreachable on the underlay or
