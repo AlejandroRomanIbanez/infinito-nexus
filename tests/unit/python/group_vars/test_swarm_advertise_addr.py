@@ -1,0 +1,69 @@
+import unittest
+from pathlib import Path
+from typing import ClassVar
+
+from jinja2 import Environment, StrictUndefined, select_autoescape
+
+from utils.cache.files import PROJECT_ROOT
+from utils.cache.yaml import load_yaml
+
+_SWARM_VARS = Path(PROJECT_ROOT) / "group_vars" / "all" / "18_swarm.yml"
+
+
+def _dict2items(mapping):
+    return [{"key": key, "value": value} for key, value in mapping.items()]
+
+
+class TestSwarmAdvertiseAddr(unittest.TestCase):
+    """Swarm binds to the manager's primary mesh, whatever it was declared as.
+
+    A mesh name written into this expression resolves to '' for every
+    deployment that declared its meshes differently, and swarm then binds to
+    the underlay the mesh exists to keep it off.
+    """
+
+    env: ClassVar[Environment]
+    source: ClassVar[str]
+
+    @classmethod
+    def setUpClass(cls):
+        cls.env = Environment(undefined=StrictUndefined, autoescape=select_autoescape())
+        cls.env.filters["bool"] = lambda value: str(value).lower() in ("true", "1")
+        cls.env.filters["dict2items"] = _dict2items
+        cls.source = load_yaml(_SWARM_VARS)["swarm"]["manager"]["advertise_addr"]
+
+    def _render(self, *, enabled=True, applications=None):
+        hostvars = {
+            "mgr": {} if applications is None else {"applications": applications}
+        }
+        return (
+            self.env.from_string(self.source)
+            .render(WIREGUARD_ENABLED=enabled, STACK_HOST="mgr", hostvars=hostvars)
+            .strip()
+        )
+
+    def _meshes(self, **meshes):
+        return {
+            "svc-net-wireguard": {
+                "meshes": {
+                    name: {"address": address, "primary": primary}
+                    for name, (address, primary) in meshes.items()
+                }
+            }
+        }
+
+    def test_a_mesh_this_repository_never_named_is_followed(self):
+        applications = self._meshes(
+            alpha=("10.100.10.1", True), beta=("10.100.11.1", False)
+        )
+        self.assertEqual(self._render(applications=applications), "10.100.10.1")
+
+    def test_the_primary_wins_over_declaration_order_on_disk(self):
+        applications = self._meshes(
+            data=("10.100.1.1", False), swarm=("10.100.0.1", True)
+        )
+        self.assertEqual(self._render(applications=applications), "10.100.0.1")
+
+    def test_no_mesh_leaves_swarm_on_its_default(self):
+        self.assertEqual(self._render(enabled=False), "")
+        self.assertEqual(self._render(applications={}), "")
