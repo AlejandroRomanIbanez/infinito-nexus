@@ -13,7 +13,11 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from cli.administration.inventory.mesh.inventory import groups_of, specs_of
+from cli.administration.inventory.mesh.inventory import (
+    groups_of,
+    specs_of,
+    topology_of,
+)
 from cli.administration.inventory.mesh.plan import members_of, plan_mesh
 from cli.administration.inventory.mesh.transport import (
     MESH_CONTROL_PERSIST,
@@ -23,10 +27,10 @@ from cli.administration.inventory.mesh.transport import (
     switch_to_mesh,
 )
 from cli.administration.inventory.mesh.write import write_mesh
+from utils.cache.yaml import dump_yaml
 
-from . import PROJECT_ROOT
+from .test_write import LAYOUT, layout_applications
 
-GROUP_VARS = PROJECT_ROOT / "inventories/development/meshes.yml"
 CONTROLLER = "localhost"
 HOSTS = ("swarm-mgr-01", "swarm-wrk-01", "nfs-server", CONTROLLER)
 
@@ -52,37 +56,39 @@ class MeshOnDisk(unittest.TestCase):
         root = Path(self._tmp.name)
         self.host_vars = root / "host_vars"
         self.host_vars.mkdir()
+        layout = layout_applications(LAYOUT)
         for host in HOSTS:
-            (self.host_vars / f"{host}.yml").write_text("---\n", encoding="utf-8")
+            dump_yaml(str(self.host_vars / f"{host}.yml"), {"applications": layout})
         self.cluster = root / "devices.yml"
         self.cluster.write_text(CLUSTER_INVENTORY, encoding="utf-8")
         self.vault_file = root / ".password"
         self.vault_file.write_text("mesh-test-password\n", encoding="utf-8")
         self.groups = groups_of([self.cluster])
-        self.specs = specs_of(GROUP_VARS)
+        self.specs = specs_of(layout, [])
+        self.topology = topology_of(self.groups, self.host_vars, self.specs)
         self.swarm = next(spec for spec in self.specs if spec.name == "swarm")
 
     def tearDown(self):
         self._tmp.cleanup()
 
     def _write_swarm(self):
-        mesh = plan_mesh(self.swarm, self.groups, rotate=True, controller=CONTROLLER)
+        mesh = plan_mesh(self.swarm, self.topology, rotate=True, controller=CONTROLLER)
         write_mesh(mesh, self.host_vars, self.vault_file)
         return mesh
 
 
 class TestTheControllerJoinsTheMesh(MeshOnDisk, unittest.TestCase):
     def test_it_is_admitted_as_an_ordinary_spoke(self):
-        _, spokes = members_of(self.swarm, self.groups, CONTROLLER)
+        _, spokes = members_of(self.swarm, self.topology, CONTROLLER)
         self.assertIn(CONTROLLER, spokes)
 
     def test_it_stays_out_when_it_is_not_named(self):
         """It belongs to no role group, so nothing else can pull it in."""
-        _, spokes = members_of(self.swarm, self.groups)
+        _, spokes = members_of(self.swarm, self.topology)
         self.assertNotIn(CONTROLLER, spokes)
 
     def test_it_is_never_made_the_hub(self):
-        hub, _ = members_of(self.swarm, self.groups, CONTROLLER)
+        hub, _ = members_of(self.swarm, self.topology, CONTROLLER)
         self.assertNotEqual(hub, CONTROLLER)
 
     def test_it_gets_an_address_of_its_own(self):
