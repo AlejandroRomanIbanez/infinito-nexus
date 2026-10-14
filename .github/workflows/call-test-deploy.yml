@@ -64,6 +64,11 @@ on:
         required: false
         type: string
         default: auto
+      meshes:
+        description: "Mesh declarations a meshed swarm row deploys. Empty: INFINITO_SWARM_MESHES from default.env."
+        required: false
+        type: string
+        default: ""
       disable:
         description: "Comma-separated provider keys removed from the test inventory; used when the matrix row carries none of its own."
         required: false
@@ -123,6 +128,11 @@ on:
         type: choice
         default: auto
         options: [auto, enforced, disabled]
+      meshes:
+        description: "🕸️ Mesh declarations meshed swarm rows deploy. Empty: the development lab's"
+        required: false
+        type: string
+        default: ""
       disable:
         description: "🚫 Provider keys removed from the test inventory (comma-separated)"
         required: false
@@ -304,9 +314,9 @@ jobs:
           set -euo pipefail
           echo "GITHUB_REPOSITORY_OWNER=$(scripts/meta/resolve/repository/owner.sh)" >> "$GITHUB_ENV"
 
-      - name: 📦 Install jq
+      - name: 📦 Install jq and iproute2
         shell: bash
-        run: ./scripts/install/apt.sh jq
+        run: ./scripts/install/apt.sh jq iproute2
 
       - name: "🔍 Resolve SWARM_NAME (mandatory; default to the matrix app)"
         if: ${{ matrix.mode == 'swarm' }}
@@ -342,6 +352,7 @@ jobs:
           variant: ${{ matrix.variant }}
           disable: ${{ matrix.disable || inputs.disable }}
           INFINITO_SWARM_VPN: ${{ matrix.vpn }}
+          INFINITO_SWARM_MESHES: ${{ inputs.meshes }}
           INFINITO_SWARM_TRANSPORT_BENCH: ${{ vars.INFINITO_SWARM_TRANSPORT_BENCH }}
         run: ./scripts/tests/deploy/distros.sh "${{ env.SCRIPTS }}/00_one.sh" 2>&1 | tee "/tmp/ansible-${{ matrix.apps }}.log"
 
