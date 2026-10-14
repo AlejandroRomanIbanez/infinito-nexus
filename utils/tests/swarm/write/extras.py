@@ -129,25 +129,35 @@ def ensure_swarm_keypairs() -> dict[str, str]:
     }
 
 
-def _mesh_address(host_vars_dir: Path, host: str, mesh: str, fallback: str) -> str:
-    """The host's address in ``mesh``, or ``fallback`` when it has none.
+def _mesh_address(host_vars_dir: Path, host: str, fallback: str) -> str:
+    """The host's address on its primary mesh, or ``fallback`` when it has none.
 
     Read from the host_vars the mesh writer produced earlier in the round
-    rather than recomputed, so the allocation stays in one place. Falling back
-    to the underlay keeps a round without a mesh working unchanged.
+    rather than recomputed, so the allocation stays in one place. The primary
+    mesh is the one every other plane reaches the host on, whatever the
+    declarations named it. Falling back to the underlay keeps a round without a
+    mesh working unchanged.
     """
     path = host_vars_dir / f"{host}.yml"
     if not path.exists():
         return fallback
-    document = load_yaml(str(path))
-    address = (
-        document.get("applications", {})
+    meshes = (
+        load_yaml(str(path))
+        .get("applications", {})
         .get("svc-net-wireguard", {})
         .get("meshes", {})
-        .get(mesh, {})
-        .get("address")
     )
-    return address or fallback
+    return next(
+        (
+            entry["address"]
+            for entry in meshes.values()
+            if isinstance(entry, dict)
+            and entry.get("primary")
+            and entry.get("host") == host
+            and entry.get("address")
+        ),
+        fallback,
+    )
 
 
 def main() -> int:
@@ -157,10 +167,8 @@ def main() -> int:
     out_path = Path(os.environ.get("OUT_PATH", "/tmp/swarm-nfs-extras.yml"))  # noqa: S108 - ephemeral swarm-test path, overridable via OUT_PATH
 
     host_vars_dir = out_path.parent / "host_vars"
-    mgr_addr = _mesh_address(host_vars_dir, mgr, "swarm", mgr_ip)
-    nfs_addr = _mesh_address(
-        host_vars_dir, os.environ.get("NFS_SERVER", ""), "data", nfs_ip
-    )
+    mgr_addr = _mesh_address(host_vars_dir, mgr, mgr_ip)
+    nfs_addr = _mesh_address(host_vars_dir, os.environ.get("NFS_SERVER", ""), nfs_ip)
 
     pubkeys = ensure_swarm_keypairs()
 
