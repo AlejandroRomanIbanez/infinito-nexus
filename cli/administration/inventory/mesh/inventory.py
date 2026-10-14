@@ -1,9 +1,14 @@
-"""Read group membership and mesh declarations.
+"""Read group membership, mesh declarations and who joins which mesh.
 
 Group membership is collected across every inventory file it is spread over.
 The swarm lab keeps the backup host in a sibling ``backup.yml`` rather than in
 the cluster inventory, so a mesh that spans both planes is only complete when
 both files have been read.
+
+The declarations and the memberships are ordinary ``applications`` values in
+each host's ``host_vars``: the hub's ``svc-net-wireguard.networks.meshes``
+declares the meshes, and every other role's ``networks.meshes`` puts the hosts
+carrying it into them (:mod:`utils.networks.mesh`).
 """
 
 from __future__ import annotations
@@ -13,14 +18,20 @@ import re
 from pathlib import Path
 from typing import Any
 
+from cli.administration.inventory.provision.ruamel_io import load_document
 from utils import PROJECT_ROOT
 from utils.cache.yaml import load_yaml_any
+from utils.networks.mesh import (
+    APPLICATION_ID,
+    HUB_ROLE,
+    MESHES_KEY,
+    declared_meshes,
+    joined_meshes,
+)
 
-from .model import MeshSpec
+from .model import MeshSpec, Topology
 
-MESHES_VAR = "WIREGUARD_MESHES"
-POOL_VAR = "WIREGUARD_SUBNET_POOL"
-PLATFORM_POOL_VAR = "NETWORK_MESH_POOL"
+POOL_VAR = "NETWORK_MESH_POOL"
 
 
 def groups_of(inventory_files: list[Path]) -> dict[str, list[str]]:
@@ -49,83 +60,113 @@ def _collect(node: Any, groups: dict[str, list[str]]) -> None:
         _collect(child, groups)
 
 
-def specs_of(group_vars_file: Path) -> list[MeshSpec]:
-    """The mesh declarations in ``group_vars_file``."""
-    document = load_yaml_any(str(group_vars_file))
-    if not isinstance(document, dict):
-        raise TypeError(f"{group_vars_file} does not contain a mapping")
-    declared = document.get(MESHES_VAR)
-    if not isinstance(declared, list) or not declared:
-        raise ValueError(f"{group_vars_file} declares no {MESHES_VAR}")
+def host_applications(host_vars_dir: Path, host: str) -> Any:
+    """The ``applications`` block of *host*'s ``host_vars``, or ``{}``."""
+    path = host_vars_dir / f"{host}.yml"
+    if not path.is_file():
+        return {}
+    return load_document(path).get("applications") or {}
 
-    pool = _resolve_pool(document.get(POOL_VAR), group_vars_file)
+
+def hub_of(groups: dict[str, list[str]]) -> str:
+    """The host that routes for every mesh."""
+    hubs = sorted(dict.fromkeys(groups.get(HUB_ROLE, [])))
+    if len(hubs) != 1:
+        raise ValueError(
+            f"hub group '{HUB_ROLE}' resolves to {len(hubs)} hosts, expected exactly 1"
+        )
+    return hubs[0]
+
+
+def specs_of(applications: Any, inventory_files: list[Path]) -> list[MeshSpec]:
+    """The meshes declared in *applications*, in declaration order.
+
+    Args:
+        applications: the hub's ``applications`` block.
+        inventory_files: the inventories of the deploy, whose ``group_vars``
+            may narrow the platform's mesh pool.
+    """
+    declared = declared_meshes(applications)
+    if not declared:
+        raise ValueError(
+            f"{APPLICATION_ID} declares no networks.{MESHES_KEY}: a deployment "
+            "states its meshes in the hub's host_vars"
+        )
+    pool = pool_of(inventory_files)
     specs = [
         MeshSpec(
-            name=entry["name"],
-            hub_group=entry["hub_group"],
-            spoke_groups=tuple(entry.get("spoke_groups", ())),
-            subnet=entry["subnet"],
+            name=str(entry["name"]),
+            subnet=str(entry["subnet"]),
             listen_port=int(entry["listen_port"]),
-            spoke_group_prefixes=tuple(entry.get("spoke_group_prefixes", ())),
-            routed_range=entry.get("routed_range") or pool or entry["subnet"],
+            routed_range=str(entry.get("routed_range") or pool),
         )
         for entry in declared
     ]
+    names = [spec.name for spec in specs]
+    duplicated = sorted({name for name in names if names.count(name) > 1})
+    if duplicated:
+        raise ValueError(f"meshes declared more than once: {duplicated}")
     assert_no_subnet_overlap(specs, pool)
     return specs
+
+
+def topology_of(
+    groups: dict[str, list[str]], host_vars_dir: Path, specs: list[MeshSpec]
+) -> Topology:
+    """Who the inventory puts into each declared mesh.
+
+    A host joins a mesh when any role it carries lists that mesh in its
+    ``networks.meshes``. A name nobody declared is refused rather than
+    dropped, because the host would otherwise deploy without the tunnel its
+    inventory asked for.
+    """
+    hub = hub_of(groups)
+    spokes: dict[str, list[str]] = {spec.name: [] for spec in specs}
+    hosts = sorted({host for members in groups.values() for host in members})
+    for host in hosts:
+        roles = [group for group, members in groups.items() if host in members]
+        joined = joined_meshes(host_applications(host_vars_dir, host), roles)
+        for name, by in sorted(joined.items()):
+            if name not in spokes:
+                raise ValueError(
+                    f"{host}: {', '.join(by)} join(s) mesh '{name}', which "
+                    f"{APPLICATION_ID} does not declare"
+                )
+            if host != hub:
+                spokes[name].append(host)
+    return Topology(hub=hub, spokes={name: tuple(h) for name, h in spokes.items()})
 
 
 _REFERENCE = re.compile(r"^\s*\{\{\s*(?P<name>[A-Z0-9_]+)\s*\}\}\s*$")
 
 
-def _literal_of(name: str, group_vars_file: Path) -> str | None:
-    """The literal ``name`` holds, from the declarations' neighbours or ours.
-
-    The declarations do not have to sit in ``group_vars/all``: a deployment
-    declares its own meshes wherever it likes, so the platform's own
-    ``group_vars/all`` is searched after the file's neighbours, and a local
-    declaration still wins.
-    """
-    for directory in dict.fromkeys(
-        [Path(group_vars_file).parent, PROJECT_ROOT / "group_vars" / "all"]
-    ):
-        for sibling in sorted(directory.glob("*.yml")):
-            document = load_yaml_any(str(sibling), default_if_missing={})
+def _literal_of(name: str, directories: list[Path]) -> str | None:
+    """The literal ``name`` holds in the first directory that defines one."""
+    for directory in directories:
+        for path in sorted(directory.glob("*.yml")):
+            document = load_yaml_any(str(path), default_if_missing={})
             value = (document or {}).get(name)
             if isinstance(value, str) and not _REFERENCE.match(value):
                 return value
     return None
 
 
-def _resolve_pool(pool: object, group_vars_file: Path) -> str | None:
-    """The range a spoke routes through its hub.
+def pool_of(inventory_files: list[Path]) -> str:
+    """The range every mesh subnet is carved from.
 
-    Declarations that say nothing about the pool get the platform's, so the
-    range is not restated once per deployment: that is the duplication
-    ``NETWORK_MESH_POOL`` exists to end, and a file that restates it is a
-    second copy to drift. A deployment that wants a different pool declares
-    one, literal or as a ``{{ VAR }}`` hop.
-
-    Resolving to nothing is not silent: ``routed_range`` would narrow from the
-    pool to each mesh's own subnet, and a spoke would stop routing to the
-    planes it is not a member of -- which is the whole reason the hub is in
-    both.
+    A deployment narrows it in its own ``group_vars/all``; otherwise the
+    platform's ``NETWORK_MESH_POOL`` applies, which is where every range the
+    platform allocates is declared once.
     """
+    directories: list[Path] = []
+    for path in inventory_files:
+        group_vars = Path(path).parent / "group_vars"
+        directories += [group_vars, group_vars / "all"]
+    directories.append(PROJECT_ROOT / "group_vars" / "all")
+    pool = _literal_of(POOL_VAR, list(dict.fromkeys(directories)))
     if pool is None:
-        return _literal_of(PLATFORM_POOL_VAR, group_vars_file)
-    if not isinstance(pool, str):
-        return None
-    match = _REFERENCE.match(pool)
-    if match is None:
-        return pool
-    name = match.group("name")
-    literal = _literal_of(name, group_vars_file)
-    if literal is None:
-        raise ValueError(
-            f"{group_vars_file} references {name}, which neither its own "
-            f"directory nor the platform's group_vars/all defines"
-        )
-    return literal
+        raise ValueError(f"{POOL_VAR} is defined nowhere the deploy reads it from")
+    return pool
 
 
 def assert_no_subnet_overlap(specs: list[MeshSpec], pool: str | None) -> None:
