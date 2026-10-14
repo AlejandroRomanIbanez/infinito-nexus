@@ -2,22 +2,80 @@
 
 from __future__ import annotations
 
+import ipaddress
+import json
 import os
+import subprocess
 import sys
 from pathlib import Path
 
+from utils import PROJECT_ROOT
 from utils.cache.yaml import dump_yaml
+from utils.env.parser import parse_static_env
 from utils.tests.swarm.extend_inventory import mesh_enabled
 from utils.tests.swarm.run import run_step
 
-_MESH_NAME = "swarm"
 _CONTROLLER = "localhost"
 _PLAYBOOK = "playbook-mesh.yml"
 _BENCH_PLAYBOOK = "transport-bench.yml"
 _SUDO_PLAYBOOK = "lab-sudo.yml"
 _SWARM_EXTRAS_VARS = "inventories/development/swarm.yml"
-_DECLARATIONS = "inventories/development/meshes.yml"
 _DEFAULT_ADMIN_KEY = "/tmp/swarm-nfs-admin.key"  # noqa: S108 - ephemeral swarm-test path, overridable via KEY_PATH
+
+
+def declarations() -> Path:
+    """The mesh declarations this round deploys, from ``INFINITO_SWARM_MESHES``."""
+    path = (
+        os.environ.get("INFINITO_SWARM_MESHES")
+        or parse_static_env(PROJECT_ROOT / "default.env")["INFINITO_SWARM_MESHES"]
+    )
+    return PROJECT_ROOT / path
+
+
+def transport_mesh() -> str:
+    """The mesh the controller joins and the transport moves onto.
+
+    The first one declared, so a deployment names it by order rather than by a
+    name this harness would have to know.
+    """
+    from cli.administration.inventory.mesh.inventory import specs_of
+
+    return specs_of(declarations())[0].name
+
+
+def stale_controller_interfaces() -> list[str]:
+    """WireGuard links on the controller left behind by other declarations.
+
+    The controller is no lab node: locally it is the act container on the
+    host's network, so its interface outlives the round. One left by other
+    declarations still routes the pool, and the next ``wg-quick up`` fails with
+    ``RTNETLINK answers: File exists``. Only links holding an address inside
+    the pool and naming no declared mesh count; any other WireGuard link on the
+    host is not this harness's to remove.
+    """
+    from cli.administration.inventory.mesh.inventory import specs_of
+
+    specs = specs_of(declarations())
+    declared = {spec.name for spec in specs}
+    pools = {ipaddress.ip_network(spec.routed_range or spec.subnet) for spec in specs}
+    listed = subprocess.run(
+        ["ip", "-j", "-4", "addr", "show", "type", "wireguard"],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    return sorted(
+        link["ifname"]
+        for link in json.loads(listed.stdout or "[]")
+        if link.get("ifname") not in declared
+        and any(
+            ipaddress.ip_address(entry["local"]) in pool
+            for entry in link.get("addr_info", [])
+            if "local" in entry
+            for pool in pools
+        )
+    )
+
 
 _LAB_ADDRESSES = {
     "MGR": "INFINITO_SWARM_MGR_IP",
@@ -50,10 +108,10 @@ def write_mesh(*, inv_dir: str, rotate: bool = False) -> int:
         return 0
     args = ["--inventory", f"{inv_dir}/devices.yml"]
     args += ["--inventory", f"{inv_dir}/backup.yml"]
-    args += ["--group-vars-file", _DECLARATIONS]
+    args += ["--group-vars-file", str(declarations())]
     args += ["--host-vars-dir", f"{inv_dir}/host_vars"]
     args += ["--vault-password-file", f"{inv_dir}/.password"]
-    args += ["--controller", _CONTROLLER, "--controller-mesh", _MESH_NAME]
+    args += ["--controller", _CONTROLLER, "--controller-mesh", transport_mesh()]
     args += _lab_endpoints()
     if rotate:
         args += ["--rotate"]
@@ -107,6 +165,15 @@ def mesh_controller(*, inv_dir: str) -> int:
     """Bring the controller's own interface up before the transport moves."""
     if not mesh_enabled():
         return 0
+    escalate = [] if os.geteuid() == 0 else ["sudo", "-n"]
+    for name in stale_controller_interfaces():
+        rc = run_step(
+            [*escalate, "ip", "link", "delete", name],
+            env=os.environ.copy(),
+            label=f"remove the controller's stale '{name}' interface",
+        )
+        if rc != 0:
+            return rc
     inventory = Path(inv_dir) / "controller.yml"
     dump_yaml(
         str(inventory),
@@ -216,7 +283,7 @@ def switch_to_mesh_transport(*, inv_dir: str) -> int:
     switched = switch_to_mesh(
         host_vars,
         hosts,
-        _MESH_NAME,
+        transport_mesh(),
         user="administrator",
         private_key_file=os.environ.get("KEY_PATH") or _DEFAULT_ADMIN_KEY,
     )
