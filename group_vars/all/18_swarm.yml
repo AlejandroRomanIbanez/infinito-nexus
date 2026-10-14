@@ -24,13 +24,20 @@ swarm:
   manager:
     # Rationale: swarm must bind to the mesh, not the underlay, or its control
     # and overlay ports stay reachable outside the tunnel that exists to carry
-    # them. Resolved from the mesh the cross-host writer put in the inventory.
+    # them. The manager's primary mesh is read rather than one named here: the
+    # deployment declares the meshes, and a name nobody declared resolves to ''.
     advertise_addr: >-
-      {{ (hostvars[STACK_HOST].applications['svc-net-wireguard'].meshes.swarm.address)
+      {{ (hostvars[STACK_HOST].applications['svc-net-wireguard'].meshes
+          | dict2items
+          | selectattr('value.primary', 'defined')
+          | selectattr('value.primary')
+          | map(attribute='value.address')
+          | first
+          | default(''))
          if (WIREGUARD_ENABLED | bool
               and hostvars[STACK_HOST].applications is defined
               and 'svc-net-wireguard' in hostvars[STACK_HOST].applications
-              and 'swarm' in hostvars[STACK_HOST].applications['svc-net-wireguard'].meshes)
+              and 'meshes' in hostvars[STACK_HOST].applications['svc-net-wireguard'])
          else '' }}
   network:
     encryption: true
