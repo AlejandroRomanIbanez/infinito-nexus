@@ -13,19 +13,12 @@
   loop_control:
     label: "{{ item.service }}"
 
+- name: "🔧 MariaDB HA | Remember the running writer"
+  ansible.builtin.set_fact:
+    _mariadb_rotate_writers: "{{ _mariadb_rotate_probe.results | selectattr('rc', 'equalto', 0) | map(attribute='item') | list }}"
+
 - name: "🔑 MariaDB HA | Write the inventory's passwords into the running writer"
-  ansible.builtin.shell: |
-    container exec -i "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ _mariadb_rotate_writer.service | quote }})" {{ MARIADB_HA_SQL }}
-  args:
-    stdin: |
-      SET @root_pwd := '{{ MARIADB_ROOT_PWD }}';
-      SET @replication_pwd := '{{ MARIADB_REPLICATION_PWD }}';
-      SET @elector_pwd := '{{ MARIADB_ELECTOR_PWD }}';
-      {{ lookup('template', role_path ~ '/templates/sql/ha/root.sql.j2') }}
-      {{ lookup('template', role_path ~ '/templates/sql/ha/users.sql.j2') }}
+  ansible.builtin.include_tasks: utils/rotate_apply.yml
   vars:
-    _mariadb_rotate_writer: "{{ _mariadb_rotate_probe.results | selectattr('rc', 'equalto', 0) | map(attribute='item') | first }}"
-  delegate_to: "{{ _mariadb_rotate_writer.host }}"
-  when: _mariadb_rotate_probe.results | selectattr('rc', 'equalto', 0) | list | length == 1
-  changed_when: false
-  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+    mariadb_rotate_writer: "{{ _mariadb_rotate_writers[0] }}"
+  when: _mariadb_rotate_writers | length == 1
