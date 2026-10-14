@@ -68,13 +68,16 @@ class TestWriteExtrasMeshAddresses(unittest.TestCase):
                     {
                         "applications": {
                             "svc-net-wireguard": {
-                                "meshes": {
-                                    name: {
-                                        "host": host,
-                                        "address": address,
-                                        "primary": primary,
-                                    }
-                                    for name, (address, primary) in meshes.items()
+                                "networks": {
+                                    "interfaces": [
+                                        {
+                                            "name": name,
+                                            "host": host,
+                                            "address": address,
+                                            "primary": primary,
+                                        }
+                                        for name, (address, primary) in meshes.items()
+                                    ]
                                 }
                             }
                         }
