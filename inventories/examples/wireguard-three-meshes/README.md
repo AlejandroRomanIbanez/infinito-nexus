@@ -18,6 +18,12 @@ a spoke of another: every spoke routes `routed_range` — the whole
 `NETWORK_MESH_POOL` — through its hub. Two meshes with no host in common
 cannot reach each other, by design.
 
+Declaration order matters once: each host's first declared mesh is its
+**primary**. That is the address the other planes reach it on, the mesh a
+deploy controller joins, and the one interface a spoke of several meshes
+routes the pool through. Its other interfaces route only their own subnet,
+because two interfaces claiming one range is a route `wg-quick` refuses.
+
 ## Running it
 
 The mesh is written by one cross-host pass before the play, never by the role:
@@ -35,6 +41,31 @@ That writes each host's own block, and rewrites
 contract is generated, because the inventory validator refuses a key the role's
 meta tree does not declare and these mesh names are not ones the repository
 ships.
+
+## Testing it end to end
+
+The swarm lab has the same five hosts in the same groups as `inventory.yml`,
+under its own names. Point a meshed swarm round at these declarations and it
+deploys a role over all three meshes:
+
+```bash
+make swarm-zombie app=<role> vpn=enforced \
+  meshes=inventories/examples/wireguard-three-meshes/meshes.yml
+```
+
+In CI, dispatch the manual workflow with the same three choices:
+
+```bash
+gh workflow run entry-manual-steer.yml --ref <branch> \
+  -f whitelist=<role> -f mode=swarm -f vpn=enforced \
+  -f meshes=inventories/examples/wireguard-three-meshes/meshes.yml
+```
+
+The lab is slightly stricter than this inventory: its NFS server keeps its own
+backup leg, so `svc-bkp-nfs-2-local` makes it a spoke of `gamma` as well as
+`beta`. A run therefore also proves a spoke of two meshes. A local run rewrites
+the role contract in the working tree; restore it with
+`git checkout roles/svc-net-wireguard/meta/meshes.yml` afterwards.
 
 ## What it does not show
 
