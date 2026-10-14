@@ -11,8 +11,9 @@ from cli.administration.inventory.provision.ruamel_io import (
     load_document,
 )
 from utils import PROJECT_ROOT
+from utils.networks.mesh import address_on
 
-from .write import DEFAULT_APPLICATION_ID, MESHES_KEY, host_vars_path
+from .write import host_vars_path
 
 if TYPE_CHECKING:
     from pathlib import Path
@@ -60,27 +61,13 @@ def repo_ssh_args(config_file: Path | None = None) -> str:
     return parser.get("ssh_connection", "ssh_args", fallback="")
 
 
-def mesh_address(
-    host_vars_dir: Path,
-    host: str,
-    mesh_name: str,
-    application_id: str = DEFAULT_APPLICATION_ID,
-) -> str | None:
+def mesh_address(host_vars_dir: Path, host: str, mesh_name: str) -> str | None:
     """The address *host* holds on *mesh_name*, or ``None`` when it is absent."""
     path = host_vars_path(host_vars_dir, host)
     if not path.exists():
         return None
-    entry = (
-        load_document(path)
-        .get("applications", {})
-        .get(application_id, {})
-        .get(MESHES_KEY, {})
-        .get(mesh_name, {})
-    )
-    if entry.get("host") != host:
-        return None
-    address = entry.get("address")
-    return address if isinstance(address, str) and address else None
+    address = address_on(load_document(path).get("applications", {}), host, mesh_name)
+    return address or None
 
 
 def switch_to_mesh(
@@ -90,7 +77,6 @@ def switch_to_mesh(
     *,
     user: str,
     private_key_file: str,
-    application_id: str = DEFAULT_APPLICATION_ID,
 ) -> dict[str, str]:
     """Point every member of *mesh_name* at its mesh address over SSH.
 
@@ -101,7 +87,7 @@ def switch_to_mesh(
     """
     switched: dict[str, str] = {}
     for host in hosts:
-        address = mesh_address(host_vars_dir, host, mesh_name, application_id)
+        address = mesh_address(host_vars_dir, host, mesh_name)
         if address is None:
             continue
         path = host_vars_path(host_vars_dir, host)
