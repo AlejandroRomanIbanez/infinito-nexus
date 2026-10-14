@@ -58,6 +58,19 @@ class TestScenarioRegistry(unittest.TestCase):
         with self.assertRaises(KeyError):
             scenarios_for("mongodb")
 
+    def test_parts_split_every_case_exactly_once(self):
+        for engine in ENGINES:
+            with self.subTest(engine):
+                in_place = scenarios_for(engine, "in-place")
+                rebuild = scenarios_for(engine, "rebuild")
+                self.assertEqual(in_place + rebuild, scenarios_for(engine))
+        self.assertEqual(
+            [s.name for s in scenarios_for("postgres", "rebuild")],
+            ["etcd-dr", "forget-reclone", "standalone", "migration"],
+        )
+        with self.assertRaises(KeyError):
+            scenarios_for("postgres", "everything")
+
     def test_rebuilding_cases_run_last_and_standalone_precedes_migration(self):
         names = [s.name for s in SCENARIOS]
         self.assertEqual(names[-2:], ["standalone", "migration"])

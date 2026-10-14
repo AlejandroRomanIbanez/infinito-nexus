@@ -8,7 +8,8 @@ scenario that applies to the engine against the Swarm lab named by the
 topology environment (``SWARM_LAB_MANAGERS``, ``SWARM_LAB_WORKERS``,
 ``SWARM_LAB_NETWORK`` and the ``INFINITO_SWARM_*_IP`` addresses exported by
 the lab topology script). The cases that redeploy find the lab inventory under
-``INFINITO_INVENTORY_DIR``. ``--only`` restricts the run to named scenarios.
+``INFINITO_INVENTORY_DIR``. ``--only`` restricts the run to named scenarios;
+``--part`` (default ``$FAILOVER_PART``) to the in-place or the rebuild cases.
 """
 
 from __future__ import annotations
@@ -25,7 +26,7 @@ from utils.failover.inventory import LabInventory, find_inventory
 from utils.failover.junit import CaseResult, write_junit
 from utils.failover.procedures import Env
 from utils.failover.runner import run_scenario
-from utils.failover.scenarios import scenarios_for
+from utils.failover.scenarios import PARTS, scenarios_for
 from utils.failover.swarm import SwarmLab, filter_lab_overrides, load_lab_sizes
 from utils.failover.targets import ENGINES, RECLONE_CEILING_S
 from utils.tests.swarm.matrix import _DEFAULT_INVENTORY_DIR
@@ -49,6 +50,9 @@ def _parse_args(argv: list[str] | None) -> argparse.Namespace:
     run.add_argument("--junit", required=True, type=Path)
     run.add_argument("--duration", type=int, default=120)
     run.add_argument("--only", nargs="+", default=None)
+    run.add_argument(
+        "--part", choices=PARTS, default=os.environ.get("FAILOVER_PART") or None
+    )
     return parser.parse_args(argv)
 
 
@@ -92,7 +96,9 @@ def main(argv: list[str] | None = None) -> int:
     lab = _swarm_lab(args.engine)
     env = Env(duration_s=args.duration)
     selected = [
-        s for s in scenarios_for(args.engine) if not args.only or s.name in args.only
+        s
+        for s in scenarios_for(args.engine, None if args.only else args.part)
+        if not args.only or s.name in args.only
     ]
     cases: list[CaseResult] = []
     for scenario in selected:

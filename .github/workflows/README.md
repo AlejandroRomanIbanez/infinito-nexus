@@ -237,7 +237,7 @@ On `sweep // 4` the axis never moves in lockstep with mode or tor, so a row walk
 
 The HA database stack has its own gate, `call-test-swarm-data.yml`, which injects real faults (primary container kill, node crash, node hang, node partition) into each engine's HA form and checks the write gap and acknowledged-write loss against the failover budget.
 The orchestrator runs it on every pull request, push and manual sweep when the `INFINITO_CI_SWARM_DATA` repository variable is `true`, so it inherits the entry's draft gating, job budget and superseded-run cancellation.
-It is off by default because its four engine jobs each hold a runner for up to two hours.
+It is off by default because it runs two jobs per engine, an `in-place` and a `rebuild` part, and each holds a runner for three to four hours.
 `cron-test-swarm-data.yml` runs the same suite nightly on the default branch when `INFINITO_CI_SWARM_DATA_NIGHTLY` is `true`, and on manual dispatch.
 Image bumps of the HA database stack (the engine images and the `haproxy`, `sentinel` and `etcd` pins in `svc-db-*` and `svc-dcs-etcd` `meta/services.yml`) arrive through `cron-update.yml` like any other bump and pass that gate whenever it is switched on.
 

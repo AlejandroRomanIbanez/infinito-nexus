@@ -357,9 +357,9 @@ This requirement covers:
 - [ ] The failover suite has one core used by both modes: the write-continuity checker, the audit, the targets and the scenario list. Lab bring-up, checker configuration and fault injection are per-mode adapters. This requirement builds the core and the Swarm adapter; 037 adds the Kubernetes adapter.
 - [ ] A reusable workflow, `.github/workflows/call-test-swarm-data.yml`, runs:
   - **when:** inside the orchestrator (pull requests, pushes, manual sweeps, with the entry's draft gating, job budget and superseded-run cancellation) while the `INFINITO_CI_SWARM_DATA` repository variable is `true`, off by default; through `.github/workflows/cron-test-swarm-data.yml` on manual dispatch always, and nightly on the default branch only while `INFINITO_CI_SWARM_DATA_NIGHTLY` is `true`;
-  - **matrix:** one engine per job, each job with 3 managers, 1 spare worker, etcd and that engine, on the free `ubuntu-latest` runner;
+  - **matrix:** two jobs per engine, each with its own lab of 3 managers, 1 spare worker, etcd and that engine, on the free `ubuntu-latest` runner. The `in-place` job deploys every variant round and runs the cases the lab heals from. The `rebuild` job deploys the first round only and runs etcd-dr, forget-reclone, standalone and migration. A full suite in one job (about 5h45m) does not fit the 355 min job limit;
   - **lab sizes:** an inventory override used only by the suite sets lab memory limits (Postgres 768m, MariaDB 512m, OpenLDAP 256m, Redis 128m, etcd 256m, HAProxy 64m); etcd keeps its production election timeouts, and the documented production sizes stay unchanged. If the runs show out-of-memory kills or flapping elections, the suite moves to a larger hosted runner. It never runs on a self-hosted runner, because a required check would run fork pull request code in privileged containers;
-  - **locally:** `make test-swarm-data engine=<name>`;
+  - **locally:** `make test-swarm-data engine=<name> [part=<in-place|rebuild>]`;
   - **output:** JUnit, separate from `make test`.
 - [ ] Each engine has a write-continuity checker service:
   - **placement:** pinned to the spare worker, which the suite never kills;

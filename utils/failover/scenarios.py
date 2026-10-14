@@ -12,6 +12,7 @@ ENGINES = ("postgres", "mariadb", "redis", "openldap")
 SQL_ENGINES = ("postgres", "mariadb")
 ELECTOR_ENGINES = ("mariadb", "openldap")
 ETCD_ENGINES = ("postgres", "mariadb", "openldap")
+PARTS = ("in-place", "rebuild")
 
 
 @dataclass(frozen=True)
@@ -27,6 +28,8 @@ class Scenario:
             ``utils.failover.procedures`` that runs this case instead of the
             plain flow, or ``None``.
         engines: engines the case applies to.
+        rebuild: the case rebuilds the engine or its coordination store, so
+            it runs in the ``rebuild`` part on a lab of its own.
     """
 
     name: str
@@ -34,6 +37,7 @@ class Scenario:
     injection: str | None = None
     procedure: str | None = None
     engines: tuple[str, ...] = ENGINES
+    rebuild: bool = False
 
     def applies_to(self, engine: str) -> bool:
         return engine in self.engines
@@ -72,10 +76,12 @@ SCENARIOS: tuple[Scenario, ...] = (
         engines=("postgres", "mariadb", "openldap"),
     ),
     Scenario("endpoint-idle", "none", procedure="endpoint_idle"),
-    Scenario("etcd-dr", "none", procedure="etcd_dr", engines=ETCD_ENGINES),
-    Scenario("forget-reclone", "node", procedure="forget_reclone"),
-    Scenario("standalone", "none", procedure="standalone"),
-    Scenario("migration", "none", procedure="migration"),
+    Scenario(
+        "etcd-dr", "none", procedure="etcd_dr", engines=ETCD_ENGINES, rebuild=True
+    ),
+    Scenario("forget-reclone", "node", procedure="forget_reclone", rebuild=True),
+    Scenario("standalone", "none", procedure="standalone", rebuild=True),
+    Scenario("migration", "none", procedure="migration", rebuild=True),
 )
 
 
@@ -86,12 +92,20 @@ def get_scenario(name: str) -> Scenario:
     raise KeyError(name)
 
 
-def scenarios_for(engine: str) -> tuple[Scenario, ...]:
+def scenarios_for(engine: str, part: str | None = None) -> tuple[Scenario, ...]:
     """Return the scenarios that apply to one engine, in run order.
 
     Args:
         engine: one of ``ENGINES``.
+        part: one of ``PARTS`` to keep only that part's cases, or ``None``
+            for every case.
     """
     if engine not in ENGINES:
         raise KeyError(engine)
-    return tuple(s for s in SCENARIOS if s.applies_to(engine))
+    if part is not None and part not in PARTS:
+        raise KeyError(part)
+    return tuple(
+        s
+        for s in SCENARIOS
+        if s.applies_to(engine) and (part is None or s.rebuild == (part == "rebuild"))
+    )
