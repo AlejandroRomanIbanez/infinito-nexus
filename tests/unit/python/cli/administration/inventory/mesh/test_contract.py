@@ -23,6 +23,7 @@ SHAPE_KEYS = {
     "subnet",
     "listen_port",
     "is_hub",
+    "primary",
     "public_key",
     "peers",
 }
