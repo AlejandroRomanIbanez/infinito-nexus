@@ -17,7 +17,7 @@ from cli.administration.inventory.mesh.keys import (
     public_key_of,
 )
 from cli.administration.inventory.mesh.model import MeshSpec
-from cli.administration.inventory.mesh.plan import plan_mesh
+from cli.administration.inventory.mesh.plan import plan_mesh, primary_meshes
 
 SWARM = MeshSpec(
     name="swarm",
@@ -169,6 +169,41 @@ class TestPeering(unittest.TestCase):
     def test_a_host_outside_the_mesh_has_no_peers(self):
         mesh = plan_mesh(SWARM, GROUPS)
         self.assertEqual(mesh.peers_of("nfs-server"), ())
+
+
+class TestPrimaryMesh(unittest.TestCase):
+    def test_the_first_declared_mesh_a_host_belongs_to_is_its_primary(self):
+        self.assertEqual(
+            primary_meshes([SWARM, DATA], GROUPS),
+            {
+                "swarm-mgr-01": "swarm",
+                "swarm-wrk-01": "swarm",
+                "swarm-wrk-02": "swarm",
+                "nfs-server": "data",
+                "swarm-bkp-01": "data",
+            },
+        )
+
+    def test_reordering_the_declarations_moves_the_hubs_primary(self):
+        self.assertEqual(primary_meshes([DATA, SWARM], GROUPS)["swarm-mgr-01"], "data")
+
+    def test_a_spoke_of_two_meshes_keeps_the_first(self):
+        groups = {**GROUPS, "svc-bkp-nfs-2-local": ["nfs-server"]}
+        beta = MeshSpec(
+            name="beta",
+            hub_group="svc-swarm-manager",
+            spoke_groups=("svc-storage-nfs-server",),
+            subnet="10.100.11.0/24",
+            listen_port=51831,
+        )
+        self.assertEqual(primary_meshes([beta, DATA], groups)["nfs-server"], "beta")
+
+    def test_the_controller_counts_only_where_it_joins(self):
+        primary = primary_meshes(
+            [SWARM, DATA], GROUPS, controller="localhost", controller_mesh="data"
+        )
+        self.assertEqual(primary["localhost"], "data")
+        self.assertNotIn("localhost", primary_meshes([SWARM, DATA], GROUPS))
 
 
 class TestKeyPairing(unittest.TestCase):
