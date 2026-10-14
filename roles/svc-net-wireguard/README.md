@@ -13,11 +13,16 @@ This role puts WireGuard under a swarm deployment so that swarm control,
 overlay and storage traffic never crosses an untunnelled network. It configures
 the hub-and-spoke meshes the deployment declares, any number of them, with the
 swarm manager as the hub of each. The manager forwards between them, which is
-how a worker reaches an NFS export it is not a member of. The development lab
-declares two, `swarm` and `data`, in
-[meshes.yml](../../inventories/development/meshes.yml);
+how a worker reaches an NFS export it is not a member of.
+
+The meshes are inventory values, and every role ships them empty.
+`networks.meshes` of this role declares them in the hub's `host_vars`, and
+`networks.meshes` of every other role lists the meshes its hosts join. The
+development lab declares two, `swarm` and `data`, in
+[wireguard.yml](../../inventories/development/wireguard.yml);
 [wireguard-three-meshes](../../inventories/examples/wireguard-three-meshes/README.md)
-declares three.
+declares three. Consumers read a host's mesh address through
+`lookup('mesh_address', <host>)` instead of naming a mesh.
 
 The role plans nothing. Every key, address and peer list is written into the
 inventory beforehand by `cli.administration.inventory.mesh`, the one pass that
@@ -104,12 +109,13 @@ cluster inventory does not:
 python3 -m cli.administration.inventory.mesh \
   --inventory /tmp/inv/devices.yml \
   --inventory /tmp/inv/backup.yml \
-  --group-vars-file inventories/development/meshes.yml \
   --host-vars-dir /tmp/inv/host_vars \
   --vault-password-file /tmp/inv/.password
 ```
 
-`--group-vars-file` names the declarations; the platform ships none of its own.
+It reads the declarations and memberships from the `host_vars` it writes to,
+and records each host's addresses, keys and peers in that host's
+`svc-net-wireguard.networks.interfaces`.
 
 Re-running is a no-op. To replace every keypair, add `--rotate`; that rewrites
 the whole mesh in one pass, because rotating one member alone partitions it.
