@@ -44,6 +44,38 @@ def members_of(
     return hub, sorted(spokes)
 
 
+def primary_meshes(
+    specs: list[MeshSpec],
+    groups: dict[str, list[str]],
+    controller: str | None = None,
+    controller_mesh: str | None = None,
+) -> dict[str, str]:
+    """The mesh each host routes the pool through and is reached on.
+
+    That is the first declared mesh the host belongs to. A spoke of several
+    meshes cannot route the pool through all of them: every interface would
+    claim the same prefix, and ``wg-quick`` refuses the second one with
+    ``RTNETLINK answers: File exists`` and deletes it.
+
+    Args:
+        specs: every declared mesh, in declaration order.
+        groups: inventory group name to member hostnames.
+        controller: host admitted as an extra spoke of ``controller_mesh``.
+        controller_mesh: the mesh ``controller`` joins.
+
+    Returns:
+        hostname to the name of its primary mesh.
+    """
+    primary: dict[str, str] = {}
+    for spec in specs:
+        hub, spokes = members_of(
+            spec, groups, controller if spec.name == controller_mesh else None
+        )
+        for host in (hub, *spokes):
+            primary.setdefault(host, spec.name)
+    return primary
+
+
 def _address(subnet: str, offset: int) -> str:
     network = ipaddress.ip_network(subnet, strict=True)
     address = network.network_address + offset
