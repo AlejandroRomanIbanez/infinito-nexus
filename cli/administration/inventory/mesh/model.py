@@ -1,7 +1,8 @@
 """The shapes a mesh is described and resolved in.
 
-A spec is what an operator declares. A mesh is what a spec resolves to once the
-inventory has been read: every member named, addressed and keyed.
+A spec is what an operator declares. A topology is who the inventory puts into
+each mesh. A mesh is what a spec resolves to against a topology: every member
+named, addressed and keyed.
 """
 
 from __future__ import annotations
@@ -14,26 +15,31 @@ class MeshSpec:
     """One declared hub-and-spoke network.
 
     Args:
-        name: identifier of the mesh, used as the interface and key prefix.
-        hub_group: inventory group whose single member routes for the mesh.
-        spoke_groups: inventory groups whose members peer with the hub.
-        spoke_group_prefixes: group-name prefixes whose members peer with the
-            hub, so a family such as ``svc-bkp-`` admits a new member without
-            this declaration changing.
+        name: identifier of the mesh, used as the interface name.
         subnet: the mesh address range, as ``a.b.c.0/24``.
         listen_port: UDP port the hub listens on.
         routed_range: the range a spoke routes through the hub. Wider than
             ``subnet`` whenever a spoke must reach a plane it is not a member
-            of, which is the entire point of the hub being in both.
+            of, which is the entire point of the hub being in every mesh.
     """
 
     name: str
-    hub_group: str
-    spoke_groups: tuple[str, ...]
     subnet: str
     listen_port: int
-    spoke_group_prefixes: tuple[str, ...] = ()
     routed_range: str = ""
+
+
+@dataclass(frozen=True)
+class Topology:
+    """Who an inventory puts into each mesh.
+
+    Args:
+        hub: the host that routes for every mesh.
+        spokes: mesh name to the hosts that joined it, never the hub.
+    """
+
+    hub: str
+    spokes: dict[str, tuple[str, ...]] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
