@@ -1,14 +1,19 @@
 ---
 - name: "🔍 MariaDB HA | Read which running instances hold seeded data"
   ansible.builtin.shell: |
-    {{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ item.service | quote }} >/dev/null 2>&1
-    if [ "$?" -eq 67 ]; then
-      echo absent
+    resolved="$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ item.service | quote }} 2>&1)"
+    rc=$?
+    if [ "$rc" -eq 67 ]; then
+      echo "absent ${resolved}"
+      exit 0
+    fi
+    if [ "$rc" -ne 0 ]; then
+      echo "pending rc=${rc} ${resolved}"
       exit 0
     fi
     container exec "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ item.service | quote }})" sh -c 'if test -e {{ MARIADB_HA_READY_MARKER }}; then echo ready; else echo unready; fi'
   register: _mariadb_rotate_state
-  until: (_mariadb_rotate_state.stdout | trim) in ['absent', 'ready', 'unready']
+  until: (_mariadb_rotate_state.stdout | trim) is match('^(absent|ready$|unready$)')
   retries: 12
   delay: 5
   changed_when: false
@@ -19,7 +24,7 @@
 
 - name: "🐛 MariaDB HA | Seeded state per instance"
   ansible.builtin.debug:
-    msg: "{{ _mariadb_rotate_state.results | map(attribute='item.service') | zip(_mariadb_rotate_state.results | map(attribute='stdout')) | list }}"
+    msg: "{{ entity_name }}: {{ _mariadb_rotate_state.results | map(attribute='item.service') | zip(_mariadb_rotate_state.results | map(attribute='stdout')) | list }}"
 
 - name: "🔑 MariaDB HA | Write the inventory's passwords into every seeded instance"
   ansible.builtin.include_tasks: utils/rotate_apply.yml
