@@ -206,6 +206,10 @@ account (or the Keycloak SSO token when SSO is enabled).
   (`templates/jmap/*.json.j2`).
 - **Only authenticated sessions relay, with or without SSO.** Under SSO a bot
   authenticates with an app password.
+- **Address bans expire after `services.stalwart.ban_period_seconds`** (one
+  hour by default). Without a period Stalwart keeps a ban forever, and the
+  reverse proxy, the published ports, Tor and the swarm ingress hand many
+  clients one address.
 - **Bans and failed logins also go to the container output**
   (`STALWART_BAN_TRACER`, `tasks/tracing.yml`), next to the daily log file in
   the data volume.
