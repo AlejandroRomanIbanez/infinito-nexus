@@ -56,6 +56,8 @@ def _provision_browser() -> subprocess.CompletedProcess[str]:
 
 
 def _ensure_browser() -> None:
+    if browser_installed():
+        return
     log(f"Provisioning {BROWSER} for mmdc via puppeteer.")
     try:
         done = _provision_browser()

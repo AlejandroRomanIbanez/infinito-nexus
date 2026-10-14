@@ -2,7 +2,8 @@
 
 Mirrors the prior ``scripts/install/lint.sh`` interface: no-arg / ``all``
 runs every group + manages the stamp file; explicit groups bypass the
-stamp; ``--force`` (as first arg) drops the stamp and reinstalls.
+stamp; ``--force`` (as first arg) drops the stamp and mmdc's browser cache
+and reinstalls.
 """
 
 from __future__ import annotations
@@ -215,6 +216,7 @@ def main(argv: list[str] | None = None) -> int:
         stamp_path = repo_root / _STAMP
         if stamp_path.exists():
             stamp_path.unlink()
+        shutil.rmtree(mermaid_cli.browser_cache(), ignore_errors=True)
         args = args[1:]
 
     if not args:

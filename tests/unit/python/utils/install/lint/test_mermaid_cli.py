@@ -84,8 +84,23 @@ class TestBrowserProvisioning(unittest.TestCase):
         self.assertEqual(len(warnings), 1)
         self.assertIn("out\nerr\n", warnings[0])
 
+    def test_an_installed_browser_is_not_provisioned_again(self) -> None:
+        with TemporaryDirectory() as cache:
+            build = Path(cache) / "chrome-headless-shell" / "linux-1" / "linux64"
+            build.mkdir(parents=True)
+            (build / "chrome-headless-shell").write_text("", encoding="utf-8")
+            with (
+                mock.patch.dict(os.environ, {"PUPPETEER_CACHE_DIR": cache}),
+                mock.patch.object(mermaid_cli, "which", return_value=True),
+                mock.patch.object(mermaid_cli.subprocess, "run") as run,
+            ):
+                mermaid_cli.ensure()
+        run.assert_not_called()
+
     def test_a_timeout_warns_instead_of_raising(self) -> None:
         with (
+            TemporaryDirectory() as cache,
+            mock.patch.dict(os.environ, {"PUPPETEER_CACHE_DIR": cache}),
             mock.patch.object(mermaid_cli, "which", return_value=True),
             mock.patch.object(
                 mermaid_cli.subprocess,
