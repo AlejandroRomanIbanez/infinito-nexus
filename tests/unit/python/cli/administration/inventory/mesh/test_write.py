@@ -9,10 +9,12 @@ from __future__ import annotations
 
 import tempfile
 import unittest
+from dataclasses import replace
 from pathlib import Path
 
 from cli.administration.inventory.mesh.inventory import groups_of, specs_of
-from cli.administration.inventory.mesh.plan import plan_mesh
+from cli.administration.inventory.mesh.keys import generate_private_key, public_key_of
+from cli.administration.inventory.mesh.plan import plan_mesh, primary_meshes
 from cli.administration.inventory.mesh.write import (
     existing_addresses,
     existing_public_keys,
@@ -23,8 +25,12 @@ from cli.administration.inventory.mesh.write import (
 from utils.cache.yaml import load_yaml_any
 
 from . import PROJECT_ROOT
+from .test_plan import MESH_POOL, topology
 
 GROUP_VARS = PROJECT_ROOT / "inventories/development/meshes.yml"
+EXAMPLE_GROUP_VARS = (
+    PROJECT_ROOT / "inventories/examples/wireguard-three-meshes/meshes.yml"
+)
 
 HOSTS = ("swarm-mgr-01", "swarm-wrk-01", "swarm-wrk-02", "nfs-server", "swarm-bkp-01")
 
@@ -344,3 +350,104 @@ class TestIdempotence(MeshOnDisk, unittest.TestCase):
 
         keyed_after = existing_public_keys(self.host_vars, list(HOSTS), "swarm")
         self.assertNotIn("swarm-wrk-01", keyed_after)
+
+
+def _hub_routes(meshes: dict) -> dict[str, list[str]]:
+    """Mesh name to the ranges a spoke routes through that mesh's hub."""
+    return {
+        name: [peer["allowed_ips"] for peer in entry["peers"] if peer["is_hub"]]
+        for name, entry in meshes.items()
+        if not entry["is_hub"]
+    }
+
+
+class TestTheLabUnderTheThreeMeshExample(MeshOnDisk, unittest.TestCase):
+    """The lab keeps the NFS server's own backup leg, which the example does not.
+
+    ``svc-bkp-nfs-2-local`` lands on the NFS server and matches gamma's
+    ``svc-bkp-`` prefix, so the server is a spoke of beta and of gamma. Routing
+    the pool through both is two routes for one prefix: ``wg-quick`` refuses the
+    second with ``RTNETLINK answers: File exists`` and deletes that interface.
+    """
+
+    def setUp(self):
+        super().setUp()
+        self.cluster.write_text(
+            CLUSTER_INVENTORY
+            + "    svc-bkp-nfs-2-local:\n      hosts:\n        nfs-server: {}\n",
+            encoding="utf-8",
+        )
+        self.groups = groups_of([self.cluster, self.backup])
+        self.specs = specs_of(EXAMPLE_GROUP_VARS)
+        primary = primary_meshes(self.specs, self.groups)
+        for spec in self.specs:
+            write_mesh(
+                plan_mesh(spec, self.groups),
+                self.host_vars,
+                self.vault_file,
+                primary=primary,
+            )
+
+    def _meshes(self, host: str) -> dict:
+        document = load_yaml_any(str(self.host_vars / f"{host}.yml"))
+        return document["applications"]["svc-net-wireguard"]["meshes"]
+
+    def test_the_nfs_server_is_a_spoke_of_beta_and_gamma(self):
+        self.assertEqual(self._mesh_names("nfs-server"), ["beta", "gamma"])
+
+    def test_it_routes_the_pool_through_its_first_declared_mesh_only(self):
+        self.assertEqual(
+            _hub_routes(self._meshes("nfs-server")),
+            {"beta": [MESH_POOL], "gamma": ["10.100.12.0/24"]},
+        )
+
+    def test_exactly_one_entry_per_host_is_primary(self):
+        for host in HOSTS:
+            with self.subTest(host=host):
+                flags = [entry["primary"] for entry in self._meshes(host).values()]
+                self.assertEqual(flags.count(True), 1)
+
+    def test_the_hub_is_primary_on_the_first_declared_mesh(self):
+        self.assertTrue(self._entry("swarm-mgr-01", "alpha")["primary"])
+        self.assertFalse(self._entry("swarm-mgr-01", "beta")["primary"])
+
+
+class TestNoTwoInterfacesClaimOneRoute(unittest.TestCase):
+    """Every interface of a host comes up, whatever the topology.
+
+    ``wg-quick`` adds one route per allowed range and refuses a prefix another
+    interface of the same host already holds. Asserted over generated
+    topologies, where hosts are spokes of any number of meshes.
+    """
+
+    def test_every_host_routes_each_prefix_through_one_interface(self):
+        public_key = public_key_of(generate_private_key())
+        for count in range(1, 9):
+            for seed in range(3):
+                specs, groups = topology(count, seed)
+                specs = [replace(spec, routed_range=MESH_POOL) for spec in specs]
+                hosts = sorted(
+                    {host for members in groups.values() for host in members}
+                )
+                primary = primary_meshes(specs, groups)
+                with tempfile.TemporaryDirectory() as td:
+                    root = Path(td)
+                    for spec in specs:
+                        mesh = plan_mesh(spec, groups, dict.fromkeys(hosts, public_key))
+                        write_mesh(mesh, root, root / ".password", primary=primary)
+                    for host in hosts:
+                        path = root / f"{host}.yml"
+                        if not path.exists():
+                            continue
+                        meshes = load_yaml_any(str(path))["applications"][
+                            "svc-net-wireguard"
+                        ]["meshes"]
+                        routes = [
+                            peer["allowed_ips"]
+                            for entry in meshes.values()
+                            for peer in entry["peers"]
+                        ]
+                        with self.subTest(meshes=count, seed=seed, host=host):
+                            self.assertEqual(len(routes), len(set(routes)))
+                            if _hub_routes(meshes):
+                                self.assertEqual(routes.count(MESH_POOL), 1)
