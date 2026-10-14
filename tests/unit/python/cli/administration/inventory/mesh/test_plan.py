@@ -16,62 +16,46 @@ from cli.administration.inventory.mesh.keys import (
     is_valid_public_key,
     public_key_of,
 )
-from cli.administration.inventory.mesh.model import MeshSpec
+from cli.administration.inventory.mesh.model import MeshSpec, Topology
 from cli.administration.inventory.mesh.plan import plan_mesh, primary_meshes
 
-SWARM = MeshSpec(
-    name="swarm",
-    hub_group="svc-swarm-manager",
-    spoke_groups=("svc-swarm-node",),
-    subnet="10.100.0.0/24",
-    listen_port=51820,
+SWARM = MeshSpec(name="swarm", subnet="10.100.0.0/24", listen_port=51820)
+
+DATA = MeshSpec(name="data", subnet="10.100.1.0/24", listen_port=51821)
+
+TOPOLOGY = Topology(
+    hub="swarm-mgr-01",
+    spokes={
+        "swarm": ("swarm-wrk-01", "swarm-wrk-02"),
+        "data": ("nfs-server", "swarm-bkp-01"),
+    },
 )
 
-DATA = MeshSpec(
-    name="data",
-    hub_group="svc-swarm-manager",
-    spoke_groups=("svc-storage-nfs-server",),
-    subnet="10.100.1.0/24",
-    listen_port=51821,
-    spoke_group_prefixes=("svc-bkp-",),
-)
 
-GROUPS = {
-    "svc-swarm-manager": ["swarm-mgr-01"],
-    "svc-swarm-node": ["swarm-mgr-01", "swarm-wrk-01", "swarm-wrk-02"],
-    "svc-storage-nfs-server": ["nfs-server"],
-    "svc-bkp-remote-2-local": ["swarm-bkp-01"],
-    "svc-bkp-local-2-device": ["swarm-bkp-01"],
-}
+def _with_spokes(**spokes: tuple[str, ...]) -> Topology:
+    return Topology(hub=TOPOLOGY.hub, spokes={**TOPOLOGY.spokes, **spokes})
 
 
 class TestMembership(unittest.TestCase):
     def test_the_hub_is_not_also_listed_as_its_own_spoke(self):
-        """The manager is a member of svc-swarm-node as well as the hub group.
+        """The manager carries svc-swarm-node as well as the hub role.
 
         Left unfiltered it peers with itself, which WireGuard accepts and which
         then routes the hub's own traffic into its own tunnel.
         """
-        mesh = plan_mesh(SWARM, GROUPS)
+        mesh = plan_mesh(SWARM, _with_spokes(swarm=("swarm-mgr-01", "swarm-wrk-01")))
         self.assertEqual(mesh.hub.host, "swarm-mgr-01")
-        self.assertNotIn("swarm-mgr-01", [s.host for s in mesh.spokes])
-        self.assertEqual(
-            [s.host for s in mesh.spokes], ["swarm-wrk-01", "swarm-wrk-02"]
-        )
+        self.assertEqual([s.host for s in mesh.spokes], ["swarm-wrk-01"])
 
-    def test_a_group_prefix_admits_the_backup_host_once(self):
-        mesh = plan_mesh(DATA, GROUPS)
+    def test_a_host_two_roles_put_into_one_mesh_is_one_spoke(self):
+        topology = _with_spokes(data=("nfs-server", "swarm-bkp-01", "nfs-server"))
+        mesh = plan_mesh(DATA, topology)
         self.assertEqual([s.host for s in mesh.spokes], ["nfs-server", "swarm-bkp-01"])
 
-    def test_a_hub_group_without_exactly_one_host_is_refused(self):
-        for hosts in ([], ["a", "b"]):
-            with self.subTest(hosts=hosts), self.assertRaises(ValueError):
-                plan_mesh(SWARM, {**GROUPS, "svc-swarm-manager": hosts})
-
     def test_membership_is_stable_against_inventory_ordering(self):
-        shuffled = {**GROUPS, "svc-swarm-node": ["swarm-wrk-02", "swarm-wrk-01"]}
+        shuffled = _with_spokes(swarm=("swarm-wrk-02", "swarm-wrk-01"))
         self.assertEqual(
-            [m.address for m in plan_mesh(SWARM, GROUPS).members],
+            [m.address for m in plan_mesh(SWARM, TOPOLOGY).members],
             [m.address for m in plan_mesh(SWARM, shuffled).members],
         )
 
@@ -80,19 +64,19 @@ class TestAddressing(unittest.TestCase):
     def test_every_member_is_addressed_inside_the_mesh_subnet(self):
         for spec in (SWARM, DATA):
             with self.subTest(mesh=spec.name):
-                mesh = plan_mesh(spec, GROUPS)
+                mesh = plan_mesh(spec, TOPOLOGY)
                 prefix = spec.subnet.rsplit(".", 1)[0]
                 for member in mesh.members:
                     self.assertTrue(member.address.startswith(prefix + "."))
 
     def test_no_two_members_share_an_address(self):
-        mesh = plan_mesh(SWARM, GROUPS)
+        mesh = plan_mesh(SWARM, TOPOLOGY)
         addresses = [m.address for m in mesh.members]
         self.assertEqual(len(addresses), len(set(addresses)))
 
     def test_the_two_meshes_do_not_share_an_address(self):
-        swarm = {m.address for m in plan_mesh(SWARM, GROUPS).members}
-        data = {m.address for m in plan_mesh(DATA, GROUPS).members}
+        swarm = {m.address for m in plan_mesh(SWARM, TOPOLOGY).members}
+        data = {m.address for m in plan_mesh(DATA, TOPOLOGY).members}
         self.assertEqual(swarm & data, set())
 
 
@@ -105,13 +89,12 @@ class TestAddressPersistence(unittest.TestCase):
     new one. The deploy then loses exactly the hosts that were already up.
     """
 
-    def _held(self, spec, groups) -> dict[str, str]:
-        return {m.host: m.address for m in plan_mesh(spec, groups).members}
+    def _held(self, spec, topology) -> dict[str, str]:
+        return {m.host: m.address for m in plan_mesh(spec, topology).members}
 
     def test_a_member_that_sorts_first_does_not_renumber_the_others(self):
-        before = self._held(SWARM, GROUPS)
-        grown = dict(GROUPS)
-        grown["svc-swarm-node"] = ["alpha-wrk-00", *GROUPS["svc-swarm-node"]]
+        before = self._held(SWARM, TOPOLOGY)
+        grown = _with_spokes(swarm=("alpha-wrk-00", *TOPOLOGY.spokes["swarm"]))
 
         mesh = plan_mesh(SWARM, grown, addresses=before)
         after = {m.host: m.address for m in mesh.members}
@@ -121,12 +104,12 @@ class TestAddressPersistence(unittest.TestCase):
         self.assertNotIn(after["alpha-wrk-00"], set(before.values()))
 
     def test_rotation_replaces_identities_and_keeps_addresses(self):
-        before = self._held(SWARM, GROUPS)
-        mesh = plan_mesh(SWARM, GROUPS, rotate=True, addresses=before)
+        before = self._held(SWARM, TOPOLOGY)
+        mesh = plan_mesh(SWARM, TOPOLOGY, rotate=True, addresses=before)
         self.assertEqual({m.host: m.address for m in mesh.members}, before)
 
     def test_a_stored_address_outside_the_subnet_is_replaced(self):
-        mesh = plan_mesh(SWARM, GROUPS, addresses={"swarm-wrk-01": "10.99.0.50"})
+        mesh = plan_mesh(SWARM, TOPOLOGY, addresses={"swarm-wrk-01": "10.99.0.50"})
         address = mesh.member("swarm-wrk-01").address
         self.assertTrue(address.startswith("10.100.0."))
 
@@ -136,15 +119,15 @@ class TestAddressPersistence(unittest.TestCase):
         A spoke that reused what it found there would bring up an interface
         claiming the hub's address and blackhole the mesh it belongs to.
         """
-        hub = plan_mesh(SWARM, GROUPS).hub.address
-        mesh = plan_mesh(SWARM, GROUPS, addresses={"swarm-wrk-01": hub})
+        hub = plan_mesh(SWARM, TOPOLOGY).hub.address
+        mesh = plan_mesh(SWARM, TOPOLOGY, addresses={"swarm-wrk-01": hub})
         self.assertNotEqual(mesh.member("swarm-wrk-01").address, hub)
 
     def test_two_members_claiming_one_address_do_not_both_keep_it(self):
-        taken = plan_mesh(SWARM, GROUPS).member("swarm-wrk-01").address
+        taken = plan_mesh(SWARM, TOPOLOGY).member("swarm-wrk-01").address
         mesh = plan_mesh(
             SWARM,
-            GROUPS,
+            TOPOLOGY,
             addresses={"swarm-wrk-01": taken, "swarm-wrk-02": taken},
         )
         addresses = [m.address for m in mesh.members]
@@ -153,28 +136,28 @@ class TestAddressPersistence(unittest.TestCase):
 
 class TestPeering(unittest.TestCase):
     def test_the_hub_peers_with_every_spoke(self):
-        mesh = plan_mesh(SWARM, GROUPS)
+        mesh = plan_mesh(SWARM, TOPOLOGY)
         self.assertEqual(
             {p.host for p in mesh.peers_of(mesh.hub.host)},
             {s.host for s in mesh.spokes},
         )
 
     def test_a_spoke_peers_only_with_the_hub(self):
-        mesh = plan_mesh(SWARM, GROUPS)
+        mesh = plan_mesh(SWARM, TOPOLOGY)
         for spoke in mesh.spokes:
             with self.subTest(spoke=spoke.host):
                 peers = mesh.peers_of(spoke.host)
                 self.assertEqual([p.host for p in peers], [mesh.hub.host])
 
     def test_a_host_outside_the_mesh_has_no_peers(self):
-        mesh = plan_mesh(SWARM, GROUPS)
+        mesh = plan_mesh(SWARM, TOPOLOGY)
         self.assertEqual(mesh.peers_of("nfs-server"), ())
 
 
 class TestPrimaryMesh(unittest.TestCase):
     def test_the_first_declared_mesh_a_host_belongs_to_is_its_primary(self):
         self.assertEqual(
-            primary_meshes([SWARM, DATA], GROUPS),
+            primary_meshes([SWARM, DATA], TOPOLOGY),
             {
                 "swarm-mgr-01": "swarm",
                 "swarm-wrk-01": "swarm",
@@ -185,37 +168,33 @@ class TestPrimaryMesh(unittest.TestCase):
         )
 
     def test_reordering_the_declarations_moves_the_hubs_primary(self):
-        self.assertEqual(primary_meshes([DATA, SWARM], GROUPS)["swarm-mgr-01"], "data")
+        self.assertEqual(
+            primary_meshes([DATA, SWARM], TOPOLOGY)["swarm-mgr-01"], "data"
+        )
 
     def test_a_spoke_of_two_meshes_keeps_the_first(self):
-        groups = {**GROUPS, "svc-bkp-nfs-2-local": ["nfs-server"]}
-        beta = MeshSpec(
-            name="beta",
-            hub_group="svc-swarm-manager",
-            spoke_groups=("svc-storage-nfs-server",),
-            subnet="10.100.11.0/24",
-            listen_port=51831,
-        )
-        self.assertEqual(primary_meshes([beta, DATA], groups)["nfs-server"], "beta")
+        topology = _with_spokes(beta=("nfs-server",))
+        beta = MeshSpec(name="beta", subnet="10.100.11.0/24", listen_port=51831)
+        self.assertEqual(primary_meshes([beta, DATA], topology)["nfs-server"], "beta")
 
     def test_the_controller_counts_only_where_it_joins(self):
         primary = primary_meshes(
-            [SWARM, DATA], GROUPS, controller="localhost", controller_mesh="data"
+            [SWARM, DATA], TOPOLOGY, controller="localhost", controller_mesh="data"
         )
         self.assertEqual(primary["localhost"], "data")
-        self.assertNotIn("localhost", primary_meshes([SWARM, DATA], GROUPS))
+        self.assertNotIn("localhost", primary_meshes([SWARM, DATA], TOPOLOGY))
 
 
 class TestKeyPairing(unittest.TestCase):
     def test_every_public_key_answers_for_its_private_key(self):
-        mesh = plan_mesh(SWARM, GROUPS)
+        mesh = plan_mesh(SWARM, TOPOLOGY)
         for member in mesh.members:
             with self.subTest(host=member.host):
                 self.assertIsNotNone(member.private_key)
                 self.assertEqual(public_key_of(member.private_key), member.public_key)
 
     def test_no_two_members_share_a_keypair(self):
-        mesh = plan_mesh(SWARM, GROUPS)
+        mesh = plan_mesh(SWARM, TOPOLOGY)
         self.assertEqual(len({m.private_key for m in mesh.members}), len(mesh.members))
 
     def test_a_peer_entry_never_carries_a_private_key(self):
@@ -224,7 +203,7 @@ class TestKeyPairing(unittest.TestCase):
         A peer is described by its public half only, so one host's inventory can
         never be used to impersonate another.
         """
-        mesh = plan_mesh(SWARM, GROUPS)
+        mesh = plan_mesh(SWARM, TOPOLOGY)
         secrets = {m.private_key for m in mesh.members}
         for member in mesh.members:
             for peer in mesh.peers_of(member.host):
@@ -247,7 +226,7 @@ class TestRotation(unittest.TestCase):
         writer leaves its stored credential alone.
         """
         held = {"swarm-wrk-01": public_key_of(generate_private_key())}
-        mesh = plan_mesh(SWARM, GROUPS, held)
+        mesh = plan_mesh(SWARM, TOPOLOGY, held)
         member = mesh.member("swarm-wrk-01")
         self.assertEqual(member.public_key, held["swarm-wrk-01"])
         self.assertIsNone(member.private_key)
@@ -257,7 +236,7 @@ class TestRotation(unittest.TestCase):
             host: public_key_of(generate_private_key())
             for host in ("swarm-mgr-01", "swarm-wrk-01")
         }
-        mesh = plan_mesh(SWARM, GROUPS, held)
+        mesh = plan_mesh(SWARM, TOPOLOGY, held)
         self.assertIsNone(mesh.member("swarm-wrk-01").private_key)
         self.assertIsNotNone(mesh.member("swarm-wrk-02").private_key)
 
@@ -266,7 +245,7 @@ class TestRotation(unittest.TestCase):
             host: public_key_of(generate_private_key())
             for host in ("swarm-mgr-01", "swarm-wrk-01", "swarm-wrk-02")
         }
-        mesh = plan_mesh(SWARM, GROUPS, held, rotate=True)
+        mesh = plan_mesh(SWARM, TOPOLOGY, held, rotate=True)
         for member in mesh.members:
             with self.subTest(host=member.host):
                 self.assertIsNotNone(member.private_key)
@@ -279,7 +258,7 @@ class TestRotation(unittest.TestCase):
         holds a spoke's old public key, the spoke presents a new one, and the
         handshake is refused with nothing logged on either side.
         """
-        mesh = plan_mesh(SWARM, GROUPS, rotate=True)
+        mesh = plan_mesh(SWARM, TOPOLOGY, rotate=True)
         published = {m.host: m.public_key for m in mesh.members}
         for member in mesh.members:
             for peer in mesh.peers_of(member.host):
@@ -289,13 +268,7 @@ class TestRotation(unittest.TestCase):
 
 class TestSubnetGuards(unittest.TestCase):
     def test_overlapping_meshes_are_refused(self):
-        clash = MeshSpec(
-            name="clash",
-            hub_group="svc-swarm-manager",
-            spoke_groups=(),
-            subnet="10.100.0.0/25",
-            listen_port=51822,
-        )
+        clash = MeshSpec(name="clash", subnet="10.100.0.0/25", listen_port=51822)
         with self.assertRaises(ValueError):
             assert_no_subnet_overlap([SWARM, clash], "10.100.0.0/16")
 
@@ -305,23 +278,13 @@ class TestSubnetGuards(unittest.TestCase):
         A mesh allocated there would collide with the addresses it is supposed
         to tunnel over.
         """
-        escapee = MeshSpec(
-            name="escapee",
-            hub_group="svc-swarm-manager",
-            spoke_groups=(),
-            subnet="192.168.244.0/24",
-            listen_port=51823,
-        )
+        escapee = MeshSpec(name="escapee", subnet="192.168.244.0/24", listen_port=51823)
         with self.assertRaises(ValueError):
             assert_no_subnet_overlap([escapee], "10.100.0.0/16")
 
     def test_a_shared_listen_port_is_refused(self):
         twin = MeshSpec(
-            name="twin",
-            hub_group="svc-swarm-manager",
-            spoke_groups=(),
-            subnet="10.100.9.0/24",
-            listen_port=SWARM.listen_port,
+            name="twin", subnet="10.100.9.0/24", listen_port=SWARM.listen_port
         )
         with self.assertRaises(ValueError):
             assert_no_subnet_overlap([SWARM, twin], "10.100.0.0/16")
@@ -333,7 +296,7 @@ class TestSubnetGuards(unittest.TestCase):
 MESH_POOL = "10.100.0.0/16"
 
 
-def topology(mesh_count: int, seed: int) -> tuple[list[MeshSpec], dict[str, list[str]]]:
+def topology(mesh_count: int, seed: int) -> tuple[list[MeshSpec], Topology]:
     """A hub-and-spoke topology of ``mesh_count`` meshes around one hub.
 
     The hub joins every mesh, which is what lets a spoke of one reach a spoke
@@ -345,25 +308,21 @@ def topology(mesh_count: int, seed: int) -> tuple[list[MeshSpec], dict[str, list
         seed: picks one arrangement of hosts over the meshes.
     """
     hosts = [f"node-{index:02d}" for index in range(12)]
-    groups: dict[str, list[str]] = {"hub-group": ["hub-01"]}
+    spokes: dict[str, tuple[str, ...]] = {}
     specs: list[MeshSpec] = []
     for index in range(mesh_count):
-        group = f"mesh-{index}-members"
-        groups[group] = [
+        name = f"mesh-{index}"
+        spokes[name] = tuple(
             host
             for position, host in enumerate(hosts)
             if (position + seed) % (index + 2)
-        ]
+        )
         specs.append(
             MeshSpec(
-                name=f"mesh-{index}",
-                hub_group="hub-group",
-                spoke_groups=(group,),
-                subnet=f"10.100.{index}.0/24",
-                listen_port=51820 + index,
+                name=name, subnet=f"10.100.{index}.0/24", listen_port=51820 + index
             )
         )
-    return specs, groups
+    return specs, Topology(hub="hub-01", spokes=spokes)
 
 
 class TestAnyNumberOfMeshes(unittest.TestCase):
@@ -379,8 +338,8 @@ class TestAnyNumberOfMeshes(unittest.TestCase):
     SEEDS = range(3)
 
     def _planned(self, count: int, seed: int):
-        specs, groups = topology(count, seed)
-        return specs, groups, [plan_mesh(spec, groups) for spec in specs]
+        specs, layout = topology(count, seed)
+        return specs, layout, [plan_mesh(spec, layout) for spec in specs]
 
     def test_every_declared_count_plans_without_collision(self):
         for count in self.COUNTS:
