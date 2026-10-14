@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""CLI: write every declared mesh into the host_vars of its members."""
+"""CLI: write every declared mesh into the host_vars of its members.
+
+The meshes and who joins them are read from the inventory itself: the hub's
+``svc-net-wireguard.networks.meshes`` declares them, and every other role's
+``networks.meshes`` puts the hosts carrying it into them.
+"""
 
 from __future__ import annotations
 
@@ -7,20 +12,14 @@ import argparse
 import sys
 from pathlib import Path
 
-from utils import PROJECT_ROOT
-
-from .contract import write_contract
-from .inventory import groups_of, specs_of
+from .inventory import groups_of, host_applications, hub_of, specs_of, topology_of
 from .plan import plan_mesh, primary_meshes
 from .write import (
-    DEFAULT_APPLICATION_ID,
     existing_addresses,
     existing_public_keys,
     prune_foreign_meshes,
     write_mesh,
 )
-
-DEFAULT_CONTRACT = PROJECT_ROOT / "roles/svc-net-wireguard/meta/meshes.yml"
 
 
 def parse_endpoints(pairs: list[str]) -> dict[str, str]:
@@ -47,7 +46,10 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument(
         "--host-vars-dir",
         required=True,
-        help="directory holding one <host>.yml per member",
+        help=(
+            "directory holding one <host>.yml per member; the meshes and their "
+            "members are read from the applications block there"
+        ),
     )
     parser.add_argument(
         "--vault-password-file",
@@ -55,30 +57,9 @@ def main(argv: list[str] | None = None) -> int:
         help="password file the private keys are encrypted with",
     )
     parser.add_argument(
-        "--group-vars-file",
-        required=True,
-        help=(
-            "file declaring WIREGUARD_MESHES. The platform ships none: the "
-            "meshes and their members belong to the deployment"
-        ),
-    )
-    parser.add_argument(
         "--mesh",
         action="append",
         help="restrict to this mesh name; repeatable, default all declared",
-    )
-    parser.add_argument(
-        "--contract-file",
-        default=str(DEFAULT_CONTRACT),
-        help=(
-            "role contract written from the declarations, so a deployment may "
-            "declare meshes this repository never named"
-        ),
-    )
-    parser.add_argument(
-        "--application-id",
-        default=DEFAULT_APPLICATION_ID,
-        help="application block the mesh is written under",
     )
     parser.add_argument(
         "--controller",
@@ -126,12 +107,13 @@ def main(argv: list[str] | None = None) -> int:
         )
         return 1
 
-    declared = specs_of(Path(args.group_vars_file).resolve())
-    if write_contract(declared, Path(args.contract_file).resolve()):
-        print(
-            f"[INFO] contract rewritten for {len(declared)} declared mesh(es): "
-            f"{', '.join(spec.name for spec in declared)}"
-        )
+    try:
+        hub = hub_of(groups)
+        declared = specs_of(host_applications(host_vars_dir, hub), inventory_files)
+        topology = topology_of(groups, host_vars_dir, declared)
+    except ValueError as error:
+        print(f"[FATAL] {error}", file=sys.stderr)
+        return 1
 
     controller_mesh = args.controller_mesh or declared[0].name
     if args.controller and controller_mesh not in {spec.name for spec in declared}:
@@ -140,7 +122,7 @@ def main(argv: list[str] | None = None) -> int:
             file=sys.stderr,
         )
         return 1
-    primary = primary_meshes(declared, groups, args.controller, controller_mesh)
+    primary = primary_meshes(declared, topology, args.controller, controller_mesh)
 
     specs = declared
     if args.mesh:
@@ -156,9 +138,7 @@ def main(argv: list[str] | None = None) -> int:
         | ({args.controller} if args.controller else set())
     )
 
-    for host, names in sorted(
-        prune_foreign_meshes(host_vars_dir, all_hosts, args.application_id).items()
-    ):
+    for host, names in sorted(prune_foreign_meshes(host_vars_dir, all_hosts).items()):
         print(
             f"[INFO] {host}: dropped mesh entr(ies) owned elsewhere: {', '.join(names)}"
         )
@@ -168,31 +148,19 @@ def main(argv: list[str] | None = None) -> int:
         held = (
             {}
             if args.rotate
-            else existing_public_keys(
-                host_vars_dir,
-                all_hosts,
-                spec.name,
-                args.application_id,
-            )
+            else existing_public_keys(host_vars_dir, all_hosts, spec.name)
         )
         held.update(keyed_here)
         mesh = plan_mesh(
             spec,
-            groups,
+            topology,
             held,
             controller=(args.controller if spec.name == controller_mesh else None),
             endpoints=parse_endpoints(args.endpoint),
-            addresses=existing_addresses(
-                host_vars_dir,
-                all_hosts,
-                spec.name,
-                args.application_id,
-            ),
+            addresses=existing_addresses(host_vars_dir, all_hosts, spec.name),
         )
         keyed_here.update({member.host: member.public_key for member in mesh.members})
-        written = write_mesh(
-            mesh, host_vars_dir, vault_password_file, args.application_id, primary
-        )
+        written = write_mesh(mesh, host_vars_dir, vault_password_file, primary)
         minted = sum(1 for member in mesh.members if member.private_key is not None)
         print(
             f"[INFO] mesh '{spec.name}': hub {mesh.hub.host} "
