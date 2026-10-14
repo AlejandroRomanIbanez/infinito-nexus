@@ -9,44 +9,29 @@ from .keys import generate_private_key, public_key_of
 from .model import Mesh, MeshMember
 
 if TYPE_CHECKING:
-    from .model import MeshSpec
+    from .model import MeshSpec, Topology
 
 HUB_OFFSET = 1
 SPOKE_OFFSET = 10
 
 
 def members_of(
-    spec: MeshSpec, groups: dict[str, list[str]], controller: str | None = None
+    spec: MeshSpec, topology: Topology, controller: str | None = None
 ) -> tuple[str, list[str]]:
-    """The hub and the spokes ``spec`` selects out of ``groups``."""
-    hubs = sorted(dict.fromkeys(groups.get(spec.hub_group, [])))
-    if len(hubs) != 1:
-        raise ValueError(
-            f"mesh '{spec.name}': hub group '{spec.hub_group}' resolves to "
-            f"{len(hubs)} hosts, expected exactly 1"
-        )
-    hub = hubs[0]
-
-    selected = set(spec.spoke_groups)
-    selected.update(
-        name
-        for name in groups
-        if any(name.startswith(prefix) for prefix in spec.spoke_group_prefixes)
-    )
-
-    spokes: list[str] = []
-    for group in sorted(selected):
-        for host in groups.get(group, []):
-            if host != hub and host not in spokes:
-                spokes.append(host)
-    if controller and controller != hub and controller not in spokes:
+    """The hub and the spokes of ``spec`` in ``topology``."""
+    spokes = [
+        host
+        for host in dict.fromkeys(topology.spokes.get(spec.name, ()))
+        if host != topology.hub
+    ]
+    if controller and controller != topology.hub and controller not in spokes:
         spokes.append(controller)
-    return hub, sorted(spokes)
+    return topology.hub, sorted(spokes)
 
 
 def primary_meshes(
     specs: list[MeshSpec],
-    groups: dict[str, list[str]],
+    topology: Topology,
     controller: str | None = None,
     controller_mesh: str | None = None,
 ) -> dict[str, str]:
@@ -59,7 +44,7 @@ def primary_meshes(
 
     Args:
         specs: every declared mesh, in declaration order.
-        groups: inventory group name to member hostnames.
+        topology: who the inventory puts into each mesh.
         controller: host admitted as an extra spoke of ``controller_mesh``.
         controller_mesh: the mesh ``controller`` joins.
 
@@ -69,7 +54,7 @@ def primary_meshes(
     primary: dict[str, str] = {}
     for spec in specs:
         hub, spokes = members_of(
-            spec, groups, controller if spec.name == controller_mesh else None
+            spec, topology, controller if spec.name == controller_mesh else None
         )
         for host in (hub, *spokes):
             primary.setdefault(host, spec.name)
@@ -129,7 +114,7 @@ def _spoke_offsets(
 
 def plan_mesh(
     spec: MeshSpec,
-    groups: dict[str, list[str]],
+    topology: Topology,
     existing_public_keys: dict[str, str] | None = None,
     *,
     rotate: bool = False,
@@ -141,7 +126,7 @@ def plan_mesh(
 
     Args:
         spec: the mesh to resolve.
-        groups: inventory group name to member hostnames.
+        topology: who the inventory puts into each mesh.
         existing_public_keys: hostname to already-issued public key.
         rotate: mint a fresh keypair for every member.
         controller: host to admit as an extra spoke, so the machine driving the
@@ -154,7 +139,7 @@ def plan_mesh(
     """
     held = {} if rotate else dict(existing_public_keys or {})
     underlay = dict(endpoints or {})
-    hub, spokes = members_of(spec, groups, controller)
+    hub, spokes = members_of(spec, topology, controller)
     offsets = _spoke_offsets(spec.subnet, spokes, dict(addresses or {}))
 
     def member(host: str, offset: int, is_hub: bool) -> MeshMember:
