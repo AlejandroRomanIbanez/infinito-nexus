@@ -38,6 +38,7 @@ from cli.meta.runtime import detect_runtime
 from utils import PROJECT_ROOT
 from utils.cache.yaml import dump_yaml, load_yaml
 from utils.env.parser import parse_static_env
+from utils.networks.mesh import primary_address
 from utils.paths import DIR_BACKUPS
 
 _DEFAULT_INVENTORY = PROJECT_ROOT / "inventories" / "development" / "default.yml"
@@ -141,23 +142,8 @@ def _mesh_address(host_vars_dir: Path, host: str, fallback: str) -> str:
     path = host_vars_dir / f"{host}.yml"
     if not path.exists():
         return fallback
-    meshes = (
-        load_yaml(str(path))
-        .get("applications", {})
-        .get("svc-net-wireguard", {})
-        .get("meshes", {})
-    )
-    return next(
-        (
-            entry["address"]
-            for entry in meshes.values()
-            if isinstance(entry, dict)
-            and entry.get("primary")
-            and entry.get("host") == host
-            and entry.get("address")
-        ),
-        fallback,
-    )
+    applications = load_yaml(str(path)).get("applications", {})
+    return primary_address(applications, host) or fallback
 
 
 def main() -> int:
