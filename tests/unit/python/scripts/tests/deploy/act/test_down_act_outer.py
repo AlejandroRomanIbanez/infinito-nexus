@@ -48,7 +48,7 @@ def teardown(container: str | None) -> tuple[subprocess.CompletedProcess, list[s
             text=True,
             check=False,
         )
-        return done, log.read_text().splitlines()
+        return done, log.read_text().splitlines()  # nocheck: cache-read  stub call log
 
 
 class TestDownActOuter(unittest.TestCase):
