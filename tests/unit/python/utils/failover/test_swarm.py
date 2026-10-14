@@ -387,6 +387,17 @@ class TestCheckerTaskLost(unittest.TestCase):
         ):
             self._lab().checker_log()
 
+    def test_a_rejected_checker_names_the_task_error(self):
+        with (
+            mock.patch.object(
+                shell,
+                "execute",
+                self._answer("Rejected 1 second ago\tNo such image: x:1\n"),
+            ),
+            self.assertRaisesRegex(RuntimeError, "No such image: x:1"),
+        ):
+            self._lab().checker_log()
+
     def test_a_pending_checker_is_still_awaited(self):
         with mock.patch.object(
             shell, "execute", self._answer("Preparing 1 second ago\n")

@@ -90,27 +90,39 @@ class Clients:
     def checker_log(self) -> str:
         """Return the checker's log; raise once its task is gone without one."""
         log = self._spare_logs(self._checker_id)
-        if not log and self._checker_task_lost():
-            raise RuntimeError(
-                f"the checker task on {self.client_node} ended without a container"
-            )
+        if not log:
+            lost, errors = self._checker_task_lost()
+            if lost:
+                raise RuntimeError(
+                    f"the checker task on {self.client_node} ended without a container"
+                    f" ({'; '.join(errors) or 'no task error'})"
+                )
         return log
 
-    def _checker_task_lost(self) -> bool:
-        states = self._on_manager(
+    def _task_rows(self, service: str) -> list[list[str]]:
+        rows = self._on_manager(
             "docker",
             "service",
             "ps",
-            self._checker_id,
+            service,
+            "--no-trunc",
             "--format",
-            "{{.CurrentState}}",
+            "{{.CurrentState}}\t{{.Error}}",
             check=False,
         ).split("\n")
-        states = [s for s in states if s.strip()]
-        return bool(states) and all(
-            s.startswith(("Failed", "Rejected", "Shutdown", "Orphaned", "Remove"))
-            for s in states
+        return [r.split("\t", 1) for r in rows if r.strip()]
+
+    @staticmethod
+    def _task_errors(rows: list[list[str]]) -> list[str]:
+        return sorted({r[1].strip() for r in rows if len(r) > 1 and r[1].strip()})
+
+    def _checker_task_lost(self) -> tuple[bool, list[str]]:
+        rows = self._task_rows(self._checker_id)
+        lost = bool(rows) and all(
+            r[0].startswith(("Failed", "Rejected", "Shutdown", "Orphaned", "Remove"))
+            for r in rows
         )
+        return lost, self._task_errors(rows)
 
     def _spare_containers(self, service_id: str, *, exited: bool) -> list[str]:
         return shell.run(
@@ -204,7 +216,11 @@ class Clients:
                 return done
 
             if not shell.wait_until(finished, timeout_s=timeout_s, interval_s=5):
-                raise RuntimeError(f"probe {mode} did not finish in {timeout_s}s")
+                errors = self._task_errors(self._task_rows(service_id))
+                raise RuntimeError(
+                    f"probe {mode} did not finish in {timeout_s}s"
+                    f" ({'; '.join(errors) or 'no task error'})"
+                )
             return records
         finally:
             self._on_manager("docker", "service", "rm", name, check=False)
