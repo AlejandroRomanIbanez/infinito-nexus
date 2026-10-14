@@ -27,18 +27,7 @@ swarm:
     # them. The manager's primary mesh is read rather than one named here: the
     # deployment declares the meshes, and a name nobody declared resolves to ''.
     advertise_addr: >-
-      {{ (hostvars[STACK_HOST].applications['svc-net-wireguard'].meshes
-          | dict2items
-          | selectattr('value.primary', 'defined')
-          | selectattr('value.primary')
-          | map(attribute='value.address')
-          | first
-          | default(''))
-         if (WIREGUARD_ENABLED | bool
-              and hostvars[STACK_HOST].applications is defined
-              and 'svc-net-wireguard' in hostvars[STACK_HOST].applications
-              and 'meshes' in hostvars[STACK_HOST].applications['svc-net-wireguard'])
-         else '' }}
+      {{ lookup('mesh_address', STACK_HOST) if (WIREGUARD_ENABLED | bool) else '' }}
   network:
     encryption: true
   registry:
