@@ -78,7 +78,7 @@ This requirement covers:
 
   | Engine | Instance kill (ceiling 30 s) | Node crash, hang or partition (ceiling 90 s) | Rolling change (ceiling 10 s, goal 5 s) |
   |---|---|---|---|
-  | Postgres | ≈ 28 s, measured 16.1–16.6 s | ≈ 30 s, measured 18.3–25.9 s | ≈ 4–6 s, measured 3.5–3.9 s |
+  | Postgres | ≈ 28 s, measured 16.1–17.9 s | ≈ 30 s, measured 18.3–25.9 s | ≈ 4–6 s, measured 3.5–4.4 s |
   | MariaDB | ≈ 25 s | ≈ 27 s | ≈ 4–6 s |
   | Redis | ≈ 11 s | ≈ 11 s, ≈ 31 s on a split Sentinel vote | ≈ 4–5 s |
   | OpenLDAP | ≈ 21 s | ≈ 23 s | ≈ 4 s |

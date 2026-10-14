@@ -88,20 +88,20 @@ Listing one host in the `svc-db-postgres` inventory group renders the standalone
 |---|---|---|
 | ≈ 28 s | ≈ 30 s | ≈ 4–6 s |
 
-**Measured write gap** on the 3+1 swarm lab (`make act-swarm-data engine=postgres`), with no acknowledged write lost in any scenario:
+**Measured write gap** on the 3+1 swarm lab, locally (`make act-swarm-data engine=postgres`) and on the hosted CI runner (`cron-test-swarm-data.yml`), with no acknowledged write lost in any scenario:
 
 | Scenario | Write gap |
 |---|---|
-| Instance kill | 16.1–16.6 s |
+| Instance kill | 16.1–17.9 s |
 | Node crash | 25.0–25.9 s |
-| Node hang | 21.1–25.9 s |
-| Node partition | 18.3–21.1 s |
-| Leader loss (etcd) | 25.1–25.6 s |
-| Rolling change | 3.5–3.9 s |
-| etcd rebuilt from backup | 0.5 s |
-| Forget a node and re-clone it | 9.4–9.5 s; full strength after 1691–1740 s |
-| Standalone form | 0.5–0.6 s |
-| Standalone to HA migration | 0.4 s |
+| Node hang | 19.9–25.9 s |
+| Node partition | 18.3–25.6 s |
+| Leader loss (etcd) | 25.1–25.7 s |
+| Rolling change | 3.5–4.4 s |
+| etcd rebuilt from backup | 0.4–0.5 s |
+| Forget a node and re-clone it | 9.4–9.5 s; full strength after 1691–2281 s |
+| Standalone form | 0.3–0.6 s |
+| Standalone to HA migration | 0.3–0.4 s |
 
 **How it is wired.**
 
