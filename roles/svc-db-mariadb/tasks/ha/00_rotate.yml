@@ -17,6 +17,10 @@
   loop_control:
     label: "{{ item.service }}"
 
+- name: "🐛 MariaDB HA | Seeded state per instance"
+  ansible.builtin.debug:
+    msg: "{{ _mariadb_rotate_state.results | map(attribute='item.service') | zip(_mariadb_rotate_state.results | map(attribute='stdout')) | list }}"
+
 - name: "🔑 MariaDB HA | Write the inventory's passwords into every seeded instance"
   ansible.builtin.include_tasks: utils/rotate_apply.yml
   loop: "{{ _mariadb_rotate_state.results | selectattr('stdout', 'equalto', 'ready') | map(attribute='item') | list }}"
