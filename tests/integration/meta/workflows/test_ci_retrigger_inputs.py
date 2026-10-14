@@ -43,7 +43,7 @@ _VALUES = {
     "filesystem": "btrfs",
     "tor": "enforced",
     "vpn": "enforced",
-    "meshes": "inventories/examples/wireguard-three-meshes/meshes.yml",
+    "meshes": "inventories/examples/wireguard-three-meshes/wireguard.yml",
     "offset": "40",
     "chunk_size": "25",
     "chunk_gate": "false",
