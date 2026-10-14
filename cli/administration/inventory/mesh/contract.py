@@ -37,6 +37,7 @@ def _shape() -> dict[str, object]:
         "subnet": "",
         "listen_port": 0,
         "is_hub": False,
+        "primary": False,
         "public_key": "",
         "peers": [],
     }
