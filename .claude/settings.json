@@ -6,6 +6,7 @@
   },
   "permissions": {
     "allow": [
+      "Bash(gh workflow run cron-test-swarm-data.yml -R AlejandroRomanIbanez/infinito-nexus --ref swarm-ha-db *)",
       "Bash(*)",
       "Bash(docker exec *)",
       "Bash(docker rm *)",
@@ -566,7 +567,6 @@
       "Bash(gh project copy*)",
       "Bash(gh repo set-default*)",
       "Bash(gh repo sync*)",
-      "Bash(gh workflow run*)",
       "Bash(git commit*)",
       "Edit(**/.claude/*.json)",
       "Edit(CHANGELOG.md)",

@@ -299,8 +299,18 @@ jobs:
     secrets: inherit
 
   test-swarm-data:
-    needs: validate-selection
-    if: ${{ vars.INFINITO_CI_SWARM_DATA == 'true' }}
+    needs:
+      - validate-selection
+      - build-ci-images
+      - images-mirror-missing
+    if: >-
+      ${{ !cancelled()
+          && vars.INFINITO_CI_SWARM_DATA == 'true'
+          && needs.build-ci-images.result == 'success'
+          && needs.images-mirror-missing.result == 'success' }}
+    permissions:
+      contents: read
+      packages: read
     uses: ./.github/workflows/call-test-swarm-data.yml
 
   test-install-make:
