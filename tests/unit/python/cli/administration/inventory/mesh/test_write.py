@@ -12,7 +12,11 @@ import unittest
 from dataclasses import replace
 from pathlib import Path
 
-from cli.administration.inventory.mesh.inventory import groups_of, specs_of
+from cli.administration.inventory.mesh.inventory import (
+    groups_of,
+    specs_of,
+    topology_of,
+)
 from cli.administration.inventory.mesh.keys import generate_private_key, public_key_of
 from cli.administration.inventory.mesh.plan import plan_mesh, primary_meshes
 from cli.administration.inventory.mesh.write import (
@@ -22,15 +26,32 @@ from cli.administration.inventory.mesh.write import (
     prune_foreign_meshes,
     write_mesh,
 )
-from utils.cache.yaml import load_yaml_any
+from utils.cache.yaml import dump_yaml, load_yaml_any
 
 from . import PROJECT_ROOT
 from .test_plan import MESH_POOL, topology
 
-GROUP_VARS = PROJECT_ROOT / "inventories/development/meshes.yml"
-EXAMPLE_GROUP_VARS = (
-    PROJECT_ROOT / "inventories/examples/wireguard-three-meshes/meshes.yml"
+LAYOUT = PROJECT_ROOT / "inventories/development/wireguard.yml"
+EXAMPLE_LAYOUT = (
+    PROJECT_ROOT / "inventories/examples/wireguard-three-meshes/wireguard.yml"
 )
+
+
+def layout_applications(path: Path) -> dict:
+    """The ``applications`` block a layout file bakes into every host."""
+    return load_yaml_any(str(path))["applications"]
+
+
+def interface_entries(host_vars: Path, host: str) -> list[dict]:
+    """Every interface entry a host's file holds, owned or not."""
+    document = load_yaml_any(str(host_vars / f"{host}.yml")) or {}
+    return (
+        document.get("applications", {})
+        .get("svc-net-wireguard", {})
+        .get("networks", {})
+        .get("interfaces", [])
+    )
+
 
 HOSTS = ("swarm-mgr-01", "swarm-wrk-01", "swarm-wrk-02", "nfs-server", "swarm-bkp-01")
 
@@ -62,16 +83,21 @@ VAULT_PASSWORD = "mesh-test-password\n"
 
 
 class MeshOnDisk(unittest.TestCase):
+    LAYOUT = LAYOUT
+
     def setUp(self):
         self._tmp = tempfile.TemporaryDirectory()
         root = Path(self._tmp.name)
         self.host_vars = root / "host_vars"
         self.host_vars.mkdir()
+        self.layout = layout_applications(self.LAYOUT)
         for host in HOSTS:
-            (self.host_vars / f"{host}.yml").write_text("---\n", encoding="utf-8")
+            dump_yaml(
+                str(self.host_vars / f"{host}.yml"), {"applications": self.layout}
+            )
 
         self.cluster = root / "devices.yml"
-        self.cluster.write_text(CLUSTER_INVENTORY, encoding="utf-8")
+        self.cluster.write_text(self.cluster_inventory(), encoding="utf-8")
         self.backup = root / "backup.yml"
         self.backup.write_text(BACKUP_INVENTORY, encoding="utf-8")
 
@@ -79,7 +105,11 @@ class MeshOnDisk(unittest.TestCase):
         self.vault_file.write_text(VAULT_PASSWORD, encoding="utf-8")
 
         self.groups = groups_of([self.cluster, self.backup])
-        self.specs = specs_of(GROUP_VARS)
+        self.specs = specs_of(self.layout, [])
+        self.topology = topology_of(self.groups, self.host_vars, self.specs)
+
+    def cluster_inventory(self) -> str:
+        return CLUSTER_INVENTORY
 
     def tearDown(self):
         self._tmp.cleanup()
@@ -91,34 +121,32 @@ class MeshOnDisk(unittest.TestCase):
         )  # nocheck: cache-read  tempdir fixture rewritten between reads in one test
 
     def _mesh_names(self, host: str) -> list[str]:
-        """The mesh names a host's file actually declares.
+        """The mesh names a host's file actually holds an interface for.
 
-        Read structurally: the credential keys are named mesh_private_key_<n>,
-        so a substring check for the mesh name matches them too and would pass
-        against a file whose mesh block is empty.
+        Read structurally: the layout names every mesh in every file, so a
+        substring check for the mesh name passes against a host that holds no
+        interface at all.
         """
-        document = load_yaml_any(str(self.host_vars / f"{host}.yml"))
         return sorted(
-            document.get("applications", {})
-            .get("svc-net-wireguard", {})
-            .get("meshes", {})
+            entry["name"] for entry in interface_entries(self.host_vars, host)
         )
 
     def _entry(self, host: str, mesh_name: str) -> dict:
-        """The mesh block as the role will read it back off disk."""
-        document = load_yaml_any(str(self.host_vars / f"{host}.yml"))
-        return (
-            document.get("applications", {})
-            .get("svc-net-wireguard", {})
-            .get("meshes", {})
-            .get(mesh_name, {})
+        """The interface entry as the role will read it back off disk."""
+        return next(
+            (
+                entry
+                for entry in interface_entries(self.host_vars, host)
+                if entry["name"] == mesh_name
+            ),
+            {},
         )
 
     def _write_all(self, *, rotate: bool = False) -> None:
         for spec in self.specs:
             mesh = plan_mesh(
                 spec,
-                self.groups,
+                self.topology,
                 None
                 if rotate
                 else existing_public_keys(self.host_vars, list(HOSTS), spec.name),
@@ -142,7 +170,7 @@ class TestBothInventoriesAreRead(MeshOnDisk, unittest.TestCase):
 class TestPrivateKeyContainment(MeshOnDisk, unittest.TestCase):
     def test_a_private_key_reaches_exactly_one_host_vars_file(self):
         for spec in self.specs:
-            mesh = plan_mesh(spec, self.groups, rotate=True)
+            mesh = plan_mesh(spec, self.topology, rotate=True)
             write_mesh(mesh, self.host_vars, self.vault_file)
             with self.subTest(mesh=spec.name):
                 for member in mesh.members:
@@ -152,7 +180,7 @@ class TestPrivateKeyContainment(MeshOnDisk, unittest.TestCase):
 
     def test_no_plaintext_private_key_is_written_anywhere(self):
         for spec in self.specs:
-            mesh = plan_mesh(spec, self.groups, rotate=True)
+            mesh = plan_mesh(spec, self.topology, rotate=True)
             write_mesh(mesh, self.host_vars, self.vault_file)
             with self.subTest(mesh=spec.name):
                 for member in mesh.members:
@@ -202,7 +230,7 @@ class TestMeshShapeOnDisk(MeshOnDisk, unittest.TestCase):
         """
         self._write_all()
         for spec in self.specs:
-            mesh = plan_mesh(spec, self.groups)
+            mesh = plan_mesh(spec, self.topology)
             self.assertEqual(spec.routed_range, "10.100.0.0/16")
             for spoke in mesh.spokes:
                 with self.subTest(mesh=spec.name, spoke=spoke.host):
@@ -220,7 +248,7 @@ class TestMeshShapeOnDisk(MeshOnDisk, unittest.TestCase):
         """
         self._write_all()
         for spec in self.specs:
-            hub = plan_mesh(spec, self.groups).hub.host
+            hub = plan_mesh(spec, self.topology).hub.host
             for peer in self._entry(hub, spec.name)["peers"]:
                 with self.subTest(mesh=spec.name, peer=peer["host"]):
                     self.assertFalse(peer["is_hub"])
@@ -233,7 +261,7 @@ class TestStoredAddresses(MeshOnDisk, unittest.TestCase):
     def test_every_written_address_is_read_back(self):
         self._write_all()
         for spec in self.specs:
-            mesh = plan_mesh(spec, self.groups)
+            mesh = plan_mesh(spec, self.topology)
             with self.subTest(mesh=spec.name):
                 self.assertEqual(
                     existing_addresses(self.host_vars, list(HOSTS), spec.name),
@@ -297,7 +325,7 @@ class TestIdempotence(MeshOnDisk, unittest.TestCase):
         addresses = {
             host: plan_mesh(
                 self.specs[0],
-                self.groups,
+                self.topology,
                 existing_public_keys(self.host_vars, list(HOSTS), "swarm"),
             )
             .member(host)
@@ -352,11 +380,13 @@ class TestIdempotence(MeshOnDisk, unittest.TestCase):
         self.assertNotIn("swarm-wrk-01", keyed_after)
 
 
-def _hub_routes(meshes: dict) -> dict[str, list[str]]:
+def _hub_routes(entries: list[dict]) -> dict[str, list[str]]:
     """Mesh name to the ranges a spoke routes through that mesh's hub."""
     return {
-        name: [peer["allowed_ips"] for peer in entry["peers"] if peer["is_hub"]]
-        for name, entry in meshes.items()
+        entry["name"]: [
+            peer["allowed_ips"] for peer in entry["peers"] if peer["is_hub"]
+        ]
+        for entry in entries
         if not entry["is_hub"]
     }
 
@@ -364,47 +394,47 @@ def _hub_routes(meshes: dict) -> dict[str, list[str]]:
 class TestTheLabUnderTheThreeMeshExample(MeshOnDisk, unittest.TestCase):
     """The lab keeps the NFS server's own backup leg, which the example does not.
 
-    ``svc-bkp-nfs-2-local`` lands on the NFS server and matches gamma's
-    ``svc-bkp-`` prefix, so the server is a spoke of beta and of gamma. Routing
-    the pool through both is two routes for one prefix: ``wg-quick`` refuses the
-    second with ``RTNETLINK answers: File exists`` and deletes that interface.
+    ``svc-bkp-nfs-2-local`` lands on the NFS server and joins gamma, so the
+    server is a spoke of beta and of gamma. Routing the pool through both is two
+    routes for one prefix: ``wg-quick`` refuses the second with ``RTNETLINK
+    answers: File exists`` and deletes that interface.
     """
+
+    LAYOUT = EXAMPLE_LAYOUT
+
+    def cluster_inventory(self) -> str:
+        return (
+            CLUSTER_INVENTORY
+            + "    svc-bkp-nfs-2-local:\n      hosts:\n        nfs-server: {}\n"
+        )
 
     def setUp(self):
         super().setUp()
-        self.cluster.write_text(
-            CLUSTER_INVENTORY
-            + "    svc-bkp-nfs-2-local:\n      hosts:\n        nfs-server: {}\n",
-            encoding="utf-8",
-        )
-        self.groups = groups_of([self.cluster, self.backup])
-        self.specs = specs_of(EXAMPLE_GROUP_VARS)
-        primary = primary_meshes(self.specs, self.groups)
+        primary = primary_meshes(self.specs, self.topology)
         for spec in self.specs:
             write_mesh(
-                plan_mesh(spec, self.groups),
+                plan_mesh(spec, self.topology),
                 self.host_vars,
                 self.vault_file,
                 primary=primary,
             )
-
-    def _meshes(self, host: str) -> dict:
-        document = load_yaml_any(str(self.host_vars / f"{host}.yml"))
-        return document["applications"]["svc-net-wireguard"]["meshes"]
 
     def test_the_nfs_server_is_a_spoke_of_beta_and_gamma(self):
         self.assertEqual(self._mesh_names("nfs-server"), ["beta", "gamma"])
 
     def test_it_routes_the_pool_through_its_first_declared_mesh_only(self):
         self.assertEqual(
-            _hub_routes(self._meshes("nfs-server")),
+            _hub_routes(interface_entries(self.host_vars, "nfs-server")),
             {"beta": [MESH_POOL], "gamma": ["10.100.12.0/24"]},
         )
 
     def test_exactly_one_entry_per_host_is_primary(self):
         for host in HOSTS:
             with self.subTest(host=host):
-                flags = [entry["primary"] for entry in self._meshes(host).values()]
+                flags = [
+                    entry["primary"]
+                    for entry in interface_entries(self.host_vars, host)
+                ]
                 self.assertEqual(flags.count(True), 1)
 
     def test_the_hub_is_primary_on_the_first_declared_mesh(self):
@@ -424,30 +454,28 @@ class TestNoTwoInterfacesClaimOneRoute(unittest.TestCase):
         public_key = public_key_of(generate_private_key())
         for count in range(1, 9):
             for seed in range(3):
-                specs, groups = topology(count, seed)
+                specs, layout = topology(count, seed)
                 specs = [replace(spec, routed_range=MESH_POOL) for spec in specs]
                 hosts = sorted(
-                    {host for members in groups.values() for host in members}
+                    {layout.hub}
+                    | {host for members in layout.spokes.values() for host in members}
                 )
-                primary = primary_meshes(specs, groups)
+                primary = primary_meshes(specs, layout)
                 with tempfile.TemporaryDirectory() as td:
                     root = Path(td)
                     for spec in specs:
-                        mesh = plan_mesh(spec, groups, dict.fromkeys(hosts, public_key))
+                        mesh = plan_mesh(spec, layout, dict.fromkeys(hosts, public_key))
                         write_mesh(mesh, root, root / ".password", primary=primary)
                     for host in hosts:
-                        path = root / f"{host}.yml"
-                        if not path.exists():
+                        if not (root / f"{host}.yml").exists():
                             continue
-                        meshes = load_yaml_any(str(path))["applications"][
-                            "svc-net-wireguard"
-                        ]["meshes"]
+                        entries = interface_entries(root, host)
                         routes = [
                             peer["allowed_ips"]
-                            for entry in meshes.values()
+                            for entry in entries
                             for peer in entry["peers"]
                         ]
                         with self.subTest(meshes=count, seed=seed, host=host):
                             self.assertEqual(len(routes), len(set(routes)))
-                            if _hub_routes(meshes):
+                            if _hub_routes(entries):
                                 self.assertEqual(routes.count(MESH_POOL), 1)
