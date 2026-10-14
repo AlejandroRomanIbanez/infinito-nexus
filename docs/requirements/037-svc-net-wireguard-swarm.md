@@ -110,6 +110,7 @@ Swarm mode only, and there only when the run's `vpn` axis asks for it. The role 
 - [x] A host may be a spoke of several meshes: it routes the pool through its first declared mesh and only the mesh subnet through the others, so every interface comes up and no two claim one route.
 - [ ] Nothing outside the declarations names a mesh: the swarm advertise address, the NFS server address, the mesh the controller joins and the mesh the transport moves onto all resolve from each host's primary mesh or the declaration order.
 - [ ] The three-mesh example deploys a role end to end in the swarm lab, locally through `make swarm-zombie` with `meshes=` and in CI through the manual entry's `meshes` input.
+- [x] The meshes are network declarations of the roles themselves: `svc-net-wireguard` declares them in `networks.meshes`, every role whose hosts join one lists it in its own `networks.meshes`, and every role ships these fields empty, so the values exist only in a deployment's inventory and one module reads them for every consumer.
 - [x] Unit tests cover the tool as a pure function of its inputs: mesh completeness, peer-key pairing, private-key containment and rotation idempotence, none of them requiring a deploy.
 - [x] Lint, external and integration suites pass for the role and the tool.
 - [ ] The role provisions its own WireGuard tooling; no test image pre-bakes it.
