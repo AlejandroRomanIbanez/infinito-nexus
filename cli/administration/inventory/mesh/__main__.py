@@ -11,7 +11,7 @@ from utils import PROJECT_ROOT
 
 from .contract import write_contract
 from .inventory import groups_of, specs_of
-from .plan import plan_mesh
+from .plan import plan_mesh, primary_meshes
 from .write import (
     DEFAULT_APPLICATION_ID,
     existing_addresses,
@@ -89,8 +89,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--controller-mesh",
-        default="swarm",
-        help="mesh --controller joins; ignored when --controller is unset",
+        help=(
+            "mesh --controller joins, default the first declared; ignored when "
+            "--controller is unset"
+        ),
     )
     parser.add_argument(
         "--endpoint",
@@ -131,6 +133,15 @@ def main(argv: list[str] | None = None) -> int:
             f"{', '.join(spec.name for spec in declared)}"
         )
 
+    controller_mesh = args.controller_mesh or declared[0].name
+    if args.controller and controller_mesh not in {spec.name for spec in declared}:
+        print(
+            f"[FATAL] --controller-mesh {controller_mesh!r} is not a declared mesh",
+            file=sys.stderr,
+        )
+        return 1
+    primary = primary_meshes(declared, groups, args.controller, controller_mesh)
+
     specs = declared
     if args.mesh:
         wanted = set(args.mesh)
@@ -169,7 +180,7 @@ def main(argv: list[str] | None = None) -> int:
             spec,
             groups,
             held,
-            controller=(args.controller if spec.name == args.controller_mesh else None),
+            controller=(args.controller if spec.name == controller_mesh else None),
             endpoints=parse_endpoints(args.endpoint),
             addresses=existing_addresses(
                 host_vars_dir,
@@ -180,7 +191,7 @@ def main(argv: list[str] | None = None) -> int:
         )
         keyed_here.update({member.host: member.public_key for member in mesh.members})
         written = write_mesh(
-            mesh, host_vars_dir, vault_password_file, args.application_id
+            mesh, host_vars_dir, vault_password_file, args.application_id, primary
         )
         minted = sum(1 for member in mesh.members if member.private_key is not None)
         print(
