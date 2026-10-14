@@ -10,6 +10,12 @@
       SET @elector_pwd := '{{ MARIADB_ELECTOR_PWD }}';
       {{ lookup('template', role_path ~ '/templates/sql/ha/root.sql.j2') }}
       {{ lookup('template', role_path ~ '/templates/sql/ha/users.sql.j2') }}
+  environment:
+    CONTAINER_EXEC_TIMEOUT: "{{ lookup('timeout', 120) }}"
+  register: _mariadb_rotate_apply
+  until: _mariadb_rotate_apply.rc == 0
+  retries: 5
+  delay: 10
   delegate_to: "{{ mariadb_rotate_instance.host }}"
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
