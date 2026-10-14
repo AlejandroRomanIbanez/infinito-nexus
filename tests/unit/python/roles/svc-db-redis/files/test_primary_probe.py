@@ -16,7 +16,9 @@ from pathlib import Path
 
 from utils.cache.files import PROJECT_ROOT
 
-SCRIPT = PROJECT_ROOT / "roles" / "svc-db-redis" / "files" / "shell" / "primary_probe.sh"
+SCRIPT = (
+    PROJECT_ROOT / "roles" / "svc-db-redis" / "files" / "shell" / "primary_probe.sh"
+)
 CONTAINER_STUB = """#!/usr/bin/env bash
 [ "$1" = exec ] || exit 0
 if [ "$3" = getent ]; then
@@ -63,7 +65,8 @@ class TestRedisPrimaryProbe(unittest.TestCase):
 
     def test_asks_the_sentinel_on_the_instance_host(self):
         self._run("redis-m1", "redis-m1")
-        self.assertEqual(self.log.read_text().split(), ["redis-sentinel-m1"])  # nocheck: cache-read  the stub appends to this log during the test, a cached read would go stale
+        log = self.log.read_text()  # nocheck: cache-read  the stub appends to this log during the test, a cached read would go stale
+        self.assertEqual(log.split(), ["redis-sentinel-m1"])
 
     def test_hostname_answer_confirms_the_named_instance(self):
         self.assertEqual(self._run("redis-m1", "redis-m1"), 0)

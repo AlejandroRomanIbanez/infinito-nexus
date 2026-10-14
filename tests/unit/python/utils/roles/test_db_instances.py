@@ -30,7 +30,9 @@ class TestHaExposureConflicts(unittest.TestCase):
 
     def test_public_service_conflicts(self):
         config = {"services": {"openldap": {"network": {"public": True}}}}
-        conflicts = ha_exposure_conflicts("svc-db-openldap", config, tor_reachable=False)
+        conflicts = ha_exposure_conflicts(
+            "svc-db-openldap", config, tor_reachable=False
+        )
         self.assertEqual(len(conflicts), 1)
         self.assertIn("services.openldap.network.public", conflicts[0])
 
@@ -149,7 +151,9 @@ class TestBuildInstances(unittest.TestCase):
     def test_instance_volume_name(self):
         result = self.build(["mgr-01", "mgr-02", "mgr-03"], legacy_host="mgr-01")
         legacy, fresh = result["instances"][0], result["instances"][1]
-        self.assertEqual(instance_volume_name("openldap_config", legacy), "openldap_config")
+        self.assertEqual(
+            instance_volume_name("openldap_config", legacy), "openldap_config"
+        )
         self.assertEqual(
             instance_volume_name("openldap_config", fresh), "openldap_config_mgr-02"
         )
@@ -179,7 +183,9 @@ class TestBuildInstances(unittest.TestCase):
 
     def test_host_id_collision_raises(self):
         with self.assertRaisesRegex(DbInstancesError, "collide"):
-            self.build(["node.a", "node_a", "mgr-01"], nodes=["node.a", "node_a", "mgr-01"])
+            self.build(
+                ["node.a", "node_a", "mgr-01"], nodes=["node.a", "node_a", "mgr-01"]
+            )
 
 
 class TestCoordinationStore(unittest.TestCase):
@@ -200,11 +206,17 @@ class TestCoordinationStore(unittest.TestCase):
         self.assertFalse(coordination_store_needed(groups, "swarm"))
 
     def test_needed_when_one_engine_is_ha(self):
-        groups = {"svc-swarm-node": NODES, "svc-db-mariadb": ["mgr-01", "mgr-02", "mgr-03"]}
+        groups = {
+            "svc-swarm-node": NODES,
+            "svc-db-mariadb": ["mgr-01", "mgr-02", "mgr-03"],
+        }
         self.assertTrue(coordination_store_needed(groups, "swarm"))
 
     def test_etcd_group_alone_does_not_trigger(self):
-        groups = {"svc-swarm-node": NODES, "svc-dcs-etcd": ["mgr-01", "mgr-02", "mgr-03"]}
+        groups = {
+            "svc-swarm-node": NODES,
+            "svc-dcs-etcd": ["mgr-01", "mgr-02", "mgr-03"],
+        }
         self.assertFalse(coordination_store_needed(groups, "swarm"))
 
     def test_never_needed_outside_swarm(self):

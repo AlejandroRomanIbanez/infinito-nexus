@@ -105,7 +105,10 @@ def iter_subnets() -> Iterable[tuple[str, ipaddress.IPv4Network]]:
         networks = _load_yaml(role_dir / ROLE_FILE_META_NETWORKS)
         if not isinstance(networks, dict):
             continue
-        for section, key in (("local", role_dir.name), ("internal", f"{role_dir.name}:internal")):
+        for section, key in (
+            ("local", role_dir.name),
+            ("internal", f"{role_dir.name}:internal"),
+        ):
             block = networks.get(section)
             if not isinstance(block, dict):
                 continue

@@ -45,7 +45,8 @@
 
         - name: hand the leadership to the member
           command:
-            argv: "{{ ['docker', 'exec', '-e', 'ETCDCTL_USER', etcd_op_cid.stdout] + etcdctl + ['--endpoints=' ~ etcd_op_endpoints, 'move-leader', etcd_op_target] }}"
+            argv: "{{ ['docker', 'exec', '-e', 'ETCDCTL_USER', etcd_op_cid.stdout] + etcdctl + ['--endpoints=' ~ etcd_op_endpoints, 'move-leader', etcd_op_target]
+              }}"
           environment:
             ETCDCTL_USER: "root:{{ etcd_root_password }}"
           vars:
@@ -65,7 +66,8 @@
     - name: delete the engine's coordination keys
       when: failover.op == 'delete-prefix'
       command:
-        argv: "{{ ['docker', 'exec', '-e', 'ETCDCTL_USER', etcd_op_cid.stdout] + etcdctl + ['del', '--prefix', lookup('config', failover.engine_role, 'services.etcd.prefix')] }}"
+        argv: "{{ ['docker', 'exec', '-e', 'ETCDCTL_USER', etcd_op_cid.stdout] + etcdctl + ['del', '--prefix', lookup('config', failover.engine_role, 'services.etcd.prefix')]
+          }}"
       environment:
         ETCDCTL_USER: "root:{{ etcd_root_password }}"
       changed_when: true

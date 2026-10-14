@@ -50,8 +50,7 @@ def primary_address(bin_resolver: str, stack: str, engine: str) -> str:
         engine: engine word, e.g. ``postgres``.
     """
     return (
-        f'"$({shlex.quote(bin_resolver)} '
-        f'{shlex.quote(stack)} {shlex.quote(engine)})"'
+        f'"$({shlex.quote(bin_resolver)} {shlex.quote(stack)} {shlex.quote(engine)})"'
     )
 
 

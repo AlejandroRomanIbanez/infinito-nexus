@@ -6,10 +6,9 @@ import os
 import unittest
 from unittest import mock
 
-from . import _NAME  # noqa: F401  side-effect import registers infinito_elector_src
-
-
 from infinito_elector_src.__main__ import parse_args
+
+from . import _NAME  # noqa: F401  side-effect import registers infinito_elector_src
 
 COMMON = {
     "ELECTOR_ENGINE": "mariadb",

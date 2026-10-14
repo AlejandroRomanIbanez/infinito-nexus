@@ -6,6 +6,7 @@ import unittest
 from utils.failover import procedures
 from utils.failover.sampling import Round
 from utils.failover.scenarios import get_scenario
+from utils.failover.targets import RECLONE_CEILING_S
 
 _GOOD = "start r 0\nack 1 200\nack 2 400\npresent 1\npresent 2\ndone\n"
 _LOST = "start r 0\nack 1 200\nack 2 400\npresent 1\ndone\n"
@@ -257,7 +258,7 @@ class TestDeployProcedures(unittest.TestCase):
                 "start",
                 "bump_engine_memory:32",
                 "redeploy",
-                "wait_full_strength:900.0",
+                f"wait_full_strength:{RECLONE_CEILING_S}",
                 "finish",
                 "stop",
             ],

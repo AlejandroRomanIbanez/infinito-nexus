@@ -31,7 +31,9 @@ printf '%s\\n' "$@" > "$FAKE_DIR/argv"
 
 
 def _read(path):
-    return path.read_text(encoding="utf-8")  # nocheck: cache-read  tempdir file the script under test rewrites
+    return path.read_text(
+        encoding="utf-8"
+    )  # nocheck: cache-read  tempdir file the script under test rewrites
 
 
 class HaStartTests(unittest.TestCase):
@@ -110,9 +112,7 @@ class HaStartTests(unittest.TestCase):
 
     def test_fresh_bootstrap_instance_seeds_no_replicaof(self):
         self._run(self_name="redis-a")
-        self.assertEqual(
-            _read(self.conf), f"include {self.include}\n"
-        )
+        self.assertEqual(_read(self.conf), f"include {self.include}\n")
 
     def test_seeded_config_is_kept_but_include_owned_lines_are_dropped(self):
         self.conf.write_text(

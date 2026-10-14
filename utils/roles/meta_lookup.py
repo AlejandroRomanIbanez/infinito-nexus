@@ -172,9 +172,7 @@ def get_role_ha(role: PathLike, *, role_name: str | None = None) -> dict:
     return raw
 
 
-def get_role_ports(
-    role: PathLike, scope: str, *, role_name: str | None = None
-) -> dict:
+def get_role_ports(role: PathLike, scope: str, *, role_name: str | None = None) -> dict:
     """Return ``ports.<scope>`` of the role's primary entity, or ``{}``.
 
     Args:

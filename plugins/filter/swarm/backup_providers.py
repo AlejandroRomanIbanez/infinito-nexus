@@ -14,7 +14,9 @@ def _as_list(value) -> list[str]:
     return [str(item) for item in value]
 
 
-def backup_providers(configured, ha_hosts: Iterable[str] | None, hostvars: Mapping) -> list:
+def backup_providers(
+    configured, ha_hosts: Iterable[str] | None, hostvars: Mapping
+) -> list:
     """Return configured providers plus every HA database host, de-duplicated.
 
     Args:

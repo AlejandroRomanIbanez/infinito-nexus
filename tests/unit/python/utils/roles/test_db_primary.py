@@ -13,7 +13,9 @@ def _groups(app_id, hosts):
 
 class TestIsHa(unittest.TestCase):
     def test_three_hosts_in_swarm(self):
-        self.assertTrue(is_ha("svc-db-postgres", _groups("svc-db-postgres", NODES), "swarm"))
+        self.assertTrue(
+            is_ha("svc-db-postgres", _groups("svc-db-postgres", NODES), "swarm")
+        )
 
     def test_one_host_is_standalone(self):
         self.assertFalse(
@@ -21,13 +23,17 @@ class TestIsHa(unittest.TestCase):
         )
 
     def test_compose_is_standalone(self):
-        self.assertFalse(is_ha("svc-db-postgres", _groups("svc-db-postgres", NODES), "compose"))
+        self.assertFalse(
+            is_ha("svc-db-postgres", _groups("svc-db-postgres", NODES), "compose")
+        )
 
     def test_coordination_store_has_no_primary(self):
         self.assertFalse(is_ha("svc-dcs-etcd", _groups("svc-dcs-etcd", NODES), "swarm"))
 
     def test_engine_without_ha_meta(self):
-        self.assertFalse(is_ha("svc-db-qdrant", _groups("svc-db-qdrant", NODES), "swarm"))
+        self.assertFalse(
+            is_ha("svc-db-qdrant", _groups("svc-db-qdrant", NODES), "swarm")
+        )
 
     def test_no_groups(self):
         self.assertFalse(is_ha("svc-db-postgres", None, "swarm"))

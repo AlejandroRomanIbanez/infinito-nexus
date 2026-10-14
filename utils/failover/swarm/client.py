@@ -58,7 +58,7 @@ class Clients:
                 "-c",
                 (
                     f"docker exec {shlex.quote(self._manager())} docker save {shlex.quote(image)}"
-                    f" | docker exec -i {shlex.quote(self.client_node)} docker load"
+                    f" | docker exec -i {shlex.quote(self.client_node)} docker load"  # nocheck: raw-docker  lab nodes are DinD containers on a controller without the container wrapper
                 ),
             ],
             timeout=600,

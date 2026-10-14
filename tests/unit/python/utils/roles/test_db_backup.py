@@ -68,7 +68,9 @@ class TestLocalBackupInstances(unittest.TestCase):
 
     def test_host_without_instance(self):
         groups = _groups(svc_db_postgres=NODES[:2])
-        self.assertEqual(local_backup_instances(groups, "swarm", "mgr-03", "/usr/bin"), [])
+        self.assertEqual(
+            local_backup_instances(groups, "swarm", "mgr-03", "/usr/bin"), []
+        )
 
 
 if __name__ == "__main__":

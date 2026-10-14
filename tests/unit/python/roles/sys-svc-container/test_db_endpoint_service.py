@@ -43,10 +43,8 @@ def _render(**variables):
         trim_blocks=True,
         lstrip_blocks=True,
     )
-    env.filters["resource_filter"] = (
-        lambda _apps, _app, key, svc, default: (
-            default if key == "platform_arch" else f"{svc}-{key}"
-        )
+    env.filters["resource_filter"] = lambda _apps, _app, key, svc, default: (
+        default if key == "platform_arch" else f"{svc}-{key}"
     )
     env.filters["swarm_restart_condition"] = lambda value: "any"
     env.globals["lookup"] = _lookup

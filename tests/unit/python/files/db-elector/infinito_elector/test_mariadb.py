@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import unittest
 
-from . import _NAME  # noqa: F401  side-effect import registers infinito_elector_src
-
-
 from infinito_elector_src.mariadb import GtidPosition, MariaDBRole
 from infinito_elector_src.roles import RoleError, choose
+
+from . import _NAME  # noqa: F401  side-effect import registers infinito_elector_src
 
 
 class FakeServers:

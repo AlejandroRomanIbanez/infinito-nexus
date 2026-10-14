@@ -1,8 +1,8 @@
 ---
-# Param: mariadb_rotate_writer - instance model entry (`service`, `host`) of the running writer
-- name: "🔑 MariaDB HA | Write the inventory's passwords into {{ mariadb_rotate_writer.service }}"
+# Param: mariadb_rotate_instance - instance model entry (`service`, `host`) of a running, seeded instance
+- name: "🔑 MariaDB HA | Rotate passwords on {{ mariadb_rotate_instance.service }}"
   ansible.builtin.shell: |
-    container exec -i "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ mariadb_rotate_writer.service | quote }})" {{ MARIADB_HA_SQL }}
+    container exec -i "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ mariadb_rotate_instance.service | quote }})" {{ MARIADB_HA_SQL }}
   args:
     stdin: |
       SET @root_pwd := '{{ MARIADB_ROOT_PWD }}';
@@ -10,6 +10,6 @@
       SET @elector_pwd := '{{ MARIADB_ELECTOR_PWD }}';
       {{ lookup('template', role_path ~ '/templates/sql/ha/root.sql.j2') }}
       {{ lookup('template', role_path ~ '/templates/sql/ha/users.sql.j2') }}
-  delegate_to: "{{ mariadb_rotate_writer.host }}"
+  delegate_to: "{{ mariadb_rotate_instance.host }}"
   changed_when: false
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"

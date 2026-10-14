@@ -121,7 +121,9 @@ class TestRenderCnConfig(unittest.TestCase):
 
     def test_custom_schemas_static(self):
         ldif = _render()
-        self.assertIn("olcAttributeTypes: ( 1.3.6.1.4.1.24552.1.2 NAME 'sshFingerprint' )", ldif)
+        self.assertIn(
+            "olcAttributeTypes: ( 1.3.6.1.4.1.24552.1.2 NAME 'sshFingerprint' )", ldif
+        )
         self.assertIn("cn: openssh-lpk", ldif)
 
     def test_data_database_read_only_multi_provider(self):
@@ -193,7 +195,10 @@ class TestSchemaDrops(unittest.TestCase):
         self.assertEqual(schema_drops(live, _render()), ["custom"])
 
     def test_nothing_dropped(self):
-        live = ["cn={4}nextcloud,cn=schema,cn=config", "cn={1}cosine,cn=schema,cn=config"]
+        live = [
+            "cn={4}nextcloud,cn=schema,cn=config",
+            "cn={1}cosine,cn=schema,cn=config",
+        ]
         self.assertEqual(schema_drops(live, _render()), [])
 
 

@@ -6,11 +6,11 @@
   },
   "permissions": {
     "allow": [
-      "Bash(gh workflow run cron-test-swarm-data.yml -R AlejandroRomanIbanez/infinito-nexus --ref swarm-ha-db *)",
       "Bash(*)",
       "Bash(docker exec *)",
       "Bash(docker rm *)",
       "Bash(docker volume *)",
+      "Bash(gh workflow run cron-test-swarm-data.yml -R AlejandroRomanIbanez/infinito-nexus --ref swarm-ha-db *)",
       "Bash(git --no-pager log --oneline -5)",
       "Bash(git add *)",
       "Bash(git log *)",

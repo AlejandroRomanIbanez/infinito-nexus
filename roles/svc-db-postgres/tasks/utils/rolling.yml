@@ -27,7 +27,8 @@
 
 - name: "🔀 POSTGRES | Switch over to a synchronous replica"
   ansible.builtin.command: # nocheck: container-exec-resolver  POSTGRES_PRIMARY_CID is the Patroni primary resolved at runtime
-    argv: "{{ ['container', 'exec', '--user', 'postgres', POSTGRES_PRIMARY_CID] + (POSTGRES_PATRONICTL | split) + ['switchover', entity_name, '--leader', postgres_rolling_leader, '--candidate', postgres_rolling_candidate, '--force'] }}"
+    argv: "{{ ['container', 'exec', '--user', 'postgres', POSTGRES_PRIMARY_CID] + (POSTGRES_PATRONICTL | split) + ['switchover', entity_name, '--leader', postgres_rolling_leader,
+      '--candidate', postgres_rolling_candidate, '--force'] }}"
   delegate_to: "{{ POSTGRES_PRIMARY_NODE }}"
 
 - name: "🔄 POSTGRES | Restart the old primary"

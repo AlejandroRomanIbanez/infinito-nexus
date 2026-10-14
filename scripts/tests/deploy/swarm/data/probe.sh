@@ -92,19 +92,32 @@ marker_read() {
 idle() {
 	case "${ENGINE}" in
 	postgres)
-		out="$({ echo "SELECT 'first';"; sleep "${ARG}"; echo "SELECT 'second';"; } |
+		out="$({
+			echo "SELECT 'first';"
+			sleep "${ARG}"
+			echo "SELECT 'second';"
+		} |
 			psql -h "${HOST}" -p "${PORT}" -U "${USER}" -d "${DATABASE}" -X -qAt 2>&1)"
 		;;
 	mariadb)
-		out="$({ echo "SELECT 'first';"; sleep "${ARG}"; echo "SELECT 'second';"; } |
+		out="$({
+			echo "SELECT 'first';"
+			sleep "${ARG}"
+			echo "SELECT 'second';"
+		} |
 			mariadb -h "${HOST}" -P "${PORT}" -u "${USER}" -N -B "${DATABASE}" 2>&1)"
 		;;
 	redis)
-		out="$({ echo "ECHO first"; sleep "${ARG}"; echo "ECHO second"; } |
+		out="$({
+			echo "ECHO first"
+			sleep "${ARG}"
+			echo "ECHO second"
+		} |
 			redis-cli -h "${HOST}" -p "${PORT}" 2>&1)"
 		;;
 	openldap)
-		out="$(python3 - "${HOST}" "${PORT}" "${ARG}" <<'PY'
+		out="$(
+			python3 - "${HOST}" "${PORT}" "${ARG}" <<'PY'
 import socket, sys, time
 bind = bytes.fromhex("300c020101600702010304008000")
 with socket.create_connection((sys.argv[1], int(sys.argv[2])), timeout=10) as conn:

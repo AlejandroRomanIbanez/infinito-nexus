@@ -22,7 +22,9 @@ ENGINES = {
     "svc-db-openldap": "openldap",
     "svc-db-redis": "redis",
 }
-SNAPSHOT = PROJECT_ROOT / "tests/unit/python/roles/sys-svc-compose/db_engine_standalone.json"
+SNAPSHOT = (
+    PROJECT_ROOT / "tests/unit/python/roles/sys-svc-compose/db_engine_standalone.json"
+)
 HA_HOSTS = ["mgr-01", "mgr-02", "mgr-03"]
 MEMORY_MB = 820
 
@@ -81,7 +83,9 @@ def render(application_id, model, loader=None, **variables):
     env.filters["has_env"] = lambda _app: False
     env.filters["bool"] = lambda value: str(value).lower() in ("1", "true", "yes", "on")
     env.filters["quote"] = lambda value: f"'{value}'"
-    env.filters["regex_replace"] = lambda value, pattern, repl: re.sub(pattern, repl, value)
+    env.filters["regex_replace"] = lambda value, pattern, repl: re.sub(
+        pattern, repl, value
+    )
     env.globals["lookup"] = _lookup_factory(application_id, model)
     hosts = sorted({i["host"] for i in model["instances"] if i.get("host")})
     base = {
@@ -140,7 +144,9 @@ class TestStandaloneUnchanged(unittest.TestCase):
         for application_id, engine in ENGINES.items():
             with self.subTest(application_id):
                 self.assertEqual(
-                    json.loads(json.dumps(render(application_id, standalone_model(engine)))),
+                    json.loads(
+                        json.dumps(render(application_id, standalone_model(engine)))
+                    ),
                     snapshot[application_id],
                 )
 
@@ -163,9 +169,9 @@ class TestThreeHostHa(unittest.TestCase):
             with self.subTest(application_id):
                 services = render(application_id, ha_model(engine))["services"]
                 for key, service in services.items():
-                    constraints = (service.get("deploy", {}).get("placement") or {}).get(
-                        "constraints", []
-                    )
+                    constraints = (
+                        service.get("deploy", {}).get("placement") or {}
+                    ).get("constraints", [])
                     self.assertNotIn("node.role == manager", constraints, key)
 
     def test_the_write_endpoint_carries_the_engine_name(self):
@@ -175,7 +181,9 @@ class TestThreeHostHa(unittest.TestCase):
                 endpoint = services[engine]
                 self.assertIn("haproxy", json.dumps(endpoint["x-container_image"]))
                 self.assertEqual(endpoint["deploy"]["replicas"], 2)
-                self.assertEqual(endpoint["deploy"]["placement"]["max_replicas_per_node"], 1)
+                self.assertEqual(
+                    endpoint["deploy"]["placement"]["max_replicas_per_node"], 1
+                )
 
     def test_instances_mount_their_own_volume(self):
         for application_id, engine in ENGINES.items():
@@ -183,13 +191,18 @@ class TestThreeHostHa(unittest.TestCase):
                 services = render(application_id, ha_model(engine))["services"]
                 for host in HA_HOSTS:
                     key = f"{engine}-{host}"
-                    self.assertIn(f'\\"instance\\": \\"{key}\\"', json.dumps(services[key]))
+                    self.assertIn(
+                        f'\\"instance\\": \\"{key}\\"', json.dumps(services[key])
+                    )
 
     def test_redis_runs_one_sentinel_per_instance_host(self):
         services = render("svc-db-redis", ha_model("redis"))["services"]
         for host in HA_HOSTS:
             deploy = services[f"redis-sentinel-{host}"]["deploy"]
-            self.assertEqual(deploy["placement"]["constraints"], [f"node.labels.infinito.host_id == {host}"])
+            self.assertEqual(
+                deploy["placement"]["constraints"],
+                [f"node.labels.infinito.host_id == {host}"],
+            )
 
 
 if __name__ == "__main__":

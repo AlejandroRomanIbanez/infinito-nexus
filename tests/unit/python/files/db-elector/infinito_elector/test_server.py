@@ -4,10 +4,9 @@ import unittest
 import urllib.error
 import urllib.request
 
-from . import _NAME  # noqa: F401  side-effect import registers infinito_elector_src
-
-
 from infinito_elector_src.server import serve
+
+from . import _NAME  # noqa: F401  side-effect import registers infinito_elector_src
 
 
 class TestWriterEndpoint(unittest.TestCase):

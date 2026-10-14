@@ -34,7 +34,9 @@ def _apps():
 
 class TestContainerVolumesInstance(unittest.TestCase):
     def render(self, instance):
-        out = container_volumes(_apps(), "svc-db-fakeengine", "openldap", instance=instance)
+        out = container_volumes(
+            _apps(), "svc-db-fakeengine", "openldap", instance=instance
+        )
         return load_yaml_str(out)["volumes"]
 
     def test_without_instance_unchanged(self):

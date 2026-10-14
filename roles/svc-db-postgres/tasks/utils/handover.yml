@@ -18,7 +18,8 @@
 
 - name: "🔀 POSTGRES | Switch over away from {{ handover_primary }}"
   ansible.builtin.command: # nocheck: container-exec-resolver  DB_HA_ROLL_PRIMARY_CID is the Patroni primary resolved at runtime
-    argv: "{{ ['container', 'exec', '--user', 'postgres', DB_HA_ROLL_PRIMARY_CID] + (POSTGRES_PATRONICTL | split) + ['switchover', entity_name, '--leader', handover_primary, '--candidate', _postgres_handover_candidate, '--force'] }}"
+    argv: "{{ ['container', 'exec', '--user', 'postgres', DB_HA_ROLL_PRIMARY_CID] + (POSTGRES_PATRONICTL | split) + ['switchover', entity_name, '--leader', handover_primary,
+      '--candidate', _postgres_handover_candidate, '--force'] }}"
   vars:
     _postgres_handover_candidate: >-
       {{ postgres_handover_members.stdout | from_json

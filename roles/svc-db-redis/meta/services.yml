@@ -49,7 +49,8 @@ sentinel:
     test:
       - "CMD-SHELL"
       # nocheck: volumes-path-single-spot  role meta renders before role vars and the volume lookup are bound
-      - "REDISCLI_AUTH=$$(cat /run/secrets/sentinel_password) redis-cli -p {{ lookup('config', 'svc-db-redis', 'services.sentinel.ports.internal.sentinel') }} ping | grep -q PONG"
+      - "REDISCLI_AUTH=$$(cat /run/secrets/sentinel_password) redis-cli -p {{ lookup('config', 'svc-db-redis', 'services.sentinel.ports.internal.sentinel') }} ping
+        | grep -q PONG"
   ports:
     internal:
       sentinel: 26379

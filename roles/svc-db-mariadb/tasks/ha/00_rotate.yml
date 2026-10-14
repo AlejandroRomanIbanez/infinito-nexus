@@ -1,11 +1,8 @@
 ---
-- name: "🔍 MariaDB HA | Ask the running instances which one is the writer"
-  ansible.builtin.command:
-    argv:
-      - "{{ [DIR_BIN, MARIADB_INSTANCES.ha.probe] | path_join }}"
-      - "{{ entity_name }}"
-      - "{{ item.service }}"
-  register: _mariadb_rotate_probe
+- name: "🔍 MariaDB HA | Find the running instances that hold seeded data"
+  ansible.builtin.shell: |
+    container exec "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ item.service | quote }})" test -e {{ MARIADB_HA_READY_MARKER | quote }}
+  register: _mariadb_rotate_ready
   changed_when: false
   failed_when: false
   delegate_to: "{{ item.host }}"
@@ -13,12 +10,9 @@
   loop_control:
     label: "{{ item.service }}"
 
-- name: "🔧 MariaDB HA | Remember the running writer"
-  ansible.builtin.set_fact:
-    _mariadb_rotate_writers: "{{ _mariadb_rotate_probe.results | selectattr('rc', 'equalto', 0) | map(attribute='item') | list }}"
-
-- name: "🔑 MariaDB HA | Write the inventory's passwords into the running writer"
+- name: "🔑 MariaDB HA | Write the inventory's passwords into every seeded instance"
   ansible.builtin.include_tasks: utils/rotate_apply.yml
-  vars:
-    mariadb_rotate_writer: "{{ _mariadb_rotate_writers[0] }}"
-  when: _mariadb_rotate_writers | length == 1
+  loop: "{{ _mariadb_rotate_ready.results | selectattr('rc', 'equalto', 0) | map(attribute='item') | list }}"
+  loop_control:
+    loop_var: mariadb_rotate_instance
+    label: "{{ mariadb_rotate_instance.service }}"

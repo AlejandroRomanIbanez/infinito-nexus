@@ -13,7 +13,12 @@ from pathlib import Path
 from utils.cache.files import PROJECT_ROOT
 
 SCRIPT = (
-    PROJECT_ROOT / "roles" / "sys-svc-compose" / "files" / "shell" / "resolve_db_primary.sh"
+    PROJECT_ROOT
+    / "roles"
+    / "sys-svc-compose"
+    / "files"
+    / "shell"
+    / "resolve_db_primary.sh"
 )
 CONTAINER_STUB = """#!/usr/bin/env bash
 [ "$1 $2" = "service ls" ] && printf '%s\\n' pg_pg-m2 pg_pg-m1 pg_pg-m3
@@ -65,7 +70,8 @@ class TestResolveDbPrimary(unittest.TestCase):
 
     def test_probe_gets_stack_and_instance_key(self):
         self._run("pg-m1")
-        self.assertEqual(self.log.read_text().splitlines()[0], "pg pg-m1")  # nocheck: cache-read  the stub appends to this log during the test, a cached read would go stale
+        log = self.log.read_text()  # nocheck: cache-read  the stub appends to this log during the test, a cached read would go stale
+        self.assertEqual(log.splitlines()[0], "pg pg-m1")
 
     def test_no_confirmed_instance_finds_no_primary(self):
         self.assertEqual(self._run("pg-ghost").returncode, 65)

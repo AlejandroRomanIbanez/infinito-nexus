@@ -50,7 +50,7 @@ save_inventory() {
 }
 
 teardown() {
-	save_inventory || true # nocheck: shell-or-true -- best-effort save in the EXIT trap
+	save_inventory || true                                                         # nocheck: shell-or-true -- best-effort save in the EXIT trap
 	bash "${REPO_ROOT}/scripts/tests/deploy/swarm/utils/clean/teardown.sh" || true # nocheck: shell-or-true -- best-effort teardown in the EXIT trap
 }
 trap teardown EXIT

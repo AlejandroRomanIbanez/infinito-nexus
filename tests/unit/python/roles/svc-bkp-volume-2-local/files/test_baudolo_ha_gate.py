@@ -130,7 +130,9 @@ class TestMissingDumps(TestCase):
         self.assertEqual(GATE.missing_dumps(gen, ["postgres_data"]), [])
 
     def test_undumped_volume_fails(self):
-        _, gen = self._generation({"postgres_data": {"database": True, "dumped": False}})
+        _, gen = self._generation(
+            {"postgres_data": {"database": True, "dumped": False}}
+        )
         self.assertEqual(GATE.missing_dumps(gen, ["postgres_data"]), ["postgres_data"])
 
     def test_absent_generation_fails(self):
@@ -161,10 +163,14 @@ class TestMain(TestCase):
     def test_missing_dump_fails_loudly(self):
         backups = tempfile.mkdtemp()
         argv = [
-            "--config", self._config([PG]),
-            "--backups-dir", backups,
-            "--repo-name", "repo",
-            "--", "baudolo",
+            "--config",
+            self._config([PG]),
+            "--backups-dir",
+            backups,
+            "--repo-name",
+            "repo",
+            "--",
+            "baudolo",
         ]
         with mock.patch.object(GATE.subprocess, "run", return_value=done(0)) as run:
             self.assertEqual(GATE.main(argv, runner_for(probe_rc=0)), GATE.MISSING_DUMP)
@@ -173,10 +179,14 @@ class TestMain(TestCase):
     def test_replica_host_excludes_volume_and_succeeds(self):
         backups = tempfile.mkdtemp()
         argv = [
-            "--config", self._config([PG]),
-            "--backups-dir", backups,
-            "--repo-name", "repo",
-            "--", "baudolo",
+            "--config",
+            self._config([PG]),
+            "--backups-dir",
+            backups,
+            "--repo-name",
+            "repo",
+            "--",
+            "baudolo",
         ]
         with mock.patch.object(GATE.subprocess, "run", return_value=done(0)) as run:
             self.assertEqual(GATE.main(argv, runner_for(probe_rc=1)), 0)
@@ -186,10 +196,14 @@ class TestMain(TestCase):
 
     def test_migrating_host_backs_up_the_standalone_engine(self):
         argv = [
-            "--config", self._config([PG]),
-            "--backups-dir", tempfile.mkdtemp(),
-            "--repo-name", "repo",
-            "--", "baudolo",
+            "--config",
+            self._config([PG]),
+            "--backups-dir",
+            tempfile.mkdtemp(),
+            "--repo-name",
+            "repo",
+            "--",
+            "baudolo",
         ]
         with mock.patch.object(GATE.subprocess, "run", return_value=done(0)) as run:
             self.assertEqual(GATE.main(argv, runner_for(probe_rc=3)), 0)
@@ -199,10 +213,14 @@ class TestMain(TestCase):
 
     def test_unknown_probe_fails_without_running_baudolo(self):
         argv = [
-            "--config", self._config([PG]),
-            "--backups-dir", tempfile.mkdtemp(),
-            "--repo-name", "repo",
-            "--", "baudolo",
+            "--config",
+            self._config([PG]),
+            "--backups-dir",
+            tempfile.mkdtemp(),
+            "--repo-name",
+            "repo",
+            "--",
+            "baudolo",
         ]
         with mock.patch.object(GATE.subprocess, "run", return_value=done(0)) as run:
             self.assertEqual(GATE.main(argv, runner_for(probe_rc=2)), GATE.PROBE_FAILED)
@@ -210,10 +228,15 @@ class TestMain(TestCase):
 
     def test_standalone_host_without_config_runs_unchanged(self):
         argv = [
-            "--config", "/nonexistent.json",
-            "--backups-dir", tempfile.mkdtemp(),
-            "--repo-name", "repo",
-            "--", "baudolo", "--only-sql",
+            "--config",
+            "/nonexistent.json",
+            "--backups-dir",
+            tempfile.mkdtemp(),
+            "--repo-name",
+            "repo",
+            "--",
+            "baudolo",
+            "--only-sql",
         ]
         with mock.patch.object(GATE.subprocess, "run", return_value=done(0)) as run:
             self.assertEqual(GATE.main(argv, runner_for()), 0)
@@ -221,10 +244,14 @@ class TestMain(TestCase):
 
     def test_baudolo_failure_propagates(self):
         argv = [
-            "--config", "/nonexistent.json",
-            "--backups-dir", tempfile.mkdtemp(),
-            "--repo-name", "repo",
-            "--", "baudolo",
+            "--config",
+            "/nonexistent.json",
+            "--backups-dir",
+            tempfile.mkdtemp(),
+            "--repo-name",
+            "repo",
+            "--",
+            "baudolo",
         ]
         with mock.patch.object(GATE.subprocess, "run", return_value=done(5)):
             self.assertEqual(GATE.main(argv, runner_for()), 5)

@@ -112,9 +112,7 @@ def render_cn_config(
     if host_id not in ids:
         raise OpenLDAPHAError(f"openldap_ha: '{host_id}' is not in the instance group")
     peers = [
-        (rid, peer)
-        for rid, peer in enumerate(sorted(ids), start=1)
-        if peer != host_id
+        (rid, peer) for rid, peer in enumerate(sorted(ids), start=1) if peer != host_id
     ]
     syncrepls = [
         _syncrepl(index, rid, peer_template.format(host=peer), suffix, root_dn)
@@ -142,7 +140,9 @@ def render_cn_config(
             "olcModuleLoad: {3}syncprov",
         ),
         _entry("cn=schema,cn=config", "objectClass: olcSchemaConfig", "cn: schema"),
-        "\n\n".join(f"include: file://{SCHEMA_DIR}/{name}.ldif" for name in CORE_SCHEMAS),
+        "\n\n".join(
+            f"include: file://{SCHEMA_DIR}/{name}.ldif" for name in CORE_SCHEMAS
+        ),
         *(_schema_entry(schema) for schema in schemas),
         _entry(
             "olcDatabase={-1}frontend,cn=config",
@@ -170,7 +170,7 @@ def render_cn_config(
             "olcDbIndex: objectClass eq",
             "olcDbIndex: entryCSN,entryUUID eq",
             "olcReadOnly: TRUE",
-            "olcLimits: {0}dn.exact=\"" + root_dn + '" time=unlimited size=unlimited',
+            'olcLimits: {0}dn.exact="' + root_dn + '" time=unlimited size=unlimited',
             f'olcAccess: {{0}}to attrs=userPassword by dn.exact="{root_dn}" manage '
             f'by dn.exact="{ROOT_PEERCRED}" manage by self write by anonymous auth '
             "by * none",
@@ -221,7 +221,9 @@ def forbidden_bind_writes(ldif: str) -> list[str]:
         writes that bypass ``olcReadOnly``.
     """
     found = []
-    if re.search(r"^olcOverlay:\s*(\{\d+\})?ppolicy\s*$", ldif, re.MULTILINE | re.IGNORECASE):
+    if re.search(
+        r"^olcOverlay:\s*(\{\d+\})?ppolicy\s*$", ldif, re.MULTILINE | re.IGNORECASE
+    ):
         found.append("ppolicy")
     if re.search(r"^olcLastBind:\s*TRUE\s*$", ldif, re.MULTILINE | re.IGNORECASE):
         found.append("olcLastBind")

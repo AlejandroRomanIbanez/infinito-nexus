@@ -45,7 +45,10 @@ BASE = {
     "SYS_SVC_CONTAINER_DATA_ROOT": "",
     "swarm": {"registry": {"host": "reg", "port": 5000}},
     "inventory_hostname": "wrk-01",
-    "groups": {"svc-registry-cache": [], "svc-swarm-manager": ["mgr-01", "mgr-02", "mgr-03"]},
+    "groups": {
+        "svc-registry-cache": [],
+        "svc-swarm-manager": ["mgr-01", "mgr-02", "mgr-03"],
+    },
     "group_names": ["svc-virt-kata"],
     "ansible_facts": {"os_family": "Debian"},
     "SYS_SVC_CONTAINER_DOCKER_FIREWALL_BACKEND_BY_OS_FAMILY": {"Debian": "iptables"},

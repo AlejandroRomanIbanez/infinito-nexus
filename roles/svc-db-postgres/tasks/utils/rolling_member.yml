@@ -2,7 +2,8 @@
 # Param: rolling_member - Patroni member to restart when a setting needs it
 - name: "🔄 POSTGRES | Restart {{ rolling_member }} for pending settings"
   ansible.builtin.command: # nocheck: container-exec-resolver  POSTGRES_PRIMARY_CID is the Patroni primary resolved at runtime
-    argv: "{{ ['container', 'exec', '--user', 'postgres', POSTGRES_PRIMARY_CID] + (POSTGRES_PATRONICTL | split) + ['restart', entity_name, rolling_member, '--pending', '--force'] }}"
+    argv: "{{ ['container', 'exec', '--user', 'postgres', POSTGRES_PRIMARY_CID] + (POSTGRES_PATRONICTL | split) + ['restart', entity_name, rolling_member, '--pending',
+      '--force'] }}"
 
 - name: "⏳ POSTGRES | Wait until {{ rolling_member }} is healthy again"
   ansible.builtin.command: # nocheck: container-exec-resolver  POSTGRES_PRIMARY_CID is the Patroni primary resolved at runtime

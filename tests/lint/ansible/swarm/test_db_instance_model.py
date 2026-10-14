@@ -57,7 +57,9 @@ class TestDbInstanceBackup(unittest.TestCase):
     def test_ha_instance_names_keep_engine_word(self):
         nodes = ["mgr-01", "mgr-02", "mgr-03"]
         offenders = []
-        for app_id in sorted(r for r in ha_engines() if ha_spec(r)["backup"] == BACKUP_SQL):
+        for app_id in sorted(
+            r for r in ha_engines() if ha_spec(r)["backup"] == BACKUP_SQL
+        ):
             engine = engine_word(app_id)
             model = build_instances(
                 app_id, nodes, deployment_mode="swarm", swarm_nodes=nodes
@@ -82,7 +84,9 @@ class TestDbInstanceBackup(unittest.TestCase):
             "which keeps replica database volumes out of file-level backups and fails "
             "on a missing dump",
         )
-        gate_block = text.split("\nBKP_VOLUME_2_LOCAL_HA_GATE_ARGS:", 1)[1].split("\n\n", 1)[0]
+        gate_block = text.split("\nBKP_VOLUME_2_LOCAL_HA_GATE_ARGS:", 1)[1].split(
+            "\n\n", 1
+        )[0]
         self.assertIn("BKP_VOLUME_2_LOCAL_HA_GATE_BIN", gate_block)
         self.assertIn(
             "BKP_VOLUME_2_LOCAL_HA_LOCAL",
@@ -94,7 +98,9 @@ class TestDbInstanceBackup(unittest.TestCase):
     def test_unbacked_engines_disable_backup(self):
         offenders = []
         for role in sorted(r for r in ha_engines() if not ha_spec(r)["backup"]):
-            services = load_yaml(PROJECT_ROOT / "roles" / role / ROLE_FILE_META_SERVICES)
+            services = load_yaml(
+                PROJECT_ROOT / "roles" / role / ROLE_FILE_META_SERVICES
+            )
             entity = get_entity_name(role)
             if not (services.get(entity, {}).get("backup") or {}).get("disabled"):
                 offenders.append(role)
@@ -120,7 +126,9 @@ class TestDbInstanceBackup(unittest.TestCase):
             if ha_spec(role)["backup"] and not ha_spec(role)["probe"]
         ]
         self.assertEqual(
-            offenders, [], "the backup gate needs ha.primary_probe for every ha.backup engine"
+            offenders,
+            [],
+            "the backup gate needs ha.primary_probe for every ha.backup engine",
         )
 
 

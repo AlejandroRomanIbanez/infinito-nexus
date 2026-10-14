@@ -15,9 +15,7 @@ def _conflicts(applications):
     ):
         lookup = LookupModule()
         lookup._templar = None
-        return lookup.run(
-            ["svc-db-openldap"], variables={}, exposure_conflicts=True
-        )[0]
+        return lookup.run(["svc-db-openldap"], variables={}, exposure_conflicts=True)[0]
 
 
 class TestExposureConflictsLookup(unittest.TestCase):
@@ -28,9 +26,7 @@ class TestExposureConflictsLookup(unittest.TestCase):
 
     def test_public_ldaps_is_reported(self):
         applications = {
-            "svc-db-openldap": {
-                "services": {"openldap": {"network": {"public": True}}}
-            }
+            "svc-db-openldap": {"services": {"openldap": {"network": {"public": True}}}}
         }
         conflicts = _conflicts(applications)
         self.assertEqual(len(conflicts), 1)

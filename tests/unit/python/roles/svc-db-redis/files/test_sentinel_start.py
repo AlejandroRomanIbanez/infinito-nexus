@@ -32,7 +32,9 @@ printf '%s\\n' "$@" > "$FAKE_DIR/argv"
 
 
 def _read(path):
-    return path.read_text(encoding="utf-8")  # nocheck: cache-read  tempdir file the script under test rewrites
+    return path.read_text(
+        encoding="utf-8"
+    )  # nocheck: cache-read  tempdir file the script under test rewrites
 
 
 class SentinelStartTests(unittest.TestCase):

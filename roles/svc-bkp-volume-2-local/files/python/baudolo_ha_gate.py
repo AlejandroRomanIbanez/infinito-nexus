@@ -115,9 +115,7 @@ def with_excluded(argv: Sequence[str], volumes: Sequence[str]) -> list[str]:
 def newest_generation(backups_dir: Path, repo_name: str) -> Path | None:
     """Return the most recently written generation of ``repo_name``."""
     generations = [
-        path
-        for path in backups_dir.glob(f"*/{repo_name}/*")
-        if path.is_dir()
+        path for path in backups_dir.glob(f"*/{repo_name}/*") if path.is_dir()
     ]
     return max(generations, key=lambda p: p.stat().st_mtime, default=None)
 
@@ -158,7 +156,9 @@ def purge_file_copies(generation: Path | None, volumes: Sequence[str]) -> None:
 def main(argv: Sequence[str] | None = None, runner: Runner = _run) -> int:
     args = list(sys.argv[1:] if argv is None else argv)
     if "--" not in args:
-        report("usage: baudolo-ha-gate --config F --backups-dir D --repo-name N -- CMD...")
+        report(
+            "usage: baudolo-ha-gate --config F --backups-dir D --repo-name N -- CMD..."
+        )
         return USAGE
     split = args.index("--")
     parser = argparse.ArgumentParser(prog="baudolo-ha-gate")

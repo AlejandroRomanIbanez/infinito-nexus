@@ -606,7 +606,10 @@ class DatabaseLookupTests(unittest.TestCase):
     def test_ha_does_not_touch_a_dedicated_database(self):
         vars_ = self._dedicated_vars(
             DEPLOYMENT_MODE="swarm",
-            groups={"svc-db-postgres": ["m1", "m2", "m3"], "svc-swarm-node": ["m1", "m2", "m3"]},
+            groups={
+                "svc-db-postgres": ["m1", "m2", "m3"],
+                "svc-swarm-node": ["m1", "m2", "m3"],
+            },
         )
         out = self._resolve(vars_)
         self.assertEqual(out["service_name"], "foo_database")

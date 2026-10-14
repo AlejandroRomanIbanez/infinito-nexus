@@ -41,7 +41,9 @@ class TestPerInstanceConfig(unittest.TestCase):
         configs = load_yaml_str(out)["configs"]
         self.assertEqual(set(configs), {"cn_config_m1", "cn_config_m2"})
         self.assertEqual(configs["cn_config_m2"]["file"], "/srv/cn-config/m2.ldif")
-        self.assertNotEqual(configs["cn_config_m1"]["name"], configs["cn_config_m2"]["name"])
+        self.assertNotEqual(
+            configs["cn_config_m1"]["name"], configs["cn_config_m2"]["name"]
+        )
 
     def test_standalone_declares_none(self):
         out = compose_volumes(
@@ -58,7 +60,13 @@ class TestPerInstanceConfig(unittest.TestCase):
         )
         self.assertEqual(
             load_yaml_str(out)["configs"],
-            [{"source": "cn_config_m2", "target": "/etc/ldap/cn-config.ldif", "mode": 0o444}],
+            [
+                {
+                    "source": "cn_config_m2",
+                    "target": "/etc/ldap/cn-config.ldif",
+                    "mode": 0o444,
+                }
+            ],
         )
 
     def test_standalone_service_mounts_nothing(self):

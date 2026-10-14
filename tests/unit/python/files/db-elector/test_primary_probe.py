@@ -55,8 +55,9 @@ class TestElectorPrimaryProbe(unittest.TestCase):
 
     def test_writer(self):
         self.assertEqual(self._run(0), 0)
-        self.assertIn("exec cid-mariadb-m1 python3 -c", self.log.read_text())  # nocheck: cache-read  the stub appends to this log during the test, a cached read would go stale
-        self.assertIn("/writer", self.log.read_text())  # nocheck: cache-read  the stub appends to this log during the test, a cached read would go stale
+        log = self.log.read_text()  # nocheck: cache-read  the stub appends to this log during the test, a cached read would go stale
+        self.assertIn("exec cid-mariadb-m1 python3 -c", log)
+        self.assertIn("/writer", log)
 
     def test_no_writer(self):
         self.assertEqual(self._run(1), 1)

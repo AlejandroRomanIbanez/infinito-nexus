@@ -6,14 +6,13 @@ import unittest
 import urllib.error
 from unittest import mock
 
-from . import _NAME  # noqa: F401  side-effect import registers infinito_elector_src
-
-
 from infinito_elector_src.lock import (
     EtcdLeaseLock,
     LockError,
     http_transport,
 )
+
+from . import _NAME  # noqa: F401  side-effect import registers infinito_elector_src
 
 
 def _b64(text: str) -> str:

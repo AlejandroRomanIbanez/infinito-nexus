@@ -19,7 +19,7 @@
 - name: "🔄 db_ha_rolling | move '{{ roll_member }}' to its rendered spec"
   ansible.builtin.command:
     argv:
-      - docker
+      - container
       - stack
       - deploy
       - --compose-file

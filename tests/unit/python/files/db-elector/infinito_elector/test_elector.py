@@ -3,12 +3,11 @@ from __future__ import annotations
 import threading
 import unittest
 
-from . import _NAME  # noqa: F401  side-effect import registers infinito_elector_src
-
-
 from infinito_elector_src.elector import Elector, FatalError
 from infinito_elector_src.lock import Lock, LockError
 from infinito_elector_src.roles import Role, RoleError
+
+from . import _NAME  # noqa: F401  side-effect import registers infinito_elector_src
 
 
 class Clock:

@@ -1,3 +1,4 @@
+SET SESSION sql_log_bin = 0;
 SET @sql_alter := CONCAT("ALTER USER IF EXISTS 'root'@'%' IDENTIFIED BY ", QUOTE(@root_pwd), ";");
 PREPARE stmt FROM @sql_alter;
 EXECUTE stmt;
