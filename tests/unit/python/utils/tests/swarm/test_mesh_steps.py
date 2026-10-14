@@ -11,10 +11,11 @@ from utils.tests.swarm import mesh as mesh_steps
 MESH = """\
 applications:
   svc-net-wireguard:
-    meshes:
-      swarm:
-        host: {host}
-        address: {address}
+    networks:
+      interfaces:
+        - name: swarm
+          host: {host}
+          address: {address}
 """
 
 
@@ -60,10 +61,10 @@ class TestSwitchToMeshTransport(unittest.TestCase):
         self.assertNotIn("ansible_host", doc)
 
 
-EXAMPLE = "inventories/examples/wireguard-three-meshes/meshes.yml"
+EXAMPLE = "inventories/examples/wireguard-three-meshes/wireguard.yml"
 
 
-class TestDeclarations(unittest.TestCase):
+class TestLayout(unittest.TestCase):
     def _env(self, meshes: str):
         return mock.patch.dict(
             "os.environ",
@@ -79,14 +80,29 @@ class TestDeclarations(unittest.TestCase):
         with self._env(EXAMPLE):
             self.assertEqual(mesh_steps.transport_mesh(), "alpha")
 
-    def test_the_writer_is_handed_the_chosen_declarations(self):
+    def test_the_layout_is_handed_over_as_inventory_values(self):
+        """The round bakes it into host_vars, where the writer reads it."""
+        with self._env(EXAMPLE):
+            applications = mesh_steps.layout_applications()
+        self.assertEqual(
+            ["alpha", "beta", "gamma"],
+            [
+                mesh["name"]
+                for mesh in applications["svc-net-wireguard"]["networks"]["meshes"]
+            ],
+        )
+        self.assertEqual(
+            ["alpha"], applications["svc-swarm-node"]["networks"]["meshes"]
+        )
+
+    def test_the_writer_reads_the_meshes_from_the_inventory(self):
         with (
             self._env(EXAMPLE),
             mock.patch.object(mesh_steps, "run_step", return_value=0) as step,
         ):
             self.assertEqual(mesh_steps.write_mesh(inv_dir="/tmp/inv"), 0)
         argv = step.call_args.args[0]
-        self.assertTrue(argv[argv.index("--group-vars-file") + 1].endswith(EXAMPLE))
+        self.assertNotIn("--group-vars-file", argv)
         self.assertEqual(argv[argv.index("--controller-mesh") + 1], "alpha")
 
 
