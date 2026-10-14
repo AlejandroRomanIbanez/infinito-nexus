@@ -10,7 +10,7 @@ import sys
 from pathlib import Path
 
 from utils import PROJECT_ROOT
-from utils.cache.yaml import dump_yaml
+from utils.cache.yaml import dump_yaml, load_yaml_any
 from utils.env.parser import parse_static_env
 from utils.tests.swarm.extend_inventory import mesh_enabled
 from utils.tests.swarm.run import run_step
@@ -23,13 +23,29 @@ _SWARM_EXTRAS_VARS = "inventories/development/swarm.yml"
 _DEFAULT_ADMIN_KEY = "/tmp/swarm-nfs-admin.key"  # noqa: S108 - ephemeral swarm-test path, overridable via KEY_PATH
 
 
-def declarations() -> Path:
-    """The mesh declarations this round deploys, from ``INFINITO_SWARM_MESHES``."""
+def layout() -> Path:
+    """The mesh layout this round deploys, from ``INFINITO_SWARM_MESHES``."""
     path = (
         os.environ.get("INFINITO_SWARM_MESHES")
         or parse_static_env(PROJECT_ROOT / "default.env")["INFINITO_SWARM_MESHES"]
     )
     return PROJECT_ROOT / path
+
+
+def layout_applications() -> dict:
+    """The ``applications`` overrides the layout bakes into every lab host.
+
+    Every host gets the same block, and membership is per role, so a host
+    only joins the meshes its own roles name.
+    """
+    document = load_yaml_any(str(layout()), default_if_missing={}) or {}
+    return dict(document.get("applications") or {})
+
+
+def _layout_specs() -> list:
+    from cli.administration.inventory.mesh.inventory import specs_of
+
+    return specs_of(layout_applications(), [])
 
 
 def transport_mesh() -> str:
@@ -38,24 +54,20 @@ def transport_mesh() -> str:
     The first one declared, so a deployment names it by order rather than by a
     name this harness would have to know.
     """
-    from cli.administration.inventory.mesh.inventory import specs_of
-
-    return specs_of(declarations())[0].name
+    return _layout_specs()[0].name
 
 
 def stale_controller_interfaces() -> list[str]:
-    """WireGuard links on the controller left behind by other declarations.
+    """WireGuard links on the controller left behind by another layout.
 
     The controller is no lab node: locally it is the act container on the
-    host's network, so its interface outlives the round. One left by other
-    declarations still routes the pool, and the next ``wg-quick up`` fails with
+    host's network, so its interface outlives the round. One left by another
+    layout still routes the pool, and the next ``wg-quick up`` fails with
     ``RTNETLINK answers: File exists``. Only links holding an address inside
     the pool and naming no declared mesh count; any other WireGuard link on the
     host is not this harness's to remove.
     """
-    from cli.administration.inventory.mesh.inventory import specs_of
-
-    specs = specs_of(declarations())
+    specs = _layout_specs()
     declared = {spec.name for spec in specs}
     pools = {ipaddress.ip_network(spec.routed_range or spec.subnet) for spec in specs}
     listed = subprocess.run(
@@ -108,7 +120,6 @@ def write_mesh(*, inv_dir: str, rotate: bool = False) -> int:
         return 0
     args = ["--inventory", f"{inv_dir}/devices.yml"]
     args += ["--inventory", f"{inv_dir}/backup.yml"]
-    args += ["--group-vars-file", str(declarations())]
     args += ["--host-vars-dir", f"{inv_dir}/host_vars"]
     args += ["--vault-password-file", f"{inv_dir}/.password"]
     args += ["--controller", _CONTROLLER, "--controller-mesh", transport_mesh()]
