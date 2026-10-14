@@ -65,7 +65,7 @@ on:
         type: string
         default: auto
       meshes:
-        description: "Mesh declarations a meshed swarm row deploys. Empty: INFINITO_SWARM_MESHES from default.env."
+        description: "WireGuard layout a meshed swarm row deploys. Empty: INFINITO_SWARM_MESHES from default.env."
         required: false
         type: string
         default: ""
@@ -129,7 +129,7 @@ on:
         default: auto
         options: [auto, enforced, disabled]
       meshes:
-        description: "🕸️ Mesh declarations meshed swarm rows deploy. Empty: the development lab's"
+        description: "🕸️ WireGuard layout meshed swarm rows deploy. Empty: the development lab's"
         required: false
         type: string
         default: ""
