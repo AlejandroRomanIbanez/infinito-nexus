@@ -17,6 +17,7 @@
       DB_REPLICATION_SUBNET: "{{ POSTGRES_REPLICATION_SUBNET }}"
       DB_POSTGRES_PORT: "{{ POSTGRES_INTERNAL_PORT }}"
       DB_PATRONI_API_PORT: "{{ POSTGRES_PATRONI_PORT }}"
+      DB_BOOTSTRAP_ALLOWED: "{{ db_instance.legacy | bool | lower }}"
     {% else %}
     command:
       - "postgres"

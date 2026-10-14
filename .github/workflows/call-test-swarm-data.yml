@@ -2,6 +2,11 @@ name: "📦 Test: Swarm data failover"
 
 on:
   workflow_call:
+    inputs:
+      engine:
+        description: "🗄️ Engine whose failover suite runs; all runs every engine"
+        type: string
+        default: all
 
 permissions:
   contents: read
@@ -15,11 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        engine:
-          - postgres
-          - mariadb
-          - redis
-          - openldap
+        engine: ${{ fromJSON((inputs.engine == 'all' || inputs.engine == '') && '["postgres","mariadb","redis","openldap"]' || format('["{0}"]', inputs.engine)) }}
 
     env:
       SWARM_NAME: data-${{ matrix.engine }}

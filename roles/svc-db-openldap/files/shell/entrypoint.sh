@@ -179,6 +179,19 @@ stage_ha_credentials() {
     /run/secrets/elector-etcd-password /run/slapd/elector-etcd-password
 }
 
+peer_has_data() {
+  local peer url
+  for peer in ${ELECTOR_PEERS//,/ }; do
+    [ "${peer}" = "${ELECTOR_HOST_ID}" ] && continue
+    url="ldap://${ELECTOR_PEER_TEMPLATE//\{host\}/${peer}}"
+    if ldapsearch -x -o nettimeout=3 -H "${url}" -D "${LDAP_ROOT_DN}" -y /run/slapd/peer-bind-pw \
+        -s base -b "${LDAP_SUFFIX}" dn >/dev/null 2>&1; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 wait_for_ldapi() {
   local attempt
   for attempt in $(seq 1 60); do
@@ -199,11 +212,16 @@ run_ha() {
   chown -R openldap:openldap /run/slapd "${DB_DIR}" "${SLAPD_D_DIR}"
 
   render_ha_cn_config
+  stage_ha_credentials
+  # A fresh slapadd on a re-cloned legacy volume gives the suffix a new entryUUID next to peers that hold the real one.
   if [ "${OPENLDAP_HA_SEED:-false}" = "true" ]; then
-    init_mdb_files_if_needed
+    if ! has_mdb_files && peer_has_data; then
+      log "HA: a peer already serves ${LDAP_SUFFIX}; replicating instead of seeding"
+    else
+      init_mdb_files_if_needed
+    fi
   fi
   chown -R openldap:openldap "${DB_DIR}"
-  stage_ha_credentials
 
   log "HA: starting slapd on ${LDAP_PORT} as openldap (read-only until elected)"
   /usr/sbin/slapd -F "${SLAPD_D_DIR}" -d "${LDAP_LOG_LEVEL}" \

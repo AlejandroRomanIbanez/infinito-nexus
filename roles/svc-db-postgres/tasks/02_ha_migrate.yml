@@ -28,3 +28,18 @@
           - "{{ entity_name }}_{{ entity_name }}=0"
       delegate_to: "{{ STACK_HOST }}"
       run_once: true
+
+    - name: "🔧 POSTGRES | Patroni key prefix of this cluster"
+      ansible.builtin.set_fact:
+        postgres_dcs_prefix: "{{ (lookup('config', application_id, 'services.etcd.prefix') | regex_replace('/+$', '')) ~ '/' ~ entity_name ~ '/' }}"
+
+# Outside the block: its condition is re-evaluated with the overridden application_id.
+- name: "🗑️ POSTGRES | Drop Patroni state left from an earlier HA cluster"
+  ansible.builtin.include_role:
+    name: svc-dcs-etcd
+    tasks_from: delete_prefix.yml
+    apply:
+      run_once: true
+  vars:
+    application_id: svc-dcs-etcd
+    etcd_delete_prefix: "{{ postgres_dcs_prefix }}"
