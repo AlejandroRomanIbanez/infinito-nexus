@@ -2,20 +2,21 @@
 
 from __future__ import annotations
 
-import re
 import tempfile
 import unittest
 from pathlib import Path
 
 from cli.administration.inventory.mesh.__main__ import main
-from utils.cache.yaml import load_yaml_any
+from utils.cache.yaml import dump_yaml
 
 from .test_write import (
     BACKUP_INVENTORY,
     CLUSTER_INVENTORY,
-    GROUP_VARS,
     HOSTS,
+    LAYOUT,
     VAULT_PASSWORD,
+    interface_entries,
+    layout_applications,
 )
 
 CONTROLLER = "deploy-controller"
@@ -28,8 +29,9 @@ class TestMeshCli(unittest.TestCase):
         root = Path(self._tmp.name)
         self.host_vars = root / "host_vars"
         self.host_vars.mkdir()
+        layout = layout_applications(LAYOUT)
         for host in HOSTS:
-            (self.host_vars / f"{host}.yml").write_text("---\n", encoding="utf-8")
+            dump_yaml(str(self.host_vars / f"{host}.yml"), {"applications": layout})
         self.cluster = root / "devices.yml"
         self.cluster.write_text(CLUSTER_INVENTORY, encoding="utf-8")
         self.backup = root / "backup.yml"
@@ -56,10 +58,13 @@ class TestMeshCli(unittest.TestCase):
             str(self.host_vars),
             "--vault-password-file",
             str(self.vault_file),
-            "--group-vars-file",
-            str(GROUP_VARS),
             *extra,
         ]
+
+    def _mesh_names(self, host: str) -> list[str]:
+        return sorted(
+            entry["name"] for entry in interface_entries(self.host_vars, host)
+        )
 
     def test_one_invocation_writes_every_member(self):
         self.assertEqual(main(self._argv()), 0)
@@ -77,7 +82,7 @@ class TestMeshCli(unittest.TestCase):
 
     def test_restricting_to_one_mesh_leaves_the_other_unwritten(self):
         self.assertEqual(main(self._argv("--mesh", "swarm")), 0)
-        self.assertNotIn("data:", self._text("nfs-server"))
+        self.assertEqual([], self._mesh_names("nfs-server"))
 
     def test_the_controller_is_pruned_although_no_group_holds_it(self):
         argv = self._argv("--controller", CONTROLLER, "--controller-mesh", "swarm")
@@ -87,15 +92,16 @@ class TestMeshCli(unittest.TestCase):
         )
 
         self.assertEqual(main(argv), 0)
-        text = self._text(CONTROLLER)
-        self.assertIn("swarm:", text)
-        self.assertNotIn("data:", text)
+        self.assertEqual(["swarm"], self._mesh_names(CONTROLLER))
 
     def test_the_controller_joins_the_first_declared_mesh_by_default(self):
         self.assertEqual(main(self._argv("--controller", CONTROLLER)), 0)
-        text = self._text(CONTROLLER)
-        self.assertIn("swarm:", text)
-        self.assertNotIn("data:", text)
+        self.assertEqual(["swarm"], self._mesh_names(CONTROLLER))
+
+    def test_a_host_vars_tree_without_declarations_fails(self):
+        for host in HOSTS:
+            (self.host_vars / f"{host}.yml").write_text("---\n", encoding="utf-8")
+        self.assertEqual(main(self._argv()), 1)
 
     def test_a_controller_mesh_nobody_declared_fails(self):
         argv = self._argv("--controller", CONTROLLER, "--controller-mesh", "absent")
@@ -128,21 +134,26 @@ class TestMeshCli(unittest.TestCase):
         self.assertEqual(main(self._argv()), 0)
         self.assertEqual(main(self._argv("--rotate")), 0)
 
-        hub = self._text("swarm-mgr-01")
-        own = re.findall(r"^        public_key: (\S+)$", hub, re.MULTILINE)
-        spoke_peers = re.findall(
-            r"^          public_key: (\S+)$", self._text("swarm-wrk-01"), re.MULTILINE
-        )
+        own = [
+            entry["public_key"]
+            for entry in interface_entries(self.host_vars, "swarm-mgr-01")
+        ]
+        spoke_peers = [
+            peer["public_key"]
+            for entry in interface_entries(self.host_vars, "swarm-wrk-01")
+            for peer in entry["peers"]
+        ]
 
         self.assertEqual(2, len(own))
         self.assertEqual(1, len(set(own)))
         self.assertIn(own[0], spoke_peers)
 
     def _address(self, host: str, mesh_name: str) -> str:
-        document = load_yaml_any(str(self.host_vars / f"{host}.yml"))
-        return document["applications"]["svc-net-wireguard"]["meshes"][mesh_name][
-            "address"
-        ]
+        return next(
+            entry["address"]
+            for entry in interface_entries(self.host_vars, host)
+            if entry["name"] == mesh_name
+        )
 
     def test_growing_the_cluster_leaves_every_member_on_its_address(self):
         """A node added later must not renumber the nodes already up.
@@ -154,7 +165,10 @@ class TestMeshCli(unittest.TestCase):
         self.assertEqual(main(self._argv()), 0)
         before = {host: self._address(host, "swarm") for host in SWARM_HOSTS}
 
-        (self.host_vars / "alpha-wrk-00.yml").write_text("---\n", encoding="utf-8")
+        dump_yaml(
+            str(self.host_vars / "alpha-wrk-00.yml"),
+            {"applications": layout_applications(LAYOUT)},
+        )
         self.cluster.write_text(
             CLUSTER_INVENTORY.replace(
                 "        swarm-wrk-01: {}",
