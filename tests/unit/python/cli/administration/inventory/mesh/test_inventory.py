@@ -1,10 +1,9 @@
-"""Reading declarations, wherever an inventory keeps them.
+"""Reading the meshes and their members out of an inventory.
 
-An inventory declares its own meshes, so the declarations are not necessarily
-a neighbour of the platform's ``group_vars/all``. When the pool reference
-cannot be followed, ``routed_range`` narrows from the pool to the mesh's own
-subnet without saying so, and a spoke stops routing to the planes it is not a
-member of -- the hub being in both is the whole point.
+The declarations are the hub's ``svc-net-wireguard.networks.meshes`` and the
+memberships every other role's ``networks.meshes``, both in ``host_vars``. A
+reader that drops a value instead of refusing it deploys a host without the
+tunnel its inventory asked for, and nothing says so until traffic is tried.
 """
 
 from __future__ import annotations
@@ -13,87 +12,187 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from cli.administration.inventory.mesh.inventory import groups_of, specs_of
-from utils.cache.yaml import dump_yaml
+from cli.administration.inventory.mesh.inventory import (
+    groups_of,
+    hub_of,
+    pool_of,
+    specs_of,
+    topology_of,
+)
+from utils.cache.yaml import dump_yaml, load_yaml_any
 
 from . import PROJECT_ROOT
 
-DECLARATIONS = {
-    "WIREGUARD_MESHES": [
-        {
-            "name": "alpha",
-            "hub_group": "svc-swarm-manager",
-            "spoke_groups": ["svc-swarm-node"],
-            "subnet": "10.100.10.0/24",
-            "listen_port": 51830,
+DECLARED = {
+    "svc-net-wireguard": {
+        "networks": {
+            "meshes": [
+                {"name": "alpha", "subnet": "10.100.10.0/24", "listen_port": 51830},
+                {"name": "beta", "subnet": "10.100.11.0/24", "listen_port": 51831},
+            ]
         }
-    ],
+    }
+}
+
+GROUPS = {
+    "svc-swarm-manager": ["mgr"],
+    "svc-swarm-node": ["mgr", "wrk-1", "wrk-2"],
+    "svc-storage-nfs-server": ["nfs"],
+    "svc-bkp-nfs-2-local": ["nfs"],
 }
 
 
-class TestPoolResolution(unittest.TestCase):
+def _joins(role: str, *meshes: str) -> dict:
+    return {role: {"networks": {"meshes": list(meshes)}}}
+
+
+class InventoryOnDisk(unittest.TestCase):
     def setUp(self):
-        self.tmp = tempfile.TemporaryDirectory()
-        self.addCleanup(self.tmp.cleanup)
-        self.directory = Path(self.tmp.name)
-        self.path = self.directory / "meshes.yml"
+        self._tmp = tempfile.TemporaryDirectory()
+        self.addCleanup(self._tmp.cleanup)
+        self.root = Path(self._tmp.name)
+        self.host_vars = self.root / "host_vars"
+        self.host_vars.mkdir()
 
-    def test_declarations_silent_about_the_pool_route_the_platform_one(self):
+    def _host(self, host: str, *blocks: dict) -> None:
+        applications: dict = {}
+        for block in blocks:
+            applications.update(block)
+        dump_yaml(str(self.host_vars / f"{host}.yml"), {"applications": applications})
+
+    def _topology(self, groups=None):
+        specs = specs_of(DECLARED, [])
+        return topology_of(groups or GROUPS, self.host_vars, specs)
+
+
+class TestDeclarations(unittest.TestCase):
+    def test_the_meshes_keep_their_declaration_order(self):
+        self.assertEqual(["alpha", "beta"], [s.name for s in specs_of(DECLARED, [])])
+
+    def test_a_silent_declaration_routes_the_platform_pool(self):
         """Restating the pool per deployment is the duplication to avoid."""
-        dump_yaml(str(self.path), dict(DECLARATIONS))
-        self.assertEqual("10.100.0.0/16", specs_of(self.path)[0].routed_range)
+        self.assertEqual("10.100.0.0/16", specs_of(DECLARED, [])[0].routed_range)
 
-    def test_a_neighbour_wins_over_the_platform(self):
-        dump_yaml(str(self.path), dict(DECLARATIONS))
-        dump_yaml(
-            str(self.directory / "00_own.yml"), {"NETWORK_MESH_POOL": "10.100.0.0/17"}
-        )
-        self.assertEqual("10.100.0.0/17", specs_of(self.path)[0].routed_range)
-
-    def test_a_deployment_may_declare_its_own_pool(self):
-        dump_yaml(
-            str(self.path),
-            {**DECLARATIONS, "WIREGUARD_SUBNET_POOL": "10.100.0.0/18"},
-        )
-        self.assertEqual("10.100.0.0/18", specs_of(self.path)[0].routed_range)
-
-    def test_a_reference_nothing_defines_is_refused(self):
-        dump_yaml(
-            str(self.path),
-            {**DECLARATIONS, "WIREGUARD_SUBNET_POOL": "{{ NOT_DECLARED_ANYWHERE }}"},
-        )
+    def test_an_inventory_without_declarations_is_refused(self):
         with self.assertRaises(ValueError) as raised:
-            specs_of(self.path)
-        self.assertIn("NOT_DECLARED_ANYWHERE", str(raised.exception))
+            specs_of({}, [])
+        self.assertIn("networks.meshes", str(raised.exception))
+
+    def test_a_mesh_declared_twice_is_refused(self):
+        twice = {
+            "svc-net-wireguard": {
+                "networks": {
+                    "meshes": [
+                        {"name": "a", "subnet": "10.100.1.0/24", "listen_port": 1},
+                        {"name": "a", "subnet": "10.100.2.0/24", "listen_port": 2},
+                    ]
+                }
+            }
+        }
+        with self.assertRaises(ValueError):
+            specs_of(twice, [])
 
 
-class TestTheShippedExample(unittest.TestCase):
-    """The example inventory is the claim that a deployment declares its own."""
+class TestPool(InventoryOnDisk, unittest.TestCase):
+    def test_the_platform_pool_applies_by_default(self):
+        self.assertEqual("10.100.0.0/16", pool_of([]))
+
+    def test_a_deployment_narrows_it_in_its_own_group_vars(self):
+        inventory = self.root / "devices.yml"
+        inventory.write_text("all: {}\n", encoding="utf-8")
+        (self.root / "group_vars").mkdir()
+        dump_yaml(
+            str(self.root / "group_vars" / "all.yml"),
+            {"NETWORK_MESH_POOL": "10.100.0.0/17"},
+        )
+        self.assertEqual("10.100.0.0/17", pool_of([inventory]))
+        self.assertEqual(
+            "10.100.0.0/17", specs_of(DECLARED, [inventory])[0].routed_range
+        )
+
+
+class TestTopology(InventoryOnDisk, unittest.TestCase):
+    def test_a_host_joins_what_its_roles_list(self):
+        self._host("wrk-1", _joins("svc-swarm-node", "alpha"))
+        self._host("nfs", _joins("svc-storage-nfs-server", "beta"))
+        topology = self._topology()
+        self.assertEqual(("wrk-1",), topology.spokes["alpha"])
+        self.assertEqual(("nfs",), topology.spokes["beta"])
+
+    def test_two_hosts_of_one_role_may_sit_in_different_meshes(self):
+        """Membership is a host value, so a role does not bind every host."""
+        self._host("wrk-1", _joins("svc-swarm-node", "alpha"))
+        self._host("wrk-2", _joins("svc-swarm-node", "beta"))
+        topology = self._topology()
+        self.assertEqual(("wrk-1",), topology.spokes["alpha"])
+        self.assertEqual(("wrk-2",), topology.spokes["beta"])
+
+    def test_two_roles_naming_one_mesh_admit_the_host_once(self):
+        self._host(
+            "nfs",
+            _joins("svc-storage-nfs-server", "beta"),
+            _joins("svc-bkp-nfs-2-local", "beta"),
+        )
+        self.assertEqual(("nfs",), self._topology().spokes["beta"])
+
+    def test_a_role_the_host_does_not_carry_admits_nothing(self):
+        """The lab bakes one block into every host, so this is the common case."""
+        self._host("wrk-1", _joins("svc-storage-nfs-server", "beta"))
+        self.assertEqual((), self._topology().spokes["beta"])
+
+    def test_the_hub_is_in_every_mesh_and_never_a_spoke(self):
+        self._host("mgr", DECLARED, _joins("svc-swarm-node", "alpha"))
+        topology = self._topology()
+        self.assertEqual("mgr", topology.hub)
+        self.assertNotIn("mgr", topology.spokes["alpha"])
+
+    def test_a_mesh_nobody_declared_is_refused(self):
+        self._host("wrk-1", _joins("svc-swarm-node", "omega"))
+        with self.assertRaises(ValueError) as raised:
+            self._topology()
+        self.assertIn("omega", str(raised.exception))
+        self.assertIn("svc-swarm-node", str(raised.exception))
+
+    def test_the_declaring_role_itself_joins_nothing(self):
+        self._host("wrk-1", DECLARED)
+        groups = {**GROUPS, "svc-net-wireguard": ["wrk-1"]}
+        self.assertEqual((), self._topology(groups).spokes["alpha"])
+
+    def test_a_hub_role_without_exactly_one_host_is_refused(self):
+        for hosts in ([], ["a", "b"]):
+            with self.subTest(hosts=hosts), self.assertRaises(ValueError):
+                hub_of({**GROUPS, "svc-swarm-manager": hosts})
+
+
+class TestTheShippedExample(InventoryOnDisk, unittest.TestCase):
+    """The example is the claim that a deployment declares its own."""
 
     EXAMPLE = PROJECT_ROOT / "inventories" / "examples" / "wireguard-three-meshes"
 
     def setUp(self):
-        if not self.EXAMPLE.is_dir():
-            self.skipTest(f"{self.EXAMPLE} is absent")
-        self.specs = specs_of(self.EXAMPLE / "meshes.yml")
+        super().setUp()
+        layout = load_yaml_any(str(self.EXAMPLE / "wireguard.yml"))["applications"]
         self.groups = groups_of([self.EXAMPLE / "inventory.yml"])
+        for host in {h for members in self.groups.values() for h in members}:
+            self._host(host, layout)
+        self.specs = specs_of(layout, [])
+        self.topology = topology_of(self.groups, self.host_vars, self.specs)
 
-    def test_it_declares_more_than_the_two_the_platform_used_to_ship(self):
-        self.assertGreater(len(self.specs), 2)
+    def test_it_declares_more_than_two_meshes(self):
+        self.assertEqual(["alpha", "beta", "gamma"], [s.name for s in self.specs])
 
     def test_every_mesh_routes_the_whole_pool_so_the_planes_can_reach_each_other(self):
         for spec in self.specs:
             with self.subTest(mesh=spec.name):
                 self.assertEqual("10.100.0.0/16", spec.routed_range)
 
-    def test_one_host_hubs_every_mesh(self):
-        hubs = {spec.hub_group for spec in self.specs}
-        self.assertEqual(1, len(hubs))
-        self.assertEqual(1, len(self.groups[hubs.pop()]))
-
-    def test_every_group_it_names_is_a_group_the_inventory_declares(self):
-        """A group nobody declares resolves to no spokes, silently."""
-        for spec in self.specs:
-            for group in spec.spoke_groups:
-                with self.subTest(mesh=spec.name, group=group):
-                    self.assertIn(group, self.groups)
+    def test_every_mesh_gets_the_members_its_table_promises(self):
+        self.assertEqual("mesh-hub-01", self.topology.hub)
+        self.assertEqual(
+            {
+                "alpha": ("mesh-wrk-01", "mesh-wrk-02"),
+                "beta": ("mesh-nfs-01",),
+                "gamma": ("mesh-bkp-01",),
+            },
+            self.topology.spokes,
+        )
