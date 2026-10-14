@@ -144,7 +144,7 @@ def prune_foreign_meshes(
     return removed
 
 
-def _peer_entries(mesh: Mesh, host: str) -> list[CommentedMap]:
+def _peer_entries(mesh: Mesh, host: str, *, routes_pool: bool) -> list[CommentedMap]:
     entries: list[CommentedMap] = []
     for peer in mesh.peers_of(host):
         entry = CommentedMap()
@@ -152,11 +152,12 @@ def _peer_entries(mesh: Mesh, host: str) -> list[CommentedMap]:
         entry["endpoint"] = peer.endpoint or peer.host
         entry["public_key"] = peer.public_key
         entry["address"] = peer.address
-        entry["allowed_ips"] = (
-            (mesh.spec.routed_range or mesh.spec.subnet)
-            if peer.is_hub
-            else peer.address + HOST_PREFIX_32
-        )
+        if not peer.is_hub:
+            entry["allowed_ips"] = peer.address + HOST_PREFIX_32
+        elif routes_pool:
+            entry["allowed_ips"] = mesh.spec.routed_range or mesh.spec.subnet
+        else:
+            entry["allowed_ips"] = mesh.spec.subnet
         entry["is_hub"] = peer.is_hub
         entries.append(entry)
     return entries
@@ -167,14 +168,27 @@ def write_mesh(
     host_vars_dir: Path,
     vault_password_file: Path,
     application_id: str = DEFAULT_APPLICATION_ID,
+    primary: dict[str, str] | None = None,
 ) -> list[Path]:
-    """Write ``mesh`` into every member's host_vars and return the paths."""
+    """Write ``mesh`` into every member's host_vars and return the paths.
+
+    Args:
+        mesh: the resolved mesh.
+        host_vars_dir: directory holding one ``<host>.yml`` per member.
+        vault_password_file: password file the private keys are encrypted with.
+        application_id: application block the mesh is written under.
+        primary: hostname to its primary mesh
+            (:func:`~cli.administration.inventory.mesh.plan.primary_meshes`).
+            A host this mesh is not primary for routes only the mesh subnet
+            through it. Absent hosts count this mesh as their primary.
+    """
     written: list[Path] = []
     key_name = private_key_name()
 
     for member in mesh.members:
         path = host_vars_path(host_vars_dir, member.host)
         document = load_document(path) if path.exists() else CommentedMap()
+        is_primary = (primary or {}).get(member.host, mesh.spec.name) == mesh.spec.name
 
         app = ensure_map(ensure_map(document, "applications"), application_id)
         entry = ensure_map(ensure_map(app, MESHES_KEY), mesh.spec.name)
@@ -183,8 +197,9 @@ def write_mesh(
         entry["subnet"] = mesh.spec.subnet
         entry["listen_port"] = mesh.spec.listen_port
         entry["is_hub"] = member.is_hub
+        entry["primary"] = is_primary
         entry["public_key"] = member.public_key
-        entry["peers"] = _peer_entries(mesh, member.host)
+        entry["peers"] = _peer_entries(mesh, member.host, routes_pool=is_primary)
 
         if member.private_key is not None:
             credentials = ensure_map(ensure_map(app, SECRETS_KEY), CREDENTIALS_KEY)
