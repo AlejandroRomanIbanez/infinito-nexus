@@ -1,10 +1,16 @@
-"""Project a resolved mesh onto the host_vars of every member."""
+"""Project a resolved mesh onto the host_vars of every member.
+
+Each host records what it holds on every mesh as one entry of
+``svc-net-wireguard.networks.interfaces``. The entry is the host's own state,
+not a declaration, so it is written here and read through
+:mod:`utils.networks.mesh`.
+"""
 
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from ruamel.yaml.comments import CommentedMap
+from ruamel.yaml.comments import CommentedMap, CommentedSeq
 
 from cli.administration.inventory.provision.ruamel_io import (
     dump_document,
@@ -13,6 +19,12 @@ from cli.administration.inventory.provision.ruamel_io import (
     vault_value,
 )
 from utils.manager.credential_key import CREDENTIALS_KEY, SECRETS_KEY
+from utils.networks.mesh import (
+    APPLICATION_ID,
+    INTERFACES_KEY,
+    interfaces,
+    owned_interface,
+)
 
 from .keys import is_valid_public_key
 
@@ -21,8 +33,6 @@ if TYPE_CHECKING:
 
     from .model import Mesh
 
-DEFAULT_APPLICATION_ID = "svc-net-wireguard"
-MESHES_KEY = "meshes"
 HOST_PREFIX_32 = "/32"
 
 
@@ -38,20 +48,18 @@ def host_vars_path(host_vars_dir: Path, host: str) -> Path:
     return host_vars_dir / f"{host}.yml"
 
 
-def _mesh_entry(document: CommentedMap, mesh_name: str, application_id: str) -> dict:
-    return (
-        document.get("applications", {})
-        .get(application_id, {})
-        .get(MESHES_KEY, {})
-        .get(mesh_name, {})
-    )
+def _interface_list(document: CommentedMap) -> CommentedSeq:
+    app = ensure_map(ensure_map(document, "applications"), APPLICATION_ID)
+    networks = ensure_map(app, "networks")
+    listed = networks.get(INTERFACES_KEY)
+    if not isinstance(listed, list):
+        listed = CommentedSeq()
+        networks[INTERFACES_KEY] = listed
+    return listed
 
 
 def existing_public_keys(
-    host_vars_dir: Path,
-    hosts: list[str],
-    mesh_name: str,
-    application_id: str = DEFAULT_APPLICATION_ID,
+    host_vars_dir: Path, hosts: list[str], mesh_name: str
 ) -> dict[str, str]:
     """The public keys already issued to ``hosts`` for ``mesh_name``."""
     found: dict[str, str] = {}
@@ -60,16 +68,12 @@ def existing_public_keys(
         if not path.exists():
             continue
         document = load_document(path)
-        meshes = (
-            document.get("applications", {}).get(application_id, {}).get(MESHES_KEY, {})
-        )
+        applications = document.get("applications", {})
+        own = owned_interface(applications, host, mesh_name)
         owned = [
             entry
-            for entry in (
-                _mesh_entry(document, mesh_name, application_id),
-                *meshes.values(),
-            )
-            if isinstance(entry, dict) and entry.get("host") == host
+            for entry in (own, *interfaces(applications))
+            if entry is not None and entry.get("host") == host
         ]
         public_key = next(
             (
@@ -83,8 +87,7 @@ def existing_public_keys(
         if public_key is None:
             continue
         credentials = (
-            document.get("applications", {})
-            .get(application_id, {})
+            applications.get(APPLICATION_ID, {})
             .get(SECRETS_KEY, {})
             .get(CREDENTIALS_KEY, {})
         )
@@ -95,10 +98,7 @@ def existing_public_keys(
 
 
 def existing_addresses(
-    host_vars_dir: Path,
-    hosts: list[str],
-    mesh_name: str,
-    application_id: str = DEFAULT_APPLICATION_ID,
+    host_vars_dir: Path, hosts: list[str], mesh_name: str
 ) -> dict[str, str]:
     """The addresses already issued to ``hosts`` on ``mesh_name``."""
     found: dict[str, str] = {}
@@ -106,20 +106,16 @@ def existing_addresses(
         path = host_vars_path(host_vars_dir, host)
         if not path.exists():
             continue
-        entry = _mesh_entry(load_document(path), mesh_name, application_id)
-        if not isinstance(entry, dict) or entry.get("host") != host:
-            continue
-        address = entry.get("address")
+        entry = owned_interface(
+            load_document(path).get("applications", {}), host, mesh_name
+        )
+        address = (entry or {}).get("address")
         if isinstance(address, str) and address.strip():
             found[host] = address.strip()
     return found
 
 
-def prune_foreign_meshes(
-    host_vars_dir: Path,
-    hosts: list[str],
-    application_id: str = DEFAULT_APPLICATION_ID,
-) -> dict[str, list[str]]:
+def prune_foreign_meshes(host_vars_dir: Path, hosts: list[str]) -> dict[str, list[str]]:
     """Drop mesh entries a host does not own, returning what was removed."""
     removed: dict[str, list[str]] = {}
     for host in hosts:
@@ -127,20 +123,20 @@ def prune_foreign_meshes(
         if not path.exists():
             continue
         document = load_document(path)
-        meshes = (
-            document.get("applications", {}).get(application_id, {}).get(MESHES_KEY, {})
-        )
+        if not interfaces(document.get("applications", {})):
+            continue
+        listed = _interface_list(document)
         foreign = [
-            name
-            for name, entry in meshes.items()
+            entry
+            for entry in listed
             if isinstance(entry, dict) and entry.get("host") not in (None, "", host)
         ]
         if not foreign:
             continue
-        for name in foreign:
-            del meshes[name]
+        for entry in foreign:
+            listed.remove(entry)
         dump_document(path, document)
-        removed[host] = sorted(foreign)
+        removed[host] = sorted(str(entry.get("name")) for entry in foreign)
     return removed
 
 
@@ -163,11 +159,20 @@ def _peer_entries(mesh: Mesh, host: str, *, routes_pool: bool) -> list[Commented
     return entries
 
 
+def _entry_for(listed: CommentedSeq, mesh_name: str) -> CommentedMap:
+    for entry in listed:
+        if isinstance(entry, dict) and entry.get("name") == mesh_name:
+            return entry
+    entry = CommentedMap()
+    entry["name"] = mesh_name
+    listed.append(entry)
+    return entry
+
+
 def write_mesh(
     mesh: Mesh,
     host_vars_dir: Path,
     vault_password_file: Path,
-    application_id: str = DEFAULT_APPLICATION_ID,
     primary: dict[str, str] | None = None,
 ) -> list[Path]:
     """Write ``mesh`` into every member's host_vars and return the paths.
@@ -176,7 +181,6 @@ def write_mesh(
         mesh: the resolved mesh.
         host_vars_dir: directory holding one ``<host>.yml`` per member.
         vault_password_file: password file the private keys are encrypted with.
-        application_id: application block the mesh is written under.
         primary: hostname to its primary mesh
             (:func:`~cli.administration.inventory.mesh.plan.primary_meshes`).
             A host this mesh is not primary for routes only the mesh subnet
@@ -190,8 +194,8 @@ def write_mesh(
         document = load_document(path) if path.exists() else CommentedMap()
         is_primary = (primary or {}).get(member.host, mesh.spec.name) == mesh.spec.name
 
-        app = ensure_map(ensure_map(document, "applications"), application_id)
-        entry = ensure_map(ensure_map(app, MESHES_KEY), mesh.spec.name)
+        entry = _entry_for(_interface_list(document), mesh.spec.name)
+        app = document["applications"][APPLICATION_ID]
         entry["host"] = member.host
         entry["address"] = member.address
         entry["subnet"] = mesh.spec.subnet
