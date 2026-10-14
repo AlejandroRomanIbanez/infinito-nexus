@@ -82,11 +82,26 @@ Listing one host in the `svc-db-postgres` inventory group renders the standalone
 
 **Durability promise.** No acknowledged write is lost when one node is lost. Once no synchronous standby is left, writes stop and nothing is lost (`synchronous_mode: quorum`, `synchronous_node_count: 1`, `synchronous_mode_strict: true`). When etcd loses quorum, the primary keeps serving only through `failsafe_mode` while it still reaches every member; otherwise it demotes. The recovery point after losing the whole cluster is the last successful SQL dump.
 
-**Failover budget** (derived from `ttl 20`, `loop_wait 5`, `retry_timeout 7`, `primary_start_timeout 10` and the HAProxy check timings; to be replaced by measured values):
+**Failover budget** (derived from `ttl 20`, `loop_wait 5`, `retry_timeout 7`, `primary_start_timeout 10` and the HAProxy check timings):
 
 | Instance kill | Node crash, hang or partition | Rolling change |
 |---|---|---|
 | ≈ 28 s | ≈ 30 s | ≈ 4–6 s |
+
+**Measured write gap** on the 3+1 swarm lab (`make act-swarm-data engine=postgres`), with no acknowledged write lost in any scenario:
+
+| Scenario | Write gap |
+|---|---|
+| Instance kill | 16.1–16.6 s |
+| Node crash | 25.0–25.9 s |
+| Node hang | 21.1–25.9 s |
+| Node partition | 18.3–21.1 s |
+| Leader loss (etcd) | 25.1–25.6 s |
+| Rolling change | 3.5–3.9 s |
+| etcd rebuilt from backup | 0.5 s |
+| Forget a node and re-clone it | 9.4–9.5 s; full strength after 1691–1740 s |
+| Standalone form | 0.5–0.6 s |
+| Standalone to HA migration | 0.4 s |
 
 **How it is wired.**
 
