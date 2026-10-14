@@ -63,7 +63,7 @@ on:
           - "enforced"
           - "disabled"
       meshes:
-        description: "🕸️ Mesh declarations meshed swarm rows deploy. Empty: the development lab's"
+        description: "🕸️ WireGuard layout meshed swarm rows deploy. Empty: the development lab's"
         required: false
         default: ""
         type: string
