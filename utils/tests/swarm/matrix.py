@@ -8,6 +8,7 @@ import os
 import subprocess
 import sys
 
+from plugins.filter.merge.with_defaults import merge_with_defaults
 from utils import PROJECT_ROOT
 from utils.storage.constrained import host_storage_constrained
 from utils.tests.swarm.derive_includes import derive_includes, variant_scope
@@ -16,6 +17,7 @@ from utils.tests.swarm.mesh import (
     bootstrap_mesh,
     converge_mesh,
     lab_sudo_without_prompt,
+    layout_applications,
     mesh_controller,
     switch_to_mesh_transport,
     transport_bench,
@@ -405,9 +407,12 @@ def main(argv: list[str] | None = None) -> int:
             flush=True,
         )
         pubkeys = ensure_swarm_keypairs()
+        applications = backup_applications_overrides(providers)
+        if meshed:
+            applications = merge_with_defaults(applications, layout_applications())
         vars_payload = _bake_overrides(
             base_overrides={
-                "applications": backup_applications_overrides(providers),
+                "applications": applications,
                 "users": {
                     name: {"authorized_keys": [key]} for name, key in pubkeys.items()
                 },
