@@ -143,7 +143,15 @@ class Clients:
         cids = self._spare_containers(service_id, exited=True)
         return "".join(
             shell.run(
-                ["docker", "exec", self.client_node, "docker", "logs", cid], check=False
+                [
+                    "docker",
+                    "exec",
+                    self.client_node,
+                    "sh",
+                    "-c",
+                    f"docker logs {shlex.quote(cid)} 2>&1",
+                ],
+                check=False,
             )
             for cid in cids
         )
@@ -217,9 +225,15 @@ class Clients:
 
             if not shell.wait_until(finished, timeout_s=timeout_s, interval_s=5):
                 errors = self._task_errors(self._task_rows(service_id))
+                tail = [
+                    line.strip()
+                    for line in self._spare_logs(service_id).splitlines()
+                    if line.strip()
+                ][-3:]
                 raise RuntimeError(
                     f"probe {mode} did not finish in {timeout_s}s"
-                    f" ({'; '.join(errors) or 'no task error'})"
+                    f" ({'; '.join(errors) or 'no task error'};"
+                    f" log: {' | '.join(tail) or 'empty'})"
                 )
             return records
         finally:

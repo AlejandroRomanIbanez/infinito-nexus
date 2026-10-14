@@ -416,9 +416,9 @@ class TestSpareLogsByServiceId(unittest.TestCase):
             out = ""
             if "ps" in argv:
                 out = "cnew\n" if argv[-1].endswith("service.id=sid-new") else "cold\n"
-            elif argv[-2:] == ["logs", "cnew"]:
+            elif argv[-1] == "docker logs cnew 2>&1":
                 out = "new-log\n"
-            elif argv[-2:] == ["logs", "cold"]:
+            elif argv[-1] == "docker logs cold 2>&1":
                 out = "old-log\n"
             return mock.Mock(returncode=0, stdout=out, stderr="")
 
