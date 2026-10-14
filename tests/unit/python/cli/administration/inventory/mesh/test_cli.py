@@ -91,6 +91,16 @@ class TestMeshCli(unittest.TestCase):
         self.assertIn("swarm:", text)
         self.assertNotIn("data:", text)
 
+    def test_the_controller_joins_the_first_declared_mesh_by_default(self):
+        self.assertEqual(main(self._argv("--controller", CONTROLLER)), 0)
+        text = self._text(CONTROLLER)
+        self.assertIn("swarm:", text)
+        self.assertNotIn("data:", text)
+
+    def test_a_controller_mesh_nobody_declared_fails(self):
+        argv = self._argv("--controller", CONTROLLER, "--controller-mesh", "absent")
+        self.assertEqual(main(argv), 1)
+
     def test_an_endpoint_replaces_the_hostname_peers_dial(self):
         argv = self._argv("--endpoint", "swarm-mgr-01=192.168.244.10")
         self.assertEqual(main(argv), 0)
