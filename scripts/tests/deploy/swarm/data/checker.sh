@@ -21,7 +21,15 @@ chmod 600 "${LDAP_PASSWORD_FILE}"
 printf '%s' "${PASSWORD}" >"${LDAP_PASSWORD_FILE}"
 
 now_ms() {
-	date +%s%3N
+	ns="$(date +%s%N)"
+	case "${ns}" in
+	*[!0-9]*) ns="" ;;
+	esac
+	if [ "${#ns}" -ge 19 ]; then
+		echo "${ns%??????}"
+	else
+		echo "$(($(date +%s) * 1000))"
+	fi
 }
 
 prepare() {
