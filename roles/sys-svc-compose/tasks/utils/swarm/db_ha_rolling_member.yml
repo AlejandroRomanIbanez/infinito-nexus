@@ -4,7 +4,7 @@
 # Param: _roll_config  - registered `docker stack config` output of the engine
 - name: "📄 db_ha_rolling | stack file holding only '{{ roll_member }}'"
   ansible.builtin.copy:
-    content: "{{ _roll_document | to_nice_yaml(indent=2) }}"
+    content: "{{ _roll_document | to_nice_yaml(indent=2) | replace('$', '$$') }}"
     dest: "{{ _roll_member_file }}"
     owner: root
     group: root
