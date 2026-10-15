@@ -83,6 +83,7 @@ inv_dir="$(dirname "${inv_file}")"
 ansible-playbook \
 	-i "${inv_file}" \
 	--vault-password-file "${inv_dir}/.password" \
+	-e "@${inv_dir}/swarm-nfs-extras.deploy.yml" \
 	-e "engine=${engine}" \
 	"${SCRIPT_DIR}/checker-secret.yml"
 
