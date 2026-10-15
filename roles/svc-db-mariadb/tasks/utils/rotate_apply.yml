@@ -26,7 +26,7 @@
       ansible.builtin.shell: |
         container exec -i "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ mariadb_rotate_instance.service | quote }})" {{ MARIADB_HA_SQL }}
       args:
-        stdin: "SELECT ID, USER, COMMAND, TIME, STATE, LEFT(INFO, 120) FROM information_schema.PROCESSLIST;"
+        stdin: "SELECT ID, USER, COMMAND, TIME, STATE FROM information_schema.PROCESSLIST;"
       environment:
         CONTAINER_EXEC_TIMEOUT: "{{ lookup('timeout', 30) }}"
       register: _mariadb_rotate_sessions

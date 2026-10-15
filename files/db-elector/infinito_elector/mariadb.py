@@ -168,11 +168,13 @@ class MariaDBRole(Role):
         self._sql("STOP SLAVE")
         self._sql("RESET SLAVE ALL")
         self._following = None
+        self._sql("SET GLOBAL rpl_semi_sync_master_enabled = 1")
         self._sql("SET GLOBAL read_only = 0")
 
     def follow(self, writer: str | None) -> None:
         if writer is None or writer in (self.host_id, self._following):
             return
+        self._sql("SET GLOBAL rpl_semi_sync_master_enabled = 0")
         self._sql("STOP SLAVE")
         if not self._slave_status():
             # A former writer's gtid_slave_pos predates its own writes; asking

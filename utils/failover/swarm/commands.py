@@ -247,9 +247,8 @@ def oneshot_service_argv(
         "--env",
         f"SECRET_FILE=/run/secrets/{SECRET_TARGET}",
         "--entrypoint",
-        "",
-        image,
         "sh",
+        image,
         script_path,
     ]
 

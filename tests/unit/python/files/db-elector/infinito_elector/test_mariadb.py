@@ -119,6 +119,24 @@ class TestTransitions(unittest.TestCase):
             role.become_writer()
         self.assertNotIn("SET GLOBAL read_only = 0", [s for _, s in run.calls])
 
+    SEMI_SYNC_ON = "SET GLOBAL rpl_semi_sync_master_enabled = 1"
+    SEMI_SYNC_OFF = "SET GLOBAL rpl_semi_sync_master_enabled = 0"
+
+    def test_only_the_writer_waits_for_semi_sync_acks(self) -> None:
+        role, run = _role({"local": {}})
+        role.follow("m2")
+        statements = [s for _, s in run.calls]
+        self.assertLess(
+            statements.index(self.SEMI_SYNC_OFF), statements.index("START SLAVE")
+        )
+        self.assertNotIn(self.SEMI_SYNC_ON, statements)
+        role.become_writer()
+        statements = [s for _, s in run.calls]
+        self.assertLess(
+            statements.index(self.SEMI_SYNC_ON),
+            statements.index("SET GLOBAL read_only = 0"),
+        )
+
     def test_follow_uses_gtid_slave_pos_and_feeds_the_password_on_stdin(self) -> None:
         role, run = _role({"local": {}})
         role.follow("m2")

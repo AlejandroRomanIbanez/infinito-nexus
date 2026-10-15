@@ -543,7 +543,8 @@ class TestCheckerService(unittest.TestCase):
         self.assertIn("DURATION_S=60", argv)
         self.assertIn("INTERVAL_S=0.2", argv)
         self.assertIn("TIMEOUT_S=1", argv)
-        self.assertEqual(argv[-3:], ["registry/postgres:18", "sh", swarm.CHECKER_PATH])
+        self.assertEqual(argv[-2:], ["registry/postgres:18", swarm.CHECKER_PATH])
+        self.assertEqual(argv[argv.index("--entrypoint") + 1], "sh")
 
     def test_probe_service_shares_the_secret_and_placement(self):
         argv = swarm.oneshot_service_argv(
@@ -562,7 +563,8 @@ class TestCheckerService(unittest.TestCase):
             f"source={swarm.secret_name('redis')},target=failover-checker", argv
         )
         self.assertIn("MODE=idle", argv)
-        self.assertEqual(argv[-2:], ["sh", swarm.PROBE_PATH])
+        self.assertEqual(argv[-2:], ["redis:8", swarm.PROBE_PATH])
+        self.assertEqual(argv[argv.index("--entrypoint") + 1], "sh")
 
     def test_declared_volumes_become_tmpfs_mounts(self):
         argv = swarm.checker_service_argv(
