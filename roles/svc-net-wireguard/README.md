@@ -27,7 +27,8 @@ declares three. Consumers read a host's mesh address through
 The role plans nothing. Every key, address and peer list is written into the
 inventory beforehand by `cli.administration.inventory.mesh`, the one pass that
 sees every host at once; this role renders what its own host was handed and
-then proves the result. The role is inert outside swarm mode.
+then proves the result. Outside swarm mode it acts only on a host the mesh
+CLI gave a mesh, such as a backup host deployed in its own play.
 
 ## Cosmos
 
