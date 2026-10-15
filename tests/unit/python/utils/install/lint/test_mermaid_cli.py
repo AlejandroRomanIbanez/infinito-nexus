@@ -23,13 +23,29 @@ def _done(returncode: int) -> subprocess.CompletedProcess[str]:
     return subprocess.CompletedProcess([], returncode, stdout="out\n", stderr="err\n")
 
 
-def _fake_mmdc(root: Path, *, revision: str | None = REVISION) -> Path:
+def _write_core(node_modules: Path, revision: str) -> None:
+    revisions = node_modules / "puppeteer-core" / "lib" / "puppeteer"
+    revisions.mkdir(parents=True)
+    (revisions / "revisions.js").write_text(
+        f"export const PUPPETEER_REVISIONS = Object.freeze({{\n"
+        f"    chrome: '155.0.8059.39',\n"
+        f"    'chrome-headless-shell': '{revision}',\n"
+        f"}});\n",
+        encoding="utf-8",
+    )
+
+
+def _fake_mmdc(
+    root: Path, *, revision: str | None = REVISION, nested: str | None = None
+) -> Path:
     """Lay out a global mermaid-cli install the way npm does.
 
     Args:
         root: npm prefix to build the install under.
-        revision: chrome-headless-shell revision its puppeteer-core pins, or
-            None to install mmdc without a puppeteer next to it.
+        revision: chrome-headless-shell revision of the puppeteer-core beside
+            puppeteer, or None to install mmdc without a puppeteer next to it.
+        nested: revision of a puppeteer-core nested under puppeteer, as npm
+            lays it out when mermaid-cli pins another puppeteer-core.
 
     Returns:
         The ``bin/mmdc`` symlink.
@@ -39,15 +55,9 @@ def _fake_mmdc(root: Path, *, revision: str | None = REVISION) -> Path:
     (package / "src" / "cli.js").write_text("", encoding="utf-8")
     if revision is not None:
         (package / "node_modules" / "puppeteer").mkdir(parents=True)
-        revisions = package / "node_modules" / "puppeteer-core" / "lib" / "puppeteer"
-        revisions.mkdir(parents=True)
-        (revisions / "revisions.js").write_text(
-            f"export const PUPPETEER_REVISIONS = Object.freeze({{\n"
-            f"    chrome: '155.0.8059.39',\n"
-            f"    'chrome-headless-shell': '{revision}',\n"
-            f"}});\n",
-            encoding="utf-8",
-        )
+        _write_core(package / "node_modules", revision)
+    if nested is not None:
+        _write_core(package / "node_modules" / "puppeteer" / "node_modules", nested)
     (root / "bin").mkdir()
     mmdc = root / "bin" / "mmdc"
     mmdc.symlink_to(package / "src" / "cli.js")
@@ -61,17 +71,20 @@ def _install_browser(cache: Path, revision: str) -> None:
 
 
 @contextlib.contextmanager
-def _environment(*, revision: str | None = REVISION) -> Iterator[tuple[Path, Path]]:
+def _environment(
+    *, revision: str | None = REVISION, nested: str | None = None
+) -> Iterator[tuple[Path, Path]]:
     """Patch mmdc's location and the puppeteer cache onto temporary dirs.
 
     Args:
         revision: passed to :func:`_fake_mmdc`.
+        nested: passed to :func:`_fake_mmdc`.
 
     Yields:
         The npm prefix and the puppeteer cache directory.
     """
     with TemporaryDirectory() as prefix, TemporaryDirectory() as cache:
-        mmdc = _fake_mmdc(Path(prefix), revision=revision)
+        mmdc = _fake_mmdc(Path(prefix), revision=revision, nested=nested)
         with (
             mock.patch.dict(os.environ, {"PUPPETEER_CACHE_DIR": cache}),
             mock.patch.object(mermaid_cli, "which", return_value=True),
@@ -130,19 +143,21 @@ class TestBrowserProvisioning(unittest.TestCase):
             calls, _ = self.provision(euid=0, results=[0])
         self.assertNotIn("PUPPETEER_SKIP_DOWNLOAD", calls[0].kwargs["env"])
 
-    def test_a_failed_install_clears_the_browser_cache_and_retries_once(self) -> None:
-        seen: list[bool] = []
+    def test_a_failed_install_clears_its_revision_and_retries_once(self) -> None:
+        seen: list[tuple[bool, bool]] = []
         with _environment() as (_, cache):
-            folder = cache / "chrome-headless-shell" / "linux-1"
-            folder.mkdir(parents=True)
+            partial = cache / "chrome-headless-shell" / f"linux-{REVISION}"
+            partial.mkdir(parents=True)
+            other = cache / "chrome-headless-shell" / "linux-155.0.8059.79"
+            other.mkdir(parents=True)
 
             def run(*_args, **_kwargs):
-                seen.append(folder.exists())
+                seen.append((partial.exists(), other.exists()))
                 return _done(1 if len(seen) == 1 else 0)
 
             with mock.patch.object(mermaid_cli.subprocess, "run", side_effect=run):
                 mermaid_cli.ensure()
-        self.assertEqual(seen, [True, False])
+        self.assertEqual(seen, [(True, True), (False, True)])
 
     def test_a_second_failure_warns_with_puppeteers_output(self) -> None:
         calls, warnings = self.provision(euid=0, results=[1, 1])
@@ -201,6 +216,12 @@ class TestBrowserInstalled(unittest.TestCase):
     def test_the_revision_is_read_from_mmdcs_puppeteer_core(self) -> None:
         with _environment():
             self.assertEqual(mermaid_cli.browser_revision(), REVISION)
+
+    def test_a_puppeteer_core_nested_under_puppeteer_wins(self) -> None:
+        with _environment(revision="155.0.8059.79", nested=REVISION) as (_, cache):
+            self.assertEqual(mermaid_cli.browser_revision(), REVISION)
+            _install_browser(cache, REVISION)
+            self.assertTrue(mermaid_cli.browser_installed())
 
 
 if __name__ == "__main__":

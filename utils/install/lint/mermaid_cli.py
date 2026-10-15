@@ -49,13 +49,24 @@ def _mmdc_puppeteer() -> Path | None:
     return None
 
 
+def _puppeteer_core(puppeteer: Path) -> Path | None:
+    for base in (puppeteer, *puppeteer.parents):
+        if base.name == "node_modules":
+            continue
+        core = base / "node_modules" / "puppeteer-core"
+        if core.is_dir():
+            return core
+    return None
+
+
 def browser_revision() -> str | None:
     puppeteer = _mmdc_puppeteer()
     if puppeteer is None:
         return None
-    revisions = (
-        puppeteer.parent / "puppeteer-core" / "lib" / "puppeteer" / "revisions.js"
-    )
+    core = _puppeteer_core(puppeteer)
+    if core is None:
+        return None
+    revisions = core / "lib" / "puppeteer" / "revisions.js"
     try:
         text = revisions.read_text(encoding="utf-8")  # nocheck: cache-read  npm prefix
     except OSError:
@@ -104,7 +115,10 @@ def _ensure_browser() -> None:
     try:
         done = _provision_browser(puppeteer)
         if done.returncode != 0:
-            shutil.rmtree(browser_cache(), ignore_errors=True)
+            revision = browser_revision()
+            if revision is not None:
+                for partial in browser_cache().glob(f"*-{revision}"):
+                    shutil.rmtree(partial, ignore_errors=True)
             done = _provision_browser(puppeteer)
     except (OSError, subprocess.TimeoutExpired) as exc:
         warn(f"{BROWSER} provisioning skipped (optional lint tool): {exc}")
