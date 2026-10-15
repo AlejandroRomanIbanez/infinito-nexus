@@ -16,6 +16,7 @@ PGPASSWORD="${PASSWORD}"
 MYSQL_PWD="${PASSWORD}"
 REDISCLI_AUTH="${PASSWORD}"
 export PGPASSWORD MYSQL_PWD REDISCLI_AUTH
+LDAP_ERROR_FILE="$(mktemp)"
 LDAP_PASSWORD_FILE="$(mktemp)"
 chmod 600 "${LDAP_PASSWORD_FILE}"
 printf '%s' "${PASSWORD}" >"${LDAP_PASSWORD_FILE}"
@@ -67,9 +68,9 @@ marker_write() {
 		;;
 	openldap)
 		printf 'dn: ou=failover-check,%s\nobjectClass: organizationalUnit\nou: failover-check\n\ndn: cn=marker-%s,ou=failover-check,%s\nobjectClass: device\ncn: marker-%s\n' \
-			"${BASE_DN}" "${ARG}" "${BASE_DN}" "${ARG}" | ldap_add >/dev/null 2>&1
+			"${BASE_DN}" "${ARG}" "${BASE_DN}" "${ARG}" | ldap_add >/dev/null 2>"${LDAP_ERROR_FILE}"
 		ldapsearch -x -H "ldap://${HOST}:${PORT}" -D "${USER}" -y "${LDAP_PASSWORD_FILE}" \
-			-LLL -s base -b "cn=marker-${ARG},ou=failover-check,${BASE_DN}" dn >/dev/null
+			-LLL -s base -b "cn=marker-${ARG},ou=failover-check,${BASE_DN}" dn >/dev/null 2>>"${LDAP_ERROR_FILE}"
 		;;
 	esac
 }
@@ -140,22 +141,22 @@ PY
 
 memberof_seed() {
 	printf 'dn: ou=failover-check,%s\nobjectClass: organizationalUnit\nou: failover-check\n\ndn: cn=failover-member,ou=failover-check,%s\nobjectClass: device\ncn: failover-member\n\ndn: cn=failover-group,ou=failover-check,%s\nobjectClass: groupOfNames\ncn: failover-group\nmember: cn=failover-member,ou=failover-check,%s\n' \
-		"${BASE_DN}" "${BASE_DN}" "${BASE_DN}" "${BASE_DN}" | ldap_add >/dev/null 2>&1
+		"${BASE_DN}" "${BASE_DN}" "${BASE_DN}" "${BASE_DN}" | ldap_add >/dev/null 2>"${LDAP_ERROR_FILE}"
 	ldapsearch -x -H "ldap://${HOST}:${PORT}" -D "${USER}" -y "${LDAP_PASSWORD_FILE}" \
-		-LLL -s base -b "cn=failover-group,ou=failover-check,${BASE_DN}" dn >/dev/null
+		-LLL -s base -b "cn=failover-group,ou=failover-check,${BASE_DN}" dn >/dev/null 2>>"${LDAP_ERROR_FILE}"
 }
 
 case "${MODE}" in
 ddl) ddl ;;
 marker-write)
-	if marker_write; then record marker-write ok; else record marker-write fail; fi
+	if marker_write; then record marker-write ok; else record marker-write "fail $(head -n 1 "${LDAP_ERROR_FILE}")"; fi
 	;;
 marker-read)
 	if marker_read; then record marker found; else record marker missing; fi
 	;;
 idle) idle ;;
 memberof-seed)
-	if memberof_seed; then record memberof-seed ok; else record memberof-seed fail; fi
+	if memberof_seed; then record memberof-seed ok; else record memberof-seed "fail $(head -n 1 "${LDAP_ERROR_FILE}")"; fi
 	;;
 *)
 	record error "unknown-mode-${MODE}"
