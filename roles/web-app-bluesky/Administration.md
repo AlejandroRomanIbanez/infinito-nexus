@@ -3,17 +3,16 @@
 ## Create a user via POST
 
 ```bash
-PDS_ADMIN_PASSWORD="$(compose exec -T pds printenv PDS_ADMIN_PASSWORD)"
-curl -X POST https://your-pds-domain/xrpc/com.atproto.server.createAccount \
-  --user "admin:${PDS_ADMIN_PASSWORD}" \
-  -H "Content-Type: application/json" \
-  -d '{
-        "email": "user@example.com",
-        "handle": "username",
-        "password": "securepassword123",
-        "inviteCode": "optional-invite-code"
-      }'
-unset PDS_ADMIN_PASSWORD
+compose exec -T pds printenv PDS_ADMIN_PASSWORD \
+  | sed 's/.*/user = "admin:&"/' \
+  | curl --config - -X POST https://your-pds-domain/xrpc/com.atproto.server.createAccount \
+      -H "Content-Type: application/json" \
+      -d '{
+            "email": "user@example.com",
+            "handle": "username",
+            "password": "securepassword123",
+            "inviteCode": "optional-invite-code"
+          }'
 ```
 
 ## Use pdsadmin
