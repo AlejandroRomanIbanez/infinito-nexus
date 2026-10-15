@@ -4,7 +4,7 @@
 
 ```bash
 compose exec -T pds printenv PDS_ADMIN_PASSWORD \
-  | sed 's/.*/user = "admin:&"/' \
+  | sed 's/[\\"]/\\&/g; s/.*/user = "admin:&"/' \
   | curl --config - -X POST https://your-pds-domain/xrpc/com.atproto.server.createAccount \
       -H "Content-Type: application/json" \
       -d '{
