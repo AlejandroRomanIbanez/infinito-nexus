@@ -129,7 +129,7 @@ def build_role(args: argparse.Namespace) -> Role:
             local_user=args.mariadb_local_user,
             peer_address=address,
             replication_user=args.replication_user,
-            replication_password=_secret(args.replication_password_file),
+            replication_password=lambda: _secret(args.replication_password_file),
         )
     from .openldap import OpenLDAPRole
 

@@ -27,7 +27,7 @@ class FakeServers:
         return ""
 
 
-def _role(answers) -> tuple[MariaDBRole, FakeServers]:
+def _role(answers, replication_password="s'cret") -> tuple[MariaDBRole, FakeServers]:  # noqa: S107 - test fixture value
     run = FakeServers(answers)
     role = MariaDBRole(
         host_id="m1",
@@ -36,7 +36,7 @@ def _role(answers) -> tuple[MariaDBRole, FakeServers]:
         socket="/run/mysqld/mysqld.sock",
         peer_address=lambda host: f"mariadb-{host}",
         replication_user="repl",
-        replication_password="s'cret",
+        replication_password=replication_password,
         run=run,
     )
     return role, run
@@ -118,6 +118,15 @@ class TestTransitions(unittest.TestCase):
         with self.assertRaises(RoleError):
             role.become_writer()
         self.assertNotIn("SET GLOBAL read_only = 0", [s for _, s in run.calls])
+
+    def test_follow_reads_a_rotated_replication_password(self) -> None:
+        passwords = iter(["old", "new"])
+        role, run = _role({"local": {}}, replication_password=lambda: next(passwords))
+        role.follow("m2")
+        role.follow("m3")
+        changes = [s for _, s in run.calls if s.startswith("CHANGE MASTER")]
+        self.assertIn("MASTER_PASSWORD='old'", changes[0])
+        self.assertIn("MASTER_PASSWORD='new'", changes[1])
 
     SEMI_SYNC_ON = "SET GLOBAL rpl_semi_sync_master_enabled = 1"
     SEMI_SYNC_OFF = "SET GLOBAL rpl_semi_sync_master_enabled = 0"

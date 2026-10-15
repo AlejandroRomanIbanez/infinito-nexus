@@ -35,3 +35,23 @@
   when:
     - _mariadb_rotate_login.rc != 0
     - "'1045' in (_mariadb_rotate_login.stderr | default(''))"
+
+- name: "🔗 MariaDB HA | Re-point {{ mariadb_rotate_instance.service }} replication"
+  ansible.builtin.shell: |
+    set -o pipefail
+    if [ -z "$(printf 'SHOW SLAVE STATUS;\n' | container exec -i "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ mariadb_rotate_instance.service | quote }})" {{ MARIADB_HA_SQL }})" ]; then
+      exit 0
+    fi
+    container exec -i "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ mariadb_rotate_instance.service | quote }})" {{ MARIADB_HA_SQL }}
+  args:
+    executable: /bin/bash
+    stdin: |
+      STOP SLAVE;
+      CHANGE MASTER TO MASTER_PASSWORD = '{{ MARIADB_REPLICATION_PWD }}';
+      START SLAVE;
+  environment:
+    CONTAINER_EXEC_TIMEOUT: "{{ lookup('timeout', 120) }}"
+  changed_when: true
+  delegate_to: "{{ mariadb_rotate_instance.host }}"
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+  when: _mariadb_rotate_apply is changed

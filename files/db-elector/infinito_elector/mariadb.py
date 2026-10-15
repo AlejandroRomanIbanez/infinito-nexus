@@ -46,7 +46,8 @@ class MariaDBRole(Role):
             own instance; ``None`` uses the option file locally too.
         peer_address: maps a host id to the address its instance listens on.
         replication_user: user replicas connect as.
-        replication_password: that user's password.
+        replication_password: that user's password, or a callable that reads
+            it at each use so a rotated password reaches the next CHANGE MASTER.
         run: command runner, ``(argv, stdin) -> stdout``.
         relay_wait_seconds: how long one promotion attempt waits for the
             relay log; kept under the runner's 5 s timeout and the renew
@@ -65,7 +66,7 @@ class MariaDBRole(Role):
         peer_address: Callable[[str], str],
         local_user: str | None = None,
         replication_user: str,
-        replication_password: str,
+        replication_password: str | Callable[[], str],
         run: Callable[[Sequence[str], str | None], str] = run_command,
         relay_wait_seconds: int = 3,
     ) -> None:
@@ -184,7 +185,7 @@ class MariaDBRole(Role):
             "CHANGE MASTER TO "
             f"MASTER_HOST={_quote(self._address(writer))}, "
             f"MASTER_USER={_quote(self._repl_user)}, "
-            f"MASTER_PASSWORD={_quote(self._repl_password)}, "
+            f"MASTER_PASSWORD={_quote(self._repl_password() if callable(self._repl_password) else self._repl_password)}, "
             "MASTER_USE_GTID=slave_pos"
         )
         self._sql("START SLAVE")
