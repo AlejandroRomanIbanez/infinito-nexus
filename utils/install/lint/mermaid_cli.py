@@ -57,7 +57,7 @@ def browser_revision() -> str | None:
         puppeteer.parent / "puppeteer-core" / "lib" / "puppeteer" / "revisions.js"
     )
     try:
-        text = revisions.read_text(encoding="utf-8")
+        text = revisions.read_text(encoding="utf-8")  # nocheck: cache-read  npm prefix
     except OSError:
         return None
     match = re.search(rf"'{BROWSER}':\s*'([^']+)'", text)
