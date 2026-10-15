@@ -1,42 +1,37 @@
 ---
 # Param: mariadb_rotate_instance - instance model entry (`service`, `host`) of a running, seeded instance
-- name: "🔑 MariaDB HA | Rotate passwords on {{ mariadb_rotate_instance.service }}"
+- name: "🔍 MariaDB HA | Try the new root on {{ mariadb_rotate_instance.service }}"
+  ansible.builtin.shell: |
+    container exec -i "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ mariadb_rotate_instance.service | quote }})" {{ MARIADB_HA_SQL }}
+  args:
+    stdin: "SELECT 1;"
+  environment:
+    CONTAINER_EXEC_TIMEOUT: "{{ lookup('timeout', 60) }}"
+  register: _mariadb_rotate_login
+  changed_when: false
+  failed_when: false
   delegate_to: "{{ mariadb_rotate_instance.host }}"
-  block:
-    - name: "🔑 MariaDB HA | Apply the passwords on {{ mariadb_rotate_instance.service }}"
-      ansible.builtin.shell: |
-        container exec -i "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ mariadb_rotate_instance.service | quote }})" {{ MARIADB_HA_SQL }}
-      args:
-        stdin: |
-          SET @root_pwd := '{{ MARIADB_ROOT_PWD }}';
-          SET @replication_pwd := '{{ MARIADB_REPLICATION_PWD }}';
-          SET @elector_pwd := '{{ MARIADB_ELECTOR_PWD }}';
-          {{ lookup('template', role_path ~ '/templates/sql/ha/root.sql.j2') }}
-          {{ lookup('template', role_path ~ '/templates/sql/ha/users.sql.j2') }}
-      environment:
-        CONTAINER_EXEC_TIMEOUT: "{{ lookup('timeout', 120) }}"
-      register: _mariadb_rotate_apply
-      until: _mariadb_rotate_apply.rc == 0
-      retries: 5
-      delay: 10
-      changed_when: false
-      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-  rescue:
-    - name: "🐛 MariaDB HA | Sessions on {{ mariadb_rotate_instance.service }}" # nocheck: rescue-extra-diagnostics the processlist names what blocks the rotation
-      ansible.builtin.shell: |
-        container exec -i "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ mariadb_rotate_instance.service | quote }})" {{ MARIADB_HA_SQL }}
-      args:
-        stdin: "SELECT ID, USER, COMMAND, TIME, STATE FROM information_schema.PROCESSLIST;"
-      environment:
-        CONTAINER_EXEC_TIMEOUT: "{{ lookup('timeout', 30) }}"
-      register: _mariadb_rotate_sessions
-      changed_when: false
-      failed_when: false
 
-    - name: "🛑 MariaDB HA | Rotation on {{ mariadb_rotate_instance.service }} failed"
-      ansible.builtin.fail:
-        msg: >-
-          rc={{ _mariadb_rotate_apply.rc | default('n/a') }};
-          sessions rc={{ _mariadb_rotate_sessions.rc }}:
-          {{ _mariadb_rotate_sessions.stdout | default('') }}
-          {{ _mariadb_rotate_sessions.stderr | default('') }}
+- name: "🔑 MariaDB HA | Rotate passwords on {{ mariadb_rotate_instance.service }}"
+  ansible.builtin.shell: |
+    container exec -i -e MYSQL_PWD "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ mariadb_rotate_instance.service | quote }})" mariadb -uroot -N -B
+  args:
+    stdin: |
+      SET @root_pwd := '{{ MARIADB_ROOT_PWD }}';
+      SET @replication_pwd := '{{ MARIADB_REPLICATION_PWD }}';
+      SET @elector_pwd := '{{ MARIADB_ELECTOR_PWD }}';
+      {{ lookup('template', role_path ~ '/templates/sql/ha/root.sql.j2') }}
+      {{ lookup('template', role_path ~ '/templates/sql/ha/users.sql.j2') }}
+  environment:
+    MYSQL_PWD: "{{ _mariadb_previous_root_pwd }}"
+    CONTAINER_EXEC_TIMEOUT: "{{ lookup('timeout', 120) }}"
+  register: _mariadb_rotate_apply
+  until: _mariadb_rotate_apply.rc == 0
+  retries: 5
+  delay: 10
+  changed_when: true
+  delegate_to: "{{ mariadb_rotate_instance.host }}"
+  no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+  when:
+    - _mariadb_rotate_login.rc != 0
+    - "'1045' in (_mariadb_rotate_login.stderr | default(''))"

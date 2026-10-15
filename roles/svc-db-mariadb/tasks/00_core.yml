@@ -8,11 +8,12 @@
   vars:
     application_id: "svc-db-mariadb"
 
-- name: "🔑 MariaDB HA | Carry rotated passwords into the running cluster"
+- name: "📖 MariaDB HA | Remember the root password the running cluster holds"
   include_tasks:
     file: ha/00_rotate.yml
     apply:
       run_once: true
+      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   when:
     - MARIADB_HA | bool
     - IS_STACK_HOST | bool

@@ -85,6 +85,10 @@
     owner: root
     group: root
     mode: "0600"
+  register: bkp_volume_2_local_ha_gate_config
+  until: bkp_volume_2_local_ha_gate_config is succeeded
+  retries: 12
+  delay: 5
 
 - name: "▶️ Execute system service setup for '{{ system_service_id }}'"
   include_role:
