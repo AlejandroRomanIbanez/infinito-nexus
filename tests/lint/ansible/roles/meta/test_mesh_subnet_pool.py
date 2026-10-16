@@ -1,8 +1,8 @@
 """Lint: the meshes belong to the deployment, and a declared one sits inside
 the declared mesh pool.
 
-Every role carries ``networks.meshes`` in its ``meta/networks.yml`` so an
-inventory may set it, and ships it empty: a role that shipped a mesh, or put
+Every role that ships a container stack carries ``networks.meshes`` in its
+``meta/networks.yml`` so an inventory may set it, and every role ships it empty: a role that shipped a mesh, or put
 its hosts into one, would hardcode a topology the platform has no business
 choosing. The values live in a deployment's inventory, and the repository's
 own deployments are the layouts it ships.
@@ -24,6 +24,7 @@ import jinja2
 from cli.administration.inventory.mesh.inventory import specs_of
 from utils.cache.yaml import load_yaml_any
 from utils.networks.mesh import APPLICATION_ID, INTERFACES_KEY, MESHES_KEY
+from utils.roles.deploy import role_has_stack
 from utils.roles.mapping import ROLE_FILE_META_NETWORKS
 
 from . import PROJECT_ROOT
@@ -77,6 +78,26 @@ class TestTheRolesShipNoMesh(unittest.TestCase):
                         "belong to the deployment's inventory",
                     )
         self.assertGreater(carried, 0, "no role carries a mesh field at all")
+
+    def test_every_stack_role_carries_the_membership_field(self) -> None:
+        stack_roles = [
+            role
+            for role in sorted((PROJECT_ROOT / "roles").iterdir())
+            if role.is_dir() and role_has_stack(role)
+        ]
+        self.assertGreater(len(stack_roles), 0, "no stack role found")
+        for role in stack_roles:
+            networks = load_yaml_any(
+                str(role / ROLE_FILE_META_NETWORKS), default_if_missing={}
+            )
+            with self.subTest(role=role.name):
+                self.assertIn(
+                    MESHES_KEY,
+                    networks or {},
+                    f"{role.name}/{ROLE_FILE_META_NETWORKS} must carry "
+                    f"networks.{MESHES_KEY}: [] so a compose host can join meshes "
+                    "through it",
+                )
 
     def test_the_declaring_role_carries_both_fields(self) -> None:
         networks = load_yaml_any(
