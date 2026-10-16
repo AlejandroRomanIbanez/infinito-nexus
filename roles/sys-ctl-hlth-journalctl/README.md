@@ -25,7 +25,8 @@ Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (
 
 ## Features
 
-- Reads the last day of the journal as JSON and drops every entry that carries a `CONTAINER_ID` field.
+- Reads the last day of the journal as JSON with every field in full (`--all`) and drops every entry that carries a `CONTAINER_ID` field.
+- Joins a repeated `MESSAGE` field into one line before matching.
 - Matches the remaining messages case-insensitively against `error`.
 - Prints one `source: message` line per match, naming the systemd unit or, without one, the syslog identifier, so alerts show who logged the error.
 - Exits non-zero on matches, and also when `journalctl` itself fails, so a broken check never passes silently.

@@ -35,6 +35,10 @@ BINARY_ERROR = {
     "MESSAGE": list(b"I/O error \xff on disk"),
     "_SYSTEMD_UNIT": "smartd.service",
 }
+REPEATED_ERROR = {
+    "MESSAGE": ["unit started", list(b"disk error \xff on sdb")],
+    "_SYSTEMD_UNIT": "zfs-import.service",
+}
 SYSTEM_INFO = {
     "MESSAGE": "Started Daily apt download activities.",
     "_SYSTEMD_UNIT": "init.scope",
@@ -71,7 +75,7 @@ class TestHlthJournalctlScript(unittest.TestCase):
                 text=True,
                 check=False,
             )
-            args = (bin_dir / "args").read_text()
+            args = (bin_dir / "args").read_text()  # nocheck: cache-read tempdir fixture
             return done.returncode, done.stdout, args
 
     def test_reads_the_journal_as_json_with_the_source_fields(self):
@@ -81,6 +85,16 @@ class TestHlthJournalctlScript(unittest.TestCase):
             "--output-fields=MESSAGE,CONTAINER_ID,SYSLOG_IDENTIFIER,_SYSTEMD_UNIT",
             args,
         )
+
+    def test_reads_every_field_in_full(self):
+        _, _, args = self.run_script(SYSTEM_INFO)
+        self.assertIn("--all", args.split())
+
+    def test_a_repeated_message_field_is_joined_and_reported(self):
+        code, output, _ = self.run_script(REPEATED_ERROR, DAEMON_ERROR)
+        self.assertEqual(code, 1)
+        self.assertIn("zfs-import.service: unit started disk error", output)
+        self.assertIn('docker.service: level=error msg="failed to start', output)
 
     def test_an_application_error_from_a_container_is_ignored(self):
         code, _, _ = self.run_script(APP_ERROR, SYSTEM_INFO)
