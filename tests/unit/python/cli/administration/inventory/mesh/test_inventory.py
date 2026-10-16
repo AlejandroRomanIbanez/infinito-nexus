@@ -1,11 +1,3 @@
-"""Reading the meshes and their members out of an inventory.
-
-The declarations are the hub's ``svc-net-wireguard.networks.meshes`` and the
-memberships every other role's ``networks.meshes``, both in ``host_vars``. A
-reader that drops a value instead of refusing it deploys a host without the
-tunnel its inventory asked for, and nothing says so until traffic is tried.
-"""
-
 from __future__ import annotations
 
 import tempfile
@@ -70,7 +62,6 @@ class TestDeclarations(unittest.TestCase):
         self.assertEqual(["alpha", "beta"], [s.name for s in specs_of(DECLARED, [])])
 
     def test_a_silent_declaration_routes_the_platform_pool(self):
-        """Restating the pool per deployment is the duplication to avoid."""
         self.assertEqual("10.100.0.0/16", specs_of(DECLARED, [])[0].routed_range)
 
     def test_an_inventory_without_declarations_is_refused(self):
@@ -120,7 +111,6 @@ class TestTopology(InventoryOnDisk, unittest.TestCase):
         self.assertEqual(("nfs",), topology.spokes["beta"])
 
     def test_two_hosts_of_one_role_may_sit_in_different_meshes(self):
-        """Membership is a host value, so a role does not bind every host."""
         self._host("wrk-1", _joins("svc-swarm-node", "alpha"))
         self._host("wrk-2", _joins("svc-swarm-node", "beta"))
         topology = self._topology()
@@ -136,7 +126,6 @@ class TestTopology(InventoryOnDisk, unittest.TestCase):
         self.assertEqual(("nfs",), self._topology().spokes["beta"])
 
     def test_a_role_the_host_does_not_carry_admits_nothing(self):
-        """The lab bakes one block into every host, so this is the common case."""
         self._host("wrk-1", _joins("svc-storage-nfs-server", "beta"))
         self.assertEqual((), self._topology().spokes["beta"])
 
@@ -167,8 +156,6 @@ class TestTopology(InventoryOnDisk, unittest.TestCase):
 
 
 class TestTheShippedExample(InventoryOnDisk, unittest.TestCase):
-    """The example is the claim that a deployment declares its own."""
-
     EXAMPLE = PROJECT_ROOT / "inventories" / "examples" / "wireguard-three-meshes"
 
     def setUp(self):
