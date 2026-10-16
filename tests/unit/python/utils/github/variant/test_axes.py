@@ -382,17 +382,40 @@ class TestMeshRotation(unittest.TestCase):
                 )
                 self.assertEqual({e["vpn"] for e in entries}, {expected})
 
-    def test_only_a_meshable_compose_title_carries_a_mesh_glyph(self) -> None:
-        glyphs = (to_emoji("vpn"), to_emoji("direct"))
-        for row, meshable in (
-            (_row("web-app-b", 0, ("compose",)), True),
-            (_row("web-app-a", 0, ("compose",)), False),
+    def test_every_compose_title_states_its_mesh(self) -> None:
+        for row in (
+            _row("web-app-b", 0, ("compose",)),
+            _row("web-app-a", 0, ("compose",)),
         ):
-            with self.subTest(app=row["name"], variant=row["variant"]):
-                label = _assign(
-                    [row], sweep=0, tor_mode="auto", variants_per_app=_VARIANTS
-                )[0]["label"]
-                self.assertEqual(any(g in label for g in glyphs), meshable)
+            for sweep in range(8):
+                with self.subTest(app=row["name"], sweep=sweep):
+                    entry = _assign(
+                        [row], sweep=sweep, tor_mode="auto", variants_per_app=_VARIANTS
+                    )[0]
+                    glyph = to_emoji("vpn" if entry["vpn"] == "true" else "direct")
+                    self.assertIn(glyph, entry["label"])
+
+    def test_a_larger_compose_variant_reads_direct(self) -> None:
+        label = _assign(
+            [_row("web-app-a", 0, ("compose",))],
+            sweep=0,
+            tor_mode="auto",
+            vpn_mode="enforced",
+            variants_per_app=_VARIANTS,
+        )[0]["label"]
+        self.assertIn(to_emoji("direct"), label)
+        self.assertNotIn(to_emoji("vpn"), label)
+
+    def test_a_host_title_carries_no_mesh_glyph(self) -> None:
+        label = _assign(
+            [_row("web-app-b", 0, ("host",))],
+            sweep=0,
+            tor_mode="auto",
+            vpn_mode="enforced",
+            variants_per_app=_VARIANTS,
+        )[0]["label"]
+        self.assertNotIn(to_emoji("vpn"), label)
+        self.assertNotIn(to_emoji("direct"), label)
 
 
 class TestPinnedAxes(unittest.TestCase):
@@ -402,6 +425,35 @@ class TestPinnedAxes(unittest.TestCase):
     def test_a_pinned_mode_replaces_the_rotation(self) -> None:
         row = _row("web-app-b", 0, ("compose", "swarm"), pin_mode="swarm")
         self.assertEqual([e["mode"] for e in self._entries(row)], ["swarm"])
+
+    def test_a_mesh_pin_no_mode_of_the_row_can_take_aborts(self) -> None:
+        for row in (
+            _row("web-app-a", 0, ("compose",), pin_vpn=True),
+            _row("web-app-b", 0, ("host",), pin_vpn=True),
+            _row(
+                "web-app-a", 0, ("compose", "swarm"), pin_mode="compose", pin_vpn=True
+            ),
+        ):
+            with (
+                self.subTest(modes=row["modes"], pin_mode=row.get("pin_mode")),
+                self.assertRaises(SystemExit),
+            ):
+                self._entries(row)
+
+    def test_a_mesh_pin_keeps_the_rotation_on_a_meshable_mode(self) -> None:
+        row = _row("web-app-a", 0, ("compose", "swarm"), pin_vpn=True)
+        for sweep in range(4):
+            with self.subTest(sweep=sweep):
+                entries = _assign(
+                    [row], sweep=sweep, tor_mode="auto", variants_per_app=_VARIANTS
+                )
+                self.assertEqual(
+                    {(e["mode"], e["vpn"]) for e in entries}, {("swarm", "true")}
+                )
+
+    def test_a_direct_pin_is_always_possible(self) -> None:
+        row = _row("web-app-a", 0, ("compose",), pin_vpn=False)
+        self.assertEqual({e["vpn"] for e in self._entries(row)}, {"false"})
 
     def test_a_pinned_onion_state_replaces_the_rotation(self) -> None:
         row = _row("web-app-b", 0, ("compose",), pin_tor=True)
@@ -608,6 +660,7 @@ class TestDistroAndFilesystemAxes(unittest.TestCase):
             entry["label"].startswith(
                 to_emoji("compose")
                 + to_emoji("clearnet")
+                + to_emoji("direct")
                 + to_emoji("debian")
                 + to_emoji("zfs")
             )
