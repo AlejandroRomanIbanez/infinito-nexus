@@ -1,10 +1,3 @@
-"""What the mesh writer is allowed to put on disk, and what it must not.
-
-These assertions are made against real files because the guarantees are about
-files: which host_vars a secret may appear in, and whether a second run of an
-unchanged mesh leaves them alone.
-"""
-
 from __future__ import annotations
 
 import tempfile
@@ -38,12 +31,10 @@ EXAMPLE_LAYOUT = (
 
 
 def layout_applications(path: Path) -> dict:
-    """The ``applications`` block a layout file bakes into every host."""
     return load_yaml_any(str(path))["applications"]
 
 
 def interface_entries(host_vars: Path, host: str) -> list[dict]:
-    """Every interface entry a host's file holds, owned or not."""
     document = load_yaml_any(str(host_vars / f"{host}.yml")) or {}
     return (
         document.get("applications", {})
@@ -116,23 +107,14 @@ class MeshOnDisk(unittest.TestCase):
 
     def _text(self, host: str) -> str:
         path = self.host_vars / f"{host}.yml"
-        return path.read_text(
-            encoding="utf-8"
-        )  # nocheck: cache-read  tempdir fixture rewritten between reads in one test
+        return path.read_text(encoding="utf-8")  # nocheck: cache-read
 
     def _mesh_names(self, host: str) -> list[str]:
-        """The mesh names a host's file actually holds an interface for.
-
-        Read structurally: the layout names every mesh in every file, so a
-        substring check for the mesh name passes against a host that holds no
-        interface at all.
-        """
         return sorted(
             entry["name"] for entry in interface_entries(self.host_vars, host)
         )
 
     def _entry(self, host: str, mesh_name: str) -> dict:
-        """The interface entry as the role will read it back off disk."""
         return next(
             (
                 entry
@@ -157,11 +139,6 @@ class MeshOnDisk(unittest.TestCase):
 
 class TestBothInventoriesAreRead(MeshOnDisk, unittest.TestCase):
     def test_the_backup_host_is_found_in_its_sibling_inventory(self):
-        """The swarm lab keeps the backup host out of the cluster inventory.
-
-        Reading only devices.yml yields a data mesh with no backup spoke, and
-        nothing downstream notices until the backup play cannot reach the hub.
-        """
         self.assertIn("swarm-bkp-01", self.groups.get("svc-bkp-remote-2-local", []))
         cluster_only = groups_of([self.cluster])
         self.assertNotIn("svc-bkp-remote-2-local", cluster_only)
@@ -204,11 +181,6 @@ class TestMeshShapeOnDisk(MeshOnDisk, unittest.TestCase):
                 self.assertIn("data", self._mesh_names(host))
 
     def test_a_worker_is_not_given_the_data_mesh(self):
-        """Workers reach NFS through the hub, not as data-plane members.
-
-        A worker that carried the data mesh would peer with the NFS server
-        directly and bypass the routing the topology depends on.
-        """
         self._write_all()
         self.assertEqual(self._mesh_names("swarm-wrk-01"), ["swarm"])
 
@@ -217,17 +189,6 @@ class TestMeshShapeOnDisk(MeshOnDisk, unittest.TestCase):
         self.assertEqual(self._mesh_names("swarm-mgr-01"), ["data", "swarm"])
 
     def test_a_spoke_routes_the_whole_pool_through_the_hub(self):
-        """A worker must reach the data plane it is not a member of.
-
-        Pinning a spoke's AllowedIPs to its own mesh subnet leaves the worker
-        with no route to the NFS server, and the mount fails while every tunnel
-        still reports a healthy handshake -- so the symptom points at storage
-        rather than at routing.
-
-        Asserted against the serialized entry, not against a second plan: the
-        role reads the file, so a writer that stored the mesh subnet in place
-        of the routed range would satisfy a re-planned comparison.
-        """
         self._write_all()
         for spec in self.specs:
             mesh = plan_mesh(spec, self.topology)
@@ -241,11 +202,6 @@ class TestMeshShapeOnDisk(MeshOnDisk, unittest.TestCase):
                     )
 
     def test_the_hub_pins_each_spoke_to_a_single_address(self):
-        """The inverse of the spoke rule.
-
-        A hub that routed the pool to one spoke would blackhole every other
-        member behind it.
-        """
         self._write_all()
         for spec in self.specs:
             hub = plan_mesh(spec, self.topology).hub.host
@@ -256,8 +212,6 @@ class TestMeshShapeOnDisk(MeshOnDisk, unittest.TestCase):
 
 
 class TestStoredAddresses(MeshOnDisk, unittest.TestCase):
-    """What the planner is allowed to treat as an address already in use."""
-
     def test_every_written_address_is_read_back(self):
         self._write_all()
         for spec in self.specs:
@@ -274,11 +228,6 @@ class TestStoredAddresses(MeshOnDisk, unittest.TestCase):
         self.assertNotIn("swarm-wrk-01", stored)
 
     def test_a_mirrored_entry_is_not_read_as_the_hosts_own_address(self):
-        """The mirror hands every node the hub's entry.
-
-        Reusing what it finds there would put the hub's address on a worker,
-        which is the same failure the key reader already guards against.
-        """
         self._write_all()
         hub_text = self._text("swarm-mgr-01")
         (self.host_vars / "swarm-wrk-01.yml").write_text(hub_text, encoding="utf-8")
@@ -304,13 +253,6 @@ class TestIdempotence(MeshOnDisk, unittest.TestCase):
                 self.assertNotEqual(self._text(host), before[host])
 
     def test_a_mirrored_host_vars_is_reminted_rather_than_adopted(self):
-        """The swarm reset copies one node's host_vars over every other.
-
-        That is right for credentials identical on every host and wrong here:
-        each node would adopt the hub's key and address, every interface would
-        claim 10.100.0.1, and no tunnel would handshake. An entry naming a
-        different host has to count as unkeyed.
-        """
         self._write_all()
         hub_text = self._text("swarm-mgr-01")
         for host in ("swarm-wrk-01", "swarm-wrk-02"):
@@ -335,12 +277,6 @@ class TestIdempotence(MeshOnDisk, unittest.TestCase):
         self.assertEqual(len(set(addresses.values())), 3)
 
     def test_a_mesh_a_host_does_not_own_is_pruned(self):
-        """Rewriting a member's own entry never removes a foreign one.
-
-        After the mirror the NFS server keeps the hub's swarm entry, brings up
-        an interface claiming 10.100.0.1, and swallows the return path for
-        every worker -- while its own data mesh looks perfectly healthy.
-        """
         self._write_all()
         hub_text = self._text("swarm-mgr-01")
         (self.host_vars / "nfs-server.yml").write_text(hub_text, encoding="utf-8")
@@ -362,11 +298,6 @@ class TestIdempotence(MeshOnDisk, unittest.TestCase):
                 self.assertEqual(self._text(host), before[host])
 
     def test_a_member_whose_credential_vanished_is_reminted(self):
-        """A public key with no private key behind it is worse than no key.
-
-        The peers accept it, the owner cannot use it, and the tunnel fails only
-        when traffic is attempted.
-        """
         self._write_all()
         keyed = existing_public_keys(self.host_vars, list(HOSTS), "swarm")
         self.assertIn("swarm-wrk-01", keyed)
@@ -381,7 +312,6 @@ class TestIdempotence(MeshOnDisk, unittest.TestCase):
 
 
 def _hub_routes(entries: list[dict]) -> dict[str, list[str]]:
-    """Mesh name to the ranges a spoke routes through that mesh's hub."""
     return {
         entry["name"]: [
             peer["allowed_ips"] for peer in entry["peers"] if peer["is_hub"]
@@ -392,14 +322,6 @@ def _hub_routes(entries: list[dict]) -> dict[str, list[str]]:
 
 
 class TestTheLabUnderTheThreeMeshExample(MeshOnDisk, unittest.TestCase):
-    """The lab keeps the NFS server's own backup leg, which the example does not.
-
-    ``svc-bkp-nfs-2-local`` lands on the NFS server and joins gamma, so the
-    server is a spoke of beta and of gamma. Routing the pool through both is two
-    routes for one prefix: ``wg-quick`` refuses the second with ``RTNETLINK
-    answers: File exists`` and deletes that interface.
-    """
-
     LAYOUT = EXAMPLE_LAYOUT
 
     def cluster_inventory(self) -> str:
@@ -443,13 +365,6 @@ class TestTheLabUnderTheThreeMeshExample(MeshOnDisk, unittest.TestCase):
 
 
 class TestNoTwoInterfacesClaimOneRoute(unittest.TestCase):
-    """Every interface of a host comes up, whatever the topology.
-
-    ``wg-quick`` adds one route per allowed range and refuses a prefix another
-    interface of the same host already holds. Asserted over generated
-    topologies, where hosts are spokes of any number of meshes.
-    """
-
     def test_every_host_routes_each_prefix_through_one_interface(self):
         public_key = public_key_of(generate_private_key())
         for count in range(1, 9):
