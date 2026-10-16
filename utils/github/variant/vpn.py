@@ -11,12 +11,13 @@ There is no ``exclusive``: every meshable row can take the mesh, so there is
 nothing to drop."""
 
 VPN_DEPLOY_MODES = ("swarm", "compose")
-"""Modes the mesh is meaningful in. A compose row takes it only on its role's
-smallest variant (:func:`meshable`)."""
+"""Modes the axis applies to. Every row in one of them carries the mesh or
+direct glyph; a compose row takes the mesh only on its role's smallest variant
+(:func:`meshable`)."""
 
 
 def meshable(mode: str, *, smallest: bool = False) -> bool:
-    """Whether a row in *mode* can carry the mesh, and so carries its glyph.
+    """Whether a row in *mode* can carry the mesh.
 
     Args:
         mode: the deploy mode of the row.
