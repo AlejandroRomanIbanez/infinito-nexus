@@ -15,7 +15,8 @@ cover the combinations instead of sampling them:
 * **tor** -- whether the row deploys behind the node onion. Driven by
   ``sweep // 2`` so it does NOT flip in lockstep with the mode.
 
-* **vpn** -- whether a swarm row carries the WireGuard mesh, in ``vpn.py``.
+* **vpn** -- whether a swarm row, or a compose row of its role's smallest
+  variant, carries the WireGuard mesh, in ``vpn.py``.
 
 * **distro** -- which declared distribution the row deploys on. Per row rather
   than per run, so one sweep proves every distribution instead of proving one
@@ -62,11 +63,12 @@ from utils.github.variant.tor import (
     wants_tor,
 )
 from utils.github.variant.vpn import (
-    MESH_GLYPH_MODES,
+    meshable,
     pinned_vpn_states,
     rotated_vpn,
 )
 from utils.roles.display import VARIANT_SEPARATOR, display_names
+from utils.roles.guide import smallest_variant
 from utils.symbol_glossary import to_emoji
 
 if TYPE_CHECKING:
@@ -238,8 +240,9 @@ def assign(
             ``enforce_filesystem`` and a host that cannot serve it fails
             instead of substituting one. A wider pool leaves the kind a
             preference, because the matrix narrows every row to one anyway.
-        vpn_mode: ``enforced`` meshes every swarm row, ``disabled`` none,
-            ``auto`` rotates.
+        vpn_mode: ``enforced`` meshes every meshable row, ``disabled`` none,
+            ``auto`` rotates. A row is meshable in swarm, and in compose on
+            its role's smallest variant.
         variants_per_app: rendered variant configs per app, so a variant that
             switches the tor gate off is never counted capable.
 
@@ -268,6 +271,9 @@ def assign(
         capable = tor_capable(app, variant, variants_per_app)
         offered = tuple(row["modes"])
         variant_csv = "" if variant is None else str(variant)
+        smallest = variant_csv == smallest_variant(
+            (variants_per_app or {}).get(app) or []
+        )
         pin_mode = row.get("pin_mode")
         pin_tor = row.get("pin_tor")
         pin_distro = row.get("pin_distro")
@@ -293,7 +299,9 @@ def assign(
                     offered, capable=capable, tor_mode=tor_mode
                 )
                 if pin_mode in (None, mode) and pin_tor in (None, state)
-                for meshed in pinned_vpn_states(mode, pin=pin_vpn, vpn_mode=vpn_mode)
+                for meshed in pinned_vpn_states(
+                    mode, pin=pin_vpn, vpn_mode=vpn_mode, smallest=smallest
+                )
             ]
         else:
             mode = pin_mode or pick_mode(
@@ -311,6 +319,7 @@ def assign(
                         sweep=sweep,
                         pin=pin_vpn,
                         vpn_mode=vpn_mode,
+                        smallest=smallest,
                     ),
                 )
                 for state in _rotated_tor(
@@ -339,7 +348,7 @@ def assign(
                 )
                 + (
                     to_emoji("vpn" if meshed else "direct")
-                    if mode in MESH_GLYPH_MODES
+                    if meshable(mode, smallest=smallest)
                     else ""
                 )
                 + to_emoji(distro)
