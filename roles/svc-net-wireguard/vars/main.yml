@@ -23,20 +23,17 @@ WIREGUARD_PRIVATE_KEY: "{{ lookup('config', application_id, 'secrets.credentials
 WIREGUARD_IS_HUB: >-
   {{ WIREGUARD_ACTIVE_MESHES.values() | map(attribute='is_hub') | select | list | length > 0 }}
 
-WIREGUARD_EXPECTED_PEERS: >-
+WIREGUARD_DIALLED_PEERS: >-
   {{ WIREGUARD_ACTIVE_MESHES.values()
-     | map(attribute='peers')
+     | map('mesh_dialled_peers')
      | flatten
-     | selectattr('is_hub')
-     | map(attribute='address')
      | list }}
+
+WIREGUARD_EXPECTED_PEERS: "{{ WIREGUARD_DIALLED_PEERS | map(attribute='address') | list }}"
 
 WIREGUARD_HEADER_BYTES: 60
 WIREGUARD_VXLAN_HEADER_BYTES: 50
 
 WIREGUARD_PMTU_TARGETS: >-
-  {{ (WIREGUARD_ACTIVE_MESHES.values()
-      | map(attribute='peers') | flatten
-      | selectattr('is_hub')
-      | map(attribute='endpoint') | list)
+  {{ (WIREGUARD_DIALLED_PEERS | map(attribute='endpoint') | list)
      | default(NETWORK_PUBLIC_DNS_RESOLVERS, true) }}
