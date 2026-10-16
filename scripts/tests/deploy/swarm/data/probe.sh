@@ -60,8 +60,8 @@ ddl() {
 marker_write() {
 	case "${ENGINE}" in
 	postgres | mariadb)
-		sql "CREATE TABLE IF NOT EXISTS failover_marker (token VARCHAR(64) PRIMARY KEY)" &&
-			sql "INSERT INTO failover_marker (token) VALUES ('${ARG}')"
+		sql "CREATE TABLE IF NOT EXISTS failover_marker (token VARCHAR(64) PRIMARY KEY)" 2>"${LDAP_ERROR_FILE}" &&
+			sql "INSERT INTO failover_marker (token) VALUES ('${ARG}')" 2>>"${LDAP_ERROR_FILE}"
 		;;
 	redis)
 		[ "$(redis-cli -h "${HOST}" -p "${PORT}" SET "failover:marker:${ARG}" 1)" = "OK" ]
