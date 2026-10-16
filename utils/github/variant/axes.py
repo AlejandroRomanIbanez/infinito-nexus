@@ -61,12 +61,10 @@ from utils.github.variant.tor import (
 )
 from utils.github.variant.vpn import (
     VPN_DEPLOY_MODES,
-    meshable,
     pinned_vpn_states,
     rotated_vpn,
 )
 from utils.roles.display import VARIANT_SEPARATOR, display_names
-from utils.roles.guide import smallest_variant
 from utils.symbol_glossary import to_emoji
 
 if TYPE_CHECKING:
@@ -152,8 +150,6 @@ def check_pins(
     tor_mode: str,
     distros: Sequence[str],
     filesystems: Sequence[str],
-    pin_vpn: bool | None = None,
-    smallest: bool = False,
 ) -> None:
     """Prove the row can take what the selection token pinned on it.
 
@@ -180,16 +176,6 @@ def check_pins(
                 f"pinned {axis} {value!r} is outside this run's {axis} pool "
                 f"({', '.join(pool) or 'empty'})",
             )
-    if pin_vpn and not any(
-        meshable(mode, smallest=smallest)
-        for mode in ((pin_mode,) if pin_mode else offered)
-    ):
-        _reject(
-            app,
-            variant,
-            "pinned mesh state vpn is impossible here (only swarm, and compose "
-            "on the role's smallest variant, take the mesh)",
-        )
     if pin_tor is None:
         return
     for mode in (pin_mode,) if pin_mode else offered:
@@ -250,7 +236,7 @@ def assign(
             ``enforce_filesystem`` and a host that cannot serve it fails
             instead of substituting one. A wider pool leaves the kind a
             preference, because the matrix narrows every row to one anyway.
-        vpn_mode: ``enforced`` meshes every meshable row, ``disabled`` none,
+        vpn_mode: ``enforced`` meshes every swarm row, ``disabled`` none,
             ``auto`` rotates.
         variants_per_app: rendered variant configs per app, so a variant that
             switches the tor gate off is never counted capable.
@@ -280,9 +266,6 @@ def assign(
         capable = tor_capable(app, variant, variants_per_app)
         offered = tuple(row["modes"])
         variant_csv = "" if variant is None else str(variant)
-        smallest = variant_csv == smallest_variant(
-            (variants_per_app or {}).get(app) or []
-        )
         pin_mode = row.get("pin_mode")
         pin_tor = row.get("pin_tor")
         pin_distro = row.get("pin_distro")
@@ -300,8 +283,6 @@ def assign(
             tor_mode=tor_mode,
             distros=distros,
             filesystems=filesystems,
-            pin_vpn=pin_vpn,
-            smallest=smallest,
         )
         if priority:
             picked = [
@@ -310,20 +291,11 @@ def assign(
                     offered, capable=capable, tor_mode=tor_mode
                 )
                 if pin_mode in (None, mode) and pin_tor in (None, state)
-                for meshed in pinned_vpn_states(
-                    mode, pin=pin_vpn, vpn_mode=vpn_mode, smallest=smallest
-                )
+                for meshed in pinned_vpn_states(mode, pin=pin_vpn, vpn_mode=vpn_mode)
             ]
         else:
             mode = pin_mode or pick_mode(
-                _offering(
-                    offered,
-                    pin_tor,
-                    pin_vpn,
-                    capable=capable,
-                    tor_mode=tor_mode,
-                    smallest=smallest,
-                ),
+                _offering(offered, pin_tor, capable=capable, tor_mode=tor_mode),
                 position,
                 sweep,
             )
@@ -337,7 +309,6 @@ def assign(
                         sweep=sweep,
                         pin=pin_vpn,
                         vpn_mode=vpn_mode,
-                        smallest=smallest,
                     ),
                 )
                 for state in _rotated_tor(
@@ -425,22 +396,17 @@ def _one_per_deploy(entries: list[dict[str, str]]) -> list[dict[str, str]]:
 
 
 def _offering(
-    offered: Sequence[str],
-    pin: bool | None,
-    pin_vpn: bool | None,
-    *,
-    capable: bool,
-    tor_mode: str,
-    smallest: bool,
+    offered: Sequence[str], pin: bool | None, *, capable: bool, tor_mode: str
 ) -> tuple[str, ...]:
     """The modes the rotation may still draw from once an onion state is
     pinned: pinning the onion on a row that also offers host must not rotate
     the row onto host, where no onion exists."""
+    if pin is None:
+        return tuple(offered)
     return tuple(
         mode
         for mode in offered
-        if (pin is None or pin in tor_states(mode, capable=capable, tor_mode=tor_mode))
-        and (not pin_vpn or meshable(mode, smallest=smallest))
+        if pin in tor_states(mode, capable=capable, tor_mode=tor_mode)
     )
 
 
