@@ -4,19 +4,7 @@ import os
 
 VPN_MODES = ("auto", "enforced", "disabled")
 
-VPN_DEPLOY_MODES = ("swarm", "compose")
-
-
-def meshable(mode: str, *, smallest: bool = False) -> bool:
-    """Whether a row in *mode* can carry the mesh.
-
-    Args:
-        mode: the deploy mode of the row.
-        smallest: whether the row deploys its role's smallest variant.
-    """
-    if mode == "compose":
-        return smallest
-    return mode in VPN_DEPLOY_MODES
+VPN_DEPLOY_MODES = ("swarm",)
 
 
 def resolve_vpn_mode(raw: str | None = None) -> str:
@@ -34,10 +22,8 @@ def resolve_vpn_mode(raw: str | None = None) -> str:
     return value if value in VPN_MODES else "auto"
 
 
-def vpn_states(
-    mode: str, *, vpn_mode: str = "auto", smallest: bool = False
-) -> list[bool]:
-    if not meshable(mode, smallest=smallest):
+def vpn_states(mode: str, *, vpn_mode: str = "auto") -> list[bool]:
+    if mode not in VPN_DEPLOY_MODES:
         return [False]
     if vpn_mode == "enforced":
         return [True]
@@ -47,11 +33,7 @@ def vpn_states(
 
 
 def pinned_vpn_states(
-    mode: str,
-    *,
-    pin: bool | None = None,
-    vpn_mode: str = "auto",
-    smallest: bool = False,
+    mode: str, *, pin: bool | None = None, vpn_mode: str = "auto"
 ) -> list[bool]:
     """The mesh states a priority row takes, global axis ahead of the pin.
 
@@ -59,9 +41,8 @@ def pinned_vpn_states(
         mode: the deploy mode of the row.
         pin: the state the row asked for, or None for every state.
         vpn_mode: the run's axis mode.
-        smallest: whether the row deploys its role's smallest variant.
     """
-    states = vpn_states(mode, vpn_mode=vpn_mode, smallest=smallest)
+    states = vpn_states(mode, vpn_mode=vpn_mode)
     if vpn_mode in ("enforced", "disabled") or pin is None:
         return states
     return [state for state in states if state == pin]
@@ -78,9 +59,8 @@ def rotated_vpn(
     sweep: int,
     pin: bool | None = None,
     vpn_mode: str = "auto",
-    smallest: bool = False,
 ) -> bool:
-    if not meshable(mode, smallest=smallest):
+    if mode not in VPN_DEPLOY_MODES:
         return False
     if vpn_mode in ("enforced", "disabled"):
         return vpn_mode == "enforced"
