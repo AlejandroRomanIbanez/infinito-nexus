@@ -1,5 +1,3 @@
-"""Move an inventory's Ansible transport onto the mesh it just created."""
-
 from __future__ import annotations
 
 import shlex
@@ -21,13 +19,6 @@ if TYPE_CHECKING:
 SSH_CONNECTION = "ssh"
 
 MESH_CONTROL_PERSIST = "600s"
-"""How long a mesh host's multiplexed connection outlives its last task.
-
-A pass over the mesh pays the SSH handshake once per task whenever the master
-has already closed, and in a linear play a host waits longer than the repo's
-default between its own tasks. Measured against a container: an exec through a
-warm master costs 7ms, a fresh connection 85ms, and 165ms once sudo asks for
-the password every task demands. The mesh pass runs thousands of tasks."""
 
 _REPLACED_OPTIONS = ("ControlPersist=", "ControlPath=")
 
@@ -55,14 +46,12 @@ def mesh_ssh_args(base: str, *, persist: str = MESH_CONTROL_PERSIST) -> str:
 
 
 def repo_ssh_args(config_file: Path | None = None) -> str:
-    """The ``ssh_args`` the repository's ansible.cfg declares."""
     parser = ConfigParser(interpolation=None)
     parser.read(config_file or PROJECT_ROOT / "ansible.cfg")
     return parser.get("ssh_connection", "ssh_args", fallback="")
 
 
 def mesh_address(host_vars_dir: Path, host: str, mesh_name: str) -> str | None:
-    """The address *host* holds on *mesh_name*, or ``None`` when it is absent."""
     path = host_vars_path(host_vars_dir, host)
     if not path.exists():
         return None
@@ -81,9 +70,8 @@ def switch_to_mesh(
     """Point every member of *mesh_name* at its mesh address over SSH.
 
     Returns:
-        Host to the address it was switched to. A host with no address on this
-        mesh is left alone -- it is not a member, and rewriting it would
-        strand a host that was reachable.
+        Host to the address it was switched to; a host without one is left
+        alone.
     """
     switched: dict[str, str] = {}
     for host in hosts:
