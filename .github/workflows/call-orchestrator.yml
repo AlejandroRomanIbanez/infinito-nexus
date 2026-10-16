@@ -83,7 +83,7 @@ on:
         type: string
         default: "auto"
       vpn:
-        description: "WireGuard axis of the deploy matrix: 'auto' rotates the mesh over the swarm rows and the compose rows of each role's smallest variant, 'enforced' meshes all of them, 'disabled' meshes none."
+        description: "WireGuard axis of the deploy matrix: 'auto' rotates the mesh over the swarm rows, 'enforced' meshes all of them, 'disabled' meshes none."
         required: false
         type: string
         default: "auto"
