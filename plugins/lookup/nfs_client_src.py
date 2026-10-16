@@ -15,10 +15,8 @@ from utils.storage.nfs import (
 class LookupModule(LookupBase):
     """NFS client mount src (server:path): {{ lookup('nfs_client_src') }}.
 
-    Pass ``controller`` to address the server as the Ansible controller must
-    reach it: ``{{ lookup('nfs_client_src', 'controller') }}``. Where the
-    cluster is joined by a VPN the controller is not a member of, the two are
-    different addresses, and the controller can only use the underlay one.
+    ``{{ lookup('nfs_client_src', 'controller') }}`` addresses the server as
+    the Ansible controller reaches it.
     """
 
     def run(self, terms, variables=None, **kwargs):
