@@ -158,10 +158,12 @@ class TestTopology(InventoryOnDisk, unittest.TestCase):
         groups = {**GROUPS, "svc-net-wireguard": ["wrk-1"]}
         self.assertEqual((), self._topology(groups).spokes["alpha"])
 
-    def test_a_hub_role_without_exactly_one_host_is_refused(self):
-        for hosts in ([], ["a", "b"]):
-            with self.subTest(hosts=hosts), self.assertRaises(ValueError):
-                hub_of({**GROUPS, "svc-swarm-manager": hosts})
+    def test_a_hub_role_with_two_hosts_is_refused(self):
+        with self.assertRaises(ValueError):
+            hub_of({**GROUPS, "svc-swarm-manager": ["a", "b"]})
+
+    def test_an_inventory_without_a_hub_host_has_no_hub(self):
+        self.assertIsNone(hub_of({**GROUPS, "svc-swarm-manager": []}))
 
 
 class TestTheShippedExample(InventoryOnDisk, unittest.TestCase):
