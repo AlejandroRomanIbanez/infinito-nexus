@@ -7,8 +7,9 @@ both files have been read.
 
 The declarations and the memberships are ordinary ``applications`` values in
 each host's ``host_vars``: the hub's ``svc-net-wireguard.networks.meshes``
-declares the meshes, and every other role's ``networks.meshes`` puts the hosts
-carrying it into them (:mod:`utils.networks.mesh`).
+declares the meshes, or every host's where there is no hub, and every other
+role's ``networks.meshes`` puts the hosts carrying it into them
+(:mod:`utils.networks.mesh`).
 """
 
 from __future__ import annotations
@@ -68,14 +69,53 @@ def host_applications(host_vars_dir: Path, host: str) -> Any:
     return load_document(path).get("applications") or {}
 
 
-def hub_of(groups: dict[str, list[str]]) -> str:
-    """The host that routes for every mesh."""
+def hub_of(groups: dict[str, list[str]]) -> str | None:
+    """The host that routes for every mesh, or None for full meshes."""
     hubs = sorted(dict.fromkeys(groups.get(HUB_ROLE, [])))
+    if not hubs:
+        return None
     if len(hubs) != 1:
         raise ValueError(
             f"hub group '{HUB_ROLE}' resolves to {len(hubs)} hosts, expected exactly 1"
         )
     return hubs[0]
+
+
+def declared_specs(
+    groups: dict[str, list[str]], host_vars_dir: Path, inventory_files: list[Path]
+) -> list[MeshSpec]:
+    """The meshes the deployment declares, in declaration order.
+
+    Under a hub they are the hub's own. Without one every host may declare
+    them, and every host that does must declare the same meshes.
+
+    Args:
+        groups: group to hosts over every inventory of the deploy.
+        host_vars_dir: directory holding one ``<host>.yml`` per host.
+        inventory_files: the inventories of the deploy.
+    """
+    hub = hub_of(groups)
+    if hub is not None:
+        return specs_of(host_applications(host_vars_dir, hub), inventory_files)
+    by_host: dict[str, list[MeshSpec]] = {}
+    for host in sorted({host for members in groups.values() for host in members}):
+        applications = host_applications(host_vars_dir, host)
+        if declared_meshes(applications):
+            by_host[host] = specs_of(applications, inventory_files)
+    if not by_host:
+        raise ValueError(
+            f"{APPLICATION_ID} declares no networks.{MESHES_KEY} on any host: "
+            "without a hub, a deployment states its meshes in every member's "
+            "host_vars"
+        )
+    first, specs = next(iter(by_host.items()))
+    differing = sorted(host for host, other in by_host.items() if other != specs)
+    if differing:
+        raise ValueError(
+            f"{', '.join(differing)} declare(s) other meshes than {first}: "
+            "without a hub, every host that declares meshes declares the same"
+        )
+    return specs
 
 
 def specs_of(applications: Any, inventory_files: list[Path]) -> list[MeshSpec]:
