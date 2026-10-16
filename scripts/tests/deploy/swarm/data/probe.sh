@@ -149,14 +149,14 @@ memberof_seed() {
 case "${MODE}" in
 ddl) ddl ;;
 marker-write)
-	if marker_write; then record marker-write ok; else record marker-write "fail $(head -n 1 "${LDAP_ERROR_FILE}")"; fi
+	if marker_write; then record marker-write ok; else record marker-write "fail $(grep -v '^WARNING' "${LDAP_ERROR_FILE}" | tail -n 1)"; fi
 	;;
 marker-read)
 	if marker_read; then record marker found; else record marker missing; fi
 	;;
 idle) idle ;;
 memberof-seed)
-	if memberof_seed; then record memberof-seed ok; else record memberof-seed "fail $(head -n 1 "${LDAP_ERROR_FILE}")"; fi
+	if memberof_seed; then record memberof-seed ok; else record memberof-seed "fail $(grep -v '^WARNING' "${LDAP_ERROR_FILE}" | tail -n 1)"; fi
 	;;
 *)
 	record error "unknown-mode-${MODE}"
