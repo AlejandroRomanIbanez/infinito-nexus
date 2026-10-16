@@ -337,7 +337,7 @@ def assign(
                 )
                 + (
                     to_emoji("vpn" if meshed else "direct")
-                    if mode in VPN_DEPLOY_MODES
+                    if mode in VPN_DEPLOY_MODES or mode == "compose"
                     else ""
                 )
                 + to_emoji(distro)
