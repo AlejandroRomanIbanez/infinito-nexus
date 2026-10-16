@@ -4,7 +4,7 @@
 - name: "🛑 Fail when the inventory carries no mesh for this host"
   ansible.builtin.fail:
     msg: >-
-      {{ inventory_hostname }} is in a swarm deploy but its inventory declares
+      {{ inventory_hostname }} is to carry WireGuard but its inventory declares
       no WireGuard mesh. Run cli.administration.inventory.mesh over every
       inventory of this deploy before the play; the mesh is written by that one
       cross-host pass, never by this role.
