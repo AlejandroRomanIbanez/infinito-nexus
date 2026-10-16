@@ -90,6 +90,40 @@ def address_on(applications: Any, host: str, mesh: str) -> str:
     return address if isinstance(address, str) else ""
 
 
+def _peers(interface: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    listed = interface.get("peers")
+    if not isinstance(listed, (list, tuple)):
+        return []
+    return [peer for peer in listed if isinstance(peer, Mapping)]
+
+
+def is_full(interface: Mapping[str, Any]) -> bool:
+    """Whether *interface* sits in a full mesh: it is no hub and peers with none."""
+    return not interface.get("is_hub") and not any(
+        peer.get("is_hub") for peer in _peers(interface)
+    )
+
+
+def listens(interface: Mapping[str, Any]) -> bool:
+    """Whether *interface* takes handshakes on its mesh port.
+
+    The hub does, and so does every member of a full mesh.
+    """
+    return bool(interface.get("is_hub")) or is_full(interface)
+
+
+def dialled_peers(interface: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    """The peers *interface* dials and keeps alive.
+
+    A spoke dials its hub, a member of a full mesh dials every peer, and the
+    hub dials none.
+    """
+    peers = _peers(interface)
+    if is_full(interface):
+        return peers
+    return [peer for peer in peers if peer.get("is_hub")]
+
+
 def primary_address(applications: Any, host: str) -> str:
     """The address the other planes reach *host* on, or ``""`` off the mesh."""
     for entry in interfaces(applications):
