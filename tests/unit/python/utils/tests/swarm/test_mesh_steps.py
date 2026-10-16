@@ -81,7 +81,6 @@ class TestLayout(unittest.TestCase):
             self.assertEqual(mesh_steps.transport_mesh(), "alpha")
 
     def test_the_layout_is_handed_over_as_inventory_values(self):
-        """The round bakes it into host_vars, where the writer reads it."""
         with self._env(EXAMPLE):
             applications = mesh_steps.layout_applications()
         self.assertEqual(
@@ -114,12 +113,6 @@ LINKS = """[
 
 
 class TestStaleControllerInterfaces(unittest.TestCase):
-    """A controller link left by other declarations still routes the pool.
-
-    The next round's ``wg-quick up`` then fails with ``RTNETLINK answers: File
-    exists``, which is how a development round died after a three-mesh one.
-    """
-
     def _stale(self) -> list[str]:
         listed = mock.Mock(stdout=LINKS)
         with (
