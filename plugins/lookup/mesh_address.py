@@ -1,14 +1,8 @@
-"""Lookup `mesh_address`: the address a host is reached on over the mesh.
-
-The address belongs to the host, not to a role: the mesh CLI writes it into the
-host's ``svc-net-wireguard.networks.interfaces``, and this reads it back through
-:mod:`utils.networks.mesh` like every other consumer does. It is the host's
-primary address, the one every other plane routes to, whatever the deployment
-named its meshes.
+"""Lookup `mesh_address`: a host's primary mesh address, or '' off the mesh.
 
 Usage:
 
-    {{ lookup('mesh_address', STACK_HOST) }}   # '10.100.0.1', or '' off the mesh
+    {{ lookup('mesh_address', STACK_HOST) }}
 
 Takes exactly one term, the inventory hostname.
 """
