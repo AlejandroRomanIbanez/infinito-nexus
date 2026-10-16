@@ -46,12 +46,6 @@ _MANAGER = f"{_PREFIX}{_NAMES['INFINITO_SWARM_MGR_NAME']}"
 
 
 def mesh_enabled() -> bool:
-    """Whether this deploy carries the WireGuard mesh.
-
-    Driven by the run's ``vpn`` axis. When it is off the role is left out of
-    the inventory entirely rather than deployed disabled, so the arm proves
-    swarm works with no mesh logic anywhere in the path.
-    """
     return (os.environ.get("INFINITO_SWARM_VPN") or "").strip().lower() == "true"
 
 
