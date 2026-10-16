@@ -201,7 +201,6 @@ def _converge_and_verify(*, app_id: str) -> int:
 
 
 def _drill_env(*, app_id: str, inv_dir: str, extras_path: str) -> dict[str, str]:
-    """The environment the drill reads, for a probe or for the real run."""
     env = os.environ.copy()
     env["APP_ID"] = app_id
     env["INFINITO_INVENTORY_DIR"] = inv_dir
@@ -211,7 +210,6 @@ def _drill_env(*, app_id: str, inv_dir: str, extras_path: str) -> dict[str, str]
 
 
 def _drill_is_coming(*, app_id: str, inv_dir: str, extras_path: str) -> bool:
-    """Whether the drill will tear this round's stack down and recover it."""
     env = _drill_env(app_id=app_id, inv_dir=inv_dir, extras_path=extras_path)
     env["DRILL_PROBE"] = "true"
     probe = subprocess.run(
@@ -239,7 +237,6 @@ def _backup_restore_drill(*, app_id: str, inv_dir: str, extras_path: str) -> int
 def _backup_phase(
     *, app_id: str, inv_dir: str, deploy_extras: str, drill_extras: str
 ) -> int:
-    """Bring the backup node up and drill backup, teardown and recovery."""
     rc = _deploy_backup_host(app_id=app_id, inv_dir=inv_dir, extras_path=deploy_extras)
     if rc == 0:
         rc = _backup_restore_drill(
@@ -266,11 +263,6 @@ def _mesh_prologue(
     round_variants: dict[str, int],
 ) -> int:
     """Put every node and the controller on the mesh, then move the transport.
-
-    The credential reset runs here rather than between the passes, where the
-    direct arm has it: its mirror copies the manager's host_vars over every
-    other host, which after the switch would hand every worker the manager's
-    mesh address.
 
     Args:
         app_id: primary application of the round.
