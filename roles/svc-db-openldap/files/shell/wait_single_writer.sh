@@ -9,12 +9,13 @@ service_key="${2:?service key required}"
 shift 2
 container exec "$("${BIN_RESOLVE_CONTAINER_ID:?resolver path required}" "$stack" "$service_key")" python3 -c '
 import sys, urllib.request
-up = 0
+up = []
 for url in sys.argv[1:]:
     try:
         urllib.request.urlopen(url, timeout=2)
-        up += 1
+        up.append(url)
     except Exception:
         pass
-sys.exit(0 if up == 1 else 1)
+print(f"writers={len(up)} {up}")
+sys.exit(0 if len(up) == 1 else 1)
 ' "$@"
