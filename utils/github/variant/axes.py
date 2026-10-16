@@ -15,9 +15,6 @@ cover the combinations instead of sampling them:
 * **tor** -- whether the row deploys behind the node onion. Driven by
   ``sweep // 2`` so it does NOT flip in lockstep with the mode.
 
-* **vpn** -- whether a swarm row, or a compose row of its role's smallest
-  variant, carries the WireGuard mesh, in ``vpn.py``.
-
 * **distro** -- which declared distribution the row deploys on. Per row rather
   than per run, so one sweep proves every distribution instead of proving one
   and claiming nothing about the other four, and a red row still names the
@@ -43,13 +40,13 @@ import os
 from typing import TYPE_CHECKING
 
 from utils.github.variant import instructions
-from utils.github.variant.label import (  # noqa: F401 - re-exported for callers
+from utils.github.variant.label import (  # noqa: F401
     LABEL_RE,
     LOCAL_GLYPH,
     Label,
     parse_label,
 )
-from utils.github.variant.pools import (  # noqa: F401 - re-exported for callers
+from utils.github.variant.pools import (  # noqa: F401
     DISTROS,
     FILESYSTEMS,
     rotate,
@@ -254,8 +251,7 @@ def assign(
             instead of substituting one. A wider pool leaves the kind a
             preference, because the matrix narrows every row to one anyway.
         vpn_mode: ``enforced`` meshes every meshable row, ``disabled`` none,
-            ``auto`` rotates. A row is meshable in swarm, and in compose on
-            its role's smallest variant.
+            ``auto`` rotates.
         variants_per_app: rendered variant configs per app, so a variant that
             switches the tor gate off is never counted capable.
 
@@ -437,10 +433,9 @@ def _offering(
     tor_mode: str,
     smallest: bool,
 ) -> tuple[str, ...]:
-    """The modes the rotation may still draw from once an onion or mesh state
-    is pinned: pinning the onion on a row that also offers host must not
-    rotate the row onto host, where no onion exists, and pinning the mesh must
-    not rotate it onto a mode that cannot take one."""
+    """The modes the rotation may still draw from once an onion state is
+    pinned: pinning the onion on a row that also offers host must not rotate
+    the row onto host, where no onion exists."""
     return tuple(
         mode
         for mode in offered
