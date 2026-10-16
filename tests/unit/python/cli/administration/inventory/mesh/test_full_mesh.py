@@ -210,12 +210,12 @@ class TestWritten(FullMeshOnDisk, unittest.TestCase):
 
     def test_a_second_run_leaves_every_file_byte_identical(self):
         before = {
-            path.name: path.read_bytes()  # nocheck: cache-read  tempdir fixture rewritten between reads in one test
+            path.name: path.read_bytes()  # nocheck: cache-read
             for path in self.host_vars.glob("*.yml")
         }
         self._write()
         after = {
-            path.name: path.read_bytes()  # nocheck: cache-read  tempdir fixture rewritten between reads in one test
+            path.name: path.read_bytes()  # nocheck: cache-read
             for path in self.host_vars.glob("*.yml")
         }
         self.assertEqual(before, after)
