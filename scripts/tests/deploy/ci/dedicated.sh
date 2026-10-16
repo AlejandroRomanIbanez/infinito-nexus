@@ -13,6 +13,8 @@ set -euo pipefail
 #   PYTHON="python3"
 #   variant="<csv>"  pin to one or more matrix rounds, e.g. "2" or "0,1,2"
 #                    (the runner-split bundle from CI discovery); empty = all
+#   INFINITO_COMPOSE_VPN="true"  also deploy svc-net-wireguard, so its CLI test
+#                    meshes three throwaway hosts after the app
 
 : "${INFINITO_DISTRO:?INFINITO_DISTRO must be set (e.g. arch)}"
 : "${INFINITO_INVENTORY_DIR:?INFINITO_INVENTORY_DIR must be set}"
@@ -206,8 +208,13 @@ docker exec -d \
 	"${_up_container}" \
 	sh /opt/src/infinito/scripts/tests/deploy/ci/dns53-sampler.sh
 
+deploy_apps="${apps}"
+if [[ "${INFINITO_COMPOSE_VPN:-}" == "true" ]]; then
+	deploy_apps="${apps} svc-net-wireguard"
+fi
+
 deploy_args=(
-	--apps "${apps}"
+	--apps "${deploy_apps}"
 	--inventory-dir "${INFINITO_INVENTORY_DIR}"
 	--debug
 )
@@ -218,7 +225,7 @@ docker system df || true # nocheck: shell-or-true -- grandfathered: worked in pr
 echo ">>> END STATE BEFORE DEPLOY"
 
 _init_args=(
-	--apps "${apps}"
+	--apps "${deploy_apps}"
 	--inventory-dir "${INFINITO_INVENTORY_DIR}"
 )
 if [[ "${INFINITO_PRESERVE_DOCKER_CACHE}" == "true" ]]; then
