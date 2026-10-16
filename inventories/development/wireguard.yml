@@ -1,7 +1,4 @@
 ---
-# WireGuard layout of the swarm development lab, as inventory values. A meshed
-# round bakes this block into every lab host's host_vars. svc-net-wireguard
-# declares the meshes; every other role lists the meshes its hosts join.
 applications:
   svc-net-wireguard:
     networks:
