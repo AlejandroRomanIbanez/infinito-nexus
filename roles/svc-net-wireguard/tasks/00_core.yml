@@ -65,7 +65,7 @@
     mode: "0700"
 
 - name: "📄 Render the interface of every mesh this host belongs to"
-  ansible.builtin.template: # nocheck: stack-host-template (per-host system config; every member writes its own /etc/wireguard, and gating on the stack host would leave every spoke without an interface)
+  ansible.builtin.template: # nocheck: stack-host-template (per-host /etc/wireguard)
     src: wg.conf.j2
     dest: "{{ [WIREGUARD_CONFIG_DIR, mesh_name ~ '.conf'] | path_join }}"
     owner: root
