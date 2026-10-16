@@ -1,10 +1,3 @@
-"""Run one swarm-matrix step, aborting before the runner's disk or RAM fills.
-
-The Actions Worker dies silently on ENOSPC while writing its own logs, so a
-full disk truncates the job without diagnostics. Terminating the step at
-DISK_FLOOR_MB keeps enough room for the rescue artifacts and the log upload.
-"""
-
 from __future__ import annotations
 
 import shutil
@@ -53,6 +46,10 @@ def run_step(cmd: list[str], *, env: dict[str, str], label: str) -> int:
 
 def run_watched(cmd: list[str], *, env: dict[str, str]) -> int:
     """Run a step, aborting visibly before the runner disk or RAM fills.
+
+    The Actions Worker dies silently on ENOSPC while writing its own logs, so
+    a full disk truncates the job without diagnostics; terminating the step at
+    DISK_FLOOR_MB keeps enough room for rescue artifacts and the log upload.
 
     Args:
         cmd: argv of the step.
