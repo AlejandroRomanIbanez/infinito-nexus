@@ -17,7 +17,7 @@
     label: "{{ item.mesh_name }}"
   when: (item.stdout | trim) | length == 0
 
-- name: "⏳ Wait until every spoke interface has handshaked with its hub"
+- name: "⏳ Wait until every dialling interface has handshaked with its peers"
   ansible.builtin.command: "wg show {{ mesh_name | quote }} latest-handshakes"
   loop: "{{ WIREGUARD_SPOKE_MESH_NAMES }}"
   loop_control:
@@ -32,12 +32,12 @@
     - wireguard_handshakes.stdout | default('', true) | trim | length > 0
     - wireguard_handshakes.stdout is not search('\t0')
 
-- name: "🛑 Fail hard when a spoke never reached its hub"
+- name: "🛑 Fail hard when a dialling interface never reached a peer"
   ansible.builtin.fail:
     msg: >-
       WireGuard interface '{{ item.mesh_name }}' on {{ inventory_hostname }}
-      never completed a handshake with its hub. No swarm deploy can proceed
-      over a partitioned mesh.
+      never completed a handshake with every peer it dials. No deploy can
+      proceed over a partitioned mesh.
   loop: "{{ wireguard_handshakes.results | default([]) }}"
   loop_control:
     label: "{{ item.mesh_name }}"
