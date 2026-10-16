@@ -1,12 +1,3 @@
-"""Moving the Ansible transport onto the mesh the deploy just built.
-
-The first pass reaches the hosts however it can, because it is what creates
-the tunnel. Every pass after it connects over the mesh, which is the only way
-the mesh is load-bearing rather than merely present: a broken tunnel then
-fails the deploy at the connection instead of letting a role fall back to the
-underlay it was supposed to stop using.
-"""
-
 from __future__ import annotations
 
 import tempfile
@@ -76,6 +67,11 @@ class MeshOnDisk(unittest.TestCase):
         write_mesh(mesh, self.host_vars, self.vault_file)
         return mesh
 
+    def _text(self, host: str) -> str:
+        return (self.host_vars / f"{host}.yml").read_text(  # nocheck: cache-read
+            encoding="utf-8"
+        )
+
 
 class TestTheControllerJoinsTheMesh(MeshOnDisk, unittest.TestCase):
     def test_it_is_admitted_as_an_ordinary_spoke(self):
@@ -83,7 +79,6 @@ class TestTheControllerJoinsTheMesh(MeshOnDisk, unittest.TestCase):
         self.assertIn(CONTROLLER, spokes)
 
     def test_it_stays_out_when_it_is_not_named(self):
-        """It belongs to no role group, so nothing else can pull it in."""
         _, spokes = members_of(self.swarm, self.topology)
         self.assertNotIn(CONTROLLER, spokes)
 
@@ -116,7 +111,6 @@ class TestSwitchingTheTransport(MeshOnDisk, unittest.TestCase):
                 self.assertEqual(switched[member.host], member.address)
 
     def test_a_non_member_is_left_reachable(self):
-        """Rewriting a host that holds no mesh address would strand it."""
         self._write_swarm()
         switched = self._switch()
         self.assertNotIn("nfs-server", switched)
@@ -124,60 +118,34 @@ class TestSwitchingTheTransport(MeshOnDisk, unittest.TestCase):
     def test_the_connection_moves_to_ssh(self):
         self._write_swarm()
         self._switch()
-        text = (
-            self.host_vars / "swarm-wrk-01.yml"
-        ).read_text(  # nocheck: cache-read  tempdir fixture rewritten between reads in one test
-            encoding="utf-8"
-        )
+        text = self._text("swarm-wrk-01")
         self.assertIn("ansible_connection: ssh", text)
         self.assertIn("ansible_user: administrator", text)
 
     def test_a_switched_host_carries_the_meshs_own_ssh_args(self):
         self._write_swarm()
         self._switch()
-        text = (
-            self.host_vars / "swarm-wrk-01.yml"
-        ).read_text(  # nocheck: cache-read  tempdir fixture rewritten between reads in one test
-            encoding="utf-8"
-        )
+        text = self._text("swarm-wrk-01")
         self.assertIn("ansible_ssh_args:", text)
         self.assertIn(f"ControlPersist={MESH_CONTROL_PERSIST}", text)
 
     def test_a_switched_host_asks_for_no_tty(self):
-        """Ansible gives a pty to anything it cannot pipeline, and a pty ends
-        every line with a carriage return. The container connection this
-        replaces returned bare newlines, so a role reading its own stdout
-        would break purely because the deploy moved onto the mesh."""
         self._write_swarm()
         self._switch()
-        text = (
-            self.host_vars / "swarm-wrk-01.yml"
-        ).read_text(  # nocheck: cache-read  tempdir fixture rewritten between reads in one test
-            encoding="utf-8"
-        )
-        self.assertIn("ansible_ssh_use_tty: false", text)
+        self.assertIn("ansible_ssh_use_tty: false", self._text("swarm-wrk-01"))
 
     def test_switching_before_the_mesh_exists_changes_nothing(self):
-        """The first pass is what creates the mesh; there is nothing to move to."""
         self.assertEqual(self._switch(), {})
 
     def test_the_address_is_only_read_from_the_host_that_owns_it(self):
-        """The swarm reset mirrors one node's host_vars over every other."""
         self._write_swarm()
-        mirrored = (
-            self.host_vars / "swarm-mgr-01.yml"
-        ).read_text(  # nocheck: cache-read  tempdir fixture rewritten between reads in one test
-            encoding="utf-8"
+        (self.host_vars / "swarm-wrk-01.yml").write_text(
+            self._text("swarm-mgr-01"), encoding="utf-8"
         )
-        (self.host_vars / "swarm-wrk-01.yml").write_text(mirrored, encoding="utf-8")
         self.assertIsNone(mesh_address(self.host_vars, "swarm-wrk-01", "swarm"))
 
 
 class TestTheMeshRetunesItsOwnTransport(unittest.TestCase):
-    """The mesh pass pays the SSH handshake once per task when the master has
-    already closed, so it raises the window for its own hosts rather than for
-    the whole repository."""
-
     BASE = (
         "-o ControlMaster=auto -o ControlPersist=20s "
         "-o ControlPath=~/.ssh/ansible-%h-%p-%r -o ServerAliveInterval=15"
@@ -189,8 +157,6 @@ class TestTheMeshRetunesItsOwnTransport(unittest.TestCase):
         self.assertNotIn("ControlPersist=20s", args)
 
     def test_the_socket_is_left_to_ansible(self):
-        """A ControlPath naming a directory nothing creates leaves the master
-        unable to open its socket, and it reconnects per task in silence."""
         self.assertNotIn("ControlPath", mesh_ssh_args(self.BASE))
 
     def test_every_other_option_survives(self):
@@ -202,8 +168,6 @@ class TestTheMeshRetunesItsOwnTransport(unittest.TestCase):
         self.assertIn("-C", mesh_ssh_args("-C -o ControlPersist=20s"))
 
     def test_the_repository_value_is_the_one_retuned(self):
-        """Derived from ansible.cfg rather than restated, so a mesh host keeps
-        whatever the platform sets and differs only where the mesh needs it."""
         base = repo_ssh_args()
         self.assertIn("ControlMaster", base)
         for option in base.split(" -o "):
