@@ -473,13 +473,6 @@ class TestProvisionMcp(unittest.TestCase):
 
 
 class TestRecordsRejectsAShapeItCannotRead(unittest.TestCase):
-    """A 200 that is not a list of records must name the shape.
-
-    Iterating a string or a dict yields strings, and the callers' ``.get``
-    then raised ``'str' object has no attribute 'get'`` from inside a 30-times
-    retry, naming neither the endpoint nor the shape.
-    """
-
     def setUp(self) -> None:
         self.module = load_script()
 
@@ -499,7 +492,6 @@ class TestRecordsRejectsAShapeItCannotRead(unittest.TestCase):
         self.assertIn("str", str(exit_.exception))
 
     def test_a_mapping_that_is_not_the_paged_shape_names_its_keys(self) -> None:
-        """n8n 2 pages as {"data": {"items": [...]}}; anything else is named."""
         with self.assertRaises(SystemExit) as exit_:
             self.module.records({"data": {"data": [{"id": "a"}]}}, "workflows")
         self.assertIn("workflows", str(exit_.exception))
@@ -512,7 +504,6 @@ class TestRecordsRejectsAShapeItCannotRead(unittest.TestCase):
         self.assertIn("str", str(exit_.exception))
 
     def test_the_failure_never_carries_the_body(self) -> None:
-        """The credentials listing holds secrets, so only the shape is said."""
         with self.assertRaises(SystemExit) as exit_:
             self.module.records({"data": "s3cret-token"}, "credentials")
         self.assertNotIn("s3cret-token", str(exit_.exception))
