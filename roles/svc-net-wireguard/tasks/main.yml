@@ -3,5 +3,17 @@
   when:
     - run_once_svc_net_wireguard is not defined
     - WIREGUARD_ENABLED | bool
+    - DEPLOYMENT_MODE == 'swarm' or WIREGUARD_MESH_NAMES | length > 0
   vars:
     application_id: svc-net-wireguard
+
+- name: "⏭️ Skip WireGuard on a host the mesh CLI wrote no mesh for"
+  ansible.builtin.debug:
+    msg: >-
+      {{ inventory_hostname }} carries svc-net-wireguard but holds no mesh; run
+      cli.administration.inventory.mesh over this deploy's inventories to give
+      it one.
+  when:
+    - WIREGUARD_ENABLED | bool
+    - DEPLOYMENT_MODE == 'compose'
+    - WIREGUARD_MESH_NAMES | length == 0
