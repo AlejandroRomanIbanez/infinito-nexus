@@ -21,7 +21,8 @@ longer match is rejected and the reader renders afresh::
       applications_carrier:
         clear: true
 
-``tasks/utils/setup/role.yml`` parks one after every role and
+``tasks/utils/setup/role.yml`` parks one after every role,
+``tasks/utils/load/app.yml`` one after every nested application load and
 ``roles/sys-token-store/tasks/write.yml`` one after every persisted token;
 where the key still matches they serve the carried payload without rendering.
 
