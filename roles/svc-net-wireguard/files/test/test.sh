@@ -1,17 +1,7 @@
 #!/usr/bin/env bash
 # shellcheck shell=bash
 #
-# svc-net-wireguard role test: three throwaway hosts from one inventory, two
-# full meshes, host II in both. Each host joins its meshes through MESH_ROLE's
-# networks.meshes. The mesh CLI writes the inventory, playbook-mesh.yml
-# deploys the role onto the hosts, and the test proves that I and II reach
-# each other, that II and III reach each other, and that I and III do not.
-#
-# A pair that shares a mesh must answer a ping, open an SSH session with the
-# platform's mesh SSH arguments that lands on the expected host, and carry a
-# bulk transfer intact. A pair that does not must fail the ping and the SSH
-# connection, WireGuard itself must refuse a packet routed into the foreign
-# mesh, and the two hosts must still reach each other on the underlay.
+# svc-net-wireguard role test: three throwaway hosts in two full meshes.
 #
 # Env (all required; the role's test.env carries them):
 #   BULK_BYTES   size of the transfer each reachable pair must carry intact
