@@ -177,14 +177,10 @@ The `tor` input decides what the onion axis is allowed to do at all:
 | `exclusive` | as `enforced`, and rows that cannot take an onion are dropped |
 | `disabled` | no row takes the onion |
 
-The `vpn` input does the same for the WireGuard mesh on swarm rows, and on
-compose rows of a role's smallest variant: `auto` rotates it, `enforced`
-meshes every such row and `disabled` none. A meshed compose row also deploys
-`svc-net-wireguard`, whose CLI test meshes three throwaway hosts; every other
-compose row never takes the mesh. Every swarm and compose title shows 🚇 when
-its row carries the mesh and 🛣️ when it does not, and a `&vpn` pin on a row
-that cannot take the mesh aborts the run. `meshes` names the WireGuard layout a meshed
-swarm row deploys, empty meaning `INFINITO_SWARM_MESHES` from `default.env`; pointing it at
+The `vpn` input does the same for the WireGuard mesh on swarm rows: `auto`
+rotates it, `enforced` meshes every swarm row and `disabled` none. A compose
+row never takes the mesh. `meshes` names the WireGuard layout a meshed row
+deploys, empty meaning `INFINITO_SWARM_MESHES` from `default.env`; pointing it at
 an `inventories/examples/*/wireguard.yml` with `vpn: enforced` and `mode: swarm`
 is how an example is deployed in CI.
 
