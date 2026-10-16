@@ -337,13 +337,62 @@ class TestMeshRotation(unittest.TestCase):
                 arms = {e["vpn"] for e in self._entries(sweep) if e["mode"] == "swarm"}
                 self.assertEqual(arms, {"true", "false"})
 
-    def test_a_compose_row_never_carries_the_mesh(self) -> None:
+    def test_every_sweep_lands_smallest_compose_rows_on_both_arms(self) -> None:
         for sweep in range(8):
             with self.subTest(sweep=sweep):
                 arms = {
                     e["vpn"] for e in self._entries(sweep) if e["mode"] == "compose"
                 }
-                self.assertEqual(arms, {"false"})
+                self.assertEqual(arms, {"true", "false"})
+
+    def test_a_compose_row_of_a_larger_variant_never_carries_the_mesh(self) -> None:
+        rows = [_row("web-app-a", 0, ("compose",)) for _ in range(8)]
+        for vpn_mode in ("auto", "enforced"):
+            for sweep in range(8):
+                with self.subTest(vpn_mode=vpn_mode, sweep=sweep):
+                    entries = _assign(
+                        rows,
+                        sweep=sweep,
+                        tor_mode="auto",
+                        vpn_mode=vpn_mode,
+                        variants_per_app=_VARIANTS,
+                    )
+                    self.assertEqual({e["vpn"] for e in entries}, {"false"})
+
+    def test_the_smallest_variant_is_the_one_enabling_fewest_services(self) -> None:
+        rows = [_row("web-app-a", 1, ("compose",))]
+        entries = _assign(
+            rows,
+            sweep=0,
+            tor_mode="auto",
+            vpn_mode="enforced",
+            variants_per_app=_VARIANTS,
+        )
+        self.assertEqual({e["vpn"] for e in entries}, {"true"})
+
+    def test_a_held_axis_holds_smallest_compose_rows(self) -> None:
+        for vpn_mode, expected in (("enforced", "true"), ("disabled", "false")):
+            with self.subTest(vpn_mode=vpn_mode):
+                entries = _assign(
+                    [_row("web-app-b", 0, ("compose",)) for _ in range(8)],
+                    sweep=0,
+                    tor_mode="auto",
+                    vpn_mode=vpn_mode,
+                    variants_per_app=_VARIANTS,
+                )
+                self.assertEqual({e["vpn"] for e in entries}, {expected})
+
+    def test_only_a_meshable_compose_title_carries_a_mesh_glyph(self) -> None:
+        glyphs = (to_emoji("vpn"), to_emoji("direct"))
+        for row, meshable in (
+            (_row("web-app-b", 0, ("compose",)), True),
+            (_row("web-app-a", 0, ("compose",)), False),
+        ):
+            with self.subTest(app=row["name"], variant=row["variant"]):
+                label = _assign(
+                    [row], sweep=0, tor_mode="auto", variants_per_app=_VARIANTS
+                )[0]["label"]
+                self.assertEqual(any(g in label for g in glyphs), meshable)
 
 
 class TestPinnedAxes(unittest.TestCase):
@@ -548,7 +597,7 @@ class TestDistroAndFilesystemAxes(unittest.TestCase):
 
     def test_the_glyphs_follow_the_onion_slot_in_the_label(self) -> None:
         entry = _assign(
-            [_row("web-app-b", 0, ("compose",))],
+            [_row("web-app-a", 0, ("compose",))],
             sweep=0,
             tor_mode="disabled",
             distros=("debian",),
