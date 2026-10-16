@@ -54,7 +54,7 @@ on:
           - "exclusive"
           - "disabled"
       vpn:
-        description: "🚇 WireGuard axis for swarm and smallest compose variants"
+        description: "🚇 WireGuard axis for swarm; auto rotates, the others hold every row"
         required: false
         default: "auto"
         type: choice
