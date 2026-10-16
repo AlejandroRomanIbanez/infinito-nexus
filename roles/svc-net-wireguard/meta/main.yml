@@ -1,7 +1,7 @@
 ---
 galaxy_info:
   author: Evangelos Tsakoudis
-  description: Kernel WireGuard tunnels carrying swarm control, overlay and storage traffic over hub-and-spoke meshes
+  description: Kernel WireGuard tunnels, hub-and-spoke meshes under a swarm manager and full meshes between Compose hosts
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
     Kevin Veen-Birkenbach
