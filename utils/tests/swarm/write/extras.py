@@ -22,8 +22,7 @@ NOT into the extras file: extra-vars replace the whole inventory
 carries the same hazard for the same reason, and its authorized_keys travel
 the same merge channel. The deploy-facing twin ``<OUT_PATH stem>.deploy.yml``
 therefore carries everything except ``applications`` and ``users``, plus
-``ansible_become_password`` so a pass connecting over ssh escalates with the
-password the administrator account holds.
+``ansible_become_password``.
 """
 
 from __future__ import annotations
@@ -131,14 +130,6 @@ def ensure_swarm_keypairs() -> dict[str, str]:
 
 
 def _mesh_address(host_vars_dir: Path, host: str, fallback: str) -> str:
-    """The host's address on its primary mesh, or ``fallback`` when it has none.
-
-    Read from the host_vars the mesh writer produced earlier in the round
-    rather than recomputed, so the allocation stays in one place. The primary
-    mesh is the one every other plane reaches the host on, whatever the
-    declarations named it. Falling back to the underlay keeps a round without a
-    mesh working unchanged.
-    """
     path = host_vars_dir / f"{host}.yml"
     if not path.exists():
         return fallback
