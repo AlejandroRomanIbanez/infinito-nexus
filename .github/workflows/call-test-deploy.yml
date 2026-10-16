@@ -364,6 +364,7 @@ jobs:
           apps: ${{ matrix.apps }}
           variant: ${{ matrix.variant }}
           disable: ${{ matrix.disable || inputs.disable }}
+          INFINITO_COMPOSE_VPN: ${{ matrix.vpn }}
           ANSIBLE_LOG_PATH: /tmp/ansible-${{ matrix.apps }}.log
         run: ./scripts/tests/deploy/ci/all.sh 2>&1 | tee "/tmp/ansible-${{ matrix.apps }}.log"
 
