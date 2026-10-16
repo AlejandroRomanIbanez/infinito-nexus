@@ -1,5 +1,3 @@
-"""The mesh steps of one swarm-matrix round."""
-
 from __future__ import annotations
 
 import ipaddress
@@ -24,7 +22,6 @@ _DEFAULT_ADMIN_KEY = "/tmp/swarm-nfs-admin.key"  # noqa: S108 - ephemeral swarm-
 
 
 def layout() -> Path:
-    """The mesh layout this round deploys, from ``INFINITO_SWARM_MESHES``."""
     path = (
         os.environ.get("INFINITO_SWARM_MESHES")
         or parse_static_env(PROJECT_ROOT / "default.env")["INFINITO_SWARM_MESHES"]
@@ -33,11 +30,6 @@ def layout() -> Path:
 
 
 def layout_applications() -> dict:
-    """The ``applications`` overrides the layout bakes into every lab host.
-
-    Every host gets the same block, and membership is per role, so a host
-    only joins the meshes its own roles name.
-    """
     document = load_yaml_any(str(layout()), default_if_missing={}) or {}
     return dict(document.get("applications") or {})
 
@@ -49,24 +41,10 @@ def _layout_specs() -> list:
 
 
 def transport_mesh() -> str:
-    """The mesh the controller joins and the transport moves onto.
-
-    The first one declared, so a deployment names it by order rather than by a
-    name this harness would have to know.
-    """
     return _layout_specs()[0].name
 
 
 def stale_controller_interfaces() -> list[str]:
-    """WireGuard links on the controller left behind by another layout.
-
-    The controller is no lab node: locally it is the act container on the
-    host's network, so its interface outlives the round. One left by another
-    layout still routes the pool, and the next ``wg-quick up`` fails with
-    ``RTNETLINK answers: File exists``. Only links holding an address inside
-    the pool and naming no declared mesh count; any other WireGuard link on the
-    host is not this harness's to remove.
-    """
     specs = _layout_specs()
     declared = {spec.name for spec in specs}
     pools = {ipaddress.ip_network(spec.routed_range or spec.subnet) for spec in specs}
@@ -99,7 +77,6 @@ _LAB_ADDRESSES = {
 
 
 def _lab_endpoints() -> list[str]:
-    """`--endpoint` argument per lab node, from the topology default.env names."""
     arguments: list[str] = []
     for name_var, address_var in _LAB_ADDRESSES.items():
         name = os.environ.get(name_var, "").strip()
@@ -135,7 +112,6 @@ def write_mesh(*, inv_dir: str, rotate: bool = False) -> int:
 
 
 def bootstrap_mesh(*, inv_dir: str) -> int:
-    """Bring the mesh up before anything is deployed over it."""
     if not mesh_enabled():
         return 0
     return run_step(
@@ -155,7 +131,6 @@ def bootstrap_mesh(*, inv_dir: str) -> int:
 
 
 def converge_mesh(*, inv_dir: str) -> int:
-    """Carry the rotated keys to every node before the transport moves."""
     if not mesh_enabled():
         return 0
     return run_step(
@@ -173,7 +148,6 @@ def converge_mesh(*, inv_dir: str) -> int:
 
 
 def mesh_controller(*, inv_dir: str) -> int:
-    """Bring the controller's own interface up before the transport moves."""
     if not mesh_enabled():
         return 0
     escalate = [] if os.geteuid() == 0 else ["sudo", "-n"]
@@ -215,15 +189,6 @@ def mesh_controller(*, inv_dir: str) -> int:
 def lab_sudo_without_prompt(*, inv_dir: str) -> int:
     """Take the sudo prompt off the lab's administrator before the switch.
 
-    Measured over the mesh, an escalated module call costs 1046ms more than an
-    unescalated one, while over the container connection -- which runs as root
-    and so never prompts -- escalation is free. The prompt, not the transport,
-    is what the meshed arm was paying: SSH through the tunnel is itself faster
-    per call than docker exec.
-
-    Runs while the inventory still reaches the nodes as root, so it is in place
-    before anything logs in as the administrator.
-
     Args:
         inv_dir: inventory directory of the round.
     """
@@ -246,17 +211,10 @@ def lab_sudo_without_prompt(*, inv_dir: str) -> int:
 def transport_bench(*, inv_dir: str, extras_path: str, label: str) -> int:
     """Time a fixed number of module calls over whatever transport is in force.
 
-    Run once before the transport switch and once after, the four task
-    durations decompose the meshed arm's per-task cost into the connection
-    plugin and the privilege escalation. Off unless asked for, and its exit
-    code never reaches the round: a diagnostic must not decide whether a
-    deploy passes.
-
     Args:
         inv_dir: inventory directory of the round.
-        extras_path: round extras, which carry the become password the
-            escalated half of the benchmark needs.
-        label: which transport the numbers belong to, for the banner.
+        extras_path: round extras, carrying the become password.
+        label: which transport the numbers belong to.
     """
     if (
         os.environ.get("INFINITO_SWARM_TRANSPORT_BENCH") or ""
@@ -282,7 +240,6 @@ def transport_bench(*, inv_dir: str, extras_path: str, label: str) -> int:
 
 
 def switch_to_mesh_transport(*, inv_dir: str) -> int:
-    """Point the inventory at the mesh before the pass that must use it."""
     if not mesh_enabled():
         return 0
     from cli.administration.inventory.mesh.transport import switch_to_mesh
