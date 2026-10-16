@@ -70,10 +70,17 @@ class ActionModule(ActionBase):
             return result
 
         revalidate_tokens_file(task_vars)
-        lookup = lookup_loader.get(
-            "applications", loader=self._loader, templar=self._templar
-        )
-        carrier = lookup.run([], variables=task_vars, carrier=True)[0]
+        render_vars = dict(task_vars)
+        render_vars.pop("application_id", None)
+        previous = self._templar.available_variables
+        self._templar.available_variables = render_vars
+        try:
+            lookup = lookup_loader.get(
+                "applications", loader=self._loader, templar=self._templar
+            )
+            carrier = lookup.run([], variables=render_vars, carrier=True)[0]
+        finally:
+            self._templar.available_variables = previous
 
         result.update(
             changed=False,
