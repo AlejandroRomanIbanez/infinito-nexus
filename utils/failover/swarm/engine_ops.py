@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import shlex
+
 from utils.failover import engines
 from utils.failover.inventory import (
     group_hosts,
@@ -115,7 +117,29 @@ class EngineOps:
                 sorted(engines.ldap_values(proc.stdout, "contextCSN"))
             )
         same = len(set(csns.values())) == 1 and bool(next(iter(csns.values())))
-        return same, f"contextCSN per instance: {csns}"
+        if same:
+            return True, f"contextCSN per instance: {csns}"
+        return False, f"contextCSN per instance: {csns}; syncrepl: {self._syncrepl_log()}"
+
+    def _syncrepl_log(self) -> dict[str, list[str]]:
+        tails: dict[str, list[str]] = {}
+        for service in self._instances():
+            try:
+                out = self._on_manager(
+                    "sh",
+                    "-c",
+                    f"docker service logs --raw --tail 400 {shlex.quote(service)} 2>&1",
+                )
+            except RuntimeError as error:
+                tails[service] = [str(error)[:160]]
+                continue
+            lines = [
+                line.strip()[:200]
+                for line in out.splitlines()
+                if "syncrep" in line or "rid=" in line
+            ]
+            tails[service] = lines[-6:]
+        return tails
 
     def wait_full_strength(self, timeout_s: float) -> tuple[bool, str]:
         detail: list[str] = []
