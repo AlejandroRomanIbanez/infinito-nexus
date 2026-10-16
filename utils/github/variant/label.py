@@ -12,7 +12,6 @@ import re
 from typing import TYPE_CHECKING, NamedTuple
 
 from utils.github.variant.pools import DISTROS, FILESYSTEMS
-from utils.github.variant.vpn import MESH_GLYPH_MODES  # noqa: F401 - re-exported
 from utils.roles.display import VARIANT_SEPARATOR
 from utils.symbol_glossary import to_emoji, to_word
 
