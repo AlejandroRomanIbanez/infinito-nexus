@@ -1,11 +1,3 @@
-"""Unit tests for plugins/lookup/mesh_ranges.py.
-
-A lookup receives the play vars unrendered. The pool reaches it as the
-template that declares it, and returning that verbatim put
-``{{ [WIREGUARD_SUBNET_POOL] }}`` into the NFS export list on a live deploy,
-where ganesha refused the config and the whole swarm pass failed.
-"""
-
 from __future__ import annotations
 
 import unittest
