@@ -1,12 +1,4 @@
 #!/usr/bin/env python3
-"""CLI: write every declared mesh into the host_vars of its members.
-
-The meshes and who joins them are read from the inventory itself: the hub's
-``svc-net-wireguard.networks.meshes`` declares them, or every host's where the
-inventory has no hub, and every other role's ``networks.meshes`` puts the
-hosts carrying it into them. Without a hub every mesh is a full mesh.
-"""
-
 from __future__ import annotations
 
 import argparse
@@ -24,7 +16,6 @@ from .write import (
 
 
 def parse_endpoints(pairs: list[str]) -> dict[str, str]:
-    """Turn ``HOST=ADDRESS`` arguments into the map the planner takes."""
     endpoints: dict[str, str] = {}
     for pair in pairs:
         host, separator, address = pair.partition("=")
@@ -64,10 +55,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument(
         "--controller",
-        help=(
-            "host to admit as an extra spoke of --controller-mesh, so the "
-            "machine driving the deploy can reach the mesh it just created"
-        ),
+        help="host to admit as an extra spoke of --controller-mesh",
     )
     parser.add_argument(
         "--controller-mesh",
@@ -82,9 +70,8 @@ def main(argv: list[str] | None = None) -> int:
         default=[],
         metavar="HOST=ADDRESS",
         help=(
-            "underlay address peers dial for HOST, for a topology whose "
-            "inventory names do not resolve on every member. Repeatable; a "
-            "host left out is dialled by its inventory name"
+            "underlay address peers dial for HOST; repeatable, a host left out "
+            "is dialled by its inventory name"
         ),
     )
     parser.add_argument(
