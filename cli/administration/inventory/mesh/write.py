@@ -1,11 +1,3 @@
-"""Project a resolved mesh onto the host_vars of every member.
-
-Each host records what it holds on every mesh as one entry of
-``svc-net-wireguard.networks.interfaces``. The entry is the host's own state,
-not a declaration, so it is written here and read through
-:mod:`utils.networks.mesh`.
-"""
-
 from __future__ import annotations
 
 from typing import TYPE_CHECKING
@@ -40,7 +32,6 @@ PRIVATE_KEY_NAME = "mesh_private_key"
 
 
 def private_key_name(mesh_name: str | None = None) -> str:
-    """The credential key a member's own secret half is stored under."""
     return PRIVATE_KEY_NAME
 
 
@@ -61,7 +52,6 @@ def _interface_list(document: CommentedMap) -> CommentedSeq:
 def existing_public_keys(
     host_vars_dir: Path, hosts: list[str], mesh_name: str
 ) -> dict[str, str]:
-    """The public keys already issued to ``hosts`` for ``mesh_name``."""
     found: dict[str, str] = {}
     for host in hosts:
         path = host_vars_path(host_vars_dir, host)
@@ -100,7 +90,6 @@ def existing_public_keys(
 def existing_addresses(
     host_vars_dir: Path, hosts: list[str], mesh_name: str
 ) -> dict[str, str]:
-    """The addresses already issued to ``hosts`` on ``mesh_name``."""
     found: dict[str, str] = {}
     for host in hosts:
         path = host_vars_path(host_vars_dir, host)
@@ -116,7 +105,6 @@ def existing_addresses(
 
 
 def prune_foreign_meshes(host_vars_dir: Path, hosts: list[str]) -> dict[str, list[str]]:
-    """Drop mesh entries a host does not own, returning what was removed."""
     removed: dict[str, list[str]] = {}
     for host in hosts:
         path = host_vars_path(host_vars_dir, host)
@@ -181,10 +169,8 @@ def write_mesh(
         mesh: the resolved mesh.
         host_vars_dir: directory holding one ``<host>.yml`` per member.
         vault_password_file: password file the private keys are encrypted with.
-        primary: hostname to its primary mesh
-            (:func:`~cli.administration.inventory.mesh.plan.primary_meshes`).
-            A host this mesh is not primary for routes only the mesh subnet
-            through it. Absent hosts count this mesh as their primary.
+        primary: hostname to its primary mesh; an absent host counts this
+            mesh as its primary.
     """
     written: list[Path] = []
     key_name = private_key_name()
