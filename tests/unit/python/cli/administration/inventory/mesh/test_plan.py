@@ -1,11 +1,3 @@
-"""Planning guarantees for cross-host mesh credentials.
-
-Planning is the whole correctness argument for the mesh, and every failure mode
-here is silent at deploy time: a spoke missing from the hub's peer list is a
-host that configures cleanly and never handshakes, and a public key that does
-not answer for its private half looks identical until traffic is attempted.
-"""
-
 from __future__ import annotations
 
 import unittest
@@ -38,11 +30,6 @@ def _with_spokes(**spokes: tuple[str, ...]) -> Topology:
 
 class TestMembership(unittest.TestCase):
     def test_the_hub_is_not_also_listed_as_its_own_spoke(self):
-        """The manager carries svc-swarm-node as well as the hub role.
-
-        Left unfiltered it peers with itself, which WireGuard accepts and which
-        then routes the hub's own traffic into its own tunnel.
-        """
         mesh = plan_mesh(SWARM, _with_spokes(swarm=("swarm-mgr-01", "swarm-wrk-01")))
         self.assertEqual(mesh.hub.host, "swarm-mgr-01")
         self.assertEqual([s.host for s in mesh.spokes], ["swarm-wrk-01"])
@@ -81,14 +68,6 @@ class TestAddressing(unittest.TestCase):
 
 
 class TestAddressPersistence(unittest.TestCase):
-    """A member keeps the address it already answers on.
-
-    `wg syncconf` carries keys and peers onto a live interface and never its
-    address, so a member whose address is recomputed keeps answering on the
-    old one while the rest of the mesh and the inventory have moved to the
-    new one. The deploy then loses exactly the hosts that were already up.
-    """
-
     def _held(self, spec, topology) -> dict[str, str]:
         return {m.host: m.address for m in plan_mesh(spec, topology).members}
 
@@ -114,11 +93,6 @@ class TestAddressPersistence(unittest.TestCase):
         self.assertTrue(address.startswith("10.100.0."))
 
     def test_a_spoke_never_adopts_the_hub_address(self):
-        """The mirror leaves every host holding the hub's entry.
-
-        A spoke that reused what it found there would bring up an interface
-        claiming the hub's address and blackhole the mesh it belongs to.
-        """
         hub = plan_mesh(SWARM, TOPOLOGY).hub.address
         mesh = plan_mesh(SWARM, TOPOLOGY, addresses={"swarm-wrk-01": hub})
         self.assertNotEqual(mesh.member("swarm-wrk-01").address, hub)
@@ -198,11 +172,6 @@ class TestKeyPairing(unittest.TestCase):
         self.assertEqual(len({m.private_key for m in mesh.members}), len(mesh.members))
 
     def test_a_peer_entry_never_carries_a_private_key(self):
-        """The containment guarantee the whole mesh rests on.
-
-        A peer is described by its public half only, so one host's inventory can
-        never be used to impersonate another.
-        """
         mesh = plan_mesh(SWARM, TOPOLOGY)
         secrets = {m.private_key for m in mesh.members}
         for member in mesh.members:
@@ -219,12 +188,6 @@ class TestKeyPairing(unittest.TestCase):
 
 class TestRotation(unittest.TestCase):
     def test_an_existing_member_keeps_its_key_and_is_not_rewritten(self):
-        """Vault encryption is salted.
-
-        Re-encrypting an unchanged secret would rewrite the file on every run,
-        so a member that already holds a key carries no private half and the
-        writer leaves its stored credential alone.
-        """
         held = {"swarm-wrk-01": public_key_of(generate_private_key())}
         mesh = plan_mesh(SWARM, TOPOLOGY, held)
         member = mesh.member("swarm-wrk-01")
@@ -252,12 +215,6 @@ class TestRotation(unittest.TestCase):
                 self.assertNotEqual(member.public_key, held[member.host])
 
     def test_rotation_keeps_the_mesh_internally_consistent(self):
-        """Every peer list must carry the rotated key, not the previous one.
-
-        A partial rotation is the failure that partitions the mesh: the hub
-        holds a spoke's old public key, the spoke presents a new one, and the
-        handshake is refused with nothing logged on either side.
-        """
         mesh = plan_mesh(SWARM, TOPOLOGY, rotate=True)
         published = {m.host: m.public_key for m in mesh.members}
         for member in mesh.members:
@@ -273,11 +230,6 @@ class TestSubnetGuards(unittest.TestCase):
             assert_no_subnet_overlap([SWARM, clash], "10.100.0.0/16")
 
     def test_a_subnet_outside_the_pool_is_refused(self):
-        """192.168.244.0/24 is the swarm lab underlay.
-
-        A mesh allocated there would collide with the addresses it is supposed
-        to tunnel over.
-        """
         escapee = MeshSpec(name="escapee", subnet="192.168.244.0/24", listen_port=51823)
         with self.assertRaises(ValueError):
             assert_no_subnet_overlap([escapee], "10.100.0.0/16")
@@ -298,10 +250,6 @@ MESH_POOL = "10.100.0.0/16"
 
 def topology(mesh_count: int, seed: int) -> tuple[list[MeshSpec], Topology]:
     """A hub-and-spoke topology of ``mesh_count`` meshes around one hub.
-
-    The hub joins every mesh, which is what lets a spoke of one reach a spoke
-    of another; the spokes are dealt out so that a host lands in no mesh, in
-    one, or in several, because a client orients its nodes however it likes.
 
     Args:
         mesh_count: how many meshes to declare.
@@ -326,14 +274,6 @@ def topology(mesh_count: int, seed: int) -> tuple[list[MeshSpec], Topology]:
 
 
 class TestAnyNumberOfMeshes(unittest.TestCase):
-    """The guarantees hold for topologies nobody wrote down.
-
-    The declared pair proves two meshes work. A deployment declares its own,
-    so the same invariants are asserted over generated topologies: any mesh
-    count, any arrangement of hosts across them, including hosts that belong
-    to several meshes and hosts that belong to none.
-    """
-
     COUNTS = range(1, 9)
     SEEDS = range(3)
 
@@ -393,7 +333,6 @@ class TestAnyNumberOfMeshes(unittest.TestCase):
                             )
 
     def test_a_host_in_several_meshes_holds_one_address_per_mesh(self):
-        """Overlapping membership is the point: the diagrams overlap."""
         shared = 0
         for count in self.COUNTS:
             for seed in self.SEEDS:
