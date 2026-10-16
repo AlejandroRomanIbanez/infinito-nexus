@@ -107,8 +107,9 @@ class MariaDBRole(Role):
             ]
         return [f"--defaults-extra-file={self._defaults}", "--socket", self._socket]
 
-    def _slave_status(self) -> dict[str, str]:
-        out = self._run(["mariadb", *self._local(), "-E"], "SHOW SLAVE STATUS")
+    def _slave_status(self, host: str | None = None) -> dict[str, str]:
+        target = self._remote(host) if host else self._local()
+        out = self._run(["mariadb", *target, "-E"], "SHOW SLAVE STATUS")
         status: dict[str, str] = {}
         for line in out.splitlines():
             key, sep, value = line.partition(":")
@@ -123,16 +124,25 @@ class MariaDBRole(Role):
             return False
         return True
 
+    def _position(self, host: str | None = None) -> GtidPosition:
+        """Rank by the newer of the applied and the received position.
+
+        Semi-sync acknowledges a commit once a replica's relay log holds it,
+        before the replica applies it, so ranking by the applied position
+        alone can promote a replica that lacks an acknowledged write.
+        """
+        applied = GtidPosition.parse(self._sql(self.QUERY_POSITION, host))
+        received = self._slave_status(host).get("Gtid_IO_Pos", "")
+        return max(applied, GtidPosition.parse(received)) if received else applied
+
     def rank(self) -> GtidPosition:
-        return GtidPosition.parse(self._sql(self.QUERY_POSITION))
+        return self._position()
 
     def peer_ranks(self) -> dict[str, GtidPosition]:
         ranks: dict[str, GtidPosition] = {}
         for peer in self.peers:
             try:
-                ranks[peer] = GtidPosition.parse(
-                    self._sql(self.QUERY_POSITION, self._address(peer))
-                )
+                ranks[peer] = self._position(self._address(peer))
             except RoleError:
                 continue
         return ranks

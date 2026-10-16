@@ -69,6 +69,18 @@ class TestGtidChoice(unittest.TestCase):
         self.assertEqual(set(ranks), {"m1", "m2"})
         self.assertEqual(choose(ranks), "m2")
 
+    def test_a_received_but_unapplied_write_counts(self) -> None:
+        role, _ = _role(
+            {
+                "local": {"SELECT @@GLOBAL.gtid_current_pos": "0-1-934"},
+                "mariadb-m2": {
+                    "SELECT @@GLOBAL.gtid_current_pos": "0-1-934",
+                    "SHOW SLAVE STATUS": "Gtid_IO_Pos: 0-1-935",
+                },
+            }
+        )
+        self.assertEqual(choose({"m1": role.rank(), **role.peer_ranks()}), "m2")
+
     def test_ties_go_to_the_lowest_host_id(self) -> None:
         position = GtidPosition.parse("0-1-7")
         self.assertEqual(choose({"m3": position, "m1": position, "m2": position}), "m1")
