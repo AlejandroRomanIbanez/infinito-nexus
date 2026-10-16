@@ -108,9 +108,7 @@ def _mirror_host_vars(
 
     A multi-host test inventory holds one file per node, all copies of the
     manager's. Rotating only the manager's would hand every other node the
-    previous secrets. Whatever a generator writes per host is the exception:
-    the copy gives every node the source's identity, so ``keep`` names the
-    subtrees that belong to the destination and outlive the mirror.
+    previous secrets.
     """
     keep = list(keep)
     mirrored: list[str] = []
@@ -194,8 +192,7 @@ def main(argv: list[str] | None = None) -> int:
         default=[],
         metavar="DOTTED.PATH",
         help=(
-            "Subtree the mirror restores from the destination afterwards, for "
-            "material a generator writes per host rather than shared. "
+            "Subtree the mirror restores from the destination afterwards. "
             "Repeatable; ignored without --mirror."
         ),
     )
