@@ -1,7 +1,4 @@
 ---
-# WireGuard layout of the three-mesh example, as inventory values. Put the
-# svc-net-wireguard block into the hub's host_vars and each role's block into
-# the host_vars of the hosts carrying it.
 applications:
   svc-net-wireguard:
     networks:
