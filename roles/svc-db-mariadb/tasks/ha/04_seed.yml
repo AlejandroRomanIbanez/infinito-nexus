@@ -98,9 +98,25 @@
   args:
     stdin: "SELECT MASTER_GTID_WAIT('{{ _mariadb_seed_writer_pos.stdout | trim }}', 600);"
   register: _mariadb_seed_caught_up
-  failed_when: (_mariadb_seed_caught_up.stdout | trim) != '0'
+  failed_when: false
   changed_when: false
   delegate_to: "{{ _mariadb_seed_target.host }}"
+
+- name: "🔍 MariaDB HA | Replication errors of {{ _mariadb_seed_target.service }}"
+  ansible.builtin.shell: |
+    set -o pipefail
+    printf 'SHOW SLAVE STATUS\\G\n' | container exec -i "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ _mariadb_seed_target.service | quote }})" {{ MARIADB_HA_SQL }} | grep -E '_Running:|Last_(IO|SQL)_Error:' || true
+  args:
+    executable: /bin/bash
+  register: _mariadb_seed_replica_errors
+  changed_when: false
+  delegate_to: "{{ _mariadb_seed_target.host }}"
+  when: (_mariadb_seed_caught_up.stdout | trim) != '0'
+
+- name: "🛑 MariaDB HA | {{ _mariadb_seed_target.service }} did not catch up"
+  ansible.builtin.fail:
+    msg: "MASTER_GTID_WAIT returned {{ _mariadb_seed_caught_up.stdout | trim }}: {{ _mariadb_seed_replica_errors.stdout | default('') }}"
+  when: (_mariadb_seed_caught_up.stdout | trim) != '0'
 
 - name: "🏁 MariaDB HA | Let {{ _mariadb_seed_target.service }}'s elector compete"
   ansible.builtin.shell: |

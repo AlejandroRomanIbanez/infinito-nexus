@@ -94,8 +94,10 @@ class EngineOps:
                 if service == primary:
                     continue
                 proc = self._in(service, engines.slave_status())
-                if not engines.replica_running(engines.parse_slave_status(proc.stdout)):
-                    lagging.append(service)
+                status = engines.parse_slave_status(proc.stdout)
+                if not engines.replica_running(status):
+                    reason = status.get("Last_IO_Error") or status.get("Last_SQL_Error") or ""
+                    lagging.append(f"{service}: {reason[:160]}" if reason else service)
             return (
                 not lagging,
                 f"replication stopped on {lagging}" if lagging else "all replicating",
