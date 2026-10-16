@@ -2,3 +2,5 @@
 cli:
   timeout: 1800
   controller_only: true
+  requires:
+    - sys-svc-container
