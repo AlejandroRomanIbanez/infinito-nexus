@@ -44,8 +44,6 @@ class TestWriteExtrasDomainPrimary(unittest.TestCase):
 
 
 class TestWriteExtrasMeshAddresses(unittest.TestCase):
-    """Swarm and NFS bind to the primary mesh, whatever the deployment named it."""
-
     MESHES: ClassVar[dict[str, dict[str, tuple[str, bool]]]] = {
         "swarm-mgr-01": {
             "alpha": ("10.100.10.1", True),
