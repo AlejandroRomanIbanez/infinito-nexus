@@ -38,6 +38,7 @@ from cli.meta.ci import query
 from utils.cache.applications import get_variants
 from utils.github.variant import axes, pools, selection, tor
 from utils.roles.display import display_names
+from utils.roles.guide import smallest_variant
 
 
 def problems(
@@ -121,6 +122,9 @@ def problems(
                     tor_mode=tor_mode,
                     distros=distros,
                     filesystems=filesystems,
+                    pin_vpn=pin.vpn,
+                    smallest=str(variant)
+                    == smallest_variant(declared.get(pin.app) or []),
                 )
             except SystemExit as refusal:
                 errors.append(f"{label}: {token!r} {str(refusal).split(': ', 1)[-1]}")
