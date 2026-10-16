@@ -1,11 +1,3 @@
-"""Read a deploy job title back into the axes that built it.
-
-The inverse of what :func:`utils.github.variant.axes.assign` builds, kept in
-its own module so the two cannot drift: consumers that hand-rolled a regex over
-raw role ids silently matched nothing once job titles carried display names,
-and every failure went unreported.
-"""
-
 from __future__ import annotations
 
 import re
