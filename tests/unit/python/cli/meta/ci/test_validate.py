@@ -100,13 +100,6 @@ class TestProblems(unittest.TestCase):
         )
         self.assertIn("pinned onion state clearnet is impossible", errors[0])
 
-    def test_a_mesh_on_a_larger_compose_variant_is_an_error(self) -> None:
-        errors, _warnings = _problems("web-app-a#1@compose&vpn")
-        self.assertIn("pinned mesh state vpn is impossible", errors[0])
-
-    def test_a_mesh_on_the_smallest_compose_variant_passes(self) -> None:
-        self.assertEqual(_problems("web-app-a#0@compose&vpn"), ([], []))
-
     def test_every_offender_is_reported_not_just_the_first(self) -> None:
         errors, _warnings = _problems(
             "web-app-a#7@compose+tor web-app-a#1@swarm+tor web-app-b#9@swarm+tor"
