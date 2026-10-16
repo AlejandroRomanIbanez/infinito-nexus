@@ -553,6 +553,7 @@ class TestDistroAndFilesystemAxes(unittest.TestCase):
             entry["label"].startswith(
                 to_emoji("compose")
                 + to_emoji("clearnet")
+                + to_emoji("direct")
                 + to_emoji("debian")
                 + to_emoji("zfs")
             )
