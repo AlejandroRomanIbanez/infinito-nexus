@@ -501,12 +501,6 @@ class TestPinnedAxes(unittest.TestCase):
         self.assertEqual(len(self._entries(row)), 1)
 
     def test_a_held_mesh_axis_overrides_a_priority_rows_pin(self) -> None:
-        """A run that holds the axis must not delete the rows that fight it.
-
-        The pin narrows a cross product, so a conflicting one removes every
-        combination and the row leaves the matrix entirely -- while a regular
-        row with the same pin is simply moved onto the held side.
-        """
         row = _row(
             "web-app-b", 0, ("swarm",), priority=True, pin_mode="swarm", pin_vpn=False
         )
