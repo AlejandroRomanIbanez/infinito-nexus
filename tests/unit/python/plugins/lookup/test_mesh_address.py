@@ -1,10 +1,3 @@
-"""Unit tests for plugins/lookup/mesh_address.py.
-
-The address is the host's own: an entry naming another host is what the lab's
-credential reset leaves behind when it copies one host's inventory over the
-rest, and reading it back would hand every node the hub's address.
-"""
-
 from __future__ import annotations
 
 import unittest
