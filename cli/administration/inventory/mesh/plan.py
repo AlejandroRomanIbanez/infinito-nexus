@@ -17,8 +17,11 @@ SPOKE_OFFSET = 10
 
 def members_of(
     spec: MeshSpec, topology: Topology, controller: str | None = None
-) -> tuple[str, list[str]]:
-    """The hub and the spokes of ``spec`` in ``topology``."""
+) -> tuple[str | None, list[str]]:
+    """The hub and the spokes of ``spec`` in ``topology``.
+
+    A full mesh has no hub: it comes back as None, and every member as a spoke.
+    """
     spokes = [
         host
         for host in dict.fromkeys(topology.spokes.get(spec.name, ()))
@@ -56,7 +59,7 @@ def primary_meshes(
         hub, spokes = members_of(
             spec, topology, controller if spec.name == controller_mesh else None
         )
-        for host in (hub, *spokes):
+        for host in [hub, *spokes] if hub else spokes:
             primary.setdefault(host, spec.name)
     return primary
 
@@ -164,6 +167,6 @@ def plan_mesh(
             endpoint=endpoint,
         )
 
-    members = [member(hub, HUB_OFFSET, True)]
+    members = [member(hub, HUB_OFFSET, True)] if hub else []
     members.extend(member(host, offsets[host], False) for host in spokes)
     return Mesh(spec=spec, members=tuple(members))
