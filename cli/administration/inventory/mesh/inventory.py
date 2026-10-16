@@ -1,17 +1,3 @@
-"""Read group membership, mesh declarations and who joins which mesh.
-
-Group membership is collected across every inventory file it is spread over.
-The swarm lab keeps the backup host in a sibling ``backup.yml`` rather than in
-the cluster inventory, so a mesh that spans both planes is only complete when
-both files have been read.
-
-The declarations and the memberships are ordinary ``applications`` values in
-each host's ``host_vars``: the hub's ``svc-net-wireguard.networks.meshes``
-declares the meshes, or every host's where there is no hub, and every other
-role's ``networks.meshes`` puts the hosts carrying it into them
-(:mod:`utils.networks.mesh`).
-"""
-
 from __future__ import annotations
 
 import ipaddress
@@ -36,7 +22,6 @@ POOL_VAR = "NETWORK_MESH_POOL"
 
 
 def groups_of(inventory_files: list[Path]) -> dict[str, list[str]]:
-    """The union of ``group -> hosts`` over every given inventory file."""
     groups: dict[str, list[str]] = {}
     for path in inventory_files:
         if not path.exists():
@@ -62,7 +47,6 @@ def _collect(node: Any, groups: dict[str, list[str]]) -> None:
 
 
 def host_applications(host_vars_dir: Path, host: str) -> Any:
-    """The ``applications`` block of *host*'s ``host_vars``, or ``{}``."""
     path = host_vars_dir / f"{host}.yml"
     if not path.is_file():
         return {}
@@ -70,7 +54,6 @@ def host_applications(host_vars_dir: Path, host: str) -> Any:
 
 
 def hub_of(groups: dict[str, list[str]]) -> str | None:
-    """The host that routes for every mesh, or None for full meshes."""
     hubs = sorted(dict.fromkeys(groups.get(HUB_ROLE, [])))
     if not hubs:
         return None
@@ -85,9 +68,6 @@ def declared_specs(
     groups: dict[str, list[str]], host_vars_dir: Path, inventory_files: list[Path]
 ) -> list[MeshSpec]:
     """The meshes the deployment declares, in declaration order.
-
-    Under a hub they are the hub's own. Without one every host may declare
-    them, and every host that does must declare the same meshes.
 
     Args:
         groups: group to hosts over every inventory of the deploy.
@@ -122,9 +102,8 @@ def specs_of(applications: Any, inventory_files: list[Path]) -> list[MeshSpec]:
     """The meshes declared in *applications*, in declaration order.
 
     Args:
-        applications: the hub's ``applications`` block.
-        inventory_files: the inventories of the deploy, whose ``group_vars``
-            may narrow the platform's mesh pool.
+        applications: the declaring host's ``applications`` block.
+        inventory_files: the inventories of the deploy.
     """
     declared = declared_meshes(applications)
     if not declared:
@@ -153,13 +132,6 @@ def specs_of(applications: Any, inventory_files: list[Path]) -> list[MeshSpec]:
 def topology_of(
     groups: dict[str, list[str]], host_vars_dir: Path, specs: list[MeshSpec]
 ) -> Topology:
-    """Who the inventory puts into each declared mesh.
-
-    A host joins a mesh when any role it carries lists that mesh in its
-    ``networks.meshes``. A name nobody declared is refused rather than
-    dropped, because the host would otherwise deploy without the tunnel its
-    inventory asked for.
-    """
     hub = hub_of(groups)
     spokes: dict[str, list[str]] = {spec.name: [] for spec in specs}
     hosts = sorted({host for members in groups.values() for host in members})
@@ -181,7 +153,6 @@ _REFERENCE = re.compile(r"^\s*\{\{\s*(?P<name>[A-Z0-9_]+)\s*\}\}\s*$")
 
 
 def _literal_of(name: str, directories: list[Path]) -> str | None:
-    """The literal ``name`` holds in the first directory that defines one."""
     for directory in directories:
         for path in sorted(directory.glob("*.yml")):
             document = load_yaml_any(str(path), default_if_missing={})
@@ -192,12 +163,6 @@ def _literal_of(name: str, directories: list[Path]) -> str | None:
 
 
 def pool_of(inventory_files: list[Path]) -> str:
-    """The range every mesh subnet is carved from.
-
-    A deployment narrows it in its own ``group_vars/all``; otherwise the
-    platform's ``NETWORK_MESH_POOL`` applies, which is where every range the
-    platform allocates is declared once.
-    """
     directories: list[Path] = []
     for path in inventory_files:
         group_vars = Path(path).parent / "group_vars"
@@ -210,12 +175,6 @@ def pool_of(inventory_files: list[Path]) -> str:
 
 
 def assert_no_subnet_overlap(specs: list[MeshSpec], pool: str | None) -> None:
-    """Fail when two meshes overlap, or when one escapes the declared pool.
-
-    Checked before a deploy rather than discovered at runtime, where an overlap
-    presents as a peer that is configured, handshakes, and still cannot be
-    reached.
-    """
     networks = [
         (spec, ipaddress.ip_network(spec.subnet, strict=True)) for spec in specs
     ]
