@@ -2,8 +2,9 @@
 """CLI: write every declared mesh into the host_vars of its members.
 
 The meshes and who joins them are read from the inventory itself: the hub's
-``svc-net-wireguard.networks.meshes`` declares them, and every other role's
-``networks.meshes`` puts the hosts carrying it into them.
+``svc-net-wireguard.networks.meshes`` declares them, or every host's where the
+inventory has no hub, and every other role's ``networks.meshes`` puts the
+hosts carrying it into them. Without a hub every mesh is a full mesh.
 """
 
 from __future__ import annotations
@@ -12,7 +13,7 @@ import argparse
 import sys
 from pathlib import Path
 
-from .inventory import groups_of, host_applications, hub_of, specs_of, topology_of
+from .inventory import declared_specs, groups_of, topology_of
 from .plan import plan_mesh, primary_meshes
 from .write import (
     existing_addresses,
@@ -108,8 +109,7 @@ def main(argv: list[str] | None = None) -> int:
         return 1
 
     try:
-        hub = hub_of(groups)
-        declared = specs_of(host_applications(host_vars_dir, hub), inventory_files)
+        declared = declared_specs(groups, host_vars_dir, inventory_files)
         topology = topology_of(groups, host_vars_dir, declared)
     except ValueError as error:
         print(f"[FATAL] {error}", file=sys.stderr)
@@ -162,9 +162,14 @@ def main(argv: list[str] | None = None) -> int:
         keyed_here.update({member.host: member.public_key for member in mesh.members})
         written = write_mesh(mesh, host_vars_dir, vault_password_file, primary)
         minted = sum(1 for member in mesh.members if member.private_key is not None)
+        shape = (
+            f"full mesh of {len(mesh.members)} member(s)"
+            if mesh.is_full
+            else f"hub {mesh.hub.host} ({mesh.hub.address}), "
+            f"{len(mesh.spokes)} spoke(s)"
+        )
         print(
-            f"[INFO] mesh '{spec.name}': hub {mesh.hub.host} "
-            f"({mesh.hub.address}), {len(mesh.spokes)} spoke(s), "
+            f"[INFO] mesh '{spec.name}': {shape}, "
             f"{minted} keypair(s) minted, {len(written)} host_vars written"
         )
 
