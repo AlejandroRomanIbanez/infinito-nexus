@@ -13,8 +13,7 @@ set -euo pipefail
 #   PYTHON="python3"
 #   variant="<csv>"  pin to one or more matrix rounds, e.g. "2" or "0,1,2"
 #                    (the runner-split bundle from CI discovery); empty = all
-#   INFINITO_COMPOSE_VPN="true"  also deploy svc-net-wireguard, so its CLI test
-#                    meshes three throwaway hosts after the app
+#   INFINITO_COMPOSE_VPN="true"  also deploy svc-net-wireguard
 
 : "${INFINITO_DISTRO:?INFINITO_DISTRO must be set (e.g. arch)}"
 : "${INFINITO_INVENTORY_DIR:?INFINITO_INVENTORY_DIR must be set}"
