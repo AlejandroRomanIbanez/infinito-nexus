@@ -63,6 +63,7 @@ from utils.github.variant.tor import (
     wants_tor,
 )
 from utils.github.variant.vpn import (
+    VPN_DEPLOY_MODES,
     meshable,
     pinned_vpn_states,
     rotated_vpn,
@@ -154,6 +155,8 @@ def check_pins(
     tor_mode: str,
     distros: Sequence[str],
     filesystems: Sequence[str],
+    pin_vpn: bool | None = None,
+    smallest: bool = False,
 ) -> None:
     """Prove the row can take what the selection token pinned on it.
 
@@ -180,6 +183,16 @@ def check_pins(
                 f"pinned {axis} {value!r} is outside this run's {axis} pool "
                 f"({', '.join(pool) or 'empty'})",
             )
+    if pin_vpn and not any(
+        meshable(mode, smallest=smallest)
+        for mode in ((pin_mode,) if pin_mode else offered)
+    ):
+        _reject(
+            app,
+            variant,
+            "pinned mesh state vpn is impossible here (only swarm, and compose "
+            "on the role's smallest variant, take the mesh)",
+        )
     if pin_tor is None:
         return
     for mode in (pin_mode,) if pin_mode else offered:
@@ -291,6 +304,8 @@ def assign(
             tor_mode=tor_mode,
             distros=distros,
             filesystems=filesystems,
+            pin_vpn=pin_vpn,
+            smallest=smallest,
         )
         if priority:
             picked = [
@@ -305,7 +320,14 @@ def assign(
             ]
         else:
             mode = pin_mode or pick_mode(
-                _offering(offered, pin_tor, capable=capable, tor_mode=tor_mode),
+                _offering(
+                    offered,
+                    pin_tor,
+                    pin_vpn,
+                    capable=capable,
+                    tor_mode=tor_mode,
+                    smallest=smallest,
+                ),
                 position,
                 sweep,
             )
@@ -348,7 +370,7 @@ def assign(
                 )
                 + (
                     to_emoji("vpn" if meshed else "direct")
-                    if meshable(mode, smallest=smallest)
+                    if mode in VPN_DEPLOY_MODES
                     else ""
                 )
                 + to_emoji(distro)
@@ -407,17 +429,23 @@ def _one_per_deploy(entries: list[dict[str, str]]) -> list[dict[str, str]]:
 
 
 def _offering(
-    offered: Sequence[str], pin: bool | None, *, capable: bool, tor_mode: str
+    offered: Sequence[str],
+    pin: bool | None,
+    pin_vpn: bool | None,
+    *,
+    capable: bool,
+    tor_mode: str,
+    smallest: bool,
 ) -> tuple[str, ...]:
-    """The modes the rotation may still draw from once an onion state is
-    pinned: pinning the onion on a row that also offers host must not rotate
-    the row onto host, where no onion exists."""
-    if pin is None:
-        return tuple(offered)
+    """The modes the rotation may still draw from once an onion or mesh state
+    is pinned: pinning the onion on a row that also offers host must not
+    rotate the row onto host, where no onion exists, and pinning the mesh must
+    not rotate it onto a mode that cannot take one."""
     return tuple(
         mode
         for mode in offered
-        if pin in tor_states(mode, capable=capable, tor_mode=tor_mode)
+        if (pin is None or pin in tor_states(mode, capable=capable, tor_mode=tor_mode))
+        and (not pin_vpn or meshable(mode, smallest=smallest))
     )
 
 
