@@ -1,5 +1,3 @@
-"""Resolve a spec against an inventory into a complete mesh."""
-
 from __future__ import annotations
 
 import ipaddress
@@ -18,10 +16,6 @@ SPOKE_OFFSET = 10
 def members_of(
     spec: MeshSpec, topology: Topology, controller: str | None = None
 ) -> tuple[str | None, list[str]]:
-    """The hub and the spokes of ``spec`` in ``topology``.
-
-    A full mesh has no hub: it comes back as None, and every member as a spoke.
-    """
     spokes = [
         host
         for host in dict.fromkeys(topology.spokes.get(spec.name, ()))
@@ -38,12 +32,7 @@ def primary_meshes(
     controller: str | None = None,
     controller_mesh: str | None = None,
 ) -> dict[str, str]:
-    """The mesh each host routes the pool through and is reached on.
-
-    That is the first declared mesh the host belongs to. A spoke of several
-    meshes cannot route the pool through all of them: every interface would
-    claim the same prefix, and ``wg-quick`` refuses the second one with
-    ``RTNETLINK answers: File exists`` and deletes it.
+    """The first declared mesh each host belongs to.
 
     Args:
         specs: every declared mesh, in declaration order.
@@ -73,7 +62,6 @@ def _address(subnet: str, offset: int) -> str:
 
 
 def _offset_of(subnet: str, address: str) -> int | None:
-    """The spoke offset ``address`` occupies in ``subnet``, or None."""
     network = ipaddress.ip_network(subnet, strict=True)
     try:
         candidate = ipaddress.ip_address(address)
@@ -88,7 +76,7 @@ def _offset_of(subnet: str, address: str) -> int | None:
 def _spoke_offsets(
     subnet: str, spokes: list[str], stored: dict[str, str]
 ) -> dict[str, int]:
-    """Keep every spoke on the address it already holds.
+    """Hostname to its offset, keeping every address a spoke already holds.
 
     Args:
         subnet: the mesh subnet offsets are taken in.
@@ -132,13 +120,11 @@ def plan_mesh(
         topology: who the inventory puts into each mesh.
         existing_public_keys: hostname to already-issued public key.
         rotate: mint a fresh keypair for every member.
-        controller: host to admit as an extra spoke, so the machine driving the
-            deploy can reach the mesh it just created.
-        endpoints: hostname to the underlay address its peers dial. A host
-            left out keeps its hostname, which is what every peer already
-            resolves and routes to wherever inventory names are real names.
-        addresses: hostname to the mesh address it already holds. Kept across
-            a rotation too: rotation replaces identities, not addresses.
+        controller: host to admit as an extra spoke.
+        endpoints: hostname to the underlay address its peers dial; a host
+            left out is dialled by its hostname.
+        addresses: hostname to the mesh address it already holds, kept across
+            a rotation.
     """
     held = {} if rotate else dict(existing_public_keys or {})
     underlay = dict(endpoints or {})
