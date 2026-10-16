@@ -22,13 +22,6 @@ def _lookup(hostvars):
 
 
 class TestSwarmAdvertiseAddr(unittest.TestCase):
-    """Swarm binds to the manager's primary mesh, whatever it was declared as.
-
-    A mesh name written into this expression resolves to '' for every
-    deployment that declared its meshes differently, and swarm then binds to
-    the underlay the mesh exists to keep it off.
-    """
-
     env: ClassVar[Environment]
     source: ClassVar[str]
 
