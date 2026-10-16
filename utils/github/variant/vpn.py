@@ -6,17 +6,25 @@ import os
 
 VPN_MODES = ("auto", "enforced", "disabled")
 """How a run treats the axis. ``auto`` rotates it, the other two hold every
-swarm row on one side so a whole sweep can be spent proving that side. There is
-no ``exclusive``: every swarm row can take the mesh, so there is nothing to
-drop."""
+meshable row on one side so a whole sweep can be spent proving that side.
+There is no ``exclusive``: every meshable row can take the mesh, so there is
+nothing to drop."""
 
-VPN_DEPLOY_MODES = ("swarm",)
-"""Modes the mesh is meaningful in. Compose is a single host, so there is
-nothing to tunnel between and the axis is always off there."""
+VPN_DEPLOY_MODES = ("swarm", "compose")
+"""Modes the mesh is meaningful in. A compose row takes it only on its role's
+smallest variant (:func:`meshable`)."""
 
-MESH_GLYPH_MODES = VPN_DEPLOY_MODES
-"""Modes whose label carries a mesh glyph at all. A compose title stays as it
-was, so the existing job names do not all churn for an axis they never take."""
+
+def meshable(mode: str, *, smallest: bool = False) -> bool:
+    """Whether a row in *mode* can carry the mesh, and so carries its glyph.
+
+    Args:
+        mode: the deploy mode of the row.
+        smallest: whether the row deploys its role's smallest variant.
+    """
+    if mode == "compose":
+        return smallest
+    return mode in VPN_DEPLOY_MODES
 
 
 def resolve_vpn_mode(raw: str | None = None) -> str:
@@ -34,9 +42,11 @@ def resolve_vpn_mode(raw: str | None = None) -> str:
     return value if value in VPN_MODES else "auto"
 
 
-def vpn_states(mode: str, *, vpn_mode: str = "auto") -> list[bool]:
+def vpn_states(
+    mode: str, *, vpn_mode: str = "auto", smallest: bool = False
+) -> list[bool]:
     """The mesh states *mode* is worth running for a priority row."""
-    if mode not in VPN_DEPLOY_MODES:
+    if not meshable(mode, smallest=smallest):
         return [False]
     if vpn_mode == "enforced":
         return [True]
@@ -46,7 +56,11 @@ def vpn_states(mode: str, *, vpn_mode: str = "auto") -> list[bool]:
 
 
 def pinned_vpn_states(
-    mode: str, *, pin: bool | None = None, vpn_mode: str = "auto"
+    mode: str,
+    *,
+    pin: bool | None = None,
+    vpn_mode: str = "auto",
+    smallest: bool = False,
 ) -> list[bool]:
     """The mesh states a priority row takes, global axis ahead of the pin.
 
@@ -54,15 +68,16 @@ def pinned_vpn_states(
         mode: the deploy mode of the row.
         pin: the state the row asked for, or None for every state.
         vpn_mode: the run's axis mode.
+        smallest: whether the row deploys its role's smallest variant.
     """
-    states = vpn_states(mode, vpn_mode=vpn_mode)
+    states = vpn_states(mode, vpn_mode=vpn_mode, smallest=smallest)
     if vpn_mode in ("enforced", "disabled") or pin is None:
         return states
     return [state for state in states if state == pin]
 
 
 def wants_vpn(position: int, sweep: int) -> bool:
-    """Whether a swarm row carries the mesh this sweep.
+    """Whether a meshable row carries the mesh this sweep.
 
     Reads the position's second digit. The mode rotation spends the first:
     ``(position + sweep) % 2`` decides which parity of rows deploys in swarm,
@@ -79,9 +94,10 @@ def rotated_vpn(
     sweep: int,
     pin: bool | None = None,
     vpn_mode: str = "auto",
+    smallest: bool = False,
 ) -> bool:
     """The single mesh state a regular row takes this sweep."""
-    if mode not in VPN_DEPLOY_MODES:
+    if not meshable(mode, smallest=smallest):
         return False
     if vpn_mode in ("enforced", "disabled"):
         return vpn_mode == "enforced"
