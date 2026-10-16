@@ -82,7 +82,8 @@ def _syncrepl(index: int, rid: int, provider: str, suffix: str, root_dn: str) ->
         f"olcSyncrepl: {{{index}}}rid={rid:03d} provider={provider} "
         f'bindmethod=simple binddn="{root_dn}" credentials=@ROOT_PW@ '
         f'searchbase="{suffix}" type=refreshAndPersist '
-        'retry="2 10 10 +" timeout=1 network-timeout=1 exattrs=memberOf'
+        'retry="2 10 10 +" timeout=1 network-timeout=1 keepalive=10:3:5 '
+        "exattrs=memberOf"
     )
 
 
