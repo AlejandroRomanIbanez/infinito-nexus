@@ -1,5 +1,3 @@
-"""The mesh CLI as the swarm routine invokes it."""
-
 from __future__ import annotations
 
 import tempfile
@@ -44,9 +42,7 @@ class TestMeshCli(unittest.TestCase):
 
     def _text(self, host: str) -> str:
         path = self.host_vars / f"{host}.yml"
-        return path.read_text(
-            encoding="utf-8"
-        )  # nocheck: cache-read  tempdir fixture rewritten between reads in one test
+        return path.read_text(encoding="utf-8")  # nocheck: cache-read
 
     def _argv(self, *extra: str) -> list[str]:
         return [
@@ -156,12 +152,6 @@ class TestMeshCli(unittest.TestCase):
         )
 
     def test_growing_the_cluster_leaves_every_member_on_its_address(self):
-        """A node added later must not renumber the nodes already up.
-
-        `wg syncconf` never moves a live interface's address, so a renumbered
-        member answers on the old one while the inventory has moved to the
-        new one -- and the next pass cannot reach it.
-        """
         self.assertEqual(main(self._argv()), 0)
         before = {host: self._address(host, "swarm") for host in SWARM_HOSTS}
 
