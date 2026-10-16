@@ -15,10 +15,6 @@ back the job title of the run they want repeated:
   mode, onion state, distro and filesystem, the ``#`` shard the variants;
 * an ASCII form (``web-app-nextcloud#0,2@swarm+tor%debian/zfs&vpn``).
 
-The mesh state takes its own ``&`` separator rather than more ``+`` words: ``+``
-is the onion axis, and one separator meaning two things could not be read back
-off a job title unambiguously.
-
 The onion state spells out as ``+tor``/``+clearnet`` rather than as a ``-tor``
 suffix: a role id may itself end in ``-tor`` (``svc-net-tor``), and a suffix
 that eats the tail of a role name selects a different role in silence.
