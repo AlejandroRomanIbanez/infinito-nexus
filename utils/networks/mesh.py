@@ -1,20 +1,3 @@
-"""The WireGuard meshes as an inventory records them.
-
-Single source for what every consumer of the mesh reads, so none of them names
-a mesh or reaches into the inventory shape on its own:
-
-* which meshes a deployment declares: ``networks.meshes`` of
-  ``svc-net-wireguard``, read from the hub, which is in every mesh;
-* which meshes a host joins: ``networks.meshes`` of every other role the host
-  carries;
-* what a host holds on them: ``networks.interfaces`` of ``svc-net-wireguard``,
-  which only the mesh CLI writes.
-
-Every role ships these lists empty, so a value can only come from the
-deployment's inventory. That also makes a host's raw ``applications`` block
-equal to its merged one for these paths.
-"""
-
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
@@ -35,7 +18,6 @@ def _listed(applications: Any, role: str, key: str) -> list[Any]:
 
 
 def declared_meshes(applications: Any) -> list[Mapping[str, Any]]:
-    """The meshes declared in a host's ``applications``, in declaration order."""
     return [
         entry
         for entry in _listed(applications, APPLICATION_ID, MESHES_KEY)
@@ -60,7 +42,6 @@ def joined_meshes(applications: Any, roles: Iterable[str]) -> dict[str, list[str
 
 
 def interfaces(applications: Any) -> list[Mapping[str, Any]]:
-    """Every mesh interface recorded in a host's ``applications``."""
     return [
         entry
         for entry in _listed(applications, APPLICATION_ID, INTERFACES_KEY)
@@ -71,12 +52,6 @@ def interfaces(applications: Any) -> list[Mapping[str, Any]]:
 def owned_interface(
     applications: Any, host: str, mesh: str
 ) -> Mapping[str, Any] | None:
-    """The interface *host* itself holds on *mesh*.
-
-    An entry naming another host is ignored: the lab's credential reset copies
-    one host's inventory over the others, and adopting what it left would put
-    the hub's address on every node.
-    """
     for entry in interfaces(applications):
         if entry.get("name") == mesh and entry.get("host") == host:
             return entry
@@ -84,7 +59,6 @@ def owned_interface(
 
 
 def address_on(applications: Any, host: str, mesh: str) -> str:
-    """The address *host* holds on *mesh*, or ``""`` when it holds none."""
     entry = owned_interface(applications, host, mesh) or {}
     address = entry.get("address")
     return address if isinstance(address, str) else ""
@@ -98,26 +72,16 @@ def _peers(interface: Mapping[str, Any]) -> list[Mapping[str, Any]]:
 
 
 def is_full(interface: Mapping[str, Any]) -> bool:
-    """Whether *interface* sits in a full mesh: it is no hub and peers with none."""
     return not interface.get("is_hub") and not any(
         peer.get("is_hub") for peer in _peers(interface)
     )
 
 
 def listens(interface: Mapping[str, Any]) -> bool:
-    """Whether *interface* takes handshakes on its mesh port.
-
-    The hub does, and so does every member of a full mesh.
-    """
     return bool(interface.get("is_hub")) or is_full(interface)
 
 
 def dialled_peers(interface: Mapping[str, Any]) -> list[Mapping[str, Any]]:
-    """The peers *interface* dials and keeps alive.
-
-    A spoke dials its hub, a member of a full mesh dials every peer, and the
-    hub dials none.
-    """
     peers = _peers(interface)
     if is_full(interface):
         return peers
@@ -125,7 +89,6 @@ def dialled_peers(interface: Mapping[str, Any]) -> list[Mapping[str, Any]]:
 
 
 def primary_address(applications: Any, host: str) -> str:
-    """The address the other planes reach *host* on, or ``""`` off the mesh."""
     for entry in interfaces(applications):
         if entry.get("primary") and entry.get("host") == host:
             address = entry.get("address")
