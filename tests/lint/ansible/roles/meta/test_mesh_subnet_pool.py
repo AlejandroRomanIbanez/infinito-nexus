@@ -1,19 +1,3 @@
-"""Lint: the meshes belong to the deployment, and a declared one sits inside
-the declared mesh pool.
-
-Every role that ships a container stack carries ``networks.meshes`` in its
-``meta/networks.yml`` so an inventory may set it, and every role ships it empty: a role that shipped a mesh, or put
-its hosts into one, would hardcode a topology the platform has no business
-choosing. The values live in a deployment's inventory, and the repository's
-own deployments are the layouts it ships.
-
-``NETWORK_MESH_POOL`` in ``group_vars/all/08_networks.yml`` names the block
-every WireGuard mesh subnet is carved from. The planner already refuses an
-overlap, but it refuses it during a deploy: a declaration that escapes the
-pool is a firewall or export list that silently excludes the hosts on it, and
-nothing says so until traffic is attempted.
-"""
-
 from __future__ import annotations
 
 import ipaddress
@@ -35,7 +19,6 @@ EXAMPLES_DIR = PROJECT_ROOT / "inventories" / "examples"
 
 
 def layout_files() -> list:
-    """Every WireGuard layout the repository ships."""
     found = [DEVELOPMENT_LAYOUT] if DEVELOPMENT_LAYOUT.is_file() else []
     found += sorted(EXAMPLES_DIR.glob("*/wireguard.yml"))
     return found
@@ -134,7 +117,6 @@ class TestTheShippedLayouts(unittest.TestCase):
                 self.assertEqual([], duplicated, f"{path}: shared listen port(s)")
 
     def test_every_membership_names_a_declared_mesh(self) -> None:
-        """A name nobody declared is refused at deploy time; catch it here."""
         for path in self.files:
             applications = _applications(path)
             declared = {spec.name for spec in specs_of(applications, [])}
@@ -148,7 +130,6 @@ class TestTheShippedLayouts(unittest.TestCase):
                     self.assertLessEqual(set(joined), declared)
 
     def test_the_platform_itself_declares_no_meshes(self) -> None:
-        """Shipping a default mesh is the hardcoding the review asked to end."""
         shipped = load_yaml_any(
             str(PROJECT_ROOT / "group_vars" / "all" / "21_wireguard.yml"),
             default_if_missing={},
