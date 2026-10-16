@@ -1,10 +1,3 @@
-"""The shapes a mesh is described and resolved in.
-
-A spec is what an operator declares. A topology is who the inventory puts into
-each mesh. A mesh is what a spec resolves to against a topology: every member
-named, addressed and keyed.
-"""
-
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -12,16 +5,14 @@ from dataclasses import dataclass, field
 
 @dataclass(frozen=True)
 class MeshSpec:
-    """One declared network, hub-and-spoke under a hub and full otherwise.
+    """One declared mesh.
 
     Args:
         name: identifier of the mesh, used as the interface name.
         subnet: the mesh address range, as ``a.b.c.0/24``.
         listen_port: UDP port the hub, or every member of a full mesh,
             listens on.
-        routed_range: the range a spoke routes through the hub. Wider than
-            ``subnet`` whenever a spoke must reach a plane it is not a member
-            of, which is the entire point of the hub being in every mesh.
+        routed_range: the range a spoke routes through the hub.
     """
 
     name: str
@@ -35,8 +26,7 @@ class Topology:
     """Who an inventory puts into each mesh.
 
     Args:
-        hub: the host that routes for every mesh, or None when every mesh is
-            a full mesh whose members all peer with each other.
+        hub: the host that routes for every mesh, or None for full meshes.
         spokes: mesh name to the hosts that joined it, never the hub.
     """
 
@@ -51,10 +41,9 @@ class MeshMember:
     Args:
         host: inventory hostname.
         address: the member's address inside the mesh subnet.
-        endpoint: the underlay address its peers dial, which is the hostname
-            itself wherever that already resolves and routes.
+        endpoint: the underlay address its peers dial.
         private_key: the member's own secret half, or None when the member
-            already holds one that must not be rewritten.
+            already holds one.
         public_key: the half its peers receive.
         is_hub: whether this member routes for the others.
     """
@@ -92,17 +81,9 @@ class Mesh:
 
     @property
     def is_full(self) -> bool:
-        """Whether every member peers with every other, there being no hub."""
         return not any(member.is_hub for member in self.members)
 
     def peers_of(self, host: str) -> tuple[MeshMember, ...]:
-        """The members ``host`` is configured to reach.
-
-        A spoke reaches only the hub. The hub reaches every spoke. Spoke to
-        spoke traffic exists, but it is routed by the hub rather than peered,
-        so it never appears here. In a full mesh every member reaches every
-        other one directly.
-        """
         member = self.member(host)
         if member is None:
             return ()
