@@ -1,23 +1,10 @@
-"""Lookup `mesh_ranges`: the address ranges the WireGuard meshes occupy.
-
-Single SPOT for "which address space do the meshes own". The pool is declared
-once, as ``NETWORK_MESH_POOL`` beside every other range the platform
-allocates, and anything that has to admit mesh traffic reads it from here
-rather than repeating the variable, which is how a range ends up stated twice
-and then drifts: a firewall or export list built from a stale copy silently
-excludes the hosts that joined since.
+"""Lookup `mesh_ranges`: the address ranges the WireGuard meshes occupy, as a list.
 
 Usage:
 
-    {{ lookup('mesh_ranges') }}           # ['10.100.0.0/16']
+    {{ lookup('mesh_ranges') }}
 
-Takes no terms. The result is a list so a consumer can concatenate it with the
-addresses it already allows without special-casing the single-entry shape.
-
-The variable arrives unrendered: a lookup is handed the play vars as declared,
-so ``WIREGUARD_SUBNET_POOLS`` reads ``{{ [WIREGUARD_SUBNET_POOL] }}`` until it is
-templated. Returning that verbatim put the literal into the NFS export list,
-and ganesha refused to start on it.
+Takes no terms.
 """
 
 from __future__ import annotations
