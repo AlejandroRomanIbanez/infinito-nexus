@@ -60,6 +60,9 @@ ddl() {
 marker_write() {
 	case "${ENGINE}" in
 	postgres | mariadb)
+		if [ "${ENGINE}" = mariadb ]; then
+			mariadb -h "${HOST}" -P "${PORT}" -u "${USER}" -e "CREATE DATABASE IF NOT EXISTS ${DATABASE}" 2>"${LDAP_ERROR_FILE}" || return 1
+		fi
 		sql "CREATE TABLE IF NOT EXISTS failover_marker (token VARCHAR(64) PRIMARY KEY)" 2>"${LDAP_ERROR_FILE}" &&
 			sql "INSERT INTO failover_marker (token) VALUES ('${ARG}')" 2>>"${LDAP_ERROR_FILE}"
 		;;
