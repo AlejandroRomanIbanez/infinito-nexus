@@ -1,6 +1,13 @@
 ---
 - include_tasks: utils/once/flag.yml
 
+- name: "📂 Include dependency 'user-administrator' for the mesh transport"
+  include_role:
+    name: user-administrator
+  when:
+    - "'svc-swarm-node' in group_names"
+    - run_once_user_administrator is not defined
+
 - name: "🛑 Fail when the inventory carries no mesh for this host"
   ansible.builtin.fail:
     msg: >-
