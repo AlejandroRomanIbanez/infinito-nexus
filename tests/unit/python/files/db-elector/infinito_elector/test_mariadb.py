@@ -81,6 +81,14 @@ class TestGtidChoice(unittest.TestCase):
         )
         self.assertEqual(choose({"m1": role.rank(), **role.peer_ranks()}), "m2")
 
+    def test_a_bootstrap_instance_may_promote_alone(self) -> None:
+        role, _ = _role({"local": {}})
+        self.assertEqual(role.quorum(), 1)
+
+    def test_a_replica_needs_a_majority(self) -> None:
+        role, _ = _role({"local": {"SHOW SLAVE STATUS": "Master_Host: mariadb-m3"}})
+        self.assertEqual(role.quorum(), 2)
+
     def test_ties_go_to_the_lowest_host_id(self) -> None:
         position = GtidPosition.parse("0-1-7")
         self.assertEqual(choose({"m3": position, "m1": position, "m2": position}), "m1")

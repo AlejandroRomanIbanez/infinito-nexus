@@ -135,6 +135,14 @@ class MariaDBRole(Role):
         received = self._slave_status(host).get("Gtid_IO_Pos", "")
         return max(applied, GtidPosition.parse(received)) if received else applied
 
+    def quorum(self) -> int:
+        """A majority of instances; one for an instance that never replicated.
+
+        The bootstrap writer starts before any other instance exists, so it has
+        no peer to rank and would never promote under the majority rule.
+        """
+        return super().quorum() if self._slave_status() else 1
+
     def rank(self) -> GtidPosition:
         return self._position()
 
