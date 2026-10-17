@@ -211,6 +211,12 @@ run_ha() {
   mkdir -p /run/slapd "${DB_DIR}" "${SLAPD_D_DIR}"
   chown -R openldap:openldap /run/slapd "${DB_DIR}" "${SLAPD_D_DIR}"
 
+  exec 9>"${DB_DIR}/.instance.lock"
+  if ! flock -x -n 9; then
+    log "HA: waiting for the previous instance to release ${DB_DIR}"
+    flock -x 9
+  fi
+
   render_ha_cn_config
   stage_ha_credentials
   # A fresh slapadd on a re-cloned legacy volume gives the suffix a new entryUUID next to peers that hold the real one.
