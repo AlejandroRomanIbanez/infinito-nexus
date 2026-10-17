@@ -174,17 +174,10 @@ class SwarmLabBase:
         stdin: str | None = None,
         timeout: int = 60,
     ) -> subprocess.CompletedProcess:
-        found: list[tuple[str, str]] = []
-
-        def located() -> bool:
-            location = self._locate(service)
-            if location is not None:
-                found.append(location)
-            return location is not None
-
-        if not shell.wait_until(located, timeout_s=LOCATE_TIMEOUT_S, interval_s=2):
+        location = self._locate(service)
+        if location is None:
             raise RuntimeError(f"{service} has no running container")
-        node, cid = found[-1]
+        node, cid = location
         return shell.execute(
             in_container_argv(
                 node, cid, argv, user=user, interactive=stdin is not None
@@ -222,11 +215,22 @@ class SwarmLabBase:
                 return service
         raise RuntimeError(f"no {self.engine} instance reports itself primary")
 
-    def node_of(self, service: str) -> str:
-        location = self._locate(service)
-        if location is None:
+    def _locate_settled(self, service: str) -> tuple[str, str]:
+        """Locate ``service``, waiting out a task replacement before a fault."""
+        found: list[tuple[str, str]] = []
+
+        def located() -> bool:
+            location = self._locate(service)
+            if location is not None:
+                found.append(location)
+            return location is not None
+
+        if not shell.wait_until(located, timeout_s=LOCATE_TIMEOUT_S, interval_s=2):
             raise RuntimeError(f"{service} has no running container")
-        return location[0]
+        return found[-1]
+
+    def node_of(self, service: str) -> str:
+        return self._locate_settled(service)[0]
 
     def gtid(self, service: str) -> str | None:
         user, argv = engines.sql("mariadb", "SELECT @@GLOBAL.gtid_current_pos")
@@ -271,10 +275,7 @@ class SwarmLabBase:
 
     def inject_at(self, injection: str, service: str) -> str:
         """Inject a fault on one instance, or on the node it runs on; return the node."""
-        location = self._locate(service)
-        if location is None:
-            raise RuntimeError(f"{service} has no running container")
-        node, cid = location
+        node, cid = self._locate_settled(service)
         self._fault(injection, node, cid)
         return node
 
