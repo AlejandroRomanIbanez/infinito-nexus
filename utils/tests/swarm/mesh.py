@@ -14,10 +14,8 @@ from utils.tests.swarm.extend_inventory import mesh_enabled
 from utils.tests.swarm.run import run_step
 
 _CONTROLLER = "localhost"
-_PLAYBOOK = "playbook-mesh.yml"
-_BENCH_PLAYBOOK = "transport-bench.yml"
-_SUDO_PLAYBOOK = "lab-sudo.yml"
-_SWARM_EXTRAS_VARS = "inventories/development/swarm.yml"
+_PLAYBOOK = "playbooks/mesh.yml"
+_SUDO_PLAYBOOK = "playbooks/swarm-lab-passwordless-sudo.yml"
 _DEFAULT_ADMIN_KEY = "/tmp/swarm-nfs-admin.key"  # noqa: S108 - ephemeral swarm-test path, overridable via KEY_PATH
 
 
@@ -206,37 +204,6 @@ def lab_sudo_without_prompt(*, inv_dir: str) -> int:
         env=os.environ.copy(),
         label="take the sudo prompt off the lab administrator",
     )
-
-
-def transport_bench(*, inv_dir: str, extras_path: str, label: str) -> int:
-    """Time a fixed number of module calls over whatever transport is in force.
-
-    Args:
-        inv_dir: inventory directory of the round.
-        extras_path: round extras, carrying the become password.
-        label: which transport the numbers belong to.
-    """
-    if (
-        os.environ.get("INFINITO_SWARM_TRANSPORT_BENCH") or ""
-    ).strip().lower() != "true":
-        return 0
-    run_step(
-        [
-            "ansible-playbook",
-            "-i",
-            f"{inv_dir}/devices.yml",
-            "--vault-password-file",
-            f"{inv_dir}/.password",
-            "-e",
-            f"@{_SWARM_EXTRAS_VARS}",
-            "-e",
-            f"@{extras_path}",
-            _BENCH_PLAYBOOK,
-        ],
-        env=os.environ.copy(),
-        label=f"transport benchmark ({label})",
-    )
-    return 0
 
 
 def switch_to_mesh_transport(*, inv_dir: str) -> int:
