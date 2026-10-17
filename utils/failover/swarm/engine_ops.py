@@ -138,8 +138,29 @@ class EngineOps:
                 for line in out.splitlines()
                 if "syncrep" in line or "rid=" in line
             ]
-            tails[service] = lines[-6:]
+            tails[service] = [self._root_pw_digest(service), *lines[-6:]]
         return tails
+
+    def _root_pw_digest(self, service: str) -> str:
+        """A 12-hex digest prefix of the instance's root password and its age.
+
+        The password is hashed inside the container so it never reaches the log.
+        """
+        try:
+            proc = self._in(
+                service,
+                [
+                    "sh",
+                    "-c",
+                    'printf %s "$LDAP_ROOT_PW" | sha256sum | cut -c1-12; '
+                    'echo $(( $(date +%s) - $(stat -c %Y /proc/1) ))',
+                ],
+                timeout=15,
+            )
+        except RuntimeError as error:
+            return f"pw=? ({str(error)[:80]})"
+        digest, _, age = proc.stdout.strip().partition("\n")
+        return f"pw={digest} age={age}s"
 
     def wait_full_strength(self, timeout_s: float) -> tuple[bool, str]:
         detail: list[str] = []
