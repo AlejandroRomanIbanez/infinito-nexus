@@ -66,7 +66,8 @@ nextcloud:
       enabled: true
   name: nextcloud
   image: nextcloud
-  version: 35-fpm-alpine
+  # nocheck: docker-version  integration_openproject v3.2.0 caps at Nextcloud 34; only its v3.3.0 nightlies declare 35, lift once 3.3.0 is stable
+  version: 34-fpm-alpine
   custom: true
   min_storage: 553MB
   backup:
