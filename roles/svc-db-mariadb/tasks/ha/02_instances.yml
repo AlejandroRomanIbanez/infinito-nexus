@@ -46,6 +46,21 @@
       delegate_to: "{{ _mariadb_ha_bootstrap.host }}"
   when: _mariadb_ha_ready | length == 0
 
+- name: "⏳ MariaDB HA | Wait until exactly one elector holds the writer lease"
+  ansible.builtin.script: >-
+    {{ lookup('path_absolute', 'roles/sys-svc-compose/files/shell/wait_single_writer.sh') }}
+    {{ entity_name | quote }} {{ _mariadb_ha_bootstrap.service | quote }}
+    {% for instance in MARIADB_INSTANCES.instances %}http://{{ instance.service }}:{{ MARIADB_ELECTOR_PORT }}/writer {% endfor %}
+  environment:
+    BIN_RESOLVE_CONTAINER_ID: "{{ BIN_RESOLVE_CONTAINER_ID }}"
+  register: _mariadb_ha_writer_wait
+  until: _mariadb_ha_writer_wait.rc == 0
+  retries: 60
+  delay: 3
+  changed_when: false
+  delegate_to: "{{ _mariadb_ha_bootstrap.host }}"
+  when: _mariadb_ha_ready | length > 0
+
 - name: "🔍 MariaDB HA | Resolve the writer"
   include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_primary.yml') }}"
   vars:

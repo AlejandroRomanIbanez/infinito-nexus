@@ -1,7 +1,7 @@
 ---
 - name: "⏳ Wait until exactly one OpenLDAP elector holds the writer lease"
   ansible.builtin.script: >-
-    {{ lookup('path_absolute', 'roles/svc-db-openldap/files/shell/wait_single_writer.sh') }}
+    {{ lookup('path_absolute', 'roles/sys-svc-compose/files/shell/wait_single_writer.sh') }}
     {{ entity_name | quote }} {{ _local.service | quote }}
     {% for instance in OPENLDAP_DB.instances %}http://{{ instance.service }}:{{ OPENLDAP_HA_WRITER_PORT }}/writer {% endfor %}
   environment:
