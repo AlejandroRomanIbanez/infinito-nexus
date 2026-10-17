@@ -111,13 +111,6 @@
   ansible.builtin.include_role:
     name: user-root
 
-- name: 🎬 init administrator on every host the mesh has to reach
-  ansible.builtin.include_role:
-    name: user-administrator
-  when:
-    - "'svc-net-wireguard' | application_allowed(group_names, lookup('deployment').whitelist)"
-    - "'svc-swarm-node' in group_names"
-
 - name: "🥾 Bootstrap svc-net-wireguard"
   when: "'svc-net-wireguard' | application_allowed(group_names, lookup('deployment').whitelist)"
   block:
