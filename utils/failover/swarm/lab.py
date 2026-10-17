@@ -24,6 +24,8 @@ from utils.failover.swarm.commands import (
 if TYPE_CHECKING:
     from utils.failover.inventory import LabInventory
 
+LOCATE_TIMEOUT_S = 30.0
+
 
 class SwarmLabBase:
     """Lab adapter driving the DinD Swarm lab from the lab host.
@@ -172,10 +174,17 @@ class SwarmLabBase:
         stdin: str | None = None,
         timeout: int = 60,
     ) -> subprocess.CompletedProcess:
-        location = self._locate(service)
-        if location is None:
+        found: list[tuple[str, str]] = []
+
+        def located() -> bool:
+            location = self._locate(service)
+            if location is not None:
+                found.append(location)
+            return location is not None
+
+        if not shell.wait_until(located, timeout_s=LOCATE_TIMEOUT_S, interval_s=2):
             raise RuntimeError(f"{service} has no running container")
-        node, cid = location
+        node, cid = found[-1]
         return shell.execute(
             in_container_argv(
                 node, cid, argv, user=user, interactive=stdin is not None
