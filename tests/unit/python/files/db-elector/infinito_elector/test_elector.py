@@ -129,6 +129,13 @@ class TestElection(unittest.TestCase):
         self.assertFalse(b.serving_writer())
         self.assertEqual(b.role.followed, "a")
 
+    def test_no_promotion_without_a_ranked_majority(self) -> None:
+        _, _, journal, (a, _) = _pair()
+        a.role.quorum = lambda: 2
+        a.tick()
+        self.assertNotIn(("writer", "a"), journal)
+        self.assertFalse(a.holding)
+
     def test_not_ready_instance_does_not_compete(self) -> None:
         _, _, _, (a, _) = _pair()
         a.role.ready = False

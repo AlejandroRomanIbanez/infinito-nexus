@@ -168,11 +168,20 @@ class Elector:
         self.holding = True
         self.renewed_at = started
         try:
-            best = choose({self.host_id: self.role.rank(), **self.role.peer_ranks()})
+            ranks = {self.host_id: self.role.rank(), **self.role.peer_ranks()}
         except RoleError as error:
             LOG.warning("cannot rank this instance: %s", error)
             self.step_down()
             return
+        if len(ranks) < self.role.quorum():
+            LOG.warning(
+                "ranked %d of the %d instances a promotion needs, leaving the lease",
+                len(ranks),
+                self.role.quorum(),
+            )
+            self.step_down()
+            return
+        best = choose(ranks)
         if best != self.host_id:
             LOG.info("%s is further ahead, leaving the lease to it", best)
             self.step_down()

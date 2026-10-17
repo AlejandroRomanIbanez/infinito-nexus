@@ -39,6 +39,12 @@ def run_command(argv: Sequence[str], stdin: str | None = None) -> str:
 class Role(abc.ABC):
     """One engine instance as the elector sees it."""
 
+    peers: Sequence[str] = ()
+
+    def quorum(self) -> int:
+        """Ranked instances a promotion needs: a majority of all instances."""
+        return (len(self.peers) + 1) // 2 + 1
+
     @abc.abstractmethod
     def is_ready_to_compete(self) -> bool:
         """Whether the instance has caught up enough to become the writer."""
