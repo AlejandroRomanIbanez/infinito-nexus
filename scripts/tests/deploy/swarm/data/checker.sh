@@ -20,15 +20,31 @@ LDAP_PASSWORD_FILE="$(mktemp)"
 chmod 600 "${LDAP_PASSWORD_FILE}"
 printf '%s' "${PASSWORD}" >"${LDAP_PASSWORD_FILE}"
 
+uptime_ms() {
+	read -r up _ </proc/uptime
+	frac="${up#*.}"
+	frac="${frac#0}"
+	echo "$((${up%.*} * 1000 + frac * 10))"
+}
+
+NS_CLOCK=false
+ns="$(date +%s%N)"
+case "${ns}" in
+*[!0-9]*) ;;
+*) [ "${#ns}" -ge 19 ] && NS_CLOCK=true ;;
+esac
+if [ "${NS_CLOCK}" = false ]; then
+	second="$(date +%s)"
+	while [ "$(date +%s)" = "${second}" ]; do :; done
+	EPOCH_OFFSET_MS=$(((second + 1) * 1000 - $(uptime_ms)))
+fi
+
 now_ms() {
-	ns="$(date +%s%N)"
-	case "${ns}" in
-	*[!0-9]*) ns="" ;;
-	esac
-	if [ "${#ns}" -ge 19 ]; then
+	if [ "${NS_CLOCK}" = true ]; then
+		ns="$(date +%s%N)"
 		echo "${ns%??????}"
 	else
-		echo "$(($(date +%s) * 1000))"
+		echo "$(($(uptime_ms) + EPOCH_OFFSET_MS))"
 	fi
 }
 
