@@ -159,7 +159,13 @@ class EtcdLeaseLock(Lock):
                 if not self._token:
                     raise LockError("etcd refused the elector's credentials")
             headers["Authorization"] = self._token
-        reply = self._transport(path, body, headers)
+        try:
+            reply = self._transport(path, body, headers)
+        except LockError:
+            if not (self._user and cached and retry):
+                raise
+            self._token = None
+            return self._call(path, body, retry=False)
         if reply.get("error") or reply.get("code"):
             self._token = None
             if self._user and cached and retry:

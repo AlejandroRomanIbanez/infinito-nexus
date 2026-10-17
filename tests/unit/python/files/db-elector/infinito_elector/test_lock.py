@@ -140,6 +140,33 @@ class TestEtcdLeaseLock(unittest.TestCase):
             [c[0] for c in gateway.calls].count("/v3/auth/authenticate"), 2
         )
 
+    def test_a_token_a_rebuilt_store_hangs_on_is_replaced(self) -> None:
+        gateway = FakeGateway()
+        lock = _lock(gateway, user="elector", password="pw")
+        lock.acquire()
+        real = gateway.__call__
+        stale = {"left": 1}
+
+        def rebuilt(path, body, headers):
+            if headers.get("Authorization") and stale["left"]:
+                stale["left"] -= 1
+                raise LockError("no etcd endpoint answered: The read operation timed out")
+            return real(path, body, headers)
+
+        lock._transport = rebuilt
+        self.assertEqual(lock.holder(), "m1")
+        self.assertEqual(
+            [c[0] for c in gateway.calls].count("/v3/auth/authenticate"), 2
+        )
+
+    def test_a_store_down_for_a_fresh_token_still_raises(self) -> None:
+        gateway = FakeGateway()
+        lock = _lock(gateway, user="elector", password="pw")
+        lock.acquire()
+        gateway.down = True
+        with self.assertRaises(LockError):
+            lock.holder()
+
 
 class TestTransportErrors(unittest.TestCase):
     def test_a_client_error_reply_is_returned_not_skipped(self):
