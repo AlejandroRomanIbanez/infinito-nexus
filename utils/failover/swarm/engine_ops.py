@@ -15,6 +15,8 @@ from utils.failover.swarm.commands import (
     raft_leader,
 )
 
+CSN_SLACK_S = 5.0
+
 
 class EngineOps:
     """Mixin of ``SwarmLabBase``: direct instance writes, LDAP views and strength."""
@@ -116,8 +118,7 @@ class EngineOps:
             csns[service] = tuple(
                 sorted(engines.ldap_values(proc.stdout, "contextCSN"))
             )
-        same = len(set(csns.values())) == 1 and bool(next(iter(csns.values())))
-        if same:
+        if engines.csns_converged(csns, CSN_SLACK_S):
             return True, f"contextCSN per instance: {csns}"
         return False, f"contextCSN per instance: {csns}; syncrepl: {self._syncrepl_log()}"
 

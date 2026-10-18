@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import re
+from datetime import datetime, timezone
 from functools import cache
 from pathlib import PurePosixPath
 
@@ -153,6 +154,40 @@ def ldap_values(text: str, attribute: str) -> list[str]:
         for line in text.splitlines()
         if line.lower().startswith(prefix)
     ]
+
+
+def _csn_seconds(csn: str) -> float:
+    stamp = csn.split("#", 1)[0].rstrip("Z")
+    whole, _, fraction = stamp.partition(".")
+    day = datetime.strptime(whole, "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
+    return day.timestamp() + float(f"0.{fraction or 0}")
+
+
+def csns_converged(csns: dict[str, tuple[str, ...]], slack_s: float) -> bool:
+    """Whether every instance holds every writer's contextCSN within ``slack_s``.
+
+    Args:
+        csns: contextCSN values per instance.
+        slack_s: seconds two instances may differ for one server id, so
+            writes landing during the check do not read as divergence.
+    """
+    per_sid: list[dict[str, float]] = []
+    for values in csns.values():
+        stamps: dict[str, float] = {}
+        for csn in values:
+            parts = csn.split("#")
+            if len(parts) == 4:
+                stamps[parts[2]] = _csn_seconds(csn)
+        per_sid.append(stamps)
+    if not per_sid or not per_sid[0]:
+        return False
+    sids = set(per_sid[0])
+    if any(set(stamps) != sids for stamps in per_sid):
+        return False
+    return all(
+        max(s[sid] for s in per_sid) - min(s[sid] for s in per_sid) <= slack_s
+        for sid in sids
+    )
 
 
 def ldap_unwilling(returncode: int, output: str) -> bool:

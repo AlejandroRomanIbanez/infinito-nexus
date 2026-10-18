@@ -105,6 +105,36 @@ class TestParsers(unittest.TestCase):
         self.assertEqual(engines.dump_database("/b/x/sql/postgres.sql"), "postgres")
 
 
+class TestCsnsConverged(unittest.TestCase):
+    def test_writes_landing_mid_check_still_converge(self) -> None:
+        csns = {
+            "a": ("20261017222635.306364Z#000000#059#000000",),
+            "b": ("20261017222635.773318Z#000000#059#000000",),
+            "c": ("20261017222636.236431Z#000000#059#000000",),
+        }
+        self.assertTrue(engines.csns_converged(csns, 5.0))
+
+    def test_a_stalled_instance_diverges(self) -> None:
+        csns = {
+            "a": ("20261017121740.820893Z#000000#059#000000",),
+            "b": ("20261017121343.875141Z#000000#059#000000",),
+        }
+        self.assertFalse(engines.csns_converged(csns, 5.0))
+
+    def test_a_missing_server_id_diverges(self) -> None:
+        csns = {
+            "a": (
+                "20261017121740.820893Z#000000#059#000000",
+                "20261017121551.384876Z#000000#b17#000000",
+            ),
+            "b": ("20261017121740.820893Z#000000#059#000000",),
+        }
+        self.assertFalse(engines.csns_converged(csns, 5.0))
+
+    def test_no_csn_is_not_converged(self) -> None:
+        self.assertFalse(engines.csns_converged({"a": (), "b": ()}, 5.0))
+
+
 class TestScratch(unittest.TestCase):
     def test_scratch_runs_without_network_or_password(self):
         argv = engines.scratch_run("postgres", name="s", image="img")
