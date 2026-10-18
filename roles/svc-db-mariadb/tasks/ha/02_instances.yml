@@ -76,6 +76,15 @@
     loop_var: mariadb_seed
     label: "{{ mariadb_seed.item.service }}"
 
+- name: "🔒 MariaDB HA | Require a majority from now on"
+  ansible.builtin.shell: |
+    container exec "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ item.service | quote }})" rm -f {{ MARIADB_HA_BOOTSTRAP_MARKER | quote }}
+  changed_when: false
+  delegate_to: "{{ item.host }}"
+  loop: "{{ MARIADB_INSTANCES.instances }}"
+  loop_control:
+    label: "{{ item.service }}"
+
 - name: "👤 MariaDB HA | Reconcile the replication and elector users on the writer"
   ansible.builtin.shell: > # nocheck: container-exec-resolver  HA instance keys are mariadb-<host-id>, which container_address cannot name
     container exec -i {{ MARIADB_PRIMARY_CID | quote }}

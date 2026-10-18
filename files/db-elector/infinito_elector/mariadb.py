@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -29,7 +30,7 @@ class GtidPosition:
         return cls(total, text.strip())
 
 
-ABSENT_MARKS = ("ERROR 2005", "(111)")
+BOOTSTRAP_MARKER = "/var/lib/mysql/.infinito-ha-bootstrap"
 
 
 def _quote(value: str) -> str:
@@ -55,6 +56,7 @@ class MariaDBRole(Role):
         relay_wait_seconds: how long one promotion attempt waits for the
             relay log; kept under the runner's 5 s timeout and the renew
             deadline, a lagging relay log is retried on the next tick.
+        bootstrap_marker: file whose presence lets this instance promote alone.
     """
 
     QUERY_POSITION = "SELECT @@GLOBAL.gtid_current_pos"
@@ -72,6 +74,7 @@ class MariaDBRole(Role):
         replication_password: str | Callable[[], str],
         run: Callable[[Sequence[str], str | None], str] = run_command,
         relay_wait_seconds: int = 3,
+        bootstrap_marker: str = BOOTSTRAP_MARKER,
     ) -> None:
         self.host_id = host_id
         self.peers = [peer for peer in peers if peer != host_id]
@@ -84,7 +87,7 @@ class MariaDBRole(Role):
         self._run = run
         self._relay_wait = relay_wait_seconds
         self._following: str | None = None
-        self._absent = 0
+        self._bootstrap_marker = bootstrap_marker
 
     def _sql(self, query: str, host: str | None = None) -> str:
         """Run *query*, fed on stdin so the replication password never shows
@@ -140,27 +143,25 @@ class MariaDBRole(Role):
         return max(applied, GtidPosition.parse(received)) if received else applied
 
     def quorum(self) -> int:
-        """A majority of the instances that exist.
+        """A majority of all instances, or one while the bootstrap marker exists.
 
-        A peer whose host is unknown or refuses the connection does not exist
-        yet, as before the bootstrap writer seeds it; a slow or frozen peer
-        still counts, so a stale instance cannot promote past it.
+        The deploy places the marker on the first writer before any other
+        instance holds data and removes it once every instance is seeded.
         """
-        present = 1 + len(self.peers) - self._absent
-        return present // 2 + 1
+        if os.path.exists(self._bootstrap_marker):
+            return 1
+        return super().quorum()
 
     def rank(self) -> GtidPosition:
         return self._position()
 
     def peer_ranks(self) -> dict[str, GtidPosition]:
         ranks: dict[str, GtidPosition] = {}
-        self._absent = 0
         for peer in self.peers:
             try:
                 ranks[peer] = self._position(self._address(peer))
-            except RoleError as error:
-                if any(mark in str(error) for mark in ABSENT_MARKS):
-                    self._absent += 1
+            except RoleError:
+                continue
         return ranks
 
     def is_writable(self) -> bool:

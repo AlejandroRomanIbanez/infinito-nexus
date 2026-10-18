@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import tempfile
 import unittest
 
 from infinito_elector_src.mariadb import GtidPosition, MariaDBRole
@@ -25,15 +26,6 @@ class FakeServers:
             if stdin.startswith(prefix):
                 return answer
         return ""
-
-
-def _failing(run, message: str):
-    def remote_fails(argv, stdin):
-        if "-h" in argv:
-            raise RoleError(message)
-        return run(argv, stdin)
-
-    return remote_fails
 
 
 def _role(answers, replication_password="s'cret") -> tuple[MariaDBRole, FakeServers]:  # noqa: S107 - test fixture value
@@ -90,18 +82,15 @@ class TestGtidChoice(unittest.TestCase):
         )
         self.assertEqual(choose({"m1": role.rank(), **role.peer_ranks()}), "m2")
 
-    def test_a_bootstrap_instance_without_peers_may_promote_alone(self) -> None:
-        role, _ = _role({"local": {}})
-        role._run = _failing(
-            role._run, "ERROR 2005 (HY000): Unknown server host 'mariadb-m2' (-2)"
-        )
-        role.peer_ranks()
-        self.assertEqual(role.quorum(), 1)
+    def test_the_bootstrap_marker_lets_the_first_writer_promote_alone(self) -> None:
+        with tempfile.NamedTemporaryFile() as marker:
+            role, _ = _role({"local": {}})
+            role._bootstrap_marker = marker.name
+            self.assertEqual(role.quorum(), 1)
 
-    def test_a_slow_peer_still_counts_toward_the_majority(self) -> None:
+    def test_without_the_marker_a_majority_is_needed(self) -> None:
         role, _ = _role({"local": {}})
-        role._run = _failing(role._run, "mariadb: Command timed out")
-        role.peer_ranks()
+        role._bootstrap_marker = "/nonexistent/.infinito-ha-bootstrap"
         self.assertEqual(role.quorum(), 2)
 
     def test_ties_go_to_the_lowest_host_id(self) -> None:

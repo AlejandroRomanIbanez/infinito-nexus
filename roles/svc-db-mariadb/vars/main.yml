@@ -43,6 +43,7 @@ MARIADB_HA_CONTEXT_DIR: ha
 MARIADB_HA_BUILD_DIR: "{{ [lookup('container', application_id, 'directories.instance'), MARIADB_HA_CONTEXT_DIR] | path_join }}"
 MARIADB_HA_DATADIR: "{{ lookup('volume', application_id, 'data').target }}"
 MARIADB_HA_READY_MARKER: "{{ [MARIADB_HA_DATADIR, '.infinito-ha-ready'] | path_join }}"
+MARIADB_HA_BOOTSTRAP_MARKER: "{{ [MARIADB_HA_DATADIR, '.infinito-ha-bootstrap'] | path_join }}"
 MARIADB_HA_ROOT_CNF: "{{ lookup('volume', application_id, 'ha_root_cnf').target }}"
 MARIADB_HA_SQL: >-
   mariadb --defaults-extra-file={{ MARIADB_HA_ROOT_CNF }} -N -B
