@@ -76,7 +76,8 @@
         MASTER_HOST = '{{ _mariadb_seed_primary.service }}',
         MASTER_USER = '{{ MARIADB_REPLICATION_USER }}',
         MASTER_PASSWORD = '{{ MARIADB_REPLICATION_PWD }}',
-        MASTER_USE_GTID = slave_pos;
+        MASTER_USE_GTID = slave_pos,
+        MASTER_CONNECT_RETRY = 1;
       START SLAVE;
   delegate_to: "{{ _mariadb_seed_target.host }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"

@@ -172,6 +172,7 @@ class TestTransitions(unittest.TestCase):
         change = next(s for _, s in run.calls if s.startswith("CHANGE MASTER"))
         self.assertIn("MASTER_HOST='mariadb-m2'", change)
         self.assertIn("MASTER_USE_GTID=slave_pos", change)
+        self.assertIn("MASTER_CONNECT_RETRY=1", change)
         self.assertIn("'s\\'cret'", change)
         role.follow("m2")
         self.assertEqual(sum(s.startswith("CHANGE MASTER") for _, s in run.calls), 1)

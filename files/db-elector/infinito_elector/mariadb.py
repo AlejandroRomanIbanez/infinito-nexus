@@ -204,7 +204,7 @@ class MariaDBRole(Role):
             f"MASTER_HOST={_quote(self._address(writer))}, "
             f"MASTER_USER={_quote(self._repl_user)}, "
             f"MASTER_PASSWORD={_quote(self._repl_password() if callable(self._repl_password) else self._repl_password)}, "
-            "MASTER_USE_GTID=slave_pos"
+            "MASTER_USE_GTID=slave_pos, MASTER_CONNECT_RETRY=1"
         )
         self._sql("START SLAVE")
         self._following = writer
