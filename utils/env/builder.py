@@ -12,8 +12,7 @@ import os
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
-from utils.env.handlers import ORDERED_HANDLERS
-from utils.env.handlers.infinito import ip_range
+from utils.env.handlers import ORDERED_HANDLERS, ip_range
 from utils.env.runtime import detect_gha_act
 
 if TYPE_CHECKING:
