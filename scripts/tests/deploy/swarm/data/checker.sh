@@ -11,6 +11,9 @@ set -u
 # shellcheck source=/dev/null
 . "${SECRET_FILE}"
 
+USER="${CHECKER_USER:-${USER}}"
+PASSWORD="${CHECKER_PASSWORD:-${PASSWORD}}"
+DATABASE="${CHECKER_DATABASE:-${DATABASE:-}}"
 # shellcheck disable=SC2153  # PASSWORD comes from the sourced SECRET_FILE
 PGPASSWORD="${PASSWORD}"
 MYSQL_PWD="${PASSWORD}"
