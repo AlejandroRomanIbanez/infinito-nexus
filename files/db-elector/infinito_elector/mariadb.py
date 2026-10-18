@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
@@ -57,6 +58,9 @@ class MariaDBRole(Role):
             relay log; kept under the runner's 5 s timeout and the renew
             deadline, a lagging relay log is retried on the next tick.
         bootstrap_marker: file whose presence lets this instance promote alone.
+        silence_grace_seconds: how long a peer must stay unanswering before a
+            promotion may leave it out of the ranking.
+        clock: monotonic clock, injectable for tests.
     """
 
     QUERY_POSITION = "SELECT @@GLOBAL.gtid_current_pos"
@@ -75,6 +79,8 @@ class MariaDBRole(Role):
         run: Callable[[Sequence[str], str | None], str] = run_command,
         relay_wait_seconds: int = 3,
         bootstrap_marker: str = BOOTSTRAP_MARKER,
+        silence_grace_seconds: float = 8.0,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.host_id = host_id
         self.peers = [peer for peer in peers if peer != host_id]
@@ -88,6 +94,9 @@ class MariaDBRole(Role):
         self._relay_wait = relay_wait_seconds
         self._following: str | None = None
         self._bootstrap_marker = bootstrap_marker
+        self._silence_grace = silence_grace_seconds
+        self._clock = clock
+        self._unranked_since: dict[str, float] = {}
 
     def _sql(self, query: str, host: str | None = None) -> str:
         """Run *query*, fed on stdin so the replication password never shows
@@ -150,18 +159,31 @@ class MariaDBRole(Role):
         """
         if os.path.exists(self._bootstrap_marker):
             return 1
+        if any(
+            self._clock() - since < self._silence_grace
+            for since in self._unranked_since.values()
+        ):
+            return len(self.peers) + 1
         return super().quorum()
 
     def rank(self) -> GtidPosition:
         return self._position()
 
     def peer_ranks(self) -> dict[str, GtidPosition]:
+        """Rank every answering peer, remembering since when the others are silent.
+
+        Semi-sync needs one acknowledgement, so the only holder of the newest
+        acknowledged write may be the one peer that answers late; ``quorum``
+        blocks a promotion until each silent peer has stayed silent for the
+        grace period.
+        """
         ranks: dict[str, GtidPosition] = {}
         for peer in self.peers:
             try:
                 ranks[peer] = self._position(self._address(peer))
+                self._unranked_since.pop(peer, None)
             except RoleError:
-                continue
+                self._unranked_since.setdefault(peer, self._clock())
         return ranks
 
     def is_writable(self) -> bool:
