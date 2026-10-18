@@ -29,6 +29,9 @@ class GtidPosition:
         return cls(total, text.strip())
 
 
+ABSENT_MARKS = ("ERROR 2005", "(111)")
+
+
 def _quote(value: str) -> str:
     return "'" + value.replace("\\", "\\\\").replace("'", "\\'") + "'"
 
@@ -81,6 +84,7 @@ class MariaDBRole(Role):
         self._run = run
         self._relay_wait = relay_wait_seconds
         self._following: str | None = None
+        self._absent = 0
 
     def _sql(self, query: str, host: str | None = None) -> str:
         """Run *query*, fed on stdin so the replication password never shows
@@ -136,23 +140,27 @@ class MariaDBRole(Role):
         return max(applied, GtidPosition.parse(received)) if received else applied
 
     def quorum(self) -> int:
-        """A majority of instances; one for an instance that never replicated.
+        """A majority of the instances that exist.
 
-        The bootstrap writer starts before any other instance exists, so it has
-        no peer to rank and would never promote under the majority rule.
+        A peer whose host is unknown or refuses the connection does not exist
+        yet, as before the bootstrap writer seeds it; a slow or frozen peer
+        still counts, so a stale instance cannot promote past it.
         """
-        return super().quorum() if self._slave_status() else 1
+        present = 1 + len(self.peers) - self._absent
+        return present // 2 + 1
 
     def rank(self) -> GtidPosition:
         return self._position()
 
     def peer_ranks(self) -> dict[str, GtidPosition]:
         ranks: dict[str, GtidPosition] = {}
+        self._absent = 0
         for peer in self.peers:
             try:
                 ranks[peer] = self._position(self._address(peer))
-            except RoleError:
-                continue
+            except RoleError as error:
+                if any(mark in str(error) for mark in ABSENT_MARKS):
+                    self._absent += 1
         return ranks
 
     def is_writable(self) -> bool:

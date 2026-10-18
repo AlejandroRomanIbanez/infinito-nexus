@@ -27,6 +27,15 @@ class FakeServers:
         return ""
 
 
+def _failing(run, message: str):
+    def remote_fails(argv, stdin):
+        if "-h" in argv:
+            raise RoleError(message)
+        return run(argv, stdin)
+
+    return remote_fails
+
+
 def _role(answers, replication_password="s'cret") -> tuple[MariaDBRole, FakeServers]:  # noqa: S107 - test fixture value
     run = FakeServers(answers)
     role = MariaDBRole(
@@ -81,12 +90,18 @@ class TestGtidChoice(unittest.TestCase):
         )
         self.assertEqual(choose({"m1": role.rank(), **role.peer_ranks()}), "m2")
 
-    def test_a_bootstrap_instance_may_promote_alone(self) -> None:
+    def test_a_bootstrap_instance_without_peers_may_promote_alone(self) -> None:
         role, _ = _role({"local": {}})
+        role._run = _failing(
+            role._run, "ERROR 2005 (HY000): Unknown server host 'mariadb-m2' (-2)"
+        )
+        role.peer_ranks()
         self.assertEqual(role.quorum(), 1)
 
-    def test_a_replica_needs_a_majority(self) -> None:
-        role, _ = _role({"local": {"SHOW SLAVE STATUS": "Master_Host: mariadb-m3"}})
+    def test_a_slow_peer_still_counts_toward_the_majority(self) -> None:
+        role, _ = _role({"local": {}})
+        role._run = _failing(role._run, "mariadb: Command timed out")
+        role.peer_ranks()
         self.assertEqual(role.quorum(), 2)
 
     def test_ties_go_to_the_lowest_host_id(self) -> None:
