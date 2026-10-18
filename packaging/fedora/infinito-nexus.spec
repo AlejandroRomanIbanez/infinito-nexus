@@ -1,5 +1,5 @@
 Name:           infinito-nexus
-Version:        16.0.0
+Version:        16.0.1
 Release:        1%{?dist}
 Summary:        Meta package for Infinito.Nexus host dependencies
 
@@ -58,6 +58,22 @@ install -d %{buildroot}%{_docdir}/%{name}
 %doc %{_docdir}/%{name}/DEPENDENCIES
 
 %changelog
+* Sun Oct 18 2026 Kevin Veen-Birkenbach <kevin@veen.world> - 16.0.1-1
+- Fixed:
+
+- - Changelog: every entry uses dash bullets, so the file lints clean again
+- - Lint: Markdown lists must use dash bullets; MD004 now pins that style
+
+- Upgrade notes:
+
+- - 16.0.0 was never published; its two upgrade notes apply to this release
+- - Moodle: [web-installed plugins](roles/web-app-moodle/README.md#updates) are not carried to 5.3
+- - Zammad: Elasticsearch 9 rebuilds the search index on the first deploy
+
+- Contributors:
+
+- - [Kevin Veen-Birkenbach](https://veen.world): the Markdown list style fix
+
 * Sun Oct 18 2026 Kevin Veen-Birkenbach <kevin@veen.world> - 16.0.0-1
 - Added:
 
