@@ -22,6 +22,12 @@ shutdown() {
 }
 trap 'shutdown 0' TERM INT
 
+exec 9>"${datadir}/.instance.lock"
+if ! flock -x -n 9; then
+  echo "infinito-ha: waiting for the previous instance to release ${datadir}" >&2
+  flock -x 9
+fi
+
 if [ "${MARIADB_HA_BOOTSTRAP:-0}" != "1" ] && [ ! -d "${datadir}/mysql" ]; then
   echo "infinito-ha: empty data directory, waiting for a seed stream on ${MARIADB_SEED_PORT}" >&2
   chown mysql:mysql "$datadir"
