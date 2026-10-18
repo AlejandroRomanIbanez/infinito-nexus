@@ -1,9 +1,8 @@
 ---
 - name: "🔒 Bring every host of this inventory onto the mesh"
-  hosts: all
+  hosts: svc-net-wireguard
   become: true
   vars:
-    WIREGUARD_ENABLED: true
     MESH_BOOTSTRAP: false
   pre_tasks:
     - name: "🧊 Render the applications SPOT once and carry it into every task's worker"
@@ -14,9 +13,6 @@
       when: ansible_facts['os_family'] == 'Debian'
   roles:
     - role: user-root
-      when: MESH_BOOTSTRAP | bool
-
-    - role: user-administrator
       when: MESH_BOOTSTRAP | bool
 
     - role: svc-net-wireguard
