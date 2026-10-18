@@ -80,8 +80,10 @@ This requirement covers:
   |---|---|---|---|
   | Postgres | ≈ 28 s, measured 16.1–17.9 s | ≈ 30 s, measured 18.3–25.9 s | ≈ 4–6 s, measured 3.5–4.4 s |
   | MariaDB | ≈ 25 s | ≈ 27 s | ≈ 4–6 s |
-  | Redis | ≈ 11 s | ≈ 11 s, ≈ 31 s on a split Sentinel vote | ≈ 4–5 s |
-  | OpenLDAP | ≈ 21 s | ≈ 23 s | ≈ 4 s |
+  | Redis | ≈ 11 s, measured 6.6–9 s | ≈ 11 s, ≈ 31 s on a split Sentinel vote, measured 6.6–9 s | ≈ 6 s, measured 5.2–5.8 s |
+  | OpenLDAP | ≈ 21 s, measured 15.5–18.3 s | ≈ 27 s, measured 25.0–26.0 s | ≈ 4 s, measured 3.2–4.0 s |
+
+  OpenLDAP's node budget includes etcd's lease extension: when the lost node held the etcd leader, the new leader restarts every lease at its full 15 s TTL before the writer key can move.
 
   The components are lock or lease expiry, promotion, HAProxy marking the new primary up, and client reconnect. Promotion times and Swarm's removal of a dead node's HAProxy replica from the virtual IP are assumptions until measured; see [Risks](#risks-to-settle-during-implementation).
 - [ ] Failover never depends on `STACK_HOST` or its image registry: instances are pinned to their hosts and run from cached images, and HAProxy, etcd and the electors need nothing from the stack host to fail over. Only re-cloning onto a replacement host and re-running a deploy need `STACK_HOST`, and both are manual steps in this requirement.
