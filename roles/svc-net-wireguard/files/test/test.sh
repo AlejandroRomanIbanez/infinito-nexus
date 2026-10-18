@@ -5,7 +5,6 @@
 #
 # Env (all required; the role's test.env carries them):
 #   BULK_BYTES   size of the transfer each reachable pair must carry intact
-#   HOST_IMAGE   pinned base image of the throwaway hosts, without WireGuard
 #   MESH_ROLE    role whose networks.meshes puts each host into its meshes
 #   PING_COUNT   echo requests per reachability probe
 #   PYTHON       interpreter that runs Ansible and the mesh CLI
@@ -15,13 +14,13 @@
 set -euo pipefail
 
 BULK_BYTES="${BULK_BYTES:?pass BULK_BYTES as env (bytes each reachable pair must carry)}"
-HOST_IMAGE="${HOST_IMAGE:?pass HOST_IMAGE as env (pinned base image of the hosts)}"
 MESH_ROLE="${MESH_ROLE:?pass MESH_ROLE as env (role whose networks.meshes joins the hosts)}"
 PING_COUNT="${PING_COUNT:?pass PING_COUNT as env (echo requests per probe)}"
 PYTHON="${PYTHON:?pass PYTHON as env (interpreter that runs Ansible)}"
 REPO_ROOT="${REPO_ROOT:?pass REPO_ROOT as env (repository the deploy runs from)}"
 SSH_TIMEOUT="${SSH_TIMEOUT:?pass SSH_TIMEOUT as env (seconds an SSH connection may take)}"
 
+COMPOSE_FILE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/compose.yml"
 PREFIX="wg-mesh-$$"
 NETWORK="${PREFIX}"
 HOST_I="${PREFIX}-1"
@@ -32,16 +31,13 @@ WORK="$(mktemp -d)"
 SSH_ARGS=()
 failures=0
 
+hosts_compose() {
+	HOST_I="${HOST_I}" HOST_II="${HOST_II}" HOST_III="${HOST_III}" NETWORK="${NETWORK}" \
+		container compose --file "${COMPOSE_FILE}" --project-name "${PREFIX}" "$@"
+}
+
 cleanup() {
-	local host
-	for host in "${HOSTS[@]}"; do
-		if container inspect --type container "${host}" >/dev/null 2>&1; then
-			container rm -f "${host}" >/dev/null
-		fi
-	done
-	if container network inspect "${NETWORK}" >/dev/null 2>&1; then
-		container network rm "${NETWORK}" >/dev/null
-	fi
+	hosts_compose down --remove-orphans >/dev/null 2>&1
 	rm -rf "${WORK}"
 }
 trap cleanup EXIT
@@ -52,11 +48,8 @@ on() {
 	container exec "${host}" "$@"
 }
 
-start_host() {
+provision_host() {
 	local host="$1"
-	container run --detach --name "${host}" --hostname "${host}" \
-		--network "${NETWORK}" --cap-add NET_ADMIN \
-		"${HOST_IMAGE}" sleep infinity >/dev/null
 	on "${host}" sh -c 'rm -rf /var/lib/apt/lists/* \
 		&& apt-get -o Acquire::Retries=3 update -qq \
 		&& apt-get -o Acquire::Retries=3 install -y -qq --no-install-recommends \
@@ -206,10 +199,10 @@ mkdir -p "${WORK}/host_vars"
 "${PYTHON}" -c 'import secrets; print(secrets.token_hex(32))' >"${WORK}/.password"
 load_mesh_ssh_args
 
-echo "[INFO] starting three throwaway hosts from ${HOST_IMAGE}"
-container network create "${NETWORK}" >/dev/null
+echo "[INFO] starting three throwaway hosts from $(hosts_compose config --images | sort -u)"
+hosts_compose up --detach --quiet-pull >/dev/null
 for host in "${HOSTS[@]}"; do
-	start_host "${host}"
+	provision_host "${host}"
 done
 authorize_every_host
 
