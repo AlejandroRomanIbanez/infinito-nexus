@@ -14,6 +14,13 @@ class RoleError(Exception):
     """The engine refused a command or could not be reached."""
 
 
+class RestartRequired(Exception):  # noqa: N818 - a signal, not an error condition
+    """The engine must be killed and recovered before it may follow a writer."""
+
+
+RESTART_EXIT_CODE = 3
+
+
 def run_command(argv: Sequence[str], stdin: str | None = None) -> str:
     """Run *argv* and return its stdout.
 

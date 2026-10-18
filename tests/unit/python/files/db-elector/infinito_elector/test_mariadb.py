@@ -4,7 +4,7 @@ import tempfile
 import unittest
 
 from infinito_elector_src.mariadb import GtidPosition, MariaDBRole
-from infinito_elector_src.roles import RoleError, choose
+from infinito_elector_src.roles import RestartRequired, RoleError, choose
 
 from . import _NAME  # noqa: F401  side-effect import registers infinito_elector_src
 
@@ -39,6 +39,7 @@ def _role(answers, replication_password="s'cret") -> tuple[MariaDBRole, FakeServ
         replication_user="repl",
         replication_password=replication_password,
         run=run,
+        recovered_marker=tempfile.NamedTemporaryFile(delete=False).name,  # noqa: SIM115 - the role removes it
     )
     return role, run
 
@@ -173,7 +174,10 @@ class TestTransitions(unittest.TestCase):
 
     def test_follow_reads_a_rotated_replication_password(self) -> None:
         passwords = iter(["old", "new"])
-        role, run = _role({"local": {}}, replication_password=lambda: next(passwords))
+        role, run = _role(
+            {"local": {"SHOW SLAVE STATUS": "Master_Host: mariadb-m1"}},
+            replication_password=lambda: next(passwords),
+        )
         role.follow("m2")
         role.follow("m3")
         changes = [s for _, s in run.calls if s.startswith("CHANGE MASTER")]
@@ -218,6 +222,16 @@ class TestTransitions(unittest.TestCase):
         reset = statements.index(self.RESET_SLAVE_POS)
         change = next(i for i, s in enumerate(statements) if s.startswith("CHANGE"))
         self.assertLess(reset, change)
+
+    def test_a_former_writer_restarts_once_before_it_follows(self) -> None:
+        with tempfile.TemporaryDirectory() as scratch:
+            role, run = _role({"local": {}})
+            role._recovered_marker = f"{scratch}/.infinito-ha-recovered"
+            with self.assertRaises(RestartRequired):
+                role.follow("m2")
+            self.assertFalse(any(s.startswith("CHANGE") for _, s in run.calls))
+            role.follow("m2")
+            self.assertTrue(any(s.startswith("CHANGE") for _, s in run.calls))
 
     def test_a_running_replica_keeps_its_slave_position(self) -> None:
         role, run = _role({"local": {"SHOW SLAVE STATUS": "Master_Host: mariadb-m3"}})

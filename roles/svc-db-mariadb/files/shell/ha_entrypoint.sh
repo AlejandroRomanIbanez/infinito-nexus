@@ -54,7 +54,11 @@ elector=$!
 exited=""
 rc=0
 wait -n -p exited "$db" "$elector" || rc=$?
-if [ "$exited" = "$elector" ]; then
+if [ "$exited" = "$elector" ] && [ "$rc" = 3 ]; then
+  echo "infinito-ha: former writer must recover before it follows; killing mariadbd" >&2
+  kill -KILL "$db"
+  exit 1
+elif [ "$exited" = "$elector" ]; then
   echo "infinito-ha: writer elector exited rc=${rc}; stopping mariadbd" >&2
 else
   echo "infinito-ha: mariadbd exited rc=${rc}; stopping the elector" >&2

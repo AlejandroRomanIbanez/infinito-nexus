@@ -7,7 +7,7 @@ import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from .roles import Role, RoleError, run_command
+from .roles import RestartRequired, Role, RoleError, run_command
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -32,6 +32,7 @@ class GtidPosition:
 
 
 BOOTSTRAP_MARKER = "/var/lib/mysql/.infinito-ha-bootstrap"
+RECOVERED_MARKER = "/var/lib/mysql/.infinito-ha-recovered"
 
 
 def _quote(value: str) -> str:
@@ -58,6 +59,8 @@ class MariaDBRole(Role):
             relay log; kept under the runner's 5 s timeout and the renew
             deadline, a lagging relay log is retried on the next tick.
         bootstrap_marker: file whose presence lets this instance promote alone.
+        recovered_marker: file a former writer leaves before its forced
+            restart, so the restarted instance follows instead of restarting again.
         silence_grace_seconds: how long a peer must stay unanswering before a
             promotion may leave it out of the ranking.
         clock: monotonic clock, injectable for tests.
@@ -79,6 +82,7 @@ class MariaDBRole(Role):
         run: Callable[[Sequence[str], str | None], str] = run_command,
         relay_wait_seconds: int = 3,
         bootstrap_marker: str = BOOTSTRAP_MARKER,
+        recovered_marker: str = RECOVERED_MARKER,
         silence_grace_seconds: float = 8.0,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
@@ -94,6 +98,7 @@ class MariaDBRole(Role):
         self._relay_wait = relay_wait_seconds
         self._following: str | None = None
         self._bootstrap_marker = bootstrap_marker
+        self._recovered_marker = recovered_marker
         self._silence_grace = silence_grace_seconds
         self._clock = clock
         self._unranked_since: dict[str, float] = {}
@@ -227,6 +232,13 @@ class MariaDBRole(Role):
         self._sql("SET GLOBAL rpl_semi_sync_master_enabled = 0")
         self._sql("STOP SLAVE")
         if not self._slave_status():
+            if not os.path.exists(self._recovered_marker):
+                open(self._recovered_marker, "w").close()  # noqa: PTH123, SIM115 - touch
+                raise RestartRequired(
+                    f"{self.host_id} was a writer; restarting so recovery drops "
+                    "binlog writes no replica acknowledged"
+                )
+            os.remove(self._recovered_marker)  # noqa: PTH107
             # A former writer's gtid_slave_pos predates its own writes; asking
             # the new writer for them again breaks gtid_strict_mode.
             self._sql("SET GLOBAL gtid_slave_pos = @@GLOBAL.gtid_current_pos")

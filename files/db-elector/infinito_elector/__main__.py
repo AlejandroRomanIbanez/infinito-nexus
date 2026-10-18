@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 from . import LEASE_SECONDS, RENEW_DEADLINE_SECONDS, RETRY_SECONDS
 from .elector import Elector, FatalError
 from .lock import EtcdLeaseLock, http_transport
+from .roles import RESTART_EXIT_CODE, RestartRequired
 from .server import serve
 
 if TYPE_CHECKING:
@@ -180,6 +181,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     server = serve(elector.serving_writer, args.listen, args.port)
     try:
         elector.run(stop)
+    except RestartRequired as error:
+        logging.getLogger("infinito_elector").warning("%s", error)
+        return RESTART_EXIT_CODE
     except FatalError as error:
         logging.getLogger("infinito_elector").error("%s", error)
         return 1
