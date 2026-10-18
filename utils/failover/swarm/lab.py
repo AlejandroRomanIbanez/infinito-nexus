@@ -63,6 +63,7 @@ class SwarmLabBase:
         self.stack = engines.stack_of(engine)
         self.role = engines.role_of(engine)
         self._faulted: str | None = None
+        self._faulted_at: dict[str, tuple[str, str]] = {}
         self._dead: set[str] = set()
         self._resolv: dict[str, str] = {}
         self._checker_id = ""
@@ -174,7 +175,7 @@ class SwarmLabBase:
         stdin: str | None = None,
         timeout: int = 60,
     ) -> subprocess.CompletedProcess:
-        location = self._locate(service)
+        location = self._locate(service) or self._faulted_at.get(service)
         if location is None:
             raise RuntimeError(f"{service} has no running container")
         node, cid = location
@@ -276,6 +277,7 @@ class SwarmLabBase:
     def inject_at(self, injection: str, service: str) -> str:
         """Inject a fault on one instance, or on the node it runs on; return the node."""
         node, cid = self._locate_settled(service)
+        self._faulted_at = {service: (node, cid)}
         self._fault(injection, node, cid)
         return node
 
@@ -321,6 +323,7 @@ class SwarmLabBase:
         self._write_name_files(node, self._resolv)
         self._resolv = {}
         self._faulted = None
+        self._faulted_at = {}
         self.wait_swarm_settled([node])
 
     def wait_swarm_settled(
