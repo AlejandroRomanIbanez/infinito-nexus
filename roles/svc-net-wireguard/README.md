@@ -45,10 +45,6 @@ flowchart LR
     subgraph role [svc-net-wireguard 💻]
         svc_wireguard["wireguard"]
     end
-    subgraph dependents [Dependents]
-        dpt_svc_swarm_node["svc-swarm-node 💻"]
-    end
-    svc_wireguard -- "1:1" --> dpt_svc_swarm_node
 ```
 
 Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (enabled only in matching deployments); red `0..0` edges are turned off in this role. Node markers show the role's deploy modes (💻 host, 🐳 compose, 🐝 swarm); ❌ marks a service that is explicitly turned off, and ⚙️ an Ansible role dependency declared in `meta/main.yml`.
