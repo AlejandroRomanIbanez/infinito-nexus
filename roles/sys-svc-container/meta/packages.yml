@@ -22,4 +22,3 @@ docker-cli:
       - docker-compose-plugin
     repo:
       managed_externally: sys-svc-container configures the download.docker.com repository per distro before installing
-

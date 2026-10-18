@@ -1,3 +1,4 @@
+---
 x-host: &host
   command: ["sleep", "infinity"]
   cap_add:
