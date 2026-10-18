@@ -9,7 +9,7 @@ wireguard:
       enabled: false
   name: wireguard
   lifecycle: beta
-  enabled: "{{ DEPLOYMENT_MODE == 'swarm' }}"
+  enabled: true
   shared: true
   bond: 1
   min_storage: "1MB"
@@ -17,10 +17,3 @@ wireguard:
   mem_reservation: "8m"
   mem_limit: "16m"
   pids_limit: 8
-
-# nocheck: dynamic-flag
-test:
-  enabled: false
-  shared: false
-  image: debian
-  version: 13.7-slim
