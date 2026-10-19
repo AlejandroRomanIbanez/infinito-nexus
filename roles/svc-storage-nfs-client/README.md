@@ -47,6 +47,9 @@ Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (
   `/var/lib/infinito-backup` over `/var/lib/infinito/backup`, so every
   backup repository on a swarm node is written to local disk with its
   extended attributes, and the backup host pulls it from there.
+  Generations written to the share before the bind stay under the
+  export's `backup/` directory, hidden from the nodes; remove them there
+  by hand.
 
 ## Quick Setup
 
