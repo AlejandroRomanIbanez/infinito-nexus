@@ -43,6 +43,10 @@ Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (
   container boot.
 - **Strict assertion:** Missing `storage.nfs.server` or
   fails the deploy with a precise error.
+- **Node-local backups:** After the state mount, binds the node's own
+  `/var/lib/infinito-backup` over `/var/lib/infinito/backup`, so every
+  backup repository on a swarm node is written to local disk with its
+  extended attributes, and the backup host pulls it from there.
 
 ## Quick Setup
 
