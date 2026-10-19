@@ -11,9 +11,7 @@ set -u
 # shellcheck source=/dev/null
 . "${SECRET_FILE}"
 
-USER="${CHECKER_USER:-${USER}}"
-PASSWORD="${CHECKER_PASSWORD:-${PASSWORD}}"
-DATABASE="${CHECKER_DATABASE:-${DATABASE:-}}"
+WRITER_USER="${USER}"
 # shellcheck disable=SC2153  # PASSWORD comes from the sourced SECRET_FILE
 PGPASSWORD="${PASSWORD}"
 MYSQL_PWD="${PASSWORD}"
@@ -59,7 +57,8 @@ prepare() {
 		;;
 	mariadb)
 		mariadb -h "${HOST}" -P "${PORT}" -u "${USER}" \
-			-e "CREATE DATABASE IF NOT EXISTS ${DATABASE}; CREATE TABLE IF NOT EXISTS ${DATABASE}.failover_check (run VARCHAR(64) NOT NULL, seq BIGINT NOT NULL, PRIMARY KEY (run, seq))"
+			-e "CREATE DATABASE IF NOT EXISTS ${DATABASE}; CREATE TABLE IF NOT EXISTS ${DATABASE}.failover_check (run VARCHAR(64) NOT NULL, seq BIGINT NOT NULL, PRIMARY KEY (run, seq)); CREATE USER IF NOT EXISTS 'failover_checker'@'%' IDENTIFIED BY '${PASSWORD}'; GRANT INSERT, SELECT ON ${DATABASE}.* TO 'failover_checker'@'%'" &&
+			WRITER_USER=failover_checker
 		;;
 	redis) ;;
 	openldap)
@@ -84,7 +83,7 @@ write_one() {
 		;;
 	mariadb)
 		timeout "${TIMEOUT_S}" mariadb --connect-timeout="${TIMEOUT_S}" -h "${HOST}" -P "${PORT}" \
-			-u "${USER}" "${DATABASE}" \
+			-u "${WRITER_USER}" "${DATABASE}" \
 			-e "INSERT INTO failover_check (run, seq) VALUES ('${RUN_ID}', $1)"
 		;;
 	redis)
