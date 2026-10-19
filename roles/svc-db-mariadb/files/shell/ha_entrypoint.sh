@@ -1,8 +1,12 @@
 #!/usr/bin/env bash
 # Param: MARIADB_HA_BOOTSTRAP  1 on the instance that may initialise an empty data directory
 # Param: MARIADB_SEED_PORT     port an empty non-bootstrap instance receives its seed stream on
-# Param: ELECTOR_*             options of the writer elector (python -m infinito_elector)
+# Param: ELECTOR_*             options of the writer elector (python -m infinito_elector); without ELECTOR_HOST_ID the stock entrypoint runs (standalone form)
 set -euo pipefail
+
+if [ -z "${ELECTOR_HOST_ID:-}" ]; then
+  exec docker-entrypoint.sh "$@"
+fi
 
 datadir=/var/lib/mysql
 ready="${datadir}/.infinito-ha-ready"
