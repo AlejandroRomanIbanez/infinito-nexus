@@ -21,7 +21,7 @@ jobs:
   update-docker-image-versions:
     name: 🐳 Update Docker image versions
     if: vars.CI_ENABLE_AUTO_UPDATES == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: ⬇️ Checkout
         uses: actions/checkout@v7.0.0
@@ -68,7 +68,7 @@ jobs:
   update-version-sources:
     name: 🔖 Update declared version sources
     if: vars.CI_ENABLE_AUTO_UPDATES == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: ⬇️ Checkout
         uses: actions/checkout@v7.0.0
@@ -115,7 +115,7 @@ jobs:
   update-pip-pins:
     name: 🐍 Update pinned pip requirements
     if: vars.CI_ENABLE_AUTO_UPDATES == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: ⬇️ Checkout
         uses: actions/checkout@v7.0.0
@@ -162,7 +162,7 @@ jobs:
   update-galaxy-pins:
     name: 🌌 Update pinned Ansible collections
     if: vars.CI_ENABLE_AUTO_UPDATES == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: ⬇️ Checkout
         uses: actions/checkout@v7.0.0
@@ -209,7 +209,7 @@ jobs:
   update-repository-refs:
     name: 🌿 Update repository refs
     if: vars.CI_ENABLE_AUTO_UPDATES == 'true'
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: ⬇️ Checkout
         uses: actions/checkout@v7.0.0
