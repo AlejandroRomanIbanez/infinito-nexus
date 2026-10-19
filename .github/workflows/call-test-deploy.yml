@@ -163,7 +163,7 @@ env:
 jobs:
   discover:
     name: 🔍 Chunk ${{ inputs.index }}${{ inputs.marker }}
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 60
     outputs:
       apps: ${{ steps.discover.outputs.apps }}
@@ -251,7 +251,7 @@ jobs:
   deploy:
     name: "${{ matrix.label }}"
     if: needs.discover.outputs.apps != '' && needs.discover.outputs.apps != '[]'
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-26.04
     timeout-minutes: 355
     needs: discover
 
