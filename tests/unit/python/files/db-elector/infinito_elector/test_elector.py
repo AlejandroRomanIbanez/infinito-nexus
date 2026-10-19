@@ -129,6 +129,17 @@ class TestElection(unittest.TestCase):
         self.assertFalse(b.serving_writer())
         self.assertEqual(b.role.followed, "a")
 
+    def test_an_instance_that_yields_leaves_the_lease_to_the_better_peer(self) -> None:
+        clock, _, _, (a, b) = _pair()
+        a.role.peers = {"b": 5}
+        b.role._rank = 5
+        a.tick()
+        self.assertFalse(a.holding)
+        a.tick()
+        self.assertFalse(a.holding)
+        b.tick()
+        self.assertTrue(b.serving_writer())
+
     def test_no_promotion_without_a_ranked_majority(self) -> None:
         _, _, journal, (a, _) = _pair()
         a.role.quorum = lambda: 2

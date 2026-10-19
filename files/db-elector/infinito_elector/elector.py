@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from .roles import Role
 
 LOG = logging.getLogger("infinito_elector")
+YIELD_TICKS = 3
 
 
 class FatalError(Exception):
@@ -65,6 +66,7 @@ class Elector:
         self.holding = False
         self.renewed_at = float("-inf")
         self.writable_seen = False
+        self._yield_until = float("-inf")
         self._mutex = threading.RLock()
 
     def _within_deadline(self) -> bool:
@@ -156,7 +158,7 @@ class Elector:
                 except RoleError as error:
                     LOG.warning("cannot follow %s: %s", holder, error)
             return
-        if not self.role.is_ready_to_compete():
+        if self.clock() < self._yield_until or not self.role.is_ready_to_compete():
             return
         started = self.clock()
         try:
@@ -185,6 +187,7 @@ class Elector:
         if best != self.host_id:
             LOG.info("%s is further ahead, leaving the lease to it", best)
             self.step_down()
+            self._yield_until = self.clock() + YIELD_TICKS * self.retry_seconds
             return
         try:
             self.role.become_writer()
