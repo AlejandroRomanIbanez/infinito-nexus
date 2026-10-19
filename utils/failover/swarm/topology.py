@@ -23,6 +23,9 @@ from utils.failover.swarm.commands import (
 from utils.failover.targets import RECLONE_CEILING_S
 from utils.roles.entity.name import get_entity_name
 
+REDIS_PREFERRED_PRIORITY = "1"
+REDIS_DEFAULT_PRIORITY = "100"
+
 
 class Topology:
     """Mixin of ``SwarmLabBase``: Raft and etcd leaders, inventory edits and redeploys."""
@@ -89,6 +92,7 @@ class Topology:
         elif self.engine == "redis":
             host_id = engines.member_of(self.engine, target).split("-", 1)[1]
             sentinel = f"{self.stack}_{self.stack}-sentinel-{host_id}"
+            self._set_replica_priorities(primary, target)
             self._in(sentinel, sentinel_failover_argv())
         else:
             node, cid = self._locate(primary) or (None, None)
@@ -99,6 +103,28 @@ class Topology:
             )
         self.wait_new_primary(primary)
 
+    def _set_replica_priorities(
+        self, primary: str | None, target: str | None
+    ) -> None:
+        """Sentinel promotes the replica with the lowest priority, else any.
+
+        Args:
+            primary: current master, left untouched; ``None`` touches every instance.
+            target: replica to prefer, ``None`` to restore the default.
+        """
+        for service in self._instances():
+            if service == primary:
+                continue
+            priority = (
+                REDIS_PREFERRED_PRIORITY
+                if service == target
+                else REDIS_DEFAULT_PRIORITY
+            )
+            self._in(
+                service,
+                engines.redis_cli("CONFIG", "SET", "replica-priority", priority),
+            )
+
     def move_primary_to(self, host: str) -> None:
         target = self._instance_on(host)
         for _ in range(ARRANGE_ATTEMPTS):
@@ -106,6 +132,8 @@ class Topology:
                 raise RuntimeError(f"no {self.engine} primary while arranging")
             primary = self.primary_instance()
             if primary == target:
+                if self.engine == "redis":
+                    self._set_replica_priorities(None, None)
                 return
             self._hand_over(primary, target)
         raise RuntimeError(
