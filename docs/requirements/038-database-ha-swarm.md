@@ -81,7 +81,7 @@ This requirement covers:
   | Postgres | ≈ 28 s, measured 16.1–17.9 s | ≈ 30 s, measured 18.3–25.9 s | ≈ 4–6 s, measured 3.5–4.4 s |
   | MariaDB | ≈ 25 s, measured 15.0–17.3 s | ≈ 30 s, measured 24.9–27.9 s | ≈ 4–6 s |
   | Redis | ≈ 11 s, measured 6.6–9 s | ≈ 11 s, ≈ 31 s on a split Sentinel vote, measured 6.6–9 s | ≈ 6 s, measured 5.2–5.8 s |
-  | OpenLDAP | ≈ 21 s, measured 15.5–18.3 s | ≈ 27 s, measured 25.0–26.0 s | ≈ 5 s, measured 3.2–4.04 s |
+  | OpenLDAP | ≈ 21 s, measured 15.5–18.3 s | ≈ 40 s, measured 25.0–37.7 s | ≈ 5 s, measured 3.2–4.04 s |
 
   MariaDB's node budget includes an 8 s grace before a candidate may leave a silent peer out of its ranking: one semi-sync acknowledgement suffices, so the silent peer may be the only holder of the newest acknowledged write. OpenLDAP's node budget includes etcd's lease extension: when the lost node held the etcd leader, the new leader restarts every lease at its full 15 s TTL before the writer key can move.
 
