@@ -88,6 +88,11 @@ jobs:
       - name: ⬇️ Checkout repository
         uses: actions/checkout@v7.0.0
 
+      - name: 🛡️ Tear down host AppArmor profiles (dev-host parity)
+        if: ${{ !env.ACT }}
+        shell: bash
+        run: make security-apparmor-teardown
+
       - name: "📥 Load the rescue paths into job env"
         shell: bash
         run: |
