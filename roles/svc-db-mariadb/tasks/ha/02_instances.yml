@@ -45,6 +45,16 @@
       delegate_to: "{{ _mariadb_ha_bootstrap.host }}"
   when: _mariadb_ha_ready | length == 0
 
+- name: "🏁 MariaDB HA | Let a ready minority elect a seeding writer"
+  ansible.builtin.shell: |
+    container exec "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ item.service | quote }})" touch {{ MARIADB_HA_BOOTSTRAP_MARKER | quote }}
+  changed_when: true
+  delegate_to: "{{ item.host }}"
+  loop: "{{ _mariadb_ha_ready }}"
+  loop_control:
+    label: "{{ item.service }}"
+  when: (_mariadb_ha_ready | length) <= ((MARIADB_INSTANCES.instances | length) // 2)
+
 - name: "⏳ MariaDB HA | Wait until exactly one elector holds the writer lease"
   ansible.builtin.script: >-
     {{ lookup('path_absolute', 'roles/sys-svc-compose/files/shell/wait_single_writer.sh') }}
