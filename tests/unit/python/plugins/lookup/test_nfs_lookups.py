@@ -35,7 +35,7 @@ class TestNfsLookups(unittest.TestCase):
     def test_mount_opts_github_soft(self):
         self.assertEqual(
             _run("nfs_mount_opts", BASE),
-            "vers=4,rw,soft,timeo=50,retrans=3",
+            "vers=4.0,rw,soft,timeo=50,retrans=3",
         )
 
     def test_mount_opts_host_hard(self):
@@ -47,7 +47,7 @@ class TestNfsLookups(unittest.TestCase):
     def test_mount_opts_act_soft(self):
         self.assertEqual(
             _run("nfs_mount_opts", {**BASE, "RUNTIME": "act"}),
-            "vers=4,rw,soft,timeo=50,retrans=3",
+            "vers=4.0,rw,soft,timeo=50,retrans=3",
         )
 
 

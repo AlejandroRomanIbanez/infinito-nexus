@@ -55,12 +55,14 @@ def fstype(version):
 
 
 def mount_opts(version, runtime):
-    reliability = (
-        "soft,timeo=50,retrans=3"
-        if runtime in ("dev", "act", "github")
-        else "hard,timeo=600"
-    )
+    lab = runtime in ("dev", "act", "github")
+    reliability = "soft,timeo=50,retrans=3" if lab else "hard,timeo=600"
     locking = "" if int(version) >= 4 else ",nolock"
+    if lab and int(version) == 4:
+        # Kernel 7.0 clients ask v4.1+ servers for directory delegations;
+        # the lab's nfs-ganesha answers NFS4ERR_OP_ILLEGAL, which surfaces as
+        # EREMOTEIO on mkdir. v4.0 has no sessions and never asks.
+        version = "4.0"
     return f"vers={version},rw,{reliability}{locking}"
 
 
