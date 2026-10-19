@@ -229,15 +229,19 @@ class MariaDBRole(Role):
     def follow(self, writer: str | None) -> None:
         if writer is None or writer in (self.host_id, self._following):
             return
+        former_writer = not self._slave_status()
+        if former_writer and not os.path.exists(self._recovered_marker):
+            open(self._recovered_marker, "w").close()  # noqa: PTH123, SIM115 - touch
+            # Turning semi-sync off first would release and commit the writes
+            # still waiting for an acknowledgement, the errant GTIDs recovery
+            # is meant to drop.
+            raise RestartRequired(
+                f"{self.host_id} was a writer; restarting so recovery drops "
+                "binlog writes no replica acknowledged"
+            )
         self._sql("SET GLOBAL rpl_semi_sync_master_enabled = 0")
         self._sql("STOP SLAVE")
-        if not self._slave_status():
-            if not os.path.exists(self._recovered_marker):
-                open(self._recovered_marker, "w").close()  # noqa: PTH123, SIM115 - touch
-                raise RestartRequired(
-                    f"{self.host_id} was a writer; restarting so recovery drops "
-                    "binlog writes no replica acknowledged"
-                )
+        if former_writer:
             os.remove(self._recovered_marker)  # noqa: PTH107
             # A former writer's gtid_slave_pos predates its own writes; asking
             # the new writer for them again breaks gtid_strict_mode.
