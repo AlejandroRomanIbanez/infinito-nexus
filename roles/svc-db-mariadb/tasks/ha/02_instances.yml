@@ -37,7 +37,6 @@
   loop_control:
     loop_var: mariadb_rotate_instance
     label: "{{ mariadb_rotate_instance.service }}"
-  when: (_mariadb_previous_root_pwd | default('')) | length > 0
 
 - name: "🌱 MariaDB HA | Bootstrap the first writer"
   include_tasks:
