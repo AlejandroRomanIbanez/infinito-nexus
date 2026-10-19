@@ -265,6 +265,19 @@ class Topology:
             lambda: not self._stack_services(self.stack), timeout_s=SETTLE_TIMEOUT_S
         ):
             raise RuntimeError(f"stack {self.stack} did not go away")
+        if not shell.wait_until(
+            lambda: not self._on_manager(
+                "docker",
+                "network",
+                "ls",
+                "-q",
+                "--filter",
+                f"label=com.docker.stack.namespace={self.stack}",
+                check=False,
+            ).split(),
+            timeout_s=SETTLE_TIMEOUT_S,
+        ):
+            raise RuntimeError(f"networks of {self.stack} did not go away")
         self._remove_stack_volumes(self.stack)
         if self.engine != "redis":
             self.delete_engine_keys()
