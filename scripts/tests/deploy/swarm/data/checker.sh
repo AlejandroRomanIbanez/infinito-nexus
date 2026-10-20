@@ -98,23 +98,31 @@ write_one() {
 	esac
 }
 
+# A dump read over a connection the fault left half-open blocks forever without a ceiling.
+DUMP_TIMEOUT_S=30
+DUMP_FILE="$(mktemp)"
+
 dump_present() {
 	case "${ENGINE}" in
 	postgres)
-		psql -h "${HOST}" -p "${PORT}" -U "${USER}" -d "${DATABASE}" -qAt \
+		PGCONNECT_TIMEOUT="${DUMP_TIMEOUT_S}" timeout "${DUMP_TIMEOUT_S}" \
+			psql -h "${HOST}" -p "${PORT}" -U "${USER}" -d "${DATABASE}" -qAt \
 			-c "SELECT seq FROM failover_check WHERE run = '${RUN_ID}'"
 		;;
 	mariadb)
-		mariadb -h "${HOST}" -P "${PORT}" -u "${USER}" "${DATABASE}" -N -B \
+		timeout "${DUMP_TIMEOUT_S}" mariadb --connect-timeout="${DUMP_TIMEOUT_S}" \
+			-h "${HOST}" -P "${PORT}" -u "${USER}" "${DATABASE}" -N -B \
 			-e "SELECT seq FROM failover_check WHERE run = '${RUN_ID}'"
 		;;
 	redis)
-		redis-cli -h "${HOST}" -p "${PORT}" \
-			--scan --pattern "failover:${RUN_ID}:*" | sed 's/.*://'
+		timeout "${DUMP_TIMEOUT_S}" redis-cli -h "${HOST}" -p "${PORT}" \
+			--scan --pattern "failover:${RUN_ID}:*" >"${DUMP_FILE}" &&
+			sed 's/.*://' "${DUMP_FILE}"
 		;;
 	openldap)
-		ldapsearch -x -H "ldap://${HOST}:${PORT}" -D "${USER}" -y "${LDAP_PASSWORD_FILE}" -LLL -b "ou=failover-check,${BASE_DN}" "(cn=${RUN_ID}-*)" cn |
-			sed -n "s/^cn: ${RUN_ID}-//p"
+		timeout "${DUMP_TIMEOUT_S}" ldapsearch -x -H "ldap://${HOST}:${PORT}" -D "${USER}" -y "${LDAP_PASSWORD_FILE}" \
+			-o nettimeout="${DUMP_TIMEOUT_S}" -LLL -b "ou=failover-check,${BASE_DN}" "(cn=${RUN_ID}-*)" cn >"${DUMP_FILE}" &&
+			sed -n "s/^cn: ${RUN_ID}-//p" "${DUMP_FILE}"
 		;;
 	esac
 }
