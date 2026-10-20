@@ -1,5 +1,5 @@
 Name:           infinito-nexus
-Version:        16.2.0
+Version:        16.2.1
 Release:        1%{?dist}
 Summary:        Meta package for Infinito.Nexus host dependencies
 
@@ -58,6 +58,26 @@ install -d %{buildroot}%{_docdir}/%{name}
 %doc %{_docdir}/%{name}/DEPENDENCIES
 
 %changelog
+* Tue Oct 20 2026 Kevin Veen-Birkenbach <kevin@veen.world> - 16.2.1-1
+- Fixed:
+
+- - Cache: the package cache frontend starts again; 16.2.0 broke its nginx
+- - Snipe-IT: SSO login works again on v8.8.1 behind oauth2-proxy
+- - Snipe-IT: the SSO header is only trusted with the proxy's shared secret
+- - Wazuh: seeded bcrypt salts no longer leak a fast password digest
+
+- Version jumps (net since 16.2.0):
+
+- - *web-app-socialhome*: 2026.10.17 to 2026.10.20
+
+- Upgrade notes:
+
+- - Snipe-IT: re-run *infinito administration inventory provision* once
+
+- Contributors:
+
+- - [Kevin Veen-Birkenbach](https://veen.world): cache, Snipe-IT SSO, bcrypt
+
 * Tue Oct 20 2026 Kevin Veen-Birkenbach <kevin@veen.world> - 16.2.0-1
 - Added:
 
