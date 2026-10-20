@@ -8,6 +8,9 @@
   environment:
     CONTAINER_EXEC_TIMEOUT: "{{ lookup('timeout', 60) }}"
   register: _mariadb_rotate_login
+  until: _mariadb_rotate_login.rc == 0 or '1045' in _mariadb_rotate_login.stderr
+  retries: 10
+  delay: 3
   changed_when: false
   failed_when: false
   delegate_to: "{{ mariadb_rotate_instance.host }}"
