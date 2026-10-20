@@ -156,6 +156,7 @@ class TestTransitions(unittest.TestCase):
         )
         self.assertIn("'0-1-50'", statements[wait])
         self.assertLess(statements.index("STOP SLAVE IO_THREAD"), wait)
+        self.assertLess(statements.index("START SLAVE SQL_THREAD"), wait)
         self.assertLess(wait, statements.index("STOP SLAVE"))
         self.assertEqual(statements[-1], "SET GLOBAL read_only = 0")
 

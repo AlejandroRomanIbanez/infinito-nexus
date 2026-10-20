@@ -208,6 +208,7 @@ class MariaDBRole(Role):
         if not status:
             return
         self._sql("STOP SLAVE IO_THREAD")
+        self._sql("START SLAVE SQL_THREAD")
         status = self._slave_status()
         io_pos = status.get("Gtid_IO_Pos", "")
         if not io_pos:
