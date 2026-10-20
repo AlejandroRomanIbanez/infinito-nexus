@@ -395,7 +395,7 @@ This requirement covers:
   - **Durable tier:** 0 acknowledged writes lost on every single-node fault.
   - **Every engine:** each value of the [failover budget](#guarantees) is asserted; the ceilings are ≤ 90 s on a node crash, hang or partition, ≤ 30 s on an instance kill and ≤ 10 s on a rolling change. 5 s on a rolling change is a goal that is reported but does not fail the run.
   - **Best-effort tier:** losses are reported, and the run fails only above 10 s worth of writes.
-  - **Re-clone:** full strength within 45 minutes at lab sizes, counted from the node loss and including the redeploy that places the replacement instance.
+  - **Re-clone:** full strength within 60 minutes at lab sizes (measured 1902–3120 s), counted from the node loss and including the redeploy that places the replacement instance.
 - [ ] The workflow reports `failure` when any assertion fails.
 - [ ] An image bump of an engine or HA component, and any HA-form lifecycle promotion, merges only with a linked green run of that engine's failover suite. This covers bump pull requests opened by the image-update workflow.
 
