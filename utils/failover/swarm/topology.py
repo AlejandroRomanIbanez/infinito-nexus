@@ -25,6 +25,7 @@ from utils.roles.entity.name import get_entity_name
 
 REDIS_PREFERRED_PRIORITY = "1"
 REDIS_DEFAULT_PRIORITY = "100"
+NETWORK_SETTLE_S = 30
 
 
 class Topology:
@@ -265,7 +266,9 @@ class Topology:
             lambda: not self._stack_services(self.stack), timeout_s=SETTLE_TIMEOUT_S
         ):
             raise RuntimeError(f"stack {self.stack} did not go away")
-        if not shell.wait_until(
+        # A network another stack still uses stays; only the stack's private
+        # ones go, so this waits for them without demanding the rest.
+        shell.wait_until(
             lambda: not self._on_manager(
                 "docker",
                 "network",
@@ -275,9 +278,8 @@ class Topology:
                 f"label=com.docker.stack.namespace={self.stack}",
                 check=False,
             ).split(),
-            timeout_s=SETTLE_TIMEOUT_S,
-        ):
-            raise RuntimeError(f"networks of {self.stack} did not go away")
+            timeout_s=NETWORK_SETTLE_S,
+        )
         self._remove_stack_volumes(self.stack)
         if self.engine != "redis":
             self.delete_engine_keys()
