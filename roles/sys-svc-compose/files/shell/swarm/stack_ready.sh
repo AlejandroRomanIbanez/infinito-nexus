@@ -211,6 +211,7 @@ if [ -n "$not_running" ]; then
 	fatal=0
 	for svc in $not_running; do
 		report_tasks "$svc"
+		timeout 15 docker service logs --no-task-ids --tail 15 "$svc" 2>&1 | sed 's/^/    log: /' >&2 || true
 		if has_fatal_task "$svc"; then
 			echo "stuck: $svc" >&2
 			fatal=1
