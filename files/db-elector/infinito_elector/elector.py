@@ -200,7 +200,7 @@ class Elector:
             self.step_down()
             return
         self._observe_writable()
-        LOG.info("%s is the writer", self.host_id)
+        LOG.info("%s is the writer, ranked %s", self.host_id, ranks)
 
     def run(
         self,
