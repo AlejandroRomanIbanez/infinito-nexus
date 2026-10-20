@@ -102,9 +102,11 @@ def gtid_choice(lab, engine: str, env: Env, result: CaseResult) -> None:
     judge(result, engine, "kill", run)
     if "at" in fault:
         violation = gtid_choice_violation(rounds, fault_ms=fault["at"], old=primary)
+        promoted = first_new_writer(rounds, after_ms=fault["at"], old=primary)
         if violation:
             result.failures.append(violation)
-        promoted = first_new_writer(rounds, after_ms=fault["at"], old=primary)
+            if promoted:
+                result.notes.extend(lab.elector_log(promoted[0]))
         result.notes.append(
             f"stopped the SQL thread of {lagging}; promoted {promoted[0] if promoted else 'none'}"
         )

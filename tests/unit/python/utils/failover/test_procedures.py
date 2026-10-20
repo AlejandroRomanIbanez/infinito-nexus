@@ -55,6 +55,7 @@ class _FakeLab:
             "fire_backup": "/tmp/stamp",
             "verify_backup": (True, "restored"),
             "memberof_views": {"a": ["cn=g"], "b": ["cn=g"]},
+            "elector_log": ["INFO ranked"],
         }
         self.answers.update(answers)
 
@@ -153,9 +154,11 @@ class TestFaultProcedures(unittest.TestCase):
                 "stop_replica_sql:pg_pg-m1",
                 "inject_at:kill:pg_pg-m2",
                 "start_replica_sql:pg_pg-m1",
+                "elector_log:pg_pg-m1",
             ],
         )
         self.assertTrue(any("pg_pg-m1 was promoted" in f for f in result.failures))
+        self.assertIn("INFO ranked", result.notes)
 
     def test_ldap_writer_move_checks_the_demoted_writer_while_isolated(self):
         lab = _FakeLab()

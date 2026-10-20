@@ -142,6 +142,28 @@ class EngineOps:
             tails[service] = [self._root_pw_digest(service), *lines[-6:]]
         return tails
 
+    def elector_log(self, service: str, lines: int = 12) -> list[str]:
+        """Return the last elector lines (INFO/WARNING/ERROR) of one instance.
+
+        Args:
+            service: the instance's Swarm service.
+            lines: how many matching lines to keep.
+        """
+        try:
+            out = self._on_manager(
+                "sh",
+                "-c",
+                f"docker service logs --raw --tail 600 {shlex.quote(service)} 2>&1",
+            )
+        except RuntimeError as error:
+            return [str(error)[:160]]
+        picked = [
+            line.strip()[:240]
+            for line in out.splitlines()
+            if any(level in line for level in (" INFO ", " WARNING ", " ERROR "))
+        ]
+        return picked[-lines:]
+
     def _root_pw_digest(self, service: str) -> str:
         """A 12-hex digest prefix of the instance's root password and its age.
 
