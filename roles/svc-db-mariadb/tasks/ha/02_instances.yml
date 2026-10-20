@@ -19,6 +19,9 @@
   ansible.builtin.shell: |
     container exec "$({{ BIN_RESOLVE_CONTAINER_ID | quote }} {{ entity_name | quote }} {{ item.service | quote }})" sh -c 'if test -e {{ MARIADB_HA_READY_MARKER }}; then echo ready; elif test -d {{ MARIADB_HA_DATADIR }}/mysql; then echo data; else echo empty; fi'
   register: _mariadb_ha_state
+  until: _mariadb_ha_state.rc == 0
+  retries: 30
+  delay: 5
   changed_when: false
   delegate_to: "{{ item.host }}"
   loop: "{{ MARIADB_INSTANCES.instances }}"
