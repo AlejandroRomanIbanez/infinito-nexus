@@ -23,12 +23,12 @@ The article is one HTML file for a single WordPress Custom HTML block; the banne
 5. Copy [templates/banner.svg](../../../skills/i8-release-article/templates/banner.svg) and fill it: `{{LOGO}}` with the `file://` URL of [assets/img/logo.png](../../../assets/img/logo.png), `{{VERSION}}`, two subtitle lines of at most 34 characters, four `{{ICON_n}}` (24 × 24 outline icons) and four `{{LABEL_n}}` (plain words, at most 14 characters) for the headline feature's benefits.
 6. Render the banner with Playwright's headless shell (`~/.cache/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-linux64/chrome-headless-shell`) and the flags `--disable-gpu --hide-scrollbars --allow-file-access-from-files --window-size=1500,1000 --screenshot=<work>/banner.png file://<work>/banner.svg`. Look at the PNG and fix overlaps or cut text before you go on.
 7. Write `banner-alt.txt` (one to three sentences that describe the banner and repeat its title) and the two social posts to the Social Posts rules below, with `{{ARTICLE_URL}}` where the article link goes.
-8. Verify: no `{{` left in the article; no `<code>`, command, flag, path or variable in the article's visible text; lengths within range on every platform; every number and version matches the changelog. Render the article on a dark page at about 860 px width and look at it.
+8. Verify: no `{{` left in the article; no `<code>`, command, flag, path or variable in the visible text of the article or the posts; lengths within range on every platform; every number and version matches the changelog. Render the article on a dark page at about 860 px width and look at it.
 9. Hand over the paths, the title, the category `Release`, ten to twenty tags, and the steps: paste the whole `article.html` into one WordPress Custom HTML block and set `banner.png` as the Featured image; once the article is live, replace `{{ARTICLE_URL}}` in both posts with its link and post them with `banner.png` and the alt text.
 
 ## Writing Standard
 
-The article and the banner alt text follow this standard; the social posts follow their own rules below.
+The article, the banner alt text and both social posts follow this standard. Their readers are outside the project, so deep technical detail stays out.
 
 - Feature-oriented: say what the reader gets and why it matters, not how it is built.
 - No commands, flags, file paths, variable names, role names, inventory keys or code, and no `<code>` tags. Product names, application names and version numbers are fine.
@@ -39,7 +39,7 @@ The article and the banner alt text follow this standard; the social posts follo
 
 ## Social Posts
 
-Unlike the article, the posts speak to a technical audience: role names, commands and flags are welcome where they show the feature, written as plain text since neither platform renders Markdown. Every claim still traces back to the changelog or the role's README, beta features say "beta", and both posts lead with the headline feature and carry the banner with its alt text.
+Both posts follow the Writing Standard like the article: no commands, role names or deep technical detail, only what the reader gets. They lead with the headline feature and carry the banner with its alt text.
 
 - **Mastodon** (`mastodon.txt`): at most 500 characters, counting the link as 23. An opening line naming the release, two or three sentences on the headline feature, one line on the rest of the release, a pointer to the upgrade notes, the link, then three to five CamelCase hashtags (`#InfinitoNexus`, `#SelfHosting`, `#OpenSource`, plus the headline technology). At most two emoji; plain and direct, no marketing superlatives.
 - **LinkedIn** (`linkedin.txt`): 1,000 to 1,600 characters. A hook in the first line of at most 200 characters, since LinkedIn shows only the first lines before "see more"; then short paragraphs: what the headline feature gives an organization, three benefit lines each opened by one emoji, one paragraph on the rest of the release, the upgrade pointer, the link, and three to five hashtags. Professional tone, second person, no hype words.
