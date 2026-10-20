@@ -60,10 +60,16 @@ def collect_checker(
 def judge_run(engine: str, fault: str, run: CheckerRun) -> Verdict:
     """Judge one finished checker run's write gap and loss against the budget."""
     gap = max_write_gap_s(run)
-    verdict = evaluate(
-        engine, fault, gap_s=gap, lost=len(audit(run)), interval_s=INTERVAL_S
-    )
+    lost = audit(run)
+    verdict = evaluate(engine, fault, gap_s=gap, lost=len(lost), interval_s=INTERVAL_S)
     verdict.notes.append(f"acks={len(run.acks)} fails={len(run.fails)} gap={gap:.1f}s")
+    if lost and run.started_ms is not None:
+        first, last = (
+            (run.acks[seq] - run.started_ms) / 1000.0 for seq in (lost[0], lost[-1])
+        )
+        verdict.notes.append(
+            f"lost seq {lost[0]}..{lost[-1]}, acknowledged {first:.1f}s..{last:.1f}s into the run"
+        )
     return verdict
 
 
