@@ -22,7 +22,7 @@ class TestNfsHelpers(unittest.TestCase):
 
     def test_mount_opts_lab_runtimes_soft(self):
         for rt in ("dev", "act", "github"):
-            self.assertEqual(mount_opts(4, rt), "vers=4.0,rw,soft,timeo=50,retrans=3")
+            self.assertEqual(mount_opts(4, rt), "vers=4,rw,soft,timeo=50,retrans=3")
 
     def test_mount_opts_prod_hard(self):
         self.assertEqual(mount_opts(4, "host"), "vers=4,rw,hard,timeo=600")
