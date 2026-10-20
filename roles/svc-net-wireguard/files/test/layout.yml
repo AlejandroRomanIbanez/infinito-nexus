@@ -1,3 +1,4 @@
+---
 meshes:
   - name: alpha
     subnet: 10.100.200.0/24
