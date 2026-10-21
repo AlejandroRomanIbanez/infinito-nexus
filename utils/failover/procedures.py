@@ -34,6 +34,7 @@ from utils.failover.procedure_kit import (
     watch_local_writes,
     with_checker,
 )
+from utils.failover.runner import unfinished
 from utils.failover.sampling import (
     dual_writer_windows,
     first_new_writer,
@@ -227,9 +228,7 @@ def replicas_down_stall(lab, engine: str, env: Env, result: CaseResult) -> None:
 
     run = with_checker(lab, engine, result.name, env, action)
     if not run.done:
-        result.failures.append(
-            f"checker did not finish its audit dump ({len(run.acks)} acks)"
-        )
+        result.failures.append(unfinished(run))
         return
     lost = audit(run)
     if lost:

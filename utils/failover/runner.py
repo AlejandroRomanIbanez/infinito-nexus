@@ -57,6 +57,23 @@ def collect_checker(
     return parse_checker_output(log)
 
 
+def unfinished(run: CheckerRun) -> str:
+    """Describe a checker run whose audit dump never completed.
+
+    The write record tells an endpoint that stayed down (fails keep coming)
+    apart from a checker that stopped writing (the record ends early).
+    """
+    events = list(run.acks.values()) + list(run.fails.values())
+    detail = f"checker did not finish its audit dump ({len(run.acks)} acks, {len(run.fails)} fails"
+    if run.started_ms is not None and events:
+        last_ack = max(run.acks.values(), default=run.started_ms)
+        detail += (
+            f", last ack {(last_ack - run.started_ms) / 1000.0:.1f}s, "
+            f"last write {(max(events) - run.started_ms) / 1000.0:.1f}s into the run"
+        )
+    return detail + ")"
+
+
 def judge_run(engine: str, fault: str, run: CheckerRun) -> Verdict:
     """Judge one finished checker run's write gap and loss against the budget."""
     gap = max_write_gap_s(run)
@@ -122,9 +139,7 @@ def run_plain(
         lab.stop_checker(run_id)
 
     if not run.done:
-        result.failures.append(
-            f"checker did not finish its audit dump ({len(run.acks)} acks)"
-        )
+        result.failures.append(unfinished(run))
     else:
         verdict = judge_run(engine, scenario.fault, run)
         result.failures.extend(verdict.failures)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import unittest
 
 from utils.failover import runner
+from utils.failover.checker import parse_checker_output
 from utils.failover.sampling import Round
 from utils.failover.scenarios import get_scenario
 
@@ -113,6 +114,18 @@ class TestRunScenario(unittest.TestCase):
     def test_unfinished_checker_fails(self):
         _, result = self._run("start r 0\nack 1 100\n")
         self.assertTrue(any("did not finish" in f for f in result.failures))
+
+
+class TestUnfinished(unittest.TestCase):
+    def test_reports_fails_and_when_the_writes_stopped(self) -> None:
+        run = parse_checker_output(
+            "start r 1000\nack 1 1200\nack 2 1400\nfail 3 30000\nfail 4 61000\n"
+        )
+        self.assertEqual(
+            runner.unfinished(run),
+            "checker did not finish its audit dump (2 acks, 2 fails, "
+            "last ack 0.4s, last write 60.0s into the run)",
+        )
 
 
 if __name__ == "__main__":

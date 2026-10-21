@@ -6,7 +6,7 @@ import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, Protocol
 
-from utils.failover.runner import collect_checker, judge_run, run_plain
+from utils.failover.runner import collect_checker, judge_run, run_plain, unfinished
 from utils.failover.sampling import Round, Sampler, epoch_ms
 from utils.failover.scenarios import get_scenario
 
@@ -86,9 +86,7 @@ def with_checker(
 
 def judge(result: CaseResult, engine: str, fault: str, run: CheckerRun) -> None:
     if not run.done:
-        result.failures.append(
-            f"checker did not finish its audit dump ({len(run.acks)} acks)"
-        )
+        result.failures.append(unfinished(run))
         return
     absorb(result, judge_run(engine, fault, run))
 
