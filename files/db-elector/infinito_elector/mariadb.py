@@ -108,6 +108,8 @@ class MariaDBRole(Role):
         self._clock = clock
         self._unranked_since: dict[str, float] = {}
         self._diverged_since: float | None = None
+        self._claimed: GtidPosition | None = None
+        self._relay_lost = False
 
     def _sql(self, query: str, host: str | None = None) -> str:
         """Run *query*, fed on stdin so the replication password never shows
@@ -178,7 +180,16 @@ class MariaDBRole(Role):
         return super().quorum()
 
     def rank(self) -> GtidPosition:
-        return self._position()
+        """The position this instance competes with.
+
+        After a promotion found its relay log could not deliver the received
+        position, only the applied one counts until it follows a writer again.
+        """
+        if self._relay_lost:
+            self._claimed = GtidPosition.parse(self._sql(self.QUERY_POSITION))
+        else:
+            self._claimed = self._position()
+        return self._claimed
 
     def peer_ranks(self) -> dict[str, GtidPosition]:
         """Rank every answering peer, remembering since when the others are silent.
@@ -226,7 +237,20 @@ class MariaDBRole(Role):
             raise RoleError(f"relay log not applied within {self._relay_wait}s")
 
     def become_writer(self) -> None:
+        """Promote only once the applied position reached the claimed rank.
+
+        An IO thread reconnect can leave the relay log empty while
+        ``Gtid_IO_Pos`` still reports the received position, and promoting
+        then would discard acknowledged writes a peer still holds.
+        """
         self._wait_relay_log()
+        applied = GtidPosition.parse(self._sql(self.QUERY_POSITION))
+        if self._claimed is not None and applied < self._claimed:
+            self._relay_lost = True
+            raise RoleError(
+                f"applied {applied.text or 'nothing'} is behind the claimed "
+                f"{self._claimed.text}; the relay log no longer holds the difference"
+            )
         self._sql("STOP SLAVE")
         self._sql("RESET SLAVE ALL")
         self._following = None
@@ -266,6 +290,7 @@ class MariaDBRole(Role):
         self._sql("START SLAVE")
         self._following = host
         self._diverged_since = None
+        self._relay_lost = False
 
     def watch(self) -> None:
         """Ask for a re-seed once replication stays on error 1236.

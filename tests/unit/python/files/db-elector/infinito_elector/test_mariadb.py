@@ -289,6 +289,35 @@ class TestTransitions(unittest.TestCase):
                 self.assertEqual(role.is_writable(), writable)
 
 
+class TestLostRelayLog(unittest.TestCase):
+    def _candidate(self) -> MariaDBRole:
+        role, _ = _role(
+            {
+                "local": {
+                    "SELECT @@GLOBAL.gtid_current_pos": "0-1-1552",
+                    "SHOW SLAVE STATUS": "Gtid_IO_Pos: 0-1-1632",
+                    "SELECT MASTER_GTID_WAIT": "0",
+                }
+            }
+        )
+        return role
+
+    def test_a_candidate_behind_its_claim_is_not_promoted(self) -> None:
+        role = self._candidate()
+        self.assertEqual(role.rank().total, 1632)
+        with self.assertRaises(RoleError):
+            role.become_writer()
+        self.assertEqual(role.rank().total, 1552)
+
+    def test_following_a_writer_restores_the_received_rank(self) -> None:
+        role = self._candidate()
+        role.rank()
+        with self.assertRaises(RoleError):
+            role.become_writer()
+        role.attach_seed("m2", "0-1-1552")
+        self.assertEqual(role.rank().total, 1632)
+
+
 class TestDivergence(unittest.TestCase):
     DIVERGED = "Slave_IO_Running: No\nLast_IO_Errno: 1236\nLast_IO_Error: not in the master's binlog"
 
