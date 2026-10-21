@@ -154,6 +154,11 @@ class Topology:
                 self.restart_node(leader)
         else:
             raise RuntimeError(f"Raft leadership did not land on {stack_host}")
+        ok, detail = self.wait_full_strength(RECLONE_CEILING_S)
+        if not ok:
+            raise RuntimeError(
+                f"not at full strength after moving the Raft leader: {detail}"
+            )
         if self._stack_services(get_entity_name(COORDINATION_ROLE)):
             self.move_etcd_leader(stack_host)
         self.move_primary_to(stack_host)
