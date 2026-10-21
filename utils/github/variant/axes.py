@@ -40,13 +40,13 @@ import os
 from typing import TYPE_CHECKING
 
 from utils.github.variant import instructions
-from utils.github.variant.label import (  # noqa: F401
+from utils.github.variant.label import (
     LABEL_RE,
     LOCAL_GLYPH,
     Label,
     parse_label,
 )
-from utils.github.variant.pools import (  # noqa: F401
+from utils.github.variant.pools import (
     DISTROS,
     FILESYSTEMS,
     rotate,
@@ -66,6 +66,22 @@ from utils.github.variant.vpn import (
 )
 from utils.roles.display import VARIANT_SEPARATOR, display_names
 from utils.symbol_glossary import to_emoji
+
+__all__ = [
+    "DISTROS",
+    "FILESYSTEMS",
+    "LABEL_RE",
+    "LOCAL_GLYPH",
+    "MODES",
+    "Label",
+    "artifact_slug",
+    "assign",
+    "check_pins",
+    "parse_label",
+    "pick_mode",
+    "resolve_sweep",
+    "sort_key",
+]
 
 if TYPE_CHECKING:
     from collections.abc import Mapping, Sequence
