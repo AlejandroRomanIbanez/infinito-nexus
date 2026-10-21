@@ -183,6 +183,12 @@ for node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}" "${BACKUP_NODE}"; do
 	dexec "${node}" sh -c "ls -l /dev/loop* 2>&1" || echo "(no loop nodes in /dev)"
 done
 
+sep "node-package-manager" "package manager logs (a failed download names the mirror, the URL and the status)"
+for node in "${MGR}" "${WRK1}" "${WRK2}" "${NFS_SERVER}" "${BACKUP_NODE}"; do
+	echo "=== ${node} ==="
+	dexec "${node}" sh -c "tail -n 3000 /var/log/dnf5.log /var/log/dnf.librepo.log 2>&1"
+done
+
 if [ -n "${OUT}" ] && [ "$(find "${OUT}" -type f 2>/dev/null | wc -l)" -eq 0 ]; then
 	echo "stack diagnostics: captured no files under ${OUT}" >&9
 fi
