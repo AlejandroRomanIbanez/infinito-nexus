@@ -88,10 +88,13 @@ def backup_argv(user: str, socket: str, *, replica: bool) -> list[str]:
 class Donor:
     """Answer ``POST /seed``: stream one backup at a time to the requesting peer.
 
+    The stream goes to the request's source address, not the requester's
+    service name: Swarm routes a service's virtual IP only to healthy tasks,
+    and an instance waiting for its seed is not healthy yet.
+
     Args:
         role: the local instance, asked whether it may donate.
         secret_file: file holding the shared seed secret.
-        address: maps a host id to the address its seed relay listens on.
         seed_port: port the requesting instance receives the stream on.
         user: local SQL user ``mariadb-backup`` connects as.
         socket: the local server socket.
@@ -104,7 +107,6 @@ class Donor:
         *,
         role: MariaDBRole,
         secret_file: str,
-        address: Callable[[str], str],
         seed_port: int,
         user: str,
         socket: str,
@@ -113,7 +115,6 @@ class Donor:
     ) -> None:
         self._role = role
         self._secret_file = secret_file
-        self._address = address
         self._port = seed_port
         self._user = user
         self._socket = socket
@@ -121,8 +122,12 @@ class Donor:
         self._clock = clock
         self._running: list[subprocess.Popen] = []
 
-    def handle(self, body: bytes) -> int:
+    def handle(self, body: bytes, peer: str) -> int:
         """Start a stream for a valid request.
+
+        Args:
+            body: the request body.
+            peer: the requester's source address, where the stream goes.
 
         Returns:
             202 when the stream started, 403 for an unsigned or stale request,
@@ -152,7 +157,7 @@ class Donor:
                 "python3",
                 SEED_RELAY,
                 "send",
-                self._address(host),
+                peer,
                 str(self._port),
                 self._secret_file,
             ],

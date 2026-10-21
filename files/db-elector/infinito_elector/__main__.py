@@ -146,7 +146,7 @@ def build_role(args: argparse.Namespace) -> Role:
     )
 
 
-def build_donor(args: argparse.Namespace, role: Role) -> Callable[[bytes], int] | None:
+def build_donor(args: argparse.Namespace, role: Role) -> Callable[[bytes, str], int] | None:
     """The ``POST /seed`` handler of a MariaDB instance that has a seed port, else ``None``."""
     if args.engine != "mariadb" or not args.seed_port:
         return None
@@ -155,7 +155,6 @@ def build_donor(args: argparse.Namespace, role: Role) -> Callable[[bytes], int] 
     return Donor(
         role=role,
         secret_file=args.replication_password_file,
-        address=lambda host: args.peer_template.format(engine=args.engine, host=host),
         seed_port=args.seed_port,
         user=args.mariadb_local_user,
         socket=args.mariadb_socket,

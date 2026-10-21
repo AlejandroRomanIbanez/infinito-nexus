@@ -1,6 +1,6 @@
 """Relay a ``mariadb-backup`` xbstream between two instances over the overlay.
 
-python3 seed_relay.py recv <port> <secret_file>          # one authenticated connection -> stdout
+python3 seed_relay.py recv <port> <secret_file> [<accept_timeout_s>]   # one authenticated connection -> stdout
 python3 seed_relay.py send <host> <port> <secret_file>   # stdin -> host:port
 
 Both ends read the same swarm secret. The receiver sends a random nonce, and
@@ -108,7 +108,13 @@ def authenticated(conn: socket.socket, secret: bytes) -> bool:
     return hmac.compare_digest(reply, answer(secret, nonce))
 
 
-def receive(port: int, sink: BinaryIO, secret: bytes, host: str = "0.0.0.0") -> int:  # noqa: S104 - the receiver must accept the donor over the engine overlay
+def receive(
+    port: int,
+    sink: BinaryIO,
+    secret: bytes,
+    host: str = "0.0.0.0",  # noqa: S104 - the receiver must accept the donor over the engine overlay
+    accept_timeout: float | None = None,
+) -> int:
     """Accept connections on *port* until one authenticates, then copy it into *sink*.
 
     Args:
@@ -116,8 +122,11 @@ def receive(port: int, sink: BinaryIO, secret: bytes, host: str = "0.0.0.0") -> 
         sink: writable binary stream.
         secret: shared secret the sender must prove.
         host: bind address.
+        accept_timeout: seconds to wait for a sender before raising
+            ``TimeoutError``; ``None`` waits forever.
     """
     with socket.create_server((host, port), reuse_port=False) as server:
+        server.settimeout(accept_timeout)
         while True:
             conn, peer = server.accept()
             with conn:
@@ -170,8 +179,13 @@ def send(
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) == 3 and argv[0] == "recv":
-        receive(int(argv[1]), sys.stdout.buffer, read_secret(argv[2]))
+    if len(argv) in (3, 4) and argv[0] == "recv":
+        receive(
+            int(argv[1]),
+            sys.stdout.buffer,
+            read_secret(argv[2]),
+            accept_timeout=float(argv[3]) if len(argv) == 4 else None,
+        )
         return 0
     if len(argv) == 4 and argv[0] == "send":
         send(argv[1], int(argv[2]), sys.stdin.buffer, read_secret(argv[3]))

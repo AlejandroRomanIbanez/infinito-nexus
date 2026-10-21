@@ -45,10 +45,10 @@ class TestWriterEndpoint(unittest.TestCase):
 
 class TestSeedEndpoint(unittest.TestCase):
     def test_post_seed_answers_the_donor_status(self) -> None:
-        bodies: list[bytes] = []
+        bodies: list[tuple[bytes, str]] = []
 
-        def seed(body: bytes) -> int:
-            bodies.append(body)
+        def seed(body: bytes, peer: str) -> int:
+            bodies.append((body, peer))
             return 202
 
         server = serve(lambda: False, "127.0.0.1", 0, seed)
@@ -60,7 +60,7 @@ class TestSeedEndpoint(unittest.TestCase):
         finally:
             server.shutdown()
             server.server_close()
-        self.assertEqual(bodies, [b'{"host": "m3"}'])
+        self.assertEqual(bodies, [(b'{"host": "m3"}', "127.0.0.1")])
 
 
 if __name__ == "__main__":

@@ -58,8 +58,9 @@ if ! flock -x -n 9; then
   flock -x 9
 fi
 
+# Param: $1  optional seconds to wait for a sender; a re-seed restarts the task instead of waiting forever
 receive_seed() {
-  gosu mysql python3 /opt/infinito/seed_relay.py recv "${MARIADB_SEED_PORT}" "${ELECTOR_REPLICATION_PASSWORD_FILE:?}" | gosu mysql mbstream -x -C "$datadir"
+  gosu mysql python3 /opt/infinito/seed_relay.py recv "${MARIADB_SEED_PORT}" "${ELECTOR_REPLICATION_PASSWORD_FILE:?}" "$@" | gosu mysql mbstream -x -C "$datadir"
 }
 
 donor=""
@@ -67,7 +68,7 @@ if [ -e "$reseed" ]; then
   echo "infinito-ha: diverged from the writer; discarding ${datadir} and re-seeding from a peer" >&2
   find "$datadir" -mindepth 1 -maxdepth 1 ! -name .instance.lock ! -name "$(basename "$reseed")" -exec rm -rf {} +
   chown mysql:mysql "$datadir"
-  receive_seed &
+  receive_seed 600 &
   seeding=$!
   until donor="$(gosu mysql python3 -m infinito_elector.mariadb_seed request)"; do
     echo "infinito-ha: no peer can donate a seed yet" >&2

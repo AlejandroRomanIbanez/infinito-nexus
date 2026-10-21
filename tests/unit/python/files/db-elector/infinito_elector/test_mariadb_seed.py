@@ -17,6 +17,7 @@ from infinito_elector_src.mariadb_seed import (
 from . import _NAME  # noqa: F401  side-effect import registers infinito_elector_src
 
 SECRET = b"seed-secret"
+PEER = "10.0.9.7"
 
 
 def _request(host: str = "m3", stamp: int = 1000, **extra) -> bytes:
@@ -80,7 +81,6 @@ class TestDonor(unittest.TestCase):
         return Donor(
             role=FakeRole(kind),
             secret_file=str(self.secret_file),
-            address=lambda host: f"mariadb-{host}",
             seed_port=4444,
             user="mysql",
             socket="/run/mysqld/mysqld.sock",
@@ -88,32 +88,32 @@ class TestDonor(unittest.TestCase):
             clock=lambda: 1000.0,
         )
 
-    def test_a_replica_streams_its_backup_to_the_requester(self) -> None:
-        self.assertEqual(self._donor("replica").handle(_request()), 202)
+    def test_a_replica_streams_its_backup_to_the_requesters_address(self) -> None:
+        self.assertEqual(self._donor("replica").handle(_request(), PEER), 202)
         backup, relay = self.started
         self.assertIn("--slave-info", backup.argv)
-        self.assertEqual(relay.argv[2:5], ["send", "mariadb-m3", "4444"])
+        self.assertEqual(relay.argv[2:5], ["send", PEER, "4444"])
         self.assertIs(relay.kwargs["stdin"], backup)
 
     def test_a_second_request_waits_for_the_running_stream(self) -> None:
         donor = self._donor("replica")
-        donor.handle(_request())
-        self.assertEqual(donor.handle(_request()), 409)
+        donor.handle(_request(), PEER)
+        self.assertEqual(donor.handle(_request(), PEER), 409)
         for process in self.started:
             process.done = True
-        self.assertEqual(donor.handle(_request()), 202)
+        self.assertEqual(donor.handle(_request(), PEER), 202)
 
     def test_the_writer_declines_a_replica_only_request(self) -> None:
-        self.assertEqual(self._donor("writer").handle(_request(replica_only=True)), 409)
-        self.assertEqual(self._donor("writer").handle(_request()), 202)
+        self.assertEqual(self._donor("writer").handle(_request(replica_only=True), PEER), 409)
+        self.assertEqual(self._donor("writer").handle(_request(), PEER), 202)
 
     def test_an_unhealthy_instance_never_donates(self) -> None:
-        self.assertEqual(self._donor(None).handle(_request()), 409)
+        self.assertEqual(self._donor(None).handle(_request(), PEER), 409)
         self.assertEqual(self.started, [])
 
     def test_an_unsigned_request_is_forbidden(self) -> None:
-        self.assertEqual(self._donor("replica").handle(b'{"host": "m3"}'), 403)
-        self.assertEqual(self._donor("replica").handle(b"{"), 400)
+        self.assertEqual(self._donor("replica").handle(b'{"host": "m3"}', PEER), 403)
+        self.assertEqual(self._donor("replica").handle(b"{", PEER), 400)
 
 
 class TestRequest(unittest.TestCase):

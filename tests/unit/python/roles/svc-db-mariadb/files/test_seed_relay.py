@@ -84,6 +84,12 @@ class TestSeedRelay(unittest.TestCase):
         with tempfile.NamedTemporaryFile() as handle, self.assertRaises(ValueError):
             seed_relay.read_secret(handle.name)
 
+    def test_a_receiver_without_a_sender_gives_up_after_its_timeout(self):
+        with self.assertRaises(TimeoutError):
+            seed_relay.receive(
+                _free_port(), io.BytesIO(), SECRET, "127.0.0.1", accept_timeout=0.2
+            )
+
     def test_usage(self):
         self.assertEqual(seed_relay.main(["bogus"]), 64)
         self.assertEqual(seed_relay.main(["recv", "4444"]), 64)
