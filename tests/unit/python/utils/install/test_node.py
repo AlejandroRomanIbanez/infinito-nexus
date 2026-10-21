@@ -52,19 +52,23 @@ class TestNewestLts(unittest.TestCase):
 class TestTarballName(unittest.TestCase):
     def test_maps_x86_64(self) -> None:
         self.assertEqual(
-            node_mod.tarball_name("v24.22.1", "x86_64"),
+            node_mod.tarball_name("v24.22.1", "Linux", "x86_64"),
             "node-v24.22.1-linux-x64.tar.gz",
         )
 
     def test_maps_aarch64(self) -> None:
         self.assertEqual(
-            node_mod.tarball_name("v24.22.1", "aarch64"),
+            node_mod.tarball_name("v24.22.1", "Linux", "aarch64"),
             "node-v24.22.1-linux-arm64.tar.gz",
         )
 
     def test_raises_for_unknown_machine(self) -> None:
         with self.assertRaises(RuntimeError):
-            node_mod.tarball_name("v24.22.1", "riscv64")
+            node_mod.tarball_name("v24.22.1", "Linux", "riscv64")
+
+    def test_refuses_a_host_that_is_not_linux(self) -> None:
+        with self.assertRaises(RuntimeError):
+            node_mod.tarball_name("v24.22.1", "Darwin", "x86_64")
 
 
 class TestExpectedSha256(unittest.TestCase):
@@ -108,6 +112,7 @@ class TestInstallUpstreamLts(unittest.TestCase):
         with (
             mock.patch.object(node_mod, "download_file", side_effect=fake_download),
             mock.patch.object(node_mod, "_verify_signature"),
+            mock.patch.object(node_mod.platform, "system", return_value="Linux"),
             mock.patch.object(node_mod.platform, "machine", return_value="x86_64"),
             mock.patch.object(node_mod, "run_privileged") as extract,
             self.assertRaises(RuntimeError),

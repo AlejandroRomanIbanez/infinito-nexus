@@ -71,16 +71,23 @@ def newest_lts(index: list) -> str:
     raise RuntimeError(f"{DIST_URL}/index.json lists no LTS release")
 
 
-def tarball_name(version: str, machine: str) -> str:
-    """Return the Linux tarball name of a release for this machine.
+def tarball_name(version: str, system: str, machine: str) -> str:
+    """Return the Linux tarball name of a release for this host.
 
     Args:
         version: release version such as ``v24.22.1``.
+        system: ``platform.system()`` of the host.
         machine: ``platform.machine()`` of the host.
 
     Raises:
-        RuntimeError: Node.js publishes no Linux build for the machine.
+        RuntimeError: the host is not Linux, or Node.js publishes no Linux
+            build for the machine.
     """
+    if system != "Linux":
+        raise RuntimeError(
+            f"The upstream Node.js install supports Linux only; install a "
+            f"supported Node.js through the package manager on {system}."
+        )
     arch = ARCHITECTURES.get(machine)
     if arch is None:
         raise RuntimeError(f"No Node.js Linux build for machine {machine!r}")
@@ -136,7 +143,7 @@ def install_upstream_lts() -> str:
         index = workdir / "index.json"
         download_file(f"{DIST_URL}/index.json", str(index))
         version = newest_lts(_load_json(index))
-        name = tarball_name(version, platform.machine())
+        name = tarball_name(version, platform.system(), platform.machine())
         shasums = workdir / "SHASUMS256.txt"
         signature = workdir / "SHASUMS256.txt.sig"
         download_file(f"{DIST_URL}/{version}/SHASUMS256.txt", str(shasums))
