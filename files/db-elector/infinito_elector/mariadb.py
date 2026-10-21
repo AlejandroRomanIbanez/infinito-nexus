@@ -34,6 +34,7 @@ class GtidPosition:
 BOOTSTRAP_MARKER = "/var/lib/mysql/.infinito-ha-bootstrap"
 RECOVERED_MARKER = "/var/lib/mysql/.infinito-ha-recovered"
 DIVERGED_ERRNO = "1236"
+ACK_HOLDERS = 2
 
 
 def _quote(value: str) -> str:
@@ -169,15 +170,20 @@ class MariaDBRole(Role):
 
         The deploy places the marker on the first writer before any other
         instance holds data and removes it once every instance is seeded.
+
+        An acknowledged write sits on the writer and one replica. A majority
+        of three always holds one of them, so a silent peer delays a promotion
+        only in larger groups, where a majority can miss both.
         """
         if os.path.exists(self._bootstrap_marker):
             return 1
-        if any(
+        majority = super().quorum()
+        if len(self.peers) + 1 - majority >= ACK_HOLDERS and any(
             self._clock() - since < self._silence_grace
             for since in self._unranked_since.values()
         ):
             return len(self.peers) + 1
-        return super().quorum()
+        return majority
 
     def rank(self) -> GtidPosition:
         """The position this instance competes with.

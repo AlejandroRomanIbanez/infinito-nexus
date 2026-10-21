@@ -94,8 +94,25 @@ class TestGtidChoice(unittest.TestCase):
             role._bootstrap_marker = marker.name
             self.assertEqual(role.quorum(), 1)
 
-    def test_a_newly_silent_peer_blocks_promotion_until_the_grace_ends(self) -> None:
+    def test_a_newly_silent_peer_blocks_promotion_until_the_grace_ends_in_five(self) -> None:
         now = [100.0]
+        role, _ = _role(
+            {
+                "local": {"SELECT @@GLOBAL.gtid_current_pos": "0-1-473"},
+                "mariadb-m2": {"SELECT @@GLOBAL.gtid_current_pos": "0-1-473"},
+                "mariadb-m3": {"SELECT @@GLOBAL.gtid_current_pos": "0-1-473"},
+            }
+        )
+        role.peers = ["m2", "m3", "m4", "m5"]
+        role._bootstrap_marker = "/nonexistent/.infinito-ha-bootstrap"
+        role._clock = lambda: now[0]
+        role.peer_ranks()
+        self.assertEqual(role.quorum(), 5)
+        now[0] += 8.0
+        role.peer_ranks()
+        self.assertEqual(role.quorum(), 3)
+
+    def test_three_instances_promote_on_a_majority_without_waiting(self) -> None:
         role, _ = _role(
             {
                 "local": {"SELECT @@GLOBAL.gtid_current_pos": "0-1-473"},
@@ -103,10 +120,7 @@ class TestGtidChoice(unittest.TestCase):
             }
         )
         role._bootstrap_marker = "/nonexistent/.infinito-ha-bootstrap"
-        role._clock = lambda: now[0]
-        role.peer_ranks()
-        self.assertEqual(role.quorum(), 3)
-        now[0] += 8.0
+        role._clock = lambda: 100.0
         role.peer_ranks()
         self.assertEqual(role.quorum(), 2)
 
