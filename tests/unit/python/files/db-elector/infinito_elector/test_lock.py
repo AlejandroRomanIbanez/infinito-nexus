@@ -194,6 +194,26 @@ class TestTransportErrors(unittest.TestCase):
         self.assertEqual(reply, {"ok": 1})
 
 
+    def test_the_endpoint_that_answered_is_tried_first_next_time(self):
+        response = mock.MagicMock()
+        response.__enter__.return_value.read.return_value = b'{"ok":1}'
+        tried: list[str] = []
+
+        def urlopen(request, **_):
+            tried.append(request.full_url.split("/v3")[0])
+            if request.full_url.startswith("https://dead"):
+                raise urllib.error.URLError("timed out")
+            return response
+
+        post = http_transport(["https://dead:2379", "https://b:2379"])
+        with mock.patch("urllib.request.urlopen", side_effect=urlopen):
+            post("/v3/x", {}, {})
+            post("/v3/y", {}, {})
+        self.assertEqual(
+            tried, ["https://dead:2379", "https://b:2379", "https://b:2379"]
+        )
+
+
 class TestTransportTrust(unittest.TestCase):
     def _post_with(self, ca_file):
         response = mock.MagicMock()

@@ -59,6 +59,9 @@ def http_transport(
 ) -> Callable[[str, dict[str, Any], dict[str, str]], dict[str, Any]]:
     """POST JSON to the etcd v3 gRPC gateway, trying each endpoint in turn.
 
+    The endpoint that answered last is tried first, so a member on a lost
+    node costs one timeout instead of one per call.
+
     Args:
         endpoints: base URLs such as ``http://etcd-a:2379``.
         timeout: per-request timeout in seconds; kept well under the renew
@@ -73,12 +76,17 @@ def http_transport(
     """
 
     context = ssl.create_default_context(cafile=ca_file) if ca_file else None
+    order = list(endpoints)
+
+    def answered(endpoint: str) -> None:
+        order.remove(endpoint)
+        order.insert(0, endpoint)
 
     def post(
         path: str, body: dict[str, Any], headers: dict[str, str]
     ) -> dict[str, Any]:
         last: Exception | None = None
-        for endpoint in endpoints:
+        for endpoint in list(order):
             if not endpoint.startswith(("http://", "https://")):
                 raise LockError(f"etcd endpoint {endpoint!r} is not http(s)")
             request = urllib.request.Request(  # noqa: S310 - scheme checked as http(s) above
@@ -91,11 +99,14 @@ def http_transport(
                 with urllib.request.urlopen(  # noqa: S310 - scheme checked as http(s) above
                     request, timeout=timeout, context=context
                 ) as response:
-                    return json.loads(response.read().decode() or "{}")
+                    reply = json.loads(response.read().decode() or "{}")
+                answered(endpoint)
+                return reply
             except urllib.error.HTTPError as error:
                 if not 400 <= error.code < 500:
                     last = error
                     continue
+                answered(endpoint)
                 try:
                     reply = json.loads(error.read().decode() or "{}")
                 except ValueError:
