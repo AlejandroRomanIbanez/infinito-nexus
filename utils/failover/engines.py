@@ -18,6 +18,8 @@ from utils.cache.yaml import load_yaml
 from utils.roles.entity.name import get_entity_name
 from utils.roles.mapping import ROLE_FILE_VARS_MAIN
 
+FATAL_IO_ERRNOS = frozenset({"1236"})
+
 _MARIADB_SQL = (
     'exec mariadb --defaults-extra-file="$ELECTOR_MARIADB_DEFAULTS_FILE" '
     '--socket="$ELECTOR_MARIADB_SOCKET" -N -B -e "$0"'
@@ -208,6 +210,18 @@ def replica_running(status: dict[str, str]) -> bool:
     return (
         status.get("Slave_IO_Running") == "Yes"
         and status.get("Slave_SQL_Running") == "Yes"
+    )
+
+
+def replica_fatal(status: dict[str, str]) -> bool:
+    """Whether the IO thread stopped on an error that no reconnect clears.
+
+    Args:
+        status: ``parse_slave_status`` of one replica.
+    """
+    return (
+        status.get("Slave_IO_Running") == "No"
+        and status.get("Last_IO_Errno") in FATAL_IO_ERRNOS
     )
 
 

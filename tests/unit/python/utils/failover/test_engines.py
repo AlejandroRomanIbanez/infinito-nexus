@@ -78,6 +78,18 @@ class TestParsers(unittest.TestCase):
         status["Slave_SQL_Running"] = "Yes"
         self.assertTrue(engines.replica_running(status))
 
+    def test_errant_gtid_is_fatal(self):
+        status = engines.parse_slave_status(
+            " Slave_IO_Running: No\n Last_IO_Errno: 1236\n"
+        )
+        self.assertTrue(engines.replica_fatal(status))
+
+    def test_connecting_replica_is_not_fatal(self):
+        status = engines.parse_slave_status(
+            " Slave_IO_Running: Connecting\n Last_IO_Errno: 2003\n"
+        )
+        self.assertFalse(engines.replica_fatal(status))
+
     def test_patroni_strength(self):
         rows = [
             {"Member": "a", "Role": "Leader", "State": "running"},

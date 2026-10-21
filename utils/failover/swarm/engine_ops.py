@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import shlex
+import time
 
 from utils.failover import engines
 from utils.failover.inventory import (
@@ -16,6 +17,7 @@ from utils.failover.swarm.commands import (
 )
 
 CSN_SLACK_S = 5.0
+FATAL_GRACE_S = 300.0
 
 
 class EngineOps:
@@ -185,16 +187,48 @@ class EngineOps:
         digest, _, age = proc.stdout.strip().partition("\n")
         return f"pw={digest} age={age}s"
 
-    def wait_full_strength(self, timeout_s: float) -> tuple[bool, str]:
-        detail: list[str] = []
+    def fatal_replicas(self) -> list[str]:
+        """Return the MariaDB replicas whose IO thread stopped on an error no reconnect clears."""
+        if self.engine != "mariadb":
+            return []
+        primary = self.primary_instance()
+        return [
+            service
+            for service in self._instances()
+            if service != primary
+            and engines.replica_fatal(
+                engines.parse_slave_status(
+                    self._in(service, engines.slave_status()).stdout
+                )
+            )
+        ]
 
-        def strong() -> bool:
+    def wait_full_strength(self, timeout_s: float) -> tuple[bool, str]:
+        """Wait until ``full_strength`` holds, or give up early on a fatal replica.
+
+        A replica that stays stopped on a fatal error for ``FATAL_GRACE_S``
+        ends the wait, since waiting out the full timeout cannot heal it.
+        """
+        detail: list[str] = []
+        fatal_since: dict[str, float] = {}
+
+        def settled() -> bool:
             ok, text = self.full_strength()
             detail.append(text)
-            return ok
+            if ok:
+                fatal_since.clear()
+                return True
+            if not self.fatal_replicas():
+                fatal_since.clear()
+                return False
+            started = fatal_since.setdefault("at", time.monotonic())
+            return time.monotonic() - started >= FATAL_GRACE_S
 
-        ok = shell.wait_until(strong, timeout_s=timeout_s, interval_s=15)
-        return ok, detail[-1] if detail else "never checked"
+        ok = shell.wait_until(settled, timeout_s=timeout_s, interval_s=15)
+        last = detail[-1] if detail else "never checked"
+        if ok and fatal_since:
+            return False, f"fatal replication error for {FATAL_GRACE_S:.0f}s: {last}"
+        return ok, last
 
     def wait_ready_for_case(self, timeout_s: float) -> tuple[bool, str]:
         """Wait for full strength when the engine runs in HA form.

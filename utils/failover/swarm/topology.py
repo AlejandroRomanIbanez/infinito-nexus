@@ -17,6 +17,7 @@ from utils.failover.swarm.commands import (
     ARRANGE_ATTEMPTS,
     COORDINATION_ROLE,
     DEPLOY_TIMEOUT_S,
+    RAFT_ARRANGE_ATTEMPTS,
     SETTLE_TIMEOUT_S,
     sentinel_failover_argv,
 )
@@ -144,7 +145,7 @@ class Topology:
     def arrange_leader_colocation(self) -> None:
         """Put the Raft leader, the etcd leader (when etcd runs) and the primary on ``STACK_HOST``."""
         stack_host = self.managers[0]
-        for _ in range(ARRANGE_ATTEMPTS):
+        for _ in range(RAFT_ARRANGE_ATTEMPTS):
             self.wait_swarm_settled(self.live_managers())
             leader = self.raft_leader()
             if leader == stack_host:

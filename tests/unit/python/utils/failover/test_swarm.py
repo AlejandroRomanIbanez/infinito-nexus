@@ -311,6 +311,55 @@ class TestReadyForCase(unittest.TestCase):
         strength.assert_called_once_with(30)
 
 
+class TestWaitFullStrength(unittest.TestCase):
+    def _lab(self) -> SwarmLab:
+        return SwarmLab(
+            engine="mariadb",
+            managers=["m1"],
+            spare="w1",
+            network="lab",
+            node_ips={},
+        )
+
+    def _wait(self, lab: SwarmLab, fatal: list[str], clock: list[float]):
+        def ticking_wait(predicate, *, timeout_s, interval_s):
+            while clock[0] < timeout_s:
+                if predicate():
+                    return True
+                clock[0] += interval_s
+            return False
+
+        with (
+            mock.patch.object(
+                SwarmLab, "full_strength", return_value=(False, "replication stopped")
+            ),
+            mock.patch.object(SwarmLab, "fatal_replicas", return_value=fatal),
+            mock.patch(
+                "utils.failover.swarm.engine_ops.shell.wait_until",
+                side_effect=ticking_wait,
+            ),
+            mock.patch(
+                "utils.failover.swarm.engine_ops.time.monotonic",
+                side_effect=lambda: clock[0],
+            ),
+        ):
+            return lab.wait_full_strength(3600)
+
+    def test_a_fatal_replica_ends_the_wait_after_the_grace(self):
+        clock = [0.0]
+        ok, detail = self._wait(self._lab(), ["mariadb_m2"], clock)
+        self.assertFalse(ok)
+        self.assertIn("fatal replication error", detail)
+        self.assertLess(clock[0], 600)
+
+    def test_a_transient_stop_waits_the_full_timeout(self):
+        clock = [0.0]
+        ok, detail = self._wait(self._lab(), [], clock)
+        self.assertFalse(ok)
+        self.assertEqual(detail, "replication stopped")
+        self.assertGreaterEqual(clock[0], 3600)
+
+
 class TestArrangeLeaderColocation(unittest.TestCase):
     def test_waits_out_a_leaderless_moment_instead_of_failing(self):
         lab = SwarmLab(
