@@ -11,6 +11,7 @@ fi
 datadir=/var/lib/mysql
 ready="${datadir}/.infinito-ha-ready"
 recovered="${datadir}/.infinito-ha-recovered"
+reseed="${datadir}/.infinito-ha-reseed"
 db=""
 elector=""
 
@@ -57,15 +58,43 @@ if ! flock -x -n 9; then
   flock -x 9
 fi
 
-if [ "${MARIADB_HA_BOOTSTRAP:-0}" != "1" ] && [ ! -d "${datadir}/mysql" ]; then
+receive_seed() {
+  gosu mysql python3 /opt/infinito/seed_relay.py recv "${MARIADB_SEED_PORT}" "${ELECTOR_REPLICATION_PASSWORD_FILE:?}" | gosu mysql mbstream -x -C "$datadir"
+}
+
+donor=""
+if [ -e "$reseed" ]; then
+  echo "infinito-ha: diverged from the writer; discarding ${datadir} and re-seeding from a peer" >&2
+  find "$datadir" -mindepth 1 -maxdepth 1 ! -name .instance.lock ! -name "$(basename "$reseed")" -exec rm -rf {} +
+  chown mysql:mysql "$datadir"
+  receive_seed &
+  seeding=$!
+  until donor="$(gosu mysql python3 -m infinito_elector.mariadb_seed request)"; do
+    echo "infinito-ha: no peer can donate a seed yet" >&2
+    sleep 10
+  done
+  echo "infinito-ha: ${donor} streams the seed" >&2
+  wait "$seeding"
+  gosu mysql mariadb-backup --prepare --target-dir="$datadir"
+elif [ "${MARIADB_HA_BOOTSTRAP:-0}" != "1" ] && [ ! -d "${datadir}/mysql" ]; then
   echo "infinito-ha: empty data directory, waiting for a seed stream on ${MARIADB_SEED_PORT}" >&2
   chown mysql:mysql "$datadir"
-  gosu mysql python3 /opt/infinito/seed_relay.py recv "${MARIADB_SEED_PORT}" "${ELECTOR_REPLICATION_PASSWORD_FILE:?}" | gosu mysql mbstream -x -C "$datadir"
+  receive_seed
   gosu mysql mariadb-backup --prepare --target-dir="$datadir"
 fi
 
 docker-entrypoint.sh "$@" &
 db=$!
+
+if [ -n "$donor" ]; then
+  until mariadb-admin --socket="${ELECTOR_MARIADB_SOCKET:?}" ping --silent >/dev/null 2>&1; do
+    kill -0 "$db" 2>/dev/null || shutdown 1
+    sleep 1
+  done
+  gosu mysql python3 -m infinito_elector.mariadb_seed attach "$donor"
+  rm -f "$reseed"
+  touch "$ready"
+fi
 
 while [ ! -e "$ready" ]; do
   kill -0 "$db" 2>/dev/null || shutdown 1
@@ -85,6 +114,11 @@ rc=0
 wait -n -p exited "$db" "$elector" || rc=$?
 if [ "$exited" = "$elector" ] && [ "$rc" = 3 ]; then
   echo "infinito-ha: former writer must recover before it follows; killing mariadbd" >&2
+  kill -KILL "$db"
+  exit 1
+elif [ "$exited" = "$elector" ] && [ "$rc" = 4 ]; then
+  echo "infinito-ha: diverged from the writer; restarting to re-seed from a peer" >&2
+  touch "$reseed"
   kill -KILL "$db"
   exit 1
 elif [ "$exited" = "$elector" ]; then

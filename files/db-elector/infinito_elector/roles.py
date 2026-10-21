@@ -18,7 +18,12 @@ class RestartRequired(Exception):  # noqa: N818 - a signal, not an error conditi
     """The engine must be killed and recovered before it may follow a writer."""
 
 
+class ReseedRequired(Exception):  # noqa: N818 - a signal, not an error condition
+    """The instance diverged from the writer and must be re-seeded from a peer."""
+
+
 RESTART_EXIT_CODE = 3
+RESEED_EXIT_CODE = 4
 
 
 def run_command(argv: Sequence[str], stdin: str | None = None) -> str:
@@ -79,6 +84,13 @@ class Role(abc.ABC):
     @abc.abstractmethod
     def follow(self, writer: str | None) -> None:
         """Replicate from *writer* (``None``: no writer right now)."""
+
+    def watch(self) -> None:
+        """Check a following instance once per tick.
+
+        Raises:
+            ReseedRequired: the instance can no longer catch up with the writer.
+        """
 
 
 def choose(candidates: Mapping[str, Any]) -> str:

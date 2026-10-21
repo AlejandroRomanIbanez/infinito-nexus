@@ -36,6 +36,32 @@ class TestWriterEndpoint(unittest.TestCase):
     def test_unknown_path_is_404(self) -> None:
         self.assertEqual(self._status("/"), 404)
 
+    def test_seed_is_404_without_a_donor(self) -> None:
+        request = urllib.request.Request(self.base + "/seed", data=b"{}", method="POST")  # noqa: S310 - local test server
+        with self.assertRaises(urllib.error.HTTPError) as caught:
+            urllib.request.urlopen(request, timeout=2)  # noqa: S310 - local test server
+        self.assertEqual(caught.exception.code, 404)
+
+
+class TestSeedEndpoint(unittest.TestCase):
+    def test_post_seed_answers_the_donor_status(self) -> None:
+        bodies: list[bytes] = []
+
+        def seed(body: bytes) -> int:
+            bodies.append(body)
+            return 202
+
+        server = serve(lambda: False, "127.0.0.1", 0, seed)
+        try:
+            url = f"http://127.0.0.1:{server.server_address[1]}/seed"
+            request = urllib.request.Request(url, data=b'{"host": "m3"}', method="POST")  # noqa: S310 - local test server
+            with urllib.request.urlopen(request, timeout=2) as response:  # noqa: S310 - local test server
+                self.assertEqual(response.status, 202)
+        finally:
+            server.shutdown()
+            server.server_close()
+        self.assertEqual(bodies, [b'{"host": "m3"}'])
+
 
 if __name__ == "__main__":
     unittest.main()

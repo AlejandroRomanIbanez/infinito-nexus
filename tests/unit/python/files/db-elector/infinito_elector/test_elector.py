@@ -5,7 +5,7 @@ import unittest
 
 from infinito_elector_src.elector import Elector, FatalError
 from infinito_elector_src.lock import Lock, LockError
-from infinito_elector_src.roles import Role, RoleError
+from infinito_elector_src.roles import ReseedRequired, Role, RoleError
 
 from . import _NAME  # noqa: F401  side-effect import registers infinito_elector_src
 
@@ -281,6 +281,14 @@ class TestElection(unittest.TestCase):
         self.assertNotIn(("writer", "a"), journal)
         ahead.tick()
         self.assertTrue(ahead.serving_writer())
+
+    def test_a_follower_is_watched_after_it_follows(self) -> None:
+        _, _, _, (a, b) = _pair()
+        a.tick()
+        b.role.watch = lambda: (_ for _ in ()).throw(ReseedRequired("diverged"))
+        with self.assertRaises(ReseedRequired):
+            b.tick()
+        self.assertEqual(b.role.followed, "a")
 
     def test_rejects_a_deadline_that_outlives_the_lease(self) -> None:
         clock = Clock()

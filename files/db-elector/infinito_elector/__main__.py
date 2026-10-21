@@ -20,11 +20,11 @@ from typing import TYPE_CHECKING
 from . import LEASE_SECONDS, RENEW_DEADLINE_SECONDS, RETRY_SECONDS
 from .elector import Elector, FatalError
 from .lock import EtcdLeaseLock, http_transport
-from .roles import RESTART_EXIT_CODE, RestartRequired
+from .roles import RESEED_EXIT_CODE, RESTART_EXIT_CODE, ReseedRequired, RestartRequired
 from .server import serve
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
     from typing import Any
 
     from .lock import Lock
@@ -93,6 +93,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     add("--mariadb-defaults-file", **_from_env("MARIADB_DEFAULTS_FILE", False))
     add("--mariadb-socket", **_from_env("MARIADB_SOCKET", False))
     add("--mariadb-local-user", **_from_env("MARIADB_LOCAL_USER", False))
+    add("--seed-port", type=int, **_from_env("SEED_PORT", False))
     add("--replication-user", **_from_env("REPLICATION_USER", False))
     add(
         "--replication-password-file",
@@ -145,6 +146,22 @@ def build_role(args: argparse.Namespace) -> Role:
     )
 
 
+def build_donor(args: argparse.Namespace, role: Role) -> Callable[[bytes], int] | None:
+    """The ``POST /seed`` handler of a MariaDB instance that has a seed port, else ``None``."""
+    if args.engine != "mariadb" or not args.seed_port:
+        return None
+    from .mariadb_seed import Donor
+
+    return Donor(
+        role=role,
+        secret_file=args.replication_password_file,
+        address=lambda host: args.peer_template.format(engine=args.engine, host=host),
+        seed_port=args.seed_port,
+        user=args.mariadb_local_user,
+        socket=args.mariadb_socket,
+    ).handle
+
+
 def build_lock(args: argparse.Namespace) -> Lock:
     return EtcdLeaseLock(
         http_transport(
@@ -178,12 +195,15 @@ def main(argv: Sequence[str] | None = None) -> int:
     stop = threading.Event()
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
     signal.signal(signal.SIGINT, lambda *_: stop.set())
-    server = serve(elector.serving_writer, args.listen, args.port)
+    server = serve(elector.serving_writer, args.listen, args.port, build_donor(args, elector.role))
     try:
         elector.run(stop)
     except RestartRequired as error:
         logging.getLogger("infinito_elector").warning("%s", error)
         return RESTART_EXIT_CODE
+    except ReseedRequired as error:
+        logging.getLogger("infinito_elector").warning("%s", error)
+        return RESEED_EXIT_CODE
     except FatalError as error:
         logging.getLogger("infinito_elector").error("%s", error)
         return 1

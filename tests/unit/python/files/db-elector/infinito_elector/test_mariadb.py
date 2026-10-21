@@ -4,7 +4,12 @@ import tempfile
 import unittest
 
 from infinito_elector_src.mariadb import GtidPosition, MariaDBRole
-from infinito_elector_src.roles import RestartRequired, RoleError, choose
+from infinito_elector_src.roles import (
+    ReseedRequired,
+    RestartRequired,
+    RoleError,
+    choose,
+)
 
 from . import _NAME  # noqa: F401  side-effect import registers infinito_elector_src
 
@@ -282,6 +287,69 @@ class TestTransitions(unittest.TestCase):
             with self.subTest(read_only=answer):
                 role, _ = _role({"local": {"SELECT @@GLOBAL.read_only": answer}})
                 self.assertEqual(role.is_writable(), writable)
+
+
+class TestDivergence(unittest.TestCase):
+    DIVERGED = "Slave_IO_Running: No\nLast_IO_Errno: 1236\nLast_IO_Error: not in the master's binlog"
+
+    def _following(self, status: str) -> tuple[MariaDBRole, list[float]]:
+        role, _ = _role({"local": {"SHOW SLAVE STATUS": status}})
+        now = [0.0]
+        role._clock = lambda: now[0]
+        role._following = "m2"
+        return role, now
+
+    def test_a_lasting_1236_asks_for_a_reseed(self) -> None:
+        role, now = self._following(self.DIVERGED)
+        role.watch()
+        now[0] = 59.0
+        role.watch()
+        now[0] = 60.0
+        with self.assertRaises(ReseedRequired):
+            role.watch()
+
+    def test_a_cleared_error_restarts_the_grace(self) -> None:
+        role, now = self._following(self.DIVERGED)
+        role.watch()
+        role._run.answers["local"]["SHOW SLAVE STATUS"] = "Slave_IO_Running: Yes"
+        now[0] = 30.0
+        role.watch()
+        role._run.answers["local"]["SHOW SLAVE STATUS"] = self.DIVERGED
+        now[0] = 61.0
+        role.watch()
+        self.assertIsNotNone(role._diverged_since)
+
+    def test_an_instance_that_follows_nobody_never_asks(self) -> None:
+        role, now = self._following(self.DIVERGED)
+        role._following = None
+        now[0] = 1000.0
+        role.watch()
+
+    def test_only_a_healthy_instance_donates(self) -> None:
+        for status, writable, kind in (
+            ("", "0", "writer"),
+            ("Slave_IO_Running: Yes\nSlave_SQL_Running: Yes", "1", "replica"),
+            (self.DIVERGED + "\nSlave_SQL_Running: Yes", "1", None),
+        ):
+            with self.subTest(kind=kind):
+                role, _ = _role(
+                    {
+                        "local": {
+                            "SHOW SLAVE STATUS": status,
+                            "SELECT @@GLOBAL.read_only": writable,
+                        }
+                    }
+                )
+                self.assertEqual(role.donor_kind(), kind)
+
+    def test_attach_starts_from_the_seed_position(self) -> None:
+        role, run = _role({"local": {}})
+        role.attach_seed("m3", "0-7-42")
+        statements = [s for _, s in run.calls]
+        self.assertIn("SET GLOBAL gtid_slave_pos = '0-7-42'", statements)
+        change = next(s for s in statements if s.startswith("CHANGE MASTER"))
+        self.assertIn("MASTER_HOST='mariadb-m3'", change)
+        self.assertEqual(role._following, "m3")
 
 
 if __name__ == "__main__":

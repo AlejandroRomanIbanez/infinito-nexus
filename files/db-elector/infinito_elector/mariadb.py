@@ -7,7 +7,7 @@ import time
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
-from .roles import RestartRequired, Role, RoleError, run_command
+from .roles import ReseedRequired, RestartRequired, Role, RoleError, run_command
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Sequence
@@ -33,6 +33,7 @@ class GtidPosition:
 
 BOOTSTRAP_MARKER = "/var/lib/mysql/.infinito-ha-bootstrap"
 RECOVERED_MARKER = "/var/lib/mysql/.infinito-ha-recovered"
+DIVERGED_ERRNO = "1236"
 
 
 def _quote(value: str) -> str:
@@ -63,6 +64,8 @@ class MariaDBRole(Role):
             restart, so the restarted instance follows instead of restarting again.
         silence_grace_seconds: how long a peer must stay unanswering before a
             promotion may leave it out of the ranking.
+        diverged_grace_seconds: how long replication must stay on error 1236
+            before the instance asks to be re-seeded.
         clock: monotonic clock, injectable for tests.
     """
 
@@ -84,6 +87,7 @@ class MariaDBRole(Role):
         bootstrap_marker: str = BOOTSTRAP_MARKER,
         recovered_marker: str = RECOVERED_MARKER,
         silence_grace_seconds: float = 8.0,
+        diverged_grace_seconds: float = 60.0,
         clock: Callable[[], float] = time.monotonic,
     ) -> None:
         self.host_id = host_id
@@ -100,8 +104,10 @@ class MariaDBRole(Role):
         self._bootstrap_marker = bootstrap_marker
         self._recovered_marker = recovered_marker
         self._silence_grace = silence_grace_seconds
+        self._diverged_grace = diverged_grace_seconds
         self._clock = clock
         self._unranked_since: dict[str, float] = {}
+        self._diverged_since: float | None = None
 
     def _sql(self, query: str, host: str | None = None) -> str:
         """Run *query*, fed on stdin so the replication password never shows
@@ -247,12 +253,70 @@ class MariaDBRole(Role):
             # A former writer's gtid_slave_pos predates its own writes; asking
             # the new writer for them again breaks gtid_strict_mode.
             self._sql("SET GLOBAL gtid_slave_pos = @@GLOBAL.gtid_current_pos")
+        self._replicate_from(writer)
+
+    def _replicate_from(self, host: str) -> None:
         self._sql(
             "CHANGE MASTER TO "
-            f"MASTER_HOST={_quote(self._address(writer))}, "
+            f"MASTER_HOST={_quote(self._address(host))}, "
             f"MASTER_USER={_quote(self._repl_user)}, "
             f"MASTER_PASSWORD={_quote(self._repl_password() if callable(self._repl_password) else self._repl_password)}, "
             "MASTER_USE_GTID=slave_pos, MASTER_CONNECT_RETRY=1"
         )
         self._sql("START SLAVE")
-        self._following = writer
+        self._following = host
+        self._diverged_since = None
+
+    def watch(self) -> None:
+        """Ask for a re-seed once replication stays on error 1236.
+
+        The writer then lacks transactions this instance holds, or has purged
+        the binary log it needs; neither heals by reconnecting.
+        """
+        if self._following is None:
+            return
+        try:
+            status = self._slave_status()
+        except RoleError:
+            return
+        if status.get("Last_IO_Errno") != DIVERGED_ERRNO:
+            self._diverged_since = None
+            return
+        if self._diverged_since is None:
+            self._diverged_since = self._clock()
+        if self._clock() - self._diverged_since < self._diverged_grace:
+            return
+        try:
+            local = self._sql("SELECT @@GLOBAL.gtid_binlog_pos")
+        except RoleError as error:
+            local = f"unknown ({error})"
+        raise ReseedRequired(
+            f"{self.host_id} diverged from {self._following} "
+            f"(local gtid_binlog_pos {local}): {status.get('Last_IO_Error', '')[:200]}"
+        )
+
+    def donor_kind(self) -> str | None:
+        """``writer`` or ``replica`` when this instance may donate a seed, else ``None``."""
+        try:
+            if self.is_writable():
+                return "writer"
+            status = self._slave_status()
+        except RoleError:
+            return None
+        if (
+            status.get("Slave_IO_Running") == "Yes"
+            and status.get("Slave_SQL_Running") == "Yes"
+        ):
+            return "replica"
+        return None
+
+    def attach_seed(self, donor: str, position: str) -> None:
+        """Replicate a freshly restored copy from its donor, starting at *position*.
+
+        Args:
+            donor: host id of the instance that streamed the copy.
+            position: GTID position the copy ends at.
+        """
+        self._sql("STOP SLAVE")
+        self._sql(f"SET GLOBAL gtid_slave_pos = {_quote(position)}")
+        self._replicate_from(donor)

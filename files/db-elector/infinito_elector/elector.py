@@ -157,6 +157,8 @@ class Elector:
                     self.role.follow(holder)
                 except RoleError as error:
                     LOG.warning("cannot follow %s: %s", holder, error)
+                    return
+                self.role.watch()
             return
         if self.clock() < self._yield_until or not self.role.is_ready_to_compete():
             return
