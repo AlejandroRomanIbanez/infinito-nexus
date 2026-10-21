@@ -10,17 +10,42 @@ fi
 
 datadir=/var/lib/mysql
 ready="${datadir}/.infinito-ha-ready"
+recovered="${datadir}/.infinito-ha-recovered"
 db=""
 elector=""
 
+semi_sync_master() {
+  gosu mysql mariadb --no-defaults --user="${ELECTOR_MARIADB_LOCAL_USER:?}" --socket="${ELECTOR_MARIADB_SOCKET:?}" \
+    --connect-timeout=2 -N -B -e 'SELECT @@GLOBAL.rpl_semi_sync_master_enabled' 2>/dev/null
+}
+
+# Stops mariadbd: cleanly on a replica, by SIGKILL on a writer or when the role
+# is unknown. A clean shutdown commits the writes still waiting for a semi-sync
+# acknowledgement, and they become errant GTIDs no peer has; a kill leaves them
+# prepared, so recovery as a replica (init_rpl_role = SLAVE) truncates them.
+stop_db() {
+  local master
+  master="$(semi_sync_master || echo unknown)"
+  case "$master" in
+    0 | OFF)
+      kill -TERM "$db" || true # nocheck: shell-or-true -- mariadbd may already have exited
+      ;;
+    *)
+      echo "infinito-ha: semi-sync master is '${master}'; killing mariadbd so recovery drops unacknowledged writes" >&2
+      case "$master" in 1 | ON) touch "$recovered" ;; esac
+      kill -KILL "$db" || true # nocheck: shell-or-true -- mariadbd may already have exited
+      ;;
+  esac
+  wait "$db" || true # nocheck: shell-or-true -- the exit code of a stopped mariadbd is irrelevant here
+}
+
 shutdown() {
   if [ -n "$elector" ] && kill -0 "$elector" 2>/dev/null; then
-    kill -TERM "$elector" || true
-    wait "$elector" || true
+    kill -TERM "$elector" || true # nocheck: shell-or-true -- the elector may already have exited
+    wait "$elector" || true # nocheck: shell-or-true -- the elector's exit code is irrelevant on shutdown
   fi
   if [ -n "$db" ] && kill -0 "$db" 2>/dev/null; then
-    kill -TERM "$db" || true
-    wait "$db" || true
+    stop_db
   fi
   exit "${1:-0}"
 }

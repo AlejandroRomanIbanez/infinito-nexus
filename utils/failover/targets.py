@@ -23,7 +23,7 @@ BEST_EFFORT = "best-effort"
 
 ENGINES: dict[str, dict] = {
     "postgres": {"tier": DURABLE, "kill": 28, "node": 30, "rolling": 6},
-    "mariadb": {"tier": DURABLE, "kill": 25, "node": 30, "rolling": 6},
+    "mariadb": {"tier": DURABLE, "kill": 25, "node": 35, "rolling": 6},
     "redis": {"tier": BEST_EFFORT, "kill": 11, "node": 31, "rolling": 6},
     "openldap": {"tier": BEST_EFFORT, "kill": 21, "node": 40, "rolling": 5},
 }

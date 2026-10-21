@@ -79,7 +79,7 @@ This requirement covers:
   | Engine | Instance kill (ceiling 30 s) | Node crash, hang or partition (ceiling 90 s) | Rolling change (ceiling 10 s, goal 5 s) |
   |---|---|---|---|
   | Postgres | ≈ 28 s, measured 16.1–17.9 s | ≈ 30 s, measured 18.3–25.9 s | ≈ 4–6 s, measured 3.5–4.4 s |
-  | MariaDB | ≈ 25 s, measured 15.0–17.3 s | ≈ 30 s, measured 24.9–27.9 s | ≈ 4–6 s |
+  | MariaDB | ≈ 25 s, measured 15.0–17.3 s | ≈ 35 s, measured 24.9–30.7 s | ≈ 4–6 s |
   | Redis | ≈ 11 s, measured 6.6–9 s | ≈ 11 s, ≈ 31 s on a split Sentinel vote, measured 6.6–9 s | ≈ 6 s, measured 5.2–5.8 s |
   | OpenLDAP | ≈ 21 s, measured 15.5–18.3 s | ≈ 40 s, measured 25.0–37.7 s | ≈ 5 s, measured 3.2–4.04 s |
 
@@ -181,6 +181,7 @@ This requirement covers:
   - **On winning:** the elector keeps the lease only if its instance has the highest `@@gtid_current_pos` among reachable instances (not `gtid_slave_pos`, which stays stale on a former primary), ties broken by host-id (otherwise it releases and lets that instance win), waits until its relay log is applied, stops replication, sets `read_only=0`, and announces itself in etcd.
   - **On losing the lease, missing the renew deadline, or SIGTERM:** set `read_only=1` first, without needing the network, then release the lease.
   - **Following:** an instance that does not hold the lease points itself at the announced writer with `CHANGE MASTER TO … MASTER_USE_GTID=slave_pos`.
+  - **Rejoining as a former writer:** with `AFTER_SYNC` a writer's binary log can hold commits no replica acknowledged, and a clean shutdown would commit them as errant GTIDs. A former writer, and an instance stopped while its semi-sync master side is on, is therefore killed instead of shut down, and restarts as a replica (`init_rpl_role = SLAVE`), so crash recovery truncates those commits. If its position still is not contained in the writer's binary log (replication error 1236), the instance discards its data and re-seeds from a healthy peer, as an empty volume does. This mirrors Patroni's `pg_rewind`, then re-initialisation; nothing acknowledged is lost, because the dropped commits were never acknowledged.
 - [ ] An isolated old primary cannot acknowledge a write even before it turns read-only, because semi-sync with the maximal timeout waits for a replica that it cannot reach.
 - [ ] The HA server profile:
   - semi-sync with `rpl_semi_sync_master_wait_point=AFTER_SYNC`;
