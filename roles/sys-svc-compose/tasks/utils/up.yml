@@ -33,7 +33,9 @@
   ansible.builtin.debug:
     msg: "{{ COMPOSE_UP_PENDING_MARKER }} is still present, so the last compose up never completed"
   changed_when: true
-  notify: compose-up
+  notify:
+    - compose-build
+    - compose-up
   when:
     - compose_mode == 'compose'
     - compose_up_pending.stat.exists

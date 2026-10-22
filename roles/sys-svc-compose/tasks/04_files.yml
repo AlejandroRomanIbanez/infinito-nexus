@@ -22,6 +22,7 @@
   notify:
     - compose-build
     - compose-up
+  register: dockerfile_template
   when:
     - dockerfile_src | default('') | length > 0
 
@@ -75,4 +76,4 @@
     mode: "0640"
   when:
     - compose_mode == 'compose'
-    - env_template.changed or compose_override_template.changed or docker_compose_template.changed
+    - dockerfile_template.changed or env_template.changed or compose_override_template.changed or docker_compose_template.changed
