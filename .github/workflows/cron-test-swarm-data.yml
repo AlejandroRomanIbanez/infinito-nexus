@@ -22,7 +22,7 @@ permissions:
 
 concurrency:
   group: swarm-data-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name != 'schedule' }}
 
 jobs:
   build-ci-images:
