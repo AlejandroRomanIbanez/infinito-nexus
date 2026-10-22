@@ -272,6 +272,10 @@ class TestDeployProcedures(unittest.TestCase):
         result = _run(_FakeLab(_LOST), "rolling")
         self.assertTrue(any("lost" in f for f in result.failures))
 
+    def test_a_failed_elector_roll_attaches_every_elector_log(self):
+        result = _run(_FakeLab(_LOST), "rolling", "mariadb")
+        self.assertIn("pg_pg-m3: INFO ranked", result.notes)
+
     def test_backup_restore_seeds_marks_fires_on_the_primary_host_and_restores(self):
         lab = _FakeLab(run_probe={"marker-write": "ok"})
         result = _run(lab, "backup-restore")
