@@ -15,6 +15,8 @@ from utils.failover.swarm.commands import (
     backup_search_root,
 )
 
+BUSY_UNIT_STATES = ("active", "activating", "reloading", "deactivating")
+
 
 class Backup:
     """Mixin of ``SwarmLabBase``: baudolo runs and scratch restores."""
@@ -31,9 +33,12 @@ class Backup:
         )
 
     def fire_backup(self, node: str) -> str:
-        """Run the backup unit on ``node``; return the stamp file newer dumps beat."""
-        stamp = f"/tmp/failover-backup-{secrets.token_hex(4)}"  # noqa: S108 - scratch stamp inside the DinD node
-        shell.run(["docker", "exec", node, "touch", stamp])
+        """Run the backup unit on ``node``; return the stamp file newer dumps beat.
+
+        A run already in progress, from the unit's own timer, is waited out
+        first: ``systemctl start`` would join it instead of starting a new run,
+        and its dump may predate the marker while its files still beat the stamp.
+        """
         units = shell.run(
             [
                 "docker",
@@ -49,6 +54,20 @@ class Backup:
         names = [line.split()[0] for line in units if line.strip()]
         if not names:
             raise RuntimeError(f"no {BACKUP_ROLE} unit installed on {node}")
+
+        def idle() -> bool:
+            states = shell.run(
+                ["docker", "exec", node, "systemctl", "is-active", *names],
+                check=False,
+            ).split()
+            return not any(state in BUSY_UNIT_STATES for state in states)
+
+        if not shell.wait_until(idle, timeout_s=BACKUP_TIMEOUT_S, interval_s=5):
+            raise RuntimeError(
+                f"a {BACKUP_ROLE} run on {node} did not finish in {BACKUP_TIMEOUT_S}s"
+            )
+        stamp = f"/tmp/failover-backup-{secrets.token_hex(4)}"  # noqa: S108 - scratch stamp inside the DinD node
+        shell.run(["docker", "exec", node, "touch", stamp])
         for unit in names:
             shell.run(
                 ["docker", "exec", node, "systemctl", "start", unit],

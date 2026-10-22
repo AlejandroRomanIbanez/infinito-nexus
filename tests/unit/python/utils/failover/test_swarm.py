@@ -475,6 +475,42 @@ class TestSpareLogsByServiceId(unittest.TestCase):
             self.assertEqual(lab.checker_log(), "new-log\n")
 
 
+class TestFireBackup(unittest.TestCase):
+    def test_a_running_backup_is_waited_out_before_the_stamp(self):
+        lab = SwarmLab(
+            engine="mariadb",
+            managers=["m1"],
+            spare="w1",
+            network="lab",
+            node_ips={},
+        )
+        states = iter(["activating", "inactive"])
+        calls: list[list[str]] = []
+
+        def run(argv, **_):
+            calls.append(argv)
+            if "list-unit-files" in argv:
+                return "svc-bkp-volume-2-local.service enabled\n"
+            if "is-active" in argv:
+                return next(states)
+            return ""
+
+        with (
+            mock.patch.object(shell, "run", side_effect=run),
+            mock.patch.object(
+                shell,
+                "wait_until",
+                side_effect=lambda pred, **_: pred() or pred(),
+            ),
+        ):
+            lab.fire_backup("m1")
+        verbs = [argv[3] for argv in calls]
+        self.assertEqual(
+            verbs, ["systemctl", "systemctl", "systemctl", "touch", "systemctl"]
+        )
+        self.assertEqual(calls[-1][-2:], ["start", "svc-bkp-volume-2-local.service"])
+
+
 class TestTopologyCleanup(unittest.TestCase):
     def _lab(self) -> SwarmLab:
         return SwarmLab(
