@@ -53,6 +53,11 @@ on:
           - "enforced"
           - "exclusive"
           - "disabled"
+      db_topology:
+        description: "🔱 Alternate Swarm rows between standalone and HA databases"
+        required: false
+        default: false
+        type: boolean
       offset:
         description: "⏩ Where chunk 0 starts: a row count, or a token like web-app-x#2"
         required: false
@@ -118,4 +123,5 @@ jobs:
       workspace: ${{ inputs.workspace }}
       workspace_track: ${{ inputs.workspace_track }}
       tor: ${{ inputs.tor }}
+      db_topology: ${{ inputs.db_topology && 'true' || '' }}
     secrets: inherit
