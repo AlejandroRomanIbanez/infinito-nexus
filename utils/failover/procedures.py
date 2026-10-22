@@ -36,6 +36,7 @@ from utils.failover.procedure_kit import (
 )
 from utils.failover.runner import unfinished
 from utils.failover.sampling import (
+    dual_writer_detail,
     dual_writer_windows,
     first_new_writer,
     gtid_choice_violation,
@@ -78,7 +79,10 @@ def two_writers(lab, engine: str, env: Env, result: CaseResult) -> None:
     finally:
         rounds = sampler.stop()
     judge(result, engine, "node", run)
-    absorb(result, evaluate_writer_overlap(dual_writer_windows(rounds)))
+    overlap = evaluate_writer_overlap(dual_writer_windows(rounds))
+    absorb(result, overlap)
+    if overlap.failures:
+        result.notes.append(dual_writer_detail(rounds))
     result.notes.append(f"{len(rounds)} writer sampling rounds")
 
 

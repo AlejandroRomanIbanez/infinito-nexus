@@ -54,6 +54,28 @@ def dual_writer_windows(rounds: list[Round]) -> list[tuple[int, int]]:
     return windows
 
 
+def dual_writer_detail(rounds: list[Round], limit: int = 5) -> str:
+    """Name the writers of each two-writer round and the wait until the next round.
+
+    A long wait means the sampler lost rounds (a paused node fails them), so
+    the stretch it reports may be one round wide in truth.
+
+    Args:
+        rounds: samples in time order.
+        limit: how many two-writer rounds to describe.
+    """
+    parts = []
+    for index, current in enumerate(rounds):
+        if len(current.writer_set()) < 2:
+            continue
+        following = rounds[index + 1].at_ms if index + 1 < len(rounds) else current.at_ms
+        parts.append(
+            f"{'+'.join(sorted(current.writer_set()))} at {current.at_ms}, "
+            f"next round {(following - current.at_ms) / 1000.0:.1f}s later"
+        )
+    return "; ".join(parts[:limit])
+
+
 def first_new_writer(
     rounds: list[Round], *, after_ms: int, old: str
 ) -> tuple[str, int] | None:

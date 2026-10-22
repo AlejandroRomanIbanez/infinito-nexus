@@ -6,6 +6,7 @@ import unittest
 from utils.failover.sampling import (
     Round,
     Sampler,
+    dual_writer_detail,
     dual_writer_windows,
     first_new_writer,
     gtid_choice_violation,
@@ -94,6 +95,18 @@ class TestGtid(unittest.TestCase):
     def test_no_promotion_is_reported(self):
         rounds = [_round(2000, gtids={"b": "0-1-1"})]
         self.assertIn("no instance", gtid_choice_violation(rounds, fault_ms=0, old="a"))
+
+
+class TestDualWriterDetail(unittest.TestCase):
+    def test_names_the_writers_and_the_wait_until_the_next_round(self):
+        rounds = [
+            _round(1000, "a"),
+            _round(2000, "a", "b"),
+            _round(64700, "b"),
+        ]
+        self.assertEqual(
+            dual_writer_detail(rounds), "a+b at 2000, next round 62.7s later"
+        )
 
 
 class TestSampler(unittest.TestCase):

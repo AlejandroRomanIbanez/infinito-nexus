@@ -13,7 +13,12 @@ from utils.failover.checker import (
     parse_checker_output,
 )
 from utils.failover.junit import CaseResult
-from utils.failover.sampling import Round, Sampler, dual_writer_windows
+from utils.failover.sampling import (
+    Round,
+    Sampler,
+    dual_writer_detail,
+    dual_writer_windows,
+)
 from utils.failover.scenarios import ELECTOR_ENGINES
 from utils.failover.targets import Verdict, evaluate, evaluate_writer_overlap
 
@@ -148,6 +153,8 @@ def run_plain(
         overlap = evaluate_writer_overlap(dual_writer_windows(rounds))
         result.failures.extend(overlap.failures)
         result.notes.extend(overlap.notes)
+        if overlap.failures:
+            result.notes.append(dual_writer_detail(rounds))
     result.seconds = time.monotonic() - started
     return result
 
