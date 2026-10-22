@@ -179,7 +179,7 @@ flowchart TD
 
 ## Bridge matrix
 
-Set per-bridge flags under `services.matrix.plugins.<bridge>: true|false` in `meta/services.yml`. Conservative defaults: `mautrix_{signal,telegram,twitter,slack}`, `appservice_irc`, `heisenbridge`, `discord`, `gitter`, `hookshot` ON; `whatsapp`/`facebook`/`instagram`/`googlechat`/`sms` OFF.
+Set per-bridge flags under `services.matrix.plugins.<bridge>: true|false` in `meta/services.yml`. Every bridge defaults to OFF; `chatgpt` follows whether `svc-ai-litellm` is part of the deployment.
 
 The ansible flavor maps each true flag to the matching `matrix_<bridge>_enabled` MDAD var; the compose flavor builds the `MATRIX_BRIDGES` loop from the enabled `mechanism: bridge` addons (see Addons below).
 
@@ -207,7 +207,7 @@ variant in [`meta/variants.yml`](./meta/variants.yml). Coverage is via
 
 ## Conferencing
 
-`services.matrix.conferencing.element_call` and `services.matrix.conferencing.jitsi` toggle MDAD's Element Call / Jitsi stacks (ansible flavor only). Both default to true.
+`services.matrix.conferencing.element_call` and `services.matrix.conferencing.jitsi` toggle MDAD's Element Call / Jitsi stacks (ansible flavor only). Both default to false: the role does not publish their media ports or proxy their web domains yet.
 
 ## Playwright specs
 
