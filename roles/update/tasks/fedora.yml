@@ -25,7 +25,7 @@
     - name: "🛑 update (dnf) | re-raise anything but packages no mirror serves" # nocheck: rescue-recovery re-fetches metadata a mirror on the previous push served and retries once; the retry fails loud
       ansible.builtin.fail:
         msg: "{{ ansible_failed_result.msg }}"
-      when: ansible_failed_result.msg != 'Failed to download packages'
+      when: ansible_failed_result.msg is not match('Failed to download packages')
 
     - name: "🧹 update (dnf) | drop the metadata a mirror still on the previous push served"
       become: true
