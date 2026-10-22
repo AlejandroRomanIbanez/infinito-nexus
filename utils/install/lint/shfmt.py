@@ -1,4 +1,4 @@
-"""Install the shfmt release roles/sys-lint pins, whatever PATH already holds."""
+"""Install shfmt via GitHub-release prebuilt binary."""
 
 from __future__ import annotations
 
@@ -72,7 +72,6 @@ def _installed_version() -> str | None:
 
 
 def ensure() -> None:
-    """Install the pinned shfmt release, replacing whatever version PATH finds."""
     _slug, want = resolve_release("shfmt")
     found = _installed_version()
     if found == want:
