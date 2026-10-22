@@ -1,5 +1,3 @@
-"""shfmt.ensure leaves only the pinned release on PATH, whatever was there before."""
-
 from __future__ import annotations
 
 import subprocess
