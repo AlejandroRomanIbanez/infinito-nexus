@@ -288,6 +288,16 @@ class TestDeployProcedures(unittest.TestCase):
         )
         self.assertEqual(result.failures, [])
 
+    def test_a_backup_without_the_marker_says_whether_the_writer_kept_it(self):
+        lab = _FakeLab(
+            run_probe={"marker-write": "ok", "marker": "found"},
+            verify_backup=(False, "replayed"),
+        )
+        result = _run(lab, "backup-restore")
+        self.assertTrue(
+            any("the live writer reports the marker found" in f for f in result.failures)
+        )
+
     def test_openldap_backup_needs_no_seed_row(self):
         lab = _FakeLab(run_probe={"marker-write": "ok"})
         _run(lab, "backup-restore", "openldap")

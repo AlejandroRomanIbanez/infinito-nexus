@@ -274,8 +274,10 @@ def backup_restore(lab, engine: str, env: Env, result: CaseResult) -> None:
     ok, detail = lab.verify_backup(node, stamp, token)
     result.notes.append(detail)
     if not ok:
+        live = lab.run_probe("marker-read", token).get("marker")
         result.failures.append(
-            f"backup on {node} does not restore the marker: {detail}"
+            f"backup on {node} does not restore the marker: {detail}; "
+            f"the live writer reports the marker {live}"
         )
 
 
