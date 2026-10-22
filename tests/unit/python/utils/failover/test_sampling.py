@@ -80,6 +80,13 @@ class TestGtid(unittest.TestCase):
         self.assertIn("c was promoted", violation)
         self.assertIn("b was at 100", violation)
 
+    def test_a_peer_holding_the_winners_first_writes_is_no_violation(self):
+        rounds = [
+            _round(1000, gtids={"b": "0-1-450", "c": "0-1-450"}),
+            _round(2000, "c", gtids={"b": "0-2-454", "c": "0-2-452"}),
+        ]
+        self.assertIsNone(gtid_choice_violation(rounds, fault_ms=500, old="a"))
+
     def test_old_writer_positions_are_not_compared(self):
         rounds = [_round(2000, "c", gtids={"a": "0-1-500", "c": "0-1-90"})]
         self.assertIsNone(gtid_choice_violation(rounds, fault_ms=500, old="a"))

@@ -96,7 +96,9 @@ def gtid_choice_violation(
 
     The promoted instance's position at its first writer sample is compared
     with the highest position any other surviving instance showed between the
-    fault and that promotion.
+    fault and the round before that promotion. The promotion round itself is
+    left out for the others: a peer sampled after the winner may already hold
+    the winner's own first writes.
 
     Args:
         rounds: samples with ``gtids`` filled, in time order.
@@ -120,6 +122,8 @@ def gtid_choice_violation(
         return f"{winner} was promoted without a readable GTID position"
     best_name, best_total = None, -1
     for current in window:
+        if current.at_ms == at_ms:
+            continue
         for name, text in current.gtids.items():
             total = gtid_total(text)
             if name in (winner, old) or total is None:
