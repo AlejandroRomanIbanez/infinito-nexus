@@ -39,8 +39,20 @@
       - /run
       - /run/lock
       - /tmp
-    {{ lookup('container_ports', ['synapse', 'http', DOCKER_BIND_HOST]) | indent(4) }}
+{% set _matrix_ports = [['synapse', 'http', DOCKER_BIND_HOST]] %}
+{% if MATRIX_JITSI_INTERNAL %}
+{%   set _ = _matrix_ports.extend([
+       {'service': 'jitsi', 'protocol': 'http', 'ip': DOCKER_BIND_HOST},
+       {'service': 'jitsi', 'protocol': 'media', 'transport': 'udp', 'container': 'same'},
+     ]) %}
+{% endif %}
+{% if MATRIX_CONFERENCING_ELEMENT_CALL %}
+{%   set _ = _matrix_ports.extend([
+       {'service': 'livekit', 'protocol': 'websocket', 'ip': DOCKER_BIND_HOST},
+       {'service': 'livekit', 'protocol': 'media', 'transport': ['tcp', 'udp'], 'container': 'same'},
+       {'service': 'livekit_jwt', 'protocol': 'http', 'ip': DOCKER_BIND_HOST},
+     ]) %}
+{% endif %}
+    {{ lookup('container_ports', *_matrix_ports) | indent(4) }}
       # nocheck: compose-ports-must-use-container-ports  matrix-docker-ansible-deploy fixes element on 8080 while this repo declares element.ports.internal.http 80; the two disagree and the playbook owns the container
       - "{{ DOCKER_BIND_HOST }}:{{ MATRIX_ELEMENT_PORT }}:8080"
-      # nocheck: compose-ports-must-use-container-ports  the upstream playbook serves federation on 8048 and no ports.internal.federation is declared for it
-      - "{{ DOCKER_BIND_HOST }}:{{ MATRIX_FEDERATION_PORT }}:8048"
