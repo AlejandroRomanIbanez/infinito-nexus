@@ -25,6 +25,7 @@ def _env(instances):
         return ""
 
     env = jinja2.Environment(
+        autoescape=jinja2.select_autoescape(default_for_string=False),
         loader=jinja2.ChoiceLoader(
             [
                 jinja2.DictLoader(

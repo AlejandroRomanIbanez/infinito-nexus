@@ -14,7 +14,6 @@ from typing import TYPE_CHECKING, Any
 
 from utils.failover.checker import acks_between, audit, max_write_gap_s
 from utils.failover.junit import CaseResult
-from utils.failover.scenarios import ELECTOR_ENGINES
 from utils.failover.procedure_kit import (
     DEMOTE_MARGIN_S,
     FAULT_HOLD_S,
@@ -42,6 +41,7 @@ from utils.failover.sampling import (
     first_new_writer,
     gtid_choice_violation,
 )
+from utils.failover.scenarios import ELECTOR_ENGINES
 from utils.failover.targets import (
     MIN_REPLICAS_MAX_LAG_S,
     RECLONE_CEILING_S,
@@ -264,7 +264,9 @@ def rolling(lab, engine: str, env: Env, result: CaseResult) -> None:
     judge(result, engine, "rolling", run)
     if result.failures and engine in ELECTOR_ENGINES:
         for service in lab.instances():
-            result.notes.extend(f"{service}: {line}" for line in lab.elector_log(service))
+            result.notes.extend(
+                f"{service}: {line}" for line in lab.elector_log(service)
+            )
 
 
 def backup_restore(lab, engine: str, env: Env, result: CaseResult) -> None:

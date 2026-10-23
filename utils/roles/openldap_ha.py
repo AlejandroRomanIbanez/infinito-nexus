@@ -10,7 +10,10 @@ from __future__ import annotations
 
 import hashlib
 import re
-from collections.abc import Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping, Sequence
 
 SERVER_ID_MAX = 4095
 CORE_SCHEMAS = ("core", "cosine", "inetorgperson", "nis")

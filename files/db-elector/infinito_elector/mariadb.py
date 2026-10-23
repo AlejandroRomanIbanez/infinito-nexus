@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import time
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from .roles import ReseedRequired, RestartRequired, Role, RoleError, run_command
@@ -175,7 +176,7 @@ class MariaDBRole(Role):
         of three always holds one of them, so a silent peer delays a promotion
         only in larger groups, where a majority can miss both.
         """
-        if os.path.exists(self._bootstrap_marker):
+        if Path(self._bootstrap_marker).exists():
             return 1
         majority = super().quorum()
         if len(self.peers) + 1 - majority >= ACK_HOLDERS and any(
@@ -276,8 +277,8 @@ class MariaDBRole(Role):
         if writer is None or writer in (self.host_id, self._following):
             return
         former_writer = not self._slave_status()
-        if former_writer and not os.path.exists(self._recovered_marker):
-            open(self._recovered_marker, "w").close()  # noqa: PTH123, SIM115 - touch
+        if former_writer and not Path(self._recovered_marker).exists():
+            open(self._recovered_marker, "w").close()  # noqa: PTH123 - touch
             raise RestartRequired(
                 f"{self.host_id} was a writer; restarting so recovery drops "
                 "binlog writes no replica acknowledged"

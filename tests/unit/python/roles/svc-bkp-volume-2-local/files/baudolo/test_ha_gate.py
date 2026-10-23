@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 import importlib.util
 import json
 import subprocess
@@ -153,9 +152,8 @@ class TestMissingDumps(TestCase):
 
 class TestMain(TestCase):
     def _config(self, instances):
-        handle = tempfile.NamedTemporaryFile("w", suffix=".json", delete=False)
-        json.dump({"instances": instances}, handle)
-        handle.close()
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as handle:
+            json.dump({"instances": instances}, handle)
         return handle.name
 
     def test_usage_without_separator(self):

@@ -4,6 +4,7 @@ import unittest
 from collections.abc import Mapping
 
 import yaml
+from ansible.errors import AnsibleFilterError
 
 from plugins.lookup.container_volumes import container_volumes
 
@@ -145,7 +146,7 @@ class TestContainerVolumesConfigSecret(unittest.TestCase):
                 "mounts": [{"service": "app", "target": "/run/secrets/key"}],
             }
         }
-        with self.assertRaises(Exception):
+        with self.assertRaises(AnsibleFilterError):
             container_volumes(_apps(meta), "my-app", "app")
 
 

@@ -54,7 +54,7 @@ class TestSeedEndpoint(unittest.TestCase):
         server = serve(lambda: False, "127.0.0.1", 0, seed)
         try:
             url = f"http://127.0.0.1:{server.server_address[1]}/seed"
-            request = urllib.request.Request(url, data=b'{"host": "m3"}', method="POST")  # noqa: S310 - local test server
+            request = urllib.request.Request(url, data=b'{"host": "m3"}', method="POST")
             with urllib.request.urlopen(request, timeout=2) as response:  # noqa: S310 - local test server
                 self.assertEqual(response.status, 202)
         finally:

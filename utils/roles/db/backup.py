@@ -7,8 +7,8 @@ copied as files, as in the standalone form.
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
 from pathlib import PurePosixPath
+from typing import TYPE_CHECKING
 
 from utils.roles.db.instances import (
     FORM_HA,
@@ -19,6 +19,9 @@ from utils.roles.db.instances import (
     ha_engines,
     ha_spec,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
 
 BACKUP_SQL = "sql"
 

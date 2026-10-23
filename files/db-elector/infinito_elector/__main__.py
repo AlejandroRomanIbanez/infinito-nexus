@@ -146,7 +146,9 @@ def build_role(args: argparse.Namespace) -> Role:
     )
 
 
-def build_donor(args: argparse.Namespace, role: Role) -> Callable[[bytes, str], int] | None:
+def build_donor(
+    args: argparse.Namespace, role: Role
+) -> Callable[[bytes, str], int] | None:
     """The ``POST /seed`` handler of a MariaDB instance that has a seed port, else ``None``."""
     if args.engine != "mariadb" or not args.seed_port:
         return None
@@ -194,7 +196,9 @@ def main(argv: Sequence[str] | None = None) -> int:
     stop = threading.Event()
     signal.signal(signal.SIGTERM, lambda *_: stop.set())
     signal.signal(signal.SIGINT, lambda *_: stop.set())
-    server = serve(elector.serving_writer, args.listen, args.port, build_donor(args, elector.role))
+    server = serve(
+        elector.serving_writer, args.listen, args.port, build_donor(args, elector.role)
+    )
     try:
         elector.run(stop)
     except RestartRequired as error:

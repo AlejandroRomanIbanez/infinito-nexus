@@ -73,6 +73,7 @@ def render(application_id, model, loader=None, **variables):
         The parsed compose document.
     """
     env = jinja2.Environment(
+        autoescape=jinja2.select_autoescape(default_for_string=False),
         loader=loader or jinja2.FileSystemLoader(str(PROJECT_ROOT)),
         trim_blocks=True,
         lstrip_blocks=True,

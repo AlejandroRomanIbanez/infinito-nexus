@@ -10,28 +10,28 @@ SUBNET = "192.168.200.0/24"
 
 
 def _file_kwargs():
-    return dict(
-        scope="postgres",
-        namespace="/service/",
-        etcd_hosts=["etcd-a:2379"],
-        etcd_cacert="/ca",
-        etcd_username="patroni",
-        etcd_password="e",
-        restapi_port=8008,
-        restapi_username="patroni",
-        restapi_password="r",
-        superuser="postgres",
-        superuser_password="s",
-        replication_user="replicator",
-        replication_password="p",
-        rewind_user="rewinder",
-        rewind_password="w",
-        data_dir="/d",
-        bin_dir="/b",
-        postgres_port=5432,
-        parameters={},
-        replication_subnet=SUBNET,
-    )
+    return {
+        "scope": "postgres",
+        "namespace": "/service/",
+        "etcd_hosts": ["etcd-a:2379"],
+        "etcd_cacert": "/ca",
+        "etcd_username": "patroni",
+        "etcd_password": "e",
+        "restapi_port": 8008,
+        "restapi_username": "patroni",
+        "restapi_password": "r",
+        "superuser": "postgres",
+        "superuser_password": "s",
+        "replication_user": "replicator",
+        "replication_password": "p",
+        "rewind_user": "rewinder",
+        "rewind_password": "w",
+        "data_dir": "/d",
+        "bin_dir": "/b",
+        "postgres_port": 5432,
+        "parameters": {},
+        "replication_subnet": SUBNET,
+    }
 
 
 class TestPatroniConfigLookup(unittest.TestCase):

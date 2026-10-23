@@ -39,6 +39,7 @@ def _lookup(name, *args, **kwargs):
 
 def _render(**variables):
     env = jinja2.Environment(
+        autoescape=jinja2.select_autoescape(default_for_string=False),
         loader=jinja2.FileSystemLoader(str(PROJECT_ROOT)),
         trim_blocks=True,
         lstrip_blocks=True,

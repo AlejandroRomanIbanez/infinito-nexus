@@ -103,7 +103,7 @@ def with_excluded(argv: Sequence[str], volumes: Sequence[str]) -> list[str]:
     if not volumes:
         return argv
     if EXCLUDE_FLAG not in argv:
-        return argv + [EXCLUDE_FLAG, *volumes]
+        return [*argv, EXCLUDE_FLAG, *volumes]
     at = argv.index(EXCLUDE_FLAG) + 1
     end = at
     while end < len(argv) and not argv[end].startswith("-"):

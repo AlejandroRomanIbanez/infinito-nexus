@@ -8,10 +8,13 @@ today's standalone shape unchanged.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable, Mapping, Sequence
+from typing import TYPE_CHECKING
 
 from utils.roles.entity.name import get_entity_name
 from utils.roles.meta_lookup import get_role_ha, iter_roles_with_ha
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable, Mapping, Sequence
 
 SWARM_NODE_GROUP = "svc-swarm-node"
 FORM_STANDALONE = "standalone"

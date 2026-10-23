@@ -102,7 +102,11 @@ class EngineOps:
                 proc = self._in(service, engines.slave_status())
                 status = engines.parse_slave_status(proc.stdout)
                 if not engines.replica_running(status):
-                    reason = status.get("Last_IO_Error") or status.get("Last_SQL_Error") or ""
+                    reason = (
+                        status.get("Last_IO_Error")
+                        or status.get("Last_SQL_Error")
+                        or ""
+                    )
                     lagging.append(f"{service}: {reason[:160]}" if reason else service)
             return (
                 not lagging,
@@ -122,7 +126,10 @@ class EngineOps:
             )
         if engines.csns_converged(csns, CSN_SLACK_S):
             return True, f"contextCSN per instance: {csns}"
-        return False, f"contextCSN per instance: {csns}; syncrepl: {self._syncrepl_log()}"
+        return (
+            False,
+            f"contextCSN per instance: {csns}; syncrepl: {self._syncrepl_log()}",
+        )
 
     def _syncrepl_log(self) -> dict[str, list[str]]:
         tails: dict[str, list[str]] = {}
@@ -177,8 +184,10 @@ class EngineOps:
                 [
                     "sh",
                     "-c",
-                    'printf %s "$LDAP_ROOT_PW" | sha256sum | cut -c1-12; '
-                    'echo $(( $(date +%s) - $(stat -c %Y /proc/1) ))',
+                    (
+                        'printf %s "$LDAP_ROOT_PW" | sha256sum | cut -c1-12; '
+                        "echo $(( $(date +%s) - $(stat -c %Y /proc/1) ))"
+                    ),
                 ],
                 timeout=15,
             )

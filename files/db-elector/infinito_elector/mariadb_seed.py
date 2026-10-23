@@ -173,7 +173,9 @@ def _post(url: str, body: bytes) -> int:
         url, data=body, headers={"Content-Type": "application/json"}, method="POST"
     )
     try:
-        with urllib.request.urlopen(request, timeout=REQUEST_TIMEOUT_SECONDS) as response:  # noqa: S310 - see above
+        with urllib.request.urlopen(  # noqa: S310 - http URL built from the peer template
+            request, timeout=REQUEST_TIMEOUT_SECONDS
+        ) as response:
             return response.status
     except urllib.error.HTTPError as error:
         return error.code
@@ -238,7 +240,9 @@ def main(argv: Sequence[str]) -> int:
         donor = request_seed(
             host_id=args.host_id,
             peers=role.peers,
-            address=lambda host: args.peer_template.format(engine=args.engine, host=host),
+            address=lambda host: args.peer_template.format(
+                engine=args.engine, host=host
+            ),
             port=args.port,
             secret=Path(args.replication_password_file).read_bytes().strip(),
         )

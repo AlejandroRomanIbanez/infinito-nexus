@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import shlex
-from collections.abc import Mapping, Sequence
+from typing import TYPE_CHECKING
 
 from utils.roles.db.instances import (
     FORM_HA,
@@ -13,6 +13,9 @@ from utils.roles.db.instances import (
     data_engines,
     engine_hosts,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
 
 
 def is_ha(

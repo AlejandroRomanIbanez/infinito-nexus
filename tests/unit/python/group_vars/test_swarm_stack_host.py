@@ -10,7 +10,10 @@ SWARM_VARS = Path(PROJECT_ROOT) / "group_vars" / "all" / "18_swarm.yml"
 
 
 def _render(expr, **variables):
-    env = jinja2.Environment(undefined=jinja2.StrictUndefined)
+    env = jinja2.Environment(
+        autoescape=jinja2.select_autoescape(default_for_string=False),
+        undefined=jinja2.StrictUndefined,
+    )
     return env.from_string(expr).render(**variables).strip()
 
 

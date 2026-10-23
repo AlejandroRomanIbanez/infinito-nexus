@@ -299,7 +299,9 @@ class TestDeployProcedures(unittest.TestCase):
         )
         result = _run(lab, "backup-restore")
         self.assertTrue(
-            any("the live writer reports the marker found" in f for f in result.failures)
+            any(
+                "the live writer reports the marker found" in f for f in result.failures
+            )
         )
 
     def test_openldap_backup_needs_no_seed_row(self):

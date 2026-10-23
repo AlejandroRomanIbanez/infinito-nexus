@@ -105,9 +105,7 @@ class Topology:
             )
         self.wait_new_primary(primary)
 
-    def _set_replica_priorities(
-        self, primary: str | None, target: str | None
-    ) -> None:
+    def _set_replica_priorities(self, primary: str | None, target: str | None) -> None:
         """Sentinel promotes the replica with the lowest priority, else any.
 
         Args:
@@ -278,15 +276,17 @@ class Topology:
         ):
             raise RuntimeError(f"stack {self.stack} did not go away")
         shell.wait_until(
-            lambda: not self._on_manager(
-                "docker",
-                "network",
-                "ls",
-                "-q",
-                "--filter",
-                f"label=com.docker.stack.namespace={self.stack}",
-                check=False,
-            ).split(),
+            lambda: (
+                not self._on_manager(
+                    "docker",
+                    "network",
+                    "ls",
+                    "-q",
+                    "--filter",
+                    f"label=com.docker.stack.namespace={self.stack}",
+                    check=False,
+                ).split()
+            ),
             timeout_s=NETWORK_SETTLE_S,
         )
         self._remove_stack_volumes(self.stack)

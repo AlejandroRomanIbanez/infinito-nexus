@@ -1,4 +1,5 @@
 import unittest
+from typing import ClassVar
 
 from utils.roles.db.instances import (
     DbInstancesError,
@@ -225,7 +226,7 @@ class TestCoordinationStore(unittest.TestCase):
 
 
 class TestDepartedInstanceServices(unittest.TestCase):
-    LIVE = [
+    LIVE: ClassVar[list[str]] = [
         "redis_redis-mgr-01",
         "redis_redis-mgr-02",
         "redis_redis-mgr-03",

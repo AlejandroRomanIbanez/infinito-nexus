@@ -104,7 +104,9 @@ class TestDonor(unittest.TestCase):
         self.assertEqual(donor.handle(_request(), PEER), 202)
 
     def test_the_writer_declines_a_replica_only_request(self) -> None:
-        self.assertEqual(self._donor("writer").handle(_request(replica_only=True), PEER), 409)
+        self.assertEqual(
+            self._donor("writer").handle(_request(replica_only=True), PEER), 409
+        )
         self.assertEqual(self._donor("writer").handle(_request(), PEER), 202)
 
     def test_an_unhealthy_instance_never_donates(self) -> None:
@@ -123,7 +125,9 @@ class TestRequest(unittest.TestCase):
         def post(url: str, body: bytes) -> int:
             replica_only = json.loads(body)["replica_only"]
             asked.append((url, replica_only))
-            return 202 if url.startswith("http://mariadb-m1") and not replica_only else 409
+            return (
+                202 if url.startswith("http://mariadb-m1") and not replica_only else 409
+            )
 
         donor = request_seed(
             host_id="m3",

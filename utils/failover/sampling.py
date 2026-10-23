@@ -68,7 +68,9 @@ def dual_writer_detail(rounds: list[Round], limit: int = 5) -> str:
     for index, current in enumerate(rounds):
         if len(current.writer_set()) < 2:
             continue
-        following = rounds[index + 1].at_ms if index + 1 < len(rounds) else current.at_ms
+        following = (
+            rounds[index + 1].at_ms if index + 1 < len(rounds) else current.at_ms
+        )
         parts.append(
             f"{'+'.join(sorted(current.writer_set()))} at {current.at_ms}, "
             f"next round {(following - current.at_ms) / 1000.0:.1f}s later"

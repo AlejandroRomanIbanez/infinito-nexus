@@ -8,13 +8,16 @@ partition looks the same as a dead node.
 
 from __future__ import annotations
 
-from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 from utils.roles.db.instances import (
     coordination_store,
     engine_word,
     sanitize_host_id,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
 
 
 class ForgetNodeError(ValueError):

@@ -85,7 +85,7 @@ class Role(abc.ABC):
     def follow(self, writer: str | None) -> None:
         """Replicate from *writer* (``None``: no writer right now)."""
 
-    def watch(self) -> None:
+    def watch(self) -> None:  # noqa: B027 - optional hook; an engine without a divergence check keeps the no-op
         """Check a following instance once per tick.
 
         Raises:

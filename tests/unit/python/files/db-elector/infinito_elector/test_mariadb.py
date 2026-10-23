@@ -94,7 +94,9 @@ class TestGtidChoice(unittest.TestCase):
             role._bootstrap_marker = marker.name
             self.assertEqual(role.quorum(), 1)
 
-    def test_a_newly_silent_peer_blocks_promotion_until_the_grace_ends_in_five(self) -> None:
+    def test_a_newly_silent_peer_blocks_promotion_until_the_grace_ends_in_five(
+        self,
+    ) -> None:
         now = [100.0]
         role, _ = _role(
             {

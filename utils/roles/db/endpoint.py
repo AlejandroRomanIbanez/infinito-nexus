@@ -10,17 +10,20 @@ ports by their ``ports.internal`` keys.
 from __future__ import annotations
 
 import re
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from utils.roles.db.instances import engine_word, ha_spec
 from utils.roles.meta_lookup import get_role_ports
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 SERVER_TIMINGS = (
     "inter 1s fastinter 500ms downinter 1s fall 2 rise 1 "
     "on-marked-down shutdown-sessions"
 )
 DOCKER_DNS = "127.0.0.11:53"
-ADMIN_SOCKET = "/tmp/haproxy-admin.sock"
+ADMIN_SOCKET = "/tmp/haproxy-admin.sock"  # noqa: S108 - socket inside the HAProxy container's private /tmp
 CHECK_HTTP = "http"
 CHECK_REDIS = "redis"
 PRIVILEGED_PORT_LIMIT = 1024

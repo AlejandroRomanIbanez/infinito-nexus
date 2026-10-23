@@ -100,8 +100,6 @@ def http_transport(
                     request, timeout=timeout, context=context
                 ) as response:
                     reply = json.loads(response.read().decode() or "{}")
-                answered(endpoint)
-                return reply
             except urllib.error.HTTPError as error:
                 if not 400 <= error.code < 500:
                     last = error
@@ -114,6 +112,9 @@ def http_transport(
                 return {"code": error.code, "error": error.reason, **reply}
             except (urllib.error.URLError, OSError, ValueError) as error:
                 last = error
+            else:
+                answered(endpoint)
+                return reply
         raise LockError(f"no etcd endpoint answered {path}: {last}")
 
     return post

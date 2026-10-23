@@ -150,7 +150,9 @@ class TestEtcdLeaseLock(unittest.TestCase):
         def rebuilt(path, body, headers):
             if headers.get("Authorization") and stale["left"]:
                 stale["left"] -= 1
-                raise LockError("no etcd endpoint answered: The read operation timed out")
+                raise LockError(
+                    "no etcd endpoint answered: The read operation timed out"
+                )
             return real(path, body, headers)
 
         lock._transport = rebuilt
@@ -192,7 +194,6 @@ class TestTransportErrors(unittest.TestCase):
         with mock.patch("urllib.request.urlopen", side_effect=[error, response]):
             reply = http_transport(endpoints)("/v3/x", {}, {})
         self.assertEqual(reply, {"ok": 1})
-
 
     def test_the_endpoint_that_answered_is_tried_first_next_time(self):
         response = mock.MagicMock()

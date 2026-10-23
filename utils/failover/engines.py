@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from functools import cache
 from pathlib import PurePosixPath
 
@@ -161,7 +161,7 @@ def ldap_values(text: str, attribute: str) -> list[str]:
 def _csn_seconds(csn: str) -> float:
     stamp = csn.split("#", 1)[0].rstrip("Z")
     whole, _, fraction = stamp.partition(".")
-    day = datetime.strptime(whole, "%Y%m%d%H%M%S").replace(tzinfo=timezone.utc)
+    day = datetime.strptime(whole, "%Y%m%d%H%M%S").replace(tzinfo=UTC)
     return day.timestamp() + float(f"0.{fraction or 0}")
 
 
