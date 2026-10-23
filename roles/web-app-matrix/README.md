@@ -147,6 +147,8 @@ MDAD knobs are rendered from `templates/flavor/ansible/vars.yml.j2`. Central-ser
 
 A `mount --make-rshared /` runs once in the deploy container before the runner starts, because MDAD's systemd units bind-mount `/matrix/synapse/storage` with `bind-propagation=slave`, which requires shared/slave propagation on the source.
 
+**Registry proxy.** When the stack's docker daemon pulls through a registry proxy (the local registry cache), the runner's nested daemon uses the same proxy via a `docker.service` drop-in and, when the outer daemon trusts the cache's CA, fetches that CA from the proxy before it starts.
+
 ### `compose` (deprecated)
 
 Set `services.matrix.flavor: compose` to opt in. Tasks live under `tasks/flavor/compose/`, templates under `templates/flavor/compose/`. Existing volumes and credentials are reused, so in-place deploys need no migration.

@@ -77,6 +77,9 @@ MATRIX_MDAD_DAEMON_JSON:
   log-opts:
     max-size: "10m"
     max-file: "3"
+MATRIX_MDAD_REGISTRY_PROXY: "{{ matrix_mdad_registry_proxy_probe.stdout | from_json }}"
+MATRIX_MDAD_REGISTRY_PROXY_DROPIN: "{{ [ MATRIX_MDAD_RUNNER_BUILD_DIR, 'registry-cache-proxy.conf' ] | path_join }}"
+MATRIX_MDAD_REGISTRY_CA_PATH: "/usr/local/share/ca-certificates/infinito-registry-cache.crt"
 
 MATRIX_BRIDGE: "{{ lookup('config', application_id, 'services.matrix.plugins') }}"
 
