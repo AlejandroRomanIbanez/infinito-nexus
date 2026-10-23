@@ -39,7 +39,7 @@
   when: openldap_ha_writer_wait.rc != 0
 
 - name: "🔍 Resolve the current OpenLDAP writer"
-  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_primary.yml') }}"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve/primary.yml') }}"
   vars:
     primary_application_id: "{{ application_id }}"
     primary_output_prefix: OPENLDAP

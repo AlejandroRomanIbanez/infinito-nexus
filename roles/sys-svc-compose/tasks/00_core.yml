@@ -39,7 +39,7 @@
 - name: 📦 Install resolve-container-id helper (Swarm task → container ID)
   become: true
   ansible.builtin.copy:
-    src: "shell/resolve_container_id.sh"
+    src: "shell/resolve/container_id.sh"
     dest: "{{ BIN_RESOLVE_CONTAINER_ID }}"
     mode: "0755"
     owner: root
@@ -48,7 +48,7 @@
 - name: 📦 Install resolve-db-primary helper (HA database → primary container ID)
   become: true
   ansible.builtin.copy:
-    src: "shell/resolve_db_primary.sh"
+    src: "shell/resolve/db_primary.sh"
     dest: "{{ BIN_RESOLVE_DB_PRIMARY }}"
     mode: "0755"
     owner: root

@@ -3,7 +3,7 @@ import unittest
 from ansible.errors import AnsibleError
 
 from plugins.lookup.db_endpoint import LookupModule
-from utils.roles.db_endpoint import KEEPALIVE_SYSCTLS
+from utils.roles.db.endpoint import KEEPALIVE_SYSCTLS
 from utils.roles.meta_lookup import get_role_ports
 
 HOSTS = ["m1", "m2", "m3"]

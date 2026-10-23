@@ -142,7 +142,7 @@ This requirement covers:
 - [ ] HAProxy runs 2 replicas with `max_replicas_per_node: 1`, unpinned, so it survives the loss of the node one replica runs on.
 - [ ] In HA form the write endpoint takes over today's service name and alias (`postgres`, `mariadb`, `redis-central`, `openldap`). Applications keep the same `host` and need no change.
 - [ ] Ansible reaches the primary only by exec into the current primary instance, delegated to the node it runs on. In HA form no database port is published, because Swarm ingress publishing cannot bind to `127.0.0.1`.
-- [ ] A shared task (working name `resolve_primary.yml`, generalising today's `resolve_host_cid.yml`) only dispatches: it includes the engine role's own primary query and sets `<ENGINE>_PRIMARY_NODE` plus the container to exec into. Each `svc-db-*` role owns its query file:
+- [ ] A shared task (working name `swarm/resolve/primary.yml`, generalising today's `swarm/resolve/host_cid.yml`) only dispatches: it includes the engine role's own primary query and sets `<ENGINE>_PRIMARY_NODE` plus the container to exec into. Each `svc-db-*` role owns its query file:
   - Postgres: Patroni's REST `/cluster`;
   - MariaDB: the elector's `/writer`;
   - Redis: Sentinel `get-master-addr-by-name`;

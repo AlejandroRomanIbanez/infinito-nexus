@@ -32,7 +32,7 @@ from utils.roles.applications.services.database import (
     resolve_database_service_key,
 )
 from utils.roles.applications.services.sso import get_sso_config
-from utils.roles.db_instances import (
+from utils.roles.db.instances import (
     FORM_HA,
     ha_engines,
     instance_volume_name,

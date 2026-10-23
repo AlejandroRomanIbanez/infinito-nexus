@@ -6,7 +6,7 @@
     lookup('db_endpoint', 'svc-db-openldap', field='sysctls')
 
 Without ``field`` it returns the ``haproxy.cfg`` text from
-``utils.roles.db_endpoint.render_haproxy_cfg`` for the engine's HA instance
+``utils.roles.db.endpoint.render_haproxy_cfg`` for the engine's HA instance
 list and raises when the engine renders its standalone form. ``field='sysctls'``
 returns the endpoint container's sysctls: TCP keepalive timings and, for a port
 below 1024, the unprivileged-port start the non-root HAProxy needs.
@@ -21,13 +21,13 @@ from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 
 from plugins.lookup.db_instances import LookupModule as DbInstancesLookup
-from utils.roles.db_endpoint import (
+from utils.roles.db.endpoint import (
     DbEndpointError,
     endpoint_settings,
     endpoint_sysctls,
     render_haproxy_cfg,
 )
-from utils.roles.db_instances import FORM_HA, DbInstancesError
+from utils.roles.db.instances import FORM_HA, DbInstancesError
 
 _FIELDS = (None, "sysctls")
 

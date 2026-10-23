@@ -204,6 +204,9 @@ wait_for_ldapi() {
   return 1
 }
 
+# Seeds the legacy volume only when no peer serves the suffix yet: a fresh
+# slapadd on a re-cloned legacy volume gives the suffix a new entryUUID next to
+# peers that hold the real one.
 run_ha() {
   : "${LDAP_PORT:?LDAP_PORT must be set in HA form}"
   : "${ELECTOR_HOST_ID:?ELECTOR_HOST_ID must be set in HA form}"
@@ -219,7 +222,6 @@ run_ha() {
 
   render_ha_cn_config
   stage_ha_credentials
-  # A fresh slapadd on a re-cloned legacy volume gives the suffix a new entryUUID next to peers that hold the real one.
   if [ "${OPENLDAP_HA_SEED:-false}" = "true" ]; then
     if ! has_mdb_files && peer_has_data; then
       log "HA: a peer already serves ${LDAP_SUFFIX}; replicating instead of seeding"

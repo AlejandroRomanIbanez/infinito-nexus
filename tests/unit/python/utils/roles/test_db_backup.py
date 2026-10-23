@@ -1,6 +1,6 @@
 import unittest
 
-from utils.roles.db_backup import ha_instance_hosts, local_backup_instances
+from utils.roles.db.backup import ha_instance_hosts, local_backup_instances
 
 NODES = ["mgr-01", "mgr-02", "mgr-03"]
 

@@ -6,7 +6,7 @@
 #   KILL_PRIMARY_TIMEOUT         seconds to wait for failover and the app (default 300)
 set -euo pipefail
 
-if [ "${INFINITO_CI_KILL_PRIMARY:-false}" != "true" ] || [ "${INFINITO_SWARM_DB_TOPOLOGY:-standalone}" != "ha" ]; then
+if [ "${INFINITO_CI_KILL_PRIMARY}" != "true" ] || [ "${INFINITO_SWARM_DB_TOPOLOGY}" != "ha" ]; then
 	echo "SKIP: kill-primary probe runs only on HA rows with INFINITO_CI_KILL_PRIMARY=true"
 	exit 0
 fi

@@ -41,8 +41,6 @@
   register: sys_svc_container_daemon_current
   failed_when: false
 
-# A path-MTU probe on a busy line reads low; rewriting daemon.json for that
-# restarts the daemon and every container on the host.
 - name: 🔧 Set docker daemon MTU fact
   ansible.builtin.set_fact:
     SYS_DOCKER_DAEMONM_MTU: >-

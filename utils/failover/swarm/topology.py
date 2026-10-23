@@ -267,13 +267,16 @@ class Topology:
         self._remove_stack_volumes(etcd_stack)
 
     def wipe_engine(self) -> None:
+        """Remove the engine stack and its volumes.
+
+        Its networks get only a short wait: a network another stack still uses
+        stays, so demanding that every one goes would wait for nothing.
+        """
         self._on_manager("docker", "stack", "rm", self.stack, check=False)
         if not shell.wait_until(
             lambda: not self._stack_services(self.stack), timeout_s=SETTLE_TIMEOUT_S
         ):
             raise RuntimeError(f"stack {self.stack} did not go away")
-        # A network another stack still uses stays; only the stack's private
-        # ones go, so this waits for them without demanding the rest.
         shell.wait_until(
             lambda: not self._on_manager(
                 "docker",

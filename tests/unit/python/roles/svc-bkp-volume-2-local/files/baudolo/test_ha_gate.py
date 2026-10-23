@@ -16,7 +16,8 @@ def load_target_module():
         / "svc-bkp-volume-2-local"
         / "files"
         / "python"
-        / "baudolo_ha_gate.py"
+        / "baudolo"
+        / "ha_gate.py"
     )
     spec = importlib.util.spec_from_file_location("baudolo_ha_gate", script_path)
     module = importlib.util.module_from_spec(spec)

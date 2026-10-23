@@ -5,7 +5,7 @@ from __future__ import annotations
 import shlex
 from collections.abc import Mapping, Sequence
 
-from utils.roles.db_instances import (
+from utils.roles.db.instances import (
     FORM_HA,
     SWARM_NODE_GROUP,
     DbInstancesError,

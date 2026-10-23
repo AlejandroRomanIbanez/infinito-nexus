@@ -21,7 +21,8 @@ def load_target_module():
         / "svc-bkp-volume-2-local"
         / "files"
         / "python"
-        / "baudolo_snapshot.py"
+        / "baudolo"
+        / "snapshot.py"
     )
     if not script_path.is_file():
         raise FileNotFoundError(f"Target script not found at: {script_path}")

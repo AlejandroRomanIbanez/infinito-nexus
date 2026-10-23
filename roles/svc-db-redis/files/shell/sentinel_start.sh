@@ -1,7 +1,9 @@
 #!/bin/sh
 # Param: SENTINEL_SELF          - service name this Sentinel announces itself by
 # Param: SENTINEL_PEERS         - space-separated service names of the other Sentinels
-# Param: SENTINEL_INSTANCES     - space-separated service names of the current Redis instances
+# Param: SENTINEL_INSTANCES     - space-separated service names of the current Redis instances; known-replica
+#                                 entries of other hosts are dropped, as Sentinel refuses to start on a
+#                                 hostname it cannot resolve
 # Param: SENTINEL_MASTER_NAME   - Sentinel master name
 # Param: SENTINEL_BOOTSTRAP     - instance service that is master on a fresh cluster
 # Param: SENTINEL_AUTH_USER     - Redis ACL user Sentinel logs in as
@@ -37,7 +39,7 @@ if [ -z "$master" ]; then
     for peer in ${SENTINEL_PEERS?}; do
       timeout 3 redis-cli -h "$peer" -p "$port" --raw \
         SENTINEL get-master-addr-by-name "$name" 2>/dev/null |
-        head -1 | awk -F. '!/^[0-9.]+$/ && !/:/ { print $1 }' || true
+        head -1 | awk -F. '!/^[0-9.]+$/ && !/:/ { print $1 }' || true # nocheck: shell-or-true -- an unreachable peer just casts no vote
     done | grep -E '^[A-Za-z0-9_-]+$' | sort | uniq -c | sort -rn | awk 'NR == 1 { print $2 }'
   )
 fi
@@ -56,7 +58,6 @@ fi
   printf 'sentinel down-after-milliseconds %s %s\n' "$name" "${SENTINEL_DOWN_AFTER_MS:?}"
   printf 'sentinel failover-timeout %s %s\n' "$name" "${SENTINEL_FAILOVER_MS:?}"
   printf 'sentinel parallel-syncs %s %s\n' "$name" "${SENTINEL_PARALLEL_SYNCS:?}"
-  # Sentinel refuses to start on a hostname it cannot resolve, so drop entries of removed services.
   awk -v instances="$instances" -v sentinels="$sentinels" '
     $1 != "sentinel" { next }
     $2 ~ /^(myid|current-epoch|config-epoch|leader-epoch)$/ { print; next }

@@ -15,8 +15,8 @@ import unittest
 
 from utils.cache.files import read_text
 from utils.cache.yaml import load_yaml
-from utils.roles.db_backup import BACKUP_SQL
-from utils.roles.db_instances import build_instances, engine_word, ha_engines, ha_spec
+from utils.roles.db.backup import BACKUP_SQL
+from utils.roles.db.instances import build_instances, engine_word, ha_engines, ha_spec
 from utils.roles.entity.name import get_entity_name
 from utils.roles.mapping import (
     ROLE_FILE_META_SERVICES,

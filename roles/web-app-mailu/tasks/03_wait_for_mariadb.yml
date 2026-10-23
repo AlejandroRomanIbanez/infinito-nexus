@@ -1,6 +1,6 @@
 ---
 - name: "🔍 Mailu | Resolve dedicated DB hosting node + container ID"
-  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve/host_cid.yml') }}"
   vars:
     resolve_service_key: mariadb
     resolve_service_name: "{{ lookup('database', application_id, 'service_name') }}"
@@ -9,7 +9,7 @@
   when: not (lookup('database', application_id, 'shared') | bool)
 
 - name: "🔍 Mailu | Resolve central DB primary node + container ID"
-  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_primary.yml') }}"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve/primary.yml') }}"
   vars:
     primary_application_id: svc-db-mariadb
     primary_output_prefix: MAILU_CENTRAL_DB
@@ -25,7 +25,7 @@
          else MAILU_DEDICATED_DB_LOCAL_CID }}
 
 - name: "🔍 Mailu | Resolve admin hosting node + container ID"
-  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve/host_cid.yml') }}"
   vars:
     resolve_service_key: admin
     resolve_output_prefix: MAILU_ADMIN

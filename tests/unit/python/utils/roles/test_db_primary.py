@@ -1,7 +1,7 @@
 import unittest
 
-from utils.roles.db_instances import DbInstancesError
-from utils.roles.db_primary import ha_primary_address, is_ha, primary_address
+from utils.roles.db.instances import DbInstancesError
+from utils.roles.db.primary import ha_primary_address, is_ha, primary_address
 
 NODES = ["m1", "m2", "m3"]
 BIN = "/usr/bin/resolve-db-primary"

@@ -1,7 +1,7 @@
 ---
 - include_tasks: utils/once/flag.yml
 
-- include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db_ha_prepare.yml') }}"
+- include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db/ha/prepare.yml') }}"
 
 - name: "📁 Create LDIF dirs {{ OPENLDAP_LDIF_PATH_HOST }} before swarm bind-mount"
   file:
@@ -35,4 +35,4 @@
   include_tasks: 06_standalone.yml
   when: not OPENLDAP_HA | bool
 
-- include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db_ha_health_gate.yml') }}"
+- include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db/ha/health_gate.yml') }}"

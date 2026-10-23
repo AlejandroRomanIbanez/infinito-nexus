@@ -1,10 +1,10 @@
 ---
 - include_tasks: utils/once/flag.yml
 
-- include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db_ha_prepare.yml') }}"
+- include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db/ha/prepare.yml') }}"
 
 - name: "📄 Render the HAProxy write endpoint config"
-  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db_endpoint.yml') }}"
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db/endpoint.yml') }}"
   vars:
     application_id: "svc-db-postgres"
 
@@ -95,4 +95,4 @@
       run_once: true
   when: POSTGRES_HA | bool
 
-- include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db_ha_health_gate.yml') }}"
+- include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db/ha/health_gate.yml') }}"

@@ -1,6 +1,6 @@
 import unittest
 
-from utils.roles.db_instances import (
+from utils.roles.db.instances import (
     DbInstancesError,
     build_instances,
     coordination_store_needed,

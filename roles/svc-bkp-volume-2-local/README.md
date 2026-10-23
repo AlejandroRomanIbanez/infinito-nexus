@@ -260,7 +260,7 @@ When a database engine lists more than one host in its inventory group, every ho
 
 `svc-bkp-remote-2-local` pulls from every instance host in addition to its configured `backup_providers`.
 
-Before migrating an engine from standalone to HA, the deploy starts this unit on `STACK_HOST`, waits for it and aborts when it fails. A restart-requiring change in the HA form does the same on the primary's host through `roles/sys-svc-compose/tasks/utils/db_pre_change_backup.yml`.
+Before migrating an engine from standalone to HA, the deploy starts this unit on `STACK_HOST`, waits for it and aborts when it fails. A restart-requiring change in the HA form does the same on the primary's host through `roles/sys-svc-compose/tasks/utils/db/pre_change_backup.yml`.
 
 After a migration, a health gate requires exactly one reachable primary or writer behind the write endpoint. If it fails before the new instances have joined, remove the added hosts from the engine group and re-run: the engine returns to standalone on the untouched legacy volume. Restore damaged data from the pre-migration backup. Going back from HA to standalone in place is not supported; restore a backup into the standalone form instead.
 

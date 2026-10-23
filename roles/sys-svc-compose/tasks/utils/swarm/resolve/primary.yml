@@ -40,7 +40,7 @@
          if _primary_model.form == 'ha' else _primary_engine }}
 
 - name: "🔍 resolve_primary | resolve node and container of the primary"
-  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_host_cid.yml') }}"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve/host_cid.yml') }}"
   vars:
     resolve_service_key: "{{ lookup('vars', primary_output_prefix ~ '_PRIMARY_INSTANCE') }}"
     resolve_service_name: "{{ (_primary_engine ~ '_' ~ lookup('vars', primary_output_prefix ~ '_PRIMARY_INSTANCE')) if DEPLOYMENT_MODE == 'swarm' else '' }}"

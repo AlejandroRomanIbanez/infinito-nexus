@@ -13,7 +13,6 @@
   delay: 3
   changed_when: false
   failed_when: false
-  delegate_to: "{{ mariadb_rotate_instance.host }}"
 
 - name: "🔑 MariaDB HA | Rotate passwords on {{ mariadb_rotate_instance.service }}"
   ansible.builtin.shell: |
@@ -33,7 +32,6 @@
   retries: 5
   delay: 10
   changed_when: true
-  delegate_to: "{{ mariadb_rotate_instance.host }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   when:
     - (_mariadb_previous_root_pwd | default('')) | length > 0
@@ -53,7 +51,6 @@
     CONTAINER_EXEC_TIMEOUT: "{{ lookup('timeout', 120) }}"
   register: _mariadb_rotate_users
   changed_when: true
-  delegate_to: "{{ mariadb_rotate_instance.host }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   when: _mariadb_rotate_login.rc == 0
 
@@ -73,6 +70,5 @@
   environment:
     CONTAINER_EXEC_TIMEOUT: "{{ lookup('timeout', 120) }}"
   changed_when: true
-  delegate_to: "{{ mariadb_rotate_instance.host }}"
   no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   when: _mariadb_rotate_apply is changed

@@ -16,8 +16,8 @@ from utils.roles.applications.services.database import (
     get_database_service_config,
     resolve_database_service_key,
 )
-from utils.roles.db_instances import DbInstancesError
-from utils.roles.db_primary import ha_primary_address
+from utils.roles.db.instances import DbInstancesError
+from utils.roles.db.primary import ha_primary_address
 from utils.roles.entity.name import get_entity_name
 
 
@@ -279,7 +279,7 @@ class LookupModule(LookupBase):
                 raise AnsibleError(
                     f"database: service_name is unavailable for {db_id} in HA form; "
                     "it would name the HAProxy endpoint, resolve the primary via "
-                    "roles/sys-svc-compose/tasks/utils/swarm/resolve_primary.yml instead"
+                    "roles/sys-svc-compose/tasks/utils/swarm/resolve/primary.yml instead"
                 )
             address = primary
             container = address

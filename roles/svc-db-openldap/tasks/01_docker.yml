@@ -37,7 +37,7 @@
     - IS_STACK_HOST | bool
 
 - name: "📄 Render the HAProxy write endpoint config"
-  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db_endpoint.yml') }}"
+  include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db/endpoint.yml') }}"
 
 - name: "🚿 Flush compose handlers"
   meta: flush_handlers

@@ -41,6 +41,9 @@ Solid `1:1` edges are fixed relationships; dashed `0..1` edges are conditional (
 - **Handler Integration**  
   Restart handler ensures the Docker daemon is reloaded when necessary.
 
+- **Sticky MTU**  
+  `automtu` probes the path MTU on every run, and a probe on a busy line reads low. Rewriting `daemon.json` for such a reading restarts the daemon and every container on the host, so the MTU already in use is kept unless a probe comes in more than `SYS_SVC_DOCKER_MTU_STICKY_MARGIN` (200) below it.
+
 ## License
 
 This role is released under the Infinito.Nexus Community License (Non-Commercial) (CNCL).  

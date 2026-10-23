@@ -4,7 +4,7 @@ In HA form a central engine has no single container: ``container`` becomes a
 shell expression that resolves the current primary at call time. A caller
 that treats it as a plain name (a ``--filter name=``, a network disconnect, a
 compose cid) breaks silently once the engine gains hosts. Use ``address`` inside
-a shell command, or ``resolve_primary.yml`` for node + container id.
+a shell command, or ``swarm/resolve/primary.yml`` for node + container id.
 """
 
 from __future__ import annotations
@@ -45,7 +45,7 @@ class TestNoDirectDbContainer(unittest.TestCase):
                 "Direct lookup('database'|'engine', ..., 'container') uses. "
                 "In HA form 'container' resolves the primary at call time and is "
                 "no plain name. Use 'address' inside a shell command or "
-                "roles/sys-svc-compose/tasks/utils/swarm/resolve_primary.yml.\n"
+                "roles/sys-svc-compose/tasks/utils/swarm/resolve/primary.yml.\n"
                 + "\n".join(f"- {p}: {c}" for p, c in sorted(found.items()))
             )
 

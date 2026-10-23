@@ -264,14 +264,20 @@ class MariaDBRole(Role):
         self._sql("SET GLOBAL read_only = 0")
 
     def follow(self, writer: str | None) -> None:
+        """Replicate from *writer*; a former writer first restarts once.
+
+        The restart comes before semi-sync is turned off: turning it off first
+        would release and commit the writes still waiting for an
+        acknowledgement, the errant GTIDs recovery is meant to drop. After the
+        restart, a former writer's ``gtid_slave_pos`` predates its own writes,
+        and asking the new writer for them again breaks ``gtid_strict_mode``,
+        so it starts from ``gtid_current_pos`` instead.
+        """
         if writer is None or writer in (self.host_id, self._following):
             return
         former_writer = not self._slave_status()
         if former_writer and not os.path.exists(self._recovered_marker):
             open(self._recovered_marker, "w").close()  # noqa: PTH123, SIM115 - touch
-            # Turning semi-sync off first would release and commit the writes
-            # still waiting for an acknowledgement, the errant GTIDs recovery
-            # is meant to drop.
             raise RestartRequired(
                 f"{self.host_id} was a writer; restarting so recovery drops "
                 "binlog writes no replica acknowledged"
@@ -280,8 +286,6 @@ class MariaDBRole(Role):
         self._sql("STOP SLAVE")
         if former_writer:
             os.remove(self._recovered_marker)  # noqa: PTH107
-            # A former writer's gtid_slave_pos predates its own writes; asking
-            # the new writer for them again breaks gtid_strict_mode.
             self._sql("SET GLOBAL gtid_slave_pos = @@GLOBAL.gtid_current_pos")
         self._replicate_from(writer)
 

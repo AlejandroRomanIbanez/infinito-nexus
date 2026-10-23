@@ -3,7 +3,9 @@
 # Param: $2 - postgres-owned copy Patroni and patronictl read
 # Param: DB_REPLICATION_SUBNET - CIDR of the engine-internal overlay pg_hba admits replication from
 # Param: DB_POSTGRES_PORT / DB_PATRONI_API_PORT - ports advertised to the peers
-# Param: DB_BOOTSTRAP_ALLOWED - "true" only on the instance that may initdb a new cluster
+# Param: DB_BOOTSTRAP_ALLOWED - "true" only on the instance that may initdb a new cluster; any other empty
+#        member waits for an initialized cluster, because one that wins the race on an empty coordination
+#        store runs initdb next to a peer that still holds the data, and the two system ids never match again
 # Param: DB_BOOTSTRAP_GRACE - seconds an empty bootstrap instance leaves peers with data to claim the cluster
 set -e
 # The service name also resolves on the coordination-store network, whose source addresses pg_hba rejects
@@ -17,8 +19,6 @@ chown postgres:postgres "$(dirname "$PGDATA")" "$PGDATA"
 chmod 0700 "$PGDATA"
 pid="$PGDATA/postmaster.pid"
 if [ -f "$pid" ] && [ ! -s "$pid" ]; then rm -f "$pid"; fi
-# An empty member that wins the race on an empty coordination store runs initdb next to a peer
-# that still holds the data, and the two system ids never match again.
 if [ ! -s "$PGDATA/PG_VERSION" ]; then
   if [ "${DB_BOOTSTRAP_ALLOWED:-false}" = "true" ]; then
     sleep "${DB_BOOTSTRAP_GRACE:-20}"

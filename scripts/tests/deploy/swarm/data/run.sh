@@ -85,7 +85,7 @@ ansible-playbook \
 	--vault-password-file "${inv_dir}/.password" \
 	-e "@${inv_dir}/swarm-nfs-extras.deploy.yml" \
 	-e "engine=${engine}" \
-	"${SCRIPT_DIR}/checker-secret.yml"
+	"${REPO_ROOT}/compose/swarm/failover/checker-secret.yml"
 
 read -ra only_args <<<"${FAILOVER_ONLY:-}"
 python3 -m utils.failover run --engine "${engine}" --junit "${FAILOVER_JUNIT}" ${FAILOVER_ONLY:+--only "${only_args[@]}"}

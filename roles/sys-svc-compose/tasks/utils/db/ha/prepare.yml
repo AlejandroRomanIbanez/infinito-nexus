@@ -74,7 +74,7 @@
              and _db_ha_prepare_legacy.stdout is not search('haproxy'))}) }}
 
     - name: "💾 db_ha_prepare | back up before migrating to the HA form"
-      ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db_pre_change_backup.yml') }}"
+      ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db/pre_change_backup.yml') }}"
       vars:
         backup_application_id: "{{ application_id }}"
         backup_reason: standalone to HA migration

@@ -13,7 +13,8 @@ REDIS_EXPOSE_LOCAL: true
 REDIS_EXEC_SHELL: "container exec {{ REDIS_CONTAINER_ADDRESS }} sh -lc"
 REDIS_CLI: 'redis-cli -a "$REDIS_PASSWORD" --no-auth-warning'
 # The HA master forks for every full resync and buffers the replica stream on top of its dataset.
-REDIS_MAXMEMORY_MB: "{{ lookup('service_memory_mb', application_id, 'redis', 0.6 if REDIS_HA.form == 'ha' else 0.8) }}"
+REDIS_MAXMEMORY_SHARE: "{{ 0.6 if REDIS_HA.form == 'ha' else 0.8 }}"
+REDIS_MAXMEMORY_MB: "{{ lookup('service_memory_mb', application_id, 'redis', REDIS_MAXMEMORY_SHARE | float) }}"
 
 REDIS_HA: "{{ lookup('db_instances', application_id) }}"
 REDIS_HA_DIR: "{{ lookup('container', application_id, 'directories.volumes') }}"

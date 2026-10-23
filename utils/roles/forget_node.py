@@ -10,7 +10,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
-from utils.roles.db_instances import (
+from utils.roles.db.instances import (
     coordination_store,
     engine_word,
     sanitize_host_id,

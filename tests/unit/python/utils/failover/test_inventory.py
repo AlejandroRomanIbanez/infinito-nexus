@@ -152,7 +152,7 @@ class TestCommands(unittest.TestCase):
         argv = inv.playbook_argv(self.lab, "etcd-op.yml", {"op": "move-leader"})
         self.assertEqual(json.loads(argv[argv.index("-e") + 1]), {"op": "move-leader"})
         self.assertTrue(
-            argv[-1].endswith("scripts/tests/deploy/swarm/data/etcd-op.yml")
+            argv[-1].endswith("compose/swarm/failover/etcd-op.yml")
         )
         self.assertNotIn("--limit", argv)
 

@@ -19,7 +19,7 @@ from utils.handler.yaml import YamlHandler
 SWARM_EXTRAS_VARS = "inventories/development/swarm.yml"
 DEPLOY_EXTRAS = "swarm-nfs-extras.deploy.yml"
 SUITE_EXTRAS = "failover-extras.yml"
-DATA_DIR = PROJECT_ROOT / "scripts" / "tests" / "deploy" / "swarm" / "data"
+PLAYBOOK_DIR = PROJECT_ROOT / "compose" / "swarm" / "failover"
 _MEMORY = re.compile(r"^(\d+)([kmg])$", re.IGNORECASE)
 _UNIT_MB = {"k": 1 / 1024, "m": 1, "g": 1024}
 
@@ -197,11 +197,11 @@ def forget_argv(inventory: LabInventory, host: str) -> list[str]:
 def playbook_argv(
     inventory: LabInventory, playbook: str, extra_vars: dict, limit: str = ""
 ) -> list[str]:
-    """Return the ``ansible-playbook`` call of one suite playbook in ``DATA_DIR``.
+    """Return the ``ansible-playbook`` call of one suite playbook in ``PLAYBOOK_DIR``.
 
     Args:
         inventory: the lab inventory.
-        playbook: file name under ``DATA_DIR``.
+        playbook: file name under ``PLAYBOOK_DIR``.
         extra_vars: passed as one JSON ``-e``.
         limit: host pattern for ``--limit``; empty runs on every host the
             playbook targets.
@@ -217,4 +217,4 @@ def playbook_argv(
     ]
     if limit:
         argv += ["--limit", limit]
-    return [*argv, str(DATA_DIR / playbook)]
+    return [*argv, str(PLAYBOOK_DIR / playbook)]

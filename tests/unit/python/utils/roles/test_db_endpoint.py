@@ -1,6 +1,6 @@
 import unittest
 
-from utils.roles.db_endpoint import (
+from utils.roles.db.endpoint import (
     KEEPALIVE_SYSCTLS,
     DbEndpointError,
     endpoint_settings,

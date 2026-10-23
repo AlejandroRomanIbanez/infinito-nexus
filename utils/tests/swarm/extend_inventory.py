@@ -33,7 +33,7 @@ from pathlib import Path
 from utils import PROJECT_ROOT
 from utils.cache.yaml import dump_yaml, load_yaml_any
 from utils.env.parser import parse_static_env
-from utils.roles.db_instances import ha_engines
+from utils.roles.db.instances import ha_engines
 from utils.roles.meta_lookup import get_role_placement
 from utils.tests.swarm.backup_repos import repo_placements
 from utils.tests.swarm.derive_includes import applications_for_round, derive_includes

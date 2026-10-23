@@ -30,8 +30,8 @@ from utils.roles.applications.services.engines import (
     is_engine_enabled,
     is_engine_shared,
 )
-from utils.roles.db_instances import DbInstancesError
-from utils.roles.db_primary import ha_primary_address
+from utils.roles.db.instances import DbInstancesError
+from utils.roles.db.primary import ha_primary_address
 from utils.roles.entity.name import get_entity_name
 
 _FIELDS = (

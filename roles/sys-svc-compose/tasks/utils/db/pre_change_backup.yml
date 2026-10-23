@@ -3,7 +3,7 @@
 # Param: backup_reason         - why the deploy takes the backup; printed when it fails
 # Param: backup_on_stack_host  - true while the engine still runs standalone (default false)
 - name: "🔍 db_pre_change_backup | resolve the primary of '{{ backup_application_id }}'"
-  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_primary.yml') }}"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve/primary.yml') }}"
   vars:
     primary_application_id: "{{ backup_application_id }}"
     primary_output_prefix: DB_PRE_CHANGE_BACKUP

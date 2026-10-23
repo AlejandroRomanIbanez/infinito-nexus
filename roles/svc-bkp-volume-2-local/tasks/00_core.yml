@@ -64,7 +64,7 @@
 
 - name: "📁 create {{ BKP_VOLUME_2_LOCAL_SNAPSHOT_BIN }}"
   ansible.builtin.copy:
-    src: python/baudolo_snapshot.py
+    src: python/baudolo/snapshot.py
     dest: "{{ BKP_VOLUME_2_LOCAL_SNAPSHOT_BIN }}"
     owner: root
     group: root
@@ -72,7 +72,7 @@
 
 - name: "📁 create {{ BKP_VOLUME_2_LOCAL_HA_GATE_BIN }}"
   ansible.builtin.copy:
-    src: python/baudolo_ha_gate.py
+    src: python/baudolo/ha_gate.py
     dest: "{{ BKP_VOLUME_2_LOCAL_HA_GATE_BIN }}"
     owner: root
     group: root

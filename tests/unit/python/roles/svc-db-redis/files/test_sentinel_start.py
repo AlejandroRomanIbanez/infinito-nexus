@@ -63,6 +63,7 @@ class SentinelStartTests(unittest.TestCase):
                 "FAKE_DIR": str(self.base),
                 "SENTINEL_SELF": "redis-sentinel-a",
                 "SENTINEL_PEERS": "redis-sentinel-b redis-sentinel-c",
+                "SENTINEL_INSTANCES": "redis-a redis-b redis-c",
                 "SENTINEL_MASTER_NAME": "redis",
                 "SENTINEL_BOOTSTRAP": "redis-a",
                 "SENTINEL_AUTH_USER": "sentinel",

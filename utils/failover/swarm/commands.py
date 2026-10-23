@@ -13,7 +13,7 @@ if TYPE_CHECKING:
     from pathlib import Path
 
 DATA_DIR = PROJECT_ROOT / "scripts" / "tests" / "deploy" / "swarm" / "data"
-LAB_SIZES = DATA_DIR / "lab-sizes.yml"
+LAB_SIZES = PROJECT_ROOT / "compose" / "swarm" / "failover" / "lab-sizes.yml"
 CHECKER_SCRIPT = DATA_DIR / "checker.sh"
 PROBE_SCRIPT = DATA_DIR / "probe.sh"
 CHECKER_PATH = "/failover/checker.sh"

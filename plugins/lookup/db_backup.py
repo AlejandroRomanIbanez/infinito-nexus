@@ -4,8 +4,8 @@
     lookup('db_backup', 'local', bin_dir=DIR_BIN)        # instances on inventory_hostname
     lookup('db_backup', 'local', bin_dir=DIR_BIN, host='mgr-02')
 
-Returns ``utils.roles.db_backup.ha_instance_hosts`` or
-``utils.roles.db_backup.local_backup_instances``.
+Returns ``utils.roles.db.backup.ha_instance_hosts`` or
+``utils.roles.db.backup.local_backup_instances``.
 """
 
 from __future__ import annotations
@@ -16,8 +16,8 @@ from typing import Any
 from ansible.errors import AnsibleError
 from ansible.plugins.lookup import LookupBase
 
-from utils.roles.db_backup import ha_instance_hosts, local_backup_instances
-from utils.roles.db_instances import DbInstancesError
+from utils.roles.db.backup import ha_instance_hosts, local_backup_instances
+from utils.roles.db.instances import DbInstancesError
 
 _KINDS = ("hosts", "local")
 

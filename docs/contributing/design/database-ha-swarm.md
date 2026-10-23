@@ -44,7 +44,7 @@ It runs 2 unpinned replicas with `max_replicas_per_node: 1` and routes only to t
 Applications therefore keep the same host name.
 Instances, HAProxy and the failover tools talk over an encrypted engine-internal overlay.
 Only HAProxy joins the application-facing overlay, and no port is published.
-Exposures that forward to the published local port, such as `network.public` (public LDAPS) or Tor reachability, are therefore refused for an engine in HA form by an assert in `roles/sys-svc-compose/tasks/utils/db_ha_prepare.yml`.
+Exposures that forward to the published local port, such as `network.public` (public LDAPS) or Tor reachability, are therefore refused for an engine in HA form by an assert in `roles/sys-svc-compose/tasks/utils/db/ha/prepare.yml`.
 
 ## Lookup contract
 
@@ -54,14 +54,14 @@ Kubernetes implements the same contract with operators instead of HAProxy and et
 | Field | Standalone | HA |
 |---|---|---|
 | `host` | the service name | the write endpoint, which carries the same name |
-| `address`, `container` | the service's container | the current primary, resolved at call time through `resolve_primary.yml` |
+| `address`, `container` | the service's container | the current primary, resolved at call time through `swarm/resolve/primary.yml` |
 | `service_name` | the engine service | raises, because it would name the write endpoint |
 | `reach_host` | the published local port | raises, because nothing is published |
 
 Ansible reaches a primary only by exec into it, delegated to the node it runs on.
 Every engine declares a primary probe script as `ha.primary_probe` in its `meta/services.yml` (Postgres and Redis ship their own under `files/shell/primary_probe.sh`, MariaDB and OpenLDAP share [`files/db-elector/primary_probe.sh`](../../../files/db-elector/primary_probe.sh)).
-It is installed as `primary-probe-<engine>` next to `resolve-db-primary`, and `roles/sys-svc-compose/tasks/utils/swarm/resolve_primary.yml` runs it against each instance on its host and requires exactly one to answer.
-A role task never treats `container` as a plain name; it uses `address` inside a shell command or `resolve_primary.yml`, enforced by [test_no_direct_db_container.py](../../../tests/lint/ansible/swarm/test_no_direct_db_container.py).
+It is installed as `primary-probe-<engine>` next to `resolve-db-primary`, and `roles/sys-svc-compose/tasks/utils/swarm/resolve/primary.yml` runs it against each instance on its host and requires exactly one to answer.
+A role task never treats `container` as a plain name; it uses `address` inside a shell command or `swarm/resolve/primary.yml`, enforced by [test_no_direct_db_container.py](../../../tests/lint/ansible/swarm/test_no_direct_db_container.py).
 There is no read endpoint: reads also go to the write endpoint.
 
 ## Minimum sizing

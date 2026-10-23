@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from ansible.errors import AnsibleFilterError
 
-from utils.roles.db_instances import DbInstancesError, departed_instance_services
+from utils.roles.db.instances import DbInstancesError, departed_instance_services
 
 
 def swarm_departed_instances(

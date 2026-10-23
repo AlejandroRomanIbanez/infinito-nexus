@@ -6,7 +6,7 @@ import jinja2
 
 from utils import PROJECT_ROOT
 from utils.cache.yaml import load_yaml_str
-from utils.roles.db_instances import build_instances
+from utils.roles.db.instances import build_instances
 from utils.roles.mapping import ROLE_FILE_TEMPL_COMPOSE
 
 TEMPLATE = f"roles/svc-db-redis/{ROLE_FILE_TEMPL_COMPOSE}"

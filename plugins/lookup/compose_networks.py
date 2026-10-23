@@ -20,7 +20,7 @@ from ansible.plugins.lookup import LookupBase
 
 from utils.networks.lookup_context import build_context, resolve_var
 from utils.networks.render import render_compose_networks
-from utils.roles.db_instances import (
+from utils.roles.db.instances import (
     FORM_HA,
     SWARM_NODE_GROUP,
     DbInstancesError,

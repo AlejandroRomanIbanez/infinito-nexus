@@ -25,7 +25,7 @@ swarm_stack_fatal_grace: 180
 # Param: db_instance - HA instance the compose template loop pins a service to; null renders the standalone placement
 db_instance:
 
-# Param: DB_HA_MIGRATING - application_id -> true while a standalone engine migrates to its HA form; filled by sys-svc-compose db_ha_prepare.yml
+# Param: DB_HA_MIGRATING - application_id -> true while a standalone engine migrates to its HA form; filled by sys-svc-compose tasks/utils/db/ha/prepare.yml
 DB_HA_MIGRATING: {}
 
 SWARM_NODE_LABEL_STACK_HOST: infinito.stack_host

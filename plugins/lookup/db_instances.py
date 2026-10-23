@@ -12,7 +12,7 @@ An empty engine group falls back to the group its meta declares as
 ``ha.host_group``.
 
 Returns ``{"form", "instances", "warnings", "ha"}`` from
-``utils.roles.db_instances.build_instances``; warnings are also displayed.
+``utils.roles.db.instances.build_instances``; warnings are also displayed.
 """
 
 from __future__ import annotations
@@ -26,7 +26,7 @@ from ansible.plugins.lookup import LookupBase
 from ansible.utils.display import Display
 
 from plugins.lookup.tor_reachable import is_reachable
-from utils.roles.db_instances import (
+from utils.roles.db.instances import (
     SWARM_NODE_GROUP,
     DbInstancesError,
     build_instances,

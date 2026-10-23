@@ -14,7 +14,7 @@
         wait_delay: 2
 
     - name: "🔍 db_ha_health_gate | exactly one primary or writer answers"
-      ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve_primary.yml') }}"
+      ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/swarm/resolve/primary.yml') }}"
       vars:
         primary_application_id: "{{ application_id }}"
         primary_output_prefix: DB_HA_HEALTH
