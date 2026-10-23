@@ -269,8 +269,11 @@ def departed_instance_services(
     Returns:
         Sorted full service names to remove: live ``<engine>-*`` services
         (instances and their per-host sidecars) the compose file no longer
-        declares. The bare ``<engine>`` service is never returned.
+        declares. The bare ``<engine>`` service is never returned, and a role
+        that is not HA-capable has no per-host instances, so none depart.
     """
+    if application_id not in ha_engines():
+        return []
     declared = set(declared_services)
     if not declared:
         raise DbInstancesError(

@@ -258,6 +258,17 @@ class TestDepartedInstanceServices(unittest.TestCase):
             [],
         )
 
+    def test_a_role_without_an_ha_form_has_nothing_to_depart(self):
+        self.assertEqual(
+            departed_instance_services(
+                "svc-db-memcached",
+                "memcached",
+                ["memcached_memcached", "memcached_memcached-mgr-02"],
+                ["memcached"],
+            ),
+            [],
+        )
+
     def test_never_touches_the_engine_service_or_foreign_names(self):
         live = ["redis_redis", "redis_other-mgr-03", "postgres_redis-mgr-03"]
         self.assertEqual(
