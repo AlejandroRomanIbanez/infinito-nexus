@@ -165,7 +165,7 @@ def _build_cmd(
 def _resolve_exec_target(config: dict) -> str:
     address = str(config.get("address") or "").strip()
     container = str(config["container"])
-    if not address or address == container or not address.startswith('"$('):
+    if not address.startswith('"$('):
         return container
     inner = (
         address[1:-1] if address.startswith('"') and address.endswith('"') else address

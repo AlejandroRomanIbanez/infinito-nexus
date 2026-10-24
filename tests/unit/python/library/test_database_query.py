@@ -72,6 +72,17 @@ class ResolveExecTargetTests(unittest.TestCase):
             ["/usr/bin/resolve-container-id", "postgres", "postgres"],
         )
 
+    def test_ha_primary_address_equal_to_container_resolves(self):
+        primary = '"$(/usr/bin/resolve-db-primary postgres postgres)"'
+        cfg = dict(_BASE_CONFIG, container=primary, address=primary)
+        fake = mock.Mock(stdout="0123456789ab\n")
+        with mock.patch.object(_DB_MOD.subprocess, "run", return_value=fake) as run:
+            self.assertEqual(_DB_MOD._resolve_exec_target(cfg), "0123456789ab")
+        self.assertEqual(
+            run.call_args.args[0],
+            ["/usr/bin/resolve-db-primary", "postgres", "postgres"],
+        )
+
     def test_swarm_resolver_empty_falls_back_to_container(self):
         cfg = dict(
             _BASE_CONFIG,
