@@ -266,7 +266,8 @@ def assign(
             instead of substituting one. A wider pool leaves the kind a
             preference, because the matrix narrows every row to one anyway.
         vpn_mode: ``enforced`` meshes every swarm row, ``disabled`` none,
-            ``auto`` rotates.
+            ``auto`` rotates. An ``ha`` row is never meshed: the mesh hangs
+            off one ``svc-swarm-manager`` hub, and an HA lab runs three.
         variants_per_app: rendered variant configs per app, so a variant that
             switches the tor gate off is never counted capable.
         db_topology: whether the db topology axis is on
@@ -357,7 +358,7 @@ def assign(
             picked = [entry for entry in picked if entry[1]]
         label = codec.encode(app, variant_csv)
         staged = [
-            (mode, enabled, meshed, topology)
+            (mode, enabled, meshed and topology != "ha", topology)
             for mode, enabled, meshed in picked
             for topology in topologies(
                 mode,

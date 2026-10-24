@@ -786,6 +786,23 @@ class TestDbTopologyAxis(unittest.TestCase):
         )
         self.assertEqual(len({entry["artifact"] for entry in entries}), 2)
 
+    def test_an_ha_row_is_never_meshed(self) -> None:
+        ha_rows = [
+            entry
+            for sweep in range(8)
+            for entry in _assign(
+                _TOPOLOGY_ROWS,
+                sweep=sweep,
+                tor_mode="auto",
+                vpn_mode="enforced",
+                db_topology=True,
+            )
+            if entry["db_topology"] == "ha"
+        ]
+        self.assertTrue(ha_rows)
+        for entry in ha_rows:
+            self.assertEqual(entry["vpn"], "false", entry["label"])
+
     def test_label_carries_and_parses_the_topology_glyph(self) -> None:
         for sweep in range(8):
             for entry in _assign(
