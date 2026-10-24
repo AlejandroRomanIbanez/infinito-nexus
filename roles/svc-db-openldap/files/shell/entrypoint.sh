@@ -250,7 +250,7 @@ run_ha() {
   local elector_pid=$!
 
   set +e
-  # shellcheck disable=SC2317
+  # shellcheck disable=SC2317,SC2329  # invoked through the TERM/INT trap
   shutdown() {
     log "HA: stopping elector first so it turns read-only and releases the lease"
     kill -TERM "${elector_pid}" 2>/dev/null
