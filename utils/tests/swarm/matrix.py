@@ -366,10 +366,12 @@ def main(argv: list[str] | None = None) -> int:
             if rc != 0:
                 return rc
 
-        variant_payloads = _resolve_variant_payloads(
-            roles_dir=_ROLES_DIR,
-            include=variant_scope(app_id, variants=round_variants),
-            active_variants=round_variants,
+        variant_payloads = lab.without_engine_exposure(
+            _resolve_variant_payloads(
+                roles_dir=_ROLES_DIR,
+                include=variant_scope(app_id, variants=round_variants),
+                active_variants=round_variants,
+            )
         )
         from utils.tests.swarm.backup_repos import backup_provider_ips
         from utils.tests.swarm.write.extras import backup_applications_overrides
