@@ -219,6 +219,38 @@ wait_full_strength() {
 	done
 }
 
+# Param: $1 engine, $2 node container, $3 primary instance container id
+# Succeeds when every other instance of a redis primary replicates from it;
+# Sentinel refuses to promote a replica that has not resynced since its restart.
+replicas_attached() {
+	local _want
+	[ "$1" = redis ] || return 0
+	_want=$(($(instance_services "$1" | wc -l) - 1))
+	docker exec "$2" docker exec "$3" sh -c '
+		REDISCLI_AUTH=$(sed -n "s/^masterauth //p" "$REDIS_HA_INCLUDE")
+		export REDISCLI_AUTH
+		n=$(redis-cli -p "$REDIS_HA_PORT" INFO replication | sed -n "s/^connected_slaves:\([0-9]*\).*/\1/p")
+		[ "${n:-0}" -ge "$1" ]' _ "${_want}" >/dev/null 2>&1
+}
+
+# Param: $1 engine
+# Prints "<node> <cid> <service>" of the primary once its replicas are attached,
+# or nothing after KILL_PRIMARY_TIMEOUT. A drain just before can leave Sentinel
+# still electing the next master for a few seconds.
+wait_primary() {
+	local _deadline _primary
+	_deadline=$(($(date +%s) + KILL_PRIMARY_TIMEOUT))
+	while [ "$(date +%s)" -lt "${_deadline}" ]; do
+		_primary=$(find_primary "$1" || true)
+		# shellcheck disable=SC2086  # ${_primary% *} is "<node> <cid>", split into replicas_attached's args
+		if [ -n "${_primary}" ] && replicas_attached "$1" ${_primary% *}; then
+			echo "${_primary}"
+			return 0
+		fi
+		sleep 3
+	done
+}
+
 # Param: $1 engine
 kill_primary_of() {
 	local _engine="$1" _old _old_node _old_cid _old_service _killed_node="" _new="" _deadline _stamp
@@ -228,9 +260,9 @@ kill_primary_of() {
 	fi
 	wait_full_strength "${_engine}"
 	echo "==> ${_engine} and etcd at full strength"
-	_old=$(find_primary "${_engine}")
+	_old=$(wait_primary "${_engine}")
 	if [ -z "${_old}" ]; then
-		echo "FAILURE: no ${_engine} primary found before the kill"
+		echo "FAILURE: no ${_engine} primary with every replica attached within ${KILL_PRIMARY_TIMEOUT}s before the kill"
 		exit 1
 	fi
 	read -r _old_node _old_cid _old_service <<<"${_old}"
