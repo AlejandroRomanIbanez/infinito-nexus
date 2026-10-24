@@ -50,6 +50,10 @@ _NFS_SERVER = f"{_PREFIX}{_NAMES['INFINITO_SWARM_NFS_NAME']}"
 _BACKUP = f"{_PREFIX}{_NAMES['INFINITO_SWARM_BACKUP_NAME']}"
 
 
+def mesh_enabled() -> bool:
+    return (os.environ.get("INFINITO_SWARM_VPN") or "").strip().lower() == "true"
+
+
 def lab_shape(topology: str, *, prefix: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
     """Return the swarm managers and workers of one lab shape.
 
@@ -97,11 +101,18 @@ def _host_topology(
     app_hosts: list[tuple[str, str]] = [(app_id, m) for m in managers]
     if app_id != "svc-swarm-manager" and get_role_placement(app_id) != "manager":
         app_hosts.extend((app_id, w) for w in workers)
+    mesh_hosts: list[tuple[str, str]] = []
+    if mesh_enabled():
+        mesh_hosts = [
+            *[("svc-net-wireguard", n) for n in nodes],
+            ("svc-net-wireguard", _NFS_SERVER),
+        ]
     return [
         *[("svc-swarm-node", n) for n in nodes],
         *[("svc-swarm-manager", m) for m in managers],
         *[("svc-storage-nfs-client", n) for n in nodes],
         ("svc-storage-nfs-server", _NFS_SERVER),
+        *mesh_hosts,
         *app_hosts,
     ]
 
@@ -177,7 +188,11 @@ def main() -> int:
         "all": {
             "children": {
                 group: {"hosts": {_BACKUP: dict(_DOCKER_VARS)}}
-                for group in ("svc-bkp-remote-2-local", "svc-bkp-local-2-device")
+                for group in (
+                    "svc-bkp-remote-2-local",
+                    "svc-bkp-local-2-device",
+                    *(("svc-net-wireguard",) if mesh_enabled() else ()),
+                )
             }
         }
     }

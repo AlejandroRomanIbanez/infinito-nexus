@@ -2,7 +2,8 @@
 
 Mirrors the prior ``scripts/install/lint.sh`` interface: no-arg / ``all``
 runs every group + manages the stamp file; explicit groups bypass the
-stamp; ``--force`` (as first arg) drops the stamp and reinstalls.
+stamp; ``--force`` (as first arg) drops the stamp and mmdc's browser cache
+and reinstalls.
 """
 
 from __future__ import annotations
@@ -36,12 +37,15 @@ from utils.install.lint.ansible import collections as ansible_collections
 from utils.install.lint.ansible import commands as ansible_commands
 from utils.install.lint.ansible import lint as ansible_lint
 from utils.install.primitives import warn
+from utils.roles.mapping import ROLE_FILE_META_SERVICES
 
 _STAMP_KEY = hashlib.sha256(sys.executable.encode("utf-8")).hexdigest()[:8]
 _STAMP = f"build/install-lint-{_STAMP_KEY}.stamp"
+_PINS = f"roles/sys-lint/{ROLE_FILE_META_SERVICES}"
 _STAMP_DEPS = (
     "scripts/install/lint.sh",
     "pyproject.toml",
+    _PINS,
 )
 
 _STAMP_TOOLS = (
@@ -177,7 +181,10 @@ def _stamp_is_fresh(repo_root: Path) -> bool:
             return False
         if dep_path.stat().st_mtime > stamp_mtime:
             return False
-    return all(shutil.which(tool) is not None for tool in _STAMP_TOOLS)
+    return (
+        all(shutil.which(tool) is not None for tool in _STAMP_TOOLS)
+        and mermaid_cli.browser_installed()
+    )
 
 
 def _touch_stamp(repo_root: Path) -> None:
@@ -212,6 +219,7 @@ def main(argv: list[str] | None = None) -> int:
         stamp_path = repo_root / _STAMP
         if stamp_path.exists():
             stamp_path.unlink()
+        shutil.rmtree(mermaid_cli.browser_cache(), ignore_errors=True)
         args = args[1:]
 
     if not args:

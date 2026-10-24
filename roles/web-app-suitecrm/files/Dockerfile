@@ -5,6 +5,7 @@ FROM ${SUITECRM_BASE_IMAGE}:${SUITECRM_BASE_VERSION} AS base
 
 ARG SUITECRM_APP_DIR
 ARG SUITECRM_PHP_MEMORY_LIMIT
+ARG SUITECRM_PHPREDIS_VERSION
 
 RUN rm -rf /var/lib/apt/lists/* \
   && apt-get -o Acquire::Retries=3 update && apt-get -o Acquire::Retries=3 install -y \
@@ -18,6 +19,7 @@ RUN rm -rf /var/lib/apt/lists/* \
       libonig-dev \
       libxml2-dev \
       libldap2-dev \
+      patch \
   && docker-php-ext-configure ldap --with-libdir=lib/x86_64-linux-gnu \
   && docker-php-ext-install \
       pdo \
@@ -31,6 +33,10 @@ RUN rm -rf /var/lib/apt/lists/* \
       opcache \
       ldap \
   && rm -rf /var/lib/apt/lists/*
+
+RUN : "${SUITECRM_PHPREDIS_VERSION:?}" \
+  && pecl install "redis-${SUITECRM_PHPREDIS_VERSION}" \
+  && docker-php-ext-enable redis
 
 RUN : "${SUITECRM_PHP_MEMORY_LIMIT:?}" && { \
       echo 'file_uploads = On'; \
@@ -51,6 +57,8 @@ FROM base AS builder
 ARG SUITECRM_APP_VERSION
 ARG SUITECRM_APP_DIR
 ARG SUITECRM_LDAP_EXTENSION_DIR
+ARG SUITECRM_EXTERNAL_AUTH_PATCH_HOST_REL
+ARG SUITECRM_EXTERNAL_AUTH_PATCH_DOCKER
 
 WORKDIR ${SUITECRM_APP_DIR}
 
@@ -63,6 +71,11 @@ RUN set -eux; \
     tar --strip-components=1 -xzf /tmp/suitecrm.tar.gz -C "${SUITECRM_APP_DIR}"; \
     rm /tmp/suitecrm.tar.gz; \
     chmod +x bin/console
+
+COPY ${SUITECRM_EXTERNAL_AUTH_PATCH_HOST_REL} ${SUITECRM_EXTERNAL_AUTH_PATCH_DOCKER}
+RUN set -eux; \
+    patch -p1 -F0 -i ${SUITECRM_EXTERNAL_AUTH_PATCH_DOCKER}; \
+    rm ${SUITECRM_EXTERNAL_AUTH_PATCH_DOCKER}
 
 RUN set -eux; \
     composer install \

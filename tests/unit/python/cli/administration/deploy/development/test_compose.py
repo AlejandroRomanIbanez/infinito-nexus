@@ -95,12 +95,17 @@ class TestComposeUpRetries(unittest.TestCase):
             "INFINITO_GIT_COMMON_DIR": "",
             "INFINITO_CACHE_NETWORK": "",
             "INFINITO_CACHE_STACK": "",
+            "INFINITO_GHCR_MIRROR": "",
         },
         clear=False,
     )
+    @patch(
+        "cli.administration.deploy.development.runner_mirror.write_override",
+        return_value="build/compose/runner-mirror.override.yml",
+    )
     @patch("subprocess.run", autospec=True)
     def test_run_skips_cache_override_on_github_runner(
-        self, run_mock: MagicMock
+        self, run_mock: MagicMock, _write_override: MagicMock
     ) -> None:
         compose = self._compose()
 
@@ -126,6 +131,8 @@ class TestComposeUpRetries(unittest.TestCase):
                 "compose",
                 "-f",
                 "compose.yml",
+                "-f",
+                "build/compose/runner-mirror.override.yml",
                 "ps",
                 "-q",
                 "infinito",
@@ -144,6 +151,7 @@ class TestComposeUpRetries(unittest.TestCase):
             "INFINITO_GIT_COMMON_DIR": "",
             "INFINITO_CACHE_NETWORK": "",
             "INFINITO_CACHE_STACK": "",
+            "INFINITO_GHCR_MIRROR": "",
         },
         clear=False,
     )
@@ -194,6 +202,7 @@ class TestComposeUpRetries(unittest.TestCase):
             "GITHUB_ACTIONS": "true",
             "INFINITO_RUNNING_ON_GITHUB": "true",
             "INFINITO_CACHE_STACK": "",
+            "INFINITO_GHCR_MIRROR": "",
         },
         clear=False,
     )
@@ -221,6 +230,7 @@ class TestComposeUpRetries(unittest.TestCase):
             "GITHUB_ACTIONS": "true",
             "INFINITO_RUNNING_ON_GITHUB": "true",
             "INFINITO_CACHE_STACK": "",
+            "INFINITO_GHCR_MIRROR": "",
         },
         clear=False,
     )
@@ -257,6 +267,7 @@ class TestComposeUpRetries(unittest.TestCase):
             "INFINITO_GIT_COMMON_DIR": "",
             "INFINITO_CACHE_NETWORK": "",
             "INFINITO_CACHE_STACK": "",
+            "INFINITO_GHCR_MIRROR": "",
         },
         clear=False,
     )

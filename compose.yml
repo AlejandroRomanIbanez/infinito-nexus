@@ -78,6 +78,7 @@ services:
       INFINITO_DIR_VAR_LIB: ${INFINITO_DIR_VAR_LIB}
       INFINITO_DNS_IP: ${INFINITO_DNS_IP}
       INFINITO_DOMAIN: ${INFINITO_DOMAIN}
+      INFINITO_DOTENV_HOST_OWNED: "true"
       INFINITO_GHCR_MIRROR_PREFIX: ${INFINITO_GHCR_MIRROR_PREFIX}
       INFINITO_IMAGE_TAG: ${INFINITO_IMAGE_TAG}
       INFINITO_IP4: ${INFINITO_IP4}
@@ -131,4 +132,5 @@ networks:
     ipam:
       config:
         - subnet: ${INFINITO_SUBNET:?Run 'make dotenv' to generate the .env single source of truth}
+          ip_range: ${INFINITO_IP_RANGE:?Run 'make dotenv' to generate the .env single source of truth}
           gateway: ${INFINITO_GATEWAY:?Run 'make dotenv' to generate the .env single source of truth}

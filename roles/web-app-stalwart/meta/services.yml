@@ -8,7 +8,6 @@ sso:
   oidc:
     email_by_username: true
     enable_user_creation: true
-    submission_via_relay: true
     clients:
       webui: stalwart-webui
       webmail: stalwart-webmail
@@ -43,7 +42,7 @@ stalwart:
   # nocheck: default-placement-manager  mail edge at a known IP: MX A-record, PTR and SPF bind to the stack host IP (a floating task's egress IP breaks deliverability); the mail store is NFS-hostile and IS the app — same rationale as web-app-mailu
   placement: manager
   image: stalwartlabs/stalwart
-  version: "v0.16.25"
+  version: "v0.16.27"
   webui_version: "v1.0.11"
   update:
     key: webui_version
@@ -54,6 +53,7 @@ stalwart:
     project_hard_restart: true
   migration:
     import_mailu: false
+  ban_period_seconds: 3600
   # nocheck: min-storage-headroom  Reason: the mail store (maildir blobs, FTS index, queue) lives in this service's volumes and dwarfs the image transfer size
   min_storage: 20GB
   domain: "{{ lookup('email').domain }}"
@@ -105,7 +105,7 @@ webmail:
   image: roundcube/roundcubemail
   healthcheck:
     flavor: curl
-  version: "1.7.4-apache"
+  version: "1.7.5-apache"
   cpus: "0.3"
   mem_reservation: 256m
   mem_limit: 1g

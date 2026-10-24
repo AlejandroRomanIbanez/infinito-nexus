@@ -27,6 +27,7 @@ flowchart LR
         dep_svc_bkp_volume_2_local["svc-bkp-volume-2-local 💻"]
         dep_svc_db_mariadb["svc-db-mariadb 🐳🐝"]
         dep_svc_db_openldap["svc-db-openldap 🐳🐝"]
+        dep_svc_db_redis["svc-db-redis 🐳🐝"]
         dep_svc_net_tor["svc-net-tor 🐳🐝"]
         dep_web_app_dashboard["web-app-dashboard 🐳🐝"]
         dep_web_app_keycloak["web-app-keycloak 🐳🐝"]
@@ -44,6 +45,7 @@ flowchart LR
         svc_matomo["matomo"]
         svc_email["email"]
         svc_mariadb["mariadb"]
+        svc_redis["redis"]
         svc_suitecrm["suitecrm"]
         svc_css["css"]
         svc_prometheus["prometheus"]
@@ -53,6 +55,7 @@ flowchart LR
     dep_svc_bkp_volume_2_local -. "0..1" .-> svc_container_backup
     dep_svc_db_mariadb -. "0..1" .-> svc_mariadb
     dep_svc_db_openldap -. "0..1" .-> svc_ldap
+    dep_svc_db_redis -. "0..1" .-> svc_redis
     dep_svc_net_tor -. "0..1" .-> svc_tor
     dep_web_app_dashboard -. "0..1" .-> svc_dashboard
     dep_web_app_keycloak -. "0..1" .-> svc_sso
@@ -138,6 +141,14 @@ docker run --rm -it \
   [`files/shell/docker-entrypoint.sh`](./files/shell/docker-entrypoint.sh) at boot, over
   the Tor SOCKS proxy whenever the issuer is an onion, because a `.onion` issuer is
   unresolvable directly. `/auth` stays reachable as the local break-glass login.
+
+- **Auto-created accounts** reach `User::save()` through SuiteCRM's own `CreateUser`
+  while the request is still anonymous. Since 8.10.2 that save answers
+  `RuntimeException: Not authorized` and forces `status = Inactive`, so
+  `files/patch/external-auth-user-create.patch` makes the stored system user the current
+  user around the save and restores the caller's afterwards.
+  [`files/Dockerfile`](./files/Dockerfile) applies it with `patch -F0` on the unpacked
+  release; the image build fails once the hunk stops matching.
 
 ## Persona contract opt-outs
 

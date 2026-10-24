@@ -11,7 +11,7 @@
 set -euo pipefail
 
 if [ "$(id -u)" -ne 0 ]; then
-	exec sudo -E env "PATH=$PATH" "HOME=$HOME" bash "$0" "$@"
+	exec sudo --preserve-env="$(compgen -e | paste -sd, -)" env "PATH=$PATH" "HOME=$HOME" bash "$0" "$@"
 fi
 
 : "${engine:?engine=<postgres|mariadb|redis|openldap> is required}"

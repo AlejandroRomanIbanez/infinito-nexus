@@ -32,7 +32,11 @@
   args:
     chdir: "{{ lookup('container', application_id, 'directories.instance') }}"
     executable: /bin/bash
+  register: _swarm_pre_deploy_rebuild
   timeout: "{{ lookup('timeout', 3600) | int }}"
+  retries: 3
+  delay: 30
+  until: _swarm_pre_deploy_rebuild is succeeded
   when: _swarm_pre_deploy_build is failed
   listen:
     - compose-up
@@ -187,6 +191,12 @@
     - swarm-deploy
   run_once: true
   delegate_to: "{{ STACK_HOST }}"
+
+- name: "🛡️ swarm: bound the ports the routing mesh now publishes on every node"
+  ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/svc-swarm-node/tasks/utils/ingress_guard/refresh.yml') }}"
+  listen:
+    - compose-up
+    - swarm-deploy
 
 - name: "🔄 swarm: force task recreation so in-container state is reloaded"
   ansible.builtin.shell: |

@@ -27,6 +27,8 @@ class Failure(NamedTuple):
     tor: bool
     distro: str
     filesystem: str
+    vpn: bool = False
+    db_topology: str = ""
 
 
 def failed_roles(jobs: list[dict]) -> dict[str, list[Failure]]:
@@ -57,6 +59,8 @@ def failed_roles(jobs: list[dict]) -> dict[str, list[Failure]]:
                 label.tor,
                 label.distro,
                 label.filesystem,
+                label.vpn,
+                label.db_topology,
             )
         )
     return out
@@ -76,6 +80,8 @@ def artifact_name(role: str, failure: Failure) -> str:
         failure.tor,
         failure.distro,
         failure.filesystem,
+        failure.vpn,
+        failure.db_topology,
     )
 
 
@@ -148,19 +154,21 @@ def _existing_issue(repo: str, role: str) -> int | None:
     return None
 
 
-def report(run_id: str, repo: str) -> int:
-    jobs = json.loads(
-        _gh(
-            [
-                "api",
-                "--paginate",
-                f"repos/{repo}/actions/runs/{run_id}/jobs",
-                "--jq",
-                "[.jobs[] | {name, conclusion}]",
-            ]
-        )
-        or "[]"
+def list_jobs(run_id: str, repo: str) -> list[dict]:
+    out = _gh(
+        [
+            "api",
+            "--paginate",
+            f"repos/{repo}/actions/runs/{run_id}/jobs",
+            "--jq",
+            ".jobs[] | {name, conclusion}",
+        ]
     )
+    return [json.loads(line) for line in out.splitlines() if line.strip()]
+
+
+def report(run_id: str, repo: str) -> int:
+    jobs = list_jobs(run_id, repo)
     roles = failed_roles(jobs)
     if not roles:
         print("No failed deploy roles.")

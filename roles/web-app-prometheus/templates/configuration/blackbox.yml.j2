@@ -24,7 +24,21 @@ modules:
       method: GET
       follow_redirects: false
       fail_if_ssl: false
-      fail_if_not_ssl: {{ lookup('tls', application_id, 'enabled') | bool | lower }}
+      fail_if_not_ssl: false
       tls_config:
-        insecure_skip_verify: {{ not (lookup('tls', application_id, 'enabled') | bool) }}
+        insecure_skip_verify: false
+      preferred_ip_protocol: "ip4"
+
+  http_ready_private_ca:
+    prober: http
+    timeout: 10s
+    http:
+      valid_http_versions: ["HTTP/1.1", "HTTP/2.0"]
+      valid_status_codes: [200, 301, 302, 303, 307, 308, 401, 403]
+      method: GET
+      follow_redirects: false
+      fail_if_ssl: false
+      fail_if_not_ssl: false
+      tls_config:
+        insecure_skip_verify: true
       preferred_ip_protocol: "ip4"

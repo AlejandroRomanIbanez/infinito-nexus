@@ -5,7 +5,8 @@ set -euo pipefail
 : "${ACT_EVENT:=workflow_dispatch}"
 : "${ACT_JOB:=}"
 : "${ACT_MATRIX:=}"
-: "${ACT_CONTAINER_OPTIONS:=--privileged}"
+: "${INFINITO_CONTAINER:?INFINITO_CONTAINER is not set; source scripts/meta/env/load.sh or invoke via make}"
+: "${ACT_CONTAINER_OPTIONS:=--privileged --label infinito.worktree=${INFINITO_CONTAINER}}"
 : "${ACT_NETWORK:=host}"
 : "${ACT_PULL:=false}"
 : "${ACT_RM:=true}"
@@ -53,10 +54,10 @@ else
 fi
 
 cmd=(act "${ACT_EVENT}" -W "${_act_workflow}")
-cmd+=(-P "ubuntu-latest=${ACT_PLATFORM_IMAGE}")
-cmd+=(-P "ubuntu-24.04=${ACT_PLATFORM_IMAGE}")
-cmd+=(-P "ubuntu-22.04=${ACT_PLATFORM_IMAGE}")
-cmd+=(-P "ubuntu-20.04=${ACT_PLATFORM_IMAGE}")
+_act_workflows_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)/.github/workflows"
+while read -r _act_label; do
+	cmd+=(-P "${_act_label}=${ACT_PLATFORM_IMAGE}")
+done < <(grep -rhE 'runs-on:' "${_act_workflows_dir}" | grep -oE 'ubuntu-[0-9]+\.[0-9]+' | sort -u)
 
 if [[ -n "${ACT_JOB}" ]]; then
 	cmd+=(-j "${ACT_JOB}")
