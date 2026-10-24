@@ -194,12 +194,40 @@ restart_node() {
 }
 
 # Param: $1 engine
+# Succeeds when every per-host service of $1 and every etcd member runs its task.
+at_full_strength() {
+	local _replicas
+	_replicas=$(docker exec "${CTL}" docker service ls --format '{{.Name}} {{.Replicas}}' |
+		grep -E "^($1_$1|etcd_etcd)-" || [ "$?" -eq 1 ])
+	[ -n "${_replicas}" ] && ! grep -qvE ' 1/1( |$)' <<<"${_replicas}"
+}
+
+# Param: $1 engine
+# Waits until the engine and etcd are back at full strength, so the kill below
+# never takes the quorum an earlier drill step already weakened.
+wait_full_strength() {
+	local _deadline
+	_deadline=$(($(date +%s) + KILL_PRIMARY_TIMEOUT))
+	until at_full_strength "$1"; do
+		if [ "$(date +%s)" -ge "${_deadline}" ]; then
+			echo "FAILURE: $1 and etcd not at full strength within ${KILL_PRIMARY_TIMEOUT}s before the kill"
+			docker exec "${CTL}" docker service ls --format '{{.Name}} {{.Replicas}}' |
+				grep -E "^($1_$1|etcd_etcd)-" || [ "$?" -eq 1 ]
+			exit 1
+		fi
+		sleep 3
+	done
+}
+
+# Param: $1 engine
 kill_primary_of() {
 	local _engine="$1" _old _old_node _old_cid _old_service _killed_node="" _new="" _deadline _stamp
 	if [ -z "$(instance_services "${_engine}")" ]; then
 		echo "SKIP: ${_engine} runs no HA instances for ${APP_ID}"
 		return 0
 	fi
+	wait_full_strength "${_engine}"
+	echo "==> ${_engine} and etcd at full strength"
 	_old=$(find_primary "${_engine}")
 	if [ -z "${_old}" ]; then
 		echo "FAILURE: no ${_engine} primary found before the kill"

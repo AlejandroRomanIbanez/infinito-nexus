@@ -4,6 +4,8 @@
 # ships a build: context produces its <ENTITY>_custom:<tag> image only on the
 # manager; mirror it onto each worker first so swarm can re-schedule there.
 # Roles without a custom build use an upstream image present on every worker.
+# The drained node is set active again once the app has moved: in an HA lab it
+# can be a manager whose pinned database and etcd instances the drain stops.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
@@ -43,6 +45,8 @@ for i in $(seq 1 "${RESCHED_TIMEOUT}"); do
 	if [ -n "${NEW_NODE}" ] && [ "${NEW_NODE}" != "${INITIAL_NODE}" ]; then
 		echo "Rescheduled from ${INITIAL_NODE} to ${NEW_NODE} after ${i}s"
 		echo "NEW_NODE=${NEW_NODE}" >>"${SWARM_DRILL_ENV:?SWARM_DRILL_ENV is required (exported by routine/00_one.sh)}"
+		docker exec "${MGR}" docker node update --availability active "${INITIAL_NODE}"
+		echo "${INITIAL_NODE} is active again"
 		exit 0
 	fi
 	sleep 1
