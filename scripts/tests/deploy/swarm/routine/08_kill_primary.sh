@@ -153,10 +153,33 @@ keeps_quorum() {
 	[ $((_left * 2)) -gt "${_total}" ]
 }
 
+NAME_FILES=(/etc/resolv.conf /etc/hosts)
+NAME_FILES_DIR="$(mktemp -d)"
+trap 'rm -rf "${NAME_FILES_DIR}"' EXIT
+
+# Param: $1 node container
+# `docker start` regenerates these files, dropping the resolver the deploy
+# installed, so they are saved before the kill and written back after.
+save_name_files() {
+	local _path
+	for _path in "${NAME_FILES[@]}"; do
+		docker exec "$1" cat "${_path}" >"${NAME_FILES_DIR}/$(basename "${_path}")"
+	done
+}
+
+# Param: $1 node container
+restore_name_files() {
+	local _path
+	for _path in "${NAME_FILES[@]}"; do
+		docker exec -i "$1" sh -c 'cat >"$1"' _ "${_path}" <"${NAME_FILES_DIR}/$(basename "${_path}")"
+	done
+}
+
 # Param: $1 node container
 restart_node() {
 	local _deadline
 	docker start "$1" >/dev/null
+	restore_name_files "$1"
 	_deadline=$(($(date +%s) + KILL_PRIMARY_TIMEOUT))
 	while [ "$(date +%s)" -lt "${_deadline}" ]; do
 		if docker exec "${CTL}" docker node ls --format '{{.Hostname}} {{.Status}}' |
@@ -187,6 +210,7 @@ kill_primary_of() {
 
 	if keeps_quorum "${_old_node}"; then
 		pick_controller "${_old_node}"
+		save_name_files "${_old_node}"
 		docker kill "${_old_node}" >/dev/null
 		_killed_node="${_old_node}"
 		echo "==> killed node ${_old_node}"
