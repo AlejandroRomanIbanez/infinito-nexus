@@ -94,13 +94,15 @@ def _host_topology(
     """Return the ``(group, host)`` pairs of the lab's node and app groups.
 
     Swarm schedules app replicas onto any node their placement allows, while
-    the app's bind sources only reach the hosts of its own group, so every
-    manager joins it: an HA lab's extra managers carry them as well.
+    the app's bind sources only reach the hosts of its own group, so an app
+    that may run anywhere joins every node: an HA lab's extra managers carry
+    its bind sources as well. A manager-placed app stays on the stack host
+    only, because some of them force the compose form there.
     """
     nodes = (*managers, *workers)
-    app_hosts: list[tuple[str, str]] = [(app_id, m) for m in managers]
+    app_hosts: list[tuple[str, str]] = [(app_id, managers[0])]
     if app_id != "svc-swarm-manager" and get_role_placement(app_id) != "manager":
-        app_hosts.extend((app_id, w) for w in workers)
+        app_hosts.extend((app_id, n) for n in (*managers[1:], *workers))
     mesh_hosts: list[tuple[str, str]] = []
     if mesh_enabled():
         mesh_hosts = [

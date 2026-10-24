@@ -109,10 +109,10 @@ class TestHaTopology(unittest.TestCase):
         )
         self.assertEqual(self._hosts("web-app-x", pairs), {"m1", "m2", "m3", "w1"})
 
-    def test_a_manager_placed_app_lands_on_every_manager(self):
+    def test_a_manager_placed_app_stays_on_the_stack_host(self):
         with mock.patch.object(ei, "get_role_placement", return_value="manager"):
             pairs = ei._host_topology("web-app-x", self.managers, self.workers)
-        self.assertEqual(self._hosts("web-app-x", pairs), set(self.managers))
+        self.assertEqual(self._hosts("web-app-x", pairs), {"m1"})
 
     def test_ha_engines_land_on_every_manager(self):
         with (
