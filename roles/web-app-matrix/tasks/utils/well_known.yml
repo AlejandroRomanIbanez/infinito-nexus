@@ -1,0 +1,20 @@
+---
+- name: "📁 create {{ MATRIX_WELL_KNOWN_DIRECTORY }}"
+  ansible.builtin.file:
+    path: "{{ MATRIX_WELL_KNOWN_DIRECTORY }}"
+    state: directory
+    mode: "0755"
+
+- name: "📁 create {{ MATRIX_WELL_KNOWN_FILE }}"
+  stack_host_template:
+    src: "well-known.j2"
+    dest: "{{ MATRIX_WELL_KNOWN_FILE }}"
+
+- name: "🔀 serve the federation delegation on {{ MATRIX_SERVER_NAME }}"
+  ansible.builtin.include_role:
+    name: web-opt-rdr-domains
+  vars:
+    redirect_domain_mappings:
+      - source: "{{ MATRIX_SERVER_NAME }}"
+        target: "{{ MATRIX_ELEMENT_DOMAIN }}"
+  when: MATRIX_SERVER_NAME not in (CURRENT_PLAY_REDIRECT_DOMAINS | map(attribute='source') | list)
