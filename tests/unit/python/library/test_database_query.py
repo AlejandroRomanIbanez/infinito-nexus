@@ -104,6 +104,15 @@ class BuildCmdPostgresTests(unittest.TestCase):
         self.assertIn("ON_ERROR_STOP=1", cmd)
         self.assertNotIn("s3cret", cmd)
 
+    def test_postgres_logs_in_over_tcp_with_the_password(self):
+        cmd, _ = _DB_MOD._build_cmd(_BASE_CONFIG, expect_rows=False)
+        self.assertEqual(cmd[cmd.index("-h") + 1], "127.0.0.1")
+
+    def test_mariadb_keeps_the_socket(self):
+        cfg = dict(_BASE_CONFIG, type="mariadb")
+        cmd, _ = _DB_MOD._build_cmd(cfg, expect_rows=False)
+        self.assertNotIn("-h", cmd)
+
     def test_postgres_expect_rows_adds_quiet_tuples_only_flag(self):
         cmd, _ = _DB_MOD._build_cmd(_BASE_CONFIG, expect_rows=True)
         self.assertIn("-qtA", cmd)

@@ -7,7 +7,9 @@ Works for both shared mode (central `svc-db-*` container) and non-shared
 mode (per-role `<entity>-database` container) because the `container`
 field of the `database` lookup is already shared-aware. Queries are
 piped via stdin, never via the shell, so SQL content doesn't need
-shell-escaping.
+shell-escaping. psql connects over TCP to 127.0.0.1 with the role's
+password: the HA engine authenticates its local socket by peer, which
+admits only the container's own OS user.
 
 A new database backend is added by extending `_ENGINES` — the rest of
 the module is engine-agnostic.
@@ -106,6 +108,7 @@ _NAMED_ARG_RE = re.compile(r"%\(([A-Za-z_][A-Za-z0-9_]*)\)s")
 _ENGINES: dict[str, dict[str, object]] = {
     "postgres": {
         "binaries": ("psql",),
+        "connect_flags": ["-h", "127.0.0.1"],
         "user_flag": "-U",
         "db_flag": "-d",
         "shared_flags": ["-v", "ON_ERROR_STOP=1"],
@@ -150,6 +153,7 @@ def _build_cmd(
         str(engine["password_env"]),
         config["container"],
         str(chosen),
+        *list(engine.get("connect_flags", [])),  # type: ignore[arg-type]
         str(engine["user_flag"]),
         config["username"],
         str(engine["db_flag"]),
