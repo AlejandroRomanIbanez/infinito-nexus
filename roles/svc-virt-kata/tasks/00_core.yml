@@ -64,6 +64,9 @@
     {{ ansible_facts['hostname'] }}
   register: svc_virt_kata_label
   changed_when: svc_virt_kata_label.rc == 0
+  retries: 20
+  delay: 3
+  until: svc_virt_kata_label.rc == 0
   delegate_to: "{{ STACK_HOST }}"
   when:
     - DEPLOYMENT_MODE == 'swarm'
