@@ -59,6 +59,9 @@ case "$1 $2" in
 	*Labels*)
 		printf '%s' "${SERVICE_LABELS}" | awk -F'|' -v s="$5" '$1 == s { print $2 }'
 		;;
+	*RestartPolicy*)
+		printf '%s' "${SERVICE_RESTART}" | awk -F'|' -v s="$5" '$1 == s { print $2 }'
+		;;
 	*) printf '%s' "${SERVICE_INSPECT_PLAIN:-${SERVICE_INSPECT}}" ;;
 	esac
 	;;
@@ -67,7 +70,12 @@ case "$1 $2" in
 	*'desired-state=running'*)
 		printf '%s' "${SERVICE_RUNNING}" | awk -F'|' -v s="$3" '$1 == s { print $2 }'
 		;;
-	*'{{.Name}}|{{.CurrentState}}|{{.Error}}'*) printf '%s' "${SERVICE_ERRORS}" ;;
+	*'{{.Name}}|{{.CurrentState}}|{{.Error}}'*)
+		printf '%s' "${SERVICE_ERRORS}" | awk -F'|' -v s="$6." 'index($1, s) == 1'
+		;;
+	*'{{.Name}}|{{.DesiredState}}|{{.CurrentState}}'*)
+		printf '%s' "${SERVICE_PS}" | awk -F'|' -v s="$6." 'index($1, s) == 1'
+		;;
 	*) printf '%s' "${SERVICE_PS}" ;;
 	esac
 	;;
@@ -97,6 +105,7 @@ class TestStackReady(unittest.TestCase):
         service_inspect_plain: str = "",
         service_labels: str = "",
         seed_wait_label: str = "",
+        service_restart: str = "",
     ) -> subprocess.CompletedProcess:
         """Poll the gate once, ``churning`` seconds into a non-converged deploy.
 
@@ -117,6 +126,7 @@ class TestStackReady(unittest.TestCase):
             service_inspect_plain: rows the fallback format returns.
             service_labels: ``service|value`` rows of the seed-wait label.
             seed_wait_label: label name passed as SEED_WAIT_LABEL.
+            service_restart: ``service|condition`` rows of the restart policy.
         """
         if updated_at is None:
             updated_at = str(int(time.time()) - churning)
@@ -146,6 +156,7 @@ class TestStackReady(unittest.TestCase):
                 SERVICE_INSPECT_PLAIN=service_inspect_plain,
                 SERVICE_LABELS=service_labels,
                 SEED_WAIT_LABEL=seed_wait_label,
+                SERVICE_RESTART=service_restart,
                 PATH=f"{stub_bin}:{env['PATH']}",
                 BASH_ENV="",
             )
@@ -415,6 +426,53 @@ class TestStackReady(unittest.TestCase):
         )
         self.assertEqual(proc.returncode, 2)
         self.assertIn("stuck: demo_flap", proc.stderr)
+
+    _FLAPPING_WEB = (
+        "demo_web.1|Ready 1 second ago|\n"
+        "demo_web.1|Failed 2 seconds ago|task: non-zero exit (1)\n"
+        "demo_web.1|Failed 8 seconds ago|task: non-zero exit (1)\n"
+        "demo_web.1|Failed 14 seconds ago|task: non-zero exit (1)\n"
+    )
+
+    def test_a_running_oneshot_keeps_its_dependents_waiting(self) -> None:
+        """Swarm ignores depends_on: an app crashes until its migrations end."""
+        proc = self._run(
+            "demo_web 0/1\ndemo_migrate 1/1\n",
+            "demo_migrate.1|Running|Running 4 minutes ago\n",
+            self._FLAPPING_WEB,
+            service_running="demo_migrate|Running 4 minutes ago\n",
+            service_restart="demo_migrate|on-failure\ndemo_web|any\n",
+            churning=600,
+        )
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn("waiting: demo_web until the one-shot demo_migrate", proc.stderr)
+        self.assertNotIn("stuck:", proc.stderr)
+
+    def test_a_failing_oneshot_shields_nothing(self) -> None:
+        proc = self._run(
+            "demo_web 0/1\ndemo_migrate 0/1\n",
+            "demo_migrate.1|Running|Starting 1 second ago\n",
+            self._FLAPPING_WEB + "demo_migrate.1|Ready 1 second ago|\n"
+            "demo_migrate.1|Failed 2 seconds ago|task: non-zero exit (1)\n"
+            "demo_migrate.1|Failed 8 seconds ago|task: non-zero exit (1)\n"
+            "demo_migrate.1|Failed 14 seconds ago|task: non-zero exit (1)\n",
+            service_restart="demo_migrate|on-failure\ndemo_web|any\n",
+            churning=600,
+        )
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("stuck: demo_web", proc.stderr)
+
+    def test_a_long_running_service_is_no_oneshot(self) -> None:
+        proc = self._run(
+            "demo_web 0/1\ndemo_worker 1/1\n",
+            "demo_worker.1|Running|Running 4 minutes ago\n",
+            self._FLAPPING_WEB,
+            service_running="demo_worker|Running 4 minutes ago\n",
+            service_restart="demo_worker|any\ndemo_web|any\n",
+            churning=600,
+        )
+        self.assertEqual(proc.returncode, 2)
+        self.assertIn("stuck: demo_web", proc.stderr)
 
     def test_three_attempts_inside_the_grace_window_still_wait(self) -> None:
         proc = self._run(

@@ -120,6 +120,21 @@ waits_for_seed() {
 	[ "$label" = "true" ]
 }
 
+# Param: $1 service
+# Succeeds while $1 is a one-shot (restart condition on-failure or none) that
+# is still working: Swarm ignores depends_on, so services waiting on it, such
+# as an app that needs its migrations, crash until it completes.
+oneshot_in_flight() {
+	local condition
+	condition=$(timeout 15 docker service inspect \
+		--format '{{.Spec.TaskTemplate.RestartPolicy.Condition}}' "$1" 2>/dev/null) || return 1
+	case "$condition" in
+	on-failure | none) ;;
+	*) return 1 ;;
+	esac
+	! is_completed_oneshot "$1" && ! has_fatal_task "$1"
+}
+
 started_awaiting_seed() {
 	local states
 	states=$(timeout 15 docker service ps "$1" \
@@ -208,11 +223,20 @@ done <<<"$services"
 
 if [ -n "$not_running" ]; then
 	echo "not converged:$not_running" >&2
+	busy_oneshot=""
+	for svc in "${service_names[@]}"; do
+		if oneshot_in_flight "$svc"; then
+			busy_oneshot="$svc"
+			break
+		fi
+	done
 	fatal=0
 	for svc in $not_running; do
 		report_tasks "$svc"
 		timeout 15 docker service logs --no-task-ids --tail 15 "$svc" 2>&1 | sed 's/^/    log: /' >&2 || true # nocheck: shell-or-true -- the log tail is diagnostics only
-		if has_fatal_task "$svc"; then
+		if [ -n "$busy_oneshot" ] && [ "$svc" != "$busy_oneshot" ]; then
+			echo "waiting: $svc until the one-shot $busy_oneshot completes" >&2
+		elif has_fatal_task "$svc"; then
 			echo "stuck: $svc" >&2
 			fatal=1
 		fi
