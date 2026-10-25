@@ -153,6 +153,16 @@ keeps_quorum() {
 	[ $((_left * 2)) -gt "${_total}" ]
 }
 
+# Param: $1 node container about to be killed
+# Succeeds when the app may only run on $1: a manager-placed app of a
+# multi-manager swarm is pinned to the stack host, the first manager, so a node
+# kill there takes the app down whatever the engine does.
+app_pinned_to() {
+	[ "${DEFAULT_PLACEMENT_MANAGER}" = "true" ] &&
+		[ "${#MANAGERS[@]}" -gt 1 ] &&
+		[ "$1" = "${MANAGERS[0]}" ]
+}
+
 NAME_FILES=(/etc/resolv.conf /etc/hosts)
 NAME_FILES_DIR="$(mktemp -d)"
 trap 'rm -rf "${NAME_FILES_DIR}"' EXIT
@@ -268,15 +278,18 @@ kill_primary_of() {
 	read -r _old_node _old_cid _old_service <<<"${_old}"
 	echo "==> ${_engine} primary is ${_old_service} on ${_old_node}"
 
-	if keeps_quorum "${_old_node}"; then
+	if ! keeps_quorum "${_old_node}"; then
+		docker exec "${_old_node}" docker kill "${_old_cid}" >/dev/null
+		echo "==> killing ${_old_node} would lose the Raft quorum; killed the ${_engine} container instead"
+	elif app_pinned_to "${_old_node}"; then
+		docker exec "${_old_node}" docker kill "${_old_cid}" >/dev/null
+		echo "==> ${APP_ID} is pinned to ${_old_node}; killed the ${_engine} container instead of the node"
+	else
 		pick_controller "${_old_node}"
 		save_name_files "${_old_node}"
 		docker kill "${_old_node}" >/dev/null
 		_killed_node="${_old_node}"
 		echo "==> killed node ${_old_node}"
-	else
-		docker exec "${_old_node}" docker kill "${_old_cid}" >/dev/null
-		echo "==> killing ${_old_node} would lose the Raft quorum; killed the ${_engine} container instead"
 	fi
 
 	_deadline=$(($(date +%s) + KILL_PRIMARY_TIMEOUT))
@@ -305,14 +318,14 @@ kill_primary_of() {
 	done
 	echo "==> write through the ${_engine} endpoint succeeded after the kill"
 
-	wait_app_reachable "${_old_node}" "${_engine}"
+	wait_app_reachable "${_killed_node}" "${_engine}"
 
 	if [ -n "${_killed_node}" ]; then
 		restart_node "${_killed_node}"
 	fi
 }
 
-# Param: $1 node container that was faulted, $2 engine
+# Param: $1 node container that was killed, empty when only the engine container was; $2 engine
 wait_app_reachable() {
 	local _deadline _app_node _app_ctr
 	_deadline=$(($(date +%s) + KILL_PRIMARY_TIMEOUT))
