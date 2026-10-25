@@ -2,6 +2,7 @@
 log_bin = mariadb-bin
 log_basename = mariadb
 binlog_format = ROW
+log_bin_trust_function_creators = 1
 log_slave_updates = 1
 sync_binlog = 1
 relay_log = mariadb-relay-bin
