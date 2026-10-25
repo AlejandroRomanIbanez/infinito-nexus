@@ -30,6 +30,25 @@ if command -v apt-get >/dev/null 2>&1; then
 	fi
 fi
 
+# Param: $1 sysctl key, $2 lowest value the lab needs
+# Every lab node shares the host kernel's inotify instances, and an HA lab's
+# extra managers exhaust the stock 128 (cAdvisor: "inotify_init: too many open
+# files"), so the limits are raised to svc-runner's and never lowered.
+raise_sysctl() {
+	local have
+	have="$(sysctl -n "$1" 2>/dev/null || echo 0)"
+	[ "${have}" -lt "$2" ] || return 0
+	if [ "$(id -u)" -eq 0 ]; then
+		sysctl -qw "$1=$2"
+	else
+		sudo sysctl -qw "$1=$2"
+	fi
+	echo "==> raised $1 from ${have} to $2"
+}
+raise_sysctl fs.inotify.max_user_instances 8192
+raise_sysctl fs.inotify.max_user_watches 524288
+raise_sysctl fs.inotify.max_queued_events 65536
+
 if docker exec "${INFINITO_CONTAINER}" docker ps --format '{{.Names}}' 2>/dev/null | grep -qx 'tor'; then
 	echo "==> quiescing CI compose tor (competing onion publisher)"
 	docker exec "${INFINITO_CONTAINER}" docker stop tor
