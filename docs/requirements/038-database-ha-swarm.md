@@ -138,7 +138,7 @@ This requirement covers:
   - Redis: a TCP check that logs in as a dedicated check user and expects `role:master` and `connected_slaves:[1-9]`;
   - OpenLDAP: the writer elector's `GET /writer`.
 
-  Every server uses `inter 1s fastinter 500ms downinter 1s fall 2 rise 1 on-marked-down shutdown-sessions`, with `timeout check 1s`. These timings are part of the failover budget.
+  Every server uses `inter 1s fastinter 500ms downinter 1s fall 3 rise 1 on-marked-down shutdown-sessions`, with `timeout check 1s`. These timings are part of the failover budget. `fall 3` rides out a host stall of about 2.5 s: with `fall 2`, two timed-out checks during a 2 s stall marked a healthy primary down and the shutdown cut its client sessions, although the primary answered again 1 s later (deploy matrix run 40143637548, Odoo#2).
 - [ ] HAProxy runs 2 replicas with `max_replicas_per_node: 1`, unpinned, so it survives the loss of the node one replica runs on.
 - [ ] In HA form the write endpoint takes over today's service name and alias (`postgres`, `mariadb`, `redis-central`, `openldap`). Applications keep the same `host` and need no change.
 - [ ] Ansible reaches the primary only by exec into the current primary instance, delegated to the node it runs on. In HA form no database port is published, because Swarm ingress publishing cannot bind to `127.0.0.1`.

@@ -12,7 +12,7 @@ from utils.roles.meta_lookup import get_role_ports
 
 TIMINGS = (
     "resolvers docker resolve-prefer ipv4 init-addr none "
-    "inter 1s fastinter 500ms downinter 1s fall 2 rise 1 "
+    "inter 1s fastinter 500ms downinter 1s fall 3 rise 1 "
     "on-marked-down shutdown-sessions"
 )
 

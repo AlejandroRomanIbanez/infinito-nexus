@@ -19,7 +19,7 @@ if TYPE_CHECKING:
     from collections.abc import Sequence
 
 SERVER_TIMINGS = (
-    "inter 1s fastinter 500ms downinter 1s fall 2 rise 1 "
+    "inter 1s fastinter 500ms downinter 1s fall 3 rise 1 "
     "on-marked-down shutdown-sessions"
 )
 DOCKER_DNS = "127.0.0.11:53"
