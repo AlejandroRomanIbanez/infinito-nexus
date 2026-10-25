@@ -714,5 +714,43 @@ class TestLabOverrides(unittest.TestCase):
             )
 
 
+class TestStartReplicaSql(unittest.TestCase):
+    def _lab(self) -> SwarmLab:
+        return SwarmLab(
+            engine="mariadb", managers=["m1"], spare="w1", network="lab", node_ips={}
+        )
+
+    def test_returns_once_the_sql_thread_runs(self):
+        lab = self._lab()
+        with (
+            mock.patch.object(lab, "_in", side_effect=self._answers(["No", "Yes"])),
+            mock.patch.object(shell.time, "sleep"),
+        ):
+            lab.start_replica_sql("mariadb_m2", timeout_s=30)
+
+    def test_raises_when_the_sql_thread_stays_stopped(self):
+        lab = self._lab()
+        with (
+            mock.patch.object(lab, "_in", side_effect=self._answers(["No"] * 50)),
+            mock.patch.object(shell.time, "sleep"),
+            mock.patch.object(shell.time, "monotonic", side_effect=[0, 0, 60]),
+            self.assertRaisesRegex(RuntimeError, "left the SQL thread stopped"),
+        ):
+            lab.start_replica_sql("mariadb_m2", timeout_s=30)
+
+    @staticmethod
+    def _answers(states: list[str]):
+        """Alternate START SLAVE replies and SHOW SLAVE STATUS replies."""
+        replies = []
+        for state in states:
+            replies.append(mock.Mock(returncode=0, stdout="", stderr=""))
+            replies.append(
+                mock.Mock(
+                    returncode=0, stdout=f"Slave_SQL_Running: {state}\n", stderr=""
+                )
+            )
+        return replies
+
+
 if __name__ == "__main__":
     unittest.main()

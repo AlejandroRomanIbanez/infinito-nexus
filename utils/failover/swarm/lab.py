@@ -359,9 +359,31 @@ class SwarmLabBase:
                 f"STOP SLAVE SQL_THREAD on {service}: {proc.stderr.strip()}"
             )
 
-    def start_replica_sql(self, service: str) -> None:
+    def start_replica_sql(
+        self, service: str, timeout_s: float = SETTLE_TIMEOUT_S
+    ) -> None:
+        """Restart the SQL thread stop_replica_sql halted and wait until it runs.
+
+        A silent miss leaves the replica stopped, and every later case then
+        waits out its full-strength deadline instead of failing here.
+        """
         user, argv = engines.sql("mariadb", "START SLAVE SQL_THREAD")
-        self._in(service, argv, user=user)
+        last_error = ""
+
+        def sql_running() -> bool:
+            nonlocal last_error
+            proc = self._in(service, argv, user=user)
+            last_error = proc.stderr.strip()
+            status = engines.parse_slave_status(
+                self._in(service, engines.slave_status()).stdout
+            )
+            return status.get("Slave_SQL_Running") == "Yes"
+
+        if not shell.wait_until(sql_running, timeout_s=timeout_s, interval_s=5):
+            raise RuntimeError(
+                f"START SLAVE SQL_THREAD on {service} left the SQL thread stopped "
+                f"after {timeout_s:.0f}s: {last_error}"
+            )
 
     def scale(self, service: str, replicas: int) -> None:
         self._on_manager(
