@@ -1,6 +1,7 @@
 ---
 - name: 🔎 Check that the Listmonk database is reachable
   shell: '{{ LISTMONK_EXEC_DATABASE }} -c "SELECT 1"'
+  environment: "{{ LISTMONK_EXEC_DATABASE_ENV }}"
   register: listmonk_db_probe
   changed_when: false
   failed_when: false
@@ -18,6 +19,7 @@
 
 - name: ⏳ Wait for the listmonk container to seed schema and admin user
   shell: "{{ LISTMONK_EXEC_DATABASE }} -tAc 'SELECT COUNT(*) FROM users'"
+  environment: "{{ LISTMONK_EXEC_DATABASE_ENV }}"
   register: listmonk_seeded
   changed_when: false
   retries: 150
