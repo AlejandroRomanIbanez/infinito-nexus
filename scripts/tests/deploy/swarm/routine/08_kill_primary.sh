@@ -261,6 +261,17 @@ wait_primary() {
 	done
 }
 
+# Param: $1 "<node> <cid> <service>" of the current primary, $2 container id that was killed
+# Succeeds when the primary runs in a container other than $2: after a
+# container kill swarm restarts the instance in place, and that fresh
+# container may win the writer role back instead of a peer.
+restarted_in_place() {
+	local _cid
+	[ -n "$1" ] || return 1
+	read -r _ _cid _ <<<"$1"
+	[ "${_cid}" != "$2" ]
+}
+
 # Param: $1 engine
 kill_primary_of() {
 	local _engine="$1" _old _old_node _old_cid _old_service _killed_node="" _new="" _deadline _stamp
@@ -297,6 +308,10 @@ kill_primary_of() {
 		_new=$(find_primary "${_engine}" || true)
 		if [ -n "${_new}" ] && [ "${_new##* }" != "${_old_service}" ]; then
 			echo "==> new ${_engine} primary: ${_new##* } on ${_new%% *}"
+			break
+		fi
+		if [ -z "${_killed_node}" ] && restarted_in_place "${_new}" "${_old_cid}"; then
+			echo "==> ${_engine} primary ${_new##* } came back in a fresh container on ${_new%% *}"
 			break
 		fi
 		_new=""
