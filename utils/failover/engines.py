@@ -307,12 +307,13 @@ def scratch_run(engine: str, *, name: str, image: str) -> list[str]:
 def scratch_ready(engine: str) -> list[str]:
     """Return the in-container readiness check of the scratch instance.
 
-    Postgres is checked over TCP: the image's init step runs a temporary
-    socket-only server first, which a socket check would already accept.
+    Both engines are checked over TCP: each image's init step runs a
+    temporary socket-only server first, which a socket check would already
+    accept, and then restarts it while the dump is being replayed.
     """
     if engine == "postgres":
         return ["pg_isready", "-h", "127.0.0.1", "-U", "postgres"]
-    return ["mariadb-admin", "-uroot", "ping"]
+    return ["mariadb-admin", "-uroot", "-h", "127.0.0.1", "--protocol=tcp", "ping"]
 
 
 def scratch_sql(engine: str, database: str, query: str) -> list[str]:

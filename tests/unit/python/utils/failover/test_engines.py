@@ -172,6 +172,11 @@ class TestScratch(unittest.TestCase):
             ["pg_isready", "-h", "127.0.0.1", "-U", "postgres"],
         )
 
+    def test_mariadb_scratch_is_ready_only_once_it_listens_on_tcp(self):
+        ready = engines.scratch_ready("mariadb")
+        self.assertIn("--protocol=tcp", ready)
+        self.assertIn("127.0.0.1", ready)
+
 
 if __name__ == "__main__":
     unittest.main()
