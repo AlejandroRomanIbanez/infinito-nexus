@@ -226,6 +226,19 @@ class Backup:
             detail = f"replayed {dump} (rc={load.returncode}) into {database}"
             if load.returncode:
                 detail += f": {load.stderr.strip()[-500:]}"
+            if found != token:
+                stamps = shell.execute(
+                    [
+                        "docker",
+                        "exec",
+                        node,
+                        "grep",
+                        "-E",
+                        "^-- (Host|Server version|Dump completed)",
+                        dump,
+                    ]
+                ).stdout.split("\n")
+                detail += f"; dump header: {' | '.join(s for s in stamps if s)}"
             return found == token, detail
         finally:
             shell.run(["docker", "exec", node, "docker", "rm", "-f", name], check=False)
