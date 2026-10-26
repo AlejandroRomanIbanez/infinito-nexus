@@ -99,7 +99,7 @@ To recover a source system, transfer the wanted generation to it (the provider's
 
 ## Further Resources
 
-- [How I backup dedicated root servers](https://blog.veen.world/2020/12/26/how-i-backup-dedicated-root-servers/)
+- [How I backup dedicated root servers](https://blog.veen.world/how-i-backup-dedicated-root-servers/)
 
 ## Credits
 
