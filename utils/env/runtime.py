@@ -82,14 +82,24 @@ def mem_total_mb() -> int:
 
 def mem_stall_pct() -> float:
     """`full avg60` from /proc/pressure/memory in percent. 0.0 on failure."""
+    return pressure_pct("memory")
+
+
+def pressure_pct(resource: str, kind: str = "full") -> float:
+    """`avg60` of one PSI line in percent. 0.0 on failure.
+
+    Args:
+        resource: ``cpu``, ``io`` or ``memory`` under /proc/pressure.
+        kind: ``some`` or ``full``.
+    """
     try:
         text = Path(
-            "/proc/pressure/memory"
+            f"/proc/pressure/{resource}"
         ).read_text()  # nocheck: cache-read -- live kernel pseudo-file
     except OSError:
         return 0.0
     for line in text.splitlines():
-        if not line.startswith("full "):
+        if not line.startswith(f"{kind} "):
             continue
         for field in line.split():
             if field.startswith("avg60="):

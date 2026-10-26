@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import time
 
 from utils import PROJECT_ROOT
-from utils.env.runtime import mem_available_mb, mem_stall_pct, mem_total_mb
+from utils.env.runtime import (
+    mem_available_mb,
+    mem_stall_pct,
+    mem_total_mb,
+    pressure_pct,
+)
 
 DISK_FLOOR_MB = 6 * 2**10
 MEM_FLOOR_RATIO = 0.06
@@ -76,7 +82,10 @@ def run_watched(cmd: list[str], *, env: dict[str, str]) -> int:
             stall = mem_stall_pct()
             print(
                 f"=== swarm-matrix: host mem {avail}M/{total}M available, "
-                f"disk {free_mb}M free on /, stall60 {stall:.1f}% ===",
+                f"disk {free_mb}M free on /, stall60 {stall:.1f}%, "
+                f"cpu60 {pressure_pct('cpu', 'some'):.1f}%, "
+                f"io60 {pressure_pct('io', 'some'):.1f}%, "
+                f"load1 {os.getloadavg()[0]:.1f}/{os.cpu_count()} ===",
                 flush=True,
             )
             if total and avail < total * MEM_FLOOR_RATIO:
