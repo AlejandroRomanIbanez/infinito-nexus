@@ -35,7 +35,22 @@ else
 	done
 fi
 
-docker exec "${MGR}" docker node update --availability drain "${INITIAL_NODE}"
+# Param: $1 availability, $2 node
+# Retries: swarm rejects a node update with "update out of sequence" when the
+# node object changed between the CLI's read and its write.
+set_availability() {
+	local _try
+	for _try in 1 2 3 4 5; do
+		if docker exec "${MGR}" docker node update --availability "$1" "$2"; then
+			return 0
+		fi
+		sleep 2
+	done
+	echo "FAILURE: could not set ${2} to ${1} after ${_try} tries"
+	exit 1
+}
+
+set_availability drain "${INITIAL_NODE}"
 
 NEW_NODE=""
 for i in $(seq 1 "${RESCHED_TIMEOUT}"); do
@@ -45,7 +60,7 @@ for i in $(seq 1 "${RESCHED_TIMEOUT}"); do
 	if [ -n "${NEW_NODE}" ] && [ "${NEW_NODE}" != "${INITIAL_NODE}" ]; then
 		echo "Rescheduled from ${INITIAL_NODE} to ${NEW_NODE} after ${i}s"
 		echo "NEW_NODE=${NEW_NODE}" >>"${SWARM_DRILL_ENV:?SWARM_DRILL_ENV is required (exported by routine/00_one.sh)}"
-		docker exec "${MGR}" docker node update --availability active "${INITIAL_NODE}"
+		set_availability active "${INITIAL_NODE}"
 		echo "${INITIAL_NODE} is active again"
 		exit 0
 	fi
