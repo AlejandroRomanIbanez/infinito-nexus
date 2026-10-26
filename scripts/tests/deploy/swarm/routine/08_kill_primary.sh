@@ -308,7 +308,10 @@ restarted_in_place() {
 # Param: $1 engine
 # Waits for every HA engine, not only $1, before the kill: a node kill takes
 # down every engine instance on that node, so an engine still recovering from
-# the previous kill would face a second fault.
+# the previous kill would face a second fault. A killed stack host, the first
+# manager, is restarted before the app check: it carries the single-host front
+# proxy, so an app replica that restarts meanwhile cannot reach the IdP through
+# it, whatever the engine does.
 kill_primary_of() {
 	local _engine="$1" _dep _old _old_node _old_cid _old_service _killed_node="" _new="" _deadline _stamp
 	if [ -z "$(instance_services "${_engine}")" ]; then
@@ -374,6 +377,12 @@ kill_primary_of() {
 		sleep 3
 	done
 	echo "==> write through the ${_engine} endpoint succeeded after the kill"
+
+	if [ -n "${_killed_node}" ] && [ "${_killed_node}" = "${MANAGERS[0]}" ]; then
+		restart_node "${_killed_node}"
+		wait_app_reachable "" "${_engine}"
+		return 0
+	fi
 
 	wait_app_reachable "${_killed_node}" "${_engine}"
 
