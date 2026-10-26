@@ -229,6 +229,39 @@ wait_full_strength() {
 	done
 }
 
+# Param: $1 node container, $2 redis instance container id
+# Succeeds when every Sentinel answers with one and the same master. A Sentinel
+# that restarts while the master is down cannot resolve the dead master's name,
+# keeps its stale master and denies the quorum for every later failover.
+sentinels_agree() {
+	docker exec "$1" docker exec "$2" sh -c '
+		REDISCLI_AUTH=$(cat "$REDIS_HA_SENTINEL_PASSWORD_FILE")
+		export REDISCLI_AUTH
+		seen=""
+		for s in $REDIS_HA_SENTINELS; do
+			m=$(timeout 3 redis-cli -h "$s" -p "$REDIS_HA_SENTINEL_PORT" --raw \
+				SENTINEL get-master-addr-by-name "$REDIS_HA_MASTER_NAME" 2>/dev/null | head -1)
+			[ -n "$m" ] || exit 1
+			[ -z "$seen" ] || [ "$m" = "$seen" ] || exit 1
+			seen=$m
+		done' >/dev/null 2>&1
+}
+
+wait_sentinels_agree() {
+	local _deadline _loc
+	_deadline=$(($(date +%s) + KILL_PRIMARY_TIMEOUT))
+	while [ "$(date +%s)" -lt "${_deadline}" ]; do
+		_loc=$(instance_location "$(instance_services redis | head -1)")
+		# shellcheck disable=SC2086  # _loc is "<node> <cid>", split into sentinels_agree's args
+		if [ -n "${_loc}" ] && sentinels_agree ${_loc}; then
+			return 0
+		fi
+		sleep 3
+	done
+	echo "FAILURE: the redis Sentinels did not agree on one master within ${KILL_PRIMARY_TIMEOUT}s before the kill"
+	exit 1
+}
+
 # Param: $1 engine, $2 node container, $3 primary instance container id
 # Succeeds when every other instance of a redis primary replicates from it;
 # Sentinel refuses to promote a replica that has not resynced since its restart.
@@ -273,14 +306,23 @@ restarted_in_place() {
 }
 
 # Param: $1 engine
+# Waits for every HA engine, not only $1, before the kill: a node kill takes
+# down every engine instance on that node, so an engine still recovering from
+# the previous kill would face a second fault.
 kill_primary_of() {
-	local _engine="$1" _old _old_node _old_cid _old_service _killed_node="" _new="" _deadline _stamp
+	local _engine="$1" _dep _old _old_node _old_cid _old_service _killed_node="" _new="" _deadline _stamp
 	if [ -z "$(instance_services "${_engine}")" ]; then
 		echo "SKIP: ${_engine} runs no HA instances for ${APP_ID}"
 		return 0
 	fi
-	wait_full_strength "${_engine}"
-	echo "==> ${_engine} and etcd at full strength"
+	for _dep in ${HA_DEPS}; do
+		[ -n "$(instance_services "${_dep}")" ] || continue
+		wait_full_strength "${_dep}"
+		if [ "${_dep}" = redis ]; then
+			wait_sentinels_agree
+		fi
+	done
+	echo "==> every HA engine and etcd at full strength"
 	_old=$(wait_primary "${_engine}")
 	if [ -z "${_old}" ]; then
 		echo "FAILURE: no ${_engine} primary with every replica attached within ${KILL_PRIMARY_TIMEOUT}s before the kill"
