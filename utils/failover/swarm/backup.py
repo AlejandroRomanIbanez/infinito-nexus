@@ -223,9 +223,9 @@ class Backup:
                     ),
                 ]
             ).stdout.strip()
-            return (
-                found == token,
-                f"replayed {dump} (rc={load.returncode}) into {database}",
-            )
+            detail = f"replayed {dump} (rc={load.returncode}) into {database}"
+            if load.returncode:
+                detail += f": {load.stderr.strip()[-500:]}"
+            return found == token, detail
         finally:
             shell.run(["docker", "exec", node, "docker", "rm", "-f", name], check=False)
