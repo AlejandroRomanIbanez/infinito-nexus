@@ -148,6 +148,13 @@ delegates **interactive** authentication to Keycloak:
   `preferred_username` claim to the provisioned account.
 - **Roundcube** logs users in over OAuth2 and talks to Stalwart with **XOAUTH2**
   (`templates/roundcube-oauth.inc.php.j2`).
+- The OIDC directory skips the audience check and gives Keycloak tokens without
+  Stalwart scopes access to mail, contacts, calendars and files
+  (`STALWART_OIDC_TOKEN_VALIDATION`). Tokens of the `stalwart-webui` client get
+  full access, because the WebUI Application names it as its `oauthClientId`.
+- With SSO disabled the WebUI Application carries no `oauthClientId`, so the
+  WebUI signs in against Stalwart's own OAuth server with its client metadata
+  document.
 
 **Design constraint (validated against the live JMAP schema):** Stalwart's
 authentication directory is *Internal XOR one external directory* — there is no
@@ -193,7 +200,7 @@ account (or the Keycloak SSO token when SSO is enabled).
   instance dir, and per-round downloads hit GitHub rate limits) and bind-mounts
   it read-only. The `update:` block next to `webui_version` in
   `meta/services.yml` names the upstream tags, so the version-source updater
-  bumps the bundle on its own.
+  bumps the bundle on its own, within the `v2.` line that server 1.x serves.
 - **The embedded PostgreSQL pins the plain `postgres` image** — the platform's
   postgis default defeats baudolo's substring database detection and would
   degrade backups to torn live-file snapshots. `backup.project_hard_restart`
@@ -278,6 +285,43 @@ The provider cutover is an inventory change; mailbox data moves with it when the
 5. Non-Cloudflare DNS: publish the new DKIM TXT record reported by the deploy; MX and A records keep their hostname.
 
 The cutover is covered end to end by [`files/test/test.sh`](files/test/test.sh), which runs as this role's CLI test whenever `web-app-mailu` is co-deployed — matrix **variant 1**, the round where SSO is off, because the import authenticates with per-account passwords. The whole scenario runs inside the deployed host and needs nothing from the environment around it: it stores mail in both directions in the legacy Mailu, confirms it landed in the maildir volume, runs [`files/python/migrate_from_mailu.py`](files/python/migrate_from_mailu.py) — the same script and argv a real cutover uses — and then asserts over IMAP that the stored mail survived and that live mail still flows. No redeploy is involved; the cutover is a docker-level data move.
+
+## Upgrading from 0.16
+
+Stalwart 1.x refuses to open a 0.16 store and has no in-place upgrade. Before it replaces a running server, the deploy reads the layout of the store that server serves and stops when the store predates 1.0 ([`tasks/store_guard.yml`](tasks/store_guard.yml)). A store from before 1.0 keeps a `bigint` column `v` in table `u`, a 1.x store a `bytea` one. Migrate the store with [`stalwart-migrate`](https://github.com/stalwartlabs/stalwart-migrate) into a new database and swap it in under the role's database name. That name is fixed to `stalwart` ([`plugins/lookup/database.py`](../../plugins/lookup/database.py) derives it from the entity name), so the migration targets a second database that later takes over the name.
+
+1. Make sure the server runs Stalwart `v0.16.27`; `stalwart-migrate` reads no other release. Upgrade an older 0.16 server with the previous revision of this role first.
+2. Back up the database `stalwart` (for example `pg_dump -Fc -d stalwart -f stalwart-v016.dump`) and the role's volumes.
+3. As a PostgreSQL superuser, create the empty target database, owned by the role's database user:
+
+   ```sql
+   CREATE DATABASE stalwart_v1 OWNER stalwart;
+   ```
+
+4. Copy the rendered `config.json` (`STALWART_CONFIG_FILE`, `etc/config.json` in the role's volumes directory) into a new directory and set its `"database"` to `"stalwart_v1"`. This file is the `--target`.
+5. Answer the conversion questions and copy the data while 0.16 keeps serving. Run the tool on the network the `stalwart` container reaches its database on (`docker inspect stalwart`), so the hosts in both files resolve:
+
+   ```sh
+   docker run --rm -it --network <stalwart-network> \
+     -v <volumes-dir>/etc:/etc/stalwart:ro \
+     -v <target-dir>:/etc/stalwart-v1 \
+     -v <state-dir>:/var/lib/stalwart-migrate \
+     stalwartlabs/stalwart-migrate:1.0.0 prepare \
+       --source /etc/stalwart/config.json \
+       --state /var/lib/stalwart-migrate
+   ```
+
+   Then run the same container with `run --source /etc/stalwart/config.json --target /etc/stalwart-v1/config.json --state /var/lib/stalwart-migrate`. `run` copies only what changed since the previous run and may be repeated.
+6. Stop the Stalwart server (`docker stop stalwart` in compose, `docker service scale <stack>_stalwart=0` in swarm) and run the same container with `run --final` and the same options. It verifies the copy and writes `final-report.txt` into the state directory.
+7. Swap the databases, as a PostgreSQL superuser connected to the `postgres` database:
+
+   ```sql
+   ALTER DATABASE stalwart RENAME TO stalwart_v016;
+   ALTER DATABASE stalwart_v1 RENAME TO stalwart;
+   ```
+
+8. Deploy this role. The store guard reads only the store of a running server, so it lets the deploy replace the stopped server, and Stalwart 1.x starts on the migrated store.
+9. Keep `stalwart_v016`, the dump and the state directory until 1.x is verified. `stalwart-migrate rollback` reads the state directory to copy the 1.x store back into a new 0.16 store.
 
 ## Verifying a production server
 

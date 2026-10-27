@@ -36,7 +36,7 @@
       {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
           'methodCalls': [['x:Application/set',
             {'update': {stalwart_webui_app_id: {'resourceUrl': STALWART_WEBUI_LOCAL_URL,
-                                                'oauthClientId': STALWART_WEBUI_OAUTH_CLIENT_ID}}},
+                                                'oauthClientId': STALWART_WEBUI_OAUTH_CLIENT_ID if STALWART_SSO_ENABLED | bool else none}}},
             'c0']]} | to_json }}
 
 - name: "📦 Unpack the WebUI bundle from the local file"

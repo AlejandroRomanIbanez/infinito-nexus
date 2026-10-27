@@ -1,0 +1,34 @@
+---
+# Stalwart 1.x keeps its schema marker in table `u` (v bytea); every 0.x store keeps its bigint quota counters under the same name.
+
+- name: "🔍 Find a running Stalwart server of this deployment"
+  ansible.builtin.command: >-
+    container ps -q --filter status=running
+    --filter {{ ('label=com.docker.swarm.service.name=' ~ lookup('container_service', application_id, 'stalwart'))
+                if DEPLOYMENT_MODE == 'swarm' else ('name=^' ~ STALWART_CONTAINER ~ '$') }}
+  register: stalwart_running_server
+  changed_when: false
+
+- name: "🔍 Read the store layout the running Stalwart serves"
+  database_query:
+    config: "{{ lookup('database', application_id) }}"
+    query_file: "{{ role_path }}/files/sql/store_layout.sql"
+    expect_rows: true
+    mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
+  register: stalwart_store_layout
+  changed_when: false
+  when: stalwart_running_server.stdout | trim | length > 0
+
+- name: "✅ Ensure the running Stalwart serves a 1.x store"
+  ansible.builtin.assert:
+    that:
+      - (stalwart_store_layout.rows | map('first') | list) == ['bytea']
+    fail_msg: >-
+      The running Stalwart serves a store from before 1.0 (type of column u.v:
+      {{ stalwart_store_layout.rows | map('first') | list }}, a 1.x store holds ['bytea']).
+      Stalwart {{ lookup('config', application_id, 'services.stalwart.version') }} refuses to open it and has no in-place upgrade,
+      so the deploy stops before it replaces the running server. Migrate the store into a new
+      database with stalwart-migrate and swap it in as '{{ lookup('database', application_id, 'name') }}',
+      following "Upgrading from 0.16" in roles/web-app-stalwart/README.md, then deploy again.
+    quiet: true
+  when: stalwart_running_server.stdout | trim | length > 0
