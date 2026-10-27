@@ -313,7 +313,7 @@ restarted_in_place() {
 # proxy, so an app replica that restarts meanwhile cannot reach the IdP through
 # it, whatever the engine does.
 kill_primary_of() {
-	local _engine="$1" _dep _old _old_node _old_cid _old_service _killed_node="" _new="" _deadline _stamp
+	local _engine="$1" _dep _old _old_node _old_cid _old_service _killed_node="" _new="" _deadline _stamp _write_err=""
 	if [ -z "$(instance_services "${_engine}")" ]; then
 		echo "SKIP: ${_engine} runs no HA instances for ${APP_ID}"
 		return 0
@@ -369,9 +369,10 @@ kill_primary_of() {
 
 	_stamp="$(date +%s%N)"
 	# shellcheck disable=SC2086  # ${_new% *} is "<node> <cid>", split into write_through_endpoint's args
-	while ! write_through_endpoint "${_engine}" ${_new% *} "${_stamp}" >/dev/null 2>&1; do
+	while ! _write_err=$(write_through_endpoint "${_engine}" ${_new% *} "${_stamp}" 2>&1); do
 		if [ "$(date +%s)" -ge "${_deadline}" ]; then
 			echo "FAILURE: no write through the ${_engine} endpoint within ${KILL_PRIMARY_TIMEOUT}s after the kill"
+			echo "last write error: ${_write_err}"
 			exit 1
 		fi
 		sleep 3
