@@ -65,6 +65,7 @@ STALWART_WEBUI_LOCAL_FILE: "{{ [ STALWART_CONFIG_DIR, 'webui.zip' ] | path_join 
 STALWART_WEBUI_CONTAINER_FILE: "{{ lookup('volume', application_id, 'webui_bundle').target }}"
 STALWART_WEBUI_LOCAL_URL: "file://{{ STALWART_WEBUI_CONTAINER_FILE }}"
 STALWART_WEBUI_APP_DESCRIPTION: "Stalwart Web Interface"
+STALWART_WEBUI_OAUTH_CLIENT_ID: "{{ lookup('config', application_id, 'services.sso.oidc.clients.webui') }}"
 
 STALWART_IP4_PUBLIC: "{{ DOCKER_PUBLIC_BIND_HOST }}"
 STALWART_ACTIVE_PROVIDER: "{{ lookup('mail_provider') == application_id }}"

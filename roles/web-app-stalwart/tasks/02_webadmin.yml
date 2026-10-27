@@ -29,13 +29,14 @@
   ansible.builtin.set_fact:
     stalwart_webui_app_id: "{{ stalwart_webui_apps[0].id }}"
 
-- name: "🔗 Point the WebUI Application at the locally-staged bundle"
+- name: "🔗 Point the WebUI Application at the locally-staged bundle and its OAuth client"
   include_tasks: jmap_call.yml
   vars:
     stalwart_jmap_body: >-
       {{ {'using': ['urn:ietf:params:jmap:core', 'urn:stalwart:jmap'],
           'methodCalls': [['x:Application/set',
-            {'update': {stalwart_webui_app_id: {'resourceUrl': STALWART_WEBUI_LOCAL_URL}}},
+            {'update': {stalwart_webui_app_id: {'resourceUrl': STALWART_WEBUI_LOCAL_URL,
+                                                'oauthClientId': STALWART_WEBUI_OAUTH_CLIENT_ID}}},
             'c0']]} | to_json }}
 
 - name: "📦 Unpack the WebUI bundle from the local file"
