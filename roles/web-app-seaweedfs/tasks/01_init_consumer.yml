@@ -8,22 +8,10 @@
 - name: "🔧 Provision the SeaweedFS bucket on the stack host"
   when: IS_STACK_HOST | bool
   vars:
-    _seaweedfs_bucket_public: "{{ lookup('objstore', objstore_consumer_id, 'public') }}"
-    _seaweedfs_bucket_policy_url: "http://127.0.0.1:{{ SEAWEEDFS_S3_PORT_INTERNAL }}/{{ lookup('objstore', objstore_consumer_id, 'bucket') }}?policy"
-    _seaweedfs_anonymous_deny_policy: "{{ lookup('objstore', objstore_consumer_id, 'bucket') | seaweedfs_anonymous_deny_policy }}"
+    _seaweedfs_bucket_listed: "{{ lookup('objstore', objstore_consumer_id, 'bucket') in (_seaweedfs_buckets.stdout | seaweedfs_bucket_names) }}"
   block:
     - name: "📋 List SeaweedFS buckets"
-      ansible.builtin.shell: |
-        set -euo pipefail
-        echo 's3.bucket.list' | container exec -i {{ SEAWEEDFS_CONTAINER_ADDRESS }} weed shell -master=localhost:{{ SEAWEEDFS_MASTER_PORT_INTERNAL }}
-      args:
-        executable: /bin/bash
-      register: _seaweedfs_buckets
-      changed_when: false
-      timeout: "{{ lookup('timeout', 60) | int }}"
-      retries: 3
-      delay: 10
-      until: _seaweedfs_buckets is succeeded
+      include_tasks: utils/bucket_list.yml
 
     - name: "📁 Create the SeaweedFS bucket for '{{ objstore_consumer_id }}'"
       ansible.builtin.shell: |
@@ -37,59 +25,10 @@
       retries: 3
       delay: 10
       until: _seaweedfs_create is succeeded
-      when: lookup('objstore', objstore_consumer_id, 'bucket') not in _seaweedfs_buckets.stdout
+      when: not _seaweedfs_bucket_listed
 
-    - name: "🔍 Read the bucket policy of '{{ objstore_consumer_id }}'"
-      ansible.builtin.shell: >-
-        {{ SEAWEEDFS_S3_ADMIN_CURL }} {{ _seaweedfs_bucket_policy_url | quote }}
-      args:
-        executable: /bin/bash
-      environment:
-        SEAWEEDFS_ADMIN_CREDENTIALS: "{{ SEAWEEDFS_ADMIN_CREDENTIALS }}"
-      register: _seaweedfs_bucket_policy
-      changed_when: false
-      failed_when: _seaweedfs_bucket_policy.rc not in [0, 22]
-      timeout: "{{ lookup('timeout', 60) | int }}"
-      retries: 3
-      delay: 10
-      until: _seaweedfs_bucket_policy is succeeded
-      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-
-    - name: "🔒 Deny unsigned reads on the private bucket of '{{ objstore_consumer_id }}'"
-      ansible.builtin.shell: >-
-        {{ SEAWEEDFS_S3_ADMIN_CURL }} -X PUT --data-binary @- {{ _seaweedfs_bucket_policy_url | quote }}
-      args:
-        executable: /bin/bash
-        stdin: "{{ _seaweedfs_anonymous_deny_policy | to_json }}"
-      environment:
-        SEAWEEDFS_ADMIN_CREDENTIALS: "{{ SEAWEEDFS_ADMIN_CREDENTIALS }}"
-      register: _seaweedfs_bucket_policy_put
-      changed_when: true
-      timeout: "{{ lookup('timeout', 60) | int }}"
-      retries: 3
-      delay: 10
-      until: _seaweedfs_bucket_policy_put is succeeded
-      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-      when: >-
-        not (_seaweedfs_bucket_public | bool)
-        and (_seaweedfs_bucket_policy.rc != 0
-             or (_seaweedfs_bucket_policy.stdout | from_json) != _seaweedfs_anonymous_deny_policy)
-
-    - name: "🔓 Lift the unsigned-read deny from the public bucket of '{{ objstore_consumer_id }}'"
-      ansible.builtin.shell: >-
-        {{ SEAWEEDFS_S3_ADMIN_CURL }} -X DELETE {{ _seaweedfs_bucket_policy_url | quote }}
-      args:
-        executable: /bin/bash
-      environment:
-        SEAWEEDFS_ADMIN_CREDENTIALS: "{{ SEAWEEDFS_ADMIN_CREDENTIALS }}"
-      register: _seaweedfs_bucket_policy_delete
-      changed_when: true
-      timeout: "{{ lookup('timeout', 60) | int }}"
-      retries: 3
-      delay: 10
-      until: _seaweedfs_bucket_policy_delete is succeeded
-      no_log: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
-      when: >-
-        (_seaweedfs_bucket_public | bool)
-        and _seaweedfs_bucket_policy.rc == 0
-        and (_seaweedfs_bucket_policy.stdout | from_json) == _seaweedfs_anonymous_deny_policy
+    - name: "🔐 Converge the bucket policy of '{{ objstore_consumer_id }}'"
+      include_tasks: utils/bucket_policy.yml
+      vars:
+        seaweedfs_bucket_policy_consumer: "{{ objstore_consumer_id }}"
+      when: _seaweedfs_bucket_listed or _seaweedfs_create is changed
