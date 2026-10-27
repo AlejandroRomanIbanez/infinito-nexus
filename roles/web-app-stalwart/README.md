@@ -152,9 +152,6 @@ delegates **interactive** authentication to Keycloak:
   Stalwart scopes access to mail, contacts, calendars and files
   (`STALWART_OIDC_TOKEN_VALIDATION`). Tokens of the `stalwart-webui` client get
   full access, because the WebUI Application names it as its `oauthClientId`.
-- With SSO disabled the WebUI Application carries no `oauthClientId`, so the
-  WebUI signs in against Stalwart's own OAuth server with its client metadata
-  document.
 
 **Design constraint (validated against the live JMAP schema):** Stalwart's
 authentication directory is *Internal XOR one external directory* — there is no
@@ -180,6 +177,22 @@ authenticated sessions in both modes (`STALWART_RELAY_RULE`).
 
 With SSO disabled the role uses the Internal directory and the bot's derived
 account password.
+
+## WebUI sign-in
+
+The WebUI Application always names `stalwart-webui` (`STALWART_WEBUI_OAUTH_CLIENT_ID`) as its `oauthClientId`, with and without SSO.
+Where the WebUI sends a login depends on the account:
+
+| Account | Authorization server | Client `stalwart-webui` |
+|---|---|---|
+| Account in a domain bound to the Keycloak OIDC directory | Keycloak | Keycloak client from `templates/keycloak/clients.json.j2` |
+| Recovery admin (`STALWART_ADMIN_USER`), and every account while SSO is off | Stalwart | OAuth client the role registers in Stalwart (`tasks/02_webadmin.yml`) |
+
+The role registers that Stalwart client over JMAP (`templates/jmap/oauth_client/`) as a public first-party client, with one redirect URI `<origin>/<prefix>/oauth/callback` and one post-logout URI `<origin>/<prefix>/login` per URL prefix of the WebUI Application.
+`<origin>` is the role's canonical WebUI URL (`STALWART_WEBUI_BASE_URL`), so a Tor deployment registers its `http://` onion origin.
+Every deploy compares the registered client with that target and updates it when they differ.
+A deployment that serves the WebUI on a further origin MUST add that origin's URIs to [`templates/jmap/oauth_client/webui.json.j2`](templates/jmap/oauth_client/webui.json.j2), because a URI added in Stalwart alone is removed by the next deploy.
+Stalwart's login page asks for consent before the password form for every registered client, so a native WebUI login shows an **Allow** step.
 
 ## Calendar & Contacts (CalDAV / CardDAV / WebDAV)
 
@@ -288,7 +301,19 @@ The cutover is covered end to end by [`files/test/test.sh`](files/test/test.sh),
 
 ## Upgrading from 0.16
 
-Stalwart 1.x refuses to open a 0.16 store and has no in-place upgrade. Before it replaces a running server, the deploy reads the layout of the store that server serves and stops when the store predates 1.0 ([`tasks/store_guard.yml`](tasks/store_guard.yml)). A store from before 1.0 keeps a `bigint` column `v` in table `u`, a 1.x store a `bytea` one. Migrate the store with [`stalwart-migrate`](https://github.com/stalwartlabs/stalwart-migrate) into a new database and swap it in under the role's database name. That name is fixed to `stalwart` ([`plugins/lookup/database.py`](../../plugins/lookup/database.py) derives it from the entity name), so the migration targets a second database that later takes over the name.
+Stalwart 1.x refuses to open a 0.16 store and has no in-place upgrade. Every deploy checks the store in the role's database before it starts Stalwart, whatever state the running server is in, and stops when the store predates 1.0 ([`tasks/store_guard.yml`](tasks/store_guard.yml)). A store from before 1.0 keeps a `bigint` column `v` in table `u`, a 1.x store a `bytea` one, and a database without that column holds no store yet.
+
+A deploy that has brought Stalwart 1.x up on the store and finished its provisioning writes the marker `store.layout`, holding the store layout version `1`, into the role's instance directory on the stack host (`STALWART_STORE_MARKER_FILE`, written last in [`tasks/manager_ops.yml`](tasks/manager_ops.yml)).
+A failed deploy writes no marker.
+A deploy that finds the marker passes without reading the store.
+A deploy without the marker reads the store:
+
+| Database | No store yet | Store to read |
+|---|---|---|
+| Shared PostgreSQL | the `postgres` superuser finds no database `stalwart` in the catalog | read as the role's database user |
+| Dedicated PostgreSQL | the volume `stalwart_database` does not exist | read inside the dedicated database container; when that container is not running, the deploy stops and names the database service to start |
+
+Migrate the store with [`stalwart-migrate`](https://github.com/stalwartlabs/stalwart-migrate) into a new database and swap it in under the role's database name. That name is fixed to `stalwart` ([`plugins/lookup/database.py`](../../plugins/lookup/database.py) derives it from the entity name), so the migration targets a second database that later takes over the name.
 
 1. Make sure the server runs Stalwart `v0.16.27`; `stalwart-migrate` reads no other release. Upgrade an older 0.16 server with the previous revision of this role first.
 2. Back up the database `stalwart` (for example `pg_dump -Fc -d stalwart -f stalwart-v016.dump`) and the role's volumes.
@@ -320,8 +345,15 @@ Stalwart 1.x refuses to open a 0.16 store and has no in-place upgrade. Before it
    ALTER DATABASE stalwart_v1 RENAME TO stalwart;
    ```
 
-8. Deploy this role. The store guard reads only the store of a running server, so it lets the deploy replace the stopped server, and Stalwart 1.x starts on the migrated store.
+8. Deploy this role. The store guard finds the migrated 1.x store under the role's database name and lets Stalwart 1.x start on it.
 9. Keep `stalwart_v016`, the dump and the state directory until 1.x is verified. `stalwart-migrate rollback` reads the state directory to copy the 1.x store back into a new 0.16 store.
+
+### Restore and redeploy
+
+The marker lives outside the stack and its volumes, so it survives `docker stack rm`, `docker compose down`, a crashed database and the stop and start cycle of `backup.project_hard_restart`.
+A host that carries the marker therefore redeploys while its dedicated database is down, as in the restore of [`svc-bkp-nfs-2-local`](../svc-bkp-nfs-2-local/README.md) (`docker stack rm`, restore, redeploy).
+A dedicated store on a host without the marker, such as a 0.16 host or a host whose instance directory was lost, needs its database running before the deploy: start the database service of the stack the host last deployed, then deploy.
+Before a host that carries the marker goes back to a 0.16 store, through `stalwart-migrate rollback` or a backup taken under 0.16, delete the marker, so the next deploy reads the store.
 
 ## Verifying a production server
 

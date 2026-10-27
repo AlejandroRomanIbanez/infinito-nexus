@@ -47,6 +47,9 @@ STALWART_OIDC_TOKEN_VALIDATION:
   unscopedTokens: "interoperable"
 
 STALWART_CONTAINER: "{{ lookup('config', application_id, 'services.stalwart.name') }}"
+STALWART_DATABASE_SHARED: "{{ lookup('database', application_id, 'shared') | bool }}"
+STALWART_STORE_LAYOUT_VERSION: "1"
+STALWART_STORE_MARKER_FILE: "{{ [ lookup('container', application_id, 'directories.instance'), 'store.layout' ] | path_join }}"
 
 STALWART_ANTIVIRUS_ENABLED: "{{ lookup('config', application_id, 'services.clamav.enabled') | bool }}"
 STALWART_CLAMAV_HOST: "clamav"
@@ -70,6 +73,7 @@ STALWART_WEBUI_CONTAINER_FILE: "{{ lookup('volume', application_id, 'webui_bundl
 STALWART_WEBUI_LOCAL_URL: "file://{{ STALWART_WEBUI_CONTAINER_FILE }}"
 STALWART_WEBUI_APP_DESCRIPTION: "Stalwart Web Interface"
 STALWART_WEBUI_OAUTH_CLIENT_ID: "{{ lookup('config', application_id, 'services.sso.oidc.clients.webui') }}"
+STALWART_WEBUI_BASE_URL: "{{ lookup('canonical_url', application_id) }}"
 
 STALWART_IP4_PUBLIC: "{{ DOCKER_PUBLIC_BIND_HOST }}"
 STALWART_ACTIVE_PROVIDER: "{{ lookup('mail_provider') == application_id }}"
