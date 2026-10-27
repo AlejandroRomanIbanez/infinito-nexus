@@ -16,7 +16,7 @@ The role serves three canonical domains:
 - `filer.seaweedfs.s3.*` serves the filer web UI behind an admin-only oauth2-proxy.
 - `master.seaweedfs.s3.*` serves the master web UI behind the same admin-only oauth2-proxy.
 
-Per-consumer S3 identities are rendered into `s3.json`: each consuming role receives an access key and bucket-scoped `Read`, `Write`, `List`, and `Tagging` actions, and consumers marked `public` additionally receive anonymous read on their bucket.
+Per-consumer S3 identities are rendered into `s3.json`: each consuming role receives an access key and bucket-scoped `Read`, `Write`, `WriteAcp`, `List`, and `Tagging` actions, and consumers marked `public` additionally receive anonymous read on their bucket.
 Consumer buckets are created through `weed shell` when a consumer role requests provisioning.
 The bucket of every consumer not marked `public` carries a bucket policy statement `DenyAnonymousRead` that denies all unsigned reads, so a `public-read` ACL set by an app never exposes an object; signed and presigned requests are unaffected.
 Every deploy of this role converges that statement on all existing consumer buckets, adding it to private buckets and removing it from public ones, and a consumer's provisioning applies it right after creating the bucket.
