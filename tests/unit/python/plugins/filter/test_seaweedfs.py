@@ -5,6 +5,7 @@ from plugins.filter.seaweedfs import (
     VOLUME_GROW_BATCH,
     VOLUME_SIZE_LIMIT_MB,
     min_free_space,
+    seaweedfs_anonymous_deny_policy,
     seaweedfs_command,
     seaweedfs_sidecar_script,
     volume_slots,
@@ -90,6 +91,34 @@ class TestSeaweedfsSidecarScriptFilter(unittest.TestCase):
 
     def test_contains_no_shell_dollar(self):
         self.assertNotIn("$", seaweedfs_sidecar_script("app", 8333, "AK", "SK"))
+
+
+class TestSeaweedfsAnonymousDenyPolicyFilter(unittest.TestCase):
+    def _statement(self, bucket="mastodon"):
+        (statement,) = seaweedfs_anonymous_deny_policy(bucket)["Statement"]
+        return statement
+
+    def test_uses_the_only_policy_version_seaweedfs_accepts(self):
+        self.assertEqual(seaweedfs_anonymous_deny_policy("b")["Version"], "2012-10-17")
+
+    def test_is_an_explicit_deny_for_every_principal(self):
+        statement = self._statement()
+        self.assertEqual(statement["Effect"], "Deny")
+        self.assertEqual(statement["Principal"], "*")
+
+    def test_spares_requests_that_carry_a_signed_username(self):
+        self.assertEqual(
+            self._statement()["Condition"], {"Null": {"aws:username": "true"}}
+        )
+
+    def test_covers_reads_and_listings_but_no_writes(self):
+        self.assertEqual(self._statement()["Action"], ["s3:Get*", "s3:List*"])
+
+    def test_scopes_the_bucket_and_its_objects(self):
+        self.assertEqual(
+            self._statement("pixelfed")["Resource"],
+            ["arn:aws:s3:::pixelfed", "arn:aws:s3:::pixelfed/*"],
+        )
 
 
 if __name__ == "__main__":

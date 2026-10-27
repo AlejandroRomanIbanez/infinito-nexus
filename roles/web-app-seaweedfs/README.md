@@ -18,6 +18,7 @@ The role serves three canonical domains:
 
 Per-consumer S3 identities are rendered into `s3.json`: each consuming role receives an access key and bucket-scoped `Read`, `Write`, `List`, and `Tagging` actions, and consumers marked `public` additionally receive anonymous read on their bucket.
 Consumer buckets are created through `weed shell` when a consumer role requests provisioning.
+The bucket of every consumer not marked `public` carries a bucket policy that denies all unsigned reads, so a `public-read` ACL set by an app never exposes an object; signed and presigned requests are unaffected.
 
 In embedded mode (`shared: false`) a consumer's compose stack receives a storage-only SeaweedFS container without UI or published ports.
 The embedded S3 listener performs no authentication, so it MUST stay confined to the consumer's isolated compose network.

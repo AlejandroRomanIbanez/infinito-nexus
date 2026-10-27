@@ -105,9 +105,40 @@ def seaweedfs_sidecar_script(bucket, s3_port, access_key, secret_key):
     )
 
 
+def seaweedfs_anonymous_deny_policy(bucket):
+    """Build the bucket policy that denies every unsigned read of *bucket*.
+
+    SeaweedFS honours a public-read object or bucket ACL on an unsigned read
+    unless a bucket policy explicitly denies it first. A bare
+    ``Principal: "*"`` deny would also hit the consumer's own signed and
+    presigned requests; the ``Null`` condition on ``aws:username`` limits it to
+    unsigned ones, because SeaweedFS derives that key from a signed caller's
+    IAM user ARN and evaluates an unsigned request as principal ``*`` without
+    it.
+
+    Args:
+        bucket: bucket the policy is attached to; scopes both the bucket ARN
+            (listings) and its object ARNs (GET/HEAD).
+    """
+    return {
+        "Version": "2012-10-17",
+        "Statement": [
+            {
+                "Sid": "DenyAnonymousRead",
+                "Effect": "Deny",
+                "Principal": "*",
+                "Action": ["s3:Get*", "s3:List*"],
+                "Resource": [f"arn:aws:s3:::{bucket}", f"arn:aws:s3:::{bucket}/*"],
+                "Condition": {"Null": {"aws:username": "true"}},
+            }
+        ],
+    }
+
+
 class FilterModule:
     def filters(self):
         return {
+            "seaweedfs_anonymous_deny_policy": seaweedfs_anonymous_deny_policy,
             "seaweedfs_command": seaweedfs_command,
             "seaweedfs_sidecar_script": seaweedfs_sidecar_script,
         }
