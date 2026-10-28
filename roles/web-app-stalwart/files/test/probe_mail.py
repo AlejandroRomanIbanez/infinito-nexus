@@ -23,6 +23,9 @@ loopback hop reaches Stalwart's bootstrap certificate, which matches no hostname
 arguments as ASCII, so a password holding any non-ASCII character (the platform
 generates passwords containing '€') raises UnicodeEncodeError before LOGIN is
 ever sent.
+A refused connection is retried for up to TIMEOUT seconds: the deploy restarts
+Stalwart for its OIDC and certificate settings just before this probe runs, and
+/healthz/ready answers before the SMTP listeners are bound again.
 """
 
 from __future__ import annotations
@@ -32,7 +35,12 @@ import imaplib
 import smtplib
 import ssl
 import sys
+import time
 from pathlib import Path
+from typing import TYPE_CHECKING, TypeVar
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 SMTP_PORT = 25
 SMTPS_PORT = 465
@@ -42,6 +50,20 @@ TIMEOUT = 60
 MAILBOXES = ("INBOX", "Junk Mail")
 EXTERNAL_RECIPIENT = "relay-probe@example.org"
 RELAY_DENIED = 550
+RETRY_INTERVAL = 2
+
+Session = TypeVar("Session")
+
+
+def connect(open_session: Callable[[], Session]) -> Session:
+    deadline = time.monotonic() + TIMEOUT
+    while True:
+        try:
+            return open_session()
+        except ConnectionRefusedError:
+            if time.monotonic() >= deadline:
+                raise
+            time.sleep(RETRY_INTERVAL)
 
 
 def unverified_context() -> ssl.SSLContext:
@@ -53,13 +75,13 @@ def unverified_context() -> ssl.SSLContext:
 
 def send(host: str, sender: str, recipient: str, eml_path: str) -> int:
     message = Path(eml_path).read_bytes()
-    with smtplib.SMTP(host, SMTP_PORT, timeout=TIMEOUT) as smtp:
+    with connect(lambda: smtplib.SMTP(host, SMTP_PORT, timeout=TIMEOUT)) as smtp:
         smtp.sendmail(sender, [recipient], message)
     return 0
 
 
 def relay(host: str, sender: str, password: str) -> int:
-    with smtplib.SMTP(host, SMTP_PORT, timeout=TIMEOUT) as smtp:
+    with connect(lambda: smtplib.SMTP(host, SMTP_PORT, timeout=TIMEOUT)) as smtp:
         smtp.ehlo()
         smtp.mail(sender)
         anonymous, _ = smtp.rcpt(EXTERNAL_RECIPIENT)
@@ -71,8 +93,10 @@ def relay(host: str, sender: str, password: str) -> int:
         )
         return 1
 
-    with smtplib.SMTP_SSL(
-        host, SMTPS_PORT, timeout=TIMEOUT, context=unverified_context()
+    with connect(
+        lambda: smtplib.SMTP_SSL(
+            host, SMTPS_PORT, timeout=TIMEOUT, context=unverified_context()
+        )
     ) as smtp:
         try:
             smtp.login(sender, password)
@@ -95,8 +119,10 @@ def relay(host: str, sender: str, password: str) -> int:
 
 
 def find(host: str, user: str, password: str, subject: str) -> int:
-    imap = imaplib.IMAP4_SSL(
-        host, IMAPS_PORT, ssl_context=unverified_context(), timeout=TIMEOUT
+    imap = connect(
+        lambda: imaplib.IMAP4_SSL(
+            host, IMAPS_PORT, ssl_context=unverified_context(), timeout=TIMEOUT
+        )
     )
     imap._encoding = "utf-8"
     try:
