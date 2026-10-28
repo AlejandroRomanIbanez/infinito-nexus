@@ -48,7 +48,7 @@ akaunting:
   image: docker.io/akaunting/akaunting
   version: 3.1.21
   repository: https://github.com/akaunting/docker.git
-  ref: master
+  ref: a6328d945200f868ca2d81da95e3a19f97bec5d3
   name: akaunting
   min_storage: 527MB
   company:
