@@ -18,10 +18,8 @@ from utils.roles.meta_lookup import get_role_ports
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
-SERVER_TIMINGS = (
-    "inter 1s fastinter 500ms downinter 1s fall 3 rise 1 "
-    "on-marked-down shutdown-sessions"
-)
+CHECK_TIMEOUT_DEFAULT = 1
+CHECK_FALL_DEFAULT = 3
 DOCKER_DNS = "127.0.0.11:53"
 ADMIN_SOCKET = "/tmp/haproxy-admin.sock"  # noqa: S108 - socket inside the HAProxy container's private /tmp
 CHECK_HTTP = "http"
@@ -48,8 +46,10 @@ def endpoint_settings(application_id: str) -> dict:
 
     Returns:
         ``{"engine", "port", "backend_port", "check", "check_port",
-        "check_path"}``; ``backend_port`` defaults to ``port``, the HTTP
-        fields are None for a non-HTTP check.
+        "check_path", "check_timeout", "check_fall"}``; ``backend_port``
+        defaults to ``port``, the HTTP fields are None for a non-HTTP check,
+        ``check_timeout`` (seconds) and ``check_fall`` (failed checks before a
+        server is marked down) default to 1 and 3.
     """
     endpoint = ha_spec(application_id)["endpoint"]
     if not isinstance(endpoint, dict):
@@ -76,6 +76,8 @@ def endpoint_settings(application_id: str) -> dict:
         "check": check,
         "check_port": _port("check_port") if http else None,
         "check_path": endpoint.get("check_path") if http else None,
+        "check_timeout": int(endpoint.get("check_timeout", CHECK_TIMEOUT_DEFAULT)),
+        "check_fall": int(endpoint.get("check_fall", CHECK_FALL_DEFAULT)),
     }
 
 
@@ -102,11 +104,15 @@ def endpoint_sysctls(port: int) -> dict[str, int]:
     return sysctls
 
 
-def _server_line(service: str, backend_port: int, check_port: int | None) -> str:
+def _server_line(
+    service: str, backend_port: int, check_port: int | None, fall: int
+) -> str:
     port = f" port {check_port}" if check_port else ""
     return (
         f"    server {service} {service}:{backend_port} check{port} "
-        f"resolvers docker resolve-prefer ipv4 init-addr none {SERVER_TIMINGS}"
+        "resolvers docker resolve-prefer ipv4 init-addr none "
+        f"inter 1s fastinter 500ms downinter 1s fall {fall} rise 1 "
+        "on-marked-down shutdown-sessions"
     )
 
 
@@ -191,14 +197,19 @@ def render_haproxy_cfg(
         "    timeout connect 2s",
         "    timeout client 30m",
         "    timeout server 30m",
-        "    timeout check 1s",
         "",
         f"frontend {engine}",
         f"    bind :{settings['port']}",
         f"    default_backend {engine}_writer",
         "",
         f"backend {engine}_writer",
+        f"    timeout check {settings['check_timeout']}s",
         *check,
-        *(_server_line(s, settings["backend_port"], check_port) for s in services),
+        *(
+            _server_line(
+                s, settings["backend_port"], check_port, settings["check_fall"]
+            )
+            for s in services
+        ),
     ]
     return "\n".join(lines) + "\n"

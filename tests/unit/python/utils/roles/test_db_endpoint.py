@@ -10,11 +10,16 @@ from utils.roles.db.endpoint import (
 )
 from utils.roles.meta_lookup import get_role_ports
 
-TIMINGS = (
-    "resolvers docker resolve-prefer ipv4 init-addr none "
-    "inter 1s fastinter 500ms downinter 1s fall 3 rise 1 "
-    "on-marked-down shutdown-sessions"
-)
+
+def _timings(fall):
+    return (
+        "resolvers docker resolve-prefer ipv4 init-addr none "
+        f"inter 1s fastinter 500ms downinter 1s fall {fall} rise 1 "
+        "on-marked-down shutdown-sessions"
+    )
+
+
+TIMINGS = _timings(3)
 
 
 def _instances(engine):
@@ -37,8 +42,16 @@ class TestEndpointSettings(unittest.TestCase):
                 "check": "http",
                 "check_port": ports["patroni"],
                 "check_path": "/primary",
+                "check_timeout": 3,
+                "check_fall": 5,
             },
         )
+
+    def test_engines_without_a_declared_grace_keep_the_defaults(self):
+        for role in ("svc-db-mariadb", "svc-db-openldap", "svc-db-redis"):
+            settings = endpoint_settings(role)
+            self.assertEqual(settings["check_timeout"], 1, role)
+            self.assertEqual(settings["check_fall"], 3, role)
 
     def test_openldap_routes_to_the_instance_port(self):
         ports = _ports("svc-db-openldap")
@@ -96,14 +109,14 @@ class TestPostgres(unittest.TestCase):
         for host in ("mgr-01", "mgr-02", "mgr-03"):
             self.assertIn(
                 f"    server postgres-{host} postgres-{host}:{self.ports['postgres']} "
-                f"check port {self.ports['patroni']} {TIMINGS}\n",
+                f"check port {self.ports['patroni']} {_timings(5)}\n",
                 self.cfg,
             )
 
     def test_checks(self):
         self.assertIn("    option httpchk GET /primary\n", self.cfg)
         self.assertIn("    http-check expect status 200\n", self.cfg)
-        self.assertIn("    timeout check 1s\n", self.cfg)
+        self.assertIn("    timeout check 3s\n", self.cfg)
         self.assertIn(f"    bind :{self.ports['postgres']}\n", self.cfg)
         self.assertIn("    nameserver dns 127.0.0.11:53\n", self.cfg)
 
@@ -120,6 +133,7 @@ class TestElectorEngines(unittest.TestCase):
             endpoint_settings("svc-db-mariadb"), _instances("mariadb")
         )
         self.assertIn("    option httpchk GET /writer\n", cfg)
+        self.assertIn("    timeout check 1s\n", cfg)
         self.assertIn(f"    bind :{ports['mariadb']}\n", cfg)
         self.assertIn(
             f"    server mariadb-mgr-02 mariadb-mgr-02:{ports['mariadb']} "

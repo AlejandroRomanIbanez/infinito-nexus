@@ -39,6 +39,8 @@ postgres:
       check: http
       check_port: patroni
       check_path: /primary
+      check_timeout: 3
+      check_fall: 5
   lifecycle: beta
 haproxy:
   cpus: "0.25"
