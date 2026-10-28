@@ -15,6 +15,7 @@ from ansible.parsing.dataloader import DataLoader
 from ansible.template import Templar
 
 from utils.cache.yaml import load_yaml_any
+from utils.roles.mapping import ROLE_FILE_VARS_MAIN
 from utils.templating.ansible import _trust_as_template
 
 from . import PROJECT_ROOT
@@ -22,7 +23,7 @@ from . import PROJECT_ROOT
 ROLE = PROJECT_ROOT / "roles" / "web-app-stalwart"
 GUARD = ROLE / "tasks" / "store_guard.yml"
 MANAGER_OPS = ROLE / "tasks" / "manager_ops.yml"
-VARS = ROLE / "vars" / "main.yml"
+VARS = ROLE / ROLE_FILE_VARS_MAIN
 
 PASS = "pass"
 ENGINE_DOWN = "Ensure the dedicated store database runs"

@@ -28,7 +28,7 @@
         'name': 'postgres',
         'password': lookup('config', 'svc-db-postgres', 'secrets.credentials.POSTGRES_PASSWORD'),
       }) }}
-    query_file: "{{ role_path }}/files/sql/store_database.sql"
+    query_file: "{{ role_path }}/files/sql/store/database.sql"
     named_args:
       name: "{{ lookup('database', application_id, 'name') }}"
     expect_rows: true
@@ -97,7 +97,7 @@
 - name: "🔍 Read the layout of the store Stalwart opens"
   database_query:
     config: "{{ lookup('database', application_id) }}"
-    query_file: "{{ role_path }}/files/sql/store_layout.sql"
+    query_file: "{{ role_path }}/files/sql/store/layout.sql"
     expect_rows: true
     mask_values: "{{ MASK_CREDENTIALS_IN_LOGS | bool }}"
   register: stalwart_store_layout
