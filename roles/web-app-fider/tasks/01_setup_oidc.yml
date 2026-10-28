@@ -45,15 +45,21 @@
     - DEPLOYMENT_MODE == 'compose'
     - (fider_tenant_count.rows[0][0] | int) == 0
 
-- name: "🥾 Fider | Bootstrap initial tenant via API (swarm, routing-mesh port)"
-  uri_retry:
-    url: "http://127.0.0.1:{{ lookup('config', application_id, 'services.fider.ports.local.http') }}/_api/tenants"
-    method: POST
-    body_format: json
-    body: "{{ FIDER_TENANT_BOOTSTRAP_BODY }}"
-    status_code: [200, 201]
+- name: "🥾 Fider | Bootstrap initial tenant via API (swarm in-container)"
+  ansible.builtin.shell:
+    cmd: >- # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
+      container exec -i {{ FIDER_LOCAL_CID | quote }} bash -c
+      'set -e; body=$(cat); length=$(printf %s "$body" | wc -c);
+      exec 3<>"/dev/tcp/127.0.0.1/$1";
+      printf "POST /_api/tenants HTTP/1.0\r\nContent-Type: application/json\r\nContent-Length: %d\r\n\r\n%s" "$length" "$body" >&3;
+      head -n1 <&3 | cut -d" " -f2' _ {{ FIDER_INTERNAL_PORT | quote }}
+    stdin: "{{ FIDER_TENANT_BOOTSTRAP_BODY | to_json }}"
   register: fider_tenant_bootstrap
   changed_when: true
+  failed_when: (fider_tenant_bootstrap.stdout | trim) not in ['200', '201']
+  retries: 30
+  delay: 2
+  until: fider_tenant_bootstrap.rc == 0
   delegate_to: "{{ FIDER_HOST_NODE }}"
   when:
     - DEPLOYMENT_MODE == 'swarm'
