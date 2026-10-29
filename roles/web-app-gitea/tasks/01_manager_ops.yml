@@ -13,7 +13,7 @@
   delegate_to: "{{ GITEA_HOST_NODE }}"
   register: gitea_http_ready
   changed_when: false
-  retries: 60
+  retries: "{{ ((lookup('timeout', 300) | int) / 5) | round(0, 'ceil') | int }}"
   delay: 5
   until: gitea_http_ready.rc == 0
 

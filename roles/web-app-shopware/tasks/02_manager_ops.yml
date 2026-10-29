@@ -49,11 +49,12 @@
 - name: ⏳ Wait for Shopware HTTP endpoint
   ansible.builtin.shell: >- # nocheck: container-exec-resolver  runtime-resolved CID, delegated to the hosting node
     container exec {{ SHOPWARE_WEB_LOCAL_CID | quote }}
-    sh -c 'wget -q --spider "$1/robots.txt" || wget -q --spider "$1/"' _ {{ SHOPWARE_API_BASE | quote }}
+    sh -c 'timeout "$2" wget -q --spider "$1/robots.txt" || timeout "$2" wget -q --spider "$1/"'
+    _ {{ SHOPWARE_API_BASE | quote }} {{ lookup('timeout', 10) | int }}
   delegate_to: "{{ SHOPWARE_WEB_HOST_NODE }}"
   register: shopware_http_ready
   changed_when: false
-  retries: 60
+  retries: "{{ ((lookup('timeout', 300) | int) / 5) | round(0, 'ceil') | int }}"
   delay: 5
   until: shopware_http_ready.rc == 0
 
