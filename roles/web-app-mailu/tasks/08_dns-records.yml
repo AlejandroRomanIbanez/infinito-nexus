@@ -7,12 +7,15 @@
         or (
           lookup('users', MAILU_DMARC_RUA_USER).forward | length > 0
           and 'mailbox' in lookup('users', lookup('users', MAILU_DMARC_RUA_USER).forward).accounts
+          and lookup('users', lookup('users', MAILU_DMARC_RUA_USER).forward).email
+            == lookup('users', lookup('users', MAILU_DMARC_RUA_USER).forward).username ~ '@' ~ MAILU_DOMAIN
         )
     fail_msg: >-
       services.mailu.dmarc.rua_user '{{ MAILU_DMARC_RUA_USER }}' carries
-      neither a mailbox account nor a forward to a user with one, so Mailu
-      delivers {{ MAILU_DMARC_RUA }} to no mailbox and every DMARC aggregate
-      report bounces.
+      neither a mailbox account nor a forward to a user with one whose email
+      is that mailbox (<username>@{{ MAILU_DOMAIN }}), so {{ MAILU_DMARC_RUA }}
+      reaches no Mailu mailbox and DMARC aggregate reports bounce or leave
+      the server.
     quiet: true
 
 - name: "🌐 DNS (Cloudflare) for Mailu"
