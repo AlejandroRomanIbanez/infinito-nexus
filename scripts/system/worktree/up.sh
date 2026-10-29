@@ -53,7 +53,7 @@ git worktree add "${path}" "${branch}"
 
 git_common_dir="$(git rev-parse --path-format=absolute --git-common-dir)"
 
-lab_prefix="10.244.${slot}"
+lab_prefix="10.160.${slot}"
 
 echo ">>> Pinning slot ${slot} in ${path}/custom.env"
 cat >"${path}/custom.env" <<PINS
