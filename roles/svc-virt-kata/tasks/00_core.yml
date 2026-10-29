@@ -59,9 +59,14 @@
     - not (IS_SWARM_MANAGER | bool)
 
 - name: "🏷️ Label this node as kata-capable"
-  ansible.builtin.command: >-
-    container node update --label-add {{ SANDBOX_NODE_LABEL }}=true
-    {{ ansible_facts['hostname'] }}
+  ansible.builtin.shell: >-
+    set -o pipefail &&
+    node_id=$(container node ls --format '{{ '{{' }}.ID{{ '}}' }} {{ '{{' }}.Hostname{{ '}}' }} {{ '{{' }}.Status{{ '}}' }}'
+    | awk -v host={{ ansible_facts['hostname'] | quote }} '$2 == host && $3 == "Ready" { print $1 }') &&
+    [ "$(printf '%s\n' "$node_id" | grep -c .)" -eq 1 ] &&
+    container node update --label-add {{ SANDBOX_NODE_LABEL }}=true "$node_id"
+  args:
+    executable: /bin/bash
   register: svc_virt_kata_label
   changed_when: svc_virt_kata_label.rc == 0
   retries: 20
