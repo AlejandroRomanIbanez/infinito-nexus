@@ -279,9 +279,9 @@ class TestChecks(unittest.TestCase):
             _M.check_spf(_args(), [], self.report)
         self.assertEqual(self.report.failures, 1)
 
-    def _check_dmarc_record(self, record):
+    def _check_dmarc_record(self, record, **overrides):
         with self._patch_query({("_dmarc.example.org", _M.TYPE_TXT): [record]}):
-            _M.check_dmarc(_args(), [], self.report)
+            _M.check_dmarc(_args(**overrides), [], self.report)
 
     def test_dmarc_requires_a_policy_and_the_rua_address(self):
         self._check_dmarc_record(
@@ -314,6 +314,30 @@ class TestChecks(unittest.TestCase):
         self._check_dmarc_record(
             "v=DMARC1; p=reject; "
             "RUA=mailto:reports@elsewhere.net!10m, mailto:Administrator@Example.org!5m"
+        )
+        self.assertEqual(self.report.failures, 0)
+
+    def test_dmarc_duplicate_rua_invalidates_the_record(self):
+        self._check_dmarc_record(
+            "v=DMARC1; p=reject; rua=mailto:reports@elsewhere.net; "
+            "rua=mailto:administrator@example.org"
+        )
+        self.assertEqual(self.report.failures, 1)
+
+    def test_dmarc_tags_differing_only_in_case_are_duplicates(self):
+        with self.assertRaises(ValueError):
+            _M.dmarc_tags("v=DMARC1; p=reject; P=none")
+
+    def test_dmarc_rua_address_is_percent_decoded(self):
+        self._check_dmarc_record(
+            "v=DMARC1; p=reject; rua=mailto:dmarc%2Breports@example.org!10m",
+            dmarc_rua="dmarc+reports@example.org",
+        )
+        self.assertEqual(self.report.failures, 0)
+
+    def test_dmarc_rua_header_fields_are_not_part_of_the_address(self):
+        self._check_dmarc_record(
+            "v=DMARC1; p=reject; rua=mailto:administrator@example.org?subject=dmarc"
         )
         self.assertEqual(self.report.failures, 0)
 

@@ -4,12 +4,15 @@
     that:
       - >-
         'mailbox' in lookup('users', MAILU_DMARC_RUA_USER).accounts
-        or lookup('users', MAILU_DMARC_RUA_USER).forward | length > 0
+        or (
+          lookup('users', MAILU_DMARC_RUA_USER).forward | length > 0
+          and 'mailbox' in lookup('users', lookup('users', MAILU_DMARC_RUA_USER).forward).accounts
+        )
     fail_msg: >-
       services.mailu.dmarc.rua_user '{{ MAILU_DMARC_RUA_USER }}' carries
-      neither a mailbox account nor a forward, so Mailu provisions no
-      recipient for {{ MAILU_DMARC_RUA }} and every DMARC aggregate report
-      bounces.
+      neither a mailbox account nor a forward to a user with one, so Mailu
+      delivers {{ MAILU_DMARC_RUA }} to no mailbox and every DMARC aggregate
+      report bounces.
     quiet: true
 
 - name: "🌐 DNS (Cloudflare) for Mailu"

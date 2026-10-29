@@ -23,6 +23,7 @@ import struct
 import sys
 import time
 from pathlib import Path
+from urllib.parse import unquote
 
 TYPE_A = 1
 TYPE_CNAME = 5
@@ -314,12 +315,21 @@ def check_spf(args, resolvers, report: Report) -> None:
 
 
 def dmarc_tags(record: str) -> dict[str, str]:
-    """Split a DMARC record into its ``tag=value`` pairs, tags lowercased."""
+    """Split a DMARC record into its ``tag=value`` pairs, tags lowercased.
+
+    Raises:
+        ValueError: a tag occurs twice, which invalidates the whole record
+            (RFC 6376 3.2 tag-list, adopted by RFC 7489 6.3).
+    """
     tags: dict[str, str] = {}
     for field in record.split(";"):
         tag, separator, value = field.partition("=")
-        if separator:
-            tags[tag.strip().lower()] = value.strip()
+        if not separator:
+            continue
+        tag = tag.strip().lower()
+        if tag in tags:
+            raise ValueError(f"duplicate tag {tag}=")
+        tags[tag] = value.strip()
     return tags
 
 
@@ -327,13 +337,14 @@ def dmarc_report_addresses(uris: str) -> list[str]:
     """The lowercased ``mailto:`` addresses of a ``rua``/``ruf`` value.
 
     A URI may end in a ``!<size>`` report size limit (RFC 7489 6.2), which is
-    not part of the address.
+    not part of the address. The address itself may be percent-encoded and
+    followed by ``?`` header fields (RFC 6068 2).
     """
     addresses: list[str] = []
     for uri in uris.split(","):
-        target = uri.strip().split("!", 1)[0].lower()
-        if target.startswith("mailto:"):
-            addresses.append(target[len("mailto:") :])
+        scheme, separator, target = uri.strip().split("!", 1)[0].partition(":")
+        if separator and scheme.lower() == "mailto":
+            addresses.append(unquote(target.split("?", 1)[0]).lower())
     return addresses
 
 
@@ -345,7 +356,11 @@ def check_dmarc(args, resolvers, report: Report) -> None:
     if not dmarc:
         report.fail(f"{name} has no v=DMARC1 TXT record")
         return
-    tags = dmarc_tags(dmarc[0])
+    try:
+        tags = dmarc_tags(dmarc[0])
+    except ValueError as error:
+        report.fail(f"{name} is not a valid DMARC record, {error}: {dmarc[0]}")
+        return
     if not tags.get("p"):
         report.fail(f"{name} declares no policy (p=): {dmarc[0]}")
         return
