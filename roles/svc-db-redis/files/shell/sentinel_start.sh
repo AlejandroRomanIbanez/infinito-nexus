@@ -15,6 +15,9 @@
 # Param: SENTINEL_PARALLEL_SYNCS - parallel-syncs
 # Param: SENTINEL_PORT          - Sentinel port
 # Param: REDIS_PORT             - Redis port
+# Param: SENTINEL_PEER_WAIT_S   - seconds a restarting Sentinel keeps asking its peers for the current
+#                                 master (default 120); the saved master may be stale after a failover
+#                                 and the node's DNS may not resolve the peers yet
 set -eu
 
 : "${SENTINEL_SELF:?}" "${SENTINEL_MASTER_NAME:?}" "${SENTINEL_BOOTSTRAP:?}"
@@ -32,17 +35,26 @@ touch "$conf"
 instances=" ${SENTINEL_INSTANCES:?} "
 sentinels=" $SENTINEL_SELF ${SENTINEL_PEERS?} "
 
-master=$(awk -v n="$name" '$1 == "sentinel" && $2 == "monitor" && $3 == n { print $4 }' "$conf" | tail -1)
-case "$instances" in *" $master "*) ;; *) master="" ;; esac
-if [ -z "$master" ]; then
-  master=$(
-    for peer in ${SENTINEL_PEERS?}; do
-      timeout 3 redis-cli -h "$peer" -p "$port" --raw \
-        SENTINEL get-master-addr-by-name "$name" 2>/dev/null |
-        head -1 | awk -F. '!/^[0-9.]+$/ && !/:/ { print $1 }' || true # nocheck: shell-or-true -- an unreachable peer just casts no vote
-    done | grep -E '^[A-Za-z0-9_-]+$' | sort | uniq -c | sort -rn | awk 'NR == 1 { print $2 }'
-  )
+peer_master() {
+  for peer in ${SENTINEL_PEERS?}; do
+    timeout 3 redis-cli -h "$peer" -p "$port" --raw \
+      SENTINEL get-master-addr-by-name "$name" 2>/dev/null |
+      head -1 | awk -F. '!/^[0-9.]+$/ && !/:/ { print $1 }' || true # nocheck: shell-or-true -- an unreachable peer just casts no vote
+  done | grep -E '^[A-Za-z0-9_-]+$' | sort | uniq -c | sort -rn | awk -v instances="$instances" '
+    index(instances, " " $2 " ") { print $2; exit }'
+}
+
+saved=$(awk -v n="$name" '$1 == "sentinel" && $2 == "monitor" && $3 == n { print $4 }' "$conf" | tail -1)
+case "$instances" in *" $saved "*) ;; *) saved="" ;; esac
+master=$(peer_master)
+if [ -z "$master" ] && [ -n "$saved" ]; then
+  deadline=$(($(date +%s) + ${SENTINEL_PEER_WAIT_S:-120}))
+  while [ -z "$master" ] && [ "$(date +%s)" -lt "$deadline" ]; do
+    sleep 2
+    master=$(peer_master)
+  done
 fi
+[ -n "$master" ] || master="$saved"
 [ -n "$master" ] || master="$SENTINEL_BOOTSTRAP"
 
 {

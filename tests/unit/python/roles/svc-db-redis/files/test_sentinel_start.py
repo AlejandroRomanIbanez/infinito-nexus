@@ -75,6 +75,7 @@ class SentinelStartTests(unittest.TestCase):
                 "SENTINEL_PARALLEL_SYNCS": "1",
                 "SENTINEL_PORT": "26379",
                 "REDIS_PORT": "6379",
+                "SENTINEL_PEER_WAIT_S": "0",
             }
         )
         subprocess.run(["sh", str(SCRIPT)], env=env, check=True)
@@ -124,6 +125,25 @@ class SentinelStartTests(unittest.TestCase):
             lines.index("sentinel monitor redis redis-b 6379 2"),
             lines.index("sentinel config-epoch redis 4"),
         )
+
+    def test_restarted_sentinel_follows_its_peers_over_a_stale_saved_master(self):
+        self.conf.write_text(
+            "sentinel monitor redis redis-a 6379 2\n", encoding="utf-8"
+        )
+        for peer in ("redis-sentinel-b", "redis-sentinel-c"):
+            (self.base / "answers" / peer).write_text(
+                "redis-b\n6379\n", encoding="utf-8"
+            )
+        self.assertIn("sentinel monitor redis redis-b 6379 2", self._run())
+
+    def test_peers_naming_an_unknown_instance_cast_no_vote(self):
+        self.conf.write_text(
+            "sentinel monitor redis redis-a 6379 2\n", encoding="utf-8"
+        )
+        (self.base / "answers" / "redis-sentinel-b").write_text(
+            "redis-gone\n6379\n", encoding="utf-8"
+        )
+        self.assertIn("sentinel monitor redis redis-a 6379 2", self._run())
 
 
 if __name__ == "__main__":
