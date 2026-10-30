@@ -88,6 +88,15 @@ test("seaweedfs: an uploaded Akaunting company logo is stored in the SeaweedFS b
       await fileInput.waitFor({ state: "attached", timeout: resolveTimeout(60_000) });
       await fileInput.setInputFiles({ name: marker, mimeType: "image/png", buffer: PNG_1x1 });
 
+      const applyCrop = appPage.locator(".dropzone.crop-active .fixed.inset-0 button").last();
+      const cropShown = await applyCrop
+        .waitFor({ state: "visible", timeout: resolveTimeout(15_000) })
+        .then(() => true, () => false);
+      if (cropShown) {
+        await applyCrop.click({ timeout: resolveTimeout(30_000) });
+        await applyCrop.waitFor({ state: "hidden", timeout: resolveTimeout(30_000) });
+      }
+
       const saveAction = appPage
         .getByRole("button", { name: /^(save|update)$/i })
         .or(appPage.locator("button[type='submit'], #index-more-actions button.button-submit"))
