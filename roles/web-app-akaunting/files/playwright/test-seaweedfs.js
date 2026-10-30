@@ -97,6 +97,14 @@ test("seaweedfs: an uploaded Akaunting company logo is stored in the SeaweedFS b
         await applyCrop.waitFor({ state: "hidden", timeout: resolveTimeout(30_000) });
       }
 
+      const country = appPage.getByPlaceholder("- Select Country -");
+      if ((await country.count()) && !(await country.isDisabled()) && !(await country.inputValue())) {
+        await country.click({ timeout: resolveTimeout(30_000) });
+        const firstCountry = appPage.locator(".el-select-dropdown__item:visible").first();
+        await firstCountry.click({ timeout: resolveTimeout(30_000) });
+        await expect(country, "the required company country must be set before Save submits").not.toHaveValue("");
+      }
+
       const saveAction = appPage
         .getByRole("button", { name: /^(save|update)$/i })
         .or(appPage.locator("button[type='submit'], #index-more-actions button.button-submit"))
