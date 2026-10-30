@@ -186,20 +186,44 @@ restore_name_files() {
 }
 
 # Param: $1 node container
+# Prints how many tasks of the services pinned to $1 run there; their task
+# containers are named <service>-<node>.<slot>.<task id>.
+pinned_tasks_running() {
+	local _names
+	if ! _names=$(docker exec "$1" docker ps --filter status=running --format '{{.Names}}' 2>/dev/null); then
+		echo 0
+		return 0
+	fi
+	printf '%s\n' "${_names}" | awk -v marker="-$1." 'index($0, marker) { n++ } END { print n + 0 }'
+}
+
+# Param: $1 node container, $2 pinned tasks it ran before the kill
+# `node ls` still reports a just-killed node Ready until swarm misses its
+# heartbeats, so the node counts as back only once its pinned tasks run again.
+# A restarted manager's agent can hang registering its session with a manager
+# that restarted shortly before; the node then stays Down with no task, so its
+# Docker daemon is restarted once halfway through the timeout.
 restart_node() {
-	local _deadline
+	local _deadline _kick _running
 	docker start "$1" >/dev/null
 	restore_name_files "$1"
 	_deadline=$(($(date +%s) + KILL_PRIMARY_TIMEOUT))
+	_kick=$(($(date +%s) + KILL_PRIMARY_TIMEOUT / 2))
 	while [ "$(date +%s)" -lt "${_deadline}" ]; do
-		if docker exec "${CTL}" docker node ls --format '{{.Hostname}} {{.Status}}' |
-			grep -qxF "$1 Ready"; then
-			echo "==> $1 rejoined the swarm"
+		_running=$(pinned_tasks_running "$1")
+		if [ "${_running}" -ge "$2" ]; then
+			echo "==> $1 rejoined the swarm and runs its ${_running} pinned tasks again"
 			return 0
+		fi
+		if [ -n "${_kick}" ] && [ "$(date +%s)" -ge "${_kick}" ]; then
+			echo "WARNING: $1 runs ${_running} of its $2 pinned tasks $((KILL_PRIMARY_TIMEOUT / 2))s after the restart (swarm agent session hang); restarting its Docker daemon"
+			docker exec "$1" systemctl restart docker
+			_kick=""
 		fi
 		sleep 3
 	done
-	echo "FAILURE: $1 did not rejoin within ${KILL_PRIMARY_TIMEOUT}s"
+	echo "FAILURE: $1 runs ${_running} of its $2 pinned tasks ${KILL_PRIMARY_TIMEOUT}s after the restart"
+	docker exec "${CTL}" docker node ls
 	exit 1
 }
 
@@ -313,7 +337,7 @@ restarted_in_place() {
 # proxy, so an app replica that restarts meanwhile cannot reach the IdP through
 # it, whatever the engine does.
 kill_primary_of() {
-	local _engine="$1" _dep _old _old_node _old_cid _old_service _killed_node="" _new="" _deadline _stamp _write_err=""
+	local _engine="$1" _dep _old _old_node _old_cid _old_service _killed_node="" _pinned=0 _new="" _deadline _stamp _write_err=""
 	if [ -z "$(instance_services "${_engine}")" ]; then
 		echo "SKIP: ${_engine} runs no HA instances for ${APP_ID}"
 		return 0
@@ -343,6 +367,7 @@ kill_primary_of() {
 	else
 		pick_controller "${_old_node}"
 		save_name_files "${_old_node}"
+		_pinned=$(pinned_tasks_running "${_old_node}")
 		docker kill "${_old_node}" >/dev/null
 		_killed_node="${_old_node}"
 		echo "==> killed node ${_old_node}"
@@ -380,7 +405,7 @@ kill_primary_of() {
 	echo "==> write through the ${_engine} endpoint succeeded after the kill"
 
 	if [ -n "${_killed_node}" ] && [ "${_killed_node}" = "${MANAGERS[0]}" ]; then
-		restart_node "${_killed_node}"
+		restart_node "${_killed_node}" "${_pinned}"
 		wait_app_reachable "" "${_engine}"
 		return 0
 	fi
@@ -388,7 +413,7 @@ kill_primary_of() {
 	wait_app_reachable "${_killed_node}" "${_engine}"
 
 	if [ -n "${_killed_node}" ]; then
-		restart_node "${_killed_node}"
+		restart_node "${_killed_node}" "${_pinned}"
 	fi
 }
 
