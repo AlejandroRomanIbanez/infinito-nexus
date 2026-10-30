@@ -8,8 +8,8 @@ const {
   normalizeBaseUrl,
 } = require("./personas");
 
-const PNG_1x1 = Buffer.from(
-  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+const LOGO_PNG_64x64 = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAIAAAAlC+aJAAAAT0lEQVR42u3PQQkAAAgEsItjRCMaywi+hcEKLNXzWgQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQEBAQELgv/q4FLyDX8mgAAAABJRU5ErkJggg==",
   "base64",
 );
 
@@ -86,7 +86,7 @@ test("seaweedfs: an uploaded Akaunting company logo is stored in the SeaweedFS b
       const marker = `infinito-storage-check-${Date.now()}.png`;
       const fileInput = appPage.locator('input[type="file"]').first();
       await fileInput.waitFor({ state: "attached", timeout: resolveTimeout(60_000) });
-      await fileInput.setInputFiles({ name: marker, mimeType: "image/png", buffer: PNG_1x1 });
+      await fileInput.setInputFiles({ name: marker, mimeType: "image/png", buffer: LOGO_PNG_64x64 });
 
       const applyCrop = appPage.locator(".dropzone.crop-active .fixed.inset-0 button").last();
       const cropShown = await applyCrop
