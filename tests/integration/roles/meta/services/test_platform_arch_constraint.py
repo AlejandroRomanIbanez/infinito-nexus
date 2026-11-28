@@ -1,8 +1,9 @@
 """A role that pins itself to a CPU architecture reaches the swarm renderer.
 
 `platform_arch` on a service is only meaningful if
-`roles/sys-svc-container/templates/deploy.yml.j2` turns it into a placement
-constraint, so the declaration and its consumer are asserted together.
+`roles/sys-svc-container/templates/deploy.yml.j2` reads it and
+`plugins/filter/swarm/deploy.py` turns it into a placement constraint, so the
+declaration and its consumers are asserted together.
 """
 
 from __future__ import annotations
@@ -21,6 +22,7 @@ if TYPE_CHECKING:
 
 ROLES_DIR = PROJECT_ROOT / "roles"
 DEPLOY_TEMPLATE = PROJECT_ROOT / "roles/sys-svc-container/templates/deploy.yml.j2"
+DEPLOY_FILTER = PROJECT_ROOT / "plugins/filter/swarm/deploy.py"
 
 DOCKER_ARCHITECTURES = {"x86_64", "aarch64", "armv7l", "ppc64le", "s390x"}
 
@@ -49,9 +51,8 @@ def _declared_arches() -> dict[str, str]:
 
 class TestPlatformArchConstraint(unittest.TestCase):
     def test_renderer_consumes_platform_arch(self) -> None:
-        template = read_text(str(DEPLOY_TEMPLATE))
-        self.assertIn("platform_arch", template)
-        self.assertIn("node.platform.arch ==", template)
+        self.assertIn("platform_arch", read_text(str(DEPLOY_TEMPLATE)))
+        self.assertIn("node.platform.arch ==", read_text(str(DEPLOY_FILTER)))
 
     def test_declared_arches_are_docker_values(self) -> None:
         for location, arch in _declared_arches().items():
