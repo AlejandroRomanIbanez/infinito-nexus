@@ -65,6 +65,6 @@ drill [backup/base.sh](backup/base.sh) -
 marker [05_seed_content.sh](05_seed_content.sh) -
 drain [06_drain_worker.sh](06_drain_worker.sh) -
 assert [07_assert_state.sh](07_assert_state.sh) -
-kill the primary node of every central HA engine the app uses, then write through its endpoint, save through the app when it ships `files/failover/save.sh`, and require an HTTP status below 500 from it (HA rows with `INFINITO_CI_KILL_PRIMARY=true`)
+kill the primary node of every central HA engine the app uses, then write through its endpoint, save through the app when it ships `files/shell/failover_save.sh`, and require an HTTP status below 500 from it (HA rows with `INFINITO_CI_KILL_PRIMARY=true`)
 [08_kill_primary.sh](08_kill_primary.sh) -
 purge [../utils/clean/purge_stacks.sh](../utils/clean/purge_stacks.sh).

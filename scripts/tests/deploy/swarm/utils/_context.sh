@@ -110,8 +110,8 @@ BACKUP_NFS_VOLUME="${BACKUP_NFS_VOLUMES%%$'\n'*}"
 NFS_CHECK_MOUNTPOINT="/mnt/nfs-check"
 
 FAILOVER_SAVE=""
-if [ -f "${ROLE_DIR}/files/failover/save.sh" ]; then
-	FAILOVER_SAVE="${ROLE_DIR}/files/failover/save.sh"
+if [ -f "${ROLE_DIR}/files/shell/failover_save.sh" ]; then
+	FAILOVER_SAVE="${ROLE_DIR}/files/shell/failover_save.sh"
 fi
 
 export APP_ID ENTITY STACK_NAME SERVICE_NAME PRIMARY_SERVICE_KEY CUSTOM_IMAGE_REPO DB_DEP HA_DEPS NFS_VOLUMES PRIMARY_NFS_VOLUME BACKUP_NFS_VOLUME DEFAULT_PLACEMENT_MANAGER PROBE_PORT NFS_CHECK_MOUNTPOINT FAILOVER_SAVE
@@ -185,7 +185,7 @@ probe_app_http() {
 		if command -v curl >/dev/null 2>&1; then
 			code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 "http://localhost:$1/") || exit 1
 		elif command -v wget >/dev/null 2>&1; then
-			code=$(wget -S -O /dev/null -T 10 "http://localhost:$1/" 2>&1 |
+			code=$(wget -S -O - -T 10 "http://localhost:$1/" 2>&1 >/dev/null |
 				sed -n "s/^ *HTTP\/[0-9.]* \([0-9][0-9][0-9]\).*/\1/p" | tail -n 1)
 		else
 			exit 2

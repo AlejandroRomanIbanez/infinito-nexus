@@ -47,7 +47,7 @@
       {{ DB_HA_MIGRATING | combine({application_id: (_db_ha_prepare_legacy.rc == 0
          and (_db_ha_prepare_legacy.stdout | trim) != 'true')}) }}
 
-- name: "🛡️ db_ha_prepare | refuse to migrate '{{ application_id }}' to HA without a backup"
+- name: "🛡️ db_ha_prepare | no HA migration of '{{ application_id }}' without a backup"
   ansible.builtin.assert:
     that:
       - not ((DB_HA_MIGRATING[application_id] | bool) and (_db_ha_prepare_backup_declared | bool) and not (_db_ha_prepare_backup | bool))

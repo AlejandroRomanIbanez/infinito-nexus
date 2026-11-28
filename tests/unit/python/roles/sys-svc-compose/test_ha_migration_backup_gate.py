@@ -12,9 +12,7 @@ HA_DIR = (
 )
 PREPARE = HA_DIR / "prepare.yml"
 PREPARE_HA = HA_DIR / "prepare_ha.yml"
-REFUSAL = (
-    "🛡️ db_ha_prepare | refuse to migrate '{{ application_id }}' to HA without a backup"
-)
+REFUSAL = "🛡️ db_ha_prepare | no HA migration of '{{ application_id }}' without a backup"
 BACKUP = "💾 db_ha_prepare | back up before migrating to the HA form"
 APP = "svc-db-postgres"
 
@@ -82,7 +80,7 @@ class TestHaMigrationBackupGate(unittest.TestCase):
     def test_a_migration_without_a_backup_host_is_refused(self) -> None:
         self.assertFalse(
             _refusal_holds(migrating=True, backup_kind="sql", backup_hosts=[]),
-            "requirement 041 takes a backup before converting a standalone "
+            "the migration takes a backup before converting a standalone "
             "engine; with no backup host the deploy must stop, not skip it",
         )
 

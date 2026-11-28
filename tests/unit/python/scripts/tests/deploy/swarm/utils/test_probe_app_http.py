@@ -1,9 +1,8 @@
 """The kill-primary probe's app checks, run against stubbed containers.
 
 The failover app check used to pass on an HTTP 500 and on a bare open port.
-``probe_app_http`` judges the status code instead,
-and the save hook of the representative app (``web-app-wordpress``) proves a
-write through the app. The stub ``docker`` drops every ``exec [flags] <target>``
+``probe_app_http`` judges the status code instead, and the save hook of the
+representative app (``web-app-wordpress``) proves a write through the app. The stub ``docker`` drops every ``exec [flags] <target>``
 and runs the rest locally, so the in-container shell runs against stubbed
 ``curl``, ``wget`` and ``wp``.
 """
@@ -23,7 +22,12 @@ CONTEXT = (
     PROJECT_ROOT / "scripts" / "tests" / "deploy" / "swarm" / "utils" / "_context.sh"
 )
 SAVE_HOOK = (
-    PROJECT_ROOT / "roles" / "web-app-wordpress" / "files" / "failover" / "save.sh"
+    PROJECT_ROOT
+    / "roles"
+    / "web-app-wordpress"
+    / "files"
+    / "shell"
+    / "failover_save.sh"
 )
 
 DOCKER = """#!/bin/sh
