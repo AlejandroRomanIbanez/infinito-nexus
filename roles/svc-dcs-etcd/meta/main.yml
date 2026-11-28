@@ -1,6 +1,6 @@
 ---
 galaxy_info:
-  author: Alejandro Roman
+  author: Alejandro Roman Ibanez
   description: Shared etcd coordination store for leader election of the central database clusters on Docker Swarm
   license: Infinito.Nexus Community License (Non-Commercial)
   company: |
