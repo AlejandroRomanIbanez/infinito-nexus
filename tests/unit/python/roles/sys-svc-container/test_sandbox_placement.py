@@ -3,6 +3,7 @@ from pathlib import Path
 
 from jinja2 import Environment, FileSystemLoader, StrictUndefined, select_autoescape
 
+from plugins.filter.swarm.deploy import swarm_deploy, swarm_deploy_replicas
 from plugins.filter.swarm.placement import swarm_placement_constraints
 from utils import PROJECT_ROOT
 
@@ -57,6 +58,8 @@ class TestSandboxPlacement(unittest.TestCase):
         env.filters["resource_filter"] = lambda _apps, *_a, **_k: ""
         env.filters["swarm_restart_condition"] = lambda value: value
         env.filters["swarm_placement_constraints"] = swarm_placement_constraints
+        env.filters["swarm_deploy"] = swarm_deploy
+        env.filters["swarm_deploy_replicas"] = swarm_deploy_replicas
 
         def _lookup(name, *args, **kwargs):
             if name == "applications":

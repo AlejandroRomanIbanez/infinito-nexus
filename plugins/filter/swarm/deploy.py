@@ -1,17 +1,16 @@
 """Filters ``swarm_deploy_replicas`` and ``swarm_deploy``: the swarm ``deploy:`` block of one service.
 
-``roles/sys-svc-container/templates/deploy.yml.j2`` gathers the values (lookups
-and the caller's template variables) and these filters decide what the block
-holds: replicas, labels, placement, rolling update, restart policy and resources.
+``roles/sys-svc-container/templates/deploy.yml.j2`` gathers the values (lookups,
+``resource_filter`` reads and the caller's template variables) and these
+filters decide what the block holds: replicas, labels, placement, rolling
+update, restart policy and resources.
 """
 
 from __future__ import annotations
 
 from typing import Any
 
-from plugins.filter.resource_filter import resource_filter
 from plugins.filter.swarm.placement import swarm_placement_constraints
-from plugins.filter.swarm.restart_condition import swarm_restart_condition
 
 
 def swarm_deploy_replicas(ctx: dict[str, Any]) -> Any:
@@ -19,16 +18,14 @@ def swarm_deploy_replicas(ctx: dict[str, Any]) -> Any:
 
     Args:
         ctx: the inputs ``deploy.yml.j2`` gathers; reads ``db_instance``,
-            ``replicas_forced`` (None when the caller forces none),
-            ``applications``, ``application_id`` and ``service``.
+            ``replicas_forced`` (None when the caller forces none) and
+            ``replicas_declared`` (the service's ``replicas``, ``''`` if unset).
     """
     if ctx["db_instance"]:
         return 1
     if ctx["replicas_forced"] is not None:
         return ctx["replicas_forced"]
-    return resource_filter(
-        ctx["applications"], ctx["application_id"], "replicas", ctx["service"], ""
-    )
+    return ctx["replicas_declared"]
 
 
 def _labels(ctx: dict[str, Any]) -> list[str]:
@@ -41,14 +38,7 @@ def _labels(ctx: dict[str, Any]) -> list[str]:
 
 
 def _constraints(ctx: dict[str, Any]) -> list[str]:
-    applications, application_id, service = (
-        ctx["applications"],
-        ctx["application_id"],
-        ctx["service"],
-    )
-    placement = (
-        resource_filter(applications, application_id, "placement", service, "") or ""
-    ).strip()
+    placement = (ctx["placement"] or "").strip()
     constraints = []
     if ctx["db_instance"]:
         constraints.append(
@@ -68,9 +58,8 @@ def _constraints(ctx: dict[str, Any]) -> list[str]:
                 "manager", ctx["managers"], ctx["stack_host_label"]
             )
         )
-    arch = resource_filter(applications, application_id, "platform_arch", service, "")
-    if arch != "":
-        constraints.append(f"node.platform.arch == {arch}")
+    if ctx["arch"] != "":
+        constraints.append(f"node.platform.arch == {ctx['arch']}")
     if ctx["kata_group"]:
         operator = "==" if ctx["kata_enabled"] else "!="
         constraints.append(f"node.labels.{ctx['sandbox_label']} {operator} true")
@@ -87,13 +76,6 @@ def swarm_deploy(ctx: dict[str, Any], replicas_line: str) -> str:
     Returns:
         The block without its final newline.
     """
-    sizing, service = ctx["sizing_application_id"], ctx["service"]
-
-    def sized(key: str, default: Any, **extra: Any) -> Any:
-        return resource_filter(
-            ctx["applications"], sizing, key, service, default, **extra
-        )
-
     lines = ["    deploy:", f"      {replicas_line}"]
     labels = _labels(ctx)
     if labels:
@@ -118,20 +100,20 @@ def swarm_deploy(ctx: dict[str, Any], replicas_line: str) -> str:
     ]
     if ctx["update_order"] is not None:
         lines.append(f"        order: {ctx['update_order']}")
-    defaults = ctx["defaults"]
+    resources = ctx["resources"]
     lines += [
         "      restart_policy:",
-        f"        condition: {swarm_restart_condition(ctx['restart_policy'])}",
+        f"        condition: {ctx['restart_condition']}",
         "      resources:",
         "        limits:",
-        f'          cpus: "{sized("cpus", defaults["cpus"], host_cpus=defaults["host_cpus"])}"',
-        f"          memory: {sized('mem_limit', defaults['mem_limit'])}",
-        f"          pids: {sized('pids_limit', defaults['pids_limit'])}",
+        f'          cpus: "{resources["cpus"]}"',
+        f"          memory: {resources['mem_limit']}",
+        f"          pids: {resources['pids_limit']}",
     ]
     if ctx["runtime"] != "github":
         lines += [
             "        reservations:",
-            f"          memory: {sized('mem_reservation', defaults['mem_reservation'])}",
+            f"          memory: {resources['mem_reservation']}",
         ]
     return "\n".join(lines)
 

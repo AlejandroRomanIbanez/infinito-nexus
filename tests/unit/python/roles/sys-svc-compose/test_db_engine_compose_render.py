@@ -12,6 +12,7 @@ import unittest
 import jinja2
 
 from plugins.filter.role_path_by_app_id import abs_role_path_by_application_id
+from plugins.filter.swarm.deploy import swarm_deploy, swarm_deploy_replicas
 from plugins.filter.swarm.instance_service import swarm_instance_service
 from plugins.filter.swarm.placement import swarm_placement_constraints
 from utils import PROJECT_ROOT
@@ -95,6 +96,8 @@ def render(application_id, model, loader=None, **variables):
     env.filters["quote"] = lambda value: f"'{value}'"
     env.filters["swarm_instance_service"] = swarm_instance_service
     env.filters["swarm_placement_constraints"] = swarm_placement_constraints
+    env.filters["swarm_deploy"] = swarm_deploy
+    env.filters["swarm_deploy_replicas"] = swarm_deploy_replicas
     env.filters["regex_replace"] = lambda value, pattern, repl: re.sub(
         pattern, repl, value
     )

@@ -1,35 +1,36 @@
 {% if compose_mode == 'swarm' %}
 {{ "\n" }}
+{% set _service = service_name | default('') %}
+{% set _sizing = service_sizing_application_id | default(application_id) %}
+{% set _applications = lookup('applications') %}
 {% set _deploy = {
-  'application_id': application_id,
-  'service': service_name | default(''),
-  'sizing_application_id': service_sizing_application_id | default(application_id),
-  'applications': lookup('applications'),
   'db_instance': db_instance,
   'seeded_after_converge': db_instance and lookup('config', application_id, 'services.' ~ service_name ~ '.ha.seeded_after_converge', false),
   'replicas_forced': service_replicas_forced | default(none),
+  'replicas_declared': _applications | resource_filter(application_id, 'replicas', _service, ''),
   'max_replicas_per_node': service_max_replicas_per_node | default(none),
   'db_endpoint': service_db_endpoint is defined,
+  'placement': _applications | resource_filter(application_id, 'placement', _service, ''),
   'manager_placed': application_id in lookup('roles_with_placement', 'manager'),
   'managers': groups['svc-swarm-manager'] | default([]),
+  'arch': _applications | resource_filter(application_id, 'platform_arch', _service, ''),
   'kata_group': groups['svc-virt-kata'] is defined,
   'kata_enabled': groups['svc-virt-kata'] is defined and (lookup('config', application_id, 'services.kata.enabled', false) | bool),
   'update_parallelism': service_update_parallelism | default(1),
   'update_delay': service_update_delay | default('10s'),
   'update_order': service_update_order | default(none),
-  'restart_policy': docker_restart_policy | default(DOCKER_RESTART_POLICY),
+  'restart_condition': docker_restart_policy | default(DOCKER_RESTART_POLICY) | swarm_restart_condition,
   'runtime': RUNTIME,
   'seed_wait_label': SWARM_SERVICE_LABEL_SEED_WAIT,
   'db_endpoint_label': SWARM_SERVICE_LABEL_DB_ENDPOINT,
   'host_id_label': SWARM_NODE_LABEL_HOST_ID,
   'stack_host_label': SWARM_NODE_LABEL_STACK_HOST,
   'sandbox_label': SANDBOX_NODE_LABEL,
-  'defaults': {
-    'cpus': RESOURCE_CPUS,
-    'host_cpus': RESOURCE_HOST_CPUS,
-    'mem_limit': RESOURCE_MEM_LIMIT,
-    'pids_limit': RESOURCE_PIDS_LIMIT,
-    'mem_reservation': RESOURCE_MEM_RESERVATION,
+  'resources': {
+    'cpus': _applications | resource_filter(_sizing, 'cpus', _service, RESOURCE_CPUS, host_cpus=RESOURCE_HOST_CPUS) | string,
+    'mem_limit': _applications | resource_filter(_sizing, 'mem_limit', _service, RESOURCE_MEM_LIMIT),
+    'pids_limit': _applications | resource_filter(_sizing, 'pids_limit', _service, RESOURCE_PIDS_LIMIT),
+    'mem_reservation': _applications | resource_filter(_sizing, 'mem_reservation', _service, RESOURCE_MEM_RESERVATION),
   },
 } %}
 {% set _replicas = _deploy | swarm_deploy_replicas %}

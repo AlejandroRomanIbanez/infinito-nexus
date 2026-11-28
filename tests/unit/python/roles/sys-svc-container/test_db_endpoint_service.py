@@ -2,6 +2,7 @@ import unittest
 
 import jinja2
 
+from plugins.filter.swarm.deploy import swarm_deploy, swarm_deploy_replicas
 from utils import PROJECT_ROOT
 from utils.cache.applications import get_application_defaults
 from utils.cache.yaml import load_yaml_str
@@ -52,6 +53,8 @@ def _render(**variables):
         default if key == "platform_arch" else f"{svc}-{key}"
     )
     env.filters["swarm_restart_condition"] = lambda value: "any"
+    env.filters["swarm_deploy"] = swarm_deploy
+    env.filters["swarm_deploy_replicas"] = swarm_deploy_replicas
     env.globals["lookup"] = _lookup
     base = {
         "compose_mode": "swarm",

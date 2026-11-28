@@ -17,6 +17,13 @@ from .test_spec_secrets_helper import load_helper, run_helper
 
 SYNC = PROJECT_ROOT / "scripts" / "tests" / "deploy" / "local" / "sync" / "role.sh"
 SYNC_PATH = ("scripts", "tests", "deploy", "local", "sync", "role.sh")
+EXTRA_PATH = ("utils", "tests", "local", "sync_extra_vars.py")
+EXTRA = PROJECT_ROOT.joinpath(*EXTRA_PATH)
+PACKAGES = (
+    ("utils", "__init__.py"),
+    ("utils", "tests", "__init__.py"),
+    ("utils", "tests", "local", "__init__.py"),
+)
 RUNNER_TAIL = ("npx", "--no-install", "playwright", "test")
 INJECTED = 'x"], "TEST_E2E_PLAYWRIGHT_RUNNER": ["npx --reporter=html'
 PARAMETERS = {
@@ -83,19 +90,26 @@ def synced_extra(*replacements: tuple[str, str]) -> dict:
     """Run ``role.sh`` with the ``PARAMETERS`` and read the extra vars it hands on.
 
     Args:
-        *replacements: changes to ``role.sh``, for a negative control.
+        *replacements: changes to the extra-vars builder ``role.sh`` runs, for
+            a negative control.
 
     Returns:
         The first ``-e`` value of the playbook command, parsed as JSON.
     """
-    source = read_text(str(SYNC))
+    source = read_text(str(EXTRA))
     for old, new in replacements:
         if source.count(old) != 1:
-            raise AssertionError(f"role.sh no longer holds {old!r} once")
+            raise AssertionError(f"sync_extra_vars.py no longer holds {old!r} once")
         source = source.replace(old, new)
+    staged = {
+        SYNC_PATH: read_text(str(SYNC)),
+        EXTRA_PATH: source,
+        **{parts: read_text(str(PROJECT_ROOT.joinpath(*parts))) for parts in PACKAGES},
+        **STUBS,
+    }
     with tempfile.TemporaryDirectory() as tmp:
         root = Path(tmp)
-        for parts, text in {SYNC_PATH: source, **STUBS}.items():
+        for parts, text in staged.items():
             root.joinpath(*parts).parent.mkdir(parents=True, exist_ok=True)
             root.joinpath(*parts).write_text(text, encoding="utf-8")
         (root / "bin").mkdir()
