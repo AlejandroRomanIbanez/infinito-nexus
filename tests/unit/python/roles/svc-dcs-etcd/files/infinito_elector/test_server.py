@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import socket
 import unittest
 import urllib.error
 import urllib.request
 
-from infinito_elector_src.server import serve
+from infinito_elector_src.server import REQUEST_TIMEOUT_S, serve
 
 
 class TestWriterEndpoint(unittest.TestCase):
@@ -59,6 +60,42 @@ class TestSeedEndpoint(unittest.TestCase):
             server.shutdown()
             server.server_close()
         self.assertEqual(bodies, [(b'{"host": "m3"}', "127.0.0.1")])
+
+    def _raw_post(self, length: str) -> bytes:
+        calls: list[bytes] = []
+        server = serve(
+            lambda: False, "127.0.0.1", 0, lambda body, _: calls.append(body) or 202
+        )
+        try:
+            with socket.create_connection(
+                ("127.0.0.1", server.server_address[1]), timeout=5
+            ) as conn:
+                conn.sendall(
+                    f"POST /seed HTTP/1.1\r\nHost: x\r\nContent-Length: {length}\r\n\r\n".encode()
+                )
+                reply = conn.recv(64)
+        finally:
+            server.shutdown()
+            server.server_close()
+        self.assertEqual(calls, [])
+        return reply
+
+    def test_a_negative_length_is_refused_without_reading_the_body(self) -> None:
+        self.assertIn(b" 413 ", self._raw_post("-1"))
+
+    def test_a_malformed_length_is_refused(self) -> None:
+        self.assertIn(b" 413 ", self._raw_post("abc"))
+
+    def test_an_idle_client_is_dropped_after_the_timeout(self) -> None:
+        server = serve(lambda: False, "127.0.0.1", 0)
+        try:
+            with socket.create_connection(
+                ("127.0.0.1", server.server_address[1]), timeout=REQUEST_TIMEOUT_S + 5
+            ) as conn:
+                self.assertEqual(conn.recv(1), b"")
+        finally:
+            server.shutdown()
+            server.server_close()
 
 
 if __name__ == "__main__":

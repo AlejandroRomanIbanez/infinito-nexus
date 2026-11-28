@@ -11,6 +11,18 @@
   vars:
     _db_ha_prepare_conflicts: "{{ lookup('db_instances', application_id, exposure_conflicts=true) }}"
 
+- name: "🛡️ db_ha_prepare | refuse HA of '{{ application_id }}' on clear overlays"
+  ansible.builtin.assert:
+    that:
+      - swarm.network.encryption | bool
+    fail_msg: >-
+      {{ application_id }} would render its HA form with swarm.network.encryption off.
+      Replication, the seed stream that rebuilds a replica and the credentials
+      between its instances carry no TLS of their own and rely on Swarm's
+      encrypted overlays. Set swarm.network.encryption to true, or list a single
+      host for the engine.
+    quiet: true
+
 - name: "🗳️ db_ha_prepare | bring the coordination store up before the first HA engine"
   ansible.builtin.include_role:
     name: "{{ lookup('db_instances', coordination_store=true) }}"

@@ -11,6 +11,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
 MAX_SEED_BODY = 4096
+REQUEST_TIMEOUT_S = 5
 
 
 def make_handler(
@@ -21,6 +22,8 @@ def make_handler(
     body and the requester's address), and 404 on any other path."""
 
     class Handler(BaseHTTPRequestHandler):
+        timeout = REQUEST_TIMEOUT_S
+
         def do_GET(self) -> None:
             if self.path.split("?", 1)[0] != "/writer":
                 self._reply(404, b"not found\n")
@@ -33,8 +36,11 @@ def make_handler(
             if seed is None or self.path.split("?", 1)[0] != "/seed":
                 self._reply(404, b"not found\n")
                 return
-            length = int(self.headers.get("Content-Length") or 0)
-            if length > MAX_SEED_BODY:
+            try:
+                length = int(self.headers.get("Content-Length") or 0)
+            except ValueError:
+                length = -1
+            if not 0 <= length <= MAX_SEED_BODY:
                 self._reply(413, b"too large\n")
                 return
             status = seed(self.rfile.read(length), self.client_address[0])
