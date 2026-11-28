@@ -22,7 +22,7 @@ CUSTOM_IMAGE_REPO="${ENTITY}_custom"
 ROLE_DIR="${_REPO_ROOT}/roles/${APP_ID}"
 
 _role_fact() {
-	PYTHONPATH="${_REPO_ROOT}" "${PYTHON}" "${_REPO_ROOT}/scripts/tests/deploy/swarm/utils/_context.py" "$1" "${ROLE_DIR}" "$2"
+	PYTHONPATH="${_REPO_ROOT}" "${PYTHON}" -m utils.tests.swarm.role_facts "$1" "${ROLE_DIR}" "$2"
 }
 
 PRIMARY_SERVICE_KEY="$(_role_fact primary-service-key "${ENTITY}")"

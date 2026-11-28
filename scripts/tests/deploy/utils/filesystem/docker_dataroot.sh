@@ -399,7 +399,7 @@ else
 fi
 
 mkdir -p "$(dirname "${DAEMON}")"
-python3 "$(dirname "${BASH_SOURCE[0]}")/set_data_root.py" "${DAEMON}" "${MOUNT}/docker"
+python3 "$(dirname "${BASH_SOURCE[0]}")/../../../../../utils/tests/filesystem/set_data_root.py" "${DAEMON}" "${MOUNT}/docker"
 install_remount_hook
 
 if systemctl cat docker.service >/dev/null 2>&1; then

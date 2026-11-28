@@ -1,4 +1,4 @@
-"""Facts about one role that the swarm drill helpers in ``_context.sh`` read.
+"""Facts about one role that ``scripts/tests/deploy/swarm/utils/_context.sh`` reads.
 
 Args (argv): a subcommand, the role directory, then its own argument:
 
