@@ -262,7 +262,7 @@ This requirement covers:
 - [ ] Adding hosts to an engine's group migrates that engine from standalone to HA. Each engine migrates independently.
 - [x] Migration takes a planned, short write outage per engine (one restart into HA form plus the name handover), stated in the documentation. It is not zero-downtime.
 - [ ] Migration runs in this order:
-  1. a pre-deploy backup, aborting on failure;
+  1. a pre-deploy backup, aborting on failure, and refusing to start when the engine declares a backup but no host is in the backup group (Redis declares none and migrates without one);
   2. etcd brought up if this is the first HA engine;
   3. the old service stopped;
   4. the original host's instance started in HA form on the legacy volume;

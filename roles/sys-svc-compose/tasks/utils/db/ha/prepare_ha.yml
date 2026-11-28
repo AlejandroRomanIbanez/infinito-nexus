@@ -47,6 +47,20 @@
       {{ DB_HA_MIGRATING | combine({application_id: (_db_ha_prepare_legacy.rc == 0
          and (_db_ha_prepare_legacy.stdout | trim) != 'true')}) }}
 
+- name: "🛡️ db_ha_prepare | refuse to migrate '{{ application_id }}' to HA without a backup"
+  ansible.builtin.assert:
+    that:
+      - not ((DB_HA_MIGRATING[application_id] | bool) and (_db_ha_prepare_backup_declared | bool) and not (_db_ha_prepare_backup | bool))
+    fail_msg: >-
+      {{ application_id }} still runs standalone, and this deploy would migrate it
+      to the HA form. The migration takes a backup first and aborts without one,
+      but no host is in the {{ _db_ha_prepare_backup_role }} group, so there is
+      nothing to take it. List the engine's instance hosts, at least
+      {{ STACK_HOST }} where the standalone service runs, in the
+      {{ _db_ha_prepare_backup_role }} group of the inventory and re-run.
+      The standalone service and its data are unchanged.
+    quiet: true
+
 - name: "💾 db_ha_prepare | back up before migrating to the HA form"
   ansible.builtin.include_tasks: "{{ lookup('path_absolute', 'roles/sys-svc-compose/tasks/utils/db/pre_change_backup.yml') }}"
   vars:

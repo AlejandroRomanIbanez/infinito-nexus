@@ -87,7 +87,7 @@ The writer elector counts inside the MariaDB and OpenLDAP limits. Limits add up 
 
 ### Runbooks
 
-- **Migrate a standalone install:** add hosts to the `svc-db-postgres` group and re-run. The deploy creates the replication and rewind roles while still standalone, stops the old service, and Patroni adopts the existing data directory on the legacy volume as the first primary; the new instances clone with `pg_basebackup`. This is a short planned write outage, not zero-downtime. Going back to standalone goes through backup and restore.
+- **Migrate a standalone install:** add hosts to the `svc-db-postgres` group and re-run. The instance hosts must also be in the `svc-bkp-volume-2-local` group: the deploy backs the engine up before it changes anything, aborts when the backup fails, and refuses to start the migration when no backup host is configured. The deploy then creates the replication and rewind roles while still standalone, stops the old service, and Patroni adopts the existing data directory on the legacy volume as the first primary; the new instances clone with `pg_basebackup`. This is a short planned write outage, not zero-downtime. Going back to standalone goes through backup and restore.
 - **Planned switchover:** `patronictl -c /var/run/postgresql/patroni.yml switchover postgres --candidate <member> --force` inside any instance.
 - **Replace a lost node:** forget the node, list the replacement host in the group and re-run; the new instance clones itself. Between loss and replacement the cluster runs 2 of 3 and the promise covers the first loss only.
 - **etcd disaster:** bootstrap an empty etcd and re-run; the deploy re-applies the cluster configuration.
