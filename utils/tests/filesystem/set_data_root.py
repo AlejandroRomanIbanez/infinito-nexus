@@ -8,8 +8,7 @@ import pathlib
 import sys
 
 path, root = pathlib.Path(sys.argv[1]), sys.argv[2]
-config = (
-    json.loads(path.read_text()) if path.is_file() and path.read_text().strip() else {}
-)
+text = path.read_text() if path.is_file() else ""  # nocheck: cache-read  host file
+config = json.loads(text) if text.strip() else {}
 config["data-root"] = root
 path.write_text(json.dumps(config, indent=2) + "\n")
