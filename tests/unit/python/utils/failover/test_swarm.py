@@ -657,9 +657,15 @@ class TestCheckerService(unittest.TestCase):
             engine="redis",
             config="cfg",
             script_path=swarm.PROBE_PATH,
+            helper_configs={"helper": swarm.PROBE_HELPER_PATH},
             env={"MODE": "idle", "ARG": "960"},
         )
         self.assertIn("node.hostname==w1", argv)
+        self.assertIn(f"source=helper,target={swarm.PROBE_HELPER_PATH},mode=0444", argv)
+        self.assertLess(
+            argv.index(f"source=helper,target={swarm.PROBE_HELPER_PATH},mode=0444"),
+            argv.index("redis:8"),
+        )
         self.assertIn(
             f"source={swarm.secret_name('redis')},target=failover-checker", argv
         )

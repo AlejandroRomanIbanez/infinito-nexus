@@ -12,16 +12,17 @@ from pathlib import Path
 from ansible.parsing.dataloader import DataLoader
 from ansible.template import Templar
 
-from utils.cache.files import PROJECT_ROOT
+from utils.cache.files import PROJECT_ROOT, read_text
 from utils.cache.yaml import load_yaml_any
 from utils.templating.ansible import _trust_as_template
 
 INSTALL = (
     PROJECT_ROOT / "roles/svc-ai-libretranslate-engine/tasks/utils/install_models.yml"
 )
+HEALTH = PROJECT_ROOT / "roles/svc-ai-libretranslate-engine/files/python/health_ready.py"
 WAIT = "⏳ Wait until {{ application_id }} finished its own boot"
 PREFETCH = "📥 Install the Argos models into {{ application_id }}"
-FAKE_CONTAINER = '#!/bin/sh\nshift 2\nexec "$@"\n'
+FAKE_CONTAINER = '#!/bin/sh\nshift 3\nexec "$@"\n'
 RESTARTING = (
     "Error response from daemon: Container "
     "19e44fa354e545a1007b37cfee53f6e064b8c5cbc9ca57a6b2cc09503874ba16"
@@ -109,10 +110,14 @@ class TestBootProbe(unittest.TestCase):
                 "LIBRETRANSLATE_ENGINE_PORT": port,
             },
         )
+        self.assertEqual(
+            task["args"]["stdin"], "{{ lookup('file', 'python/health_ready.py') }}"
+        )
         run = subprocess.run(
             ["/bin/sh", "-c", command],
             cwd=self.root,
             env=self.env,
+            input=read_text(str(HEALTH)),
             capture_output=True,
             text=True,
             check=False,

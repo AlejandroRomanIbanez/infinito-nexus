@@ -10,6 +10,8 @@ from utils.failover.checker import parse_probe_output
 from utils.failover.swarm import shell
 from utils.failover.swarm.commands import (
     CHECKER_SCRIPT,
+    PROBE_HELPER,
+    PROBE_HELPER_PATH,
     PROBE_PATH,
     PROBE_SCRIPT,
     checker_service_argv,
@@ -190,16 +192,19 @@ class Clients:
             timeout_s: seconds to wait for ``probe-done``.
         """
         name = probe_service_name(self.engine)
-        config = f"failover-probe-{secrets.token_hex(4)}"
+        token = secrets.token_hex(4)
+        config = f"failover-probe-{token}"
+        helper = f"failover-probe-helper-{token}"
         self._on_manager("docker", "service", "rm", name, check=False)
-        self._on_manager(
-            "docker",
-            "config",
-            "create",
-            config,
-            "-",
-            stdin=read_text(str(PROBE_SCRIPT)),
-        )
+        for config_id, source in ((config, PROBE_SCRIPT), (helper, PROBE_HELPER)):
+            self._on_manager(
+                "docker",
+                "config",
+                "create",
+                config_id,
+                "-",
+                stdin=read_text(str(source)),
+            )
         try:
             image = self._client_image()
             service_id = shell.run(
@@ -212,7 +217,13 @@ class Clients:
                     engine=self.engine,
                     config=config,
                     script_path=PROBE_PATH,
-                    env={"ENGINE": self.engine, "MODE": mode, "ARG": arg},
+                    helper_configs={helper: PROBE_HELPER_PATH},
+                    env={
+                        "ENGINE": self.engine,
+                        "MODE": mode,
+                        "ARG": arg,
+                        "LDAP_IDLE": PROBE_HELPER_PATH,
+                    },
                     scratch_dirs=self._image_volumes(image),
                 )
             ).strip()

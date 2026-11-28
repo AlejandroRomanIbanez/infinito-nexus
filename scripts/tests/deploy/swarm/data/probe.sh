@@ -3,6 +3,7 @@
 # Param: MODE        ddl | marker-write | marker-read | idle | memberof-seed
 # Param: ARG         marker token (marker-*), idle seconds (idle)
 # Param: SECRET_FILE shell env file with HOST, PORT, USER, PASSWORD and DATABASE or BASE_DN
+# Param: LDAP_IDLE   path of ldap_idle.py, mounted beside this script (openldap idle)
 # Output: "probe <key> <value>" records, then "probe-done"
 set -u
 
@@ -120,18 +121,7 @@ idle() {
 			redis-cli -h "${HOST}" -p "${PORT}" 2>&1)"
 		;;
 	openldap)
-		out="$(
-			python3 - "${HOST}" "${PORT}" "${ARG}" <<'PY'
-import socket, sys, time
-bind = bytes.fromhex("300c020101600702010304008000")
-with socket.create_connection((sys.argv[1], int(sys.argv[2])), timeout=10) as conn:
-    conn.sendall(bind)
-    print("first" if conn.recv(64)[5:6] == b"\x61" else "no-bind")
-    time.sleep(float(sys.argv[3]))
-    conn.sendall(bind.replace(b"\x02\x01\x01", b"\x02\x01\x02", 1))
-    print("second" if conn.recv(64)[5:6] == b"\x61" else "dropped")
-PY
-		)"
+		out="$(python3 "${LDAP_IDLE:?}" "${HOST}" "${PORT}" "${ARG}")"
 		;;
 	esac
 	if printf '%s\n' "${out}" | grep -q 'second'; then

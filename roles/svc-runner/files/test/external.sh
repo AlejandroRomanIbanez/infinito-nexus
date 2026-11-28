@@ -5,6 +5,7 @@
 set -euo pipefail
 
 CURL="curl --connect-timeout 5 --max-time 30"
+DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 if [[ -z "${RUNNER_API_TOKEN:-}" ]]; then
     echo "SKIP: RUNNER_API_TOKEN not set — skipping GitHub registration and smoke dispatch"
@@ -21,11 +22,7 @@ if ! runners_json=$(${CURL} -sf \
     echo "FAIL: GitHub API unreachable while checking runner registration"
     exit 1
 fi
-online_count=$(echo "${runners_json}" | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-print(sum(1 for r in data.get('runners', []) if r.get('status') == 'online'))
-" 2>/dev/null || echo "0")
+online_count=$(echo "${runners_json}" | python3 "${DIR}/online_runners.py" 2>/dev/null || echo "0")
 if [[ "${online_count}" -lt "${RUNNER_COUNT}" ]]; then
     echo "FAIL: expected at least ${RUNNER_COUNT} online runner(s) on GitHub, found ${online_count}"
     fail_count=$((fail_count + 1))
@@ -61,13 +58,7 @@ else
             echo "FAIL: GitHub API unreachable while polling for smoke run"
             exit 1
         fi
-        smoke_run_id=$(echo "${runs_json}" | python3 -c "
-import json, sys
-data = json.load(sys.stdin)
-dispatch_time = '${dispatch_time}'
-runs = [r for r in data.get('workflow_runs', []) if r.get('created_at', '') >= dispatch_time]
-print(runs[0]['id'] if runs else '')
-" 2>/dev/null || echo "")
+        smoke_run_id=$(echo "${runs_json}" | python3 "${DIR}/smoke_run_id.py" "${dispatch_time}" 2>/dev/null || echo "")
         attempts=$((attempts + 1))
     done
 

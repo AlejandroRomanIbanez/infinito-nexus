@@ -30,7 +30,7 @@ STUB = (
     '  mountpoint) [ "$2" = /mnt/docker-fs ] && [ -e "${STUB_LOG}.mounted" ] ;;\n'
     '  zpool) [ "$1" != list ] ;;\n'
     '  systemctl) [ "$1" != cat ] ;;\n'
-    "  python3|tee) cat >/dev/null ;;\n"
+    "  tee) cat >/dev/null ;;\n"
     "esac\n"
 )
 STUBBED = (

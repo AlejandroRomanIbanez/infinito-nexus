@@ -33,6 +33,12 @@
         mode: "0644"
         directory_mode: "0755"
 
+    - name: 📋 Copy the cn=config renderer into the image build context
+      stack_host_copy:
+        src: python/render_cn_config.py
+        dest: "{{ [lookup('container', application_id, 'directories.instance'), 'render_cn_config.py'] | path_join }}"
+        mode: "0644"
+
     - name: "📄 Render the HA per-instance cn=config and elector credentials"
       include_tasks: ha/01_config.yml
       when: IS_STACK_HOST | bool

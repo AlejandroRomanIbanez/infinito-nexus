@@ -9,10 +9,4 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/../../../.." && pwd)"
 
 cd "${repo_root}"
-"${PYTHON:-python3}" -c '
-import sys
-
-from utils.distros import base_image
-
-print(base_image(sys.argv[1], owner=sys.argv[2], tag=sys.argv[3]))
-' "${INFINITO_DISTRO}" "${INFINITO_PARENT_IMAGE_OWNER}" "${INFINITO_PARENT_IMAGE_TAG}"
+"${PYTHON:-python3}" -m cli.meta.ci.parent_image "${INFINITO_DISTRO}" "${INFINITO_PARENT_IMAGE_OWNER}" "${INFINITO_PARENT_IMAGE_TAG}"

@@ -399,16 +399,7 @@ else
 fi
 
 mkdir -p "$(dirname "${DAEMON}")"
-python3 - "${DAEMON}" "${MOUNT}/docker" <<'PYTHON'
-import json
-import pathlib
-import sys
-
-path, root = pathlib.Path(sys.argv[1]), sys.argv[2]
-config = json.loads(path.read_text()) if path.is_file() and path.read_text().strip() else {}
-config["data-root"] = root
-path.write_text(json.dumps(config, indent=2) + "\n")
-PYTHON
+python3 "$(dirname "${BASH_SOURCE[0]}")/set_data_root.py" "${DAEMON}" "${MOUNT}/docker"
 install_remount_hook
 
 if systemctl cat docker.service >/dev/null 2>&1; then

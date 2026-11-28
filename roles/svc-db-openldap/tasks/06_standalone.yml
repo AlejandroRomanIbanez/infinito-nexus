@@ -115,18 +115,9 @@
     global_install: true
 
 - name: ✅ Sanity check python-ldap import (verbose)
-  ansible.builtin.shell: |
-    set -euo pipefail
-    {{ ansible_python_interpreter }} - <<'EOF'
-    import traceback
-    try:
-        import ldap
-        print("python-ldap version:", ldap.__version__)
-        print("ldap module:", ldap.__file__)
-    except Exception:
-        traceback.print_exc()
-        raise
-    EOF
+  ansible.builtin.script: python/check_python_ldap.py
+  args:
+    executable: "{{ ansible_python_interpreter }}"
   changed_when: false
   when: MODE_DEBUG | bool
 

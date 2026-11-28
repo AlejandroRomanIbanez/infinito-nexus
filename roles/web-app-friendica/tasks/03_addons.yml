@@ -58,11 +58,11 @@
   changed_when: "'No tables need to be changed' not in friendica_dbstructure_update.stdout"
 
 - name: "🩹 Patch upstream friendica-addons/ldapauth autocreate return shape"
-  script: >- # nocheck: container-exec-resolver  FRIENDICA_LOCAL_CID resolved at delegate_to runtime
-    shell/patch/ldapauth_autocreate.sh "container exec -i --user root {{ FRIENDICA_LOCAL_CID | quote }}"
+  ansible.builtin.shell: >- # nocheck: container-exec-resolver  FRIENDICA_LOCAL_CID resolved at delegate_to runtime
+    container exec -i --user root {{ FRIENDICA_LOCAL_CID | quote }} python3 -
     "{{ FRIENDICA_APPLICATION_DIR }}/addon/ldapauth/ldapauth.php"
   args:
-    executable: /bin/bash
+    stdin: "{{ lookup('file', role_path + '/files/python/patch/ldapauth_autocreate.py') }}"
   delegate_to: "{{ FRIENDICA_HOST_NODE }}"
   register: friendica_ldapauth_patch
   changed_when: "'PATCHED' in friendica_ldapauth_patch.stdout"

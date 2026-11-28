@@ -11,7 +11,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from utils.cache.files import PROJECT_ROOT
+from utils.cache.files import PROJECT_ROOT, read_text
 
 SCRIPT = (
     PROJECT_ROOT
@@ -22,8 +22,17 @@ SCRIPT = (
     / "resolve"
     / "http_primary_probe.sh"
 )
+CHECK = (
+    PROJECT_ROOT
+    / "roles"
+    / "sys-svc-compose"
+    / "files"
+    / "python"
+    / "primary_probe_http.py"
+)
 CONTAINER_STUB = """#!/usr/bin/env bash
 echo "$*" >> "${EXEC_LOG}"
+cat > "${EXEC_LOG}.stdin"
 exit "${EXEC_RC}"
 """
 RESOLVER_STUB = """#!/usr/bin/env bash
@@ -37,6 +46,7 @@ class TestHttpPrimaryProbe(unittest.TestCase):
         self.tmp = Path(tempfile.mkdtemp())
         self.addCleanup(shutil.rmtree, self.tmp, True)
         shutil.copy(SCRIPT, self.tmp / "primary-probe-http")
+        shutil.copy(CHECK, self.tmp / "primary-probe-http.py")
         for name, body in (
             ("resolve-container-id", RESOLVER_STUB),
             ("container", CONTAINER_STUB),
@@ -70,8 +80,15 @@ class TestHttpPrimaryProbe(unittest.TestCase):
     def test_primary_asks_the_check_on_its_port_and_path(self):
         self.assertEqual(self._run(0), 0)
         log = self.log.read_text()  # nocheck: cache-read  the stub appends to this log during the test, a cached read would go stale
-        self.assertIn("exec cid-postgres-m1 python3 -c", log)
+        self.assertIn("exec -i cid-postgres-m1 python3 -", log)
         self.assertTrue(log.rstrip().endswith("8008 /primary"))
+        stdin = Path(f"{self.log}.stdin")
+        fed = stdin.read_text()  # nocheck: cache-read  the stub writes it in the test
+        self.assertEqual(fed, read_text(str(CHECK)))
+
+    def test_a_missing_check_is_unknown(self):
+        (self.tmp / "primary-probe-http.py").unlink()
+        self.assertEqual(self._run(0), 2)
 
     def test_an_error_status_is_no_primary(self):
         self.assertEqual(self._run(1), 1)

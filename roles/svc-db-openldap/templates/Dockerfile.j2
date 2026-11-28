@@ -21,6 +21,7 @@ RUN rm -rf /var/lib/apt/lists/* \
 {% if OPENLDAP_HA | bool %}
 COPY infinito_elector {{ [DB_ELECTOR_DIR, 'infinito_elector'] | path_join }}
 ENV PYTHONPATH={{ DB_ELECTOR_DIR }}
+COPY render_cn_config.py /render_cn_config.py
 
 {% endif %}
 COPY entrypoint.sh /entrypoint.sh

@@ -153,18 +153,7 @@ render_ha_cn_config() {
   [ -f "${source}" ] || fatal "HA form needs ${source} (the per-instance cn=config)"
   OPENLDAP_UID="$(id -u openldap)" OPENLDAP_GID="$(id -g openldap)" \
   ROOT_PW_HASH="$(slappasswd -s "${LDAP_ROOT_PW}")" \
-  python3 - "${source}" "${target}" <<'PY'
-import os
-import sys
-
-text = open(sys.argv[1], encoding="utf-8").read()
-for token in ("ROOT_PW_HASH", "OPENLDAP_UID", "OPENLDAP_GID"):
-    text = text.replace(f"@{token}@", os.environ[token])
-text = text.replace("@ROOT_PW@", os.environ["LDAP_ROOT_PW"])
-fd = os.open(sys.argv[2], os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
-with os.fdopen(fd, "w", encoding="utf-8") as handle:
-    handle.write(text)
-PY
+  python3 /render_cn_config.py "${source}" "${target}"
   rm -rf "${SLAPD_D_DIR:?}/"*
   log "HA: rebuilding slapd.d from the rendered cn=config (data database read-only)"
   slapadd -n 0 -F "${SLAPD_D_DIR}" -l "${target}"

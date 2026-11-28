@@ -30,18 +30,8 @@ RUN git init -q . && \
 RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt
 
-RUN python - <<'PY'
-import oauth_dropins, pathlib, os
-target = pathlib.Path(oauth_dropins.__file__).parent / 'static'
-link = pathlib.Path('/app/oauth_dropins_static')
-try:
-    if link.exists() or link.is_symlink():
-        link.unlink()
-    os.symlink(str(target), str(link))
-except FileExistsError:
-    pass
-print('Symlinked oauth_dropins_static ->', target)
-PY
+COPY link_oauth_dropins_static.py /tmp/link_oauth_dropins_static.py
+RUN python - < /tmp/link_oauth_dropins_static.py
 
 FROM ${PY_BASE}
 

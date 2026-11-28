@@ -65,9 +65,9 @@
 - name: 🔧 Provision Mattermost OAuth app for Nextcloud and capture creds (idempotent)
   ansible.builtin.command:
     argv:
-      - bash
-      - -s
-    stdin: "{{ lookup('file', 'shell/addons/mattermost/provision_oauth_app.sh') }}"
+      - python3
+      - "-"
+    stdin: "{{ lookup('file', 'python/addons/mattermost/provision_oauth_app.py') }}"
   environment:
     MM_LOCAL_URL: "{{ nextcloud_mm_local_url }}"
     MM_TOKEN: "{{ nextcloud_mm_token }}"

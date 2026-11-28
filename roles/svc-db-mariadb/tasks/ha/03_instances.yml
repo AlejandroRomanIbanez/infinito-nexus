@@ -68,6 +68,7 @@
     {% for instance in MARIADB_INSTANCES.instances %}http://{{ instance.service }}:{{ MARIADB_ELECTOR_PORT }}/writer {% endfor %}
   environment:
     BIN_RESOLVE_CONTAINER_ID: "{{ BIN_RESOLVE_CONTAINER_ID }}"
+    BIN_WRITER_COUNT: "{{ BIN_WRITER_COUNT }}"
   register: _mariadb_ha_writer_wait
   until: _mariadb_ha_writer_wait.rc == 0
   retries: 60

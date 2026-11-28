@@ -41,16 +41,7 @@ download_file() {
   fi
 
   if command -v python3 >/dev/null 2>&1; then
-    python3 - "${url}" "${dest}" <<'PY'
-import pathlib
-import sys
-import urllib.request
-
-url = sys.argv[1]
-dest = pathlib.Path(sys.argv[2])
-with urllib.request.urlopen(url) as response:
-    dest.write_bytes(response.read())
-PY
+    python3 -c 'import pathlib, sys, urllib.request; pathlib.Path(sys.argv[2]).write_bytes(urllib.request.urlopen(sys.argv[1]).read())' "${url}" "${dest}"
     return
   fi
 

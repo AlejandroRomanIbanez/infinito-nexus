@@ -31,6 +31,7 @@ RUN mkdir -p /var/log/odoo && \
 COPY volumes/addons/ /mnt/custom-addons/
 
 COPY ${ODOO_ENTRYPOINT_SCRIPT_HOST_REL} ${ODOO_ENTRYPOINT_SCRIPT_DOCKER}
+COPY volumes/entrypoint/ /usr/local/lib/odoo-entrypoint/
 RUN chmod +x "${ODOO_ENTRYPOINT_SCRIPT_DOCKER}" \
     && ln -sf "${ODOO_ENTRYPOINT_SCRIPT_DOCKER}" /usr/local/bin/entrypoint-odoo
 

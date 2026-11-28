@@ -28,15 +28,8 @@ case "$?" in
 *) exit 2 ;;
 esac
 
-container exec "$CID" python3 -c '
-import sys, urllib.error, urllib.request
-try:
-    urllib.request.urlopen("http://127.0.0.1:%s%s" % (sys.argv[1], sys.argv[2]), timeout=5)
-except urllib.error.HTTPError:
-    sys.exit(1)
-except Exception:
-    sys.exit(2)
-' "$PORT" "$PATH_"
+[ -r "$0.py" ] || exit 2
+container exec -i "$CID" python3 - "$PORT" "$PATH_" <"$0.py"
 RC=$?
 case "$RC" in
 0 | 1) exit "$RC" ;;

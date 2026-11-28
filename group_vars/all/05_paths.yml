@@ -19,6 +19,7 @@ BIN_RESOLVE_CONTAINER_ID: "{{ [ DIR_BIN, 'resolve-container-id' ] | path_join }}
 BIN_RESOLVE_DB_PRIMARY: "{{ [ DIR_BIN, 'resolve-db-primary' ] | path_join }}"
 BIN_DB_CLIENT: "{{ [ DIR_BIN, 'db-client' ] | path_join }}"
 BIN_PRIMARY_PROBE_HTTP: "{{ [ DIR_BIN, 'primary-probe-http' ] | path_join }}"
+BIN_WRITER_COUNT: "{{ [ DIR_BIN, 'writer-count.py' ] | path_join }}"
 
 DIR_CACHE: "/var/cache/infinito/core/cache"
 

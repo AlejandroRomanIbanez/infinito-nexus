@@ -26,18 +26,7 @@ source scripts/meta/env/load.sh
 
 inv_dir="${INFINITO_INVENTORY_DIR}${variant:+-${variant}}"
 
-extra="$(python3 -c '
-import json, shlex, sys
-role, scope, task, base, pw, keep = sys.argv[1:]
-extra = {"APPLICATIONS_WHITELIST": [role], "sync_scope": scope, "sync_task": task}
-if base:
-    extra["DESIGN_BASE_COLOR"] = base
-if pw:
-    extra["sync_playwright"] = True
-    extra["TEST_E2E_PLAYWRIGHT_ARGUMENTS"] = shlex.split(pw)
-    extra["test_e2e_playwright_keep"] = keep
-print(json.dumps(extra))
-' "${role}" "${scope}" "${task:-}" "${base:-}" "${pw:-}" "${keep:-false}")"
+extra="$(python3 -m utils.tests.local.sync_extra_vars "${role}" "${scope}" "${task:-}" "${base:-}" "${pw:-}" "${keep:-false}")"
 printf -v extra_word '%q' "${extra}"
 
 cmd="\"\${INFINITO_VENV_DIR}/bin/ansible-playbook\" -i '${inv_dir}/devices.yml' playbook-sync.yml -l localhost --vault-password-file '${inv_dir}/.password' -e ${extra_word} -e ASYNC_ENABLED=false" \

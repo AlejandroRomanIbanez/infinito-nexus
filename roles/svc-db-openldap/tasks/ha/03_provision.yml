@@ -6,6 +6,7 @@
     {% for instance in OPENLDAP_DB.instances %}http://{{ instance.service }}:{{ OPENLDAP_HA_WRITER_PORT }}/writer {% endfor %}
   environment:
     BIN_RESOLVE_CONTAINER_ID: "{{ BIN_RESOLVE_CONTAINER_ID }}"
+    BIN_WRITER_COUNT: "{{ BIN_WRITER_COUNT }}"
   vars:
     _local: "{{ OPENLDAP_DB.instances | selectattr('legacy') | first }}"
   register: openldap_ha_writer_wait

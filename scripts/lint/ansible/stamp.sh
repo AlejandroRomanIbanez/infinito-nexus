@@ -34,15 +34,5 @@ ansible_lint_stamp_record() {
 }
 
 ansible_lint_included() {
-	python3 -c '
-import sys
-import yaml
-
-with open(".ansible-lint", encoding="utf-8") as handle:
-    prefixes = [entry.strip("/") + "/" for entry in yaml.safe_load(handle)["exclude_paths"]]
-for line in sys.stdin:
-    path = line.rstrip("\n")
-    if not any((path + "/").startswith(prefix) for prefix in prefixes):
-        print(path)
-'
+	python3 -m utils.lint.ansible_included
 }

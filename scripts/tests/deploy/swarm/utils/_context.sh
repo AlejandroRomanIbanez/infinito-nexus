@@ -21,19 +21,11 @@ CUSTOM_IMAGE_REPO="${ENTITY}_custom"
 
 ROLE_DIR="${_REPO_ROOT}/roles/${APP_ID}"
 
-PRIMARY_SERVICE_KEY="$(PYTHONPATH="${_REPO_ROOT}" "${PYTHON}" -c "
-import os, yaml
-key = '${ENTITY}'
-svc = os.path.join('${ROLE_DIR}', 'meta', 'services.yml')
-if os.path.exists(svc):
-    data = yaml.safe_load(open(svc)) or {}
-    entity = data.get('${ENTITY}') if isinstance(data, dict) else None
-    if isinstance(entity, dict):
-        k = (entity.get('proxy') or {}).get('service_key')
-        if isinstance(k, str) and k:
-            key = k
-print(key)
-")"
+_role_fact() {
+	PYTHONPATH="${_REPO_ROOT}" "${PYTHON}" "${_REPO_ROOT}/scripts/tests/deploy/swarm/utils/_context.py" "$1" "${ROLE_DIR}" "$2"
+}
+
+PRIMARY_SERVICE_KEY="$(_role_fact primary-service-key "${ENTITY}")"
 SERVICE_NAME="${STACK_NAME}_${PRIMARY_SERVICE_KEY}"
 
 DB_DEP=none
@@ -55,54 +47,12 @@ if [ -f "${ROLE_DIR}/meta/services.yml" ]; then
 	' "${ROLE_DIR}/meta/services.yml" | paste -sd' ' -)"
 fi
 
-DEFAULT_PLACEMENT_MANAGER="$(PYTHONPATH="${_REPO_ROOT}" "${PYTHON}" -c "
-from utils.roles.meta_lookup import get_role_placement
-placement = get_role_placement('${ROLE_DIR}', role_name='${APP_ID}') or ''
-print('true' if placement.strip() == 'manager' else 'false')
-")"
+DEFAULT_PLACEMENT_MANAGER="$(_role_fact placement-manager "${APP_ID}")"
 
-PROBE_PORT="$(PYTHONPATH="${_REPO_ROOT}" "${PYTHON}" -c "
-import os, yaml
-port = 80
-svc = os.path.join('${ROLE_DIR}', 'meta', 'services.yml')
-if os.path.exists(svc):
-    data = yaml.safe_load(open(svc)) or {}
-    entity = data.get('${ENTITY}') if isinstance(data, dict) else None
-    if isinstance(entity, dict):
-        try:
-            port = entity['ports']['internal']['http'] or 80
-        except Exception:
-            port = 80
-print(port)
-")"
+PROBE_PORT="$(_role_fact probe-port "${ENTITY}")"
 
-NFS_VOLUMES=""
-BACKUP_NFS_VOLUMES=""
-if [ -f "${ROLE_DIR}/meta/volumes.yml" ]; then
-	_nfs_volumes_py="
-import sys, yaml
-with open('${ROLE_DIR}/meta/volumes.yml') as f:
-    data = yaml.safe_load(f) or {}
-if isinstance(data, list):
-    entries = [e for e in data if isinstance(e, dict)]
-elif isinstance(data, dict):
-    entries = [v for v in data.values() if isinstance(v, dict)]
-else:
-    entries = []
-for v in entries:
-    if v.get('type') != 'volume':
-        continue
-    if v.get('nfs') is False:
-        continue
-    if sys.argv[1:] == ['backed-up'] and v.get('backup') is False:
-        continue
-    docker_name = v.get('docker_name') or v.get('name')
-    if isinstance(docker_name, str):
-        print(docker_name)
-"
-	NFS_VOLUMES="$(python3 -c "${_nfs_volumes_py}")"
-	BACKUP_NFS_VOLUMES="$(python3 -c "${_nfs_volumes_py}" backed-up)"
-fi
+NFS_VOLUMES="$(_role_fact nfs-volumes all)"
+BACKUP_NFS_VOLUMES="$(_role_fact nfs-volumes backed-up)"
 
 PRIMARY_NFS_VOLUME="${NFS_VOLUMES%%$'\n'*}"
 BACKUP_NFS_VOLUME="${BACKUP_NFS_VOLUMES%%$'\n'*}"

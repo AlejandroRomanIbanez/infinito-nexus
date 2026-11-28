@@ -31,6 +31,16 @@
     - compose-up
     - compose-build
 
+- name: "📋 Copy the Python helpers of the Odoo entrypoint"
+  copy:
+    src: "python/entrypoint/"
+    dest: "{{ [ lookup('container', application_id, 'directories.volumes'), 'entrypoint' ] | path_join }}/"
+    mode: "0644"
+    directory_mode: "0755"
+  notify:
+    - compose-up
+    - compose-build
+
 - name: "🐳 Docker Compose Up for '{{ application_id }}'"
   meta: flush_handlers
 

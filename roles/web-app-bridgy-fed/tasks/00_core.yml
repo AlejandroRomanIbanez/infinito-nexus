@@ -5,5 +5,18 @@
   vars:
     domain: "{{ lookup('domain',application_id) }}"
     http_port: "{{ lookup('config', application_id, 'services.bridgy-fed.ports.local.http') }}"
+    compose_handlers_flush: false
+
+- name: "🎬 Stage the oauth_dropins link script for {{ application_id }}"
+  stack_host_copy:
+    src: "python/link_oauth_dropins_static.py"
+    dest: "{{ [ lookup('container', application_id, 'directories.instance'), 'link_oauth_dropins_static.py' ] | path_join }}"
+    mode: "0644"
+  notify:
+    - compose-build
+    - compose-up
+
+- name: "🚿 Flush compose handlers for {{ application_id }}"
+  ansible.builtin.meta: flush_handlers
 
 - include_tasks: utils/once/flag.yml

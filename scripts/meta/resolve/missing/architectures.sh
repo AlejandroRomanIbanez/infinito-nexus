@@ -21,18 +21,4 @@ fi
 cd "${repo_root}"
 
 MANIFEST="${manifest}" IMAGE_ARCHITECTURES="${IMAGE_ARCHITECTURES:-}" \
-	"${PYTHON:-python3}" -c '
-import json
-import os
-
-from utils.github.variant.pools import resolve_architectures
-
-raw = os.environ["MANIFEST"].strip()
-index = json.loads(raw) if raw else {}
-served = {
-    entry.get("platform", {}).get("architecture")
-    for entry in index.get("manifests", [])
-}
-required = resolve_architectures(os.environ["IMAGE_ARCHITECTURES"])
-print(" ".join(name for name in required if name not in served))
-'
+	"${PYTHON:-python3}" -m cli.meta.ci.missing_architectures

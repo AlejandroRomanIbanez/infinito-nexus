@@ -24,6 +24,8 @@
 
 set -uo pipefail
 
+here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 RETRIES="${RETRIES:-20}"
 SLEEP_SECONDS="${SLEEP_SECONDS:-15}"
 
@@ -43,110 +45,7 @@ auth_local() {
 # forward with the administrator credentials.
 auth_tor() {
 	BIND_DN="${BIND_DN}" DB_PW="${DB_PASSWORD}" \
-		python3 - "${TOR_SOCKS}" "${ONION_HOST}" "${DB_PORT}" <<'PY'
-import os, socket, sys, threading
-
-proxy, onion, port = sys.argv[1], sys.argv[2], int(sys.argv[3])
-ph, pp = proxy.rsplit(":", 1)
-pp = int(pp)
-
-
-def recvall(s, n):
-    buf = b""
-    while len(buf) < n:
-        chunk = s.recv(n - len(buf))
-        if not chunk:
-            raise OSError("short read from SOCKS")
-        buf += chunk
-    return buf
-
-
-def socks_connect():
-    s = socket.create_connection((ph, pp), timeout=120)
-    s.settimeout(120)
-    s.sendall(b"\x05\x01\x00")
-    if recvall(s, 2) != b"\x05\x00":
-        raise OSError("SOCKS5 no-auth rejected")
-    host = onion.encode()
-    s.sendall(b"\x05\x01\x00\x03" + bytes([len(host)]) + host + port.to_bytes(2, "big"))
-    hdr = recvall(s, 4)
-    if hdr[1] != 0:
-        raise OSError("SOCKS5 CONNECT failed rep=%d" % hdr[1])
-    atyp = hdr[3]
-    if atyp == 1:
-        recvall(s, 4)
-    elif atyp == 3:
-        recvall(s, recvall(s, 1)[0])
-    elif atyp == 4:
-        recvall(s, 16)
-    recvall(s, 2)
-    s.settimeout(None)
-    return s
-
-
-def pipe(a, b):
-    try:
-        while True:
-            data = a.recv(65536)
-            if not data:
-                break
-            b.sendall(data)
-    except OSError:
-        pass
-    finally:
-        try:
-            b.shutdown(socket.SHUT_WR)
-        except OSError:
-            pass
-
-
-def handle(conn):
-    try:
-        up = socks_connect()
-    except OSError as exc:
-        print("socks connect failed: %s" % exc, file=sys.stderr)
-        conn.close()
-        return
-    threading.Thread(target=pipe, args=(conn, up), daemon=True).start()
-    pipe(up, conn)
-
-
-lsock = socket.socket()
-lsock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-lsock.bind(("127.0.0.1", 0))
-lsock.listen(4)
-lport = lsock.getsockname()[1]
-
-
-def serve():
-    while True:
-        try:
-            conn, _ = lsock.accept()
-        except OSError:
-            return
-        threading.Thread(target=handle, args=(conn,), daemon=True).start()
-
-
-threading.Thread(target=serve, daemon=True).start()
-
-from ldap3 import Connection, Server
-
-try:
-    server = Server("127.0.0.1", port=lport, connect_timeout=120)
-    conn = Connection(
-        server,
-        user=os.environ["BIND_DN"],
-        password=os.environ["DB_PW"],
-        auto_bind=True,
-        receive_timeout=120,
-    )
-    who = conn.extend.standard.who_am_i()
-    conn.unbind()
-except Exception as exc:
-    print("bind error: %s" % exc, file=sys.stderr)
-    sys.exit(1)
-sys.exit(0 if who else 1)
-PY
+		PYTHONPATH="${here}/shared/tor" python3 "${here}/tor_auth.py" "${TOR_SOCKS}" "${ONION_HOST}" "${DB_PORT}"
 }
 
 run_auth() {

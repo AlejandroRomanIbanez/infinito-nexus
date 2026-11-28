@@ -16,8 +16,10 @@ DATA_DIR = PROJECT_ROOT / "scripts" / "tests" / "deploy" / "swarm" / "data"
 LAB_SIZES = PROJECT_ROOT / "compose" / "swarm" / "failover" / "lab-sizes.yml"
 CHECKER_SCRIPT = DATA_DIR / "checker.sh"
 PROBE_SCRIPT = DATA_DIR / "probe.sh"
+PROBE_HELPER = DATA_DIR / "ldap_idle.py"
 CHECKER_PATH = "/failover/checker.sh"
 PROBE_PATH = "/failover/probe.sh"
+PROBE_HELPER_PATH = "/failover/ldap_idle.py"
 SECRET_TARGET = "failover-checker"  # noqa: S105 - docker secret mount name, not a credential
 COORDINATION_ROLE = "svc-dcs-etcd"
 MARKER_DATABASE = {"postgres": "postgres", "mariadb": "failover"}
@@ -178,6 +180,7 @@ def oneshot_service_argv(
     engine: str,
     config: str,
     script_path: str,
+    helper_configs: dict[str, str],
     env: dict[str, str],
     scratch_dirs: list[str] | None = None,
 ) -> list[str]:
@@ -192,6 +195,7 @@ def oneshot_service_argv(
         engine: engine under test; selects the connection secret.
         config: Docker config holding the script.
         script_path: where the script is mounted.
+        helper_configs: further Docker configs the script reads, name -> mount path.
         env: environment of the script.
         scratch_dirs: the image's declared ``VOLUME`` paths; each gets a
             tmpfs, so the service leaves no anonymous volume behind.
@@ -203,6 +207,11 @@ def oneshot_service_argv(
         arg
         for path in scratch_dirs or []
         for arg in ("--mount", f"type=tmpfs,destination={path}")
+    ]
+    helper_args = [
+        arg
+        for helper, target in helper_configs.items()
+        for arg in ("--config", f"source={helper},target={target},mode=0444")
     ]
     return [
         "docker",
@@ -225,6 +234,7 @@ def oneshot_service_argv(
         f"source={secret_name(engine)},target={SECRET_TARGET}",
         "--config",
         f"source={config},target={script_path},mode=0555",
+        *helper_args,
         *mount_args,
         *env_args,
         "--env",
@@ -268,6 +278,7 @@ def checker_service_argv(
         engine=engine,
         config=config_name(run_id),
         script_path=CHECKER_PATH,
+        helper_configs={},
         env={
             "ENGINE": engine,
             "RUN_ID": run_id,

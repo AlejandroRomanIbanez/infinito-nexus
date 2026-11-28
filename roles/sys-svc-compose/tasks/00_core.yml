@@ -68,6 +68,24 @@
     owner: root
     group: root
 
+- name: 📦 Install the in-container check the HTTP primary probe feeds its instance
+  become: true
+  ansible.builtin.copy:
+    src: "python/primary_probe_http.py"
+    dest: "{{ BIN_PRIMARY_PROBE_HTTP }}.py"
+    mode: "0644"
+    owner: root
+    group: root
+
+- name: 📦 Install the writer count the single-writer wait feeds its instance
+  become: true
+  ansible.builtin.copy:
+    src: "python/writer_count.py"
+    dest: "{{ BIN_WRITER_COUNT }}"
+    mode: "0644"
+    owner: root
+    group: root
+
 - name: 📦 Install each HA engine's own primary probe script
   become: true
   ansible.builtin.copy:
