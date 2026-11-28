@@ -109,7 +109,12 @@ BACKUP_NFS_VOLUME="${BACKUP_NFS_VOLUMES%%$'\n'*}"
 
 NFS_CHECK_MOUNTPOINT="/mnt/nfs-check"
 
-export APP_ID ENTITY STACK_NAME SERVICE_NAME PRIMARY_SERVICE_KEY CUSTOM_IMAGE_REPO DB_DEP HA_DEPS NFS_VOLUMES PRIMARY_NFS_VOLUME BACKUP_NFS_VOLUME DEFAULT_PLACEMENT_MANAGER PROBE_PORT NFS_CHECK_MOUNTPOINT
+FAILOVER_SAVE=""
+if [ -f "${ROLE_DIR}/files/failover/save.sh" ]; then
+	FAILOVER_SAVE="${ROLE_DIR}/files/failover/save.sh"
+fi
+
+export APP_ID ENTITY STACK_NAME SERVICE_NAME PRIMARY_SERVICE_KEY CUSTOM_IMAGE_REPO DB_DEP HA_DEPS NFS_VOLUMES PRIMARY_NFS_VOLUME BACKUP_NFS_VOLUME DEFAULT_PLACEMENT_MANAGER PROBE_PORT NFS_CHECK_MOUNTPOINT FAILOVER_SAVE
 
 # Exits the calling chaos step (09/10/11) with success when the role is
 # manager-pinned (no worker task exists to drain).
@@ -170,6 +175,23 @@ service_replicas() {
 	docker exec "$1" docker service ls \
 		--filter "name=$2" --format '{{.Name}} {{.Replicas}}' |
 		awk -v svc="$2" '$1 == svc { print $2 }'
+}
+
+# Param: $1 node container, $2 app container id, $3 port
+# Succeeds when http://localhost:$3/ inside $2 answers with a status from 200 to 499.
+# Exits 2 when $2 has neither curl nor wget.
+probe_app_http() {
+	docker exec "$1" docker exec "$2" sh -c '
+		if command -v curl >/dev/null 2>&1; then
+			code=$(curl -sS -o /dev/null -w "%{http_code}" --max-time 10 "http://localhost:$1/") || exit 1
+		elif command -v wget >/dev/null 2>&1; then
+			code=$(wget -S -O /dev/null -T 10 "http://localhost:$1/" 2>&1 |
+				sed -n "s/^ *HTTP\/[0-9.]* \([0-9][0-9][0-9]\).*/\1/p" | tail -n 1)
+		else
+			exit 2
+		fi
+		echo "HTTP ${code:-none}"
+		[ -n "${code}" ] && [ "${code}" -ge 200 ] && [ "${code}" -lt 500 ]' _ "$3"
 }
 
 # Param: $1 node container, $2 app container id, $3 port

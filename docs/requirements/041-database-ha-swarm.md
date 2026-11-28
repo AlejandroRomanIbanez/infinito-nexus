@@ -353,6 +353,8 @@ This requirement covers:
 - [x] Priority Swarm rows deploy both topologies.
 - [x] The axis is switchable because runner resources are limited: off by default, enabled by a manual `workflow_dispatch` input and by a GitHub repository variable. When it is off, every Swarm row stays standalone on today's 1+2 lab.
 - [x] HA rows add a probe to the application round: kill the node holding the database primary, then assert the application still responds. Where that node also runs the manager-pinned application, the probe first kills the primary container there to move the primary to another node and then kills that node; only a primary that stays on the pinned node, or a node kill that would cost the Raft quorum, ends in a container kill, and the probe says so. A killed node that does not rejoin within the timeout fails the probe; nothing restarts its Docker daemon.
+- [ ] "Responds" means an HTTP status from 200 to 499 on the application's port, read inside its container; an open port or a healthy container counts only when the container has no HTTP client, and the probe says so. The probe reports how many seconds after the kill the write through the endpoint succeeded.
+- [ ] An application that ships `files/failover/save.sh` saves an item through its own code while the killed node is still down, reads it back, and the probe reports how many seconds after the kill the first save succeeded. WordPress is the representative application: it saves and reads back a post with wp-cli. For such an application the probe never kills the stack host, whose front proxy every save needs; it moves the primary off that node first, as for a manager-pinned application.
 
 #### The failover suite
 

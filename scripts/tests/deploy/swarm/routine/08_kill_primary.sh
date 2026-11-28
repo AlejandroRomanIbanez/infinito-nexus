@@ -138,6 +138,23 @@ app_pinned_to() {
 		[ "$1" = "${MANAGERS[0]}" ]
 }
 
+# Param: $1 node container about to be killed
+# Prints why the probe must keep $1 running, or nothing when $1 may be killed.
+spare_reason() {
+	if app_pinned_to "$1"; then
+		echo "${APP_ID} is pinned to $1"
+	elif [ -n "${FAILOVER_SAVE}" ] && [ "${#MANAGERS[@]}" -gt 1 ] && [ "$1" = "${MANAGERS[0]}" ]; then
+		echo "$1 is the stack host whose front proxy every save through ${APP_ID} needs"
+	fi
+}
+
+# Param: $1 epoch milliseconds of the kill
+# Prints the seconds since $1 with one decimal.
+seconds_since() {
+	local _ms=$(($(date +%s%3N) - $1))
+	printf '%d.%d' $((_ms / 1000)) $((_ms % 1000 / 100))
+}
+
 NAME_FILES=(/etc/resolv.conf /etc/hosts)
 NAME_FILES_DIR="$(mktemp -d)"
 trap 'rm -rf "${NAME_FILES_DIR}"' EXIT
@@ -314,7 +331,7 @@ move_primary_off() {
 
 # Param: $1 engine
 kill_primary_of() {
-	local _engine="$1" _old _old_node _old_cid _old_service _killed_node="" _pinned=0 _new="" _deadline _stamp _write_err=""
+	local _engine="$1" _old _old_node _old_cid _old_service _killed_node="" _pinned=0 _new="" _deadline _stamp _write_err="" _reason _killed_ms
 	if [ -z "$(instance_services "${_engine}")" ]; then
 		echo "SKIP: ${_engine} runs no HA instances for ${APP_ID}"
 		return 0
@@ -328,8 +345,9 @@ kill_primary_of() {
 	read -r _old_node _old_cid _old_service <<<"${_old}"
 	echo "==> ${_engine} primary is ${_old_service} on ${_old_node}"
 
-	if app_pinned_to "${_old_node}" && keeps_quorum "${_old_node}"; then
-		echo "==> ${APP_ID} is pinned to ${_old_node}; moving the ${_engine} primary off it before the node kill"
+	_reason=$(spare_reason "${_old_node}")
+	if [ -n "${_reason}" ] && keeps_quorum "${_old_node}"; then
+		echo "==> ${_reason}; moving the ${_engine} primary off it before the node kill"
 		if [ -z "$(move_primary_off "${_engine}" "${_old_node}" "${_old_cid}")" ]; then
 			echo "==> the ${_engine} primary stayed on ${_old_node} after its container was killed"
 		fi
@@ -343,20 +361,26 @@ kill_primary_of() {
 		echo "==> ${_engine} primary is now ${_old_service} on ${_old_node}"
 	fi
 
+	_reason=$(spare_reason "${_old_node}")
 	if ! keeps_quorum "${_old_node}"; then
+		_killed_ms=$(date +%s%3N)
 		docker exec "${_old_node}" docker kill "${_old_cid}" >/dev/null
 		echo "==> killing ${_old_node} would lose the Raft quorum; killed the ${_engine} container instead"
-	elif app_pinned_to "${_old_node}"; then
+	elif [ -n "${_reason}" ]; then
+		_killed_ms=$(date +%s%3N)
 		docker exec "${_old_node}" docker kill "${_old_cid}" >/dev/null
-		echo "==> ${APP_ID} is pinned to ${_old_node}; killed the ${_engine} container instead of the node"
+		echo "==> ${_reason}; killed the ${_engine} container instead of the node"
 	else
 		pick_controller "${_old_node}"
 		save_name_files "${_old_node}"
 		_pinned=$(pinned_tasks_running "${_old_node}")
+		_killed_ms=$(date +%s%3N)
 		docker kill "${_old_node}" >/dev/null
 		_killed_node="${_old_node}"
 		echo "==> killed node ${_old_node}"
 	fi
+
+	save_through_app "${_killed_node}" "${_engine}" "${_killed_ms}"
 
 	_deadline=$(($(date +%s) + KILL_PRIMARY_TIMEOUT))
 	while [ "$(date +%s)" -lt "${_deadline}" ]; do
@@ -387,7 +411,7 @@ kill_primary_of() {
 		fi
 		sleep 3
 	done
-	echo "==> write through the ${_engine} endpoint succeeded after the kill"
+	echo "==> write through the ${_engine} endpoint succeeded $(seconds_since "${_killed_ms}")s after the kill"
 
 	if [ -n "${_killed_node}" ] && [ "${_killed_node}" = "${MANAGERS[0]}" ]; then
 		restart_node "${_killed_node}" "${_pinned}"
@@ -402,23 +426,65 @@ kill_primary_of() {
 	fi
 }
 
+# Param: $1 node container to leave out, empty for none
+# Prints "<node> <cid>" of a running app task outside $1, or nothing.
+app_task_outside() {
+	local _app_node _app_ctr
+	_app_node=$(docker exec "${CTL}" docker service ps --filter desired-state=running \
+		--format '{{.Node}}' "${SERVICE_NAME}" 2>/dev/null | grep -vxF "$1" | head -1 || true)
+	[ -n "${_app_node}" ] || return 0
+	_app_ctr=$(service_container_id "${_app_node}" "${SERVICE_NAME}" 2>/dev/null || true)
+	if [ -n "${_app_ctr}" ]; then
+		echo "${_app_node} ${_app_ctr}"
+	fi
+}
+
 # Param: $1 node container that was killed, empty when only the engine container was; $2 engine
 wait_app_reachable() {
-	local _deadline _app_node _app_ctr
+	local _deadline _task _rc _answer=""
 	_deadline=$(($(date +%s) + KILL_PRIMARY_TIMEOUT))
 	while [ "$(date +%s)" -lt "${_deadline}" ]; do
-		_app_node=$(docker exec "${CTL}" docker service ps --filter desired-state=running \
-			--format '{{.Node}}' "${SERVICE_NAME}" 2>/dev/null | grep -vxF "$1" | head -1 || true)
-		if [ -n "${_app_node}" ]; then
-			_app_ctr=$(service_container_id "${_app_node}" "${SERVICE_NAME}" 2>/dev/null || true)
-			if [ -n "${_app_ctr}" ] && probe_app_reachable "${_app_node}" "${_app_ctr}" "${PROBE_PORT}"; then
-				echo "${ENTITY} reachable after the $2 primary was killed"
+		_task=$(app_task_outside "$1")
+		if [ -n "${_task}" ]; then
+			_rc=0
+			# shellcheck disable=SC2086  # _task is "<node> <cid>", split into probe_app_http's args
+			_answer=$(probe_app_http ${_task} "${PROBE_PORT}" 2>&1) || _rc=$?
+			if [ "${_rc}" -eq 0 ]; then
+				echo "${ENTITY} answers ${_answer##*$'\n'} after the $2 primary was killed"
+				return 0
+			fi
+			# shellcheck disable=SC2086  # _task is "<node> <cid>", split into probe_app_reachable's args
+			if [ "${_rc}" -ge 2 ] && probe_app_reachable ${_task} "${PROBE_PORT}"; then
+				echo "${ENTITY} reachable after the $2 primary was killed (port or health only: the container has no curl or wget)"
 				return 0
 			fi
 		fi
 		sleep 3
 	done
-	echo "FAILURE: ${ENTITY} not reachable within ${KILL_PRIMARY_TIMEOUT}s after the $2 primary was killed"
+	echo "FAILURE: ${ENTITY} did not answer HTTP below 500 within ${KILL_PRIMARY_TIMEOUT}s after the $2 primary was killed"
+	echo "last answer: ${_answer}"
+	exit 1
+}
+
+# Param: $1 node container that was killed, empty when only the engine container was
+#        $2 engine
+#        $3 epoch milliseconds of the kill
+save_through_app() {
+	local _deadline _task _stamp _err=""
+	[ -n "${FAILOVER_SAVE}" ] || return 0
+	_stamp="$(date +%s%N)"
+	_deadline=$(($(date +%s) + KILL_PRIMARY_TIMEOUT))
+	while [ "$(date +%s)" -lt "${_deadline}" ]; do
+		_task=$(app_task_outside "$1")
+		# shellcheck disable=SC2086  # _task is "<node> <cid>", split into the save hook's args
+		if [ -n "${_task}" ] && _err=$(bash "${FAILOVER_SAVE}" ${_task} "${_stamp}" 2>&1); then
+			echo "==> saved and read back an item through ${APP_ID} $(seconds_since "$3")s after the $2 kill${1:+, with $1 still down}"
+			return 0
+		fi
+		sleep 3
+	done
+	echo "FAILURE: no save through ${APP_ID} within ${KILL_PRIMARY_TIMEOUT}s after the $2 kill"
+	echo "last save error: ${_err}"
 	exit 1
 }
 
