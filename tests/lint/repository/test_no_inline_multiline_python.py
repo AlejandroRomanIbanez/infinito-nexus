@@ -157,7 +157,11 @@ class TestFindings(unittest.TestCase):
         self.assertEqual(findings_in("x.sh", lines), ["x.sh:1: python <<PY"])
 
     def test_the_ansible_interpreter_heredoc_is_found(self) -> None:
-        lines = ["    {{ ansible_python_interpreter }} - <<'EOF'", "    import ldap", "    EOF"]
+        lines = [
+            "    {{ ansible_python_interpreter }} - <<'EOF'",
+            "    import ldap",
+            "    EOF",
+        ]
         self.assertEqual(findings_in("t.yml", lines), ["t.yml:1: python <<EOF"])
 
     def test_a_script_held_in_a_variable_is_found(self) -> None:

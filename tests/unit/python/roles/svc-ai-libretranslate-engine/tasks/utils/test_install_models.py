@@ -19,7 +19,9 @@ from utils.templating.ansible import _trust_as_template
 INSTALL = (
     PROJECT_ROOT / "roles/svc-ai-libretranslate-engine/tasks/utils/install_models.yml"
 )
-HEALTH = PROJECT_ROOT / "roles/svc-ai-libretranslate-engine/files/python/health_ready.py"
+HEALTH = (
+    PROJECT_ROOT / "roles/svc-ai-libretranslate-engine/files/python/health_ready.py"
+)
 WAIT = "⏳ Wait until {{ application_id }} finished its own boot"
 PREFETCH = "📥 Install the Argos models into {{ application_id }}"
 FAKE_CONTAINER = '#!/bin/sh\nshift 3\nexec "$@"\n'

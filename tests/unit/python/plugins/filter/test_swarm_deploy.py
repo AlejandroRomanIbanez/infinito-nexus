@@ -64,24 +64,22 @@ class TestBlock(unittest.TestCase):
     def test_a_plain_service_renders_resources_and_rolling_update(self):
         self.assertEqual(
             swarm_deploy(ctx(), "replicas: 2"),
-            "\n".join(
-                [
-                    "    deploy:",
-                    "      replicas: 2",
-                    "      update_config:",
-                    "        parallelism: 1",
-                    "        delay: 10s",
-                    "        failure_action: continue",
-                    "      restart_policy:",
-                    "        condition: any",
-                    "      resources:",
-                    "        limits:",
-                    '          cpus: "2.0"',
-                    "          memory: 1g",
-                    "          pids: 512",
-                    "        reservations:",
-                    "          memory: 256m",
-                ]
+            (
+                "    deploy:\n"
+                "      replicas: 2\n"
+                "      update_config:\n"
+                "        parallelism: 1\n"
+                "        delay: 10s\n"
+                "        failure_action: continue\n"
+                "      restart_policy:\n"
+                "        condition: any\n"
+                "      resources:\n"
+                "        limits:\n"
+                '          cpus: "2.0"\n'
+                "          memory: 1g\n"
+                "          pids: 512\n"
+                "        reservations:\n"
+                "          memory: 256m"
             ),
         )
 
