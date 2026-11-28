@@ -5,7 +5,7 @@
 As a platform administrator running Infinito.Nexus on Docker Swarm, I want the central Postgres, MariaDB, Redis and OpenLDAP engines to run as database clusters across three managers, without changing a single application role, so that losing any one node:
 
 - for the **durable tier** (Postgres, MariaDB) loses no acknowledged write and stops writes for at most 90 seconds;
-- for the **best-effort tier** (Redis, OpenLDAP) stops writes for at most 90 seconds and loses at most 10 seconds of acknowledged writes.
+- for the **best-effort tier** (Redis, OpenLDAP) stops writes for at most 90 seconds and targets losing at most 10 seconds of acknowledged writes, a target the failover suite measures but the engines do not guarantee.
 
 Losing a second node stops writes and never loses them on the durable tier. Surviving two node losses is not a goal of this requirement.
 
@@ -54,7 +54,7 @@ This requirement covers:
 | **Coordination store** | The shared etcd that Patroni and the writer elector use for leader election. |
 | **Writer election** | How MariaDB and OpenLDAP keep exactly one writable instance: instances compete for a lease, and an instance that loses or cannot renew it makes itself read-only. |
 | **Durable tier** | Postgres and MariaDB: no acknowledged write lost on one node loss; writes stall rather than continue unprotected. |
-| **Best-effort tier** | Redis and OpenLDAP: on one node loss, at most 10 s of acknowledged writes are lost (Redis) or merged last-writer-wins by `entryCSN` (OpenLDAP). |
+| **Best-effort tier** | Redis and OpenLDAP: on one node loss, the target is that the acknowledged writes lost (Redis) or merged last-writer-wins by `entryCSN` (OpenLDAP) span at most 10 s. It is a measured target, not a guarantee. |
 | **Failover budget** | The documented worst-case write gap per engine and fault, built from the configured timings. Each line is a failover suite assertion. |
 | **Forgetting a node** | Declaring a lost node permanently gone. The administrator makes that one decision, because a partition looks the same as a dead node; everything after it is automatic. |
 
@@ -68,7 +68,7 @@ This requirement covers:
   |---|---|---|---|---|
   | Postgres | durable | 0 acknowledged writes lost | writes stop, nothing lost | cannot commit: no synchronous standby acknowledges |
   | MariaDB | durable | 0 acknowledged writes lost | writes stop, nothing lost | cannot commit: semi-sync waits for a replica forever; set read-only on losing the lease |
-  | Redis | best-effort | ≤ 10 s of acknowledged writes lost | writes stop | stops writing after `min-replicas-max-lag` 10 s |
+  | Redis | best-effort | target: lost acknowledged writes span ≤ 10 s (not guaranteed) | writes stop | stops writing after `min-replicas-max-lag` 10 s |
   | OpenLDAP | best-effort | ≤ 10 s of writes merged last-writer-wins by `entryCSN` | writes stop | read-only at the renew deadline, 10 s |
 
 - [x] Two node losses stop writes on purpose: etcd, Swarm Raft and the synchronous fences all need a majority of three, and that majority is what prevents split-brain. A 5-manager profile that survives two losses is a [Future Extension](#future-extensions).
@@ -394,7 +394,7 @@ This requirement covers:
 - [ ] Targets, at the timings in this document:
   - **Durable tier:** 0 acknowledged writes lost on every single-node fault.
   - **Every engine:** each value of the [failover budget](#guarantees) is asserted; the ceilings are ≤ 90 s on a node crash, hang or partition, ≤ 30 s on an instance kill and ≤ 10 s on a rolling change. 5 s on a rolling change is a goal that is reported but does not fail the run.
-  - **Best-effort tier:** losses are reported, and the run fails only above 10 s worth of writes.
+  - **Best-effort tier:** losses are reported, and the run fails only when the lost writes were acknowledged across more than 10 s, measured from their recorded acknowledgement timestamps rather than from their count.
   - **Re-clone:** full strength within 60 minutes at lab sizes (measured 1902–3120 s), counted from the node loss and including the redeploy that places the replacement instance.
 - [x] The workflow reports `failure` when any assertion fails.
 - [ ] An image bump of an engine or HA component, and any HA-form lifecycle promotion, merges only with a linked green run of that engine's failover suite. This covers bump pull requests opened by the image-update workflow.

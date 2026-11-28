@@ -47,7 +47,9 @@ Sizing: an instance reserves 128 MiB (limit 512 MiB), a Sentinel 32 MiB (limit 6
 
 | Engine | Tier | One node lost | Partitioned old master |
 |---|---|---|---|
-| Redis | best-effort | at most 10 s of acknowledged writes lost | stops writing after `min-replicas-max-lag` 10 s |
+| Redis | best-effort | target: lost acknowledged writes span at most 10 s (not guaranteed) | stops writing after `min-replicas-max-lag` 10 s |
+
+The 10 s figure is a target, not a guarantee. Replication is asynchronous, and `min-replicas-max-lag` only checks how recently a replica acknowledged the replication stream, not whether it has copied a given write ([upstream `redis.conf`](https://github.com/redis/redis/blob/unstable/redis.conf): "does not GUARANTEE"). The failover suite measures the span from the recorded acknowledgement timestamps of the lost writes and fails above 10 s.
 
 Writes also stop while no replica is connected. Redis is not backed up, in either form.
 

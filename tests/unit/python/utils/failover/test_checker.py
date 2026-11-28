@@ -5,6 +5,7 @@ import unittest
 from utils.failover.checker import (
     acks_between,
     audit,
+    lost_window_s,
     max_write_gap_s,
     parse_checker_output,
     parse_probe_output,
@@ -65,6 +66,24 @@ class TestWriteGap(unittest.TestCase):
     def test_no_acks_is_infinite(self):
         run = parse_checker_output("start r 0\nfail 1 100\n")
         self.assertEqual(max_write_gap_s(run), float("inf"))
+
+
+class TestLostWindow(unittest.TestCase):
+    def test_slow_acks_widen_the_window_beyond_count_times_interval(self):
+        log = "".join(f"ack {seq} {seq * 400}\n" for seq in range(1, 31)) + "done\n"
+        run = parse_checker_output(log)
+        lost = audit(run)
+        self.assertEqual(len(lost), 30)
+        self.assertAlmostEqual(lost_window_s(run, lost), 11.6)
+
+    def test_an_old_lost_write_stretches_the_window(self):
+        run = parse_checker_output(
+            "ack 1 1000\nack 2 60000\nack 3 60200\npresent 2\ndone\n"
+        )
+        self.assertAlmostEqual(lost_window_s(run, audit(run)), 59.2)
+
+    def test_nothing_lost_is_an_empty_window(self):
+        self.assertEqual(lost_window_s(parse_checker_output(_LOG), []), 0.0)
 
 
 class TestAcksBetween(unittest.TestCase):

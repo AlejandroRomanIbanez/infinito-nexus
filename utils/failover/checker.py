@@ -68,6 +68,19 @@ def audit(run: CheckerRun) -> list[int]:
     return sorted(seq for seq in run.acks if seq not in run.present)
 
 
+def lost_window_s(run: CheckerRun, lost: list[int]) -> float:
+    """Return the seconds from the first to the last acknowledgement of ``lost``.
+
+    Args:
+        run: the parsed checker run.
+        lost: acknowledged sequence numbers missing from the engine.
+    """
+    stamps = [run.acks[seq] for seq in lost]
+    if not stamps:
+        return 0.0
+    return (max(stamps) - min(stamps)) / 1000.0
+
+
 def acks_between(run: CheckerRun, start_ms: int, end_ms: int) -> list[int]:
     """Return the sequence numbers acknowledged in ``[start_ms, end_ms]``."""
     return sorted(seq for seq, at in run.acks.items() if start_ms <= at <= end_ms)

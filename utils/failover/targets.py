@@ -45,7 +45,7 @@ def budget_s(engine: str, fault: str) -> float:
 
 
 def evaluate(
-    engine: str, fault: str, *, gap_s: float, lost: int, interval_s: float
+    engine: str, fault: str, *, gap_s: float, lost: int, lost_window_s: float
 ) -> Verdict:
     """Assert one scenario's write gap and acknowledged-write loss.
 
@@ -54,7 +54,8 @@ def evaluate(
         fault: one of ``FAULTS`` or ``none``.
         gap_s: longest stretch without an acknowledged write.
         lost: acknowledged sequence numbers missing after the run.
-        interval_s: checker write interval, to turn ``lost`` into seconds.
+        lost_window_s: seconds from the first to the last acknowledgement
+            of the missing writes, as ``checker.lost_window_s`` measures it.
 
     Returns:
         A ``Verdict``; any entry in ``failures`` fails the scenario.
@@ -75,19 +76,19 @@ def evaluate(
             f"{engine} rolling: write gap {gap_s:.1f}s misses the {ROLLING_GOAL_S:.0f}s goal"
         )
     if lost:
-        lost_s = lost * interval_s
         if ENGINES[engine]["tier"] == DURABLE or fault == "none":
             verdict.failures.append(
                 f"{engine} {fault}: {lost} acknowledged writes lost"
             )
-        elif lost_s > BEST_EFFORT_LOSS_S + 1e-9:
+        elif lost_window_s > BEST_EFFORT_LOSS_S + 1e-9:
             verdict.failures.append(
-                f"{engine} {fault}: {lost_s:.1f}s of acknowledged writes lost, "
-                f"above {BEST_EFFORT_LOSS_S:.0f}s"
+                f"{engine} {fault}: {lost} acknowledged writes lost, acknowledged "
+                f"across {lost_window_s:.1f}s, above the {BEST_EFFORT_LOSS_S:.0f}s target"
             )
         else:
             verdict.notes.append(
-                f"{engine} {fault}: {lost} acknowledged writes lost ({lost_s:.1f}s)"
+                f"{engine} {fault}: {lost} acknowledged writes lost, acknowledged "
+                f"across {lost_window_s:.1f}s (target {BEST_EFFORT_LOSS_S:.0f}s)"
             )
     return verdict
 

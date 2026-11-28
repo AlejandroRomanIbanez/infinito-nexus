@@ -6,9 +6,9 @@ import time
 from typing import TYPE_CHECKING, Protocol
 
 from utils.failover.checker import (
-    INTERVAL_S,
     CheckerRun,
     audit,
+    lost_window_s,
     max_write_gap_s,
     parse_checker_output,
 )
@@ -83,7 +83,13 @@ def judge_run(engine: str, fault: str, run: CheckerRun) -> Verdict:
     """Judge one finished checker run's write gap and loss against the budget."""
     gap = max_write_gap_s(run)
     lost = audit(run)
-    verdict = evaluate(engine, fault, gap_s=gap, lost=len(lost), interval_s=INTERVAL_S)
+    verdict = evaluate(
+        engine,
+        fault,
+        gap_s=gap,
+        lost=len(lost),
+        lost_window_s=lost_window_s(run, lost),
+    )
     verdict.notes.append(f"acks={len(run.acks)} fails={len(run.fails)} gap={gap:.1f}s")
     if lost and run.started_ms is not None:
         first, last = (

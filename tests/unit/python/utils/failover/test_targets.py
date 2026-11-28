@@ -42,39 +42,45 @@ class TestBudgetTable(unittest.TestCase):
 
 class TestEvaluate(unittest.TestCase):
     def test_within_budget_and_nothing_lost_passes(self):
-        verdict = evaluate("postgres", "kill", gap_s=20.0, lost=0, interval_s=0.2)
+        verdict = evaluate("postgres", "kill", gap_s=20.0, lost=0, lost_window_s=0.0)
         self.assertEqual(verdict.failures, [])
 
     def test_gap_over_budget_fails(self):
-        verdict = evaluate("postgres", "kill", gap_s=29.0, lost=0, interval_s=0.2)
+        verdict = evaluate("postgres", "kill", gap_s=29.0, lost=0, lost_window_s=0.0)
         self.assertEqual(len(verdict.failures), 1)
         self.assertIn("29.0", verdict.failures[0])
 
     def test_durable_tier_fails_on_any_loss(self):
-        verdict = evaluate("mariadb", "node", gap_s=1.0, lost=1, interval_s=0.2)
+        verdict = evaluate("mariadb", "node", gap_s=1.0, lost=1, lost_window_s=0.0)
         self.assertTrue(any("lost" in f for f in verdict.failures))
 
-    def test_best_effort_tier_tolerates_ten_seconds_of_writes(self):
-        ok = evaluate("redis", "node", gap_s=1.0, lost=50, interval_s=0.2)
+    def test_best_effort_tier_tolerates_a_ten_second_window(self):
+        ok = evaluate("redis", "node", gap_s=1.0, lost=50, lost_window_s=10.0)
         self.assertEqual(ok.failures, [])
-        self.assertTrue(ok.notes)
-        bad = evaluate("redis", "node", gap_s=1.0, lost=51, interval_s=0.2)
-        self.assertTrue(bad.failures)
+        self.assertTrue(any("target" in n for n in ok.notes))
+        bad = evaluate("redis", "node", gap_s=1.0, lost=2, lost_window_s=10.1)
+        self.assertTrue(any("10s target" in f for f in bad.failures))
+
+    def test_best_effort_judges_the_window_not_the_count(self):
+        many_close = evaluate("redis", "node", gap_s=1.0, lost=80, lost_window_s=2.0)
+        self.assertEqual(many_close.failures, [])
+        few_spread = evaluate("redis", "node", gap_s=1.0, lost=3, lost_window_s=60.0)
+        self.assertTrue(few_spread.failures)
 
     def test_rolling_goal_is_reported_not_failed(self):
         verdict = evaluate(
-            "postgres", "rolling", gap_s=ROLLING_GOAL_S + 0.5, lost=0, interval_s=0.2
+            "postgres", "rolling", gap_s=ROLLING_GOAL_S + 0.5, lost=0, lost_window_s=0.0
         )
         self.assertEqual(verdict.failures, [])
         self.assertTrue(any("goal" in n for n in verdict.notes))
 
     def test_standalone_steady_state_has_a_tight_budget(self):
         self.assertTrue(
-            evaluate("openldap", "none", gap_s=3.0, lost=0, interval_s=0.2).failures
+            evaluate("openldap", "none", gap_s=3.0, lost=0, lost_window_s=0.0).failures
         )
 
     def test_rolling_gap_over_the_ceiling_names_the_ceiling(self):
-        verdict = evaluate("postgres", "rolling", gap_s=11.0, lost=0, interval_s=0.2)
+        verdict = evaluate("postgres", "rolling", gap_s=11.0, lost=0, lost_window_s=0.0)
         self.assertTrue(any("10s ceiling" in f for f in verdict.failures))
 
 
