@@ -316,17 +316,23 @@ wait_every_engine() {
 # Param: $1 engine, $2 node container the primary must leave, $3 primary container id
 # Prints "<node> <cid> <service>" of a primary on another node, or nothing after KILL_PRIMARY_TIMEOUT.
 move_primary_off() {
-	local _deadline _now
-	docker exec "$2" docker kill "$3" >/dev/null
+	local _deadline _now=""
+	docker exec "$2" docker pause "$3" >/dev/null
 	_deadline=$(($(date +%s) + KILL_PRIMARY_TIMEOUT))
 	while [ "$(date +%s)" -lt "${_deadline}" ]; do
 		_now=$(find_primary "$1" || true)
 		if [ -n "${_now}" ] && [ "${_now%% *}" != "$2" ]; then
-			echo "${_now}"
-			return 0
+			break
 		fi
+		_now=""
 		sleep 3
 	done
+	if ! docker exec "$2" docker unpause "$3" >/dev/null 2>&1; then
+		echo "==> $3 on $2 was replaced while it was paused" >&2
+	fi
+	if [ -n "${_now}" ]; then
+		echo "${_now}"
+	fi
 }
 
 # Param: $1 engine
@@ -349,7 +355,7 @@ kill_primary_of() {
 	if [ -n "${_reason}" ] && keeps_quorum "${_old_node}"; then
 		echo "==> ${_reason}; moving the ${_engine} primary off it before the node kill"
 		if [ -z "$(move_primary_off "${_engine}" "${_old_node}" "${_old_cid}")" ]; then
-			echo "==> the ${_engine} primary stayed on ${_old_node} after its container was killed"
+			echo "==> the ${_engine} primary stayed on ${_old_node} while its container was paused"
 		fi
 		wait_every_engine
 		_old=$(wait_primary "${_engine}")
