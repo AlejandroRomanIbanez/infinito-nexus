@@ -14,7 +14,7 @@ from utils.handler.yaml import YamlHandler
 SWARM_EXTRAS_VARS = "inventories/development/swarm.yml"
 DEPLOY_EXTRAS = "swarm-nfs-extras.deploy.yml"
 SUITE_EXTRAS = "failover-extras.yml"
-PLAYBOOK_DIR = PROJECT_ROOT / "playbooks"
+PLAYBOOK_DIR = PROJECT_ROOT / "playbooks" / "failover"
 _MEMORY = re.compile(r"^(\d+)([kmg])$", re.IGNORECASE)
 _UNIT_MB = {"k": 1 / 1024, "m": 1, "g": 1024}
 
